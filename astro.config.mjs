@@ -6,6 +6,8 @@ import sitemap from "@astrojs/sitemap";
 
 // https://astro.build/config
 export default defineConfig({
+  base: '/sampreethavvari.github.io/',
+  outDir: 'docs',
   devToolbar: {
     enabled: false
   },
