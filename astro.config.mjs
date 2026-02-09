@@ -11,6 +11,6 @@ export default defineConfig({
   markdown: {
     rehypePlugins: [rehypeAccessibleEmojis],
   },
-  site: 'https://astro-portfolio-template.pages.dev',
+  site: 'https://sampreethavvari.github.io',
   integrations: [tailwind(), react(), robotsTxt(), sitemap()]
 });

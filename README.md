@@ -1,4 +1,4 @@
-# 1. Astro Portfolio Template
+# 1. Sampreeth Avvari Portfolio
 
 [![Open in StackBlitz](https://developer.stackblitz.com/img/open_in_stackblitz.svg)](https://stackblitz.com/github/gio-del/Astro-Portfolio-Template)
 [![Open with CodeSandbox](https://assets.codesandbox.io/github/button-edit-lime.svg)](https://codesandbox.io/p/sandbox/github/gio-del/Astro-Portfolio-Template)
@@ -6,7 +6,7 @@
 
 ## 1.1. Table of Contents
 
-- [1. Astro Portfolio Template](#1-astro-portfolio-template)
+- [1. Sampreeth Avvari Portfolio](#1-sampreeth-avvari-portfolio)
   - [1.1. Table of Contents](#11-table-of-contents)
   - [1.2. Features :open\_hands:](#12-features-open_hands)
   - [1.3. What's next? :rocket:](#13-whats-next-rocket)
@@ -32,7 +32,6 @@
 
 ## 1.3. What's next? :rocket:
 
-- [ ] Internationalization (i18n)
 - [ ] Projects collection
 - Feel free to open an issue or submit a pull request with your ideas for improving this portfolio template (see [Contributing](#18-contributing-building_construction))
 

@@ -2,29 +2,75 @@
 import Nav from "../components/navbar/Nav";
 import TopButton from "../components/TopButton";
 import Pointer from "../components/Pointer";
+import ChatWidget from "../components/chatbot/ChatWidget";
+import FooterBar from "../components/footer/FooterBar";
 
-const { title } = Astro.props;
+const { title, footerVariant = "default" } = Astro.props;
 const posts = await Astro.glob("../pages/posts/*.md");
+const pages = [
+  {
+    title: "Home",
+    description: "Landing, hero, and quick intro.",
+    url: "/",
+  },
+  {
+    title: "About",
+    description: "Bio, education, skills, and experience.",
+    url: "/#about",
+  },
+  {
+    title: "Projects",
+    description: "AI, research, and industry projects.",
+    url: "/projects",
+  },
+  {
+    title: "Filmmaking",
+    description: "Among Monsters and film work.",
+    url: "/filmmaking",
+  },
+  {
+    title: "Writing",
+    description: "Blog posts and research notes.",
+    url: "/posts",
+  },
+  {
+    title: "Contact",
+    description: "Email and social links.",
+    url: "/#contact",
+  },
+];
+
+const searchItems = [
+  ...pages.map((page) => ({ ...page, type: "page" })),
+  ...posts.map((post) => ({
+    title: post.frontmatter.title,
+    description: post.frontmatter.description,
+    url: post.url,
+    type: "post",
+  })),
+];
 
 import "../styles/global.css";
 ---
 
 <!doctype html>
-<html lang="en">
+<html lang="en" translate="no">
   <head>
     <meta charset="UTF-8" />
     <meta
       name="description"
-      content="A portfolio website for a software developer"
+      content="Lead AI Engineer specializing in agentic AI, RAG, and ML systems."
     />
-    <meta name="keywords" content="portfolio, software, developer" />
-    <meta name="author" content="Your Name" />
+    <meta name="keywords" content="Sampreeth Avvari, AI engineer, agentic AI, RAG, ML, MLOps, NYU" />
+    <meta name="author" content="Sampreeth Avvari" />
+    <meta http-equiv="Content-Language" content="en" />
+    <meta name="google" content="notranslate" />
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link
       rel="alternate"
       type="application/rss+xml"
-      title="Your Site's Title"
+      title="Sampreeth Avvari RSS"
       href={`${Astro.site}rss.xml`}
     />
     <meta name="generator" content={Astro.generator} />
@@ -64,12 +110,46 @@ import "../styles/global.css";
         document.documentElement.classList.remove("dark");
       }
     </script>
+    <script>
+      const setupReveal = () => {
+        const elements = document.querySelectorAll("[data-reveal]");
+        if (!elements.length) return;
+
+        if (!("IntersectionObserver" in window)) {
+          elements.forEach((el) => el.classList.add("reveal-visible"));
+          return;
+        }
+
+        const observer = new IntersectionObserver(
+          (entries) => {
+            entries.forEach((entry) => {
+              if (entry.isIntersecting) {
+                entry.target.classList.add("reveal-visible");
+              } else {
+                entry.target.classList.remove("reveal-visible");
+              }
+            });
+          },
+          { threshold: 0.2 }
+        );
+
+        elements.forEach((el) => observer.observe(el));
+      };
+
+      if (document.readyState === "loading") {
+        document.addEventListener("DOMContentLoaded", setupReveal);
+      } else {
+        setupReveal();
+      }
+    </script>
   </head>
   <body class="bg-primary dark:bg-dk-primary w-full container mx-auto">
-    <Nav client:visible posts={posts} />
+    <Nav client:visible searchItems={searchItems} />
     <div class="container mx-auto px-4">
       <slot />
     </div>
+    <FooterBar variant={footerVariant} />
+    <ChatWidget client:only />
     <TopButton client:only />
     <Pointer client:only />
   </body>

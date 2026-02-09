@@ -7,7 +7,9 @@
     "start": "astro dev",
     "build": "astro build",
     "preview": "astro preview",
-    "astro": "astro"
+    "astro": "astro",
+    "ingest": "node scripts/ingest-embeddings.mjs --append",
+    "ingest:reset": "node scripts/ingest-embeddings.mjs"
   },
   "dependencies": {
     "@astrojs/react": "^3.0.9",

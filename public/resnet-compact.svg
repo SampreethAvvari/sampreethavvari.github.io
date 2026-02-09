@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="800" viewBox="0 0 1200 800" role="img" aria-label="ResNet compact neon illustration">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#0B0F1A" />
+      <stop offset="100%" stop-color="#151E2E" />
+    </linearGradient>
+    <linearGradient id="accent" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#53C6FF" />
+      <stop offset="100%" stop-color="#1D4CC4" />
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="800" fill="url(#bg)" />
+  <g transform="translate(120 220)" fill="none" stroke="#53C6FF" stroke-width="6" opacity="0.5">
+    <rect x="0" y="0" width="160" height="110" rx="18" />
+    <rect x="220" y="0" width="160" height="110" rx="18" />
+    <rect x="440" y="0" width="160" height="110" rx="18" />
+    <rect x="660" y="0" width="160" height="110" rx="18" />
+    <path d="M80 110 V190 H300 V110" />
+    <path d="M300 110 V190 H520 V110" />
+    <path d="M520 110 V190 H740 V110" />
+  </g>
+  <g transform="translate(200 470)">
+    <rect x="0" y="0" width="800" height="140" rx="24" fill="#111A2E" stroke="#53C6FF" stroke-width="3" />
+  </g>
+  <g transform="translate(240 510)" fill="url(#accent)" opacity="0.8">
+    <rect x="0" y="0" width="120" height="40" rx="12" />
+    <rect x="160" y="0" width="120" height="40" rx="12" />
+    <rect x="320" y="0" width="120" height="40" rx="12" />
+    <rect x="480" y="0" width="120" height="40" rx="12" />
+  </g>
+  <text x="80" y="120" fill="#53C6FF" font-size="34" font-family="Roboto, sans-serif" letter-spacing="4">RESNET &lt; 5M</text>
+</svg>

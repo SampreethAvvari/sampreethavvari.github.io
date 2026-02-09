@@ -98,3 +98,100 @@ html.dark *::selection {
   background-color: theme(colors.dk-text) !important;
   color: theme(colors.dk-primary) !important;
 }
+
+.line-clamp-2 {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+}
+
+.photo-carousel-frame {
+  aspect-ratio: 16 / 9;
+  min-height: 200px;
+}
+
+a,
+button,
+[role="button"] {
+  transition: transform 0.2s ease;
+  transform-origin: center;
+}
+
+a:hover,
+button:hover,
+[role="button"]:hover {
+  transform: scale(1.03);
+}
+
+.reveal {
+  opacity: 0;
+  transform: translateY(24px);
+  transition: opacity 0.8s ease, transform 0.8s ease;
+}
+
+.reveal-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .reveal,
+  .reveal-visible {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+}
+
+.chat-attention {
+  animation: chatPulse 5s ease-in-out infinite;
+}
+
+.chat-attention:hover {
+  transform: scale(1.08);
+  animation-play-state: paused;
+}
+
+@keyframes chatPulse {
+  0%,
+  70%,
+  100% {
+    transform: scale(1);
+  }
+  72% {
+    transform: scale(1.2) rotate(-3deg);
+  }
+  75% {
+    transform: scale(0.92) rotate(3deg);
+  }
+  78% {
+    transform: scale(1.16) rotate(-3deg);
+  }
+  82% {
+    transform: scale(1);
+  }
+}
+
+@keyframes fadeInOut {
+  0% {
+    opacity: 0;
+    transform: translateX(8px);
+  }
+  10% {
+    opacity: 1;
+    transform: translateX(0);
+  }
+  80% {
+    opacity: 1;
+    transform: translateX(0);
+  }
+  100% {
+    opacity: 0;
+    transform: translateX(8px);
+  }
+}
+
+.animate-fade-in-out {
+  animation: fadeInOut 3s ease-in-out forwards;
+}

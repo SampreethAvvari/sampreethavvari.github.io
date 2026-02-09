@@ -1,18 +1,26 @@
 ---
 import BaseLayout from "../layouts/BaseLayout.astro";
 import { info } from "../data/info";
-import ProjectCarousel from "../components/projects_section/ProjectCarousel";
 import Contact from "../components/contact_section/Contact";
 import About from "../components/about_section/About";
-import Blog from "../components/post_section/Blog.astro";
+import PhotoCarousel from "../components/about_section/PhotoCarousel";
+import ProjectCard from "../components/projects_section/ProjectCard";
 
 import { Image } from "astro:assets";
 
-const allPosts = await Astro.glob("./posts/*.md");
+const posts = await Astro.glob("../pages/posts/*.md");
+const latestPost = posts
+  .sort((a, b) => {
+    return (
+      new Date(b.frontmatter.date).getTime() -
+      new Date(a.frontmatter.date).getTime()
+    );
+  })[0];
+const featuredProjects = info.projects.slice(0, 3);
 ---
 
 <BaseLayout title="Home">
-  <section class="lg:h-screen lg:m-0 my-20 mx-2" id="home">
+  <section class="lg:h-screen lg:m-0 my-20 mx-2 relative" id="home">
     <div
       class="flex flex-col lg:flex-row justify-center items-center h-full space-y-4"
     >
@@ -41,29 +49,101 @@ const allPosts = await Astro.glob("./posts/*.md");
       </div>
     </div>
   </section>
-  <section class="lg:m-0
-        my-20
-        mx-2" id="about">
+  <section class="my-20 mx-2" id="about">
     <About about={info.about} client:visible />
   </section>
 
-  <section
-    class="lg:h-screen lg:m-0 my-20 mx-2 flex-col flex justify-center w-full"
-    id="projects"
-  >
-    <ProjectCarousel projects={info.projects} client:only />
+  <section class="mx-2 mt-28 mb-20 flex justify-center reveal" id="photos" data-reveal>
+    <PhotoCarousel photos={info.about.photos} client:visible />
+  </section>
+
+  <section class="my-20 mx-2 space-y-16">
+    <div class="reveal" data-reveal>
+      <div class="flex items-center justify-between mb-6">
+        <a
+          href="/projects"
+          class="flex items-center gap-3 text-3xl font-bold text-secondary dark:text-dk-secondary hover:text-accent dark:hover:text-dk-accent"
+        >
+          <i class="fas fa-code text-2xl"></i>
+          Projects
+        </a>
+        <a
+          href="/projects"
+          class="text-sm uppercase tracking-[0.2em] text-secondary/70 dark:text-dk-secondary/70 hover:text-accent dark:hover:text-dk-accent"
+        >
+          View all
+        </a>
+      </div>
+      <div class="grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 items-start">
+        {featuredProjects.map((project) => (
+          <ProjectCard project={project} client:only key={project.title} />
+        ))}
+      </div>
+    </div>
+
+    <div class="reveal" data-reveal>
+      <div class="flex items-center justify-between mb-4">
+        <a
+          href="/filmmaking"
+          class="flex items-center gap-3 text-3xl font-bold text-secondary dark:text-dk-secondary hover:text-accent dark:hover:text-dk-accent"
+        >
+          <i class="fas fa-clapperboard text-2xl"></i>
+          Filmmaking
+        </a>
+        <a
+          href="/filmmaking"
+          class="text-sm uppercase tracking-[0.2em] text-secondary/70 dark:text-dk-secondary/70 hover:text-accent dark:hover:text-dk-accent"
+        >
+          View page
+        </a>
+      </div>
+      <p class="text-lg text-text dark:text-dk-text max-w-3xl">
+        I make films about gray characters, tight spaces, and the chaos hiding inside ordinary lives.
+        My latest project, <span class="font-semibold">Among Monsters</span>, is a zero-budget crime drama
+        built from the ground up — intimate, dangerous, and painfully human.
+      </p>
+    </div>
+
+    <div class="reveal" data-reveal>
+      <div class="flex items-center justify-between mb-4">
+        <a
+          href="/posts"
+          class="flex items-center gap-3 text-3xl font-bold text-secondary dark:text-dk-secondary hover:text-accent dark:hover:text-dk-accent"
+        >
+          <i class="fas fa-pen-nib text-2xl"></i>
+          Writing
+        </a>
+        <a
+          href="/posts"
+          class="text-sm uppercase tracking-[0.2em] text-secondary/70 dark:text-dk-secondary/70 hover:text-accent dark:hover:text-dk-accent"
+        >
+          View all
+        </a>
+      </div>
+      {latestPost ? (
+        <div class="max-w-3xl">
+          <h3 class="text-2xl font-semibold mb-2">
+            <a href={latestPost.url} class="hover:text-accent dark:hover:text-dk-accent">
+              {latestPost.frontmatter.title}
+            </a>
+          </h3>
+          <p class="text-text dark:text-dk-text mb-2">
+            {latestPost.frontmatter.description}
+          </p>
+          <p class="text-sm text-secondary/70 dark:text-dk-secondary/70">
+            {latestPost.frontmatter.date}
+          </p>
+        </div>
+      ) : (
+        <p class="text-text dark:text-dk-text">New posts coming soon.</p>
+      )}
+    </div>
   </section>
 
   <section
-    class="lg:h-screen lg:m-0 my-20 flex-col flex justify-center w-full"
-    id="blog"
-  >
-    <Blog posts={allPosts} />
-  </section>
-
-  <section
-    class="lg:h-screen lg:m-0 my-20 mx-2 flex-col flex justify-center w-full"
+    class="lg:h-screen lg:m-0 my-20 mx-2 flex-col flex justify-center w-full reveal"
     id="contact"
+    data-reveal
   >
     <div class="flex flex-row justify-center items-center h-full space-y-4">
       <Contact contact={info.contact} size="lg" />
