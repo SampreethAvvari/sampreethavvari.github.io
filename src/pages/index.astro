@@ -47,9 +47,11 @@ const filmmakingPhotos = filmmakingFiles.map((file) => {
 ---
 
 <BaseLayout title="Sampreeth Avvari: Home">
-  <section class="lg:h-screen lg:m-0 my-20 mx-2 relative" id="home">
+  <section class="lg:h-screen lg:m-0 my-20 mx-2 relative landing-atmos" id="home">
+    <div class="celestial sun" aria-hidden="true"></div>
+    <div class="celestial moon" aria-hidden="true"></div>
     <div
-      class="flex flex-col lg:flex-row justify-center items-center h-full space-y-4"
+      class="flex flex-col lg:flex-row justify-center items-center h-full space-y-4 relative z-10"
     >
       <div class="profile-pic">
         <Image
@@ -63,11 +65,14 @@ const filmmakingPhotos = filmmakingFiles.map((file) => {
 
       <div class="flex flex-col lg:mx-8 leading-relaxed space-y-4">
         <h1 class="text-3xl lg:text-5xl font-bold font-serif">
-          Hi, I'm <span class="bg-clip-text animate-pulse typewriter">
+          Hi, I'm <span class="bg-clip-text animate-pulse typewriter floaty">
             {info.name}</span
           >
         </h1>
         <h2 class="text-text dark:text-dk-text">{info.brief_description}</h2>
+        <p class="text-base text-secondary dark:text-dk-secondary font-normal">
+          But theres more to me :)
+        </p>
         <p class="text-2xl">
           Based in <span class="text-secondary dark:text-dk-secondary"
             >{info.location}</span
@@ -143,7 +148,7 @@ const filmmakingPhotos = filmmakingFiles.map((file) => {
           class="flex items-center gap-3 text-3xl font-bold text-secondary dark:text-dk-secondary hover:text-accent dark:hover:text-dk-accent"
         >
           <i class="fas fa-pen-nib text-2xl"></i>
-          Writing
+          Technical Writing
         </a>
         <a
           href="/posts"
@@ -222,6 +227,15 @@ const filmmakingPhotos = filmmakingFiles.map((file) => {
     display: inline-block;
     overflow: hidden;
     border-radius: 100%;
+    animation: floaty 6s ease-in-out infinite;
+    will-change: transform;
+    box-shadow: 32px 38px 95px rgba(0, 0, 0, 0.45),
+      16px 18px 42px rgba(42, 111, 168, 0.32);
+  }
+
+  :global(html.dark) .profile-pic {
+    box-shadow: -24px 30px 60px rgba(0, 0, 0, 0.2),
+      -12px 14px 26px rgba(42, 111, 168, 0.18);
   }
 
   .profile-pic::before {
@@ -258,6 +272,141 @@ const filmmakingPhotos = filmmakingFiles.map((file) => {
   @keyframes shine {
     100% {
       left: 125%;
+    }
+  }
+
+  .landing-atmos {
+    position: relative;
+    overflow: hidden;
+    --celestial-bg: radial-gradient(circle at 30% 30%, #fff6c6 0%, #ffd54d 48%, #ffb703 70%, transparent 72%);
+  }
+
+  .celestial {
+    position: absolute;
+    width: 120px;
+    height: 120px;
+    border-radius: 999px;
+    pointer-events: none;
+    z-index: 1;
+    transition: opacity 0.6s ease, transform 0.6s ease;
+  }
+
+  .sun {
+    top: 5%;
+    left: 4%;
+    background: radial-gradient(circle at 30% 30%, #fff3b0 0%, #ffd54d 45%, #ffb703 70%, transparent 72%);
+    box-shadow: 0 0 50px rgba(255, 213, 77, 0.45);
+  }
+
+  .moon {
+    top: 5%;
+    right: 4%;
+    background:
+      radial-gradient(circle at 35% 35%, #f4f7ff 0%, #cfd8ff 55%, #8fa3ff 75%, transparent 78%),
+      radial-gradient(circle at 30% 35%, rgba(120, 132, 200, 0.7) 0 12px, transparent 14px),
+      radial-gradient(circle at 60% 55%, rgba(120, 132, 200, 0.6) 0 10px, transparent 12px),
+      radial-gradient(circle at 45% 70%, rgba(120, 132, 200, 0.55) 0 8px, transparent 10px);
+    box-shadow: 0 0 45px rgba(143, 163, 255, 0.35);
+  }
+
+  .sun::before {
+    content: "";
+    position: absolute;
+    inset: -38px;
+    border-radius: 999px;
+    background: repeating-conic-gradient(
+      from 0deg,
+      rgba(255, 214, 102, 0.8) 0deg 6deg,
+      transparent 6deg 18deg
+    );
+    mask: radial-gradient(circle, transparent 46%, #000 56%);
+    opacity: 0.85;
+  }
+
+  :global(html.dark) .sun {
+    opacity: 0;
+    transform: translateY(-14px) scale(0.92);
+  }
+
+  :global(html.dark) .moon {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+
+  :global(html:not(.dark)) .sun {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+
+  :global(html:not(.dark)) .moon {
+    opacity: 0;
+    transform: translateY(14px) scale(0.9);
+  }
+
+  :global(html.dark) .landing-atmos {
+    --celestial-bg: radial-gradient(circle at 65% 35%, #f4f7ff 0%, #cfd8ff 55%, #8fa3ff 78%, transparent 80%);
+  }
+
+  .landing-atmos::before,
+  .landing-atmos::after {
+    content: "";
+    position: absolute;
+    pointer-events: none;
+    opacity: 0.14;
+    background-repeat: no-repeat;
+    background-size: contain;
+    z-index: 0;
+  }
+
+  .landing-atmos::before {
+    width: 320px;
+    height: 320px;
+    bottom: 8%;
+    right: 32%;
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 200' fill='none' stroke='%239ad0ff' stroke-width='10' stroke-linecap='round' stroke-linejoin='round'><path d='M70 40 L30 100 L70 160'/><path d='M130 40 L170 100 L130 160'/><path d='M110 30 L90 170'/></svg>");
+  }
+
+  .landing-atmos::after {
+    width: 360px;
+    height: 360px;
+    bottom: 5%;
+    right: 6%;
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 240 200' fill='none' stroke='%239ad0ff' stroke-width='8' stroke-linecap='round' stroke-linejoin='round'><rect x='40' y='70' width='160' height='90' rx='8' /><rect x='40' y='30' width='160' height='35' rx='6' /><line x1='55' y1='36' x2='85' y2='60' /><line x1='85' y1='36' x2='115' y2='60' /><line x1='115' y1='36' x2='145' y2='60' /><line x1='145' y1='36' x2='175' y2='60' /></svg>");
+  }
+
+  @media (max-width: 768px) {
+    .landing-atmos::before,
+    .landing-atmos::after {
+      opacity: 0.1;
+      width: 220px;
+      height: 220px;
+    }
+
+    .celestial {
+      display: none;
+    }
+
+    .landing-atmos {
+      background-image: var(--celestial-bg);
+      background-repeat: no-repeat;
+      background-size: 90px 90px;
+      background-position: top 6% left 6%;
+    }
+
+    :global(html.dark) .landing-atmos {
+      background-position: top 6% right 6%;
+    }
+  }
+
+  :global(html.dark) .landing-atmos::before,
+  :global(html.dark) .landing-atmos::after {
+    opacity: 0.06;
+  }
+
+  @media (max-width: 768px) {
+    :global(html.dark) .landing-atmos::before,
+    :global(html.dark) .landing-atmos::after {
+      opacity: 0.04;
     }
   }
 </style>

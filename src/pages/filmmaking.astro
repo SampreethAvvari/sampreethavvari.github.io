@@ -49,6 +49,24 @@ const galleryItems = galleryFiles.map((file) => {
   return { src, alt };
 });
 
+const swechchaDir = path.join(galleryDir, "Swechcha");
+let swechchaFiles = [];
+try {
+  swechchaFiles = fs
+    .readdirSync(swechchaDir)
+    .filter((file) => /\.(png|jpe?g|webp|gif|avif)$/i.test(file))
+    .sort((a, b) => a.localeCompare(b));
+} catch (error) {
+  swechchaFiles = [];
+}
+
+const swechchaItems = swechchaFiles.map((file) => {
+  const encoded = encodeURIComponent(file);
+  const src = `/Photo%20Gallery/Swechcha/${encoded}`;
+  const alt = file.replace(/\.[^/.]+$/, "").replace(/[-_]+/g, " ");
+  return { src, alt };
+});
+
 const crewPhoto = (filename) => ({
   src: `/Crew%20Photos/${encodeURIComponent(filename)}`,
   alt: filename.replace(/\.[^/.]+$/, ""),
@@ -642,6 +660,24 @@ const filmTimeline = [
         </div>
       ) : (
         <p class="text-text dark:text-dk-text">Gallery images coming soon.</p>
+      )}
+
+      <div class="text-2xl font-bold text-secondary dark:text-dk-secondary">
+        Swechcha (2024):
+      </div>
+      {swechchaItems.length ? (
+        <div class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+          {swechchaItems.map((item) => (
+            <img
+              src={item.src}
+              alt={item.alt}
+              loading="lazy"
+              class="w-full h-72 object-cover rounded-lg border-2 border-secondary dark:border-dk-secondary transition-transform duration-200 hover:scale-[1.02]"
+            />
+          ))}
+        </div>
+      ) : (
+        <p class="text-text dark:text-dk-text">Swechcha images coming soon.</p>
       )}
     </div>
   </section>

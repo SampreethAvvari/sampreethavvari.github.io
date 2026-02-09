@@ -8,12 +8,11 @@ export default function Nav({ searchItems }) {
   const [isNavOpen, setIsNavOpen] = useState(false);
 
   const navLinks = [
-    { name: "Home", href: "/#home", icon: "fas fa-home" },
-    { name: "About", href: "/#about", icon: "fas fa-user" },
-    { name: "Projects", href: "/projects", icon: "fas fa-code" },
-    { name: "Filmmaking", href: "/filmmaking", icon: "fas fa-clapperboard" },
-    { name: "Blog", href: "/posts", icon: "fas fa-pen-nib" },
-    { name: "Contact", href: "/#contact", icon: "fas fa-envelope" },
+    { name: "Home", href: "/#home", icon: "fas fa-home", match: "home" },
+    { name: "Projects", href: "/projects", icon: "fas fa-code", match: "projects" },
+    { name: "Filmmaking", href: "/filmmaking", icon: "fas fa-clapperboard", match: "filmmaking" },
+    { name: "Blog", href: "/posts", icon: "fas fa-pen-nib", match: "posts" },
+    { name: "Contact", href: "/#contact", icon: "fas fa-envelope", match: "contact" },
   ];
 
   const extractInitials = (name) => {
@@ -24,6 +23,19 @@ export default function Nav({ searchItems }) {
     });
     return initials;
   };
+
+  const [activeMatch, setActiveMatch] = useState("home");
+
+  useEffect(() => {
+    const resolveMatch = () => {
+      const path = window.location.pathname || "/";
+      if (path === "/" || path === "") return "home";
+      const segment = path.replace("/", "").split("/")[0];
+      return segment || "home";
+    };
+
+    setActiveMatch(resolveMatch());
+  }, []);
 
   return (
     <>
@@ -56,10 +68,14 @@ export default function Nav({ searchItems }) {
           </div>
           <div className="hidden lg:block">
             <ul className="inline-flex text-secondary dark:text-dk-secondary text-2xl font-normal">
-              {navLinks.map((link, index) => (
+              {navLinks.map((link, index) => {
+                const isActive = activeMatch === link.match;
+                return (
                 <li
                   key={index}
-                  className="p-4 hover:text-accent dark:hover:text-dk-accent"
+                  className={`p-4 hover:text-accent dark:hover:text-dk-accent ${
+                    isActive ? "opacity-100" : "opacity-50"
+                  }`}
                 >
                   <a
                     href={link.href}
@@ -73,7 +89,7 @@ export default function Nav({ searchItems }) {
                     </span>
                   </a>
                 </li>
-              ))}
+              )})}
               <li className="px-4 flex">
                 <ToggleDarkMode />
               </li>
@@ -92,8 +108,13 @@ export default function Nav({ searchItems }) {
           }
         >
           <ul className="w-full text-secondary dark:text-dk-secondary text-xl font-semibold">
-            {navLinks.map((link, index) => (
-              <li key={index} className="p-4">
+            {navLinks.map((link, index) => {
+              const isActive = activeMatch === link.match;
+              return (
+              <li
+                key={index}
+                className={`p-4 ${isActive ? "opacity-100" : "opacity-60"}`}
+              >
                 <a
                   href={link.href}
                   onClick={() => setIsNavOpen(false)}
@@ -107,7 +128,7 @@ export default function Nav({ searchItems }) {
                   </span>
                 </a>
               </li>
-            ))}
+            )})}
             <li className="p-4 flex flex-row items-center justify-evenly">
               <ToggleDarkMode />
               <Search items={searchItems} />
