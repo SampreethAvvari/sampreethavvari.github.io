@@ -1,0 +1,50 @@
+---
+import { Image } from "astro:assets";
+
+type Props = {
+  src: string | ImageMetadata;
+  alt: string;
+  class?: string;
+  style?: string;
+  width?: number;
+  height?: number;
+  loading?: "eager" | "lazy";
+  decoding?: "async" | "sync" | "auto";
+  sizes?: string;
+};
+
+const {
+  src,
+  alt,
+  class: className,
+  style,
+  width,
+  height,
+  loading = "lazy",
+  decoding = "async",
+  sizes,
+} = Astro.props as Props;
+
+const isImported = typeof src === "object";
+---
+
+{isImported ? (
+  <Image
+    src={src as ImageMetadata}
+    alt={alt}
+    class={className}
+    style={style}
+    width={width}
+    height={height}
+    sizes={sizes}
+  />
+) : (
+  <img
+    src={src as string}
+    alt={alt}
+    class={className}
+    style={style}
+    loading={loading}
+    decoding={decoding}
+  />
+)}
