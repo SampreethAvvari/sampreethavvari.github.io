@@ -148,6 +148,20 @@ button:hover,
   animation: chatPulse 5s ease-in-out infinite;
 }
 
+.floaty {
+  animation: floaty 6s ease-in-out infinite;
+}
+
+@keyframes floaty {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-8px);
+  }
+}
+
 .chat-attention:hover {
   transform: scale(1.08);
   animation-play-state: paused;

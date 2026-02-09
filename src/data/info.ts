@@ -121,7 +121,7 @@ export const info = {
     skills: [
       {
         label: "Languages",
-        items: ["Python", "Go", "Java", "C++", "C#", "JavaScript", "TypeScript"],
+        items: ["Python", "Go", "Java", "C++", "JavaScript", "TypeScript"],
       },
       {
         label: "Frameworks and Platforms",
@@ -133,7 +133,7 @@ export const info = {
           "Angular",
           "Spring Boot",
           "Flask API",
-          "Gin",
+          "FastAPI",
           "GraphQL",
           "Microservices",
           "MCP",
@@ -145,7 +145,22 @@ export const info = {
       },
       {
         label: "Tools",
-        items: ["AWS", "Kafka", "Docker", "Kubernetes", "N8N", "Jenkins", "Git", "SVN", "Figma"],
+        items: [
+          "AWS",
+          "Kafka",
+          "Docker",
+          "Kubernetes",
+          "N8N",
+          "Jenkins",
+          "Selenium",
+          "Playwright",
+          "Test Runner",
+          "Pytest",
+          "Prometheus",
+          "Grafana",
+          "Git",
+          "SVN",
+        ],
       },
       {
         label: "ML and Data",
@@ -157,7 +172,6 @@ export const info = {
           "Hugging Face",
           "Unsloth",
           "Accelerate",
-          "OpenCV",
           "Pandas",
           "NumPy",
           "Scikit-learn",
@@ -168,7 +182,13 @@ export const info = {
       },
       {
         label: "Specialization",
-        items: ["Agentic AI", "Model Training"],
+        items: [
+          "Agentic AI",
+          "Model Training",
+          "RLHF",
+          "LLM Finetuning",
+          "MLOps",
+        ],
       },
     ],
   },

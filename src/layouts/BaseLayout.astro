@@ -120,26 +120,40 @@ import "../styles/global.css";
           return;
         }
 
-        const observer = new IntersectionObserver(
-          (entries) => {
-            entries.forEach((entry) => {
-              if (entry.isIntersecting) {
-                entry.target.classList.add("reveal-visible");
-              } else {
-                entry.target.classList.remove("reveal-visible");
-              }
-            });
-          },
-          { threshold: 0.2 }
-        );
+        if (!window.__revealObserver) {
+          window.__revealObserver = new IntersectionObserver(
+            (entries) => {
+              entries.forEach((entry) => {
+                if (entry.isIntersecting) {
+                  entry.target.classList.add("reveal-visible");
+                } else {
+                  entry.target.classList.remove("reveal-visible");
+                }
+              });
+            },
+            { threshold: 0.2 }
+          );
+        }
 
-        elements.forEach((el) => observer.observe(el));
+        elements.forEach((el) => {
+          if (el.dataset.revealObserved) return;
+          el.dataset.revealObserved = "true";
+          window.__revealObserver.observe(el);
+        });
+      };
+
+      const boot = () => {
+        setupReveal();
+        if ("MutationObserver" in window) {
+          const observer = new MutationObserver(() => setupReveal());
+          observer.observe(document.body, { childList: true, subtree: true });
+        }
       };
 
       if (document.readyState === "loading") {
-        document.addEventListener("DOMContentLoaded", setupReveal);
+        document.addEventListener("DOMContentLoaded", boot);
       } else {
-        setupReveal();
+        boot();
       }
     </script>
   </head>
