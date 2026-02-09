@@ -35,8 +35,14 @@ export default function Experience(props: ExperienceProps) {
           <div className="relative left-10 w-full">
             <p className="text-xl font-normal">{exp.date}</p>
             <p className="text-xl font-normal">{exp.location}</p>
-            {exp.description?.includes("Project 1:") ? (
-              <ul className="lg:text-xl text-lg font-normal list-disc pl-6 space-y-1">
+            {exp.highlights?.length ? (
+              <ul className="text-base lg:text-lg font-normal list-disc pl-6 space-y-1 leading-relaxed text-text dark:text-white">
+                {exp.highlights.map((item) => (
+                  <li key={item}>{item}</li>
+                ))}
+              </ul>
+            ) : exp.description?.includes("Project 1:") ? (
+              <ul className="text-base lg:text-lg font-normal list-disc pl-6 space-y-1 leading-relaxed text-text dark:text-white">
                 {exp.description
                   .split("Project ")
                   .filter((item) => item.trim())
@@ -48,7 +54,9 @@ export default function Experience(props: ExperienceProps) {
                   })}
               </ul>
             ) : (
-              <p className="lg:text-xl text-lg font-normal">{exp.description}</p>
+              <p className="text-base lg:text-lg font-normal leading-relaxed">
+                {exp.description}
+              </p>
             )}
           </div>
 
