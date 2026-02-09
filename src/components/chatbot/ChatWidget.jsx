@@ -86,6 +86,11 @@ export default function ChatWidget() {
         aria-label="Open chatbot"
         onClick={() => setIsOpen(true)}
       >
+        <img
+          src="/logos/samp-chat.png"
+          alt="Samp-chat avatar"
+          className="absolute -left-12 -bottom-2 w-10 h-10 rounded-full border border-secondary/50 dark:border-dk-secondary/50 shadow-md bg-primary dark:bg-dk-primary"
+        />
         {showNudge && (
           <div className="absolute -left-44 -top-8 lg:-top-10">
             <div className="bg-secondary text-primary px-3 py-2 rounded-full text-xs lg:text-sm shadow-lg animate-fade-in-out whitespace-nowrap">
@@ -104,6 +109,11 @@ export default function ChatWidget() {
               <p className="text-sm font-semibold text-secondary dark:text-dk-secondary">Ask Sampreeth</p>
               <p className="text-xs text-text dark:text-dk-text">Friendly, short, and to the point.</p>
             </div>
+            <img
+              src="/logos/samp-chat.png"
+              alt="Samp-chat avatar"
+              className="w-16 h-16 rounded-full border border-secondary/40 dark:border-dk-secondary/40"
+            />
             <button
               className="text-secondary dark:text-dk-secondary hover:text-accent dark:hover:text-dk-accent"
               aria-label="Close chatbot"

@@ -18,9 +18,19 @@ export default function Experience(props: ExperienceProps) {
           className="flex flex-col space-y-2 relative transition-transform duration-200 hover:scale-[1.02]"
           key={index}
         >
-          <div className="flex items-center space-x-2">
-            <i className="fas fa-briefcase text-2xl text-secondary dark:text-dk-secondary dark:hover:text-dk-accent hover:text-accent z-10"></i>
-            <h2 className="text-xl font-semibold">{exp.title}</h2>
+          <div className="flex items-center justify-between gap-4">
+            <div className="flex items-center space-x-2">
+              <i className="fas fa-briefcase text-2xl text-secondary dark:text-dk-secondary dark:hover:text-dk-accent hover:text-accent z-10"></i>
+              <h2 className="text-xl font-semibold">{exp.title}</h2>
+            </div>
+            {exp.logo && (
+              <img
+                src={exp.logo}
+                alt={`${exp.location} logo`}
+                className={`w-auto max-w-[160px] object-contain ${exp.logoClass ?? "h-8"}`}
+                loading="lazy"
+              />
+            )}
           </div>
           <div className="relative left-10 w-full">
             <p className="text-xl font-normal">{exp.date}</p>
