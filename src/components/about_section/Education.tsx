@@ -15,9 +15,19 @@ export default function Education(props: EducationProps) {
       <h1 className="text-3xl font-bold">Education</h1>
       {education.map((edu, index) => (
         <div className="flex flex-col space-y-2 relative" key={index}>
-          <div className="flex items-center space-x-2">
-            <i className="fas fa-graduation-cap text-2xl text-secondary dark:text-dk-secondary dark:hover:text-dk-accent hover:text-accent z-10"></i>
-            <h2 className="text-xl font-semibold">{edu.title}</h2>
+          <div className="flex items-center justify-between gap-4">
+            <div className="flex items-center space-x-2">
+              <i className="fas fa-graduation-cap text-2xl text-secondary dark:text-dk-secondary dark:hover:text-dk-accent hover:text-accent z-10"></i>
+              <h2 className="text-xl font-semibold">{edu.title}</h2>
+            </div>
+            {edu.logo && (
+              <img
+                src={edu.logo}
+                alt={`${edu.location} logo`}
+                className={`w-auto max-w-[160px] object-contain ${edu.logoClass ?? "h-8"}`}
+                loading="lazy"
+              />
+            )}
           </div>
           <div className="relative left-10 w-full">
             <p className="text-xl font-normal">{edu.date}</p>

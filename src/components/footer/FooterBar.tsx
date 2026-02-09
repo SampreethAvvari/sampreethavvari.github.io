@@ -54,9 +54,8 @@ export default function FooterBar({ variant = "default" }: FooterBarProps) {
     },
     {
       icon: "fab fa-imdb",
-      href: "",
-      label: "IMDb (Coming Soon)",
-      disabled: true,
+      href: "https://hi.switchy.io/q94P",
+      label: "IMDb",
     },
   ];
 

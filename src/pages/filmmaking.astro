@@ -164,14 +164,6 @@ const mainCast = [
     instagram: "@cooldudemurray",
   },
   {
-    name: "Asli Mumtas",
-    role: "Grace",
-    quote: "Quote coming soon.",
-    image: pickGalleryImage(9),
-    imageStyle: "object-position: 70% center;",
-    instagram: "@aslimumtaz",
-  },
-  {
     name: "Evan Beskin",
     role: "Agent David",
     quote: "Quote coming soon.",
@@ -213,6 +205,13 @@ const supportingCast = [
     role: "Max",
     image: crewPhoto("Max.jpeg"),
     instagram: "@riyaan.jiwani",
+  },
+  {
+    name: "Asli Mumtas",
+    role: "Grace",
+    image: pickGalleryImage(9),
+    imageStyle: "object-position: 70% center;",
+    instagram: "@asliimumtas",
   },
   {
     name: "Dylan Redford",
@@ -287,25 +286,13 @@ const filmTimeline = [
     <p class="uppercase tracking-[0.3em] text-xs text-secondary dark:text-dk-secondary">
       Photographer • Writer • Filmmaker • Traveler
     </p>
-    <div class="space-y-4">
-      <h2 class="text-3xl font-bold">Filmmaking Style</h2>
-      <p class="text-lg text-text dark:text-dk-text">
-        My filmmaking lives in the gray—human emotions, flawed characters, and those “how did we get here?”
-        moments that turn ordinary lives into something electric. I’m obsessed with visual storytelling:
-        tight compositions, lived-in spaces, and soundscapes where silence does half the acting—long,
-        slow, and full of tension (yes, that’s what she said).
-      </p>
-      <p class="text-lg text-text dark:text-dk-text">
-        Editing is my favorite part of filmmaking—and my most dramatic relationship.
-        I’ve cut 12 projects so far: documentaries, independent features, short films,
-        travel vlogs. I love the endless possibilities and how it sets my creative juices
-        on fire, but it can also feel like the loneliest room in the house. Worth it. Always.
-      </p>
-      <p class="text-lg text-text dark:text-dk-text">
-        As a traveler, I pull from real places and real faces. As a writer, I chase the truth
-        inside conflict. As a filmmaker, I build worlds that feel intimate, dangerous,
-        and inevitable. And the camera? Still my favorite human technological invention.
-      </p>
+    <div class="my-8 flex flex-col lg:flex-row gap-10 items-center">
+      <div class="flex-[5] flex justify-center w-full">
+        <PhotoCarousel photos={filmmakingPhotos} title={false} client:visible />
+      </div>
+      <blockquote class="flex-1 text-4xl lg:text-6xl xl:text-7xl font-semibold italic text-secondary dark:text-dk-secondary leading-snug lg:-ml-12 text-left">
+        “Cinema is how I make truth visible.”
+      </blockquote>
     </div>
     <div class="my-16">
       <h2 class="text-3xl font-bold mb-6 text-left">Creative Roles</h2>
@@ -329,43 +316,45 @@ const filmTimeline = [
         ))}
       </div>
     </div>
-    <div class="my-16">
-      <PhotoCarousel photos={filmmakingPhotos} client:visible />
-    </div>
-    <div class="flex flex-col space-y-4 lg:w-1/2 mx-4">
-      <div class="flex items-center gap-4">
-        <h2 class="text-2xl font-bold">Timeline</h2>
-      </div>
-      {filmTimeline.map((item, index) => (
-        <div class="flex flex-col space-y-2 relative" key={item.title + item.date}>
-          <div class="flex items-center space-x-2">
-            <i class="fas fa-film text-2xl text-secondary dark:text-dk-secondary dark:hover:text-dk-accent hover:text-accent z-10"></i>
-            <h3 class="text-xl font-semibold">{item.title}</h3>
-          </div>
-          <div class="relative left-10 w-full">
-            <p class="text-xl font-normal">{item.date}</p>
-            {item.projectLink ? (
-              <a
-                href={item.projectLink}
-                class="text-xl font-normal text-secondary dark:text-dk-secondary hover:text-accent dark:hover:text-dk-accent underline"
-              >
-                {item.project}
-              </a>
-            ) : (
-              <p class="text-xl font-normal">{item.project}</p>
+    <div class="my-16 flex flex-col lg:flex-row gap-10 items-start">
+      <div class="flex flex-col space-y-4 lg:w-1/2 mx-4">
+        <div class="flex items-center gap-4">
+          <h2 class="text-2xl font-bold">Timeline</h2>
+        </div>
+        {filmTimeline.map((item, index) => (
+          <div class="flex flex-col space-y-2 relative" key={item.title + item.date}>
+            <div class="flex items-center space-x-2">
+              <i class="fas fa-film text-2xl text-secondary dark:text-dk-secondary dark:hover:text-dk-accent hover:text-accent z-10"></i>
+              <h3 class="text-xl font-semibold">{item.title}</h3>
+            </div>
+            <div class="relative left-10 w-full">
+              <p class="text-xl font-normal">{item.date}</p>
+              {item.projectLink ? (
+                <a
+                  href={item.projectLink}
+                  class="text-xl font-normal text-secondary dark:text-dk-secondary hover:text-accent dark:hover:text-dk-accent underline"
+                >
+                  {item.project}
+                </a>
+              ) : (
+                <p class="text-xl font-normal">{item.project}</p>
+              )}
+            </div>
+            {index !== filmTimeline.length - 1 && (
+              <div class="absolute top-3.5 left-[0.655rem] h-full w-1 bg-secondary dark:bg-dk-secondary hover:bg-accent dark:hover:bg-dk-accent -z-10"></div>
             )}
           </div>
-          {index !== filmTimeline.length - 1 && (
-            <div class="absolute top-3.5 left-[0.655rem] h-full w-1 bg-secondary dark:bg-dk-secondary hover:bg-accent dark:hover:bg-dk-accent -z-10"></div>
-          )}
-        </div>
-      ))}
+        ))}
+      </div>
+      <blockquote class="flex-1 self-center text-5xl lg:text-6xl xl:text-7xl font-semibold italic text-secondary dark:text-dk-secondary leading-tight text-center">
+        “Ordinary<br />lives,<br />Extraordinary<br />stakes”
+      </blockquote>
     </div>
   </section>
 
   <section class="my-16 reveal" data-reveal>
     <h1 class="text-4xl lg:text-6xl font-bold text-center mb-8" id="among-monsters">
-      Among Monsters
+      Among Monsters (2026)
     </h1>
     <div class="relative w-full max-w-5xl mx-auto group">
       <img
@@ -375,9 +364,13 @@ const filmTimeline = [
       />
       <div class="absolute inset-0 bg-black/55 opacity-0 transition-opacity duration-300 group-hover:opacity-100"></div>
       <div class="absolute inset-0 z-10 flex items-center justify-center px-6 opacity-0 transition-opacity duration-300 group-hover:opacity-100">
-        <div class="max-w-3xl text-center">
+        <div class="max-w-3xl text-center space-y-4">
           <p class="text-2xl lg:text-3xl text-white font-semibold">
             Guns &amp; Drugs don&#39;t save people
+          </p>
+          <p class="text-base lg:text-lg text-white/90">
+            Witness the story of a criminal trapped in a coward’s body, driven to seek revenge at all costs.
+            Chaos is inevitable. The question is not whether he will break—but how long he can keep going.
           </p>
           <div class="flex flex-wrap justify-center gap-4 mt-6">
             <a
@@ -409,11 +402,6 @@ const filmTimeline = [
 
 
   <section class="my-16 reveal" data-reveal>
-    <h2 class="text-3xl font-bold mb-4">About Among Monsters</h2>
-    <p class="text-lg text-text dark:text-dk-text max-w-3xl mb-8">
-      Witness the story of a criminal trapped in a coward’s body, driven to seek revenge at all costs.
-      Chaos is inevitable. The question is not whether he will break—but how long he can keep going.
-    </p>
     <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
       {keyCreators.map((person) => (
         <div class="bg-primary/80 dark:bg-dk-primary/80 rounded-lg border-2 border-secondary dark:border-dk-secondary overflow-hidden max-w-sm w-full mx-auto flex min-h-[200px] transition-transform duration-200 hover:scale-[1.02]">
@@ -616,10 +604,10 @@ const filmTimeline = [
         </a>
         <p class="text-base lg:text-lg text-text dark:text-dk-text">Among Monsters Screenplay</p>
       </div>
-      <div class="flex flex-col items-center gap-6 text-center opacity-60">
-        <span aria-label="IMDb coming soon">
+      <div class="flex flex-col items-center gap-6 text-center">
+        <a href="https://hi.switchy.io/q94P" aria-label="Among Monsters IMDb" target="_blank" rel="noreferrer">
           <i class="fab fa-imdb"></i>
-        </span>
+        </a>
         <p class="text-base lg:text-lg text-text dark:text-dk-text">Among Monsters IMDB</p>
       </div>
     </div>
@@ -627,20 +615,25 @@ const filmTimeline = [
 
   <section class="my-16 reveal" data-reveal>
     <h2 class="text-3xl font-bold mb-6">Photo Gallery</h2>
-    {galleryItems.length ? (
-      <div class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-        {galleryItems.map((item) => (
-          <img
-            src={item.src}
-            alt={item.alt}
-            loading="lazy"
-            class="w-full h-72 object-cover rounded-lg border-2 border-secondary dark:border-dk-secondary transition-transform duration-200 hover:scale-[1.02]"
-          />
-        ))}
+    <div class="space-y-6">
+      <div class="text-2xl font-bold text-secondary dark:text-dk-secondary">
+        Among Monsters (2024-2026):
       </div>
-    ) : (
-      <p class="text-text dark:text-dk-text">Gallery images coming soon.</p>
-    )}
+      {galleryItems.length ? (
+        <div class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+          {galleryItems.map((item) => (
+            <img
+              src={item.src}
+              alt={item.alt}
+              loading="lazy"
+              class="w-full h-72 object-cover rounded-lg border-2 border-secondary dark:border-dk-secondary transition-transform duration-200 hover:scale-[1.02]"
+            />
+          ))}
+        </div>
+      ) : (
+        <p class="text-text dark:text-dk-text">Gallery images coming soon.</p>
+      )}
+    </div>
   </section>
 
   

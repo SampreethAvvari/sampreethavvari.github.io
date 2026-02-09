@@ -15,7 +15,7 @@ export default function About(props: AboutProps) {
     <div className="flex flex-col justify-center items-center h-full space-y-10">
       <div className="flex flex-col space-y-4 w-full lg:w-1/2 mx-4 reveal" data-reveal>
         <h1 className="text-4xl font-bold">About me</h1>
-        <p className="text-2xl font-normal">{info.about.description}</p>
+        <p className="text-2xl font-normal text-justify">{info.about.description}</p>
       </div>
       <div className="w-full flex justify-center reveal" data-reveal>
         <Education education={about.education} />

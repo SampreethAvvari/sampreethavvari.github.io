@@ -9,17 +9,20 @@ export const info = {
 
   about: {
     description:
-      "I’m an AI Engineer who likes turning big, messy ideas into clean, working products. I’m finishing my MS at NYU, and I’ve built systems that help real teams move faster without losing their sanity. I care about clarity, good taste, and tech that feels human. Also: I’m happiest when the prototype survives real users—and still behaves.",
+      "I’m an AI Engineer who likes turning big, messy ideas into clean, working products. I completed my MS at NYU, and I’ve built systems that help real teams move faster without losing their sanity. I care about clarity, good taste, and tech that feels human. Also: I’m happiest when the prototype survives real users—and still behaves.",
     education: [
       {
         title: "Master of Science, Computer Engineering",
         date: "Aug 2023 - May 2025",
         location: "New York University, New York",
+        logo: "/logos/nyu.svg",
       },
       {
         title: "Bachelor of Technology, Computer Science and Engineering",
         date: "Jul 2017 - Jun 2021",
         location: "Gokaraju Rangaraju Institute of Engineering and Technology, India",
+        logo: "/logos/griet.png",
+        logoClass: "h-14",
       },
     ],
     photos: [
@@ -82,6 +85,8 @@ export const info = {
         title: "AI Specialist Engineer",
         date: "Aug 2025 - Present",
         location: "Hybridge Implants, New York",
+        logo: "/logos/hybridge.webp",
+        logoClass: "h-12",
         description:
           "I’m the sole AI specialist at Hybridge Implants, leading how the company brings AI into dental care. I partner directly with the C‑suite to modernize consultations for new doctors, build automation workflows that make teams faster and more consistent, and keep the AI infrastructure reliable and ready for what’s next. In a non‑tech industry, my job is to make AI feel practical, trusted, and impactful—so Hybridge stays ahead as an AI‑ready leader in dentistry.",
       },
@@ -89,6 +94,7 @@ export const info = {
         title: "Lead Machine Learning Researcher and Author",
         date: "May 2024 - Sep 2025",
         location: "New York University, New York",
+        logo: "/logos/nyu.svg",
         description:
           "Fine-tuned Llama 3.1 8B with Unsloth and QLoRA (4-bit) using SFT and GRPO RLHF via TRL. Trained a Llama-3-8B reward model on premise/chosen/rejected debate pairs with LoRA to score counter-arguments, and built data pipelines plus evaluation scripts (BLEU, ROUGE, Qualtrics), tracking experiments in Weights and Biases.",
       },
@@ -96,6 +102,7 @@ export const info = {
         title: "Software Engineer",
         date: "Aug 2021 - Aug 2023",
         location: "Shure Incorporated, India",
+        logo: "/logos/shure.svg",
         description:
           "Built Flask-based REST APIs for Shure Cloud audio analytics on AWS (DynamoDB, S3, MSK) and optimized data flow to cut processing time 20%. Developed backend services and CI/CD pipelines with Python and Jenkins, streamlining testing with Selenium and reducing deployment errors by 40%.",
       },

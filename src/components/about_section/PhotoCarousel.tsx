@@ -7,12 +7,13 @@ type CarouselItem = PhotoItem & { placeholder?: boolean };
 
 interface PhotoCarouselProps {
   photos: PhotoItem[] | undefined;
+  title?: string | false;
 }
 
 const AUTO_INTERVAL = 5000;
 
 export default function PhotoCarousel(props: PhotoCarouselProps) {
-  const { photos } = props;
+  const { photos, title = "Photos" } = props;
   const [index, setIndex] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
 
@@ -56,7 +57,7 @@ export default function PhotoCarousel(props: PhotoCarouselProps) {
 
   return (
     <div className="flex flex-col space-y-4 w-full lg:w-1/2 mx-4 reveal" data-reveal>
-      <h1 className="text-3xl font-bold">Photos</h1>
+      {title ? <h1 className="text-3xl font-bold">{title}</h1> : null}
       <div
         className="relative group rounded-xl border border-secondary/30 dark:border-dk-secondary/30 overflow-hidden bg-primary/40"
         onMouseEnter={() => setIsPaused(true)}
