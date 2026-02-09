@@ -4,7 +4,7 @@ import fs from "node:fs";
 import path from "node:path";
 import PhotoCarousel from "../components/about_section/PhotoCarousel";
 
-const title = "Filmmaking";
+const title = "SA: Filmmaking";
 const playlistUrl = "https://hi.switchy.io/q3Ng";
 const screenplayUrl = "/among-monsters-screenplay.pdf";
 
@@ -54,6 +54,8 @@ const crewPhoto = (filename) => ({
   alt: filename.replace(/\.[^/.]+$/, ""),
 });
 
+const creativeRoleBg = (filename) => `/Creative%20Roles/${encodeURIComponent(filename)}`;
+
 const instagramUrl = (handle) =>
   handle ? `https://instagram.com/${handle.replace(/^@/, "")}` : "";
 
@@ -62,6 +64,7 @@ const roles = [
     title: "Director",
     items: ["Extraordinary Lives (upcoming)", "Among Monsters (2026)", "Tiger Man (2022)"],
     icon: "fas fa-clapperboard",
+    background: creativeRoleBg("Director.jpg"),
     gridClass: "lg:col-start-1 lg:col-span-2",
   },
   {
@@ -73,24 +76,28 @@ const roles = [
       "Tigerman (2022)",
     ],
     icon: "fas fa-pen-nib",
+    background: creativeRoleBg("Write.jpg"),
     gridClass: "lg:col-start-3 lg:col-span-2",
   },
   {
     title: "Editor",
     items: ["Among Monsters (2026)", "Solistice (2025)", "Swecha (2024)", "Tigerman (2022)"],
     icon: "fas fa-scissors",
+    background: creativeRoleBg("Editor.jpg"),
     gridClass: "lg:col-start-5 lg:col-span-2",
   },
   {
     title: "Cinematographer",
     items: ["Among Monsters (2026)", "Strangers (2019)"],
     icon: "fas fa-video",
+    background: creativeRoleBg("Cinematographer.jpg"),
     gridClass: "lg:col-start-2 lg:col-span-2",
   },
   {
     title: "Music Composer",
     items: ["Among Monsters (2026)", "Strangers (2019)"],
     icon: "fas fa-music",
+    background: creativeRoleBg("Music.jpg"),
     gridClass: "lg:col-start-4 lg:col-span-2",
   },
 ];
@@ -299,9 +306,12 @@ const filmTimeline = [
       <div class="grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 justify-items-center">
         {roles.map((role) => (
           <div
-            class={`group bg-primary dark:bg-dk-primary rounded-lg border-2 border-secondary dark:border-dk-secondary p-6 text-center max-w-sm w-full relative overflow-hidden min-h-[180px] flex items-center justify-center transition-transform duration-300 ease-out hover:scale-105 hover:shadow-lg col-span-full sm:col-span-1 ${role.gridClass}`}
+            class={`group bg-primary dark:bg-dk-primary rounded-lg border-2 border-secondary dark:border-dk-secondary text-center max-w-sm w-full relative overflow-hidden min-h-[180px] flex items-center justify-center transition-transform duration-300 ease-out hover:scale-105 hover:shadow-lg col-span-full sm:col-span-1 ${role.gridClass}`}
+            style={`background-image: url(${role.background});`}
           >
-            <div class="flex flex-col items-center">
+            <div class="absolute inset-0 bg-black/55 dark:bg-black/65"></div>
+            <div class="absolute inset-0 bg-cover bg-center opacity-30" style={`background-image: url(${role.background});`}></div>
+            <div class="relative z-10 flex flex-col items-center">
               <i class={`${role.icon} text-3xl lg:text-4xl text-secondary dark:text-dk-secondary mb-3`}></i>
               <h3 class="text-2xl lg:text-3xl font-semibold mb-2">{role.title}</h3>
             </div>

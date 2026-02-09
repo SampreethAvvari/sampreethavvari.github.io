@@ -87,24 +87,35 @@ export const info = {
         location: "Hybridge Implants, New York",
         logo: "/logos/hybridge.webp",
         logoClass: "h-12",
-        description:
-          "I’m the sole AI specialist at Hybridge Implants, leading how the company brings AI into dental care. I partner directly with the C‑suite to modernize consultations for new doctors, build automation workflows that make teams faster and more consistent, and keep the AI infrastructure reliable and ready for what’s next. In a non‑tech industry, my job is to make AI feel practical, trusted, and impactful—so Hybridge stays ahead as an AI‑ready leader in dentistry.",
+        highlights: [
+          "Sole AI specialist at Hybridge Implants, leading AI adoption in dental care.",
+          "Partner with the C‑suite to modernize consultations for new doctors.",
+          "Build automation workflows that make teams faster and more consistent.",
+          "Own AI infrastructure so the company stays AI‑ready and ahead in dentistry.",
+        ],
       },
       {
         title: "Lead Machine Learning Researcher and Author",
         date: "May 2024 - Sep 2025",
         location: "New York University, New York",
         logo: "/logos/nyu.svg",
-        description:
-          "Fine-tuned Llama 3.1 8B with Unsloth and QLoRA (4-bit) using SFT and GRPO RLHF via TRL. Trained a Llama-3-8B reward model on premise/chosen/rejected debate pairs with LoRA to score counter-arguments, and built data pipelines plus evaluation scripts (BLEU, ROUGE, Qualtrics), tracking experiments in Weights and Biases.",
+        highlights: [
+          "Fine‑tuned Llama 3.1 8B with Unsloth + QLoRA using SFT and GRPO RLHF via TRL.",
+          "Trained reward models with LoRA on premise/chosen/rejected debate pairs.",
+          "Built data pipelines and evaluation scripts (BLEU, ROUGE, Qualtrics).",
+          "Tracked experiments and results in Weights and Biases.",
+        ],
       },
       {
         title: "Software Engineer",
         date: "Aug 2021 - Aug 2023",
         location: "Shure Incorporated, India",
         logo: "/logos/shure.svg",
-        description:
-          "Built Flask-based REST APIs for Shure Cloud audio analytics on AWS (DynamoDB, S3, MSK) and optimized data flow to cut processing time 20%. Developed backend services and CI/CD pipelines with Python and Jenkins, streamlining testing with Selenium and reducing deployment errors by 40%.",
+        highlights: [
+          "Built Flask APIs for Shure Cloud audio analytics on AWS (DynamoDB, S3, MSK).",
+          "Optimized data flow to cut processing time by 20%.",
+          "Built CI/CD pipelines and Selenium testing to reduce deployment errors by 40%.",
+        ],
       },
     ],
     skills: [

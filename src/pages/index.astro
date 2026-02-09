@@ -5,21 +5,48 @@ import Contact from "../components/contact_section/Contact";
 import About from "../components/about_section/About";
 import PhotoCarousel from "../components/about_section/PhotoCarousel";
 import ProjectCard from "../components/projects_section/ProjectCard";
+import fs from "node:fs";
+import path from "node:path";
 
 import { Image } from "astro:assets";
 
 const posts = await Astro.glob("../pages/posts/*.md");
-const latestPost = posts
+const latestPosts = posts
   .sort((a, b) => {
     return (
       new Date(b.frontmatter.date).getTime() -
       new Date(a.frontmatter.date).getTime()
     );
-  })[0];
+  })
+  .slice(0, 3);
+
 const featuredProjects = info.projects.slice(0, 3);
+
+const filmmakingPicsDir = path.join(process.cwd(), "public", "Filmmaking Page pics");
+let filmmakingFiles = [];
+try {
+  filmmakingFiles = fs
+    .readdirSync(filmmakingPicsDir)
+    .filter((file) => /\.(png|jpe?g|webp|gif|avif|heic)$/i.test(file))
+    .sort((a, b) => a.localeCompare(b));
+} catch (error) {
+  filmmakingFiles = [];
+}
+
+const filmmakingPhotos = filmmakingFiles.map((file) => {
+  const encoded = encodeURIComponent(file);
+  const src = `/Filmmaking%20Page%20pics/${encoded}`;
+  const alt = file.replace(/\.[^/.]+$/, "").replace(/[-_]+/g, " ");
+  return {
+    src,
+    alt,
+    context: `Filmmaking still: ${alt}`,
+    tag: "Filmmaking",
+  };
+});
 ---
 
-<BaseLayout title="Home">
+<BaseLayout title="Sampreeth Avvari: Home">
   <section class="lg:h-screen lg:m-0 my-20 mx-2 relative" id="home">
     <div
       class="flex flex-col lg:flex-row justify-center items-center h-full space-y-4"
@@ -97,11 +124,16 @@ const featuredProjects = info.projects.slice(0, 3);
           View page
         </a>
       </div>
-      <p class="text-lg text-text dark:text-dk-text max-w-3xl">
-        I make films about gray characters, tight spaces, and the chaos hiding inside ordinary lives.
-        My latest project, <span class="font-semibold">Among Monsters</span>, is a zero-budget crime drama
-        built from the ground up — intimate, dangerous, and painfully human.
-      </p>
+      <div class="flex flex-col lg:flex-row gap-8 items-center">
+        <p class="text-2xl lg:text-3xl font-semibold italic text-secondary dark:text-dk-secondary max-w-3xl lg:flex-1">
+          “I make films about gray characters, tight spaces, and the chaos hiding inside ordinary lives.
+          My latest project, <span class="font-semibold">Among Monsters</span>, is a zero budget crime drama
+          built from the ground up, intimate, dangerous, and painfully human.”
+        </p>
+        <div class="w-full lg:flex-1 flex justify-center">
+          <PhotoCarousel photos={filmmakingPhotos} title={false} client:visible />
+        </div>
+      </div>
     </div>
 
     <div class="reveal" data-reveal>
@@ -120,19 +152,31 @@ const featuredProjects = info.projects.slice(0, 3);
           View all
         </a>
       </div>
-      {latestPost ? (
-        <div class="max-w-3xl">
-          <h3 class="text-2xl font-semibold mb-2">
-            <a href={latestPost.url} class="hover:text-accent dark:hover:text-dk-accent">
-              {latestPost.frontmatter.title}
-            </a>
-          </h3>
-          <p class="text-text dark:text-dk-text mb-2">
-            {latestPost.frontmatter.description}
-          </p>
-          <p class="text-sm text-secondary/70 dark:text-dk-secondary/70">
-            {latestPost.frontmatter.date}
-          </p>
+      {latestPosts.length ? (
+        <div class="grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 items-start">
+          {latestPosts.map((post) => (
+            <div class="flex flex-col bg-primary dark:bg-dk-primary rounded-lg shadow-sm dark:shadow-dk-secondary border border-secondary/30 dark:border-dk-secondary/30 transform transition duration-500 hover:scale-105">
+              <div class="p-6 flex flex-col gap-3">
+                <h3 class="text-lg font-semibold text-text dark:text-dk-text line-clamp-2 min-h-[2.5rem]">
+                  <a href={post.url} class="hover:text-accent dark:hover:text-dk-accent">
+                    {post.frontmatter.title}
+                  </a>
+                </h3>
+                <p class="text-sm text-text dark:text-dk-text line-clamp-2 min-h-[2.5rem]">
+                  {post.frontmatter.description}
+                </p>
+                <p class="text-xs text-secondary/70 dark:text-dk-secondary/70">
+                  {post.frontmatter.date}
+                </p>
+                <a
+                  href={post.url}
+                  class="text-sm font-semibold text-secondary dark:text-dk-secondary hover:text-accent dark:hover:text-dk-accent"
+                >
+                  Read more →
+                </a>
+              </div>
+            </div>
+          ))}
         </div>
       ) : (
         <p class="text-text dark:text-dk-text">New posts coming soon.</p>
