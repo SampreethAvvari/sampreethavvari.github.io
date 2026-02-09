@@ -28,16 +28,10 @@ export default function Contact({ contact, size }: ContactProps) {
       link_alt: "LinkedIn",
     },
     {
-      name: "twitter",
-      icon: "fab fa-x-twitter",
-      link: contact.twitter,
-      link_alt: "Twitter",
-    },
-    {
-      name: "rss",
-      icon: "fas fa-rss",
-      link: "/rss.xml",
-      link_alt: "RSS Feed",
+      name: "instagram",
+      icon: "fab fa-instagram",
+      link: contact.instagram,
+      link_alt: "Instagram",
     },
   ];
 

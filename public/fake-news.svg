@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="800" viewBox="0 0 1200 800" role="img" aria-label="Fake News neon illustration">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#180B0B" />
+      <stop offset="100%" stop-color="#2A1212" />
+    </linearGradient>
+    <linearGradient id="accent" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#FF6B6B" />
+      <stop offset="100%" stop-color="#FF3D00" />
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="800" fill="url(#bg)" />
+  <g transform="translate(120 160)">
+    <rect x="0" y="0" width="520" height="420" rx="28" fill="#211010" stroke="#FF6B6B" stroke-width="3" />
+    <rect x="40" y="40" width="260" height="32" rx="12" fill="#FF6B6B" opacity="0.4" />
+    <rect x="40" y="100" width="420" height="18" rx="9" fill="#FF6B6B" opacity="0.25" />
+    <rect x="40" y="140" width="360" height="18" rx="9" fill="#FF6B6B" opacity="0.25" />
+    <rect x="40" y="200" width="420" height="18" rx="9" fill="#FF6B6B" opacity="0.25" />
+    <rect x="40" y="240" width="340" height="18" rx="9" fill="#FF6B6B" opacity="0.25" />
+  </g>
+  <g transform="translate(760 220)">
+    <polygon points="120,0 240,220 0,220" fill="url(#accent)" />
+    <rect x="110" y="70" width="20" height="80" fill="#180B0B" />
+    <rect x="110" y="170" width="20" height="20" fill="#180B0B" />
+  </g>
+  <text x="80" y="120" fill="#FF6B6B" font-size="34" font-family="Roboto, sans-serif" letter-spacing="4">FAKE NEWS</text>
+</svg>

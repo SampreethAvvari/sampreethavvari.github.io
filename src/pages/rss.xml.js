@@ -6,8 +6,8 @@ export async function GET(context) {
     const posts = Object.values(postImportResult);
 
     return rss({
-        title: 'Portfolio',
-        description: 'A portfolio template for Astro',
+        title: 'Sampreeth Avvari',
+        description: 'Writing on agentic AI, RAG, and ML systems.',
         site: context.site,
         items: posts.map((post) => ({
             link: post.url,

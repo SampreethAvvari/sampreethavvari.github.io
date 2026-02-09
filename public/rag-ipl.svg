@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="800" viewBox="0 0 1200 800" role="img" aria-label="RAG IPL neon illustration">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#0B1210" />
+      <stop offset="100%" stop-color="#15231C" />
+    </linearGradient>
+    <linearGradient id="accent" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#3DDC84" />
+      <stop offset="100%" stop-color="#1FA36B" />
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="800" fill="url(#bg)" />
+  <g transform="translate(120 200)">
+    <ellipse cx="240" cy="200" rx="200" ry="150" fill="#1FA36B" opacity="0.2" />
+    <ellipse cx="240" cy="200" rx="130" ry="95" fill="#1FA36B" opacity="0.3" />
+    <path d="M60 200 H420" stroke="#3DDC84" stroke-width="4" opacity="0.6" />
+  </g>
+  <g transform="translate(640 180)">
+    <ellipse cx="180" cy="60" rx="140" ry="36" fill="#1D4CC4" opacity="0.9" />
+    <rect x="40" y="60" width="280" height="220" fill="#1D4CC4" opacity="0.9" />
+    <ellipse cx="180" cy="280" rx="140" ry="36" fill="#0D2563" />
+  </g>
+  <g transform="translate(380 520)">
+    <rect x="0" y="0" width="480" height="150" rx="26" fill="#1D4CC4" opacity="0.18" />
+    <path d="M60 110 L160 70 L260 90 L380 50" stroke="#3DDC84" stroke-width="8" fill="none" />
+  </g>
+  <text x="80" y="120" fill="#3DDC84" font-size="34" font-family="Roboto, sans-serif" letter-spacing="4">RAG-IPL</text>
+</svg>

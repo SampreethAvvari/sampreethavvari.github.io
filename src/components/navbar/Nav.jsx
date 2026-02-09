@@ -4,14 +4,16 @@ import Search from "../search/Search";
 import Hamburger from "./Hamburger";
 import { info } from "../../data/info";
 
-export default function Nav({ posts }) {
+export default function Nav({ searchItems }) {
   const [isNavOpen, setIsNavOpen] = useState(false);
 
   const navLinks = [
-    { name: "About", href: "/#about" },
-    { name: "Projects", href: "/#projects" },
-    { name: "Blog", href: "/#blog" },
-    { name: "Contact", href: "/#contact" },
+    { name: "Home", href: "/#home", icon: "fas fa-home" },
+    { name: "About", href: "/#about", icon: "fas fa-user" },
+    { name: "Projects", href: "/projects", icon: "fas fa-code" },
+    { name: "Filmmaking", href: "/filmmaking", icon: "fas fa-clapperboard" },
+    { name: "Blog", href: "/posts", icon: "fas fa-pen-nib" },
+    { name: "Contact", href: "/#contact", icon: "fas fa-envelope" },
   ];
 
   const extractInitials = (name) => {
@@ -41,9 +43,9 @@ export default function Nav({ posts }) {
           >
             <i className="fas fa-download mr-2"></i>
             <span className="hidden lg:inline-block font-medium">
-              Download CV
+              Download Resume
             </span>
-            <span className="lg:hidden font-medium">CV</span>
+            <span className="lg:hidden font-medium">Resume</span>
           </a>
 
           <div className="inline-flex lg:hidden text-secondary dark:text-dk-secondary">
@@ -59,14 +61,24 @@ export default function Nav({ posts }) {
                   key={index}
                   className="p-4 hover:text-accent dark:hover:text-dk-accent"
                 >
-                  <a href={link.href}>{link.name}</a>
+                  <a
+                    href={link.href}
+                    className="relative group inline-flex items-center justify-center"
+                    aria-label={link.name}
+                    title={link.name}
+                  >
+                    <i className={link.icon}></i>
+                    <span className="absolute -bottom-6 left-1/2 -translate-x-1/2 text-xs uppercase tracking-[0.2em] text-secondary dark:text-dk-secondary opacity-0 group-hover:opacity-100 transition-opacity">
+                      {link.name}
+                    </span>
+                  </a>
                 </li>
               ))}
               <li className="px-4 flex">
                 <ToggleDarkMode />
               </li>
               <li className="px-4 flex">
-                <Search posts={posts} />
+                <Search items={searchItems} />
               </li>
             </ul>
           </div>
@@ -82,14 +94,23 @@ export default function Nav({ posts }) {
           <ul className="w-full text-secondary dark:text-dk-secondary text-xl font-semibold">
             {navLinks.map((link, index) => (
               <li key={index} className="p-4">
-                <a href={link.href} onClick={() => setIsNavOpen(false)}>
-                  {link.name}
+                <a
+                  href={link.href}
+                  onClick={() => setIsNavOpen(false)}
+                  className="relative group inline-flex items-center justify-center"
+                  aria-label={link.name}
+                  title={link.name}
+                >
+                  <i className={link.icon}></i>
+                  <span className="absolute -bottom-6 left-1/2 -translate-x-1/2 text-xs uppercase tracking-[0.2em] text-secondary dark:text-dk-secondary opacity-0 group-hover:opacity-100 transition-opacity">
+                    {link.name}
+                  </span>
                 </a>
               </li>
             ))}
             <li className="p-4 flex flex-row items-center justify-evenly">
               <ToggleDarkMode />
-              <Search posts={posts} />
+              <Search items={searchItems} />
             </li>
           </ul>
         </div>

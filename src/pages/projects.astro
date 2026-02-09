@@ -1,0 +1,18 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+import ProjectCard from "../components/projects_section/ProjectCard";
+import { info } from "../data/info";
+
+const title = "Projects";
+---
+
+<BaseLayout title={title}>
+  <section class="mt-24 reveal" data-reveal>
+    <h1 class="text-4xl font-bold mb-6">Projects</h1>
+    <div class="grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 items-start">
+      {info.projects.map((project) => (
+        <ProjectCard project={project} client:only />
+      ))}
+    </div>
+  </section>
+</BaseLayout>

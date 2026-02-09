@@ -3,7 +3,7 @@ import Fuse from "fuse.js";
 import React, { useEffect, useState } from "react";
 import Modal from "react-modal";
 
-export default function Search({ posts }: any) {
+export default function Search({ items }: any) {
   const [search, setSearch] = useState(false);
   const [searchResults, setSearchResults] = useState([]);
   const [selected, setSelected] = useState(0);
@@ -12,8 +12,8 @@ export default function Search({ posts }: any) {
     Modal.setAppElement("body");
   }, []);
 
-  const fuse = new Fuse(posts, {
-    keys: ["frontmatter.title", "frontmatter.description"],
+  const fuse = new Fuse(items ?? [], {
+    keys: ["title", "description"],
   });
 
   const query = (query: string) => {
@@ -94,7 +94,7 @@ export default function Search({ posts }: any) {
           <ul className="flex flex-col space-y-2">
             {searchResults.map((result: any, index: number) => (
               <li
-                key={result.item.frontmatter.title}
+                key={`${result.item.title}-${result.item.url}`}
                 className="p-2 rounded-lg cursor-pointer flex flex-row justify-between items-center"
                 onMouseEnter={() => setSelected(index)}
               >
@@ -104,11 +104,16 @@ export default function Search({ posts }: any) {
                   onClick={() => setSearch(false)}
                 >
                   <h3 className="text-xl font-bold text-text dark:text-dk-text">
-                    {result.item.frontmatter.title}
+                    {result.item.title}
                   </h3>
                   <p className="text-text dark:text-dk-text">
-                    {result.item.frontmatter.description}
+                    {result.item.description}
                   </p>
+                  {result.item.type && (
+                    <p className="text-xs uppercase tracking-widest text-secondary/70 dark:text-dk-secondary/70">
+                      {result.item.type}
+                    </p>
+                  )}
                 </a>
                 {selected === index && (
                   <i className="fa fa-arrow-left text-accent dark:text-dk-accent text-2xl"></i>
