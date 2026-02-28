@@ -1,19 +1,24 @@
 import React from "react";
 import { info } from "../../data/info";
 
+type TimelineItem =
+  | (typeof info)["about"]["experience"][number]
+  | (typeof info)["about"]["research"][number];
+
 interface ExperienceProps {
-  experience: (typeof info)["about"]["experience"];
+  items: TimelineItem[];
+  title?: string;
 }
 
 export default function Experience(props: ExperienceProps) {
-  const { experience: experience } = props;
+  const { items, title = "Experience" } = props;
 
-  return experience.length == 0 ? (
+  return items.length == 0 ? (
     <div></div>
   ) : (
-    <div className="flex flex-col space-y-4 lg:w-1/2 mx-4">
-      <h1 className="text-3xl font-bold">Experience</h1>
-      {experience.map((exp, index) => (
+    <div className="flex flex-col space-y-4 w-full mx-4 lg:mx-0">
+      <h1 className="text-3xl font-bold">{title}</h1>
+      {items.map((exp, index) => (
         <div
           className="flex flex-col space-y-2 relative transition-transform duration-200 hover:scale-[1.02]"
           key={index}
@@ -60,7 +65,7 @@ export default function Experience(props: ExperienceProps) {
             )}
           </div>
 
-          {index !== experience.length - 1 && (
+          {index !== items.length - 1 && (
             <div className="absolute top-3.5 left-[0.655rem] h-full w-1 bg-secondary dark:bg-dk-secondary hover:bg-accent dark:hover:bg-dk-accent -z-10"></div>
           )}
         </div>

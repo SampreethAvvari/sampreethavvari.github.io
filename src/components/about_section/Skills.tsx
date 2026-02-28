@@ -8,28 +8,21 @@ interface SkillsProps {
 export default function Skills(props: SkillsProps) {
   const { skills } = props;
 
-  const mlItems = new Set([
-    "MCP",
-    "PostgreSQL",
-    "Postgres",
-    "FastAPI",
-    "Prometheus",
-    "Grafana",
+  const mlLabels = new Set(["Libraries"]);
+  const softwareLabels = new Set([
+    "Languages",
+    "Full Stack",
+    "Databases",
+    "Data / Infra",
+    "Testing",
+    "Tools",
   ]);
 
-  const colorForItem = (label: string, item: string) => {
-    if (mlItems.has(item)) {
+  const colorForItem = (label: string) => {
+    if (mlLabels.has(label)) {
       return "bg-amber-500/10 text-amber-600 dark:text-amber-300";
     }
-    if (label === "ML and Data" || label === "Specialization") {
-      return "bg-amber-500/10 text-amber-600 dark:text-amber-300";
-    }
-    if (
-      label === "Languages" ||
-      label === "Frameworks and Platforms" ||
-      label === "Databases" ||
-      label === "Tools"
-    ) {
+    if (softwareLabels.has(label)) {
       return "bg-emerald-500/10 text-emerald-600 dark:text-emerald-300";
     }
     return "bg-secondary/10 text-secondary dark:text-dk-secondary dark:bg-dk-secondary/10";
@@ -50,10 +43,7 @@ export default function Skills(props: SkillsProps) {
                   {group.items.map((item) => (
                     <span
                       key={item}
-                      className={`px-3 py-1 text-sm rounded-full transition-transform duration-200 hover:scale-105 ${colorForItem(
-                        group.label,
-                        item
-                      )}`}
+                      className={`px-3 py-1 text-sm rounded-full transition-transform duration-200 hover:scale-105 ${colorForItem(group.label)}`}
                     >
                       {item}
                     </span>

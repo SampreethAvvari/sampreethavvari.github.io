@@ -27,8 +27,13 @@ export default function About(props: AboutProps) {
           <Skills skills={about.skills} />
         </div>
       </div>
-      <div className="w-full flex justify-center reveal" data-reveal>
-        <Experience experience={about.experience} />
+      <div className="w-full max-w-6xl flex flex-col lg:flex-row gap-12 items-start">
+        <div className="w-full lg:w-1/2 flex justify-center reveal" data-reveal>
+          <Experience items={about.experience} />
+        </div>
+        <div className="w-full lg:w-1/2 flex justify-center reveal" data-reveal>
+          <Experience items={about.research} title="Research" />
+        </div>
       </div>
     </div>
   );
