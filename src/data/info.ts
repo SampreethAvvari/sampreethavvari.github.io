@@ -208,6 +208,69 @@ export const info = {
 
   projects: [
     {
+      title: "CBCT Scan Validator — Hybridge Implants LLC",
+      date: "Mar 2026 - Present",
+      description:
+        "Production medical-imaging AI replacing a $98K + $26K/yr vendor quote with an in-house stack running <$50/mo on GCP. Closes a 10-year recurring loss from bad CBCT scans reaching the design queue.",
+      link: "",
+      details: {
+        summary:
+          "End-to-end MLOps pipeline: SFTP ingest from MagicTouch DLCPM → ETL parity-checked across train/eval/serve → DentalSegmentator-backboned multi-task head → OpenVINO inference on Cloud Run → verdict PDF + email + write-back. ~5.5s end-to-end, CPU-only, scale-to-zero.",
+        highlights: [
+          "Bake-off across six architectures (A–F: ConvNeXt-MIL, Hybrid Transformer, 3D CNN, nnU-Net, VAE, ST-MAE), then iterated through Models G, H, and J as data and failure modes taught more.",
+          "Model H: frozen DentalSegmentator nnU-Net v2 encoder + multi-scale taps (global/mid/slice-seq BiGRU + attention) + compact 500K-param head with feature-space augmentation and cost-tuned threshold (FN cost = 15× FP).",
+          "Strict 20-scan CICT holdout wired into GitHub Actions caught a leaky AUROC 0.80 — shipped the honest 0.6309 number rather than gaming the gate.",
+          "Tag-based CI/CD (git tag vX.Y.Z → Cloud Build → Cloud Run) with hot-swap head checkpoint via GCS, no rebuild of the OpenVINO encoder IR required.",
+          "Drove the partner integration (DLCPM, no API license) by discovering their bidirectional SFTP path — single architectural pivot that kept the project unblocked.",
+        ],
+      },
+      tech: ["PyTorch Lightning", "MONAI", "OpenVINO", "FastAPI", "Cloud Run", "Eventarc", "W&B", "GitHub Actions"],
+      img_alt: "CBCT Scan Validator - Hybridge Implants LLC",
+      img_path: "/cbct-validator.svg",
+    },
+    {
+      title: "Treatment Estimator — Hybridge Implants LLC",
+      date: "May 2026 - Present",
+      description:
+        "Decoupled a decade-old single-price quoting tool into a code-driven decision tree + per-location frozen-at-capture price catalog. Makes the 6-month price-guarantee a real system property, not a sticker on the PDF.",
+      link: "",
+      details: {
+        summary:
+          "Next.js 16 + Postgres + Drizzle internal tool for treatment coordinators across three clinics. Five pricing model kinds (flat, tiered, tiered-zoned, price-range, per-surface) with write-once price snapshots and an immutable price-book versioning workflow (proposed → approved → published).",
+        highlights: [
+          "Wrote a 9-decision ADR with tradeoff tables and library citations before any code — Next.js, Drizzle, Cloud Run, Auth.js, RBAC topology, all justified against a $35/mo cost target.",
+          "Designed write-once *_at_capture columns enforced by Postgres triggers + per-location price-book versions — the 6-month price guarantee becomes a real invariant, not a PDF claim.",
+          "Three-affordance wizard orientation (phase progress strip + within-option checklist with answer recap + sticky 'selections so far' sidebar) so the TC never loses context mid-consult.",
+          "Code-driven decision tree (Path strategy classes) + DB-driven price catalog with a 100% branch-coverage gate on the pricing engine; golden snapshots lock every documented wizard path.",
+          "BACKLOG.md of 30+ consciously-deferred items with revisit triggers and a `questions-for-Chelsea` doc with worked numerical examples so the clinical SME could review without reading code.",
+        ],
+      },
+      tech: ["Next.js 16", "TypeScript", "Drizzle", "PostgreSQL", "Auth.js", "Cloud Run", "@react-pdf/renderer", "Zod"],
+      img_alt: "Treatment Estimator - Hybridge Implants LLC",
+      img_path: "/treatment-estimator.svg",
+    },
+    {
+      title: "Cowork Dashboard — Hybridge Implants LLC",
+      date: "Apr 2026 - May 2026",
+      description:
+        "Replaced a brittle live-Monday-API dashboard with a weekly-Excel pipeline that lifted patient↔lead linkage from 49% to ~99%. Single source of truth for every operational metric across two clinics.",
+      link: "",
+      details: {
+        summary:
+          "Internal operations dashboard for two clinics (Rochester / Buffalo). Apps Script web app on top of weekly Monday.com Excel exports, with one shared metrics module so every tab and widget computes from the same definitions.",
+        highlights: [
+          "Found that Monday's connect column (a real board_relation, not a mirror) survives Excel export — drove patient↔lead linkage from 49.5% / 65.3% to 98.8% / 99.9% across two boards.",
+          "Cut the weekly reporting cycle from half a day of manual reconciliation to a 3-minute drop-three-Excels-and-refresh workflow.",
+          "Six tabs (Dashboard, Monthly, History, Lead Sources, Trends, Playground) share one filter bar and one set of metric functions — structurally impossible for two tabs to disagree.",
+          "Encoded every business rule explicitly (marketing taxonomy, location filter, excluded reasons, scheduled-date semantics, consult-show parsing) so leadership stops arguing about whose number is right.",
+          "Surfaced 24 orphan re-treatment patients carrying $169k of YTD treatment value that the old dashboard was silently dropping.",
+        ],
+      },
+      tech: ["Google Apps Script", "Monday.com GraphQL", "Drive API", "Chart.js", "JavaScript"],
+      img_alt: "Cowork Dashboard - Hybridge Implants LLC",
+      img_path: "/cowork-dashboard.svg",
+    },
+    {
       title: "Loan Radar",
       date: "Jan - May 2025",
       description:
@@ -246,22 +309,24 @@ export const info = {
       img_path: "/llm-persuasion.png",
     },
     {
-      title: "Doc Coach - Hybridge Implants LLC",
+      title: "Doc Coach — Consultation QA Pipeline (Hybridge Implants LLC)",
       date: "Aug 2025 - Present",
       description:
-        "Built a multi-modal RAG platform for clinical consultations to boost treatment acceptance and reduce hallucinations.",
+        "Zoom transcript → Vertex AI Gemini scoring against a proprietary 7-criterion clinical framework → color-coded PDF reports to doctor + CEO + TC, with a master Sheet ledger for trend analysis. HIPAA-eligible, multi-tenant Zoom.",
       link: "",
       details: {
         summary:
-          "A clinical decision-support system that combines audio transcripts, clinical notes, and metadata with hybrid retrieval and agentic orchestration.",
+          "Production-grade Cloud Run pipeline that grades every implant consultation across two Zoom Business orgs and three TCs. Doctor↔TC pairing is fully flexible — identity is resolved per-meeting through participants list, transcript alias matching, and an LLM tie-break, with explicit failure modes for unresolved cases.",
         highlights: [
-          "130% increase in treatment acceptance and 43% revenue growth.",
-          "Hybrid keyword + vector search using Supabase (pgvector) with GraphQL queries.",
-          "Stateful agent chains cut hallucinations by 35% while staying HIPAA-compliant.",
+          "Drove +130% treatment acceptance and +43% revenue growth, with stateful agent chains cutting hallucinations by 35% under HIPAA-compliant controls.",
+          "Translated the CEO's hand-written 7-criterion framework into a versioned `consultation-rubric.md` prompt + JSON Schema 2020-12 contract that every Gemini response must validate against (with one retry on schema-fail).",
+          "Wrote a 19-section, 11-acceptance-test PRD with locked column orderings and explicit edge cases (Step 3 clinical override, Step 5 fee-presenter attribution) — usable as engineering brief AND clinical-stakeholder reference.",
+          "Built a production scoring RAG with Cloud SQL pgvector + GraphQL + rubric-backed SQL analytics for longitudinal doctor performance and feedback generation.",
+          "Avoided Workspace Domain-Wide Delegation by using a user-OAuth grant on the build owner's account (refresh token in Secret Manager) — bypassed Super Admin dependency entirely.",
         ],
       },
       imageStyle: "object-position: center 20%;",
-      tech: ["LangChain", "Gemini 3 Pro", "Supabase pgvector", "GraphQL", "Python"],
+      tech: ["FastAPI", "Vertex AI Gemini 2.5", "Cloud Run", "Cloud SQL pgvector", "GraphQL", "Firestore", "BigQuery", "Drive/Sheets/Gmail APIs"],
       img_alt: "Doc Coach - Hybridge Implants LLC",
       img_path: "/doc-coach.png",
     },
