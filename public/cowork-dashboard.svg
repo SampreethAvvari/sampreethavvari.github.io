@@ -1,0 +1,58 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="800" viewBox="0 0 1200 800" role="img" aria-label="Cowork Dashboard neon illustration">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#0B1428" />
+      <stop offset="100%" stop-color="#152340" />
+    </linearGradient>
+    <linearGradient id="rocAccent" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#5B8DEF" />
+      <stop offset="100%" stop-color="#3D6FCC" />
+    </linearGradient>
+    <linearGradient id="bufAccent" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#F5A524" />
+      <stop offset="100%" stop-color="#C97F0E" />
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="800" fill="url(#bg)" />
+  <circle cx="200" cy="180" r="140" fill="#5B8DEF" opacity="0.10" />
+  <circle cx="1000" cy="620" r="170" fill="#F5A524" opacity="0.08" />
+
+  <!-- Left card: KPI scorecards -->
+  <g transform="translate(110 180)">
+    <rect x="0" y="0" width="320" height="430" rx="24" fill="#0F1A33" stroke="#5B8DEF" stroke-width="3" />
+    <rect x="30" y="40" width="120" height="80" rx="14" fill="#5B8DEF" opacity="0.25" />
+    <rect x="170" y="40" width="120" height="80" rx="14" fill="#F5A524" opacity="0.25" />
+    <rect x="30" y="140" width="260" height="20" rx="6" fill="#5B8DEF" opacity="0.4" />
+    <rect x="30" y="180" width="220" height="20" rx="6" fill="#5B8DEF" opacity="0.4" />
+    <rect x="30" y="220" width="180" height="20" rx="6" fill="#F5A524" opacity="0.4" />
+    <rect x="30" y="270" width="260" height="14" rx="4" fill="#5B8DEF" opacity="0.18" />
+    <rect x="30" y="295" width="260" height="14" rx="4" fill="#5B8DEF" opacity="0.18" />
+    <rect x="30" y="320" width="260" height="14" rx="4" fill="#5B8DEF" opacity="0.18" />
+    <rect x="30" y="345" width="260" height="14" rx="4" fill="#5B8DEF" opacity="0.18" />
+    <rect x="30" y="370" width="260" height="14" rx="4" fill="#5B8DEF" opacity="0.18" />
+  </g>
+
+  <!-- Center: trend chart -->
+  <g transform="translate(480 200)">
+    <rect x="0" y="0" width="420" height="280" rx="24" fill="#0F1A33" stroke="#5B8DEF" stroke-width="3" />
+    <path d="M40 220 L100 180 L160 200 L220 130 L280 150 L340 90 L380 110" stroke="url(#rocAccent)" stroke-width="6" fill="none" />
+    <path d="M40 230 L100 210 L160 220 L220 180 L280 200 L340 150 L380 170" stroke="url(#bufAccent)" stroke-width="6" fill="none" />
+    <path d="M40 240 L100 220 L160 230 L220 200 L280 220 L340 180 L380 200" stroke="#9B6DFF" stroke-width="3" stroke-dasharray="8 6" fill="none" />
+    <circle cx="220" cy="130" r="8" fill="#5B8DEF" />
+    <circle cx="280" cy="150" r="8" fill="#5B8DEF" />
+    <circle cx="340" cy="90" r="8" fill="#5B8DEF" />
+  </g>
+
+  <!-- Right: funnel -->
+  <g transform="translate(940 200)">
+    <rect x="0" y="0" width="160" height="380" rx="24" fill="#0F1A33" stroke="#F5A524" stroke-width="3" />
+    <polygon points="20,40 140,40 130,90 30,90" fill="#5B8DEF" opacity="0.85" />
+    <polygon points="30,110 130,110 122,160 38,160" fill="#5B8DEF" opacity="0.7" />
+    <polygon points="38,180 122,180 116,230 44,230" fill="#5B8DEF" opacity="0.55" />
+    <polygon points="44,250 116,250 110,300 50,300" fill="#5B8DEF" opacity="0.4" />
+    <polygon points="50,320 110,320 105,360 55,360" fill="#F5A524" opacity="0.85" />
+  </g>
+
+  <text x="80" y="110" fill="#5B8DEF" font-size="34" font-family="Roboto, sans-serif" letter-spacing="4">COWORK DASHBOARD</text>
+  <text x="80" y="710" fill="#9CA3AF" font-size="20" font-family="Roboto, sans-serif" letter-spacing="3">Single source of truth · 99% linkage · 6 tabs</text>
+</svg>
