@@ -19,7 +19,7 @@ stats:
     tone: "cyan"
 ---
 
-The treatment estimator at Hybridge had been running for about ten years. It worked. It also had three quiet problems that nobody had time to fix.
+Hybridge's treatment coordinators were closing full-arch implant cases worth $24,000 or more while mentally adjusting numbers the software got wrong. The quoting tool was ten years old. It worked, roughly, but three problems had been quietly absorbing coordinator effort the whole time.
 
 **One price for every clinic.** Rochester, Buffalo, and the planned Syracuse location all shared a single set of numbers. Want to charge differently? Fork the script.
 
@@ -27,7 +27,7 @@ The treatment estimator at Hybridge had been running for about ten years. It wor
 
 **No price freeze.** Write a $24,300 quote today. Raise prices next month. Patient comes back to accept. The legacy tool happily reads the new price book. The "6-month guarantee" at the bottom of the PDF was a promise the software couldn't keep.
 
-A vendor tried to fix this around ten years ago. Their version never shipped.
+A vendor spent a decade trying to fix this. They never shipped. I shipped in two days.
 
 ## The decoupling that made it all work
 
@@ -112,6 +112,6 @@ The redesign stacks three things that tell the TC where they are:
 | Cost target | n/a | $35/month at S1 volume on Cloud Run |
 | Time to working end-to-end | The vendor 10 years ago: never shipped | About one month |
 
-Drizzle and Postgres and Next.js are everywhere these days. What this rebuild actually did, what the legacy tool spent ten years avoiding, was draw a clean line between *how a quote is built* and *what those parts cost today*. Once that line is in schema and code, the next person extending the system can't blur it.
+Drizzle and Postgres and Next.js are everywhere these days. The tools were not the hard part. The hard part was sitting with Chelsea until her mental pricing model was precise enough to write a schema for, writing nine ADR decisions before touching code, and knowing that a service-level check on price changes would always be one missed call away from a broken promise. A Postgres trigger cannot be skipped. A business guarantee probably can.
 
-That's most of the work.
+That gap, between what an org says it does and what the system actually enforces, is where this kind of work lives. Draw the line in schema and code, and the next engineer extending it cannot blur it by accident.

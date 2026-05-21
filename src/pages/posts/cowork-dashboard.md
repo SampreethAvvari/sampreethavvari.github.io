@@ -19,9 +19,13 @@ stats:
     tone: "amber"
 ---
 
-Every Monday at 8 a.m., I used to spend half a day exporting three Monday.com boards into Excel, hand-pivoting them, and trying to make the numbers match across tabs. They never did.
+The previous dashboard hit Monday.com's live API directly. It broke on rate limits, broke on schema changes, broke whenever a column got renamed. Every Monday morning the front office would open it and see stale numbers or an error. Leadership would pull their own exports. Two people would walk into the same meeting with different totals for the same metric, and the meeting would turn into an argument about the spreadsheet instead of the business.
 
-The reason was subtle. Our dental practice runs two clinics. Each one has a Patients board on Monday, both linked back to a single Leads board. To answer any real question, you had to join Patients back to Leads. The legacy dashboard joined them by name. Two real people share a name. Typos happen. Monday inserts `(copy)` on duplicates.
+At some point the front office stopped trusting their own reports. That is a worse problem than a broken API call.
+
+I'm the sole engineer touching this system at Hybridge. The move I kept resisting was the obvious one: stop fighting the live API and pull from the weekly Excel exports Monday already generates. Stable files, predictable schema, no rate limits. Once I committed to that, the real problem became visible: the join was wrong.
+
+Our dental practice runs two clinics. Each has a Patients board on Monday, both linked back to a single Leads board. To answer any real business question you have to join Patients to Leads. The old dashboard joined them by name. Two real people share a name. Typos happen. Monday inserts `(copy)` on duplicates.
 
 I measured the damage one afternoon and almost didn't believe the number:
 
@@ -85,4 +89,4 @@ A weekly workflow that used to eat 6-8 hours of senior time across the team now 
 
 The dashboard has six tabs: Dashboard, Monthly, History, Lead Sources, Trends, Playground. All pull from the same in-memory snapshot and the same metric functions. About 4,200 lines of Apps Script, deployed internally, costs nothing to run.
 
-The lesson I keep coming back to: read the schema. Then read it again. The fix to a year of bad reporting was sitting in a column I'd been looking at all along.
+The front office uses this dashboard every day. They do not think about how it works. They open it, see one number, and trust it. That is only possible because every business rule lives in one function. When leadership asks "why does this tab say X," there is exactly one place to look. The orphans do not disappear silently anymore. If a re-treatment patient has no Lead row, the dashboard shows them as an orphan instead of dropping them from the funnel. That is the job: not shipping code, but making sure the business can see itself clearly.

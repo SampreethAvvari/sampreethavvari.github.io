@@ -19,9 +19,11 @@ stats:
     tone: "blue"
 ---
 
-Garrett runs accounting for Hybridge. Every Monday he'd download CSVs from five different systems, open each one, rename columns, copy-paste rows, hand-tag deposit accounts, look up vendor names by check number. Repeat. Repeat. Repeat. An entire workday a week was disappearing into spreadsheet reformatting.
+Garrett is the controller at Hybridge. Every Monday morning he'd download CSVs from five different systems, open each one, rename columns, copy-paste rows, hand-tag deposit accounts, look up vendor names by check number. Then do it again for the next file. An entire workday a week was disappearing into reformatting work that produced no decisions, only inputs.
 
-Nobody senses this kind of work is broken until they sit next to the person doing it.
+The cost isn't just his time. Garrett is the person the operations team needs when something looks wrong in the numbers. While he was buried in paste-and-rename, everyone else was waiting. A small dental-implant clinic can't afford to have its only senior accountant running a manual ETL pipeline every week.
+
+I'm the sole AI engineer at Hybridge. When I sat down with Garrett and watched the Monday workflow, the problem wasn't that nobody had tried to fix it. The problem was that the obvious fix, one unified import platform, would have broken every time a vendor changed a column header, which they do constantly. What Garrett actually needed was a dozen small scripts: one per upstream system, short enough to read in ten minutes, and editable without my help.
 
 ## The five upstream systems
 
@@ -130,6 +132,6 @@ Garrett never sees the throttle. He sees a one-line "retrying in 4s" message and
 | Reformat errors per quarter | Occasional silent paste-wrong-column | Near zero (deterministic output) |
 | Lines of code per script | 80-500 | Short enough to read in 10 min |
 
-The pattern I keep coming back to: **most internal automation projects fail not because the engineering is bad but because the engineering builds a platform when the user wanted a tool.** A tool is a thing you keep in a drawer. A platform is a thing you log into. Tools are easier to trust.
+The pattern here matters more than the code. **Most internal automation projects fail not because the engineering is bad but because the engineering builds a platform when the user wanted a tool.** A tool is a thing you keep in a drawer. A platform is a thing you log into. Tools are easier to trust.
 
-Garrett doesn't run a server. He runs scripts. The right level of platformisation for one accountant doing weekly closes is: give him scripts he can read and edit. Anything heavier would have been a tax, not an asset.
+Garrett doesn't run a server. He runs scripts. Six months in, he has already edited two config blocks himself when a vendor renamed a column. He didn't need to file a ticket or wait for me. That's the deliverable I was aiming for: not automation that requires an engineer to maintain it, but automation that belongs to the person using it.

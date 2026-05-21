@@ -19,9 +19,11 @@ stats:
     tone: "emerald"
 ---
 
-Argument mining sits at an awkward intersection. Academic tradition treats persuasion as structure. Practical default is "just prompt a big model." Neither has a good answer to: *given a controversial claim, produce a counter-argument that real humans find more persuasive than what the base model already says.*
+The question Prof. Marco Morucci's group at NYU was working on sounds deceptively simple: given a controversial claim, can you train a model to produce counter-arguments that real humans find more persuasive than what the base model already says?
 
-I joined Prof. Marco Morucci's group at NYU to take a swing at it.
+The visible decision in any RLHF project is which optimizer to run. But by the time I got to GRPO vs PPO, that choice barely mattered. What mattered was earlier: how do you construct preference pairs that actually encode "more persuasive" rather than "longer"? How do you keep a reward model from learning surface features instead of the thing you care about? Those are harder, less discussed, and they determine most of the outcome.
+
+I joined the project to build the pipeline end to end.
 
 ## The dataset
 
