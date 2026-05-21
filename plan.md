@@ -2,13 +2,37 @@
 
 Open this in a fresh chat. Everything needed to keep going is in here.
 
-**Last update:** end of session after commit `f171d1b` — nav redesign, photo+text glass shimmer, brighter eyebrows.
+**Last update:** session ending at `ea6b316` — Apple-spec PostLayout + all 8 posts upgraded, Posts index with featured hero, Filmmaking page reimagined (USER LOVED IT), Projects page rebuilt as Hybridge one-screen-per-project deep dives. Five chunks pushed live.
+
+## 🔥 TOP OF QUEUE — Latest user feedback (after the last push)
+
+- **Filmmaking page approved** ("i love what you did with the filmmaking page"). DO NOT redesign it again unless asked.
+- **User will swap in real images** for a few of the people on the filmmaking page (crew/cast portraits). When they paste image files or update `/public/Crew Photos/*`, the existing markup automatically picks them up — no code change needed for image swaps. If they ask to swap a placeholder gallery image with a real one, just update the corresponding `crewPhoto(...)` filename or drop the file in `/public/Crew Photos/` with the same name.
+- **Cache gotcha:** GitHub Pages serves stale CSS aggressively. After every push the user should hard-refresh (Ctrl+Shift+R) or the changes look like they didn't ship. Multiple "i don't see any changes" reports turned out to be browser cache.
+
+## Already-shipped recent commits (do NOT redo)
+
+| Commit | What |
+|---|---|
+| `ea6b316` | Projects: tier field + Hybridge one-screen-per-project deep dives + Research/Industry editorial cards + Coursework archive |
+| `b7f6ebb` | Filmmaking page: festival-catalog reimagining (USER APPROVED) |
+| `f75a030` | Posts index: featured hero + accented cards + tag chips |
+| `3210711` | Blog template: PostLayout rewrite + tag/tone/stats frontmatter + inline stat callouts on 7 posts |
+| `f56b960` | Home: drop noisy shimmer (now a no-op), unify rainbow pills into one blue-glass treatment, bump logos, reorder Writing 03 before Filmmaking 04, writing-atmos mesh |
+| `cc06855` | GRIET logo + bigger About heading + brighter eyebrows |
+
+## Lessons baked in (don't undo)
+
+- **`.text-shimmer` is now a no-op passthrough.** Earlier versions used background-clip:text which made the accent word go invisible mid-sweep. Do not bring it back without an entirely different approach.
+- **`.glow-wave` is a soft behind-the-text radial blob**, not a text mask. Text always stays solid. Live on hero h1, hero subtitle, chapter headlines, and project-screen titles.
+- **Skill pills are one coherent blue-glass treatment**, not rainbow. The `.p1..p10` variants exist as no-ops so old markup doesn't break.
+- **The filmmaking page lives in `<style is:global>` inside the .astro**, not `global.css`. Same for the new projects page.
 
 ---
 
-## 🔥 TOP OF QUEUE — Latest user feedback (start here)
+## Old TOP OF QUEUE (preserved for context — most of this shipped)
 
-These came in at the end of the session and haven't shipped yet. They are P0 for the next chat.
+These came in at the end of an earlier session.
 
 ### F1. Add institutional logos to the About chapter
 
