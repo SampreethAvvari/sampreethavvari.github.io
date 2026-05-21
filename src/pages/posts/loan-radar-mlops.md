@@ -19,9 +19,9 @@ stats:
     tone: "emerald"
 ---
 
-Most ML projects I'd seen had the same shape: a Jupyter notebook with a 90% accurate model, a Flask wrapper, and a long tail of operational questions the team got to "later." When do we retrain? Who reviewed this? What data version did it see? How do we roll back? Later usually meant "after the production incident."
+The hardest part of ML in production is not the model. The hardest part is everything that happens after: how you know when to retrain, who approved the version running right now, what data it was trained on, and how fast you can swap it out when something goes wrong. Most projects skip those questions. They show up as the post-incident follow-up six months later.
 
-Loan Radar was a grad-school project to flip that ratio. Make the boring 85% the focus on a problem (loan-default scoring) where the model itself is well-understood.
+Loan Radar was a grad-school project built with that gap in mind. The domain is loan-default scoring, where the modeling problem is well-understood. I picked it precisely because it let me put all my time into the operational layer: lineage, gates, automated retraining, rollback paths. The stuff teams usually defer until the first fire.
 
 ## The whole system in one diagram
 
@@ -105,6 +105,6 @@ The Hybridge work I did later carries the same DNA. The [CBCT validator](/posts/
 
 Those patterns came out of Loan Radar.
 
-I built Loan Radar because I didn't want to learn those lessons in production. Now every system I ship starts with the gates.
+The kind of engineer I want to be is the one who asks "how do we roll this back" before asking "what accuracy did we hit." Demos age out; gates are what survive contact with reality. Loan Radar was the project that taught me to build in that order.
 
 Live demo: [Loan Radar](https://hi.switchy.io/cv-i).
