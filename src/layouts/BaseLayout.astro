@@ -157,9 +157,9 @@ import "../styles/global.css";
       }
     </script>
   </head>
-  <body class="bg-primary dark:bg-dk-primary w-full container mx-auto">
+  <body class="bg-primary dark:bg-dk-primary w-full overflow-x-hidden">
     <Nav client:visible searchItems={searchItems} />
-    <div class="container mx-auto px-4">
+    <div class="mx-auto w-full max-w-screen-2xl px-4 sm:px-6 lg:px-10 xl:px-14 2xl:px-20">
       <slot />
     </div>
     <FooterBar variant={footerVariant} />
