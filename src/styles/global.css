@@ -300,6 +300,71 @@ button.no-lift:hover {
   box-shadow: 0 20px 40px -20px rgba(91, 141, 239, 0.35);
 }
 
+/* Colourful skill pills — gradient backgrounds, white text, subtle hover lift. */
+.skill-pill {
+  display: inline-flex;
+  align-items: center;
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 0.4rem 0.85rem;
+  border-radius: 9999px;
+  color: white !important;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  letter-spacing: 0.01em;
+  transition: transform 0.25s, box-shadow 0.25s, filter 0.25s;
+  white-space: nowrap;
+}
+.skill-pill:hover {
+  transform: translateY(-2px);
+  filter: brightness(1.1);
+  box-shadow: 0 8px 24px -8px currentColor;
+}
+.skill-pill.p1 { background: linear-gradient(135deg, #5B8DEF, #22D3EE); }
+.skill-pill.p2 { background: linear-gradient(135deg, #22D3EE, #34D399); }
+.skill-pill.p3 { background: linear-gradient(135deg, #A78BFA, #5B8DEF); }
+.skill-pill.p4 { background: linear-gradient(135deg, #34D399, #F5A524); }
+.skill-pill.p5 { background: linear-gradient(135deg, #5B8DEF, #A78BFA); }
+.skill-pill.p6 { background: linear-gradient(135deg, #F5A524, #22D3EE); }
+.skill-pill.p7 { background: linear-gradient(135deg, #A78BFA, #34D399); }
+.skill-pill.p8 { background: linear-gradient(135deg, #34D399, #22D3EE); }
+.skill-pill.p9 { background: linear-gradient(135deg, #F5A524, #A78BFA); }
+.skill-pill.p10 { background: linear-gradient(135deg, #22D3EE, #5B8DEF); }
+
+/* Timeline rows with institutional logos. */
+.timeline-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.85rem;
+}
+.timeline-logo {
+  flex-shrink: 0;
+  width: 2.75rem;
+  height: 2.75rem;
+  border-radius: 0.75rem;
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  padding: 0.35rem;
+}
+html.dark .timeline-logo {
+  background: rgba(255, 255, 255, 0.92);
+}
+.timeline-logo img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+.timeline-logo.logo-placeholder {
+  background: linear-gradient(135deg, #5B8DEF, #A78BFA);
+  color: white;
+  font-weight: 700;
+  font-size: 0.85rem;
+  letter-spacing: 0.02em;
+}
+
 /* Scroll-snap chapter pages (proximity, not mandatory — never traps the user).
    scroll-snap-type lives on the actual scrolling element (html / body), not on
    a non-scrolling wrapper div. .snap-chapter children opt their viewports in. */
