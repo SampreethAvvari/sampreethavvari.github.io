@@ -3,13 +3,27 @@ title: "On making movies, shipping AI, and the work between the two"
 date: "2026-05-20"
 layout: ../../layouts/PostLayout.astro
 description: "Two crafts I keep being told are separate. They aren't. What ten years of writing, directing, and editing short films does to the way I do engineering work."
-img_path: "/paper.png"
-img_alt: "Film set and engineering workspace"
+img_path: "/film-and-engineering.png"
+img_alt: "Film clapperboard and laptop, same craft"
 tag: "Personal"
 tone: "amber"
+stats:
+  - value: "7 films"
+    label: "directed, written, edited, or scored"
+    tone: "amber"
+  - value: "10 yrs"
+    label: "from first short to Among Monsters"
+    tone: "rose"
+  - value: "8 hats"
+    label: "I've worn on a small short"
+    tone: "violet"
 ---
 
 I make movies. I write screenplays, direct, edit, occasionally compose music. I also build production AI systems at a dental implant company. People keep treating those two as separate. They aren't.
+
+<blockquote class="pull-quote">
+The customer is the cast. The system is the scene. The job is to make the scene work for them.
+</blockquote>
 
 Here's the credit list, so we're talking about specifics:
 
@@ -35,15 +49,35 @@ Specialists. None of them wrong. One person whose job is to make it add up.
 
 ## Things I do at a keyboard that I learned on set
 
+<div class="aside aside-amber">
+
 **Block before you light.** On set, you walk the actors through the scene before anyone touches a lamp. In code, I write the ADR before I touch the schema. Every project I'm proud of has a spec written first. Building from a shape you've sketched costs less than building from a shape you haven't.
+
+</div>
+
+<div class="aside">
 
 **Listen to the script supervisor.** The script supervisor has the lowest credit on the call sheet and the highest practical authority on the day. The engineering equivalent is the person who does the actual work every day. Garrett knew the bank CSV glob picks up half-downloaded files. I would not have built the y/s/d prompt in the cashflow import if he hadn't told me.
 
+</div>
+
+<div class="aside aside-emerald">
+
 **Cut to the bone.** Editing a film is mostly about removing. A 20-minute short usually starts as a 45-minute assembly. The cuts that hurt to make are usually the right ones. The same with code. The dashboard rebuild replaced 2,803 lines of live-API code with 1,400 lines of weekly-Excel code that's strictly more correct. Less is harder than more.
+
+</div>
+
+<div class="aside aside-amber">
 
 **Show one cut to the right person.** The first person I show a rough cut to isn't another editor. It's somebody from the target audience. I don't ask for notes. I watch them watch it. Same thing in code: the first demo of a new feature isn't to the engineering team. It's to the person who's going to use it every day. I'd rather watch Chelsea fumble through the tooth chart for thirty seconds in silence than read a stakeholder Slack thread about it.
 
+</div>
+
+<div class="aside">
+
 **A scene works or it doesn't.** Films don't get judged on the elegance of the camerawork. They get judged on whether the scene works. A great scene with one bad cut is still a great scene. A polished sequence of bad scenes is a polished bad film. I'm relentless about whether the shipped thing actually solved the problem the customer brought.
+
+</div>
 
 ## What this does to the engineering portfolio
 
