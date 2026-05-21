@@ -477,16 +477,8 @@ const projectsWithBlog = projects
     padding-bottom: clamp(4rem, 7vh, 6rem);
   }
 
-  /* Deep-dive backdrops are mostly the page bg — black/matte gray — with a
-     single faint coloured glow so consecutive sections breathe and don't all
-     read green. Each variant rotates the accent: amber, cyan, violet,
-     rose, slate, blue, emerald. */
-  .project-screen {
-    background: #FBFBFD;
-  }
-  html.dark .project-screen { background: #050505; }
-  .project-screen:nth-child(even) { background: #F4F4F6; }
-  html.dark .project-screen:nth-child(even) { background: #0B0B0D; }
+  /* No per-screen bg fills. Every project sits on the body bg so the only
+     colour cue is the per-project atmos glow. */
 
   .project-screen-atmos {
     position: absolute;
@@ -652,23 +644,36 @@ const projectsWithBlog = projects
     .flip-card-back-grid { grid-template-columns: 1fr; gap: 0.6rem; }
   }
   .flip-section-label {
-    font-size: 0.62rem;
-    font-weight: 700;
-    letter-spacing: 0.18em;
+    font-size: 0.66rem;
+    font-weight: 800;
+    letter-spacing: 0.20em;
     text-transform: uppercase;
-    color: rgba(29, 29, 31, 0.55);
-    margin-bottom: 0.3rem;
+    color: #1D1D1F;
+    margin-bottom: 0.4rem;
   }
   html.dark .flip-section-label {
-    color: rgba(245, 245, 247, 0.55);
+    color: #F5F5F7;
+  }
+  /* Tiny coloured dot before each section label so the four panels feel
+     anchored visually and the headings don't drown in the body text. */
+  .flip-section-label::before {
+    content: "";
+    display: inline-block;
+    width: 0.42rem;
+    height: 0.42rem;
+    border-radius: 999px;
+    margin-right: 0.5rem;
+    transform: translateY(-1px);
+    background: currentColor;
+    opacity: 0.55;
   }
   .flip-section-body {
     font-size: clamp(0.78rem, 0.95vw, 0.92rem);
-    line-height: 1.45;
-    color: rgba(29, 29, 31, 0.85);
+    line-height: 1.5;
+    color: rgba(29, 29, 31, 0.72);
   }
   html.dark .flip-section-body {
-    color: rgba(245, 245, 247, 0.85);
+    color: rgba(245, 245, 247, 0.72);
   }
   .flip-card-hint-back {
     position: absolute;
