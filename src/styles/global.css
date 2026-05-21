@@ -641,37 +641,11 @@ html.snap-home {
   scroll-snap-align: start;
 }
 
-/* Chapter-fade — soft top/bottom highlights that fade into the body bg so
-   chapters blend instead of clicking between flat colour slabs. The
-   highlight is a slim horizontal radial gradient at the top and bottom
-   edges of the chapter, fading to transparent toward the middle. */
+/* Chapter-fade. Stripped of the top/bottom radial highlights so chapter
+   transitions are pure body bg with no glow seam. Class is kept on the
+   sections so existing markup doesn't need to change. */
 .chapter-fade {
   position: relative;
-}
-.chapter-fade::before,
-.chapter-fade::after {
-  content: "";
-  position: absolute;
-  left: 0;
-  right: 0;
-  height: 12rem;
-  pointer-events: none;
-  z-index: 0;
-  opacity: 0.85;
-}
-.chapter-fade::before {
-  top: 0;
-  background: radial-gradient(ellipse at 50% 0%, rgba(91, 141, 239, 0.05), transparent 70%);
-}
-.chapter-fade::after {
-  bottom: 0;
-  background: radial-gradient(ellipse at 50% 100%, rgba(91, 141, 239, 0.05), transparent 70%);
-}
-html.dark .chapter-fade::before {
-  background: radial-gradient(ellipse at 50% 0%, rgba(91, 141, 239, 0.08), transparent 70%);
-}
-html.dark .chapter-fade::after {
-  background: radial-gradient(ellipse at 50% 100%, rgba(91, 141, 239, 0.08), transparent 70%);
 }
 .chapter-fade > * { position: relative; z-index: 1; }
 
