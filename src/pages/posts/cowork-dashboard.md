@@ -68,13 +68,20 @@ Change the definition of "marketing source" in one place and every chart on ever
 
 A weekly workflow that used to eat 6-8 hours of senior time across the team now takes 3 minutes. The leadership meetings are about strategy, not arithmetic.
 
-| Before | After |
-|---|---|
-| Half a day of reconciliation each week | 3-minute "drop the Excels, click Refresh" |
-| 49% patient-to-lead linkage | 99%+ linkage |
-| 8 filter logics that drifted | 1 metrics module, shared |
-| ~$169k of treatment revenue invisible | All re-treatment cases surfaced |
-| Argument about whose number is right | Argument about strategy |
+<div class="post-stats-grid my-10">
+  <div class="stat-callout stat-blue">
+    <div class="stat-value">49% → 99%</div>
+    <div class="stat-label">patient-to-lead linkage, both boards</div>
+  </div>
+  <div class="stat-callout stat-amber">
+    <div class="stat-value">½ day → 3 min</div>
+    <div class="stat-label">weekly reconciliation cycle</div>
+  </div>
+  <div class="stat-callout stat-emerald">
+    <div class="stat-value">8 → 1</div>
+    <div class="stat-label">filter logics across tabs</div>
+  </div>
+</div>
 
 The dashboard has six tabs: Dashboard, Monthly, History, Lead Sources, Trends, Playground. All of them pull from the same in-memory snapshot and the same metric functions. About 4,200 lines of code total, deployed as an internal Apps Script web app, costs nothing to run.
 

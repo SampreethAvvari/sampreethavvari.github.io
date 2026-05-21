@@ -449,44 +449,43 @@ const stillsLimited = galleryItems.slice(0, 16);
     <!-- ── 4. Among Monsters deep dive ────────────────────────────────── -->
     <section
       id="among-monsters"
-      class="mx-auto w-full max-w-screen-2xl px-6 lg:px-12 mt-24 lg:mt-32 reveal"
+      class="min-h-screen flex items-center mt-24 lg:mt-32 reveal"
       data-reveal
     >
-      <div class="max-w-3xl mb-10">
-        <p class="eyebrow text-acc-amber mb-3">
-          The feature
-        </p>
-        <h2 class="display-sm text-text dark:text-dk-text">
-          Among Monsters, in detail.
-        </h2>
-      </div>
-
-      <div class="grid lg:grid-cols-12 gap-10 lg:gap-16">
-        <div class="lg:col-span-5">
-          <div class="lg:sticky lg:top-28">
-            <div class="film-detail-poster">
-              <SmartImage
-                src={posterSrc}
-                alt="Among Monsters poster"
-                class="w-full h-auto rounded-2xl"
-                loading="lazy"
-              />
+      <div class="mx-auto w-full max-w-screen-2xl px-6 lg:px-12 py-12">
+        <div class="grid lg:grid-cols-12 gap-10 lg:gap-16 items-start">
+          <div class="lg:col-span-5">
+            <div class="lg:sticky lg:top-28">
+              <div class="film-detail-poster">
+                <SmartImage
+                  src={posterSrc}
+                  alt="Among Monsters poster"
+                  class="w-full h-auto rounded-2xl"
+                  loading="lazy"
+                />
+              </div>
             </div>
           </div>
-        </div>
 
-        <div class="lg:col-span-7 space-y-10">
-          <div class="space-y-4">
-            <p class="text-[0.7rem] uppercase tracking-[0.22em] text-text/40 dark:text-dk-text/40 font-semibold">
-              Synopsis
-            </p>
-            <p class="text-base lg:text-lg text-text/80 dark:text-dk-text/80 leading-relaxed">
-              A criminal trapped in a coward's body sets out to take revenge at any cost. Guns and drugs don't save people. The question isn't whether he breaks — it's how long he can keep going before the chaos finishes him.
-            </p>
-            <p class="text-base lg:text-lg text-text/70 dark:text-dk-text/70 leading-relaxed">
-              I wrote, directed, edited, and scored it. We shot in Rochester across 2024 and 2025, in real living rooms and motel parking lots and the kind of streets the script kept asking for. The film premieres Nov 28 in Rochester, with an NYC screening to follow.
-            </p>
-          </div>
+          <div class="lg:col-span-7 space-y-8">
+            <div>
+              <p class="eyebrow text-acc-amber mb-3">The feature</p>
+              <h2 class="display-sm text-text dark:text-dk-text">
+                Among Monsters, in detail.
+              </h2>
+            </div>
+
+            <div class="space-y-4">
+              <p class="text-[0.7rem] uppercase tracking-[0.22em] text-text/40 dark:text-dk-text/40 font-semibold">
+                Synopsis
+              </p>
+              <p class="text-base lg:text-lg text-text/80 dark:text-dk-text/80 leading-relaxed">
+                A criminal trapped in a coward's body sets out to take revenge at any cost. Guns and drugs don't save people. The question isn't whether he breaks, it's how long he can keep going before the chaos finishes him.
+              </p>
+              <p class="text-base lg:text-lg text-text/70 dark:text-dk-text/70 leading-relaxed">
+                I wrote, directed, edited, and scored it. We shot in Rochester across 2024 and 2025, in real living rooms and motel parking lots and the kind of streets the script kept asking for. Premieres Nov 28 in Rochester, NYC screening to follow.
+              </p>
+            </div>
 
           <div class="space-y-4">
             <p class="text-[0.7rem] uppercase tracking-[0.22em] text-text/40 dark:text-dk-text/40 font-semibold">
@@ -517,31 +516,32 @@ const stillsLimited = galleryItems.slice(0, 16);
             </ul>
           </div>
 
-          <div class="flex flex-wrap items-center gap-3 pt-2">
-            <a
-              href={imdbUrl}
-              target="_blank"
-              rel="noreferrer"
-              class="no-lift inline-flex items-center gap-2 rounded-full px-5 py-2.5 bg-text text-primary dark:bg-dk-text dark:text-dk-primary text-sm font-semibold hover:opacity-85 transition"
-            >
-              <i class="fab fa-imdb"></i> IMDb <span aria-hidden="true">↗</span>
-            </a>
-            <a
-              href={screenplayUrl}
-              target="_blank"
-              rel="noreferrer"
-              class="no-lift inline-flex items-center gap-2 rounded-full px-5 py-2.5 border border-text/20 dark:border-dk-text/25 text-sm font-semibold text-text dark:text-dk-text hover:bg-text/5 dark:hover:bg-dk-text/10 transition"
-            >
-              <i class="fas fa-file-lines"></i> Screenplay
-            </a>
-            <a
-              href={playlistUrl}
-              target="_blank"
-              rel="noreferrer"
-              class="no-lift inline-flex items-center gap-2 rounded-full px-5 py-2.5 border border-text/20 dark:border-dk-text/25 text-sm font-semibold text-text dark:text-dk-text hover:bg-text/5 dark:hover:bg-dk-text/10 transition"
-            >
-              <i class="fab fa-youtube"></i> Playlist
-            </a>
+            <div class="flex flex-wrap items-center gap-3 pt-2">
+              <a
+                href={imdbUrl}
+                target="_blank"
+                rel="noreferrer"
+                class="no-lift inline-flex items-center gap-2 rounded-full px-5 py-2.5 bg-text text-primary dark:bg-dk-text dark:text-dk-primary text-sm font-semibold hover:opacity-85 transition"
+              >
+                <i class="fab fa-imdb"></i> IMDb <span aria-hidden="true">↗</span>
+              </a>
+              <a
+                href={screenplayUrl}
+                target="_blank"
+                rel="noreferrer"
+                class="no-lift inline-flex items-center gap-2 rounded-full px-5 py-2.5 border border-text/20 dark:border-dk-text/25 text-sm font-semibold text-text dark:text-dk-text hover:bg-text/5 dark:hover:bg-dk-text/10 transition"
+              >
+                <i class="fas fa-file-lines"></i> Screenplay
+              </a>
+              <a
+                href={playlistUrl}
+                target="_blank"
+                rel="noreferrer"
+                class="no-lift inline-flex items-center gap-2 rounded-full px-5 py-2.5 border border-text/20 dark:border-dk-text/25 text-sm font-semibold text-text dark:text-dk-text hover:bg-text/5 dark:hover:bg-dk-text/10 transition"
+              >
+                <i class="fab fa-youtube"></i> Playlist
+              </a>
+            </div>
           </div>
         </div>
       </div>

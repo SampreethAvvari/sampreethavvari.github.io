@@ -108,9 +108,19 @@ Garrett never sees the throttle. He sees a one-line "retrying in 4s" message and
 
 ## By the numbers
 
-<div class="stat-callout stat-amber">
-  <div class="stat-value">~400 hrs/yr</div>
-  <div class="stat-label">Of senior accounting time the controller stopped losing to manual CSV reformatting</div>
+<div class="post-stats-grid my-8">
+  <div class="stat-callout stat-amber">
+    <div class="stat-value">~400 hrs/yr</div>
+    <div class="stat-label">of senior accounting time saved</div>
+  </div>
+  <div class="stat-callout stat-emerald">
+    <div class="stat-value">6-8 h → 30 min</div>
+    <div class="stat-label">weekly reformat workload</div>
+  </div>
+  <div class="stat-callout stat-blue">
+    <div class="stat-value">12</div>
+    <div class="stat-label">small Python scripts, one per system</div>
+  </div>
 </div>
 
 | | Before | After |
