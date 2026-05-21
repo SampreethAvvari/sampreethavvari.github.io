@@ -298,7 +298,7 @@ export const info = {
       },
       tech: ["PyTorch Lightning", "MONAI", "OpenVINO", "FastAPI", "Cloud Run", "Eventarc", "W&B", "GitHub Actions"],
       img_alt: "CBCT Scan Validator - Hybridge Implants LLC",
-      img_path: "/cbct-validator.svg",
+      img_path: "/cbct-validator.png",
     },
     {
       title: "Treatment Estimator — Hybridge Implants LLC",
@@ -320,7 +320,7 @@ export const info = {
       },
       tech: ["Next.js 16", "TypeScript", "Drizzle", "PostgreSQL", "Auth.js", "Cloud Run", "@react-pdf/renderer", "Zod"],
       img_alt: "Treatment Estimator - Hybridge Implants LLC",
-      img_path: "/treatment-estimator.svg",
+      img_path: "/treatment-estimator.png",
     },
     {
       title: "Optimal Living Systems — Enterprise SaaS AMI",
@@ -363,7 +363,7 @@ export const info = {
       },
       tech: ["Google Apps Script", "Monday.com GraphQL", "Drive API", "Chart.js", "JavaScript"],
       img_alt: "Cowork Dashboard - Hybridge Implants LLC",
-      img_path: "/cowork-dashboard.svg",
+      img_path: "/cowork-dashboard.png",
     },
     {
       title: "Loan Radar",
@@ -383,7 +383,7 @@ export const info = {
       },
       tech: ["FastAPI", "Flask", "Uvicorn", "Docker", "Kubernetes", "MLflow", "Airflow", "Terraform", "Ray"],
       img_alt: "Loan Radar",
-      img_path: "/loan-radar.svg",
+      img_path: "/loan-radar.png",
     },
     {
       title: "LLM Persuasion (RLHF with GRPO/PPO) - Research",

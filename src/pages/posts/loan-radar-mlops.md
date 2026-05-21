@@ -3,7 +3,7 @@ title: "Loan Radar: building the boring parts of an ML platform on purpose"
 date: "2025-05-01"
 layout: ../../layouts/PostLayout.astro
 description: "A loan-default scoring service with the boring parts actually built: containerised training, MLflow lineage, quality gates, an Airflow retraining DAG. The gates mattered most."
-img_path: "/loan-radar.svg"
+img_path: "/loan-radar.png"
 img_alt: "Loan Radar architecture — training, lineage, gates, inference, retraining"
 tag: "MLOps"
 tone: "cyan"
