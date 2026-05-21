@@ -1,5 +1,5 @@
 ---
-title: "Rebuilding a decade-old dental quoting tool around a price-freeze invariant"
+title: "How I rebuilt a decade-old quoting tool so the price guarantee is a DB invariant, not a PDF claim"
 date: "2026-05-18"
 layout: ../../layouts/PostLayout.astro
 description: "A decade-old quoting tool, rebuilt around a Postgres trigger that makes the 6-month price guarantee a real database invariant. One month of work versus ten years of attempts."
