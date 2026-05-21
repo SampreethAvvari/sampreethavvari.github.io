@@ -300,13 +300,18 @@ button.no-lift:hover {
   box-shadow: 0 20px 40px -20px rgba(91, 141, 239, 0.35);
 }
 
-/* Scroll-snap chapter pages (proximity, not mandatory — never traps the user). */
-.snap-chapters {
+/* Scroll-snap chapter pages (proximity, not mandatory — never traps the user).
+   scroll-snap-type lives on the actual scrolling element (html / body), not on
+   a non-scrolling wrapper div. .snap-chapter children opt their viewports in. */
+html.snap-home {
   scroll-snap-type: y proximity;
 }
 .snap-chapter {
   scroll-snap-align: start;
   scroll-snap-stop: normal;
+}
+.snap-chapters > section { /* legacy class kept for backward compat */
+  scroll-snap-align: start;
 }
 
 /* The home page narrative chapters: full-viewport, generous padding,
@@ -405,10 +410,12 @@ html { scroll-padding-top: 4.5rem; }
   100% { background-position: 200% 0; opacity: 0; }
 }
 
-/* Text gradient shimmer for the accent name in the hero (and any heading
-   you want to glint). currentColor is the resting fill; the white band
-   sweeps through every few seconds. */
-.text-shimmer {
+/* Text gradient shimmer for the accent name in the hero. Only kicks in
+   on dark mode — in light mode a white sweep over a light bg is invisible,
+   so light mode just shows the accent colour cleanly. */
+.text-shimmer { color: inherit; }
+
+html.dark .text-shimmer {
   background: linear-gradient(
     90deg,
     currentColor 0%,
@@ -433,7 +440,7 @@ html { scroll-padding-top: 4.5rem; }
 
 @media (prefers-reduced-motion: reduce) {
   .photo-shimmer::after { animation: none; opacity: 0; }
-  .text-shimmer {
+  html.dark .text-shimmer {
     animation: none;
     background: none;
     -webkit-text-fill-color: currentColor;
