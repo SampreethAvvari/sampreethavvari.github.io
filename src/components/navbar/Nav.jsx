@@ -39,64 +39,73 @@ export default function Nav({ searchItems }) {
 
   return (
     <>
-      <nav className="container mx-auto top-0 z-50 absolute bg-primary dark:bg-dk-primary">
-        <div className="w-full px-6 py-2 flex justify-between items-center">
-          <a className="font-bold text-2xl lg:text-4xl" href="/#">
+      <nav className="fixed top-0 left-0 right-0 z-50 bg-primary/75 dark:bg-dk-primary/70 backdrop-blur-xl backdrop-saturate-150 border-b border-text/5 dark:border-dk-text/10">
+        <div className="mx-auto w-full max-w-screen-2xl px-4 sm:px-6 lg:px-10 xl:px-14 2xl:px-20 h-14 lg:h-16 flex items-center gap-4">
+          {/* Brand */}
+          <a className="font-semibold text-lg lg:text-xl tracking-tight text-text dark:text-dk-text shrink-0" href="/#home">
             <span className="text-secondary dark:text-dk-secondary">
               {"</" + extractInitials(info.name) + ">"}
             </span>
-          </a>
-
-          {/* Button for CV download */}
-          <a
-            href={info.cv}
-            download
-            className="px-4 py-2 border-2 rounded text-secondary dark:text-dk-secondary border-secondary dark:border-dk-secondary hover:bg-secondary dark:hover:bg-dk-secondary hover:text-primary dark:hover:text-primary cursor-pointer"
-          >
-            <i className="fas fa-download mr-2"></i>
-            <span className="hidden lg:inline-block font-medium">
-              Download Resume
+            <span className="hidden md:inline-block ml-2 text-text/60 dark:text-dk-text/60 font-normal">
+              {info.name}
             </span>
-            <span className="lg:hidden font-medium">Resume</span>
           </a>
 
-          <div className="inline-flex lg:hidden text-secondary dark:text-dk-secondary">
+          {/* Desktop nav (links centered, actions right) */}
+          <div className="hidden lg:flex flex-1 items-center justify-center">
+            <ul className="inline-flex items-center gap-1 text-sm font-medium text-text/70 dark:text-dk-text/70">
+              {navLinks.map((link, index) => {
+                const isActive = activeMatch === link.match;
+                return (
+                <li key={index}>
+                  <a
+                    href={link.href}
+                    className={`no-lift inline-flex items-center gap-2 px-4 py-2 rounded-full transition ${
+                      isActive
+                        ? "text-text dark:text-dk-text bg-text/[0.06] dark:bg-dk-text/[0.08]"
+                        : "hover:text-text dark:hover:text-dk-text hover:bg-text/[0.04] dark:hover:bg-dk-text/[0.05]"
+                    }`}
+                    aria-label={link.name}
+                    title={link.name}
+                  >
+                    <i className={`${link.icon} text-base`} aria-hidden="true"></i>
+                    <span>{link.name}</span>
+                  </a>
+                </li>
+              )})}
+            </ul>
+          </div>
+
+          {/* Right-side actions */}
+          <div className="hidden lg:flex items-center gap-2 shrink-0">
+            <Search items={searchItems} />
+            <ToggleDarkMode />
+            <a
+              href={info.cv}
+              download
+              className="no-lift ml-2 inline-flex items-center gap-2 px-4 py-2 rounded-full bg-text text-primary dark:bg-dk-text dark:text-dk-primary text-sm font-semibold hover:opacity-85 transition"
+            >
+              <i className="fas fa-download text-xs" aria-hidden="true"></i>
+              Resume
+            </a>
+          </div>
+
+          {/* Mobile right cluster */}
+          <div className="flex lg:hidden ml-auto items-center gap-2">
+            <a
+              href={info.cv}
+              download
+              className="no-lift inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-text text-primary dark:bg-dk-text dark:text-dk-primary text-xs font-semibold"
+            >
+              <i className="fas fa-download text-[0.65rem]" aria-hidden="true"></i>
+              Resume
+            </a>
+            <ToggleDarkMode />
+            <Search items={searchItems} />
             <Hamburger
               onClick={() => setIsNavOpen(!isNavOpen)}
               isNavOpen={isNavOpen}
             />
-          </div>
-          <div className="hidden lg:block">
-            <ul className="inline-flex text-secondary dark:text-dk-secondary text-2xl font-normal">
-              {navLinks.map((link, index) => {
-                const isActive = activeMatch === link.match;
-                return (
-                <li
-                  key={index}
-                  className={`p-4 hover:text-accent dark:hover:text-dk-accent ${
-                    isActive ? "opacity-100" : "opacity-50"
-                  }`}
-                >
-                  <a
-                    href={link.href}
-                    className="relative group inline-flex items-center justify-center"
-                    aria-label={link.name}
-                    title={link.name}
-                  >
-                    <i className={link.icon}></i>
-                    <span className="absolute -bottom-6 left-1/2 -translate-x-1/2 text-xs uppercase tracking-[0.2em] text-secondary dark:text-dk-secondary opacity-0 group-hover:opacity-100 transition-opacity">
-                      {link.name}
-                    </span>
-                  </a>
-                </li>
-              )})}
-              <li className="px-4 flex">
-                <ToggleDarkMode />
-              </li>
-              <li className="px-4 flex">
-                <Search items={searchItems} />
-              </li>
-            </ul>
           </div>
         </div>
         <div
