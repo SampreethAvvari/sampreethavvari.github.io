@@ -340,12 +340,12 @@ button.no-lift:hover {
    magenta / rose / lilac for warmth. Only wired in on the home page.
    ───────────────────────────────────────────────────────────────── */
 .home-aurora {
-  position: fixed;
+  position: absolute;
   top: 0;
   left: 0;
   right: 0;
   height: 55vh;
-  z-index: -1;
+  z-index: 0;
   pointer-events: none;
   overflow: hidden;
   contain: layout paint;
