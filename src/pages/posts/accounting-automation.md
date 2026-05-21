@@ -3,7 +3,7 @@ title: "The dozen scripts that ate the controller's manual import work"
 date: "2026-05-20"
 layout: ../../layouts/PostLayout.astro
 description: "The controller was hand-reformatting CSVs from five upstream systems every week. A dozen small Python scripts now do it, with a UX that respects how accountants work."
-img_path: "/enterprise-data.svg"
+img_path: "/accounting-automation.png"
 img_alt: "Accounting automation pipeline — Denticon, MagicTouch, Paychex, banks into Google Sheets and QuickBooks"
 tag: "Process"
 tone: "amber"

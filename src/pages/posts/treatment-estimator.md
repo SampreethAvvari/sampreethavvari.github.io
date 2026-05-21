@@ -3,7 +3,7 @@ title: "Rebuilding a decade-old dental quoting tool around a price-freeze invari
 date: "2026-05-18"
 layout: ../../layouts/PostLayout.astro
 description: "A decade-old quoting tool, rebuilt around a Postgres trigger that makes the 6-month price guarantee a real database invariant. One month of work versus ten years of attempts."
-img_path: "/treatment-estimator.svg"
+img_path: "/treatment-estimator.png"
 img_alt: "Treatment Estimator wizard, decision tree, and frozen-price snapshot"
 tag: "Architecture"
 tone: "blue"

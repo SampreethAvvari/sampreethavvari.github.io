@@ -3,7 +3,7 @@ title: "When a single connect column rescued a year of reporting"
 date: "2026-05-12"
 layout: ../../layouts/PostLayout.astro
 description: "Two clinics, three Monday boards, a patient-to-lead join only 49% accurate. The fix wasn't an algorithm. It was reading the schema."
-img_path: "/cowork-dashboard.svg"
+img_path: "/cowork-dashboard.png"
 img_alt: "Cowork Dashboard scorecards, trend chart, and funnel"
 tag: "MLOps"
 tone: "blue"
