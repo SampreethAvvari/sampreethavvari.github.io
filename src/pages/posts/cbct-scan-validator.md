@@ -39,8 +39,8 @@ I built it instead, on a laptop GPU and a CPU-only Cloud Run service.
     <div class="stat-label">year-one cloud spend, in-house</div>
   </div>
   <div class="stat-callout stat-blue">
-    <div class="stat-value">100% ours</div>
-    <div class="stat-label">IP, model weights, full MLOps stack</div>
+    <div class="stat-value">100%</div>
+    <div class="stat-label">IP retained — weights, code, MLOps stack</div>
   </div>
 </div>
 
