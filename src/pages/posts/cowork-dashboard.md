@@ -38,7 +38,7 @@ Both Patient boards already had a real pointer field back to the Leads board. Mo
 
 I switched the join from "match by name + creation date" to "match by the linked lead's name string." That one change took the linkage to 99%.
 
-The 25 leftover patients turned out to be re-treatment cases the ops team had filed without re-creating a Lead row. Combined treatment value across them: **~$169k of YTD revenue** that nobody had been counting.
+The 25 leftover patients were re-treatment cases the ops team had filed without creating a Lead row. Combined treatment value: **~$169k of YTD revenue** that nobody had been counting.
 
 <div class="stat-callout stat-emerald">
   <div class="stat-value">$169k</div>
@@ -47,7 +47,7 @@ The 25 leftover patients turned out to be re-treatment cases the ops team had fi
 
 ## One source of truth, finally
 
-The old dashboard had filtering logic copy-pasted into eight tabs. They drifted. So I rebuilt the data layer around three flat tables (one per Monday board), pulled from weekly Excel exports, with every metric living in exactly one function:
+The old dashboard had filtering logic copy-pasted into eight tabs. They drifted. I rebuilt the data layer around three flat tables, one per Monday board, pulled from weekly Excel exports. Every metric lives in exactly one function:
 
 ```js
 function getLeads_(snap, f) {
@@ -83,6 +83,6 @@ A weekly workflow that used to eat 6-8 hours of senior time across the team now 
   </div>
 </div>
 
-The dashboard has six tabs: Dashboard, Monthly, History, Lead Sources, Trends, Playground. All of them pull from the same in-memory snapshot and the same metric functions. About 4,200 lines of code total, deployed as an internal Apps Script web app, costs nothing to run.
+The dashboard has six tabs: Dashboard, Monthly, History, Lead Sources, Trends, Playground. All pull from the same in-memory snapshot and the same metric functions. About 4,200 lines of Apps Script, deployed internally, costs nothing to run.
 
 The lesson I keep coming back to: read the schema. Then read it again. The fix to a year of bad reporting was sitting in a column I'd been looking at all along.

@@ -19,7 +19,7 @@ stats:
     tone: "amber"
 ---
 
-Roughly 600 cases a month flow through our design team. About 10-15% of them arrive with a CBCT scan that's unusable: motion blur, metal streaks, a missing jaw region, a calibration ring of death. Designers don't catch it for twenty minutes. The case gets escalated. The patient gets a rescan appointment two days later.
+Roughly 600 cases a month flow through our design team. About 10-15% arrive with a CBCT scan that's unusable: motion blur, metal streaks, a missing jaw region, a calibration ring of death. Designers don't catch it for twenty minutes. The case gets escalated. The patient gets a rescan appointment two days later.
 
 This had been quietly happening for ten years.
 
@@ -100,7 +100,7 @@ I shipped 0.6309.
   <div class="stat-label">Cloud spend vs the $124K year-one vendor quote, same ten-year operating loss closed in-house</div>
 </div>
 
-Shipping 0.80 would have promised something the model couldn't actually deliver, and the next person to run a proper holdout would have caught it. Better to be honest about where the model is and lean on the active-learning queue for borderline cases.
+Shipping 0.80 would have promised something the model couldn't deliver. The next person to run a proper holdout would have caught it. Better to be honest about where the model stands and lean on the active-learning queue for borderline cases.
 
 > A 99%-accurate model with no lineage and no honest holdout is operationally worse than a 75%-accurate model with both.
 
@@ -128,4 +128,4 @@ Cases flow in from MagicTouch DLCPM over SFTP (no API license needed). Eventarc 
 | Wasted design-team hours / month | 60-120 | Near zero |
 | Patient case turnaround on affected cases | +24-48 hrs | Same-day |
 
-A model on its own is a science fair. A model with SFTP fan-out, Eventarc, CICT gates, a tag-based release pipeline, a hot-swap retrain loop, and a dashboard somebody actually opens — that's the thing that closes a ten-year operating loss.
+A model on its own is a science fair. A model with SFTP fan-out, Eventarc, CICT gates, a tag-based release pipeline, a hot-swap retrain loop, and a dashboard somebody actually opens: that's the thing that closes a ten-year operating loss.

@@ -19,7 +19,7 @@ stats:
     tone: "emerald"
 ---
 
-Argument mining sits at an awkward intersection. There's a long academic tradition of treating persuasion as structure. There's a newer practical default of "just prompt a big model." Neither side has a great answer to: *given a controversial claim, produce a counter-argument that real humans find more persuasive than what the base model already says.*
+Argument mining sits at an awkward intersection. Academic tradition treats persuasion as structure. Practical default is "just prompt a big model." Neither has a good answer to: *given a controversial claim, produce a counter-argument that real humans find more persuasive than what the base model already says.*
 
 I joined Prof. Marco Morucci's group at NYU to take a swing at it.
 
@@ -27,8 +27,8 @@ I joined Prof. Marco Morucci's group at NYU to take a swing at it.
 
 ChangeMyView (CMV) is one of the few sizeable corpora where you can mine real persuasion signal at scale, because the OP literally awards a "delta" (∆) to commenters who change their mind. We mined 118 monthly shards and extracted preference pairs:
 
-- **chosen** — a comment that received a delta
-- **rejected** — a no-delta comment from the same thread
+- **chosen**: a comment that received a delta
+- **rejected**: a no-delta comment from the same thread
 
 ~38k clean pairs after filtering, split 90/5/5 by post (not by row, to prevent leakage of the same OP appearing in train and eval).
 
@@ -50,9 +50,9 @@ Held-out eval: BLEU/ROUGE + Qualtrics human blind A/B
 
 ## What broke and what fixing it taught me
 
-**Length bias in the reward model.** First training pass produced a reward model that decided longer responses are more persuasive. The policy then collapsed onto length maximisation in RL. Fix: length-controlled pair sampling (chosen and rejected within 0.5σ of each other). The whole pipeline depended on getting this right.
+**Length bias in the reward model.** The first training pass produced a reward model that treated longer responses as more persuasive. The policy then collapsed onto length maximisation. Fix: length-controlled pair sampling (chosen and rejected within 0.5σ of each other).
 
-**Tokenisation mismatch between SFT and the reward model.** They'd been LoRA'd from slightly different base checkpoints. The reward distribution drifted weirdly across training, not loudly. Fix: lock the base checkpoint for every pass.
+**Tokenisation mismatch between SFT and the reward model.** They'd been LoRA'd from slightly different base checkpoints. The reward distribution drifted oddly across training with no obvious signal. Fix: lock the base checkpoint for every pass.
 
 **WandB run-id collisions** overwrote one PPO run partway through. Recovered from checkpoints. Now every run gets a non-collidable prefix.
 
