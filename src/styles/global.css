@@ -11,6 +11,28 @@ body {
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
   font-feature-settings: "ss01", "cv11", "kern", "liga";
+  position: relative;
+}
+
+/* Global noise dither — a tiny tile of SVG fractal noise overlays the whole
+   page at very low opacity. Breaks up 8-bit gradient banding on every soft
+   colour wash (aurora, atmos backdrops, post hero). Pointer-events:none so
+   it never intercepts clicks. */
+body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0.06;
+  mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 240 240'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 0.6 0'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
+  background-size: 240px 240px;
+  background-repeat: repeat;
+}
+html.dark body::after {
+  opacity: 0.10;
+  mix-blend-mode: soft-light;
 }
 html {
   scroll-behavior: smooth;
