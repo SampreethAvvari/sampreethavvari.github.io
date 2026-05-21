@@ -2,35 +2,15 @@
 import BaseLayout from "../layouts/BaseLayout.astro";
 import fs from "node:fs";
 import path from "node:path";
-import PhotoCarousel from "../components/about_section/PhotoCarousel";
 import SmartImage from "../components/common/SmartImage.astro";
 
 const title = "SA: Filmmaking";
 const playlistUrl = "https://hi.switchy.io/q3Ng";
 const screenplayUrl = "/among-monsters-screenplay.pdf";
+const imdbUrl = "https://hi.switchy.io/q94P";
+const photographyUrl = "https://hi.switchy.io/q3TE";
 
-const filmmakingPicsDir = path.join(process.cwd(), "public", "Filmmaking Page pics");
-let filmmakingFiles = [];
-try {
-  filmmakingFiles = fs
-    .readdirSync(filmmakingPicsDir)
-    .filter((file) => /\.(png|jpe?g|webp|gif|avif)$/i.test(file))
-    .sort((a, b) => a.localeCompare(b));
-} catch (error) {
-  filmmakingFiles = [];
-}
-
-const filmmakingPhotos = filmmakingFiles.map((file) => {
-  const encoded = encodeURIComponent(file);
-  const src = `/Filmmaking%20Page%20pics/${encoded}`;
-  const alt = file.replace(/\.[^/.]+$/, "").replace(/[-_]+/g, " ");
-  return {
-    src,
-    alt,
-    context: `Filmmaking still: ${alt}`,
-    tag: "Filmmaking",
-  };
-});
+const posterSrc = "/among-monsters-poster.jpg";
 
 const galleryDir = path.join(process.cwd(), "public", "Photo Gallery");
 let galleryFiles = [];
@@ -149,7 +129,6 @@ const keyCreators = [
     name: "Akash Munji",
     image: crewPhoto("Akash.jpg"),
     instagram: "@akumunji",
-    compact: true,
   },
 ];
 
@@ -257,432 +236,848 @@ const musicCredits = [
   },
 ];
 
-const castMembers = [...mainCast, ...supportingCast];
-const leadCastNames = new Set(["Sam Velletri", "Matt Ehrmann", "Kendall Hobson"]);
-const leadCast = castMembers.filter((member) => leadCastNames.has(member.name));
-const restCast = castMembers.filter((member) => !leadCastNames.has(member.name));
-
-const filmTimeline = [
+// Festival-catalog filmography. Among Monsters uses the real poster; the
+// others use tasteful gradient placeholder blocks (no new image files
+// generated — gradient comes from a hashed colour pair below).
+const filmography = [
   {
-    title: "Director, Writer, Editor, Color Grading, Music",
-    date: "Mar 2024 - Present",
-    project: "Among Monsters — Independent Feature Film",
-    projectLink: "#among-monsters",
+    title: "Among Monsters",
+    year: "2026",
+    roles: "Director, Writer, Editor, Music",
+    poster: posterSrc,
+    gradient: null,
   },
   {
-    title: "Editor",
-    date: "Jul 2025 - Aug 2025",
-    project: "Solistice — Documentary",
+    title: "Extraordinary Lives",
+    year: "upcoming",
+    roles: "Director, Writer",
+    poster: null,
+    gradient: "linear-gradient(155deg, #1a1d2e 0%, #2b2440 60%, #3a2a4f 100%)",
   },
   {
-    title: "AD",
-    date: "Dec 2024 - Jun 2025",
-    project: "The blessing — Independent Feature Film",
+    title: "Pupa",
+    year: "upcoming",
+    roles: "Writer",
+    poster: null,
+    gradient: "linear-gradient(155deg, #1d2329 0%, #2a3a3a 55%, #3a4a3a 100%)",
   },
   {
-    title: "Editor, Color Grading",
-    date: "Mar 2024",
-    project: "Swecha — Short Film",
+    title: "Solistice",
+    year: "2025",
+    roles: "Editor",
+    poster: null,
+    gradient: "linear-gradient(155deg, #14181f 0%, #1f2a3a 55%, #2c3e57 100%)",
   },
   {
-    title: "Editor, Color Grading",
-    date: "Sep 2023",
-    project: "The Other Planner — Micro Film",
+    title: "Swecha",
+    year: "2024",
+    roles: "Editor",
+    poster: null,
+    gradient: "linear-gradient(155deg, #1a1611 0%, #2e2317 55%, #4a341d 100%)",
   },
   {
-    title: "Director, Writer, Editor, Color Grader",
-    date: "2022",
-    project: "Tigerman — Micro Film",
+    title: "Tiger Man",
+    year: "2022",
+    roles: "Director, Writer, Editor",
+    poster: null,
+    gradient: "linear-gradient(155deg, #1d1714 0%, #3a241b 55%, #5a2f1a 100%)",
   },
   {
-    title: "Asst. Editor, Color Grading",
-    date: "2021",
-    project: "Gone forever — Short Film",
-  },
-  {
-    title: "Journey Started",
-    date: "2013",
-    project: "Many projects before this.",
+    title: "Strangers",
+    year: "2019",
+    roles: "Cinematographer, Music",
+    poster: null,
+    gradient: "linear-gradient(155deg, #14141a 0%, #1f1d2a 55%, #2a253a 100%)",
   },
 ];
+
+const stillsLimited = galleryItems.slice(0, 16);
 ---
 
 <BaseLayout title={title} footerVariant="filmmaking">
-  <div class="mx-auto w-full max-w-screen-2xl px-4 sm:px-6 lg:px-10 xl:px-14 2xl:px-20">
-    <section class="mt-24 space-y-8 reveal" data-reveal>
-    <p class="uppercase tracking-[0.3em] text-xs text-secondary dark:text-dk-secondary">
-      Photographer • Writer • Filmmaker • Traveler
-    </p>
-    <div class="my-8 flex flex-col lg:flex-row gap-10 items-center">
-      <blockquote class="flex-1 text-4xl lg:text-6xl xl:text-7xl font-semibold italic text-secondary dark:text-dk-secondary leading-snug text-left lg:ml-6">
-        “Cinema is how I make truth visible.”
-      </blockquote>
-      <div class="flex-[5] flex justify-center w-full">
-        <PhotoCarousel photos={filmmakingPhotos} title={false} client:visible />
+  <div class="film-page">
+
+    <!-- ── 1. Cinematic hero ──────────────────────────────────────────── -->
+    <section class="film-hero relative overflow-hidden reveal" data-reveal>
+      <div class="film-hero-backdrop" aria-hidden="true">
+        <img src={posterSrc} alt="" class="film-hero-backdrop-img" />
+        <div class="film-hero-backdrop-veil"></div>
       </div>
-    </div>
-    <div class="my-16">
-      <h2 class="text-3xl font-bold mb-6 text-left">Creative Roles</h2>
-      <div class="grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 justify-items-center">
+
+      <div class="relative z-10 mx-auto w-full max-w-screen-2xl px-6 lg:px-12 grid lg:grid-cols-12 items-center gap-10 lg:gap-16 py-24 lg:py-0">
+        <div class="lg:col-span-5 flex justify-center lg:justify-start">
+          <div class="film-poster-frame">
+            <SmartImage
+              src={posterSrc}
+              alt="Among Monsters poster"
+              class="film-poster-img"
+              loading="eager"
+            />
+          </div>
+        </div>
+
+        <div class="lg:col-span-7 flex flex-col gap-6 text-center lg:text-left">
+          <p class="eyebrow text-acc-amber">
+            04 — Filmmaking
+          </p>
+          <h1 class="display text-white leading-[1.02]">
+            Among Monsters.
+          </h1>
+          <p class="text-lg lg:text-2xl text-white/75 leading-relaxed max-w-2xl">
+            An independent crime drama about gray characters, tight spaces, and the chaos hiding inside ordinary lives.
+          </p>
+          <p class="film-credit-line">
+            Director · Writer · Editor · Music
+          </p>
+          <div class="flex flex-wrap items-center justify-center lg:justify-start gap-3 pt-2">
+            <a
+              href={imdbUrl}
+              target="_blank"
+              rel="noreferrer"
+              class="no-lift inline-flex items-center gap-2 rounded-full px-6 py-3 bg-white text-black text-sm font-semibold hover:opacity-85 transition"
+            >
+              <i class="fab fa-imdb text-base"></i>
+              On IMDb <span aria-hidden="true">↗</span>
+            </a>
+            <a
+              href={screenplayUrl}
+              target="_blank"
+              rel="noreferrer"
+              class="no-lift inline-flex items-center gap-2 rounded-full px-6 py-3 border border-white/30 text-sm font-semibold text-white hover:bg-white/10 transition"
+            >
+              Read the screenplay
+            </a>
+          </div>
+          <p class="text-sm text-white/60 tracking-wide">
+            <span class="text-acc-amber">Premiering Nov 28</span> in Rochester · NYC soon
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── 2. Filmography (horizontal scroll) ─────────────────────────── -->
+    <section class="mx-auto w-full max-w-screen-2xl px-6 lg:px-12 mt-24 lg:mt-32 reveal" data-reveal>
+      <div class="max-w-3xl mb-10 lg:mb-12">
+        <p class="eyebrow text-acc-amber mb-3">
+          Selected work
+        </p>
+        <h2 class="display-sm text-text dark:text-dk-text">
+          Seven films, in order.
+        </h2>
+        <p class="mt-4 text-base lg:text-lg text-text/65 dark:text-dk-text/65 leading-relaxed">
+          What I've directed, written, edited, shot, or scored. Some are out, some are in the cut, some are still pages.
+        </p>
+      </div>
+
+      <div class="filmography-scroll">
+        {filmography.map((film) => (
+          <article class="film-card snap-start">
+            <div class="film-card-poster">
+              {film.poster ? (
+                <SmartImage
+                  src={film.poster}
+                  alt={`${film.title} poster`}
+                  class="film-card-poster-img"
+                  loading="lazy"
+                />
+              ) : (
+                <div
+                  class="film-card-poster-placeholder"
+                  style={`background-image: ${film.gradient};`}
+                >
+                  <div class="film-card-poster-noise"></div>
+                  <div class="film-card-poster-meta">
+                    <p class="film-card-poster-year">{film.year}</p>
+                    <p class="film-card-poster-title">{film.title}</p>
+                  </div>
+                </div>
+              )}
+            </div>
+            <div class="mt-4 flex items-baseline justify-between gap-3">
+              <h3 class="text-base lg:text-lg font-semibold text-text dark:text-dk-text leading-tight">
+                {film.title}
+              </h3>
+              <span class="font-mono text-xs tabular-nums text-acc-amber/85 shrink-0">
+                {film.year}
+              </span>
+            </div>
+            <p class="mt-1 text-[0.78rem] text-text/55 dark:text-dk-text/55 leading-snug">
+              {film.roles}
+            </p>
+          </article>
+        ))}
+      </div>
+      <p class="mt-4 text-xs text-text/40 dark:text-dk-text/40 lg:hidden">
+        Swipe to scroll →
+      </p>
+    </section>
+
+    <!-- ── 3. Creative roles (kept, polished) ─────────────────────────── -->
+    <section class="mx-auto w-full max-w-screen-2xl px-6 lg:px-12 mt-24 lg:mt-32 reveal" data-reveal>
+      <div class="max-w-3xl mb-10">
+        <p class="eyebrow text-acc-amber mb-3">
+          What I do on set
+        </p>
+        <h2 class="display-sm text-text dark:text-dk-text">
+          Five hats. One sensibility.
+        </h2>
+      </div>
+
+      <div class="grid gap-5 grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 justify-items-center">
         {roles.map((role) => (
           <div
-            class={`group bg-primary dark:bg-dk-primary rounded-lg border-2 border-secondary dark:border-dk-secondary text-center max-w-sm w-full relative overflow-hidden min-h-[180px] flex items-center justify-center transition-transform duration-300 ease-out hover:scale-105 hover:shadow-lg col-span-full sm:col-span-1 ${role.gridClass}`}
+            class={`role-tile group ${role.gridClass}`}
             style={`background-image: url(${role.background});`}
           >
-            <div class="absolute inset-0 bg-black/55 dark:bg-black/65"></div>
-            <div class="absolute inset-0 bg-cover bg-center opacity-30" style={`background-image: url(${role.background});`}></div>
-            <div class="relative z-10 flex flex-col items-center">
-              <i class={`${role.icon} text-3xl lg:text-4xl text-secondary dark:text-dk-secondary mb-3`}></i>
-              <h3 class="text-2xl lg:text-3xl font-semibold mb-2">{role.title}</h3>
+            <div class="role-tile-veil"></div>
+            <div class="relative z-10 flex flex-col items-center text-center px-4">
+              <i class={`${role.icon} text-3xl lg:text-4xl text-white mb-3 drop-shadow-lg`}></i>
+              <h3 class="text-xl lg:text-2xl font-semibold text-white drop-shadow-lg">{role.title}</h3>
             </div>
-            <div class="absolute inset-0 bg-primary dark:bg-dk-primary opacity-0 group-hover:opacity-95 transition-opacity duration-300 flex items-center justify-center p-4">
-              <ul class="text-sm lg:text-base text-text dark:text-dk-text space-y-2 font-semibold">
+            <div class="role-tile-hover">
+              <ul class="text-sm lg:text-base text-text dark:text-dk-text space-y-1.5 font-medium text-center">
                 {role.items.map((item) => (
-                  <li>- {item}</li>
+                  <li>{item}</li>
                 ))}
               </ul>
             </div>
           </div>
         ))}
       </div>
-    </div>
-    <div class="my-16 flex flex-col lg:flex-row gap-10 items-start">
-      <div class="flex flex-col space-y-4 lg:w-1/2 mx-4">
-        <div class="flex items-center gap-4">
-          <h2 class="text-2xl font-bold">Timeline</h2>
-        </div>
-        {filmTimeline.map((item, index) => (
-          <div class="flex flex-col space-y-2 relative" key={item.title + item.date}>
-            <div class="flex items-center space-x-2">
-              <i class="fas fa-film text-2xl text-secondary dark:text-dk-secondary dark:hover:text-dk-accent hover:text-accent z-10"></i>
-              <h3 class="text-xl font-semibold">{item.title}</h3>
-            </div>
-            <div class="relative left-10 w-full">
-              <p class="text-xl font-normal">{item.date}</p>
-              {item.projectLink ? (
-                <a
-                  href={item.projectLink}
-                  class="text-xl font-normal text-secondary dark:text-dk-secondary hover:text-accent dark:hover:text-dk-accent underline"
-                >
-                  {item.project}
-                </a>
-              ) : (
-                <p class="text-xl font-normal">{item.project}</p>
-              )}
-            </div>
-            {index !== filmTimeline.length - 1 && (
-              <div class="absolute top-3.5 left-[0.655rem] h-full w-1 bg-secondary dark:bg-dk-secondary hover:bg-accent dark:hover:bg-dk-accent -z-10"></div>
-            )}
-          </div>
-        ))}
-      </div>
-      <blockquote class="flex-1 self-center text-5xl lg:text-6xl xl:text-7xl font-semibold italic text-secondary dark:text-dk-secondary leading-tight text-center">
-        “Ordinary<br />lives,<br />Extraordinary<br />stakes”
-      </blockquote>
-    </div>
-  </section>
+    </section>
 
-  <section class="my-16 reveal" data-reveal>
-    <h1 class="text-4xl lg:text-6xl font-bold text-center mb-8" id="among-monsters">
-      Among Monsters (2026)
-    </h1>
-    <div class="relative w-full max-w-5xl mx-auto group">
-      <SmartImage
-        src="/among-monsters-poster.jpg"
-        alt="Among Monsters poster"
-        class="w-full h-auto bg-black"
-      />
-      <div class="absolute inset-0 bg-black/55 opacity-0 transition-opacity duration-300 group-hover:opacity-100"></div>
-      <div class="absolute inset-0 z-10 flex items-center justify-center px-6 opacity-0 transition-opacity duration-300 group-hover:opacity-100">
-        <div class="max-w-3xl text-center space-y-4">
-          <p class="text-2xl lg:text-3xl text-white font-semibold">
-            Guns &amp; Drugs don&#39;t save people
-          </p>
-          <p class="text-base lg:text-lg text-white/90">
-            Witness the story of a criminal trapped in a coward’s body, driven to seek revenge at all costs.
-            Chaos is inevitable. The question is not whether he will break—but how long he can keep going.
-          </p>
-          <div class="flex flex-wrap justify-center gap-4 mt-6">
+    <!-- ── 4. Among Monsters deep dive ────────────────────────────────── -->
+    <section
+      id="among-monsters"
+      class="mx-auto w-full max-w-screen-2xl px-6 lg:px-12 mt-24 lg:mt-32 reveal"
+      data-reveal
+    >
+      <div class="max-w-3xl mb-10">
+        <p class="eyebrow text-acc-amber mb-3">
+          The feature
+        </p>
+        <h2 class="display-sm text-text dark:text-dk-text">
+          Among Monsters, in detail.
+        </h2>
+      </div>
+
+      <div class="grid lg:grid-cols-12 gap-10 lg:gap-16">
+        <div class="lg:col-span-5">
+          <div class="lg:sticky lg:top-28">
+            <div class="film-detail-poster">
+              <SmartImage
+                src={posterSrc}
+                alt="Among Monsters poster"
+                class="w-full h-auto rounded-2xl"
+                loading="lazy"
+              />
+            </div>
+          </div>
+        </div>
+
+        <div class="lg:col-span-7 space-y-10">
+          <div class="space-y-4">
+            <p class="text-[0.7rem] uppercase tracking-[0.22em] text-text/40 dark:text-dk-text/40 font-semibold">
+              Synopsis
+            </p>
+            <p class="text-base lg:text-lg text-text/80 dark:text-dk-text/80 leading-relaxed">
+              A criminal trapped in a coward's body sets out to take revenge at any cost. Guns and drugs don't save people. The question isn't whether he breaks — it's how long he can keep going before the chaos finishes him.
+            </p>
+            <p class="text-base lg:text-lg text-text/70 dark:text-dk-text/70 leading-relaxed">
+              I wrote, directed, edited, and scored it. We shot in Rochester across 2024 and 2025, in real living rooms and motel parking lots and the kind of streets the script kept asking for. The film premieres Nov 28 in Rochester, with an NYC screening to follow.
+            </p>
+          </div>
+
+          <div class="space-y-4">
+            <p class="text-[0.7rem] uppercase tracking-[0.22em] text-text/40 dark:text-dk-text/40 font-semibold">
+              Core team
+            </p>
+            <ul class="divide-y divide-text/10 dark:divide-dk-text/10">
+              {keyCreators.map((person) => (
+                <li class="py-3 flex items-center justify-between gap-4">
+                  <div class="min-w-0">
+                    <p class="text-base font-semibold text-text dark:text-dk-text">{person.name}</p>
+                    <p class="text-[0.72rem] uppercase tracking-[0.18em] text-text/50 dark:text-dk-text/55 mt-0.5">
+                      {person.role}
+                    </p>
+                  </div>
+                  {person.instagram && (
+                    <a
+                      href={instagramUrl(person.instagram)}
+                      class="no-lift text-text/50 dark:text-dk-text/50 hover:text-acc-amber transition"
+                      target="_blank"
+                      rel="noreferrer"
+                      aria-label={`${person.name} Instagram`}
+                    >
+                      <i class="fab fa-instagram text-lg"></i>
+                    </a>
+                  )}
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          <div class="flex flex-wrap items-center gap-3 pt-2">
             <a
-              href={playlistUrl}
+              href={imdbUrl}
               target="_blank"
               rel="noreferrer"
-              class="px-6 py-3 border-2 rounded bg-white text-black border-white shadow-[0_6px_0_rgba(0,0,0,0.35)] hover:-translate-y-0.5 hover:shadow-[0_4px_0_rgba(0,0,0,0.35)] transition"
+              class="no-lift inline-flex items-center gap-2 rounded-full px-5 py-2.5 bg-text text-primary dark:bg-dk-text dark:text-dk-primary text-sm font-semibold hover:opacity-85 transition"
             >
-              Watch the Playlist
+              <i class="fab fa-imdb"></i> IMDb <span aria-hidden="true">↗</span>
             </a>
             <a
               href={screenplayUrl}
               target="_blank"
               rel="noreferrer"
-              class="px-6 py-3 border-2 rounded text-white border-white hover:bg-white hover:text-black transition"
+              class="no-lift inline-flex items-center gap-2 rounded-full px-5 py-2.5 border border-text/20 dark:border-dk-text/25 text-sm font-semibold text-text dark:text-dk-text hover:bg-text/5 dark:hover:bg-dk-text/10 transition"
             >
-              Read the Screenplay
+              <i class="fas fa-file-lines"></i> Screenplay
+            </a>
+            <a
+              href={playlistUrl}
+              target="_blank"
+              rel="noreferrer"
+              class="no-lift inline-flex items-center gap-2 rounded-full px-5 py-2.5 border border-text/20 dark:border-dk-text/25 text-sm font-semibold text-text dark:text-dk-text hover:bg-text/5 dark:hover:bg-dk-text/10 transition"
+            >
+              <i class="fab fa-youtube"></i> Playlist
             </a>
           </div>
-          <p class="mt-4 text-sm text-white/80">
-            Premiering Nov 28 in Rochester and coming soon in NYC.
-          </p>
         </div>
       </div>
-    </div>
-  </section>
+    </section>
 
-  
+    <!-- ── 5. Crew & cast ─────────────────────────────────────────────── -->
+    <section class="mx-auto w-full max-w-screen-2xl px-6 lg:px-12 mt-24 lg:mt-32 reveal" data-reveal>
+      <div class="max-w-3xl mb-10">
+        <p class="eyebrow text-acc-amber mb-3">
+          Crew & cast
+        </p>
+        <h2 class="display-sm text-text dark:text-dk-text">
+          The people who made the scene work.
+        </h2>
+      </div>
 
-
-  <section class="my-16 reveal" data-reveal>
-    <div class="space-y-4">
-      <p class="text-2xl font-bold text-secondary dark:text-dk-secondary">Crew</p>
-      <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      <p class="text-[0.7rem] uppercase tracking-[0.22em] text-text/40 dark:text-dk-text/40 font-semibold mb-4">
+        Above the line
+      </p>
+      <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 mb-12">
         {keyCreators.map((person) => (
-          <div class="bg-primary/80 dark:bg-dk-primary/80 rounded-lg border-2 border-secondary dark:border-dk-secondary overflow-hidden w-full mx-auto flex min-h-[170px] h-[170px] transition-transform duration-200 hover:scale-[1.02]">
-            <div class="w-2/3 p-3 flex flex-col justify-between text-left">
-              <div>
-                <p class="text-2xl font-semibold">{person.name}</p>
-                {person.role && (
-                  <p class="text-sm text-secondary dark:text-dk-secondary mt-1 truncate">
-                    {person.role}
-                  </p>
+          <article class="people-card group">
+            <SmartImage
+              src={person.image.src}
+              alt={`${person.name} portrait`}
+              class="people-card-img"
+              loading="lazy"
+            />
+            <div class="people-card-veil"></div>
+            <div class="people-card-meta">
+              <p class="people-card-name">{person.name}</p>
+              <div class="flex items-center justify-between gap-2">
+                <p class="people-card-role">{person.role}</p>
+                {person.instagram && (
+                  <a
+                    href={instagramUrl(person.instagram)}
+                    class="no-lift text-white/75 hover:text-acc-amber transition shrink-0"
+                    target="_blank"
+                    rel="noreferrer"
+                    aria-label={`${person.name} Instagram`}
+                  >
+                    <i class="fab fa-instagram text-sm"></i>
+                  </a>
                 )}
-                <div class="flex items-center text-secondary dark:text-dk-secondary mt-1">
-                  {person.instagram ? (
-                    <a
-                      href={instagramUrl(person.instagram)}
-                      class="hover:text-accent dark:hover:text-dk-accent"
-                      target="_blank"
-                      rel="noreferrer"
-                      aria-label={`${person.name} Instagram`}
-                    >
-                      <i class="fab fa-instagram"></i>
-                    </a>
-                  ) : (
-                    <span class="opacity-40" aria-hidden="true">
-                      <i class="fab fa-instagram"></i>
-                    </span>
-                  )}
-                </div>
               </div>
             </div>
-            <div class="w-1/3 overflow-hidden">
-              <SmartImage
-                src={person.image.src}
-                alt={`${person.name} portrait`}
-                class="w-full h-full object-cover"
-                loading="lazy"
-              />
-            </div>
-          </div>
+          </article>
         ))}
       </div>
-    </div>
 
-    <div class="mt-8">
-      <h3 class="text-2xl font-bold mb-3">Cast</h3>
-      <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {leadCast.map((member) => (
-          <div class="bg-primary/80 dark:bg-dk-primary/80 rounded-lg border-2 border-secondary dark:border-dk-secondary overflow-hidden w-full mx-auto flex min-h-[170px] transition-transform duration-200 hover:scale-[1.02]">
-            <div class="w-2/3 p-3 flex flex-col justify-between text-left">
-              <div>
-                <p class="text-2xl font-semibold">{member.name}</p>
-                {member.role && (
-                  <p class="text-sm text-secondary dark:text-dk-secondary mt-1">
-                    {member.role}
-                  </p>
-                )}
-                <div class="flex items-center text-secondary dark:text-dk-secondary mt-1">
-                  {member.instagram ? (
-                    <a
-                      href={instagramUrl(member.instagram)}
-                      class="hover:text-accent dark:hover:text-dk-accent"
-                      target="_blank"
-                      rel="noreferrer"
-                      aria-label={`${member.name} Instagram`}
-                    >
-                      <i class="fab fa-instagram"></i>
-                    </a>
-                  ) : (
-                    <span class="opacity-40" aria-hidden="true">
-                      <i class="fab fa-instagram"></i>
-                    </span>
-                  )}
-                </div>
-              </div>
-            </div>
-            <div class="w-1/3 overflow-hidden">
-              <SmartImage
-                src={member.image.src}
-                alt={`${member.name} portrait`}
-                class="w-full h-full object-cover"
-                style={member.imageStyle}
-                loading="lazy"
-              />
-            </div>
-          </div>
-        ))}
-      </div>
-      <div class="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        {restCast.map((member) => (
-          <div class="bg-primary/80 dark:bg-dk-primary/80 rounded-lg border-2 border-secondary dark:border-dk-secondary overflow-hidden w-full mx-auto flex min-h-[150px] transition-transform duration-200 hover:scale-[1.02]">
-            <div class="w-2/3 p-3 flex flex-col justify-between text-left">
-              <div>
-                <p class="text-xl font-semibold">{member.name}</p>
-                {member.role && (
-                  <p class="text-xs text-secondary dark:text-dk-secondary mt-1">
-                    {member.role}
-                  </p>
-                )}
-                <div class="flex items-center text-secondary dark:text-dk-secondary mt-1">
-                  {member.instagram ? (
-                    <a
-                      href={instagramUrl(member.instagram)}
-                      class="hover:text-accent dark:hover:text-dk-accent"
-                      target="_blank"
-                      rel="noreferrer"
-                      aria-label={`${member.name} Instagram`}
-                    >
-                      <i class="fab fa-instagram"></i>
-                    </a>
-                  ) : (
-                    <span class="opacity-40" aria-hidden="true">
-                      <i class="fab fa-instagram"></i>
-                    </span>
-                  )}
-                </div>
-              </div>
-            </div>
-            <div class="w-1/3 overflow-hidden">
-              <SmartImage
-                src={member.image.src}
-                alt={`${member.name} portrait`}
-                class="w-full h-full object-cover"
-                style={member.imageStyle}
-                loading="lazy"
-              />
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
-
-    <div class="mt-8">
-      <h3 class="text-2xl font-bold mb-3">Music</h3>
-      <div class="grid gap-3 sm:grid-cols-2">
-        {musicCredits.map((member) => (
-          <div class="bg-primary/80 dark:bg-dk-primary/80 rounded-lg border-2 border-secondary dark:border-dk-secondary overflow-hidden max-w-xs w-full mx-0 flex min-h-[160px] transition-transform duration-200 hover:scale-[1.02]">
-            <div class="w-2/3 p-3 flex flex-col justify-center text-left">
-              <p class="text-xl font-semibold">{member.name}</p>
-              {member.role && (
-                <p class="text-sm text-secondary dark:text-dk-secondary mt-1">
-                  {member.role}
-                </p>
-              )}
-              <div class="flex items-center text-secondary dark:text-dk-secondary mt-1">
-                {member.instagram ? (
+      <p class="text-[0.7rem] uppercase tracking-[0.22em] text-text/40 dark:text-dk-text/40 font-semibold mb-4">
+        Cast
+      </p>
+      <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 mb-12">
+        {[...mainCast, ...supportingCast].map((member) => (
+          <article class="people-card group">
+            <SmartImage
+              src={member.image.src}
+              alt={`${member.name} portrait`}
+              class="people-card-img"
+              style={member.imageStyle}
+              loading="lazy"
+            />
+            <div class="people-card-veil"></div>
+            <div class="people-card-meta">
+              <p class="people-card-name">{member.name}</p>
+              <div class="flex items-center justify-between gap-2">
+                <p class="people-card-role">{member.role || "Cast"}</p>
+                {member.instagram && (
                   <a
                     href={instagramUrl(member.instagram)}
-                    class="hover:text-accent dark:hover:text-dk-accent"
+                    class="no-lift text-white/75 hover:text-acc-amber transition shrink-0"
                     target="_blank"
                     rel="noreferrer"
                     aria-label={`${member.name} Instagram`}
                   >
-                    <i class="fab fa-instagram"></i>
+                    <i class="fab fa-instagram text-sm"></i>
                   </a>
-                ) : (
-                  <span class="opacity-40" aria-hidden="true">
-                    <i class="fab fa-instagram"></i>
-                  </span>
                 )}
               </div>
             </div>
-            <div class="w-1/3">
-              <SmartImage
-                src={member.image.src}
-                alt={`${member.name} portrait`}
-                class="w-full h-full object-cover"
-                style={member.imageStyle}
-                loading="lazy"
-              />
-            </div>
-          </div>
+          </article>
         ))}
       </div>
-    </div>
-  </section>
 
-  <section class="my-16 reveal" data-reveal>
-    <div class="grid grid-cols-2 sm:grid-cols-4 gap-10 sm:gap-12 text-[4.5rem] sm:text-[6rem] lg:text-[8rem] xl:text-[10rem] text-secondary dark:text-dk-secondary place-items-center">
-      <div class="flex flex-col items-center gap-4 text-center">
-        <a href="#among-monsters" aria-label="Among Monsters section">
-          <i class="fab fa-youtube"></i>
-        </a>
-        <p class="text-sm sm:text-base lg:text-lg text-text dark:text-dk-text">Among Monsters</p>
+      <p class="text-[0.7rem] uppercase tracking-[0.22em] text-text/40 dark:text-dk-text/40 font-semibold mb-4">
+        Music
+      </p>
+      <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+        {musicCredits.map((member) => (
+          <article class="people-card group">
+            <SmartImage
+              src={member.image.src}
+              alt={`${member.name} portrait`}
+              class="people-card-img"
+              style={member.imageStyle}
+              loading="lazy"
+            />
+            <div class="people-card-veil"></div>
+            <div class="people-card-meta">
+              <p class="people-card-name">{member.name}</p>
+              <div class="flex items-center justify-between gap-2">
+                <p class="people-card-role">{member.role}</p>
+                {member.instagram && (
+                  <a
+                    href={instagramUrl(member.instagram)}
+                    class="no-lift text-white/75 hover:text-acc-amber transition shrink-0"
+                    target="_blank"
+                    rel="noreferrer"
+                    aria-label={`${member.name} Instagram`}
+                  >
+                    <i class="fab fa-instagram text-sm"></i>
+                  </a>
+                )}
+              </div>
+            </div>
+          </article>
+        ))}
       </div>
-      <div class="flex flex-col items-center gap-4 text-center">
-        <a
-          href="https://hi.switchy.io/q3TE"
-          aria-label="Photography Page"
-          target="_blank"
-          rel="noreferrer"
-        >
-          <i class="fab fa-instagram"></i>
-        </a>
-        <p class="text-sm sm:text-base lg:text-lg text-text dark:text-dk-text">Photography Page</p>
-      </div>
-      <div class="flex flex-col items-center gap-4 text-center">
-        <a href={screenplayUrl} aria-label="Among Monsters screenplay PDF">
-          <i class="fas fa-file-pdf"></i>
-        </a>
-        <p class="text-sm sm:text-base lg:text-lg text-text dark:text-dk-text">Among Monsters Screenplay</p>
-      </div>
-      <div class="flex flex-col items-center gap-4 text-center">
-        <a href="https://hi.switchy.io/q94P" aria-label="Among Monsters IMDb" target="_blank" rel="noreferrer">
-          <i class="fab fa-imdb"></i>
-        </a>
-        <p class="text-sm sm:text-base lg:text-lg text-text dark:text-dk-text">Among Monsters IMDB</p>
-      </div>
-    </div>
-  </section>
+    </section>
 
-  <section class="my-16 reveal" data-reveal>
-    <h2 class="text-3xl font-bold mb-6">Photo Gallery</h2>
-    <div class="space-y-6">
-      <div class="text-2xl font-bold text-secondary dark:text-dk-secondary">
-        Among Monsters (2024-2026):
+    <!-- ── 6. Stills gallery ──────────────────────────────────────────── -->
+    <section class="mx-auto w-full max-w-screen-2xl px-6 lg:px-12 mt-24 lg:mt-32 reveal" data-reveal>
+      <div class="max-w-3xl mb-10">
+        <p class="eyebrow text-acc-amber mb-3">
+          Stills
+        </p>
+        <h2 class="display-sm text-text dark:text-dk-text">
+          On set.
+        </h2>
       </div>
-      {galleryItems.length ? (
-        <div class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          {galleryItems.map((item) => (
+
+      {stillsLimited.length ? (
+        <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-4">
+          {stillsLimited.map((item) => (
             <SmartImage
               src={item.src}
               alt={item.alt}
               loading="lazy"
-              class="w-full h-72 object-cover rounded-lg border-2 border-secondary dark:border-dk-secondary transition-transform duration-200 hover:scale-[1.02]"
+              class="w-full aspect-[4/5] object-cover rounded-xl"
             />
           ))}
         </div>
       ) : (
-        <p class="text-text dark:text-dk-text">Gallery images coming soon.</p>
+        <p class="text-text/65 dark:text-dk-text/65">Stills coming soon.</p>
       )}
+    </section>
 
-      <div class="text-2xl font-bold text-secondary dark:text-dk-secondary">
-        Swechcha (2024):
+    <!-- ── 7. Swechcha — earlier work ─────────────────────────────────── -->
+    <section class="mx-auto w-full max-w-screen-2xl px-6 lg:px-12 mt-24 lg:mt-32 reveal" data-reveal>
+      <div class="max-w-3xl mb-10">
+        <p class="eyebrow text-acc-amber/80 mb-3">
+          Swechcha · 2024
+        </p>
+        <h2 class="display-sm text-text dark:text-dk-text">
+          Earlier work.
+        </h2>
+        <p class="mt-4 text-base text-text/60 dark:text-dk-text/60 leading-relaxed">
+          A short film I edited and color graded in 2024.
+        </p>
       </div>
+
       {swechchaItems.length ? (
-        <div class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+        <div class="grid grid-cols-2 lg:grid-cols-3 gap-3 lg:gap-4">
           {swechchaItems.map((item) => (
             <SmartImage
               src={item.src}
               alt={item.alt}
               loading="lazy"
-              class="w-full h-72 object-cover rounded-lg border-2 border-secondary dark:border-dk-secondary transition-transform duration-200 hover:scale-[1.02]"
+              class="w-full aspect-[4/5] object-cover rounded-xl"
             />
           ))}
         </div>
       ) : (
-        <p class="text-text dark:text-dk-text">Swechcha images coming soon.</p>
+        <p class="text-text/65 dark:text-dk-text/65">Swechcha stills coming soon.</p>
       )}
-    </div>
-  </section>
+    </section>
+
+    <!-- ── 8. Quick links footer ──────────────────────────────────────── -->
+    <section class="mx-auto w-full max-w-screen-2xl px-6 lg:px-12 mt-24 lg:mt-32 mb-24 reveal" data-reveal>
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-8 sm:gap-10 place-items-center">
+        <a
+          href={playlistUrl}
+          target="_blank"
+          rel="noreferrer"
+          class="quick-link no-lift"
+          aria-label="Among Monsters YouTube playlist"
+        >
+          <i class="fab fa-youtube text-5xl lg:text-6xl text-acc-amber/70"></i>
+          <span class="quick-link-label">Among Monsters</span>
+        </a>
+        <a
+          href={photographyUrl}
+          target="_blank"
+          rel="noreferrer"
+          class="quick-link no-lift"
+          aria-label="Photography Instagram"
+        >
+          <i class="fab fa-instagram text-5xl lg:text-6xl text-acc-amber/70"></i>
+          <span class="quick-link-label">Photography Page</span>
+        </a>
+        <a
+          href={screenplayUrl}
+          target="_blank"
+          rel="noreferrer"
+          class="quick-link no-lift"
+          aria-label="Among Monsters screenplay PDF"
+        >
+          <i class="fas fa-file-pdf text-5xl lg:text-6xl text-acc-amber/70"></i>
+          <span class="quick-link-label">Screenplay</span>
+        </a>
+        <a
+          href={imdbUrl}
+          target="_blank"
+          rel="noreferrer"
+          class="quick-link no-lift"
+          aria-label="Among Monsters IMDb"
+        >
+          <i class="fab fa-imdb text-5xl lg:text-6xl text-acc-amber/70"></i>
+          <span class="quick-link-label">IMDb</span>
+        </a>
+      </div>
+    </section>
+
   </div>
 </BaseLayout>
+
+<style is:global>
+  /* ── Filmmaking page — festival catalog feel ──────────────────── */
+
+  .film-page {
+    /* No left/right padding here — each section handles its own. The
+       hero is deliberately edge-to-edge for the cinematic dark band. */
+  }
+
+  /* ── Hero ─────────────────────────────────────────────────────── */
+  .film-hero {
+    background: #050608;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+  }
+  .film-hero-backdrop {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+    z-index: 0;
+  }
+  .film-hero-backdrop-img {
+    position: absolute;
+    inset: -8%;
+    width: 116%;
+    height: 116%;
+    object-fit: cover;
+    filter: blur(60px) saturate(115%);
+    opacity: 0.32;
+    transform: scale(1.08);
+  }
+  .film-hero-backdrop-veil {
+    position: absolute;
+    inset: 0;
+    background:
+      linear-gradient(180deg, rgba(5,6,8,0.55) 0%, rgba(5,6,8,0.75) 50%, rgba(5,6,8,0.95) 100%),
+      radial-gradient(ellipse at 50% 50%, transparent 0%, rgba(5,6,8,0.4) 80%);
+  }
+
+  .film-poster-frame {
+    position: relative;
+    width: 100%;
+    max-width: 22rem;
+    aspect-ratio: 2 / 3;
+    border-radius: 0.75rem;
+    overflow: hidden;
+    box-shadow:
+      0 30px 60px -20px rgba(0,0,0,0.7),
+      0 0 0 1px rgba(255,255,255,0.06);
+  }
+  .film-poster-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+
+  .film-credit-line {
+    font-size: 0.78rem;
+    text-transform: uppercase;
+    letter-spacing: 0.32em;
+    font-weight: 600;
+    color: rgba(255,255,255,0.55);
+  }
+
+  /* ── Filmography horizontal scroll ────────────────────────────── */
+  .filmography-scroll {
+    display: flex;
+    gap: 1.5rem;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    padding-bottom: 1.5rem;
+    margin-left: -1.5rem;
+    margin-right: -1.5rem;
+    padding-left: 1.5rem;
+    padding-right: 1.5rem;
+    scroll-padding-left: 1.5rem;
+    scrollbar-width: thin;
+  }
+  @media (min-width: 1024px) {
+    .filmography-scroll {
+      margin-left: -3rem;
+      margin-right: -3rem;
+      padding-left: 3rem;
+      padding-right: 3rem;
+      scroll-padding-left: 3rem;
+    }
+  }
+  .film-card {
+    flex: 0 0 280px;
+    min-width: 280px;
+    scroll-snap-align: start;
+  }
+  .film-card-poster {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 4 / 5;
+    border-radius: 0.85rem;
+    overflow: hidden;
+    background: #0f1014;
+    box-shadow: 0 10px 30px -16px rgba(0,0,0,0.5);
+    transition: transform 0.45s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.45s ease;
+  }
+  .film-card:hover .film-card-poster {
+    transform: translateY(-4px);
+    box-shadow: 0 18px 40px -16px rgba(0,0,0,0.65);
+  }
+  .film-card-poster-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+  .film-card-poster-placeholder {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    background-size: cover;
+    background-position: center;
+    display: flex;
+    align-items: flex-end;
+    padding: 1.4rem;
+    color: rgba(255,255,255,0.85);
+  }
+  .film-card-poster-noise {
+    position: absolute;
+    inset: 0;
+    background-image:
+      repeating-linear-gradient(
+        90deg,
+        transparent 0,
+        transparent 2px,
+        rgba(255,255,255,0.018) 2px,
+        rgba(255,255,255,0.018) 3px
+      );
+    mix-blend-mode: overlay;
+    pointer-events: none;
+  }
+  .film-card-poster-meta {
+    position: relative;
+    z-index: 1;
+  }
+  .film-card-poster-year {
+    font-family: "SF Mono", "JetBrains Mono", Menlo, Monaco, Consolas, monospace;
+    font-size: 0.72rem;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: #F5A524;
+    opacity: 0.85;
+    margin-bottom: 0.4rem;
+    font-variant-numeric: tabular-nums;
+  }
+  .film-card-poster-title {
+    font-size: 1.35rem;
+    font-weight: 600;
+    line-height: 1.1;
+    letter-spacing: -0.015em;
+    color: rgba(255,255,255,0.92);
+  }
+
+  /* ── Creative role tiles (polished) ───────────────────────────── */
+  .role-tile {
+    position: relative;
+    overflow: hidden;
+    border-radius: 1rem;
+    border: 1px solid rgba(255,255,255,0.15);
+    background-size: cover;
+    background-position: center;
+    min-height: 200px;
+    width: 100%;
+    max-width: 26rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.4s ease;
+  }
+  html.dark .role-tile {
+    border-color: rgba(255,255,255,0.20);
+  }
+  .role-tile:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 18px 38px -18px rgba(0,0,0,0.55);
+  }
+  .role-tile-veil {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(180deg, rgba(0,0,0,0.45) 0%, rgba(0,0,0,0.70) 100%);
+  }
+  .role-tile-hover {
+    position: absolute;
+    inset: 0;
+    background: theme(colors.primary);
+    opacity: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+    transition: opacity 0.35s ease;
+    z-index: 2;
+  }
+  html.dark .role-tile-hover {
+    background: theme(colors.dk-primary);
+  }
+  .role-tile:hover .role-tile-hover {
+    opacity: 0.97;
+  }
+
+  /* ── Among Monsters detail poster ─────────────────────────────── */
+  .film-detail-poster {
+    position: relative;
+    border-radius: 1rem;
+    overflow: hidden;
+    box-shadow:
+      0 30px 60px -28px rgba(0,0,0,0.45),
+      0 0 0 1px rgba(91,141,239,0.08);
+  }
+  html.dark .film-detail-poster {
+    box-shadow:
+      0 30px 60px -28px rgba(0,0,0,0.8),
+      0 0 0 1px rgba(255,255,255,0.06);
+  }
+
+  /* ── People cards (uniform 4:5 portrait, name+role+IG over gradient) ── */
+  .people-card {
+    position: relative;
+    aspect-ratio: 4 / 5;
+    border-radius: 0.85rem;
+    overflow: hidden;
+    background: #0f1014;
+    transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.4s ease;
+  }
+  .people-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 18px 36px -18px rgba(0,0,0,0.55);
+  }
+  .people-card-img {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+    transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  .people-card:hover .people-card-img {
+    transform: scale(1.04);
+  }
+  .people-card-veil {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(180deg, transparent 45%, rgba(0,0,0,0.55) 75%, rgba(0,0,0,0.88) 100%);
+    pointer-events: none;
+  }
+  .people-card-meta {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    padding: 0.85rem 0.9rem;
+    z-index: 2;
+  }
+  .people-card-name {
+    font-size: 0.88rem;
+    font-weight: 600;
+    color: #ffffff;
+    line-height: 1.25;
+    letter-spacing: -0.005em;
+    margin-bottom: 0.2rem;
+  }
+  .people-card-role {
+    font-size: 0.65rem;
+    text-transform: uppercase;
+    letter-spacing: 0.18em;
+    color: rgba(255,255,255,0.55);
+    font-weight: 600;
+    line-height: 1.3;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  /* ── Quick links ──────────────────────────────────────────────── */
+  .quick-link {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.85rem;
+    text-align: center;
+    transition: transform 0.3s ease;
+  }
+  .quick-link:hover {
+    transform: translateY(-3px);
+  }
+  .quick-link i {
+    transition: color 0.3s ease, transform 0.3s ease;
+  }
+  .quick-link:hover i {
+    color: #F5A524;
+  }
+  .quick-link-label {
+    font-size: 0.8rem;
+    color: theme(colors.text);
+    opacity: 0.7;
+    font-weight: 500;
+    letter-spacing: 0.01em;
+  }
+  html.dark .quick-link-label {
+    color: theme(colors.dk-text);
+    opacity: 0.7;
+  }
+</style>
