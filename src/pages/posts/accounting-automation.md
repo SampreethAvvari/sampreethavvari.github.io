@@ -5,6 +5,18 @@ layout: ../../layouts/PostLayout.astro
 description: "The controller was hand-reformatting CSVs from five upstream systems every week. A dozen small Python scripts now do it, with a UX that respects how accountants work."
 img_path: "/enterprise-data.svg"
 img_alt: "Accounting automation pipeline — Denticon, MagicTouch, Paychex, banks into Google Sheets and QuickBooks"
+tag: "Process"
+tone: "amber"
+stats:
+  - value: "~400 hrs/yr"
+    label: "of senior accounting time recovered"
+    tone: "amber"
+  - value: "6-8 h → 30 min"
+    label: "weekly reformat workload"
+    tone: "emerald"
+  - value: "12"
+    label: "small Python scripts replacing one platform"
+    tone: "blue"
 ---
 
 Garrett runs accounting for Hybridge. Every Monday he'd download CSVs from five different systems, open each one, rename columns, copy-paste rows, hand-tag deposit accounts, look up vendor names by check number. Repeat. Repeat. Repeat. An entire workday a week was disappearing into spreadsheet reformatting.
@@ -96,12 +108,16 @@ Garrett never sees the throttle. He sees a one-line "retrying in 4s" message and
 
 ## By the numbers
 
+<div class="stat-callout stat-amber">
+  <div class="stat-value">~400 hrs/yr</div>
+  <div class="stat-label">Of senior accounting time the controller stopped losing to manual CSV reformatting</div>
+</div>
+
 | | Before | After |
 |---|---|---|
 | Weekly accounting reformat workload | ~6-8 hours | ~30-45 minutes |
 | Of which is actual work | All of it | Downloading files + answering y/s/d |
 | Reformat errors per quarter | Occasional silent paste-wrong-column | Near zero (deterministic output) |
-| Annual senior accounting hours saved | — | **~400 hours** |
 | Lines of code per script | 80-500 | Short enough to read in 10 min |
 
 The pattern I keep coming back to: **most internal automation projects fail not because the engineering is bad but because the engineering builds a platform when the user wanted a tool.** A tool is a thing you keep in a drawer. A platform is a thing you log into. Tools are easier to trust.

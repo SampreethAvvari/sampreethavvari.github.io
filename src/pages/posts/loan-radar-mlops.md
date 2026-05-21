@@ -5,6 +5,18 @@ layout: ../../layouts/PostLayout.astro
 description: "A loan-default scoring service with the boring parts actually built: containerised training, MLflow lineage, quality gates, an Airflow retraining DAG. The gates mattered most."
 img_path: "/loan-radar.svg"
 img_alt: "Loan Radar architecture — training, lineage, gates, inference, retraining"
+tag: "MLOps"
+tone: "cyan"
+stats:
+  - value: "0.79 ms"
+    label: "median single-caller latency"
+    tone: "cyan"
+  - value: "~33k req/s"
+    label: "sustained throughput before p99 climbs"
+    tone: "blue"
+  - value: "6"
+    label: "quality gates before any promotion"
+    tone: "emerald"
 ---
 
 Most ML projects I'd seen up close had the same shape: a Jupyter notebook with a 90% accurate model, a Flask wrapper, and a long tail of operational questions (when do we retrain, who reviewed this, what data version did it see, how do we roll back) that the team got to "later." Later usually meant "after the production incident."
@@ -53,13 +65,12 @@ Reason they're scripts in git instead of checkboxes in a dashboard: it makes "di
 
 ## Honest latency numbers, not vibes
 
-A benchmark harness measures three things on a single 2-CPU container with the production model:
+A benchmark harness measures three things on a single 2-CPU container with the production model: **0.79ms** median latency for a single caller, **0.87ms** at p95, and sustained throughput around **33,000 samples/second** before p99 starts climbing.
 
-| | Value |
-|---|---|
-| Median latency, single caller | **0.79ms** |
-| p95 latency, single caller | **0.87ms** |
-| Sustained throughput before p99 climbs | **~33,000 samples / second** |
+<div class="stat-callout stat-cyan">
+  <div class="stat-value">0.79 ms</div>
+  <div class="stat-label">Median single-caller inference latency, measured with a real harness, not back-of-envelope math</div>
+</div>
 
 Numbers exist because the harness exists. Plenty of teams quote "tens of thousands of QPS" off back-of-envelope math. Running the load test is the difference.
 

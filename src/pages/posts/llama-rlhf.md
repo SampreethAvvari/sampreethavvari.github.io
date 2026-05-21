@@ -5,6 +5,18 @@ layout: ../../layouts/PostLayout.astro
 description: "Llama 3.1 8B trained for more persuasive counter-arguments on ChangeMyView debates. SFT with QLoRA, a reward model, GRPO. Which design choices actually mattered."
 img_path: "/llm-persuasion.png"
 img_alt: "RLHF pipeline diagram — SFT, reward model, policy optimisation"
+tag: "Research"
+tone: "violet"
+stats:
+  - value: "~67%"
+    label: "RLHF (GRPO) vs base, human eval"
+    tone: "violet"
+  - value: "38k"
+    label: "preference pairs from CMV"
+    tone: "blue"
+  - value: "~71%"
+    label: "reward model held-out pair accuracy"
+    tone: "emerald"
 ---
 
 Argument mining sits at an awkward intersection. There's a long academic tradition of treating persuasion as structure. There's a newer practical default of "just prompt a big model." Neither side has a great answer to: *given a controversial claim, produce a counter-argument that real humans find more persuasive than what the base model already says.*
@@ -55,6 +67,11 @@ I ran both PPO and GRPO from the same SFT-aligned base, same reward model, same 
 | Stability across batches | Smoother | Spikier (advantage normalisation within group) |
 | Won at human eval vs base | ~66% | ~67% |
 | Won at human eval vs each other | ~50/50 within rater noise |
+
+<div class="stat-callout stat-violet">
+  <div class="stat-value">~67%</div>
+  <div class="stat-label">Human-eval win rate vs base after GRPO. A great reward model with a competent PPO loop beats a mediocre reward model with the most exotic policy algorithm.</div>
+</div>
 
 GRPO converges faster. PPO is less spiky. On this data and at this scale, the policy algorithm wasn't the limiting factor.
 

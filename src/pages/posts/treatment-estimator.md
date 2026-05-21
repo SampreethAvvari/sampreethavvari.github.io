@@ -5,6 +5,18 @@ layout: ../../layouts/PostLayout.astro
 description: "A decade-old quoting tool, rebuilt around a Postgres trigger that makes the 6-month price guarantee a real database invariant. One month of work versus ten years of attempts."
 img_path: "/treatment-estimator.svg"
 img_alt: "Treatment Estimator wizard, decision tree, and frozen-price snapshot"
+tag: "Architecture"
+tone: "blue"
+stats:
+  - value: "1 month"
+    label: "spec to working end-to-end"
+    tone: "violet"
+  - value: "5"
+    label: "pricing model kinds, one resolver"
+    tone: "blue"
+  - value: "Postgres trigger"
+    label: "enforcing the 6-month price guarantee"
+    tone: "cyan"
 ---
 
 The treatment estimator at Hybridge had been running for about ten years. It worked. It also had three quiet problems that nobody had time to fix.
@@ -52,6 +64,11 @@ FOR EACH ROW EXECUTE FUNCTION freeze_capture();
 ```
 
 If application code tries to recompute a price into an existing line, Postgres throws. The 6-month guarantee is no longer a sticker on the PDF. It's an invariant the database enforces.
+
+<div class="stat-callout stat-violet">
+  <div class="stat-value">1 month</div>
+  <div class="stat-label">From ADR to working end-to-end, versus a vendor attempt that never shipped in ten years</div>
+</div>
 
 ## Per-clinic, with a lifecycle
 

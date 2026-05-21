@@ -5,6 +5,8 @@ layout: ../../layouts/PostLayout.astro
 description: "Two crafts I keep being told are separate. They aren't. What ten years of writing, directing, and editing short films does to the way I do engineering work."
 img_path: "/paper.png"
 img_alt: "Film set and engineering workspace"
+tag: "Personal"
+tone: "amber"
 ---
 
 I make movies. I write screenplays, direct, edit, occasionally compose music. I also build production AI systems at a dental implant company. People keep treating those two as separate. They aren't.

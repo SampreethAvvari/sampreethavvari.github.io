@@ -5,6 +5,18 @@ layout: ../../layouts/PostLayout.astro
 description: "A vendor wanted $98K up front and $26K a year to flag bad dental CT scans. I built it in-house on Cloud Run for under $50 a month, with one painful lesson."
 img_path: "/cbct-validator.svg"
 img_alt: "CBCT volume slices, multi-task head, verdict pipeline"
+tag: "MLOps"
+tone: "cyan"
+stats:
+  - value: "$50/mo"
+    label: "vs the $124K year-one vendor quote"
+    tone: "cyan"
+  - value: "~5.5 s"
+    label: "end-to-end latency on CPU"
+    tone: "blue"
+  - value: "AUROC 0.6309"
+    label: "the honest test number, not the leaky 0.80"
+    tone: "amber"
 ---
 
 Roughly 600 cases a month flow through our design team. About 10-15% of them arrive with a CBCT scan that's unusable: motion blur, metal streaks, a missing jaw region, a calibration ring of death. Designers don't catch it for twenty minutes. The case gets escalated. The patient gets a rescan appointment two days later.
@@ -67,6 +79,11 @@ After several weeks of tuning, my test AUROC came in at **0.80**. Beautiful numb
 Then I went back and checked the splits one more time. Seven of the ten test bads had also appeared in earlier training during an experiment I'd run. They'd leaked. After redoing the split cleanly, the honest test AUROC was **0.6309**.
 
 I shipped 0.6309.
+
+<div class="stat-callout stat-cyan">
+  <div class="stat-value">&lt;$50/mo</div>
+  <div class="stat-label">Cloud spend vs the $124K year-one vendor quote, same ten-year operating loss closed in-house</div>
+</div>
 
 Shipping 0.80 would have promised something the model couldn't actually deliver, and the next person to run a proper holdout would have caught it. Better to be honest about where the model is and lean on the active-learning queue for borderline cases.
 
