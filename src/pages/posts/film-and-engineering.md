@@ -7,7 +7,17 @@ img_path: "/paper.png"
 img_alt: "Film set and engineering workspace"
 ---
 
-I make movies. I write screenplays, I direct, I edit. There's one I'm cutting right now, between work weeks. I'm also an AI Engineer at Hybridge Implants, where most of my time goes into systems that classify CBCT scans, score doctor-patient consultations, automate pricing, replace manual cashflow imports, all built for and used by people who don't code.
+I make movies. I write screenplays, I direct, I edit, I score. The features and shorts I've credits on so far:
+
+- **Among Monsters** (2026) — Director, Writer, Editor, Color Grading, Music. Independent feature, currently in post. [IMDb](https://www.imdb.com/title/tt39700295/).
+- **Extraordinary Lives** (upcoming) — Director, Writer.
+- **Pupa** (upcoming) — Writer.
+- **Solistice** (2025) — Editor.
+- **Swecha** (2024) — Editor.
+- **Tiger Man** (2022) — Director, Writer, Editor.
+- **Strangers** (2019) — Cinematographer, Music Composer.
+
+I'm cutting *Among Monsters* between work weeks right now. I'm also an AI Engineer at Hybridge Implants, where most of my time goes into systems that classify CBCT scans, score doctor-patient consultations, automate pricing, replace manual cashflow imports, all built for and used by people who don't code.
 
 People keep treating those two things as separate. They aren't.
 
@@ -89,4 +99,4 @@ The version of this essay that an engineering manager wants to read is a list of
 
 If you're reading this and you're hiring for the kind of role that wants engineers who can sit with a customer until the system you ship is the system they needed: this is the work I want. The Hybridge engineering portfolio is what comes out the other end when you treat every project like a small film. A spec written before the schema. A handful of department heads who all need to be heard. A scene that needs to actually work. A cut that gets shorter every week until it's the right length.
 
-I have a film in my hard drive right now that I'm cutting between work weeks. I'll be cutting another one next year. In between, I'll be shipping production systems for the people in the room who don't write code. The two crafts are the same craft. Anyone hiring for one of them is hiring for the other one whether they know it or not.
+I have *Among Monsters* on my hard drive right now and I'm cutting it between work weeks. *Extraordinary Lives* and *Pupa* are the next two on the slate. In between, I'll be shipping production systems for the people in the room who don't write code. The two crafts are the same craft. Anyone hiring for one of them is hiring for the other one whether they know it or not.
