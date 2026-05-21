@@ -497,30 +497,40 @@ const brandFor = (loc: string) => {
 
     <!-- ── Chapter 6: Connect ────────────────────────────────────────────── -->
     <section
-      class="chapter snap-chapter bg-text/[0.02] dark:bg-dk-text/[0.03]"
+      class="chapter snap-chapter bg-text/[0.02] dark:bg-dk-text/[0.03] relative overflow-hidden"
       id="contact"
     >
+      <div class="aurora-ripples" aria-hidden="true">
+        <span class="ripple ripple-1"></span>
+        <span class="ripple ripple-1 ripple-late"></span>
+        <span class="ripple ripple-2"></span>
+        <span class="ripple ripple-2 ripple-late"></span>
+        <span class="ripple ripple-3"></span>
+        <span class="ripple ripple-3 ripple-late"></span>
+      </div>
       <div
-        class="mx-auto w-full max-w-screen-2xl px-6 lg:px-12 text-center reveal"
+        class="relative z-10 mx-auto w-full max-w-screen-2xl px-6 lg:px-12 text-center reveal"
         data-reveal
       >
         <p class="eyebrow text-secondary dark:text-dk-secondary mb-4">
           05 — Connect
         </p>
-        <h2 class="display text-text dark:text-dk-text mb-6">
-          Let's build something.
+        <h2 class="display text-text dark:text-dk-text mb-6 glow-wave">
+          Let's build <span class="text-secondary dark:text-dk-secondary">something</span>.
         </h2>
         <p class="text-lg lg:text-xl text-text/70 dark:text-dk-text/70 max-w-2xl mx-auto leading-relaxed mb-10">
           Hiring for forward-deployed, applied AI, or anything in between?
           I'd love to hear what you're working on.
         </p>
-        <a
-          href={`mailto:${info.contact.email}`}
-          class="no-lift inline-flex items-center gap-2 rounded-full px-7 py-4 bg-text text-primary dark:bg-dk-text dark:text-dk-primary text-base font-semibold hover:opacity-85 transition"
-        >
-          {info.contact.email} <span aria-hidden="true">→</span>
-        </a>
-        <div class="mt-12 flex justify-center">
+        <div class="email-cta-wrap glow-wave glow-delay-1">
+          <a
+            href={`mailto:${info.contact.email}`}
+            class="no-lift inline-flex items-center rounded-full px-7 py-4 bg-text text-primary dark:bg-dk-text dark:text-dk-primary text-base font-semibold hover:opacity-85 transition"
+          >
+            {info.contact.email}
+          </a>
+        </div>
+        <div class="mt-12 flex justify-center relative z-10">
           <Contact contact={info.contact} size="md" client:visible />
         </div>
       </div>
