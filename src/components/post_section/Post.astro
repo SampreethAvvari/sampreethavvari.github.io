@@ -20,6 +20,9 @@ const accent = ACCENTS[index % ACCENTS.length];
 const chipTone = tone || TAG_TONE[tag] || "blue";
 const displayTag = tag || "Engineering";
 
+// Slug used by the view-counter (abacus.jasoncameron.dev). Stable per post.
+const slug = (url || "").replace(/^\//, "").replace(/\/$/, "").replace(/\W+/g, "-");
+
 let formattedDate = date;
 try {
   const d = new Date(date);
@@ -42,8 +45,10 @@ try {
           alt={img_alt || title}
           width={600}
           height={320}
-          class="w-full h-48 object-cover transition duration-500 group-hover:scale-[1.04]"
+          class="w-full h-40 object-cover transition duration-500 group-hover:scale-[1.04]"
         />
+        {/* Bottom fade so the screenshot hands the eye off to the heading */}
+        <div class="pointer-events-none absolute inset-x-0 bottom-0 h-2/3 bg-gradient-to-t from-black/55 via-black/15 to-transparent"></div>
       </div>
     )
   }
@@ -57,19 +62,39 @@ try {
       </span>
     </div>
     <h3
-      class="text-[1.02rem] font-semibold text-text dark:text-dk-text leading-snug line-clamp-3 group-hover:text-secondary dark:group-hover:text-dk-secondary transition min-h-[3.4rem]"
+      class="post-card-title text-lg lg:text-xl font-bold tracking-tight text-text dark:text-dk-text leading-[1.18] line-clamp-3 group-hover:text-secondary dark:group-hover:text-dk-secondary transition min-h-[3.6rem]"
     >
       {title}
     </h3>
     <p
-      class="text-xs text-text/60 dark:text-dk-text/65 leading-relaxed line-clamp-3 mt-auto"
+      class="text-[0.78rem] text-text/55 dark:text-dk-text/55 leading-relaxed line-clamp-2 mt-auto"
     >
       {description}
     </p>
-    <p
-      class="text-xs font-semibold text-secondary dark:text-dk-secondary inline-flex items-center gap-1.5 mt-1"
-    >
-      Read more <span aria-hidden="true">→</span>
-    </p>
+    <div class="flex items-center justify-between mt-1">
+      <p
+        class="text-xs font-semibold text-secondary dark:text-dk-secondary inline-flex items-center gap-1.5"
+      >
+        Read more <span aria-hidden="true">→</span>
+      </p>
+      <span
+        class="post-views text-[0.68rem] font-medium text-text/30 dark:text-dk-text/30 inline-flex items-center gap-1 tabular-nums"
+        data-view-slug={slug}
+        aria-label="View count"
+      >
+        <svg
+          viewBox="0 0 24 24"
+          class="w-3.5 h-3.5"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.7"
+          aria-hidden="true"
+        >
+          <path stroke-linecap="round" stroke-linejoin="round" d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z" />
+          <circle cx="12" cy="12" r="2.6" />
+        </svg>
+        <span class="post-views-value">—</span>
+      </span>
+    </div>
   </div>
 </a>
