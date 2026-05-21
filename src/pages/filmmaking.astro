@@ -58,6 +58,9 @@ const creativeRoleBg = (filename) => `/Creative%20Roles/${encodeURIComponent(fil
 const instagramUrl = (handle) =>
   handle ? `https://instagram.com/${handle.replace(/^@/, "")}` : "";
 
+// Glow colors are picked to match the dominant tone of each tile's
+// background image (cyan monitor, warm-paper script, violet edit suite,
+// green forest, magenta gig lights), echoing the blog grid's accent system.
 const roles = [
   {
     title: "Director",
@@ -65,6 +68,7 @@ const roles = [
     icon: "fas fa-clapperboard",
     background: creativeRoleBg("Director.jpg"),
     gridClass: "lg:col-start-1 lg:col-span-2",
+    glow: "#22D3EE",
   },
   {
     title: "Writer",
@@ -77,6 +81,7 @@ const roles = [
     icon: "fas fa-pen-nib",
     background: creativeRoleBg("Write.jpg"),
     gridClass: "lg:col-start-3 lg:col-span-2",
+    glow: "#F5A524",
   },
   {
     title: "Editor",
@@ -84,6 +89,7 @@ const roles = [
     icon: "fas fa-scissors",
     background: creativeRoleBg("Editor.jpg"),
     gridClass: "lg:col-start-5 lg:col-span-2",
+    glow: "#A78BFA",
   },
   {
     title: "Cinematographer",
@@ -91,6 +97,7 @@ const roles = [
     icon: "fas fa-video",
     background: creativeRoleBg("Cinematographer.jpg"),
     gridClass: "lg:col-start-2 lg:col-span-2",
+    glow: "#34D399",
   },
   {
     title: "Music Composer",
@@ -98,6 +105,7 @@ const roles = [
     icon: "fas fa-music",
     background: creativeRoleBg("Music.jpg"),
     gridClass: "lg:col-start-4 lg:col-span-2",
+    glow: "#C084FC",
   },
 ];
 
@@ -421,7 +429,7 @@ const stillsLimited = galleryItems.slice(0, 16);
         {roles.map((role) => (
           <div
             class={`role-tile group ${role.gridClass}`}
-            style={`background-image: url(${role.background});`}
+            style={`background-image: url(${role.background}); --tile-glow: ${role.glow};`}
           >
             <div class="role-tile-veil"></div>
             <div class="role-tile-front relative z-10 flex flex-col items-center text-center px-4">
@@ -925,10 +933,11 @@ const stillsLimited = galleryItems.slice(0, 16);
 
   /* ── Creative role tiles (polished) ───────────────────────────── */
   .role-tile {
+    --tile-glow: #5B8DEF;
     position: relative;
     overflow: hidden;
     border-radius: 1rem;
-    border: 1px solid rgba(255,255,255,0.15);
+    border: 1px solid color-mix(in srgb, var(--tile-glow) 28%, rgba(255,255,255,0.12));
     background-size: cover;
     background-position: center;
     min-height: 200px;
@@ -937,14 +946,22 @@ const stillsLimited = galleryItems.slice(0, 16);
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.4s ease;
+    box-shadow:
+      0 14px 30px -22px color-mix(in srgb, var(--tile-glow) 70%, transparent),
+      0 0 24px -10px color-mix(in srgb, var(--tile-glow) 45%, transparent);
+    transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1),
+                box-shadow 0.4s ease,
+                border-color 0.4s ease;
   }
   html.dark .role-tile {
-    border-color: rgba(255,255,255,0.20);
+    border-color: color-mix(in srgb, var(--tile-glow) 32%, rgba(255,255,255,0.16));
   }
   .role-tile:hover {
     transform: translateY(-4px);
-    box-shadow: 0 18px 38px -18px rgba(0,0,0,0.55);
+    border-color: color-mix(in srgb, var(--tile-glow) 55%, rgba(255,255,255,0.2));
+    box-shadow:
+      0 28px 56px -22px color-mix(in srgb, var(--tile-glow) 80%, transparent),
+      0 0 42px -8px color-mix(in srgb, var(--tile-glow) 60%, transparent);
   }
   .role-tile-veil {
     position: absolute;
