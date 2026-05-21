@@ -2,443 +2,473 @@
 import BaseLayout from "../layouts/BaseLayout.astro";
 import { info } from "../data/info";
 import Contact from "../components/contact_section/Contact";
-import About from "../components/about_section/About";
-import PhotoCarousel from "../components/about_section/PhotoCarousel";
-import ProjectCard from "../components/projects_section/ProjectCard";
-import fs from "node:fs";
-import path from "node:path";
-
 import { Image } from "astro:assets";
 
-const posts = await Astro.glob("../pages/posts/*.md");
-const latestPosts = posts
-  .sort((a, b) => {
-    return (
+const allPosts = await Astro.glob("../pages/posts/*.md");
+const latestPosts = allPosts
+  .sort(
+    (a, b) =>
       new Date(b.frontmatter.date).getTime() -
-      new Date(a.frontmatter.date).getTime()
-    );
-  })
-  .slice(0, 3);
+      new Date(a.frontmatter.date).getTime(),
+  )
+  .slice(0, 4);
 
-const featuredProjects = info.projects.slice(0, 3);
+// The five Hybridge systems, in display order on the home strip.
+const systems = [
+  {
+    n: "01",
+    name: "Consultation QA Pipeline",
+    tagline:
+      "Zoom transcript turns into a color-coded coaching report in 5–15 minutes. Schema-validated Vertex AI Gemini, no Workspace DWD required.",
+    metric: "+130%",
+    metricLabel: "treatment acceptance",
+    accent: "#34D399",
+    href: "/posts/clinical-rag",
+  },
+  {
+    n: "02",
+    name: "CBCT Scan Validator",
+    tagline:
+      "In-house dental-CT classifier on Cloud Run that replaced a $98K + $26K/yr vendor quote with a sub-$50/month service.",
+    metric: "$50/mo",
+    metricLabel: "vs $124K year-one quote",
+    accent: "#22D3EE",
+    href: "/posts/cbct-scan-validator",
+  },
+  {
+    n: "03",
+    name: "Treatment Estimator",
+    tagline:
+      "A Postgres BEFORE-UPDATE trigger that turns the 6-month price guarantee into a database invariant. Shipped end-to-end in two days.",
+    metric: "2 days",
+    metricLabel: "spec to production",
+    accent: "#A78BFA",
+    href: "/posts/treatment-estimator",
+  },
+  {
+    n: "04",
+    name: "Cowork Dashboard",
+    tagline:
+      "The Monday connect column took patient-to-lead linkage from 49% to 99% and surfaced six figures of orphan re-treatment revenue.",
+    metric: "$169k",
+    metricLabel: "of revenue surfaced",
+    accent: "#5B8DEF",
+    href: "/posts/cowork-dashboard",
+  },
+  {
+    n: "05",
+    name: "Accounting Automation",
+    tagline:
+      "A dozen Python scripts replaced the controller's manual weekly import-reformat-paste loop across Denticon, MagicTouch, Paychex, and two banks.",
+    metric: "~400h",
+    metricLabel: "of senior time saved per year",
+    accent: "#F5A524",
+    href: "/posts/accounting-automation",
+  },
+];
 
-const filmmakingPicsDir = path.join(process.cwd(), "public", "Filmmaking Page pics");
-let filmmakingFiles = [];
-try {
-  filmmakingFiles = fs
-    .readdirSync(filmmakingPicsDir)
-    .filter((file) => /\.(png|jpe?g|webp|gif|avif|heic)$/i.test(file))
-    .sort((a, b) => a.localeCompare(b));
-} catch (error) {
-  filmmakingFiles = [];
-}
-
-const filmmakingPhotos = filmmakingFiles.map((file) => {
-  const encoded = encodeURIComponent(file);
-  const src = `/Filmmaking%20Page%20pics/${encoded}`;
-  const alt = file.replace(/\.[^/.]+$/, "").replace(/[-_]+/g, " ");
-  return {
-    src,
-    alt,
-    context: `Filmmaking still: ${alt}`,
-    tag: "Filmmaking",
-  };
-});
+const filmCredits = [
+  { title: "Among Monsters", year: "2026", role: "Director · Writer · Editor · Music" },
+  { title: "Extraordinary Lives", year: "upcoming", role: "Director · Writer" },
+  { title: "Tiger Man", year: "2022", role: "Director · Writer · Editor" },
+  { title: "Strangers", year: "2019", role: "Cinematographer · Music" },
+];
 ---
 
-<BaseLayout title="Sampreeth Avvari: Home">
-  <section
-    class="relative landing-atmos min-h-[88vh] flex items-center justify-center py-16 lg:py-24"
-    id="home"
-  >
-    <div
-      class="relative z-10 w-full max-w-6xl mx-auto flex flex-col lg:flex-row items-center justify-center gap-10 lg:gap-20"
+<BaseLayout title="Sampreeth Avvari">
+  <div class="snap-chapters">
+
+    <!-- ── Chapter 1: Hero ───────────────────────────────────────────────── -->
+    <section
+      class="chapter snap-chapter relative landing-atmos overflow-hidden"
+      id="home"
     >
-      <div class="profile-pic shrink-0 floaty">
-        <Image
-          src={info.picture}
-          alt={info.picture_alt}
-          width={384}
-          height={384}
-          class="lg:h-80 lg:w-80 xl:h-96 xl:w-96 h-48 w-48 rounded-full object-cover ring-1 ring-secondary/20 dark:ring-dk-secondary/20 shadow-[0_30px_80px_-20px_rgba(91,141,239,0.35)]"
-        />
+      <div
+        class="relative z-10 mx-auto w-full max-w-screen-2xl px-6 lg:px-12 grid lg:grid-cols-12 items-center gap-12"
+      >
+        <div class="lg:col-span-5 flex justify-center lg:justify-start">
+          <div class="relative floaty">
+            <div
+              class="absolute -inset-6 rounded-full bg-gradient-to-br from-acc-blue/30 via-acc-violet/20 to-acc-cyan/30 blur-3xl opacity-60 pointer-events-none"
+            ></div>
+            <Image
+              src={info.picture}
+              alt={info.picture_alt}
+              width={420}
+              height={420}
+              class="relative lg:h-80 lg:w-80 xl:h-[22rem] xl:w-[22rem] h-48 w-48 rounded-full object-cover ring-1 ring-text/10 dark:ring-dk-text/10"
+            />
+          </div>
+        </div>
+
+        <div class="lg:col-span-7 flex flex-col gap-6 text-center lg:text-left">
+          <p
+            class="eyebrow text-text/60 dark:text-dk-text/60"
+          >
+            AI Engineer · New York
+          </p>
+          <h1 class="display text-text dark:text-dk-text">
+            Hi, I'm <span class="text-secondary dark:text-dk-secondary">Sampreeth.</span>
+          </h1>
+          <p class="text-xl lg:text-2xl text-text/70 dark:text-dk-text/70 leading-relaxed">
+            I ship ML systems in the room with the people using them.
+          </p>
+          <div class="flex flex-wrap items-center justify-center lg:justify-start gap-3 pt-2">
+            <a
+              href="#work"
+              class="no-lift inline-flex items-center gap-2 rounded-full px-6 py-3 bg-text text-primary dark:bg-dk-text dark:text-dk-primary text-sm font-semibold hover:opacity-85 transition"
+            >
+              See the work <span aria-hidden="true">↓</span>
+            </a>
+            <a
+              href="/posts"
+              class="no-lift inline-flex items-center gap-2 rounded-full px-6 py-3 border border-text/20 dark:border-dk-text/20 text-sm font-semibold text-text dark:text-dk-text hover:bg-text/5 dark:hover:bg-dk-text/10 transition"
+            >
+              Read the writing
+            </a>
+            <a
+              href="#contact"
+              class="no-lift inline-flex items-center gap-2 rounded-full px-6 py-3 text-sm font-semibold text-text/70 dark:text-dk-text/70 hover:text-secondary dark:hover:text-dk-secondary transition"
+            >
+              Get in touch
+            </a>
+          </div>
+        </div>
       </div>
 
-      <div class="flex flex-col gap-5 lg:gap-7 text-center lg:text-left max-w-2xl">
-        <p
-          class="text-xs uppercase tracking-[0.32em] font-semibold text-secondary/70 dark:text-dk-secondary/70"
-        >
-          AI Engineer · New York
-        </p>
-        <h1
-          class="text-5xl lg:text-7xl xl:text-8xl font-bold tracking-[-0.03em] leading-[1.02] text-text dark:text-dk-text"
-        >
-          Hi, I'm <span class="text-secondary dark:text-dk-secondary">{info.name}</span>.
-        </h1>
-        <p
-          class="text-xl lg:text-2xl leading-relaxed text-text/80 dark:text-dk-text/80"
-        >
-          {info.brief_description}
-        </p>
-        <div
-          class="flex flex-wrap items-center justify-center lg:justify-start gap-3 pt-2"
-        >
+      <a
+        href="#work"
+        aria-label="Scroll"
+        class="no-lift absolute bottom-8 left-1/2 -translate-x-1/2 text-text/40 dark:text-dk-text/40 hover:text-text dark:hover:text-dk-text transition animate-pulse"
+      >
+        <i class="fas fa-chevron-down text-xl"></i>
+      </a>
+    </section>
+
+    <!-- ── Chapter 2: The work ───────────────────────────────────────────── -->
+    <section
+      class="chapter snap-chapter bg-text/[0.02] dark:bg-dk-text/[0.03]"
+      id="work"
+    >
+      <div class="mx-auto w-full max-w-screen-2xl px-6 lg:px-12">
+        <div class="max-w-4xl reveal" data-reveal>
+          <p class="eyebrow text-secondary dark:text-dk-secondary mb-4">
+            01 — The work
+          </p>
+          <h2 class="display text-text dark:text-dk-text mb-4">
+            Five systems, inside a dental practice.
+          </h2>
+          <p class="text-lg lg:text-xl text-text/70 dark:text-dk-text/70 leading-relaxed max-w-2xl">
+            Production AI built alongside the senior coordinator, the
+            controller, the validation team, the CEO. The systems I'm
+            proudest of are the ones that survived that contact.
+          </p>
+        </div>
+
+        <ul class="mt-12 lg:mt-16 divide-y divide-text/10 dark:divide-dk-text/10 reveal" data-reveal>
+          {systems.map((s) => (
+            <li>
+              <a
+                href={s.href}
+                class="no-lift group flex flex-col lg:flex-row lg:items-center gap-4 lg:gap-8 py-6 lg:py-7 transition"
+              >
+                <span
+                  class="font-mono text-sm font-semibold tabular-nums w-10 shrink-0 text-text/40 dark:text-dk-text/40"
+                >
+                  {s.n}
+                </span>
+                <div class="flex-1 min-w-0">
+                  <h3
+                    class="text-2xl lg:text-3xl font-semibold tracking-tight text-text dark:text-dk-text group-hover:text-secondary dark:group-hover:text-dk-secondary transition"
+                  >
+                    {s.name}
+                  </h3>
+                  <p class="mt-1 text-sm lg:text-base text-text/65 dark:text-dk-text/65 leading-relaxed max-w-3xl">
+                    {s.tagline}
+                  </p>
+                </div>
+                <div class="lg:text-right lg:min-w-[10rem]">
+                  <div
+                    class="text-2xl lg:text-3xl font-semibold tabular-nums tracking-tight"
+                    style={`color: ${s.accent};`}
+                  >
+                    {s.metric}
+                  </div>
+                  <div class="text-xs uppercase tracking-[0.18em] text-text/45 dark:text-dk-text/45 mt-1">
+                    {s.metricLabel}
+                  </div>
+                </div>
+                <span
+                  class="text-text/40 dark:text-dk-text/40 group-hover:text-secondary dark:group-hover:text-dk-secondary group-hover:translate-x-1 transition-transform"
+                  aria-hidden="true"
+                >
+                  →
+                </span>
+              </a>
+            </li>
+          ))}
+        </ul>
+
+        <div class="mt-10 flex items-center justify-between flex-wrap gap-4">
           <a
             href="/projects"
-            class="no-lift inline-flex items-center gap-2 rounded-full px-6 py-3 bg-secondary text-primary dark:bg-dk-secondary dark:text-dk-primary text-sm font-semibold hover:bg-accent dark:hover:bg-dk-accent transition"
+            class="link-underline text-sm font-semibold text-secondary dark:text-dk-secondary"
           >
-            See the work <span aria-hidden="true">→</span>
+            Browse all 13 projects <span aria-hidden="true">→</span>
           </a>
+          <p class="text-xs text-text/40 dark:text-dk-text/40">
+            Scroll for the rest of the story
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── Chapter 3: About ──────────────────────────────────────────────── -->
+    <section class="chapter snap-chapter" id="about">
+      <div
+        class="mx-auto w-full max-w-screen-2xl px-6 lg:px-12 grid lg:grid-cols-12 gap-12 items-center"
+      >
+        <div class="lg:col-span-5 reveal" data-reveal>
+          <p class="eyebrow text-secondary dark:text-dk-secondary mb-4">
+            02 — About
+          </p>
+          <h2 class="display-sm text-text dark:text-dk-text mb-6">
+            An engineer who happens to make movies.
+          </h2>
+          <p class="text-lg text-text/75 dark:text-dk-text/75 leading-relaxed">
+            {info.about.description}
+          </p>
+        </div>
+
+        <div class="lg:col-span-7 reveal" data-reveal>
+          <div class="grid sm:grid-cols-2 gap-8">
+            <div>
+              <p class="eyebrow text-text/50 dark:text-dk-text/50 mb-3">
+                Education
+              </p>
+              <ul class="space-y-4">
+                {info.about.education.map((ed) => (
+                  <li class="text-sm">
+                    <p class="font-semibold text-text dark:text-dk-text">
+                      {ed.title}
+                    </p>
+                    <p class="text-text/60 dark:text-dk-text/60">{ed.location}</p>
+                    <p class="text-text/40 dark:text-dk-text/40 mt-1">
+                      {ed.date}{ed.gpa ? ` · GPA ${ed.gpa}` : ""}
+                    </p>
+                  </li>
+                ))}
+              </ul>
+            </div>
+            <div>
+              <p class="eyebrow text-text/50 dark:text-dk-text/50 mb-3">
+                Experience
+              </p>
+              <ul class="space-y-4">
+                {info.about.experience.map((ex) => (
+                  <li class="text-sm">
+                    <p class="font-semibold text-text dark:text-dk-text">
+                      {ex.title}
+                    </p>
+                    <p class="text-text/60 dark:text-dk-text/60">{ex.location}</p>
+                    <p class="text-text/40 dark:text-dk-text/40 mt-1">{ex.date}</p>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
+
+          <div class="mt-10 pt-8 border-t border-text/10 dark:border-dk-text/10">
+            <p class="eyebrow text-text/50 dark:text-dk-text/50 mb-4">
+              What I reach for
+            </p>
+            <div class="flex flex-wrap gap-2">
+              {[
+                "Python", "TypeScript", "FastAPI", "Next.js", "Postgres",
+                "Drizzle", "PyTorch", "MONAI", "OpenVINO", "Vertex AI",
+                "Cloud Run", "Eventarc", "Docker", "Terraform", "MLflow",
+                "W&B", "LangChain", "pgvector",
+              ].map((t) => (
+                <span
+                  class="text-xs font-medium px-3 py-1.5 rounded-full bg-text/5 dark:bg-dk-text/10 text-text/75 dark:text-dk-text/80 border border-text/10 dark:border-dk-text/10"
+                >
+                  {t}
+                </span>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── Chapter 4: Filmmaking ─────────────────────────────────────────── -->
+    <section
+      class="chapter snap-chapter bg-text/[0.02] dark:bg-dk-text/[0.03]"
+      id="filmmaking"
+    >
+      <div
+        class="mx-auto w-full max-w-screen-2xl px-6 lg:px-12 grid lg:grid-cols-12 gap-12 items-center"
+      >
+        <div class="lg:col-span-6 reveal" data-reveal>
+          <p class="eyebrow text-secondary dark:text-dk-secondary mb-4">
+            03 — Filmmaking
+          </p>
+          <h2 class="display-sm text-text dark:text-dk-text mb-6">
+            "Gray characters, tight spaces, and the chaos hiding inside ordinary lives."
+          </h2>
+          <p class="text-lg text-text/70 dark:text-dk-text/70 leading-relaxed mb-8">
+            I write, direct, edit, and score. <em>Among Monsters</em> is the
+            independent feature I'm cutting between work weeks. The way I work
+            alongside non-engineers — that I learned on film sets first.
+          </p>
+          <div class="flex flex-wrap items-center gap-3">
+            <a
+              href="https://www.imdb.com/title/tt39700295/"
+              target="_blank"
+              rel="noreferrer"
+              class="no-lift inline-flex items-center gap-2 rounded-full px-5 py-2.5 bg-text text-primary dark:bg-dk-text dark:text-dk-primary text-sm font-semibold hover:opacity-85 transition"
+            >
+              Among Monsters on IMDb <span aria-hidden="true">↗</span>
+            </a>
+            <a
+              href="/filmmaking"
+              class="no-lift inline-flex items-center gap-2 rounded-full px-5 py-2.5 border border-text/20 dark:border-dk-text/20 text-sm font-semibold text-text dark:text-dk-text hover:bg-text/5 dark:hover:bg-dk-text/10 transition"
+            >
+              See the full slate
+            </a>
+          </div>
+        </div>
+
+        <div class="lg:col-span-6 reveal" data-reveal>
+          <ul class="space-y-3">
+            {filmCredits.map((c) => (
+              <li
+                class="flex items-baseline justify-between gap-6 py-3 border-b border-text/10 dark:border-dk-text/10"
+              >
+                <div class="min-w-0">
+                  <p class="text-lg font-semibold text-text dark:text-dk-text truncate">
+                    {c.title}
+                  </p>
+                  <p class="text-sm text-text/60 dark:text-dk-text/60">
+                    {c.role}
+                  </p>
+                </div>
+                <span
+                  class="font-mono text-sm text-text/50 dark:text-dk-text/50 tabular-nums shrink-0"
+                >
+                  {c.year}
+                </span>
+              </li>
+            ))}
+          </ul>
+          <a
+            href="/filmmaking"
+            class="link-underline text-sm font-semibold text-secondary dark:text-dk-secondary mt-6 inline-flex"
+          >
+            All credits, stills, and crew <span aria-hidden="true">→</span>
+          </a>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── Chapter 5: Writing ────────────────────────────────────────────── -->
+    <section class="chapter snap-chapter" id="writing">
+      <div class="mx-auto w-full max-w-screen-2xl px-6 lg:px-12">
+        <div class="flex items-end justify-between mb-12 reveal" data-reveal>
+          <div>
+            <p class="eyebrow text-secondary dark:text-dk-secondary mb-4">
+              04 — Writing
+            </p>
+            <h2 class="display-sm text-text dark:text-dk-text">
+              Notes from the work.
+            </h2>
+          </div>
           <a
             href="/posts"
-            class="no-lift inline-flex items-center gap-2 rounded-full px-6 py-3 border border-secondary/40 dark:border-dk-secondary/40 text-sm font-semibold text-secondary dark:text-dk-secondary hover:bg-secondary/5 dark:hover:bg-dk-secondary/10 transition"
+            class="link-underline text-sm font-semibold text-secondary dark:text-dk-secondary hidden lg:inline-flex"
           >
-            Read the writing
-          </a>
-          <a
-            href="/#contact"
-            class="no-lift inline-flex items-center gap-2 rounded-full px-6 py-3 text-sm font-semibold text-text/80 dark:text-dk-text/80 hover:text-secondary dark:hover:text-dk-secondary transition"
-          >
-            Get in touch
+            All posts <span aria-hidden="true">→</span>
           </a>
         </div>
-      </div>
-    </div>
 
-    <a
-      href="#about"
-      aria-label="Scroll to About"
-      class="no-lift absolute bottom-8 left-1/2 -translate-x-1/2 text-secondary/60 dark:text-dk-secondary/60 hover:text-secondary dark:hover:text-dk-secondary transition animate-pulse"
-    >
-      <i class="fas fa-chevron-down text-xl"></i>
-    </a>
-  </section>
-  <section class="-mt-8 mb-20 mx-2" id="about">
-    <About about={info.about} client:visible />
-  </section>
-
-  <section class="mx-2 mt-28 mb-20 flex justify-center reveal" id="photos" data-reveal>
-    <PhotoCarousel photos={info.about.photos} client:visible />
-  </section>
-
-  <section class="my-20 mx-2 space-y-16">
-    <div class="reveal" data-reveal>
-      <div class="flex items-center justify-between mb-6">
-        <a
-          href="/projects"
-          class="flex items-center gap-3 text-3xl font-bold text-secondary dark:text-dk-secondary hover:text-accent dark:hover:text-dk-accent"
+        <div
+          class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 reveal"
+          data-reveal
         >
-          <i class="fas fa-code text-2xl"></i>
-          Projects
-        </a>
-        <a
-          href="/projects"
-          class="text-sm uppercase tracking-[0.2em] text-secondary/70 dark:text-dk-secondary/70 hover:text-accent dark:hover:text-dk-accent"
-        >
-          View all
-        </a>
-      </div>
-      <div class="grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 items-stretch">
-        {featuredProjects.map((project) => (
-          <ProjectCard project={project} client:only key={project.title} />
-        ))}
-      </div>
-    </div>
-
-    <div class="reveal" data-reveal>
-      <div class="flex items-center justify-between mb-4">
-        <a
-          href="/filmmaking"
-          class="flex items-center gap-3 text-3xl font-bold text-secondary dark:text-dk-secondary hover:text-accent dark:hover:text-dk-accent"
-        >
-          <i class="fas fa-clapperboard text-2xl"></i>
-          Filmmaking
-        </a>
-        <a
-          href="/filmmaking"
-          class="text-sm uppercase tracking-[0.2em] text-secondary/70 dark:text-dk-secondary/70 hover:text-accent dark:hover:text-dk-accent"
-        >
-          View page
-        </a>
-      </div>
-      <div class="flex flex-col lg:flex-row gap-8 items-center">
-        <p class="text-2xl lg:text-3xl font-semibold italic text-secondary dark:text-dk-secondary max-w-3xl lg:flex-1">
-          “I make films about gray characters, tight spaces, and the chaos hiding inside ordinary lives.
-          My latest project, <span class="font-semibold">Among Monsters</span>, is a zero budget crime drama
-          built from the ground up, intimate, dangerous, and painfully human.”
-        </p>
-        <div class="w-full lg:flex-1 flex justify-center">
-          <PhotoCarousel photos={filmmakingPhotos} title={false} client:visible />
-        </div>
-      </div>
-    </div>
-
-    <div class="reveal" data-reveal>
-      <div class="flex items-center justify-between mb-4">
-        <a
-          href="/posts"
-          class="flex items-center gap-3 text-3xl font-bold text-secondary dark:text-dk-secondary hover:text-accent dark:hover:text-dk-accent"
-        >
-          <i class="fas fa-pen-nib text-2xl"></i>
-          Technical Writing
-        </a>
-        <a
-          href="/posts"
-          class="text-sm uppercase tracking-[0.2em] text-secondary/70 dark:text-dk-secondary/70 hover:text-accent dark:hover:text-dk-accent"
-        >
-          View all
-        </a>
-      </div>
-      {latestPosts.length ? (
-        <div class="grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 items-stretch">
           {latestPosts.map((post) => (
-            <div class="flex flex-col bg-primary dark:bg-dk-primary rounded-lg shadow-sm dark:shadow-dk-secondary border border-secondary/30 dark:border-dk-secondary/30 transform transition duration-500 hover:scale-105">
-              <div class="p-6 flex flex-col gap-3">
-                <h3 class="text-lg font-semibold text-text dark:text-dk-text line-clamp-2 min-h-[2.5rem]">
-                  <a href={post.url} class="hover:text-accent dark:hover:text-dk-accent">
-                    {post.frontmatter.title}
-                  </a>
-                </h3>
-                <p class="text-sm text-text dark:text-dk-text line-clamp-2 min-h-[2.5rem]">
-                  {post.frontmatter.description}
-                </p>
-                <p class="text-xs text-secondary/70 dark:text-dk-secondary/70">
+            <a
+              href={post.url}
+              class="no-lift group flex flex-col rounded-2xl bg-text/[0.03] dark:bg-dk-text/[0.05] border border-text/10 dark:border-dk-text/10 hover:bg-text/[0.06] dark:hover:bg-dk-text/[0.08] transition overflow-hidden"
+            >
+              {post.frontmatter.img_path && (
+                <Image
+                  src={post.frontmatter.img_path}
+                  alt={post.frontmatter.img_alt || post.frontmatter.title}
+                  width={600}
+                  height={300}
+                  class="w-full h-40 object-cover"
+                />
+              )}
+              <div class="p-5 flex flex-col gap-3 flex-1">
+                <p
+                  class="text-xs text-text/45 dark:text-dk-text/45 tabular-nums"
+                >
                   {post.frontmatter.date}
                 </p>
-                <a
-                  href={post.url}
-                  class="text-sm font-semibold text-secondary dark:text-dk-secondary hover:text-accent dark:hover:text-dk-accent"
+                <h3
+                  class="text-base font-semibold text-text dark:text-dk-text leading-snug line-clamp-3 group-hover:text-secondary dark:group-hover:text-dk-secondary transition"
                 >
-                  Read more →
-                </a>
+                  {post.frontmatter.title}
+                </h3>
+                <p
+                  class="text-xs text-text/60 dark:text-dk-text/60 leading-relaxed line-clamp-3 mt-auto"
+                >
+                  {post.frontmatter.description}
+                </p>
               </div>
-            </div>
+            </a>
           ))}
         </div>
-      ) : (
-        <p class="text-text dark:text-dk-text">New posts coming soon.</p>
-      )}
-    </div>
-  </section>
 
-  <section
-    class="lg:h-screen lg:m-0 my-20 mx-2 flex-col flex justify-center w-full reveal"
-    id="contact"
-    data-reveal
-  >
-    <div class="flex flex-row justify-center items-center h-full space-y-4">
-      <Contact contact={info.contact} size="lg" />
-    </div>
-  </section>
+        <a
+          href="/posts"
+          class="link-underline text-sm font-semibold text-secondary dark:text-dk-secondary mt-8 inline-flex lg:hidden"
+        >
+          All posts <span aria-hidden="true">→</span>
+        </a>
+      </div>
+    </section>
+
+    <!-- ── Chapter 6: Connect ────────────────────────────────────────────── -->
+    <section
+      class="chapter snap-chapter bg-text/[0.02] dark:bg-dk-text/[0.03]"
+      id="contact"
+    >
+      <div
+        class="mx-auto w-full max-w-screen-2xl px-6 lg:px-12 text-center reveal"
+        data-reveal
+      >
+        <p class="eyebrow text-secondary dark:text-dk-secondary mb-4">
+          05 — Connect
+        </p>
+        <h2 class="display text-text dark:text-dk-text mb-6">
+          Let's build something.
+        </h2>
+        <p class="text-lg lg:text-xl text-text/70 dark:text-dk-text/70 max-w-2xl mx-auto leading-relaxed mb-10">
+          Hiring for forward-deployed, applied AI, or anything in between?
+          I'd love to hear what you're working on.
+        </p>
+        <a
+          href={`mailto:${info.contact.email}`}
+          class="no-lift inline-flex items-center gap-2 rounded-full px-7 py-4 bg-text text-primary dark:bg-dk-text dark:text-dk-primary text-base font-semibold hover:opacity-85 transition"
+        >
+          {info.contact.email} <span aria-hidden="true">→</span>
+        </a>
+        <div class="mt-12 flex justify-center">
+          <Contact contact={info.contact} size="md" client:visible />
+        </div>
+      </div>
+    </section>
+
+  </div>
 </BaseLayout>
-
-<style>
-  .typewriter {
-    background: linear-gradient(to left, #3333ff, #efff15, #ff0000);
-    -webkit-background-clip: text;
-    background-clip: text;
-    color: transparent;
-    animation: animation 6s ease-in-out infinite;
-    background-size: 400% 100%;
-  }
-
-  @keyframes animation {
-    0%,
-    100% {
-      background-position: 0 0;
-    }
-
-    50% {
-      background-position: 100% 0;
-    }
-  }
-
-  /* Shadow effect shifting through the image: inspired by https://codepen.io/davidicus/pen/emgQKJ */
-  .profile-pic {
-    position: relative;
-    display: inline-block;
-    overflow: hidden;
-    border-radius: 100%;
-    animation: floaty 6s ease-in-out infinite;
-    will-change: transform;
-    box-shadow: 32px 38px 95px rgba(0, 0, 0, 0.45),
-      16px 18px 42px rgba(42, 111, 168, 0.32);
-  }
-
-  :global(html.dark) .profile-pic {
-    box-shadow: -24px 30px 60px rgba(0, 0, 0, 0.2),
-      -12px 14px 26px rgba(42, 111, 168, 0.18);
-  }
-
-  .profile-pic::before {
-    position: absolute;
-    top: 0;
-    left: -75%;
-    z-index: 2;
-    display: block;
-    content: "";
-    width: 50%;
-    height: 100%;
-    background: -webkit-linear-gradient(
-      left,
-      rgba(255, 255, 255, 0) 0%,
-      rgba(255, 255, 255, 0.3) 100%
-    );
-    background: linear-gradient(
-      to right,
-      rgba(255, 255, 255, 0) 0%,
-      rgba(255, 255, 255, 0.3) 100%
-    );
-    -webkit-transform: skewX(-25deg);
-    transform: skewX(-25deg);
-  }
-  .profile-pic:hover::before {
-    -webkit-animation: shine 0.75s;
-    animation: shine 0.75s;
-  }
-  @-webkit-keyframes shine {
-    100% {
-      left: 125%;
-    }
-  }
-  @keyframes shine {
-    100% {
-      left: 125%;
-    }
-  }
-
-  .landing-atmos {
-    position: relative;
-    overflow: hidden;
-    --celestial-bg: radial-gradient(circle at 30% 30%, #fff6c6 0%, #ffd54d 48%, #ffb703 70%, transparent 72%);
-  }
-
-  .celestial {
-    position: absolute;
-    width: 120px;
-    height: 120px;
-    border-radius: 999px;
-    pointer-events: none;
-    z-index: 1;
-    transition: opacity 0.6s ease, transform 0.6s ease;
-  }
-
-  .sun {
-    top: 5%;
-    left: 4%;
-    background: radial-gradient(circle at 30% 30%, #fff3b0 0%, #ffd54d 45%, #ffb703 70%, transparent 72%);
-    box-shadow: 0 0 50px rgba(255, 213, 77, 0.45);
-  }
-
-  .moon {
-    top: 5%;
-    right: 4%;
-    background:
-      radial-gradient(circle at 35% 35%, #f4f7ff 0%, #cfd8ff 55%, #8fa3ff 75%, transparent 78%),
-      radial-gradient(circle at 30% 35%, rgba(120, 132, 200, 0.7) 0 12px, transparent 14px),
-      radial-gradient(circle at 60% 55%, rgba(120, 132, 200, 0.6) 0 10px, transparent 12px),
-      radial-gradient(circle at 45% 70%, rgba(120, 132, 200, 0.55) 0 8px, transparent 10px);
-    box-shadow: 0 0 45px rgba(143, 163, 255, 0.35);
-  }
-
-  .sun::before {
-    content: "";
-    position: absolute;
-    inset: -38px;
-    border-radius: 999px;
-    background: repeating-conic-gradient(
-      from 0deg,
-      rgba(255, 214, 102, 0.8) 0deg 6deg,
-      transparent 6deg 18deg
-    );
-    mask: radial-gradient(circle, transparent 46%, #000 56%);
-    opacity: 0.85;
-  }
-
-  :global(html.dark) .sun {
-    opacity: 0;
-    transform: translateY(-14px) scale(0.92);
-  }
-
-  :global(html.dark) .moon {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
-
-  :global(html:not(.dark)) .sun {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
-
-  :global(html:not(.dark)) .moon {
-    opacity: 0;
-    transform: translateY(14px) scale(0.9);
-  }
-
-  :global(html.dark) .landing-atmos {
-    --celestial-bg: radial-gradient(circle at 65% 35%, #f4f7ff 0%, #cfd8ff 55%, #8fa3ff 78%, transparent 80%);
-  }
-
-  .landing-atmos::before,
-  .landing-atmos::after {
-    content: "";
-    position: absolute;
-    pointer-events: none;
-    opacity: 0.14;
-    background-repeat: no-repeat;
-    background-size: contain;
-    z-index: 0;
-  }
-
-  .landing-atmos::before {
-    width: 320px;
-    height: 320px;
-    bottom: 8%;
-    right: 32%;
-    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 200' fill='none' stroke='%239ad0ff' stroke-width='10' stroke-linecap='round' stroke-linejoin='round'><path d='M70 40 L30 100 L70 160'/><path d='M130 40 L170 100 L130 160'/><path d='M110 30 L90 170'/></svg>");
-  }
-
-  .landing-atmos::after {
-    width: 360px;
-    height: 360px;
-    bottom: 5%;
-    right: 6%;
-    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 240 200' fill='none' stroke='%239ad0ff' stroke-width='8' stroke-linecap='round' stroke-linejoin='round'><rect x='40' y='70' width='160' height='90' rx='8' /><rect x='40' y='30' width='160' height='35' rx='6' /><line x1='55' y1='36' x2='85' y2='60' /><line x1='85' y1='36' x2='115' y2='60' /><line x1='115' y1='36' x2='145' y2='60' /><line x1='145' y1='36' x2='175' y2='60' /></svg>");
-  }
-
-  @media (max-width: 768px) {
-    .landing-atmos::before,
-    .landing-atmos::after {
-      opacity: 0.1;
-      width: 220px;
-      height: 220px;
-    }
-
-    .celestial {
-      display: none;
-    }
-
-    .landing-atmos {
-      background-image: var(--celestial-bg);
-      background-repeat: no-repeat;
-      background-size: 90px 90px;
-      background-position: top 6% left 6%;
-    }
-
-    :global(html.dark) .landing-atmos {
-      background-position: top 6% right 6%;
-    }
-  }
-
-  :global(html.dark) .landing-atmos::before,
-  :global(html.dark) .landing-atmos::after {
-    opacity: 0.06;
-  }
-
-  @media (max-width: 768px) {
-    :global(html.dark) .landing-atmos::before,
-    :global(html.dark) .landing-atmos::after {
-      opacity: 0.04;
-    }
-  }
-</style>

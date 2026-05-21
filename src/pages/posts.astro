@@ -14,12 +14,15 @@ const title = "SA: Writing";
 ---
 
 <BaseLayout title={title}>
-  <section class="mt-24 px-4 lg:px-6 reveal" data-reveal>
-    <h1 class="text-4xl font-bold mb-6">Writing</h1>
-    <div
-      class="grid gap-6 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 items-stretch"
-    >
-      {allPosts.map((post) => <Post post={post} />)}
-    </div>
-  </section>
+  <div class="mx-auto w-full max-w-screen-2xl px-4 sm:px-6 lg:px-10 xl:px-14 2xl:px-20">
+    <section class="mt-24 reveal" data-reveal>
+      <p class="eyebrow text-secondary dark:text-dk-secondary mb-3">Notes from the work</p>
+      <h1 class="display-sm mb-10">Writing.</h1>
+      <div
+        class="grid gap-6 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 items-stretch"
+      >
+        {allPosts.map((post) => <Post post={post} />)}
+      </div>
+    </section>
+  </div>
 </BaseLayout>
