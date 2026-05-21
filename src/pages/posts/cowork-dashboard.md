@@ -75,7 +75,7 @@ A weekly workflow that used to eat 6-8 hours of senior time across the team now 
   </div>
   <div class="stat-callout stat-amber">
     <div class="stat-value">½ day → 3 min</div>
-    <div class="stat-label">weekly reconciliation cycle</div>
+    <div class="stat-label">weekly reconciliation, end to end</div>
   </div>
   <div class="stat-callout stat-emerald">
     <div class="stat-value">8 → 1</div>
