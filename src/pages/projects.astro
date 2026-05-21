@@ -24,6 +24,7 @@ const cleanTitle = (t: string) =>
     .trim();
 
 const industry = projects.filter((p: any) => p.tier === "industry");
+const research = projects.filter((p: any) => p.tier === "research");
 const academic = projects.filter((p: any) => p.tier === "academic");
 
 // Industry chips stay neutral slate so the page reads as black + matte gray;
@@ -36,13 +37,13 @@ const INDUSTRY_CHIP_TONES = ["slate", "slate", "slate", "slate", "slate", "slate
 const ATMOS_BY_IMG: Record<string, string> = {
   "/cbct-validator.png": "cyan",
   "/treatment-estimator.png": "violet",
-  "/optimal-living-systems.png": "blue",
   "/cowork-dashboard.png": "cyan",
   "/loan-radar.png": "blue",
   "/llm-persuasion.png": "violet",
   "/doc-coach.png": "emerald",
   "/npc-coach.png": "emerald",
   "/accounting-automation.png": "amber",
+  "/enterprise-data.png": "amber",
 };
 const atmosToneFor = (p: any) => ATMOS_BY_IMG[p.img_path] || "slate";
 
@@ -118,7 +119,9 @@ const projectsWithBlog = projects
   {industry.map((project: any, i: number) => {
     const flip = i % 2 === 1;
     const display = cleanTitle(project.title);
-    const highlights = project.details?.highlights?.slice(0, 3) || [];
+    const shortDesc = project.details?.summary_short || project.description;
+    const stats = project.details?.stats || [];
+    const star = project.details?.star;
     const tech = project.tech?.slice(0, 8) || [];
     const chipTone = INDUSTRY_CHIP_TONES[i % INDUSTRY_CHIP_TONES.length];
     const blog = postFor(project.title);
@@ -131,13 +134,58 @@ const projectsWithBlog = projects
         <div class="relative z-10 mx-auto w-full max-w-screen-2xl px-6 lg:px-12 grid lg:grid-cols-12 gap-10 lg:gap-16 items-center">
           <div class={`lg:col-span-7 ${flip ? "lg:order-2" : ""}`}>
             <div class="relative project-screen-imagewrap">
-              <Image
-                src={project.img_path}
-                alt={project.img_alt || project.title}
-                width={1400}
-                height={875}
-                class="w-full aspect-[16/10] object-cover rounded-2xl shadow-2xl ring-1 ring-text/10 dark:ring-dk-text/15"
-              />
+              <button
+                type="button"
+                class="flip-card group"
+                aria-label={`Show case study for ${display}`}
+                data-flip-card
+              >
+                <div class="flip-card-inner">
+                  <div class="flip-card-front">
+                    <Image
+                      src={project.img_path}
+                      alt={project.img_alt || project.title}
+                      width={1400}
+                      height={875}
+                      class="w-full aspect-[16/10] object-cover rounded-2xl shadow-2xl ring-1 ring-text/10 dark:ring-dk-text/15"
+                    />
+                    <div class="flip-card-hint">
+                      <span class="flip-card-hint-icon" aria-hidden="true">↻</span>
+                      <span>Click for the case study</span>
+                    </div>
+                  </div>
+                  <div class="flip-card-back">
+                    {star ? (
+                      <div class="flip-card-back-grid">
+                        <div>
+                          <p class="flip-section-label">Problem</p>
+                          <p class="flip-section-body">{star.problem}</p>
+                        </div>
+                        <div>
+                          <p class="flip-section-label">Solution</p>
+                          <p class="flip-section-body">{star.solution}</p>
+                        </div>
+                        <div>
+                          <p class="flip-section-label">Process</p>
+                          <p class="flip-section-body">{star.process}</p>
+                        </div>
+                        <div>
+                          <p class="flip-section-label">Result</p>
+                          <p class="flip-section-body">{star.result}</p>
+                        </div>
+                      </div>
+                    ) : (
+                      <p class="flip-section-body">
+                        {project.details?.summary || project.description}
+                      </p>
+                    )}
+                    <div class="flip-card-hint flip-card-hint-back">
+                      <span class="flip-card-hint-icon" aria-hidden="true">↺</span>
+                      <span>Click to flip back</span>
+                    </div>
+                  </div>
+                </div>
+              </button>
             </div>
           </div>
           <div class="lg:col-span-5">
@@ -152,18 +200,18 @@ const projectsWithBlog = projects
             <h2 class="display-sm text-text dark:text-dk-text mb-5 glow-wave">
               {display}
             </h2>
-            <p class="text-base lg:text-lg text-text/75 dark:text-dk-text/80 leading-relaxed mb-6">
-              {project.details?.summary || project.description}
+            <p class="text-base lg:text-lg text-text/75 dark:text-dk-text/80 leading-relaxed mb-7">
+              {shortDesc}
             </p>
-            {highlights.length > 0 && (
-              <ul class="space-y-2.5 mb-6">
-                {highlights.map((h: string) => (
-                  <li class="flex gap-2.5 text-sm text-text/75 dark:text-dk-text/80 leading-relaxed">
-                    <span class={`mt-1.5 w-1.5 h-1.5 rounded-full shrink-0 chip-dot-${chipTone}`}></span>
-                    <span>{h}</span>
-                  </li>
+            {stats.length > 0 && (
+              <div class={`stat-grid stat-grid-${atmosToneFor(project)} mb-7`}>
+                {stats.map((s: any) => (
+                  <div class="stat-cell">
+                    <p class="stat-value">{s.value}</p>
+                    <p class="stat-label">{s.label}</p>
+                  </div>
                 ))}
-              </ul>
+              </div>
             )}
             {tech.length > 0 && (
               <div class="flex flex-wrap gap-2 mb-6">
@@ -198,7 +246,70 @@ const projectsWithBlog = projects
     );
   })}
 
-  <!-- ── Band B: Academic ───────────────────────────────────────────── -->
+  <!-- ── Band B: Research ───────────────────────────────────────────── -->
+  {research.length > 0 && (
+    <section class="snap-chapter relative py-24 lg:py-32">
+      <div class="mx-auto w-full max-w-screen-2xl px-6 lg:px-12">
+        <div class="max-w-3xl mb-12 lg:mb-16">
+          <p class="eyebrow text-acc-violet mb-4">Research</p>
+          <h2 class="display-sm text-text dark:text-dk-text glow-wave mb-4">
+            Working with researchers.
+          </h2>
+          <p class="text-base lg:text-lg text-text/70 dark:text-dk-text/70 leading-relaxed">
+            Collaborations at NYU on persuasion, alignment, and the
+            edges of RLHF.
+          </p>
+        </div>
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+          {research.map((p: any) => (
+            <article class="rounded-xl border border-text/10 dark:border-dk-text/15 bg-primary dark:bg-dk-primary/40 overflow-hidden flex flex-col hover:border-text/30 dark:hover:border-dk-text/25 transition">
+              <div class="relative overflow-hidden">
+                <Image
+                  src={p.img_path}
+                  alt={p.img_alt || p.title}
+                  width={900}
+                  height={500}
+                  class="w-full aspect-[16/9] object-cover transition duration-500 hover:scale-[1.03]"
+                />
+              </div>
+              <div class="p-5 flex flex-col flex-1">
+                <div class="flex items-center gap-2 mb-3">
+                  <span class="text-[0.6rem] uppercase tracking-[0.18em] font-bold text-acc-violet">
+                    Research · {p.date}
+                  </span>
+                </div>
+                <h3 class="text-base lg:text-lg font-semibold text-text dark:text-dk-text leading-snug mb-2">
+                  {cleanTitle(p.title)}
+                </h3>
+                <p class="text-xs lg:text-sm text-text/60 dark:text-dk-text/65 leading-relaxed mb-4 line-clamp-3">
+                  {p.description}
+                </p>
+                <div class="flex flex-wrap gap-1 mt-auto mb-3">
+                  {(p.tech?.slice(0, 5) || []).map((t: string) => (
+                    <span class="text-[0.62rem] uppercase tracking-[0.1em] px-1.5 py-0.5 rounded-full bg-text/5 dark:bg-dk-text/[0.06] text-text/60 dark:text-dk-text/65">
+                      {t}
+                    </span>
+                  ))}
+                </div>
+                {p.link && (
+                  <a
+                    href={p.link}
+                    target="_blank"
+                    rel="noreferrer"
+                    class="link-underline text-xs font-semibold text-acc-violet inline-flex mt-1"
+                  >
+                    View project <span aria-hidden="true">↗</span>
+                  </a>
+                )}
+              </div>
+            </article>
+          ))}
+        </div>
+      </div>
+    </section>
+  )}
+
+  <!-- ── Band C: Academic ───────────────────────────────────────────── -->
   {academic.length > 0 && (
     <section class="snap-chapter relative py-24 lg:py-32">
       <div class="mx-auto w-full max-w-screen-2xl px-6 lg:px-12">
@@ -434,4 +545,200 @@ const projectsWithBlog = projects
     border-radius: 2rem;
     opacity: 0.45;
   }
+
+  /* ── Flip card ──────────────────────────────────────────────────────
+     Click the screenshot to reveal the STAR case study on the back.
+     CSS-only flip via the .is-flipped class added by a small script. */
+  .flip-card {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 16 / 10;
+    background: transparent;
+    border: 0;
+    padding: 0;
+    perspective: 1600px;
+    cursor: pointer;
+    appearance: none;
+    text-align: left;
+    font: inherit;
+    color: inherit;
+  }
+  .flip-card:focus-visible {
+    outline: 2px solid rgba(91, 141, 239, 0.6);
+    outline-offset: 6px;
+    border-radius: 1.25rem;
+  }
+  .flip-card-inner {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    transition: transform 0.85s cubic-bezier(0.4, 0, 0.2, 1);
+    transform-style: preserve-3d;
+  }
+  .flip-card.is-flipped .flip-card-inner {
+    transform: rotateY(180deg);
+  }
+  .flip-card-front,
+  .flip-card-back {
+    position: absolute;
+    inset: 0;
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+    border-radius: 1rem;
+    overflow: hidden;
+  }
+  .flip-card-front img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+  .flip-card-hint {
+    position: absolute;
+    left: 50%;
+    bottom: 0.9rem;
+    transform: translateX(-50%);
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.45rem 0.9rem;
+    border-radius: 999px;
+    background: rgba(0, 0, 0, 0.55);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    color: #FBFBFD;
+    font-size: 0.72rem;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    border: 1px solid rgba(255, 255, 255, 0.10);
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.25s ease, transform 0.25s ease;
+  }
+  .flip-card:hover .flip-card-hint,
+  .flip-card:focus-visible .flip-card-hint {
+    opacity: 1;
+    transform: translateX(-50%) translateY(-2px);
+  }
+  .flip-card-hint-icon {
+    display: inline-block;
+    line-height: 1;
+    transform: translateY(-1px);
+  }
+  /* Back face: structured STAR layout on a clean black/matte gray card. */
+  .flip-card-back {
+    transform: rotateY(180deg);
+    background: #FBFBFD;
+    color: #1D1D1F;
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    padding: clamp(1rem, 2.5vw, 1.6rem);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    box-shadow: 0 30px 60px -28px rgba(0, 0, 0, 0.45);
+  }
+  html.dark .flip-card-back {
+    background: #0B0B0D;
+    color: #F5F5F7;
+    border-color: rgba(255, 255, 255, 0.08);
+  }
+  .flip-card-back-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: clamp(0.6rem, 1.6vw, 1.1rem) clamp(0.9rem, 2vw, 1.4rem);
+    max-height: 100%;
+  }
+  @media (max-width: 720px) {
+    .flip-card-back-grid { grid-template-columns: 1fr; gap: 0.6rem; }
+  }
+  .flip-section-label {
+    font-size: 0.62rem;
+    font-weight: 700;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: rgba(29, 29, 31, 0.55);
+    margin-bottom: 0.3rem;
+  }
+  html.dark .flip-section-label {
+    color: rgba(245, 245, 247, 0.55);
+  }
+  .flip-section-body {
+    font-size: clamp(0.78rem, 0.95vw, 0.92rem);
+    line-height: 1.45;
+    color: rgba(29, 29, 31, 0.85);
+  }
+  html.dark .flip-section-body {
+    color: rgba(245, 245, 247, 0.85);
+  }
+  .flip-card-hint-back {
+    position: absolute;
+    bottom: 0.7rem;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(0, 0, 0, 0.08);
+    color: rgba(29, 29, 31, 0.7);
+    border-color: rgba(0, 0, 0, 0.05);
+    opacity: 1;
+  }
+  html.dark .flip-card-hint-back {
+    background: rgba(255, 255, 255, 0.08);
+    color: rgba(245, 245, 247, 0.75);
+    border-color: rgba(255, 255, 255, 0.06);
+  }
+
+  /* ── Stats grid on the right panel of each industry project. ─────── */
+  .stat-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.9rem 1rem;
+  }
+  .stat-cell {
+    border-left: 2px solid rgba(148, 163, 184, 0.35);
+    padding: 0.1rem 0 0.1rem 0.8rem;
+  }
+  html.dark .stat-cell {
+    border-left-color: rgba(148, 163, 184, 0.40);
+  }
+  .stat-grid-cyan    .stat-cell { border-left-color: rgba(34, 211, 238, 0.55); }
+  .stat-grid-violet  .stat-cell { border-left-color: rgba(167, 139, 250, 0.55); }
+  .stat-grid-blue    .stat-cell { border-left-color: rgba(91, 141, 239, 0.55); }
+  .stat-grid-emerald .stat-cell { border-left-color: rgba(52, 211, 153, 0.55); }
+  .stat-grid-amber   .stat-cell { border-left-color: rgba(245, 165, 36, 0.55); }
+  html.dark .stat-grid-cyan    .stat-cell { border-left-color: rgba(34, 211, 238, 0.6); }
+  html.dark .stat-grid-violet  .stat-cell { border-left-color: rgba(167, 139, 250, 0.6); }
+  html.dark .stat-grid-blue    .stat-cell { border-left-color: rgba(91, 141, 239, 0.6); }
+  html.dark .stat-grid-emerald .stat-cell { border-left-color: rgba(52, 211, 153, 0.6); }
+  html.dark .stat-grid-amber   .stat-cell { border-left-color: rgba(245, 165, 36, 0.6); }
+  .stat-value {
+    font-size: clamp(1.1rem, 1.6vw, 1.4rem);
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    line-height: 1.1;
+    color: #1D1D1F;
+    margin-bottom: 0.2rem;
+  }
+  html.dark .stat-value { color: #F5F5F7; }
+  .stat-label {
+    font-size: 0.72rem;
+    line-height: 1.3;
+    color: rgba(29, 29, 31, 0.6);
+  }
+  html.dark .stat-label {
+    color: rgba(245, 245, 247, 0.6);
+  }
 </style>
+
+<script>
+  // Toggle the .is-flipped class on each [data-flip-card] when clicked.
+  // Lightweight and progressive: no JS, no flip.
+  document.querySelectorAll<HTMLElement>("[data-flip-card]").forEach((card) => {
+    card.addEventListener("click", () => {
+      card.classList.toggle("is-flipped");
+      const flipped = card.classList.contains("is-flipped");
+      card.setAttribute(
+        "aria-label",
+        flipped ? "Hide case study" : "Show case study",
+      );
+    });
+  });
+</script>
