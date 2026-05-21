@@ -19,7 +19,7 @@ stats:
     tone: "emerald"
 ---
 
-Most ML projects I'd seen up close had the same shape: a Jupyter notebook with a 90% accurate model, a Flask wrapper, and a long tail of operational questions (when do we retrain, who reviewed this, what data version did it see, how do we roll back) that the team got to "later." Later usually meant "after the production incident."
+Most ML projects I'd seen had the same shape: a Jupyter notebook with a 90% accurate model, a Flask wrapper, and a long tail of operational questions the team got to "later." When do we retrain? Who reviewed this? What data version did it see? How do we roll back? Later usually meant "after the production incident."
 
 Loan Radar was a grad-school project to flip that ratio. Make the boring 85% the focus on a problem (loan-default scoring) where the model itself is well-understood.
 
@@ -65,7 +65,7 @@ Reason they're scripts in git instead of checkboxes in a dashboard: it makes "di
 
 ## Honest latency numbers, not vibes
 
-A benchmark harness measures three things on a single 2-CPU container with the production model: **0.79ms** median latency for a single caller, **0.87ms** at p95, and sustained throughput around **33,000 samples/second** before p99 starts climbing.
+A benchmark harness runs against the production model on a single 2-CPU container. Results: **0.79ms** median latency for a single caller, **0.87ms** at p95, sustained throughput around **33,000 samples/second** before p99 climbs.
 
 <div class="post-stats-grid my-8">
   <div class="stat-callout stat-cyan">
@@ -95,13 +95,13 @@ The Airflow DAG runs weekly:
 5. If green, promote to staging + Slack ack required.
 6. After human ack, canary roll to production.
 
-The Slack ack is deliberate. Fully automated production rollouts on a financial model are a thing you do only if your rollback story is trivially safe. The five-minute human pause is cheap compared to the cost of an automatic rollout that violates a calibration assumption nobody'd thought to write a gate for.
+The Slack ack is deliberate. Fully automated rollouts on a financial model only make sense when rollback is trivially safe. A five-minute human pause is cheap compared to an automatic rollout that violates a calibration assumption nobody'd thought to gate on.
 
 ## What this taught me
 
 > The boring parts are the parts. A 99% accurate model with no lineage and no gates is operationally worse than a 92% accurate model with both.
 
-The Hybridge work I did later carries the same DNA. The [CBCT validator](/posts/cbct-scan-validator) has a CICT gate before any promotion. The [consultation QA pipeline](/posts/clinical-rag) has schema-validated outputs and a single-retry contract. Both use a hot-swap deploy shape so retrains don't need a rebuild. Both share a single ETL module across train and serve.
+The Hybridge work I did later carries the same DNA. The [CBCT validator](/posts/cbct-scan-validator) has a gate before any promotion. The [consultation QA pipeline](/posts/clinical-rag) has schema-validated outputs and a single-retry contract. Both use a hot-swap deploy shape so retrains don't need a rebuild. Both share a single ETL module across train and serve.
 
 Those patterns came out of Loan Radar.
 

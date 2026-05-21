@@ -132,4 +132,4 @@ Garrett never sees the throttle. He sees a one-line "retrying in 4s" message and
 
 The pattern I keep coming back to: **most internal automation projects fail not because the engineering is bad but because the engineering builds a platform when the user wanted a tool.** A tool is a thing you keep in a drawer. A platform is a thing you log into. Tools are easier to trust.
 
-Garrett doesn't run a server. He runs scripts. The right level of platformisation for one accountant doing weekly closes is "give him scripts he can read and edit." Anything heavier would have been a tax, not an asset.
+Garrett doesn't run a server. He runs scripts. The right level of platformisation for one accountant doing weekly closes is: give him scripts he can read and edit. Anything heavier would have been a tax, not an asset.

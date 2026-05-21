@@ -7,7 +7,7 @@ const CHAT_ENDPOINT = import.meta.env.PUBLIC_CHAT_ENDPOINT || "";
 
 const initialMessage = {
   role: "assistant",
-  content: "Hey! I can answer questions about Sampreeth — projects, experience, filmmaking, or background. Ask me anything about him.",
+  content: "Hey! Ask me anything about Sampreeth. Projects, experience, filmmaking, background.",
 };
 
 export default function ChatWidget() {

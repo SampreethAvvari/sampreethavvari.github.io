@@ -334,9 +334,9 @@ const projectsWithBlog = projects
 </BaseLayout>
 
 <style is:global>
-  /* Hero atmosphere — blue / violet / cyan mix so it stops reading as one
-     wash of green. ::after lays a tiny SVG noise pattern on top to dither
-     the gradient and kill 8-bit banding on near-black bgs. */
+  /* Hero atmosphere. Same faint single-bloom pattern as the chapter and
+     project-screen atmos so the page reads as one continuous black/matte
+     gray surface; the eyebrow-blue colour stays in the glow only. */
   .projects-hero-atmos {
     position: relative;
   }
@@ -345,10 +345,9 @@ const projectsWithBlog = projects
     position: absolute;
     inset: -10%;
     background:
-      radial-gradient(circle at 18% 28%, rgba(91, 141, 239, 0.20), transparent 55%),
-      radial-gradient(circle at 82% 22%, rgba(34, 211, 238, 0.16), transparent 55%),
-      radial-gradient(circle at 50% 95%, rgba(167, 139, 250, 0.14), transparent 55%);
-    filter: blur(80px);
+      radial-gradient(ellipse 55% 45% at 22% 32%, rgba(91, 141, 239, 0.10), transparent 70%),
+      radial-gradient(ellipse 55% 45% at 78% 72%, rgba(91, 141, 239, 0.07), transparent 70%);
+    filter: blur(90px);
     z-index: 0;
     pointer-events: none;
     animation: atmosDrift 22s ease-in-out infinite;

@@ -387,88 +387,29 @@ button.no-lift:hover {
 .chip-dot-rose    { background: #FB7185; }
 .chip-dot-slate   { background: #94A3B8; }
 
-/* ─────────────────────────────────────────────────────────────────
-   Northern lights — soft aurora ribbons drifting across the top of
-   the home page. Fixed band so they ride along as the user scrolls,
-   z-index: -1 so they sit behind everything. Dark mode is the classic
-   emerald / cyan / blue / violet; light mode is the same shape in
-   magenta / rose / lilac for warmth. Only wired in on the home page.
-   ───────────────────────────────────────────────────────────────── */
-.home-aurora {
+/* Hero atmos. Same single-bloom treatment as the chapter atmos so the page
+   reads as one continuous dark surface instead of a coloured wash up top. */
+.hero-atmos {
   position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 55vh;
+  inset: -10%;
   z-index: 0;
   pointer-events: none;
-  overflow: hidden;
-  contain: layout paint;
+  filter: blur(80px);
+  background:
+    radial-gradient(ellipse 55% 45% at 22% 32%, rgba(91, 141, 239, 0.09), transparent 70%),
+    radial-gradient(ellipse 55% 45% at 78% 72%, rgba(91, 141, 239, 0.06), transparent 70%);
+  animation: atmosDrift 22s ease-in-out infinite;
 }
-.home-aurora::before,
-.home-aurora::after {
-  content: "";
-  position: absolute;
-  inset: -15% -25%;
-  filter: blur(72px);
-  opacity: 0.58;
-  background-repeat: no-repeat;
-  will-change: transform;
+@media (prefers-reduced-motion: reduce) {
+  .hero-atmos { animation: none; }
 }
 
-/* Dark mode — green / teal / blue ribbons, classic aurora */
-html.dark .home-aurora::before {
-  background:
-    radial-gradient(ellipse 50% 32% at 22% 28%, rgba(52, 211, 153, 0.62), transparent 65%),
-    radial-gradient(ellipse 55% 36% at 60% 42%, rgba(34, 211, 238, 0.48), transparent 65%);
-  animation: auroraDrift1 18s ease-in-out infinite alternate;
-}
-html.dark .home-aurora::after {
-  background:
-    radial-gradient(ellipse 50% 34% at 80% 32%, rgba(91, 141, 239, 0.45), transparent 65%),
-    radial-gradient(ellipse 42% 28% at 38% 58%, rgba(167, 139, 250, 0.38), transparent 65%);
-  animation: auroraDrift2 22s ease-in-out infinite alternate;
-  opacity: 0.42;
-}
-
-/* Light mode — same aurora shapes in magenta / rose / lilac, still
-   moving but a touch fainter so the near-white bg doesn't get washed. */
-html:not(.dark) .home-aurora::before {
-  background:
-    radial-gradient(ellipse 50% 32% at 22% 28%, rgba(232, 121, 249, 0.34), transparent 65%),
-    radial-gradient(ellipse 55% 36% at 60% 42%, rgba(244, 114, 182, 0.28), transparent 65%);
-  animation: auroraDrift1 18s ease-in-out infinite alternate;
-  mix-blend-mode: multiply;
-}
-html:not(.dark) .home-aurora::after {
-  background:
-    radial-gradient(ellipse 50% 34% at 80% 32%, rgba(167, 139, 250, 0.26), transparent 65%),
-    radial-gradient(ellipse 42% 28% at 38% 58%, rgba(251, 113, 133, 0.22), transparent 65%);
-  animation: auroraDrift2 22s ease-in-out infinite alternate;
-  mix-blend-mode: multiply;
-  opacity: 0.40;
-}
-
-@keyframes auroraDrift1 {
-  0%   { transform: translate3d(-5%, -2%, 0) skewX(-2deg); }
-  100% { transform: translate3d(5%, 3%, 0) skewX(2deg); }
-}
-@keyframes auroraDrift2 {
-  0%   { transform: translate3d(4%, 2%, 0) skewY(1deg); }
-  100% { transform: translate3d(-4%, -2%, 0) skewY(-1deg); }
-}
-
-/* Email-CTA wrap — makes the .glow-wave's behind-blob hug just the email
+/* Email-CTA wrap. Makes the .glow-wave's behind-blob hug just the email
    button area, not the whole containing block. */
 .email-cta-wrap {
   display: inline-block;
   padding: 0.5rem 1rem;
   margin: -0.5rem -1rem;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .home-aurora::before,
-  .home-aurora::after { animation: none; }
 }
 
 /* Subtle gradient drift behind the landing hero. */

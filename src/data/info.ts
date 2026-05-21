@@ -30,7 +30,7 @@ export const info = {
       {
         src: "/About%20page%20pics/Shure%201.JPG",
         alt: "Shure team moment",
-        context: "Shure days — building and testing in the lab.",
+        context: "Shure days. Building and testing in the lab.",
         position: "center 60%",
         tag: "Shure",
       },
@@ -44,14 +44,14 @@ export const info = {
       {
         src: "/About%20page%20pics/NYU%201.AVIF",
         alt: "NYU campus",
-        context: "NYU — the grind, the skyline, the good kind of chaos.",
+        context: "NYU. The grind, the skyline, the good kind of chaos.",
         position: "center 60%",
         tag: "Grad",
       },
       {
         src: "/About%20page%20pics/NYU%202.AVIF",
         alt: "NYU academic moment",
-        context: "NYU milestones — long nights, big wins.",
+        context: "NYU milestones. Long nights, big wins.",
         position: "center 70%",
         tag: "Grad",
       },
@@ -64,14 +64,14 @@ export const info = {
       {
         src: "/About%20page%20pics/Hybridge%201.JPG",
         alt: "Hybridge team moment",
-        context: "Hybridge Implants — where AI meets dentistry.",
+        context: "Hybridge Implants. Where AI meets dentistry.",
         position: "center 10%",
         tag: "Hybridge",
       },
       {
         src: "/About%20page%20pics/Hybridge%202.JPG",
         alt: "Hybridge office snapshot",
-        context: "Hybridge — innovation, iteration, impact.",
+        context: "Hybridge. Build, ship, repeat.",
         tag: "Hybridge",
       },
     ] as Array<{
@@ -89,12 +89,12 @@ export const info = {
         logo: "/logos/hybridge.webp",
         logoClass: "h-12",
         highlights: [
-          "[Consultation QA Pipeline](/posts/clinical-rag) — Cloud Run + FastAPI service that turns every Zoom consultation into a color-coded coaching report. Three-layer doctor ID, schema-validated Gemini scoring, HIPAA-compliant without Workspace DWD. +130% treatment acceptance, +43% revenue, -35% hallucinations.",
-          "[CBCT Scan Validator](/posts/cbct-scan-validator) — In-house dental CT classifier that replaced a $98K + $26K/yr vendor quote with a Cloud Run service running under $50/month. Frozen DentalSegmentator encoder + multi-scale head, OpenVINO on CPU, ~5.5s end-to-end. 20-scan CICT gate on every push.",
-          "[Treatment Estimator](/posts/treatment-estimator) — Next.js + Postgres rebuild of the decade-old quoting tool. Write-once `_at_capture` columns enforced by a Postgres trigger make the 6-month price guarantee a real database invariant. Shipped end-to-end in about two days; an earlier vendor attempt hadn't shipped at all.",
-          "[Cowork Dashboard](/posts/cowork-dashboard) — Apps Script on weekly Monday.com exports. Patient-to-lead linkage went from 49% to 99% by joining on the Monday connect column. Surfaced ~$169k of orphan revenue. Weekly reconciliation: half a day → 3 minutes.",
-          "[Accounting Automation Suite](/posts/accounting-automation) — A dozen Python scripts that replaced the controller's manual weekly imports across Denticon, MagicTouch, Paychex, and two banks. ~6-8 hours/week → ~30-45 minutes. About 400 hours/year recovered.",
-          "Cross-cutting MLOps under all of the above: a single shared ETL module so train/serve skew is impossible, hot-swap model checkpoints via GCS, tag-based Cloud Build CI/CD, OpenTelemetry observability with strict no-PHI-in-logs.",
+          "[Consultation QA Pipeline](/posts/clinical-rag). Cloud Run + FastAPI grades every Zoom consult against a 7-criterion rubric. Schema-validated Gemini scoring, three-layer doctor ID, HIPAA-clean without Workspace DWD. +130% acceptance, +43% revenue, -35% hallucinations.",
+          "[CBCT Scan Validator](/posts/cbct-scan-validator). In-house dental CT classifier. Replaced a $98K + $26K/yr vendor quote with a Cloud Run service under $50/mo. Frozen DentalSegmentator + multi-scale head, OpenVINO on CPU, ~5.5s end-to-end. 20-scan CICT gate on every push.",
+          "[Treatment Estimator](/posts/treatment-estimator). Next.js + Postgres rebuild of a decade-old quoting tool. Write-once `_at_capture` columns + Postgres triggers turn the 6-month price guarantee into a real DB invariant. Shipped in two days; a prior vendor attempt never shipped.",
+          "[Cowork Dashboard](/posts/cowork-dashboard). Apps Script on weekly Monday.com exports. Patient-to-lead linkage went from 49% to 99% via the Monday connect column. Surfaced ~$169k of orphan revenue. Weekly recon: half a day → 3 minutes.",
+          "[Accounting Automation Suite](/posts/accounting-automation). A dozen Python scripts that replaced the controller's manual weekly imports across Denticon, MagicTouch, Paychex, and two banks. ~6-8 hrs/week → 30-45 min. ~400 hrs/yr recovered.",
+          "Cross-cutting MLOps: one shared ETL module so train/serve skew is impossible. Hot-swap checkpoints via GCS, tag-based Cloud Build CI/CD, OpenTelemetry with strict no-PHI logs.",
         ],
       },
       {
@@ -167,7 +167,7 @@ export const info = {
         ],
       },
       {
-        label: "Cloud — GCP",
+        label: "Cloud / GCP",
         items: [
           "Cloud Run",
           "Cloud SQL",
@@ -183,7 +183,7 @@ export const info = {
         ],
       },
       {
-        label: "Cloud — AWS",
+        label: "Cloud / AWS",
         items: [
           "EC2",
           "S3",
@@ -279,21 +279,21 @@ export const info = {
 
   projects: [
     {
-      title: "CBCT Scan Validator — Hybridge Implants LLC",
+      title: "CBCT Scan Validator",
       tier: "industry",
       date: "Mar 2026 - Present",
       description:
-        "Production medical-imaging AI replacing a $98K + $26K/yr vendor quote with an in-house stack running <$50/mo on GCP. Closes a 10-year recurring loss from bad CBCT scans reaching the design queue.",
+        "In-house dental CT classifier. Replaced a $98K + $26K/yr vendor quote with a Cloud Run service running under $50/mo. Closes a 10-year recurring loss from bad scans reaching the design queue.",
       link: "",
       details: {
         summary:
-          "End-to-end MLOps pipeline: SFTP ingest from MagicTouch DLCPM → ETL parity-checked across train/eval/serve → DentalSegmentator-backboned multi-task head → OpenVINO inference on Cloud Run → verdict PDF + email + write-back. ~5.5s end-to-end, CPU-only, scale-to-zero.",
+          "End-to-end MLOps. SFTP ingest from MagicTouch DLCPM → parity-checked ETL → frozen DentalSegmentator + multi-task head → OpenVINO on Cloud Run → verdict PDF + email + write-back. ~5.5s end-to-end, CPU-only, scale-to-zero.",
         highlights: [
-          "Bake-off across six architectures (A–F: ConvNeXt-MIL, Hybrid Transformer, 3D CNN, nnU-Net, VAE, ST-MAE), then iterated through Models G, H, and J as data and failure modes taught more.",
-          "Model H: frozen DentalSegmentator nnU-Net v2 encoder + multi-scale taps (global/mid/slice-seq BiGRU + attention) + compact 500K-param head with feature-space augmentation and cost-tuned threshold (FN cost = 15× FP).",
-          "Strict 20-scan CICT holdout wired into GitHub Actions caught a leaky AUROC 0.80 — shipped the honest 0.6309 number rather than gaming the gate.",
-          "Tag-based CI/CD (git tag vX.Y.Z → Cloud Build → Cloud Run) with hot-swap head checkpoint via GCS, no rebuild of the OpenVINO encoder IR required.",
-          "Drove the partner integration (DLCPM, no API license) by discovering their bidirectional SFTP path — single architectural pivot that kept the project unblocked.",
+          "Bake-off across six architectures (A–F), then iterated through Models G, H, J as data and failure modes taught more.",
+          "Model H: frozen DentalSegmentator nnU-Net v2 encoder + multi-scale taps + compact 500K-param head. Cost-tuned threshold (FN cost = 15× FP).",
+          "Strict 20-scan CICT holdout wired into GitHub Actions caught a leaky AUROC 0.80. Shipped the honest 0.6309 rather than game the gate.",
+          "Tag-based CI/CD (git tag → Cloud Build → Cloud Run). Hot-swap head checkpoint via GCS, no OpenVINO IR rebuild.",
+          "Found the partner's bidirectional SFTP path (DLCPM has no API license). One architectural pivot that kept the project unblocked.",
         ],
       },
       tech: ["PyTorch Lightning", "MONAI", "OpenVINO", "FastAPI", "Cloud Run", "Eventarc", "W&B", "GitHub Actions"],
@@ -301,21 +301,21 @@ export const info = {
       img_path: "/cbct-validator.png",
     },
     {
-      title: "Treatment Estimator — Hybridge Implants LLC",
+      title: "Treatment Estimator",
       tier: "industry",
       date: "May 2026 - Present",
       description:
-        "Decoupled a decade-old single-price quoting tool into a code-driven decision tree + per-location frozen-at-capture price catalog. Makes the 6-month price-guarantee a real system property, not a sticker on the PDF.",
+        "Decoupled a decade-old single-price quoting tool into a code-driven decision tree + per-location frozen-at-capture price catalog. The 6-month price guarantee becomes a real system property, not a sticker on the PDF.",
       link: "",
       details: {
         summary:
-          "Next.js 16 + Postgres + Drizzle internal tool for treatment coordinators across three clinics. Five pricing model kinds (flat, tiered, tiered-zoned, price-range, per-surface) with write-once price snapshots and an immutable price-book versioning workflow (proposed → approved → published).",
+          "Next.js 16 + Postgres + Drizzle for treatment coordinators across three clinics. Five pricing models (flat, tiered, tiered-zoned, price-range, per-surface). Write-once price snapshots. Price-book lifecycle: proposed → approved → published.",
         highlights: [
-          "Wrote a 9-decision ADR with tradeoff tables and library citations before any code — Next.js, Drizzle, Cloud Run, Auth.js, RBAC topology, all justified against a $35/mo cost target.",
-          "Designed write-once *_at_capture columns enforced by Postgres triggers + per-location price-book versions — the 6-month price guarantee becomes a real invariant, not a PDF claim.",
-          "Three-affordance wizard orientation (phase progress strip + within-option checklist with answer recap + sticky 'selections so far' sidebar) so the TC never loses context mid-consult.",
-          "Code-driven decision tree (Path strategy classes) + DB-driven price catalog with a 100% branch-coverage gate on the pricing engine; golden snapshots lock every documented wizard path.",
-          "BACKLOG.md of 30+ consciously-deferred items with revisit triggers and a `questions-for-Chelsea` doc with worked numerical examples so the clinical SME could review without reading code.",
+          "9-decision ADR with tradeoff tables and citations before any code. Next.js, Drizzle, Cloud Run, Auth.js, RBAC topology, all justified against a $35/mo cost target.",
+          "Write-once *_at_capture columns enforced by Postgres triggers + per-location price-book versions. The 6-month price guarantee is a DB invariant, not a PDF claim.",
+          "Three-affordance wizard: phase progress strip, within-option checklist with answer recap, sticky 'selections so far' sidebar. The TC never loses context mid-consult.",
+          "Code-driven decision tree (Path strategy classes) + DB-driven price catalog. 100% branch coverage on the pricing engine. Golden snapshots lock every documented wizard path.",
+          "BACKLOG.md of 30+ consciously deferred items with revisit triggers. A `questions-for-Chelsea` doc with worked numbers lets the clinical SME review without reading code.",
         ],
       },
       tech: ["Next.js 16", "TypeScript", "Drizzle", "PostgreSQL", "Auth.js", "Cloud Run", "@react-pdf/renderer", "Zod"],
@@ -323,20 +323,20 @@ export const info = {
       img_path: "/treatment-estimator.png",
     },
     {
-      title: "Optimal Living Systems — Enterprise SaaS AMI",
+      title: "Optimal Living Systems, Enterprise SaaS AMI",
       tier: "industry",
       date: "May 2025 - Sept 2025",
       description:
-        "Packaged the OLS AI platform into a deployable AMI: frontend, backend, chatbot, and databases inside K3s on EC2. Tag-scoped RAG retrieval. Cross-region migration to us-east-1.",
+        "Packaged the OLS AI platform into a deployable AMI. Frontend, backend, chatbot, and databases inside K3s on EC2. Tag-scoped RAG retrieval. Cross-region migration to us-east-1.",
       link: "",
       details: {
         summary:
-          "Turned the Optimal Living Systems platform from a single-tenant product into a per-client SaaS deployment shape. The deliverable was a production-ready AWS AMI that drops into an enterprise customer's private VPC and runs the full stack inside a lightweight Kubernetes cluster.",
+          "Turned OLS from a single-tenant product into a per-client SaaS shape. The deliverable: a production-ready AWS AMI that drops into an enterprise customer's private VPC and runs the full stack on a lightweight Kubernetes cluster.",
         highlights: [
-          "Extended and integrated the core frontend (React, Next.js), backend, and chatbot (Golang) into one deployable unit, enabling per-client SaaS customisations without forking the codebase.",
-          "Provisioned frontend, backend, bots, MySQL, Redis, and Milvus inside a K3s cluster on AWS EC2 and built a production-ready AMI for enterprise private clouds.",
-          "Implemented tag-scoped RAG retrieval with Milvus filtering at both index and query time so a single shared vector store could partition cleanly across tenants.",
-          "Drove a cross-region migration from ap-southeast-1 to us-east-1 across S3, ECR, RDS, and ElastiCache, cutting end-user latency by ~50ms; added CloudWatch dashboards so on-call had a real surface to work from.",
+          "Integrated the core frontend (React, Next.js), backend, and chatbot (Golang) into one deployable unit. Per-client customisations without forking the codebase.",
+          "Provisioned frontend, backend, bots, MySQL, Redis, and Milvus inside a K3s cluster on EC2. Production-ready AMI for enterprise private clouds.",
+          "Tag-scoped RAG retrieval with Milvus filtering at index and query time. One shared vector store, clean tenant partitioning.",
+          "Cross-region migration from ap-southeast-1 to us-east-1 across S3, ECR, RDS, ElastiCache. ~50ms latency drop. CloudWatch dashboards so on-call had a real surface.",
         ],
       },
       tech: ["React", "Next.js", "Golang", "AWS EC2", "K3s", "MySQL", "Redis", "Milvus", "CloudWatch"],
@@ -344,21 +344,21 @@ export const info = {
       img_path: "/optimal-living-systems.png",
     },
     {
-      title: "Cowork Dashboard — Hybridge Implants LLC",
+      title: "Cowork Dashboard",
       tier: "industry",
       date: "Apr 2026 - May 2026",
       description:
-        "Replaced a brittle live-Monday-API dashboard with a weekly-Excel pipeline that lifted patient↔lead linkage from 49% to ~99%. Single source of truth for every operational metric across two clinics.",
+        "Replaced a brittle live-Monday-API dashboard with a weekly-Excel pipeline. Lifted patient↔lead linkage from 49% to ~99%. Single source of truth for every metric across two clinics.",
       link: "",
       details: {
         summary:
-          "Internal operations dashboard for two clinics (Rochester / Buffalo). Apps Script web app on top of weekly Monday.com Excel exports, with one shared metrics module so every tab and widget computes from the same definitions.",
+          "Apps Script web app on weekly Monday.com exports for two clinics (Rochester / Buffalo). One shared metrics module so every tab computes from the same definitions.",
         highlights: [
-          "Found that Monday's connect column (a real board_relation, not a mirror) survives Excel export — drove patient↔lead linkage from 49.5% / 65.3% to 98.8% / 99.9% across two boards.",
-          "Cut the weekly reporting cycle from half a day of manual reconciliation to a 3-minute drop-three-Excels-and-refresh workflow.",
-          "Six tabs (Dashboard, Monthly, History, Lead Sources, Trends, Playground) share one filter bar and one set of metric functions — structurally impossible for two tabs to disagree.",
-          "Encoded every business rule explicitly (marketing taxonomy, location filter, excluded reasons, scheduled-date semantics, consult-show parsing) so leadership stops arguing about whose number is right.",
-          "Surfaced 24 orphan re-treatment patients carrying $169k of YTD treatment value that the old dashboard was silently dropping.",
+          "Monday's connect column (a real board_relation, not a mirror) survives Excel export. Drove patient↔lead linkage from 49.5% / 65.3% to 98.8% / 99.9% across two boards.",
+          "Weekly reporting: half a day of manual reconciliation → 3-minute drop-three-Excels-and-refresh.",
+          "Six tabs (Dashboard, Monthly, History, Lead Sources, Trends, Playground) share one filter bar and one set of metric functions. Two tabs can't disagree.",
+          "Every business rule explicit: marketing taxonomy, location filter, excluded reasons, scheduled-date semantics, consult-show parsing. Leadership stops arguing about whose number is right.",
+          "Surfaced 24 orphan re-treatment patients carrying $169k of YTD treatment value the old dashboard was silently dropping.",
         ],
       },
       tech: ["Google Apps Script", "Monday.com GraphQL", "Drive API", "Chart.js", "JavaScript"],
@@ -386,7 +386,7 @@ export const info = {
       img_path: "/loan-radar.png",
     },
     {
-      title: "LLM Persuasion (RLHF with GRPO/PPO) - Research",
+      title: "LLM Persuasion (RLHF with GRPO/PPO)",
       tier: "academic",
       date: "May 2024 - Sep 2025",
       description:
@@ -406,21 +406,21 @@ export const info = {
       img_path: "/llm-persuasion.png",
     },
     {
-      title: "Doc Coach — Consultation QA Pipeline (Hybridge Implants LLC)",
+      title: "Doc Coach, Consultation QA Pipeline",
       tier: "industry",
       date: "Aug 2025 - Present",
       description:
-        "Zoom transcript → Vertex AI Gemini scoring against a proprietary 7-criterion clinical framework → color-coded PDF reports to doctor + CEO + TC, with a master Sheet ledger for trend analysis. HIPAA-eligible, multi-tenant Zoom.",
+        "Zoom transcript → Vertex AI Gemini scoring on a 7-criterion clinical rubric → color-coded PDF to doctor + CEO + TC, plus a master Sheet ledger. HIPAA-eligible, multi-tenant Zoom.",
       link: "",
       details: {
         summary:
-          "Production-grade Cloud Run pipeline that grades every implant consultation across two Zoom Business orgs and three TCs. Doctor↔TC pairing is fully flexible — identity is resolved per-meeting through participants list, transcript alias matching, and an LLM tie-break, with explicit failure modes for unresolved cases.",
+          "Cloud Run pipeline that grades every implant consultation across two Zoom Business orgs and three TCs. Doctor↔TC pairing is fully flexible. Identity resolves per-meeting via participants list, transcript alias matching, and an LLM tie-break, with explicit failure modes.",
         highlights: [
-          "Drove +130% treatment acceptance and +43% revenue growth, with stateful agent chains cutting hallucinations by 35% under HIPAA-compliant controls.",
-          "Translated the CEO's hand-written 7-criterion framework into a versioned `consultation-rubric.md` prompt + JSON Schema 2020-12 contract that every Gemini response must validate against (with one retry on schema-fail).",
-          "Wrote a 19-section, 11-acceptance-test PRD with locked column orderings and explicit edge cases (Step 3 clinical override, Step 5 fee-presenter attribution) — usable as engineering brief AND clinical-stakeholder reference.",
-          "Built a production scoring RAG with Cloud SQL pgvector + GraphQL + rubric-backed SQL analytics for longitudinal doctor performance and feedback generation.",
-          "Avoided Workspace Domain-Wide Delegation by using a user-OAuth grant on the build owner's account (refresh token in Secret Manager) — bypassed Super Admin dependency entirely.",
+          "+130% treatment acceptance and +43% revenue. Stateful agent chains cut hallucinations 35% under HIPAA controls.",
+          "Translated the CEO's 7-criterion framework into a versioned `consultation-rubric.md` prompt + JSON Schema 2020-12 contract. Every Gemini response must validate, with one retry on schema-fail.",
+          "19-section, 11-acceptance-test PRD with locked column orderings and explicit edge cases (Step 3 clinical override, Step 5 fee-presenter attribution). Usable as engineering brief and clinical-stakeholder reference.",
+          "Production scoring RAG: Cloud SQL pgvector + GraphQL + rubric-backed SQL analytics for longitudinal doctor performance and feedback.",
+          "Avoided Workspace Domain-Wide Delegation. User-OAuth grant on the build owner's account (refresh token in Secret Manager) bypasses Super Admin dependency.",
         ],
       },
       imageStyle: "object-position: center 20%;",
@@ -429,7 +429,7 @@ export const info = {
       img_path: "/doc-coach.png",
     },
     {
-      title: "NPC Coach - Hybridge Implants LLC",
+      title: "NPC Coach",
       tier: "industry",
       date: "Aug 2025 - Present",
       description:
