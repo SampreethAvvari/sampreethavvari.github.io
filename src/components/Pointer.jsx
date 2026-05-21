@@ -1,162 +1,166 @@
 import React, { useRef, useEffect } from "react";
-import { useThemeColor } from "../hooks/useThemeColor";
-import resolveConfig from "tailwindcss/resolveConfig";
-import tailwindConfig from "../../tailwind.config.mjs";
 
+// Cursor glitter trail. Fine specks with a soft radial glow, twinkling out
+// over their life. Multi-tone palette so it doesn't read as one flat colour.
+// Hi-DPI canvas so the specks stay crisp on retina displays.
 export default function Pointer() {
   const canvasRef = useRef(null);
-  const twConfig = resolveConfig(tailwindConfig);
-  const themeColor = useThemeColor([
-    twConfig.theme.colors["dk-secondary"],
-    twConfig.theme.colors["secondary"],
-  ]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
     const ctx = canvas.getContext("2d");
     let particles = [];
+    let raf = 0;
+    let dpr = window.devicePixelRatio || 1;
 
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
-
-    const onResize = () => {
-      canvas.width = window.innerWidth;
-      canvas.height = window.innerHeight;
+    const sizeCanvas = () => {
+      dpr = window.devicePixelRatio || 1;
+      const w = window.innerWidth;
+      const h = window.innerHeight;
+      canvas.width = Math.floor(w * dpr);
+      canvas.height = Math.floor(h * dpr);
+      canvas.style.width = `${w}px`;
+      canvas.style.height = `${h}px`;
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     };
+    sizeCanvas();
 
+    const onResize = () => sizeCanvas();
     window.addEventListener("resize", onResize);
 
-    const mouse = {
-      x: undefined,
-      y: undefined,
-      last_x: undefined,
-      last_y: undefined,
-    };
+    const mouse = { x: undefined, y: undefined, last_x: undefined, last_y: undefined };
 
     const onMouseMove = (e) => {
       mouse.last_x = mouse.x;
       mouse.last_y = mouse.y;
-      mouse.x = e.x;
-      mouse.y = e.y;
+      mouse.x = e.clientX;
+      mouse.y = e.clientY;
     };
-
     const onMouseOut = () => {
       mouse.x = mouse.last_x;
       mouse.y = mouse.last_y;
     };
-
     document.addEventListener("mousemove", onMouseMove);
-
     document.addEventListener("mouseout", onMouseOut);
 
-    function animate() {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      particles.forEach((particle, index) => {
-        if (particle.isDead()) {
-          particles.splice(index, 1);
-        } else {
-          particle.update();
-        }
-      });
-      requestAnimationFrame(animate);
-    }
+    // Cool-palette glitter so it reads as a single coherent trail across modes.
+    const palette = [
+      "rgba(91, 141, 239, 1)",   // brand blue
+      "rgba(34, 211, 238, 1)",   // cyan
+      "rgba(167, 139, 250, 1)",  // violet
+      "rgba(244, 244, 247, 1)",  // near-white sparkle
+    ];
 
-    animate();
-
-    const particlesConfig = {
-      radius_in: [2, 5],
-      vx_in: [-1, 1],
-      vy_in: [-1, 1],
-      spread: 10,
-      life: 20,
-      interval: 1,
-      threshold: 3,
-      derivative_ratio: 10,
+    const cfg = {
+      radius: [0.4, 1.6],     // fine specks instead of fat balls
+      spread: 14,              // jitter around the cursor
+      life: 42,                // frames; longer life = longer twinkle tail
+      interval: 12,            // ms between emissions
+      threshold: 1.2,          // movement floor to start emitting
+      velocityScale: 0.10,     // damped, sleek tails
+      friction: 0.94,          // ease the speed out so specks settle
     };
 
-    const random = (min, max) => Math.random() * (max - min) + min;
+    const rand = (min, max) => Math.random() * (max - min) + min;
 
-    function createParticle() {
-      const radius = random(...particlesConfig.radius_in);
-      const x = mouse.x;
-      const y = mouse.y;
-      let vx = random(...particlesConfig.vx_in);
-      let vy = random(...particlesConfig.vy_in);
-      const color = themeColor;
-      const life = particlesConfig.life;
-      const spread = particlesConfig.spread;
-      const threshold = particlesConfig.threshold;
-      const derivative_ratio = particlesConfig.derivative_ratio;
-
+    function emit() {
       if (
-        Math.abs(mouse.x - mouse.last_x) < threshold &&
-        Math.abs(mouse.y - mouse.last_y) < threshold
+        mouse.x === undefined ||
+        mouse.last_x === undefined ||
+        (Math.abs(mouse.x - mouse.last_x) < cfg.threshold &&
+          Math.abs(mouse.y - mouse.last_y) < cfg.threshold)
       ) {
-        setTimeout(createParticle, particlesConfig.interval);
         return;
       }
-
-      if (mouse.last_x && mouse.last_y) {
-        // Derivative of mouse position
-        vx = (mouse.x - mouse.last_x) / derivative_ratio;
-        vy = (mouse.y - mouse.last_y) / derivative_ratio;
+      // Up to 3 specks per emission, density scales with speed.
+      const dx = mouse.x - mouse.last_x;
+      const dy = mouse.y - mouse.last_y;
+      const speed = Math.hypot(dx, dy);
+      const count = Math.min(3, 1 + Math.floor(speed / 10));
+      for (let i = 0; i < count; i++) {
+        const radius = rand(...cfg.radius);
+        const x = mouse.x + rand(-cfg.spread, cfg.spread) / 2;
+        const y = mouse.y + rand(-cfg.spread, cfg.spread) / 2;
+        const vx = dx * cfg.velocityScale + rand(-0.3, 0.3);
+        const vy = dy * cfg.velocityScale + rand(-0.3, 0.3);
+        const color = palette[Math.floor(Math.random() * palette.length)];
+        particles.push(new Particle(x, y, vx, vy, radius, color, cfg.life, ctx, cfg.friction));
       }
-
-      particles.push(
-        new Particle(x, y, vx, vy, radius, color, life, spread, ctx)
-      );
-
-      // Call createParticle again after interval
-      setTimeout(createParticle, particlesConfig.interval);
     }
 
-    // Initial call to start creating particles
-    createParticle();
+    const emitter = setInterval(emit, cfg.interval);
+
+    function frame() {
+      ctx.clearRect(0, 0, canvas.width / dpr, canvas.height / dpr);
+      // Additive blending makes overlapping specks twinkle instead of muddy out.
+      ctx.globalCompositeOperation = "lighter";
+      for (let i = particles.length - 1; i >= 0; i--) {
+        const p = particles[i];
+        if (p.dead()) particles.splice(i, 1);
+        else p.update();
+      }
+      ctx.globalCompositeOperation = "source-over";
+      raf = requestAnimationFrame(frame);
+    }
+    raf = requestAnimationFrame(frame);
 
     return () => {
+      cancelAnimationFrame(raf);
+      clearInterval(emitter);
       window.removeEventListener("resize", onResize);
-      window.removeEventListener("mousemove", onMouseMove);
-      window.removeEventListener("mouseout", onMouseOut);
-
-      // Clear particles when unmounting
+      document.removeEventListener("mousemove", onMouseMove);
+      document.removeEventListener("mouseout", onMouseOut);
       particles = [];
     };
-  }, [themeColor]);
+  }, []);
 
   return (
     <canvas
       ref={canvasRef}
       className="fixed top-0 left-0 w-full h-full pointer-events-none z-50 hidden md:block not-sr-only"
-    ></canvas>
+    />
   );
 }
 
-function Particle(x, y, vx, vy, radius, color, life, spread, ctx) {
-  this.x = x + Math.random() * spread - spread / 2;
-  this.y = y + Math.random() * spread - spread / 2;
+function Particle(x, y, vx, vy, radius, color, life, ctx, friction) {
+  this.x = x;
+  this.y = y;
   this.vx = vx;
   this.vy = vy;
   this.radius = radius;
   this.color = color;
   this.life = life;
+  this.maxLife = life;
   this.ctx = ctx;
-
-  this.draw = function () {
-    this.ctx.beginPath();
-    this.ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2, false);
-    this.ctx.fillStyle = this.color;
-    this.ctx.fill();
-    this.ctx.closePath();
-  };
+  this.friction = friction;
 
   this.update = function () {
+    this.vx *= this.friction;
+    this.vy *= this.friction;
     this.x += this.vx;
     this.y += this.vy;
     this.life -= 1;
-    this.draw();
+
+    // Twinkle: opacity falls off non-linearly as life remaining shrinks.
+    const t = this.life / this.maxLife;
+    const alpha = Math.max(0, Math.pow(t, 0.8));
+    // Soft radial halo: small bright core + wider faint glow.
+    const haloR = this.radius * 5.5;
+    const grad = this.ctx.createRadialGradient(this.x, this.y, 0, this.x, this.y, haloR);
+    const coreColor = this.color.replace("1)", `${0.9 * alpha})`);
+    const midColor = this.color.replace("1)", `${0.4 * alpha})`);
+    const outerColor = this.color.replace("1)", "0)");
+    grad.addColorStop(0, coreColor);
+    grad.addColorStop(0.35, midColor);
+    grad.addColorStop(1, outerColor);
+
+    this.ctx.beginPath();
+    this.ctx.fillStyle = grad;
+    this.ctx.arc(this.x, this.y, haloR, 0, Math.PI * 2);
+    this.ctx.fill();
   };
 
-  this.isDead = function () {
+  this.dead = function () {
     return this.life <= 0;
   };
 }

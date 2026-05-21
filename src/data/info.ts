@@ -283,17 +283,35 @@ export const info = {
       tier: "industry",
       date: "Mar 2026 - Present",
       description:
-        "In-house dental CT classifier. Replaced a $98K + $26K/yr vendor quote with a Cloud Run service running under $50/mo. Closes a 10-year recurring loss from bad scans reaching the design queue.",
+        "Catches bad dental CT scans before they reach the implant-design queue.",
       link: "",
       details: {
+        summary_short:
+          "Catches bad dental CT scans before they reach the implant-design queue. An in-house Cloud Run service replaced a vendor quote.",
+        stats: [
+          { value: "$98K → <$50/mo", label: "Vendor quote vs in-house cost" },
+          { value: "~5.5s", label: "Per scan, CPU-only" },
+          { value: "0.6309", label: "Honest AUROC (leaky 0.80 caught)" },
+          { value: "20-scan", label: "CICT gate, every push" },
+        ],
+        star: {
+          problem:
+            "Bad CBCT scans (poor field-of-view, motion, missing anatomy) kept reaching the implant-design queue. A vendor wanted $98K up front + $26K/yr to fix it.",
+          solution:
+            "An in-house classifier. Frozen DentalSegmentator nnU-Net v2 encoder + a compact 500K-param head, packaged as a Cloud Run service that scores every scan in seconds.",
+          process:
+            "Bake-off across six architectures, then iterated through Models G, H, J as data taught more. A strict 20-scan CICT holdout caught a leaky AUROC of 0.80 in CI. Shipped the honest 0.6309 rather than game the gate. Tag-based CI/CD lets us hot-swap the head checkpoint via GCS with no OpenVINO IR rebuild.",
+          result:
+            "Under $50/mo running cost. ~5.5s per scan on CPU, scale-to-zero. The 10-year recurring loss from bad scans closes.",
+        },
         summary:
           "End-to-end MLOps. SFTP ingest from MagicTouch DLCPM → parity-checked ETL → frozen DentalSegmentator + multi-task head → OpenVINO on Cloud Run → verdict PDF + email + write-back. ~5.5s end-to-end, CPU-only, scale-to-zero.",
         highlights: [
-          "Bake-off across six architectures (A–F), then iterated through Models G, H, J as data and failure modes taught more.",
+          "Bake-off across six architectures (A–F), then iterated through Models G, H, J.",
           "Model H: frozen DentalSegmentator nnU-Net v2 encoder + multi-scale taps + compact 500K-param head. Cost-tuned threshold (FN cost = 15× FP).",
-          "Strict 20-scan CICT holdout wired into GitHub Actions caught a leaky AUROC 0.80. Shipped the honest 0.6309 rather than game the gate.",
-          "Tag-based CI/CD (git tag → Cloud Build → Cloud Run). Hot-swap head checkpoint via GCS, no OpenVINO IR rebuild.",
-          "Found the partner's bidirectional SFTP path (DLCPM has no API license). One architectural pivot that kept the project unblocked.",
+          "20-scan CICT holdout in GitHub Actions caught a leaky AUROC 0.80.",
+          "Tag-based CI/CD with hot-swap checkpoint via GCS, no OpenVINO IR rebuild.",
+          "Found the partner's bidirectional SFTP path (DLCPM has no API license).",
         ],
       },
       tech: ["PyTorch Lightning", "MONAI", "OpenVINO", "FastAPI", "Cloud Run", "Eventarc", "W&B", "GitHub Actions"],
@@ -305,17 +323,34 @@ export const info = {
       tier: "industry",
       date: "May 2026 - Present",
       description:
-        "Decoupled a decade-old single-price quoting tool into a code-driven decision tree + per-location frozen-at-capture price catalog. The 6-month price guarantee becomes a real system property, not a sticker on the PDF.",
+        "Rebuilt a decade-old quoting tool. The 6-month price guarantee is now a database invariant.",
       link: "",
       details: {
+        summary_short:
+          "Rebuilt a decade-old quoting tool. The 6-month price guarantee is now a database invariant.",
+        stats: [
+          { value: "2 days", label: "End-to-end shipped" },
+          { value: "100%", label: "Branch coverage on pricing engine" },
+          { value: "5", label: "Pricing model kinds" },
+          { value: "<$35/mo", label: "Cost target hit" },
+        ],
+        star: {
+          problem:
+            "A 10-year-old single-price tool couldn't handle three clinics with different price books. The 6-month price-lock was a promise on the PDF, not a system property. An earlier vendor attempt never shipped.",
+          solution:
+            "Next.js 16 + Postgres + Drizzle rebuild. Five pricing models (flat, tiered, tiered-zoned, price-range, per-surface). Write-once `*_at_capture` columns enforced by Postgres triggers + per-location price-book versions. The price lock is a real DB invariant.",
+          process:
+            "9-decision ADR with tradeoff tables and library citations before any code. 100% branch coverage on the pricing engine. Golden snapshots lock every documented wizard path. A `questions-for-Chelsea` doc with worked numbers lets the clinical SME review without reading code.",
+          result:
+            "Shipped end-to-end in two days. Runs under $35/mo. A BACKLOG.md of 30+ consciously deferred items keeps scope honest.",
+        },
         summary:
-          "Next.js 16 + Postgres + Drizzle for treatment coordinators across three clinics. Five pricing models (flat, tiered, tiered-zoned, price-range, per-surface). Write-once price snapshots. Price-book lifecycle: proposed → approved → published.",
+          "Next.js 16 + Postgres + Drizzle for treatment coordinators across three clinics. Five pricing models with write-once price snapshots. Price-book lifecycle: proposed → approved → published.",
         highlights: [
-          "9-decision ADR with tradeoff tables and citations before any code. Next.js, Drizzle, Cloud Run, Auth.js, RBAC topology, all justified against a $35/mo cost target.",
-          "Write-once *_at_capture columns enforced by Postgres triggers + per-location price-book versions. The 6-month price guarantee is a DB invariant, not a PDF claim.",
-          "Three-affordance wizard: phase progress strip, within-option checklist with answer recap, sticky 'selections so far' sidebar. The TC never loses context mid-consult.",
-          "Code-driven decision tree (Path strategy classes) + DB-driven price catalog. 100% branch coverage on the pricing engine. Golden snapshots lock every documented wizard path.",
-          "BACKLOG.md of 30+ consciously deferred items with revisit triggers. A `questions-for-Chelsea` doc with worked numbers lets the clinical SME review without reading code.",
+          "9-decision ADR with tradeoff tables before any code.",
+          "Write-once *_at_capture columns + Postgres triggers turn the 6-month guarantee into a DB invariant.",
+          "Three-affordance wizard so the TC never loses context mid-consult.",
+          "100% branch coverage on the pricing engine; golden snapshots per wizard path.",
         ],
       },
       tech: ["Next.js 16", "TypeScript", "Drizzle", "PostgreSQL", "Auth.js", "Cloud Run", "@react-pdf/renderer", "Zod"],
@@ -323,42 +358,38 @@ export const info = {
       img_path: "/treatment-estimator.png",
     },
     {
-      title: "Optimal Living Systems, Enterprise SaaS AMI",
-      tier: "industry",
-      date: "May 2025 - Sept 2025",
-      description:
-        "Packaged the OLS AI platform into a deployable AMI. Frontend, backend, chatbot, and databases inside K3s on EC2. Tag-scoped RAG retrieval. Cross-region migration to us-east-1.",
-      link: "",
-      details: {
-        summary:
-          "Turned OLS from a single-tenant product into a per-client SaaS shape. The deliverable: a production-ready AWS AMI that drops into an enterprise customer's private VPC and runs the full stack on a lightweight Kubernetes cluster.",
-        highlights: [
-          "Integrated the core frontend (React, Next.js), backend, and chatbot (Golang) into one deployable unit. Per-client customisations without forking the codebase.",
-          "Provisioned frontend, backend, bots, MySQL, Redis, and Milvus inside a K3s cluster on EC2. Production-ready AMI for enterprise private clouds.",
-          "Tag-scoped RAG retrieval with Milvus filtering at index and query time. One shared vector store, clean tenant partitioning.",
-          "Cross-region migration from ap-southeast-1 to us-east-1 across S3, ECR, RDS, ElastiCache. ~50ms latency drop. CloudWatch dashboards so on-call had a real surface.",
-        ],
-      },
-      tech: ["React", "Next.js", "Golang", "AWS EC2", "K3s", "MySQL", "Redis", "Milvus", "CloudWatch"],
-      img_alt: "Optimal Living Systems enterprise AMI",
-      img_path: "/optimal-living-systems.png",
-    },
-    {
       title: "Cowork Dashboard",
       tier: "industry",
       date: "Apr 2026 - May 2026",
       description:
-        "Replaced a brittle live-Monday-API dashboard with a weekly-Excel pipeline. Lifted patient↔lead linkage from 49% to ~99%. Single source of truth for every metric across two clinics.",
+        "Replaced a brittle live-API dashboard with weekly Excel exports. Two clinics, one source of truth.",
       link: "",
       details: {
+        summary_short:
+          "Replaced a brittle live-API dashboard with weekly Excel exports. Two clinics, one source of truth.",
+        stats: [
+          { value: "49% → 99%", label: "Patient ↔ lead linkage" },
+          { value: "$169k", label: "Orphan revenue surfaced" },
+          { value: "½ day → 3 min", label: "Weekly recon time" },
+          { value: "6 tabs, 1 truth", label: "Shared metrics module" },
+        ],
+        star: {
+          problem:
+            "The old dashboard hit the Monday.com API live, broke constantly, and patient↔lead linkage sat at 49% / 65% across the two clinics. Leadership argued about whose numbers were right.",
+          solution:
+            "Apps Script on weekly Excel exports. One shared metrics module so every tab and widget computes from the same definitions. Six tabs share one filter bar.",
+          process:
+            "Found that Monday's connect column (a real board_relation, not a mirror) survives Excel export. Encoded every business rule explicitly: marketing taxonomy, location filter, excluded reasons, scheduled-date semantics, consult-show parsing.",
+          result:
+            "Linkage 49.5% / 65.3% → 98.8% / 99.9% across two boards. Weekly recon: half a day → 3 minutes. Surfaced 24 orphan re-treatment patients worth $169k of YTD treatment value.",
+        },
         summary:
-          "Apps Script web app on weekly Monday.com exports for two clinics (Rochester / Buffalo). One shared metrics module so every tab computes from the same definitions.",
+          "Apps Script web app on weekly Monday.com exports for two clinics (Rochester / Buffalo).",
         highlights: [
-          "Monday's connect column (a real board_relation, not a mirror) survives Excel export. Drove patient↔lead linkage from 49.5% / 65.3% to 98.8% / 99.9% across two boards.",
-          "Weekly reporting: half a day of manual reconciliation → 3-minute drop-three-Excels-and-refresh.",
-          "Six tabs (Dashboard, Monthly, History, Lead Sources, Trends, Playground) share one filter bar and one set of metric functions. Two tabs can't disagree.",
-          "Every business rule explicit: marketing taxonomy, location filter, excluded reasons, scheduled-date semantics, consult-show parsing. Leadership stops arguing about whose number is right.",
-          "Surfaced 24 orphan re-treatment patients carrying $169k of YTD treatment value the old dashboard was silently dropping.",
+          "Linkage 49% → 99% via the Monday connect column.",
+          "Weekly recon: half a day → 3 minutes.",
+          "Six tabs share one filter bar and one metric module.",
+          "Surfaced $169k of orphan revenue the old dashboard was silently dropping.",
         ],
       },
       tech: ["Google Apps Script", "Monday.com GraphQL", "Drive API", "Chart.js", "JavaScript"],
@@ -387,7 +418,7 @@ export const info = {
     },
     {
       title: "LLM Persuasion (RLHF with GRPO/PPO)",
-      tier: "academic",
+      tier: "research",
       date: "May 2024 - Sep 2025",
       description:
         "Built RLHF pipelines to improve persuasive counter-arguments using GRPO and PPO, with reward modeling and human evaluation.",
@@ -410,17 +441,35 @@ export const info = {
       tier: "industry",
       date: "Aug 2025 - Present",
       description:
-        "Zoom transcript → Vertex AI Gemini scoring on a 7-criterion clinical rubric → color-coded PDF to doctor + CEO + TC, plus a master Sheet ledger. HIPAA-eligible, multi-tenant Zoom.",
+        "Grades every implant consult from the Zoom transcript. Color-coded report to doctor, CEO, and TC.",
       link: "",
       details: {
+        summary_short:
+          "Grades every implant consult from the Zoom transcript. Color-coded report to doctor, CEO, and TC.",
+        stats: [
+          { value: "+130%", label: "Treatment acceptance" },
+          { value: "+43%", label: "Revenue" },
+          { value: "-35%", label: "Hallucinations" },
+          { value: "HIPAA", label: "Eligible, no Workspace DWD" },
+        ],
+        star: {
+          problem:
+            "Implant consultations vary in quality and there was no scalable way to grade them. The CEO had a 7-criterion framework but no system enforced it.",
+          solution:
+            "Cloud Run + FastAPI pipeline. Vertex AI Gemini scores against a versioned `consultation-rubric.md` prompt + JSON Schema 2020-12 contract. Every response must validate (one retry on schema-fail) before it renders a color-coded PDF.",
+          process:
+            "Doctor↔TC identity resolves per meeting via the participants list, transcript alias matching, and an LLM tie-break, with explicit failure modes. Avoided Workspace Domain-Wide Delegation by using a user-OAuth grant on the build owner's account (refresh token in Secret Manager).",
+          result:
+            "+130% treatment acceptance, +43% revenue, -35% hallucinations. A 19-section, 11-acceptance-test PRD with locked column orderings serves as engineering brief and clinical-stakeholder reference.",
+        },
         summary:
-          "Cloud Run pipeline that grades every implant consultation across two Zoom Business orgs and three TCs. Doctor↔TC pairing is fully flexible. Identity resolves per-meeting via participants list, transcript alias matching, and an LLM tie-break, with explicit failure modes.",
+          "Cloud Run pipeline grading every implant consultation across two Zoom Business orgs and three TCs.",
         highlights: [
-          "+130% treatment acceptance and +43% revenue. Stateful agent chains cut hallucinations 35% under HIPAA controls.",
-          "Translated the CEO's 7-criterion framework into a versioned `consultation-rubric.md` prompt + JSON Schema 2020-12 contract. Every Gemini response must validate, with one retry on schema-fail.",
-          "19-section, 11-acceptance-test PRD with locked column orderings and explicit edge cases (Step 3 clinical override, Step 5 fee-presenter attribution). Usable as engineering brief and clinical-stakeholder reference.",
-          "Production scoring RAG: Cloud SQL pgvector + GraphQL + rubric-backed SQL analytics for longitudinal doctor performance and feedback.",
-          "Avoided Workspace Domain-Wide Delegation. User-OAuth grant on the build owner's account (refresh token in Secret Manager) bypasses Super Admin dependency.",
+          "+130% acceptance, +43% revenue, -35% hallucinations under HIPAA controls.",
+          "Versioned rubric prompt + JSON Schema contract for every Gemini response.",
+          "19-section, 11-acceptance-test PRD with locked column orderings.",
+          "Cloud SQL pgvector + GraphQL for longitudinal scoring analytics.",
+          "User-OAuth grant bypasses Workspace DWD entirely.",
         ],
       },
       imageStyle: "object-position: center 20%;",
@@ -433,15 +482,33 @@ export const info = {
       tier: "industry",
       date: "Aug 2025 - Present",
       description:
-        "Agentic AI automation framework for New Patient Coordinators (NPCs) with real-time coaching and QA.",
+        "Agentic QA for New Patient Coordinators. Grades calls and triggers coaching.",
       link: "",
       details: {
+        summary_short:
+          "Agentic QA for New Patient Coordinators. Grades calls and triggers coaching.",
+        stats: [
+          { value: "3% → 12%", label: "Intake conversion" },
+          { value: "6-phase", label: "Grading rubric" },
+          { value: "Real-time", label: "Coaching feedback" },
+          { value: "n8n", label: "Agentic orchestration" },
+        ],
+        star: {
+          problem:
+            "NPCs convert intake calls into consultations, but quality was uneven and feedback was ad-hoc. No one had a scorecard.",
+          solution:
+            "n8n-orchestrated agentic system. A chain-of-thought grading engine scores every call against a 6-phase performance rubric.",
+          process:
+            "pgvector-backed memory tracks per-NPC trend. Automated feedback emails go out after each call.",
+          result:
+            "Intake conversion 3% → 12% with real-time coaching in the loop.",
+        },
         summary:
-          "An n8n-based agentic QA system that grades performance and triggers coaching feedback for New Patient Coordinators (NPCs).",
+          "n8n-based agentic QA grading performance and triggering coaching feedback for NPCs.",
         highlights: [
-          "Intake conversion improved from 3% to 12% with real-time coaching.",
-          "End-to-end CoT grading engine analyzing 6-phase performance metrics.",
-          "Automated feedback emails and workflow orchestration in n8n.",
+          "Intake conversion 3% → 12%.",
+          "6-phase performance rubric with CoT grading.",
+          "Automated feedback emails, n8n orchestration.",
         ],
       },
       imageStyle: "object-position: center 20%;",
@@ -510,18 +577,36 @@ export const info = {
       img_path: "/customer-segmentation.png",
     },
     {
-      title: "Enterprise Data Project - Hybridge Implants LLC",
+      title: "Enterprise Data Project",
       tier: "industry",
       date: "Aug 2025 - Present",
       description:
-        "Unified AI infrastructure and data pipelines to cut costs and automate executive analytics.",
+        "Self-hosted AI workflow infra on AWS. Centralized automation across teams.",
       link: "",
       details: {
+        summary_short:
+          "Self-hosted AI workflow infra on AWS. Centralized automation across teams.",
+        stats: [
+          { value: "-20%", label: "Automation cost" },
+          { value: "500+ hrs/yr", label: "Recovered on exec analytics" },
+          { value: "Self-hosted", label: "n8n on AWS via Docker" },
+          { value: "Org-wide", label: "Standard data flows" },
+        ],
+        star: {
+          problem:
+            "Per-seat SaaS automations were expensive and getting more so. C-suite analytics relied on manual exports each week.",
+          solution:
+            "Self-hosted n8n on AWS via Docker. One platform for every team automation, with data flows standardized across the org.",
+          process:
+            "Migrated existing automations into n8n. Built executive analytics pipelines that publish on a schedule instead of on-demand.",
+          result:
+            "20% lower automation cost. 500+ hours/year recovered on executive analytics. AI initiatives ship on a shared substrate.",
+        },
         summary:
           "Self-hosted AI workflow infrastructure on AWS to centralize automation and analytics across teams.",
         highlights: [
-          "Deployed self-hosted n8n on AWS via Docker, cutting costs by 20%.",
-          "Automated C‑suite analytics pipelines to recover 500+ hours annually.",
+          "Self-hosted n8n on AWS via Docker, cutting costs 20%.",
+          "Automated C-suite analytics pipelines recovering 500+ hours/year.",
           "Standardized data flows for AI initiatives across the org.",
         ],
       },
