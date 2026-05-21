@@ -1,0 +1,13 @@
+name = "sampreeth-chatbot"
+main = "src/index.ts"
+compatibility_date = "2026-05-01"
+compatibility_flags = ["nodejs_compat"]
+
+# Secrets to set with: wrangler secret put GROQ_API_KEY
+# (and optionally GROQ_MODEL if you want to override the default)
+[vars]
+GROQ_MODEL = "llama-3.1-8b-instant"
+ALLOWED_ORIGINS = "https://sampreethavvari.github.io,http://localhost:4321,http://localhost:3000"
+
+[observability]
+enabled = true

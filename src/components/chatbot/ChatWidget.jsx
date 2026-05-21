@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState } from "react";
 
-const CHAT_ENDPOINT =
-  import.meta.env.PUBLIC_CHAT_ENDPOINT ||
-  "https://bfcfkgskoofforjgqnem.functions.supabase.co/chat";
+// Set PUBLIC_CHAT_ENDPOINT in the build env to point at the deployed Cloudflare
+// Worker (e.g. https://sampreeth-chatbot.<subdomain>.workers.dev/chat).
+// See chatbot-worker/README.md for the one-time setup.
+const CHAT_ENDPOINT = import.meta.env.PUBLIC_CHAT_ENDPOINT || "";
 
 const initialMessage = {
   role: "assistant",
@@ -44,7 +45,7 @@ export default function ChatWidget() {
     setError("");
 
     if (!CHAT_ENDPOINT) {
-      setError("Chat endpoint is not configured yet.");
+      setError("Chat is offline while the new worker is being deployed. Email me at spa9659@nyu.edu in the meantime.");
       setIsLoading(false);
       return;
     }
