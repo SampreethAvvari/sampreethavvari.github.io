@@ -73,6 +73,16 @@ const filmCredits = [
   { title: "Tiger Man", year: "2022", role: "Director · Writer · Editor" },
   { title: "Strangers", year: "2019", role: "Cinematographer · Music" },
 ];
+
+// Brand monograms for the Education/Experience timeline rows. Same colour
+// language across all four so Shure is as readable as NYU.
+const brandFor = (loc: string) => {
+  if (/Hybridge/i.test(loc)) return { acronym: "HB", from: "#1E3A8A", to: "#3B82F6", label: "Hybridge" };
+  if (/Shure/i.test(loc))    return { acronym: "SH", from: "#047857", to: "#10B981", label: "Shure" };
+  if (/GRIET|Gokaraju/i.test(loc)) return { acronym: "GR", from: "#991B1B", to: "#EF4444", label: "GRIET" };
+  if (/New York University|NYU/i.test(loc)) return { acronym: "NYU", from: "#57068C", to: "#9333EA", label: "NYU" };
+  return { acronym: loc.slice(0, 2).toUpperCase(), from: "#475569", to: "#94A3B8", label: loc };
+};
 ---
 
 <BaseLayout title="Sampreeth Avvari">
@@ -270,28 +280,31 @@ const filmCredits = [
                 Education
               </p>
               <ul class="space-y-4">
-                {info.about.education.map((ed) => (
-                  <li class="timeline-row text-sm">
-                    <div class={`timeline-logo ${ed.logo ? "" : "logo-placeholder"}`}>
-                      {ed.logo ? (
-                        <img src={ed.logo} alt={`${ed.location} logo`} />
-                      ) : (
-                        <span>JNTU</span>
-                      )}
-                    </div>
-                    <div class="min-w-0 flex-1">
-                      <p class="font-semibold text-text dark:text-dk-text leading-snug">
-                        {ed.title}
-                      </p>
-                      <p class="text-text/60 dark:text-dk-text/60 leading-snug">
-                        {ed.location}
-                      </p>
-                      <p class="text-text/40 dark:text-dk-text/40 text-xs mt-1">
-                        {ed.date}{ed.gpa ? ` · GPA ${ed.gpa}` : ""}
-                      </p>
-                    </div>
-                  </li>
-                ))}
+                {info.about.education.map((ed) => {
+                  const b = brandFor(ed.location);
+                  return (
+                    <li class="timeline-row text-sm">
+                      <div
+                        class="brand-badge"
+                        style={`background: linear-gradient(135deg, ${b.from}, ${b.to});`}
+                        aria-label={b.label}
+                      >
+                        <span>{b.acronym}</span>
+                      </div>
+                      <div class="min-w-0 flex-1">
+                        <p class="font-semibold text-text dark:text-dk-text leading-snug">
+                          {ed.title}
+                        </p>
+                        <p class="text-text/60 dark:text-dk-text/60 leading-snug">
+                          {ed.location}
+                        </p>
+                        <p class="text-text/40 dark:text-dk-text/40 text-xs mt-1">
+                          {ed.date}{ed.gpa ? ` · GPA ${ed.gpa}` : ""}
+                        </p>
+                      </div>
+                    </li>
+                  );
+                })}
               </ul>
             </div>
             <div>
@@ -299,28 +312,31 @@ const filmCredits = [
                 Experience
               </p>
               <ul class="space-y-4">
-                {info.about.experience.map((ex) => (
-                  <li class="timeline-row text-sm">
-                    <div class={`timeline-logo ${ex.logo ? "" : "logo-placeholder"}`}>
-                      {ex.logo ? (
-                        <img src={ex.logo} alt={`${ex.location} logo`} />
-                      ) : (
-                        <span>{ex.location.split(",")[0].slice(0, 2).toUpperCase()}</span>
-                      )}
-                    </div>
-                    <div class="min-w-0 flex-1">
-                      <p class="font-semibold text-text dark:text-dk-text leading-snug">
-                        {ex.title}
-                      </p>
-                      <p class="text-text/60 dark:text-dk-text/60 leading-snug">
-                        {ex.location}
-                      </p>
-                      <p class="text-text/40 dark:text-dk-text/40 text-xs mt-1">
-                        {ex.date}
-                      </p>
-                    </div>
-                  </li>
-                ))}
+                {info.about.experience.map((ex) => {
+                  const b = brandFor(ex.location);
+                  return (
+                    <li class="timeline-row text-sm">
+                      <div
+                        class="brand-badge"
+                        style={`background: linear-gradient(135deg, ${b.from}, ${b.to});`}
+                        aria-label={b.label}
+                      >
+                        <span>{b.acronym}</span>
+                      </div>
+                      <div class="min-w-0 flex-1">
+                        <p class="font-semibold text-text dark:text-dk-text leading-snug">
+                          {ex.title}
+                        </p>
+                        <p class="text-text/60 dark:text-dk-text/60 leading-snug">
+                          {ex.location}
+                        </p>
+                        <p class="text-text/40 dark:text-dk-text/40 text-xs mt-1">
+                          {ex.date}
+                        </p>
+                      </div>
+                    </li>
+                  );
+                })}
               </ul>
             </div>
           </div>
