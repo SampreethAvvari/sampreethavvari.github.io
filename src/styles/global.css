@@ -48,6 +48,24 @@ html.dark body::after {
   box-shadow: 0 10px 22px -8px rgba(245, 197, 24, 0.75);
 }
 .imdb-pill i { color: #000; }
+
+/* IMDb wordmark — small black tag with yellow "IMDb" text, the canonical
+   IMDb identifier. Works inside the yellow .imdb-pill button. */
+.imdb-wordmark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.12rem 0.4rem;
+  border-radius: 0.28rem;
+  background: #000000;
+  color: #F5C518;
+  font-family: Arial, "Arial Black", "Helvetica Neue", sans-serif;
+  font-weight: 900;
+  font-size: 0.78em;
+  letter-spacing: 0.01em;
+  line-height: 1;
+  margin-right: 0.15rem;
+}
 html {
   scroll-behavior: smooth;
 }
