@@ -27,8 +27,24 @@ const industry = projects.filter((p: any) => p.tier === "industry");
 const academic = projects.filter((p: any) => p.tier === "academic");
 
 // Industry chips stay neutral slate so the page reads as black + matte gray;
-// the colour comes only from the rotating atmos glow behind each deep dive.
+// the colour comes only from the atmos glow behind each deep dive.
 const INDUSTRY_CHIP_TONES = ["slate", "slate", "slate", "slate", "slate", "slate", "slate"];
+
+// Each project's atmos glow takes the ambient colour of its hero image —
+// keeps the screen black/matte gray, lets the floating glow do the colour
+// signaling. Mapped per filename so adding a new project is one line.
+const ATMOS_BY_IMG: Record<string, string> = {
+  "/cbct-validator.png": "cyan",
+  "/treatment-estimator.png": "violet",
+  "/optimal-living-systems.png": "blue",
+  "/cowork-dashboard.png": "cyan",
+  "/loan-radar.png": "blue",
+  "/llm-persuasion.png": "violet",
+  "/doc-coach.png": "emerald",
+  "/npc-coach.png": "emerald",
+  "/accounting-automation.png": "amber",
+};
+const atmosToneFor = (p: any) => ATMOS_BY_IMG[p.img_path] || "slate";
 
 // Map project title fragments to their long-form blog post URL. Used for
 // inline "Read the write-up" links per deep dive and the closing band.
@@ -111,7 +127,7 @@ const projectsWithBlog = projects
         class="project-screen snap-chapter relative overflow-hidden"
         id={slug(project.title)}
       >
-        <div class={`project-screen-atmos atmos-${(i % 3) + 1}`} aria-hidden="true"></div>
+        <div class={`project-screen-atmos atmos-${atmosToneFor(project)}`} aria-hidden="true"></div>
         <div class="relative z-10 mx-auto w-full max-w-screen-2xl px-6 lg:px-12 grid lg:grid-cols-12 gap-10 lg:gap-16 items-center">
           <div class={`lg:col-span-7 ${flip ? "lg:order-2" : ""}`}>
             <div class="relative project-screen-imagewrap">
@@ -365,20 +381,43 @@ const projectsWithBlog = projects
   .project-screen-atmos {
     position: absolute;
     inset: -8%;
-    filter: blur(90px);
+    filter: blur(120px);
     z-index: 0;
     pointer-events: none;
-    opacity: 0.75;
+    opacity: 0.55;
     animation: atmosDrift 24s ease-in-out infinite;
   }
-  .project-screen-atmos.atmos-1 {
-    background: radial-gradient(circle at 18% 30%, rgba(245, 165, 36, 0.14), transparent 55%);
+  /* Each variant matches the ambient colour of that project's hero image
+     so the glow reads as a faint echo of the screenshot, never a wash. */
+  .project-screen-atmos.atmos-cyan {
+    background:
+      radial-gradient(ellipse 55% 45% at 22% 32%, rgba(34, 211, 238, 0.10), transparent 70%),
+      radial-gradient(ellipse 55% 45% at 78% 72%, rgba(34, 211, 238, 0.07), transparent 70%);
   }
-  .project-screen-atmos.atmos-2 {
-    background: radial-gradient(circle at 82% 25%, rgba(34, 211, 238, 0.13), transparent 55%);
+  .project-screen-atmos.atmos-violet {
+    background:
+      radial-gradient(ellipse 55% 45% at 22% 32%, rgba(167, 139, 250, 0.10), transparent 70%),
+      radial-gradient(ellipse 55% 45% at 78% 72%, rgba(167, 139, 250, 0.07), transparent 70%);
   }
-  .project-screen-atmos.atmos-3 {
-    background: radial-gradient(circle at 50% 75%, rgba(167, 139, 250, 0.13), transparent 55%);
+  .project-screen-atmos.atmos-blue {
+    background:
+      radial-gradient(ellipse 55% 45% at 22% 32%, rgba(91, 141, 239, 0.10), transparent 70%),
+      radial-gradient(ellipse 55% 45% at 78% 72%, rgba(91, 141, 239, 0.07), transparent 70%);
+  }
+  .project-screen-atmos.atmos-emerald {
+    background:
+      radial-gradient(ellipse 55% 45% at 22% 32%, rgba(52, 211, 153, 0.10), transparent 70%),
+      radial-gradient(ellipse 55% 45% at 78% 72%, rgba(52, 211, 153, 0.07), transparent 70%);
+  }
+  .project-screen-atmos.atmos-amber {
+    background:
+      radial-gradient(ellipse 55% 45% at 22% 32%, rgba(245, 165, 36, 0.10), transparent 70%),
+      radial-gradient(ellipse 55% 45% at 78% 72%, rgba(245, 165, 36, 0.07), transparent 70%);
+  }
+  .project-screen-atmos.atmos-slate {
+    background:
+      radial-gradient(ellipse 55% 45% at 22% 32%, rgba(148, 163, 184, 0.10), transparent 70%),
+      radial-gradient(ellipse 55% 45% at 78% 72%, rgba(148, 163, 184, 0.07), transparent 70%);
   }
   @media (prefers-reduced-motion: reduce) {
     .project-screen-atmos { animation: none; }

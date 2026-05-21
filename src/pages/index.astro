@@ -83,6 +83,30 @@ const brandFor = (loc: string) => {
   if (/New York University|NYU/i.test(loc)) return { acronym: "NYU", from: "#57068C", to: "#9333EA", label: "NYU" };
   return { acronym: loc.slice(0, 2).toUpperCase(), from: "#475569", to: "#94A3B8", label: loc };
 };
+
+// Skills grouped by tone. ML/AI in blue, data & cloud in emerald,
+// software & testing in amber. Order intentional: most-used first per bucket.
+// Literal class strings so Tailwind's JIT can detect them.
+const skillBuckets = [
+  {
+    label: "Machine learning & MLOps",
+    labelClass: "text-acc-blue",
+    pillClass: "skill-pill skill-pill-blue",
+    items: ["PyTorch", "Transformers", "HuggingFace", "TRL", "Unsloth", "RLHF (GRPO/PPO)", "OpenVINO", "MONAI", "nnU-Net v2", "LangChain", "MLflow", "Weights & Biases"],
+  },
+  {
+    label: "Data & cloud",
+    labelClass: "text-acc-emerald",
+    pillClass: "skill-pill skill-pill-emerald",
+    items: ["PostgreSQL", "BigQuery", "Milvus", "pgvector", "Firestore", "Vertex AI Gemini", "Cloud Run", "Pub/Sub", "Eventarc", "Redis", "DynamoDB", "S3 · EC2 · RDS"],
+  },
+  {
+    label: "Software & testing",
+    labelClass: "text-acc-amber",
+    pillClass: "skill-pill skill-pill-amber",
+    items: ["Python", "TypeScript", "Go", "React", "Next.js 16", "FastAPI", "Drizzle ORM", "Docker", "Kubernetes", "Terraform", "GitHub Actions", "pytest · Vitest"],
+  },
+];
 ---
 
 <BaseLayout title="Sampreeth Avvari">
@@ -164,10 +188,11 @@ const brandFor = (loc: string) => {
 
     <!-- ── Chapter 2: The work ───────────────────────────────────────────── -->
     <section class="chapter snap-chapter chapter-fade" id="work">
+      <div class="work-atmos" aria-hidden="true"></div>
       <div class="mx-auto w-full max-w-screen-2xl px-6 lg:px-12">
         <div class="max-w-4xl reveal" data-reveal>
           <p class="eyebrow text-secondary dark:text-dk-secondary mb-3">
-            01 — The work
+            01 / The work
           </p>
           <h2 class="display-sm text-text dark:text-dk-text mb-3 glow-wave">
             Five systems, inside a dental practice.
@@ -239,12 +264,13 @@ const brandFor = (loc: string) => {
 
     <!-- ── Chapter 3: About ──────────────────────────────────────────────── -->
     <section class="chapter snap-chapter chapter-fade" id="about">
+      <div class="about-atmos" aria-hidden="true"></div>
       <div
         class="mx-auto w-full max-w-screen-2xl px-6 lg:px-12 grid lg:grid-cols-12 gap-10 lg:gap-16 items-center"
       >
         <div class="lg:col-span-6 reveal" data-reveal>
           <p class="eyebrow text-secondary dark:text-dk-secondary mb-5">
-            02 — About
+            02 / About
           </p>
           <h2 class="display text-text dark:text-dk-text mb-8 glow-wave">
             An engineer who happens to <span class="text-secondary dark:text-dk-secondary">make movies</span>.
@@ -345,15 +371,34 @@ const brandFor = (loc: string) => {
           </a>
         </div>
       </div>
+
+      <div class="mx-auto w-full max-w-screen-2xl px-6 lg:px-12 mt-12 lg:mt-16 reveal" data-reveal>
+        <p class="eyebrow text-secondary/80 dark:text-dk-secondary/80 mb-6">Skills</p>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-8 lg:gap-12">
+          {skillBuckets.map((b) => (
+            <div>
+              <p class={`text-[0.66rem] uppercase tracking-[0.18em] font-bold mb-4 ${b.labelClass}`}>
+                {b.label}
+              </p>
+              <div class="flex flex-wrap gap-2">
+                {b.items.map((s) => (
+                  <span class={b.pillClass}>{s}</span>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
     </section>
 
     <!-- ── Chapter 4: Writing ────────────────────────────────────────────── -->
     <section class="chapter snap-chapter chapter-fade" id="writing">
+      <div class="writing-atmos" aria-hidden="true"></div>
       <div class="mx-auto w-full max-w-screen-2xl px-6 lg:px-12">
         <div class="flex items-end justify-between mb-10 reveal" data-reveal>
           <div>
             <p class="eyebrow text-acc-emerald dark:text-acc-emerald mb-4">
-              03 — Writing
+              03 / Writing
             </p>
             <h2 class="display-sm text-text dark:text-dk-text glow-wave">
               Notes from <span class="text-acc-emerald">the work</span>.
@@ -425,12 +470,13 @@ const brandFor = (loc: string) => {
 
     <!-- ── Chapter 5: Filmmaking ─────────────────────────────────────────── -->
     <section class="chapter snap-chapter chapter-fade" id="filmmaking">
+      <div class="filmmaking-atmos" aria-hidden="true"></div>
       <div
         class="mx-auto w-full max-w-screen-2xl px-6 lg:px-12 grid lg:grid-cols-12 gap-12 items-center"
       >
         <div class="lg:col-span-6 reveal" data-reveal>
           <p class="eyebrow text-acc-amber dark:text-acc-amber mb-4">
-            04 — Filmmaking
+            04 / Filmmaking
           </p>
           <h2 class="display-sm text-text dark:text-dk-text mb-6 glow-wave">
             "Gray characters, <span class="text-acc-amber">tight spaces</span>, and the chaos hiding inside ordinary lives."
@@ -491,20 +537,13 @@ const brandFor = (loc: string) => {
 
     <!-- ── Chapter 6: Connect ────────────────────────────────────────────── -->
     <section class="chapter snap-chapter chapter-fade relative overflow-hidden" id="contact">
-      <div class="aurora-ripples" aria-hidden="true">
-        <span class="ripple ripple-1"></span>
-        <span class="ripple ripple-1 ripple-late"></span>
-        <span class="ripple ripple-2"></span>
-        <span class="ripple ripple-2 ripple-late"></span>
-        <span class="ripple ripple-3"></span>
-        <span class="ripple ripple-3 ripple-late"></span>
-      </div>
+      <div class="connect-atmos" aria-hidden="true"></div>
       <div
         class="relative z-10 mx-auto w-full max-w-screen-2xl px-6 lg:px-12 text-center reveal"
         data-reveal
       >
         <p class="eyebrow text-secondary dark:text-dk-secondary mb-4">
-          05 — Connect
+          05 / Connect
         </p>
         <h2 class="display text-text dark:text-dk-text mb-6 glow-wave">
           Let's build <span class="text-secondary dark:text-dk-secondary">something</span>.
