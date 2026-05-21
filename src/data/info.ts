@@ -341,7 +341,7 @@ export const info = {
       },
       tech: ["React", "Next.js", "Golang", "AWS EC2", "K3s", "MySQL", "Redis", "Milvus", "CloudWatch"],
       img_alt: "Optimal Living Systems enterprise AMI",
-      img_path: "/enterprise-data.svg",
+      img_path: "/optimal-living-systems.png",
     },
     {
       title: "Cowork Dashboard — Hybridge Implants LLC",
@@ -467,7 +467,7 @@ export const info = {
       },
       tech: ["LLaMA 3", "QLoRA", "RoBERTa", "LDA", "Python"],
       img_alt: "Fake News and Sentiment Analysis",
-      img_path: "/fake-news.svg",
+      img_path: "/fake-news.png",
     },
     {
       title: "ResNet Under 5M Parameters",
@@ -487,7 +487,7 @@ export const info = {
       },
       tech: ["ResNet", "PyTorch", "CIFAR-10"],
       img_alt: "ResNet Under 5M Parameters",
-      img_path: "/resnet-compact.svg",
+      img_path: "/resnet-compact.png",
     },
     {
       title: "Customer Segmentation and Recommendation System",
@@ -507,7 +507,7 @@ export const info = {
       },
       tech: ["Spark", "Hadoop", "MinHash LSH", "ALS", "Python"],
       img_alt: "Customer Segmentation and Recommendation System",
-      img_path: "/customer-segmentation.svg",
+      img_path: "/customer-segmentation.png",
     },
     {
       title: "Enterprise Data Project - Hybridge Implants LLC",
@@ -527,7 +527,7 @@ export const info = {
       },
       tech: ["AWS", "Docker", "n8n", "Data Pipelines", "Automation"],
       img_alt: "Enterprise Data Project - Hybridge Implants LLC",
-      img_path: "/enterprise-data.svg",
+      img_path: "/enterprise-data.png",
     },
   ],
 
