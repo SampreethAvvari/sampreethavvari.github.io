@@ -1,5 +1,5 @@
 ---
-title: "The dozen scripts that ate the controller's manual import work"
+title: "How I gave a non-engineer controller a dozen Python scripts he could read and edit"
 date: "2026-05-20"
 layout: ../../layouts/PostLayout.astro
 description: "The controller was hand-reformatting CSVs from five upstream systems every week. A dozen small Python scripts now do it, with a UX that respects how accountants work."
