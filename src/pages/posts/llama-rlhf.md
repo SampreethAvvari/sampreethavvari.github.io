@@ -103,4 +103,6 @@ The lesson I keep repeating to anyone trying RLHF for the first time:
 
 A great reward model with a competent PPO loop will beat a mediocre reward model with the most exotic policy algorithm you can find. GRPO is faster. It doesn't save you from a bad reward model.
 
+The part of this project I'm most proud of isn't the ~67% win rate. It's that I anticipated the failure modes before the runs, not after. Length bias in the reward model is predictable if you think about it ahead of time. Tokenization drift is predictable. I built the controls in, ran cleaner experiments because of it, and got results I could actually trust. That's the kind of engineer I want to be: someone who designs around the obvious failure before it wastes a week of compute.
+
 Full project: [marcomorucci/LLM-Persuasion (Sampreeth)](https://github.com/marcomorucci/LLM-Persuasion/tree/main/Sampreeth).
