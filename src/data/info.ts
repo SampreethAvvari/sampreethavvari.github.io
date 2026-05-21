@@ -280,7 +280,7 @@ export const info = {
   projects: [
     {
       title: "CBCT Scan Validator — Hybridge Implants LLC",
-      tier: "hybridge",
+      tier: "industry",
       date: "Mar 2026 - Present",
       description:
         "Production medical-imaging AI replacing a $98K + $26K/yr vendor quote with an in-house stack running <$50/mo on GCP. Closes a 10-year recurring loss from bad CBCT scans reaching the design queue.",
@@ -302,7 +302,7 @@ export const info = {
     },
     {
       title: "Treatment Estimator — Hybridge Implants LLC",
-      tier: "hybridge",
+      tier: "industry",
       date: "May 2026 - Present",
       description:
         "Decoupled a decade-old single-price quoting tool into a code-driven decision tree + per-location frozen-at-capture price catalog. Makes the 6-month price-guarantee a real system property, not a sticker on the PDF.",
@@ -345,7 +345,7 @@ export const info = {
     },
     {
       title: "Cowork Dashboard — Hybridge Implants LLC",
-      tier: "hybridge",
+      tier: "industry",
       date: "Apr 2026 - May 2026",
       description:
         "Replaced a brittle live-Monday-API dashboard with a weekly-Excel pipeline that lifted patient↔lead linkage from 49% to ~99%. Single source of truth for every operational metric across two clinics.",
@@ -367,7 +367,7 @@ export const info = {
     },
     {
       title: "Loan Radar",
-      tier: "research",
+      tier: "academic",
       date: "Jan - May 2025",
       description:
         "Architected end-to-end ML CI/CD for loan-default scoring with containerized training and serving, MLflow model lineage, and automated quality gates before promotion.",
@@ -387,7 +387,7 @@ export const info = {
     },
     {
       title: "LLM Persuasion (RLHF with GRPO/PPO) - Research",
-      tier: "research",
+      tier: "academic",
       date: "May 2024 - Sep 2025",
       description:
         "Built RLHF pipelines to improve persuasive counter-arguments using GRPO and PPO, with reward modeling and human evaluation.",
@@ -407,7 +407,7 @@ export const info = {
     },
     {
       title: "Doc Coach — Consultation QA Pipeline (Hybridge Implants LLC)",
-      tier: "hybridge",
+      tier: "industry",
       date: "Aug 2025 - Present",
       description:
         "Zoom transcript → Vertex AI Gemini scoring against a proprietary 7-criterion clinical framework → color-coded PDF reports to doctor + CEO + TC, with a master Sheet ledger for trend analysis. HIPAA-eligible, multi-tenant Zoom.",
@@ -430,7 +430,7 @@ export const info = {
     },
     {
       title: "NPC Coach - Hybridge Implants LLC",
-      tier: "hybridge",
+      tier: "industry",
       date: "Aug 2025 - Present",
       description:
         "Agentic AI automation framework for New Patient Coordinators (NPCs) with real-time coaching and QA.",
@@ -450,28 +450,8 @@ export const info = {
       img_path: "/npc-coach.png",
     },
     {
-      title: "RAG-IPL",
-      tier: "coursework",
-      date: "Jan - May 2025",
-      description:
-        "Designed a natural-language-to-SQL system with LangChain and RapidFuzz, using OpenAI embeddings and Streamlit to deliver verifiable IPL insights without hallucinations.",
-      link: "",
-      details: {
-        summary:
-          "A natural-language-to-SQL assistant for IPL stats that prioritizes verifiable answers by compiling queries into SQL instead of free‑form generation.",
-        highlights: [
-          "Hybrid parsing with LangChain + RapidFuzz to map user questions to IPL schema and metrics.",
-          "OpenAI embeddings for retrieval, with a Streamlit UI for interactive exploration.",
-          "All responses are grounded in SQL results to minimize hallucinations.",
-        ],
-      },
-      tech: ["LangChain", "RapidFuzz", "OpenAI Embeddings", "Streamlit", "SQLite"],
-      img_alt: "RAG-IPL",
-      img_path: "/rag-ipl.svg",
-    },
-    {
       title: "Fake News and Sentiment Analysis",
-      tier: "research",
+      tier: "academic",
       date: "Feb - May 2024",
       description:
         "Fine-tuned LLaMA 3 8B (QLoRA) and RoBERTa on 1.8M+ tweets to model misinformation and sentiment; achieved 76% on LIAR and used LDA for topic-level patterns.",
@@ -491,7 +471,7 @@ export const info = {
     },
     {
       title: "ResNet Under 5M Parameters",
-      tier: "coursework",
+      tier: "academic",
       date: "2024",
       description:
         "Designed compact ResNet variants for CIFAR-10 under 5M parameters and achieved 97.12% accuracy on the best model.",
@@ -511,7 +491,7 @@ export const info = {
     },
     {
       title: "Customer Segmentation and Recommendation System",
-      tier: "coursework",
+      tier: "academic",
       date: "Feb - May 2024",
       description:
         "Built a Spark-based recommendation pipeline on Hadoop using MinHash LSH and ALS matrix factorization over 22M+ records, improving Precision@K by 20%.",
@@ -531,7 +511,7 @@ export const info = {
     },
     {
       title: "Enterprise Data Project - Hybridge Implants LLC",
-      tier: "hybridge",
+      tier: "industry",
       date: "Aug 2025 - Present",
       description:
         "Unified AI infrastructure and data pipelines to cut costs and automate executive analytics.",
