@@ -67,9 +67,19 @@ Reason they're scripts in git instead of checkboxes in a dashboard: it makes "di
 
 A benchmark harness measures three things on a single 2-CPU container with the production model: **0.79ms** median latency for a single caller, **0.87ms** at p95, and sustained throughput around **33,000 samples/second** before p99 starts climbing.
 
-<div class="stat-callout stat-cyan">
-  <div class="stat-value">0.79 ms</div>
-  <div class="stat-label">Median single-caller inference latency, measured with a real harness, not back-of-envelope math</div>
+<div class="post-stats-grid my-8">
+  <div class="stat-callout stat-cyan">
+    <div class="stat-value">0.79 ms</div>
+    <div class="stat-label">median single-caller latency</div>
+  </div>
+  <div class="stat-callout stat-blue">
+    <div class="stat-value">~33k req/s</div>
+    <div class="stat-label">throughput before p99 climbs</div>
+  </div>
+  <div class="stat-callout stat-emerald">
+    <div class="stat-value">6 gates</div>
+    <div class="stat-label">before any model can be promoted</div>
+  </div>
 </div>
 
 Numbers exist because the harness exists. Plenty of teams quote "tens of thousands of QPS" off back-of-envelope math. Running the load test is the difference.

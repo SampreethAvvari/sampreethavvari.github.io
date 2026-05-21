@@ -844,12 +844,15 @@ html.dark .stat-callout .stat-label { color: theme(colors.dk-text); opacity: 0.8
   opacity: 0.85;
 }
 
-/* Prose — readable, breathing, with character */
+/* Prose — Apple-article spec: 17-ish px on a calm ~70-char measure, with
+   varied rhythm so the read doesn't feel mechanical. */
 .post-prose {
-  font-size: 1.135rem;
-  line-height: 1.82;
+  font-size: 1.075rem;
+  line-height: 1.72;
   color: theme(colors.text);
   letter-spacing: -0.003em;
+  font-feature-settings: "ss01", "cv11", "kern", "liga", "onum";
+  hyphens: none;
 }
 html.dark .post-prose { color: theme(colors.dk-text); }
 
@@ -857,13 +860,119 @@ html.dark .post-prose { color: theme(colors.dk-text); }
 .post-prose p {
   color: theme(colors.text);
   opacity: 0.85;
-  margin: 1.5rem 0;
+  margin: 1.4rem 0;
 }
 html.dark .post-prose p { color: theme(colors.dk-text); opacity: 0.9; }
 
-/* First paragraph after a heading gets a slightly bigger drop-in feel. */
-.post-prose h2 + p { font-size: 1.18rem; opacity: 0.95; }
-html.dark .post-prose h2 + p { opacity: 1; }
+/* Lede — the very first paragraph reads bigger and looser, like a lede. */
+.post-prose > p:first-of-type {
+  font-size: 1.22rem;
+  line-height: 1.55;
+  opacity: 1;
+  margin-top: 0;
+  font-weight: 450;
+  color: theme(colors.text);
+}
+html.dark .post-prose > p:first-of-type { color: theme(colors.dk-text); }
+
+/* Drop cap on the lede — typeset, not generated. */
+.post-prose > p:first-of-type::first-letter {
+  float: left;
+  font-size: 4.2rem;
+  line-height: 0.92;
+  font-weight: 700;
+  padding: 0.3rem 0.6rem 0 0;
+  margin: 0.2rem 0.15rem 0 -0.05rem;
+  color: theme(colors.secondary);
+  letter-spacing: -0.04em;
+}
+html.dark .post-prose > p:first-of-type::first-letter { color: theme(colors.dk-secondary); }
+
+/* Inline highlight (<mark>) — soft yellow marker, like a real article. */
+.post-prose mark {
+  background: linear-gradient(180deg, transparent 55%, rgba(245, 165, 36, 0.32) 55%);
+  color: inherit;
+  padding: 0 0.1em;
+  font-weight: 500;
+  border-radius: 1px;
+}
+html.dark .post-prose mark {
+  background: linear-gradient(180deg, transparent 55%, rgba(245, 165, 36, 0.40) 55%);
+  color: inherit;
+}
+
+/* Pull-quote — break out of the column on lg+ so the read has rhythm. */
+.post-prose .pull-quote {
+  font-size: clamp(1.4rem, 2.6vw, 1.85rem);
+  line-height: 1.35;
+  font-weight: 600;
+  font-style: normal;
+  letter-spacing: -0.022em;
+  color: theme(colors.text);
+  margin: 3rem 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  text-align: left;
+  position: relative;
+}
+.post-prose .pull-quote::before {
+  display: none;
+}
+.post-prose .pull-quote::after {
+  content: "";
+  display: block;
+  width: 3rem;
+  height: 2px;
+  margin-top: 1rem;
+  background: linear-gradient(90deg, #5B8DEF, #22D3EE);
+  border-radius: 2px;
+}
+html.dark .post-prose .pull-quote { color: theme(colors.dk-text); }
+@media (min-width: 1100px) {
+  .post-prose .pull-quote {
+    margin-left: -3rem;
+    margin-right: -3rem;
+    padding: 0 1rem;
+  }
+}
+
+/* Aside — small coloured card for a side note, footnote, or human aside. */
+.post-prose .aside {
+  margin: 2.5rem 0;
+  padding: 1.1rem 1.25rem;
+  border-radius: 0.85rem;
+  background: rgba(91, 141, 239, 0.06);
+  border-left: 3px solid rgba(91, 141, 239, 0.55);
+  font-size: 0.96rem;
+  line-height: 1.6;
+  color: theme(colors.text);
+  opacity: 0.85;
+}
+html.dark .post-prose .aside {
+  background: rgba(91, 141, 239, 0.10);
+  border-left-color: rgba(91, 141, 239, 0.65);
+  color: theme(colors.dk-text);
+  opacity: 0.9;
+}
+.post-prose .aside > *:first-child { margin-top: 0; }
+.post-prose .aside > *:last-child { margin-bottom: 0; }
+.post-prose .aside-amber {
+  background: rgba(245, 165, 36, 0.08);
+  border-left-color: rgba(245, 165, 36, 0.60);
+}
+html.dark .post-prose .aside-amber {
+  background: rgba(245, 165, 36, 0.12);
+  border-left-color: rgba(245, 165, 36, 0.70);
+}
+.post-prose .aside-emerald {
+  background: rgba(52, 211, 153, 0.08);
+  border-left-color: rgba(52, 211, 153, 0.60);
+}
+html.dark .post-prose .aside-emerald {
+  background: rgba(52, 211, 153, 0.12);
+  border-left-color: rgba(52, 211, 153, 0.70);
+}
 
 .post-prose strong {
   color: theme(colors.text);
@@ -879,141 +988,220 @@ html.dark .post-prose strong { color: theme(colors.dk-text); }
 html.dark .post-prose em { color: theme(colors.dk-secondary); }
 
 .post-prose h2 {
-  font-size: clamp(1.7rem, 3vw, 2.25rem);
-  letter-spacing: -0.022em;
-  line-height: 1.2;
+  font-size: clamp(1.85rem, 3.2vw, 2.5rem);
+  letter-spacing: -0.024em;
+  line-height: 1.18;
   font-weight: 700;
-  margin-top: 5rem;
-  margin-bottom: 1.5rem;
-  padding-left: 1.15rem;
+  margin-top: 4.5rem;
+  margin-bottom: 1.25rem;
   position: relative;
   color: theme(colors.text);
+}
+/* Subtler than a hard vertical bar — a typeset chapter number under the
+   heading instead, drawn with a counter so it self-numbers. */
+.post-prose {
+  counter-reset: h2-counter;
+}
+.post-prose h2 {
+  counter-increment: h2-counter;
 }
 .post-prose h2::before {
-  content: "";
-  position: absolute;
-  left: 0;
-  top: 0.45rem;
-  bottom: 0.45rem;
-  width: 4px;
-  border-radius: 4px;
-  background: linear-gradient(180deg, #5B8DEF, #22D3EE);
+  content: counter(h2-counter, decimal-leading-zero);
+  display: block;
+  font-size: 0.7rem;
+  letter-spacing: 0.22em;
+  font-weight: 700;
+  color: theme(colors.secondary);
+  margin-bottom: 0.5rem;
+  text-transform: uppercase;
+  opacity: 0.85;
 }
 html.dark .post-prose h2 { color: theme(colors.dk-text); }
+html.dark .post-prose h2::before { color: theme(colors.dk-secondary); }
 
+/* h3 is a "side heading" — tracked uppercase label in the section accent,
+   distinct from the chapter-style h2 above it. Reads as a beat, not a slab. */
 .post-prose h3 {
-  font-size: 1.4rem;
-  font-weight: 600;
-  margin-top: 3rem;
-  margin-bottom: 1rem;
-  letter-spacing: -0.014em;
-  color: theme(colors.text);
+  font-size: 0.78rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  font-weight: 700;
+  color: theme(colors.secondary);
+  margin-top: 2.6rem;
+  margin-bottom: 0.85rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
 }
-html.dark .post-prose h3 { color: theme(colors.dk-text); }
+.post-prose h3::before {
+  content: "";
+  width: 1.2rem;
+  height: 1px;
+  background: theme(colors.secondary);
+  display: inline-block;
+  opacity: 0.55;
+}
+html.dark .post-prose h3 { color: theme(colors.dk-secondary); }
+html.dark .post-prose h3::before { background: theme(colors.dk-secondary); }
 
-/* Blockquotes — colored band with quote glyph */
+/* ───── Post body grid + side TOC ─────────────────────────────── */
+.post-body-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 2rem;
+}
+.post-body { min-width: 0; }
+.post-body .post-prose { max-width: 44rem; margin: 0 auto; }
+.post-toc-wrap { display: none; }
+
+@media (min-width: 1024px) {
+  .post-body-grid {
+    grid-template-columns: 14rem minmax(0, 1fr);
+    gap: 3rem;
+  }
+  .post-toc-wrap {
+    display: block;
+    position: sticky;
+    top: 7rem;
+    align-self: start;
+    max-height: calc(100vh - 9rem);
+    overflow-y: auto;
+    scrollbar-width: thin;
+  }
+  .post-body .post-prose {
+    max-width: 44rem;
+    margin: 0;
+  }
+}
+@media (min-width: 1280px) {
+  .post-body-grid {
+    grid-template-columns: 15rem minmax(0, 1fr) 6rem;
+  }
+}
+
+.post-toc-label {
+  font-size: 0.66rem;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  font-weight: 700;
+  color: theme(colors.text);
+  opacity: 0.5;
+  margin: 0 0 1rem;
+}
+html.dark .post-toc-label { color: theme(colors.dk-text); opacity: 0.55; }
+
+.post-toc ol {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  counter-reset: toc;
+}
+.post-toc li {
+  position: relative;
+  counter-increment: toc;
+  padding: 0.45rem 0 0.45rem 1.85rem;
+  border-left: 2px solid transparent;
+  color: theme(colors.text);
+  opacity: 0.55;
+  font-size: 0.86rem;
+  line-height: 1.4;
+  transition: opacity 0.25s ease, color 0.25s ease, border-color 0.25s ease;
+}
+.post-toc li::before {
+  content: counter(toc, decimal-leading-zero);
+  position: absolute;
+  left: 0.6rem;
+  top: 0.45rem;
+  font-size: 0.6rem;
+  letter-spacing: 0.12em;
+  font-weight: 700;
+  opacity: 0.55;
+  font-variant-numeric: tabular-nums;
+}
+.post-toc a {
+  color: inherit;
+  text-decoration: none;
+  background: none !important;
+  font-weight: 500;
+}
+html.dark .post-toc li { color: theme(colors.dk-text); }
+.post-toc li:hover {
+  opacity: 1;
+  color: theme(colors.secondary);
+}
+html.dark .post-toc li:hover { color: theme(colors.dk-secondary); }
+.post-toc li.toc-active {
+  opacity: 1;
+  color: theme(colors.secondary);
+  border-left-color: theme(colors.secondary);
+  font-weight: 600;
+}
+html.dark .post-toc li.toc-active {
+  color: theme(colors.dk-secondary);
+  border-left-color: theme(colors.dk-secondary);
+}
+
+/* Blockquote — typeset, not boxed. A real article uses a clean indent + rule. */
 .post-prose blockquote {
   position: relative;
-  margin: 2.75rem 0;
-  padding: 1.75rem 1.85rem 1.75rem 2.5rem;
-  font-size: 1.2rem;
+  margin: 2.5rem 0 2.5rem 1rem;
+  padding: 0.4rem 0 0.4rem 1.5rem;
+  font-size: 1.18rem;
   font-style: italic;
-  font-weight: 500;
-  line-height: 1.5;
+  font-weight: 450;
+  line-height: 1.55;
   color: theme(colors.text);
-  background: linear-gradient(135deg, rgba(91,141,239,0.10), rgba(34,211,238,0.04));
-  border-left: 4px solid theme(colors.secondary);
-  border-radius: 0 1.1rem 1.1rem 0;
+  border-left: 3px solid theme(colors.secondary);
+  background: none;
+  border-radius: 0;
+  opacity: 0.92;
 }
 html.dark .post-prose blockquote {
   color: theme(colors.dk-text);
-  background: linear-gradient(135deg, rgba(91,141,239,0.14), rgba(34,211,238,0.05));
   border-left-color: theme(colors.dk-secondary);
 }
-.post-prose blockquote::before {
-  content: "\201C";
-  position: absolute;
-  top: -0.5rem;
-  left: 0.65rem;
-  font-size: 3.5rem;
-  font-style: normal;
-  font-family: Georgia, "Times New Roman", serif;
-  color: theme(colors.secondary);
-  opacity: 0.28;
-  line-height: 1;
-}
-html.dark .post-prose blockquote::before { color: theme(colors.dk-secondary); }
+.post-prose blockquote::before { content: none; }
 .post-prose blockquote p {
-  margin: 0;
+  margin: 0.3rem 0;
   opacity: 1;
   color: inherit;
 }
 
-/* Inline code — colorful tinted pill */
+/* Inline code — quiet, not a pill. */
 .post-prose :not(pre) > code {
-  background: rgba(91,141,239,0.10);
+  background: rgba(91,141,239,0.08);
   color: theme(colors.secondary);
-  padding: 0.18em 0.45em;
-  border-radius: 0.35rem;
-  font-size: 0.92em;
+  padding: 0.08em 0.32em;
+  border-radius: 0.25rem;
+  font-size: 0.88em;
   font-weight: 500;
-  border: 1px solid rgba(91,141,239,0.18);
   font-family: "SF Mono", "JetBrains Mono", Menlo, Monaco, Consolas, monospace;
 }
 html.dark .post-prose :not(pre) > code {
-  background: rgba(91,141,239,0.20);
+  background: rgba(91,141,239,0.14);
   color: theme(colors.dk-secondary);
-  border-color: rgba(91,141,239,0.32);
 }
 .post-prose :not(pre) > code::before,
 .post-prose :not(pre) > code::after { content: ""; }
 
-/* Code blocks — collapsed by default so the prose breathes. Click to expand
-   the block; the gradient fade at the bottom hints there's more inside. */
+/* Code blocks — quieter, no gradient bar, scroll inside a capped height
+   so prose breathes around them. */
 .post-prose pre {
-  margin: 2.25rem 0;
-  padding: 1.1rem 1.4rem;
-  border-radius: 1rem;
-  background: #0F172A !important;
-  border: 1px solid rgba(91,141,239,0.22);
+  margin: 2rem 0;
+  padding: 1rem 1.2rem;
+  border-radius: 0.75rem;
+  background: #0E1422 !important;
+  border: 1px solid rgba(91,141,239,0.16);
   overflow: auto;
-  max-height: 16rem;
-  font-size: 0.82rem;
+  max-height: 18rem;
+  font-size: 0.8rem;
   line-height: 1.55;
   position: relative;
-  box-shadow:
-    0 18px 36px -18px rgba(0,0,0,0.5),
-    inset 0 1px 0 rgba(255,255,255,0.04);
   scrollbar-width: thin;
   scrollbar-color: rgba(91,141,239,0.4) transparent;
-  scroll-behavior: smooth;
-}
-.post-prose pre::before {
-  content: "";
-  position: absolute;
-  top: 0; left: 0; right: 0;
-  height: 2px;
-  background: linear-gradient(90deg, #5B8DEF, #22D3EE, #A78BFA);
-  opacity: 0.65;
-  border-radius: 1rem 1rem 0 0;
-  pointer-events: none;
-  z-index: 1;
-}
-.post-prose pre::after {
-  content: "";
-  position: sticky;
-  bottom: -1.1rem;
-  left: 0;
-  right: 0;
-  height: 3rem;
-  margin-top: -3rem;
-  display: block;
-  background: linear-gradient(to bottom, rgba(15,23,42,0) 0%, rgba(15,23,42,0.92) 90%);
-  pointer-events: none;
-  border-radius: 0 0 1rem 1rem;
 }
 .post-prose pre code {
-  color: rgba(229,231,235,0.94);
+  color: rgba(229,231,235,0.92);
   background: transparent;
   border: 0;
   padding: 0;

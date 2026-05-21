@@ -68,9 +68,19 @@ I ran both PPO and GRPO from the same SFT-aligned base, same reward model, same 
 | Won at human eval vs base | ~66% | ~67% |
 | Won at human eval vs each other | ~50/50 within rater noise |
 
-<div class="stat-callout stat-violet">
-  <div class="stat-value">~67%</div>
-  <div class="stat-label">Human-eval win rate vs base after GRPO. A great reward model with a competent PPO loop beats a mediocre reward model with the most exotic policy algorithm.</div>
+<div class="post-stats-grid my-8">
+  <div class="stat-callout stat-violet">
+    <div class="stat-value">~67%</div>
+    <div class="stat-label">RLHF (GRPO) win rate vs base</div>
+  </div>
+  <div class="stat-callout stat-blue">
+    <div class="stat-value">38k pairs</div>
+    <div class="stat-label">clean preference pairs from CMV</div>
+  </div>
+  <div class="stat-callout stat-emerald">
+    <div class="stat-value">~71%</div>
+    <div class="stat-label">reward model held-out pair accuracy</div>
+  </div>
 </div>
 
 GRPO converges faster. PPO is less spiky. On this data and at this scale, the policy algorithm wasn't the limiting factor.

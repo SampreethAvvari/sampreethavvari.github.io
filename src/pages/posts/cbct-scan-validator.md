@@ -29,6 +29,21 @@ I built it instead, on a laptop GPU and a CPU-only Cloud Run service.
 
 ## The cost picture, before anything else
 
+<div class="post-stats-grid my-8">
+  <div class="stat-callout stat-cyan">
+    <div class="stat-value">$124K</div>
+    <div class="stat-label">vendor year-one cost</div>
+  </div>
+  <div class="stat-callout stat-emerald">
+    <div class="stat-value">&lt; $600</div>
+    <div class="stat-label">year-one cloud spend, in-house</div>
+  </div>
+  <div class="stat-callout stat-blue">
+    <div class="stat-value">100% ours</div>
+    <div class="stat-label">IP, model weights, full MLOps stack</div>
+  </div>
+</div>
+
 | | Vendor proposal | What I built |
 |---|---|---|
 | Year 1 | ~$98K + $26K = **$124K** | < $600 cloud spend |

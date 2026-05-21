@@ -85,9 +85,17 @@ const chipTone = tone || (tag ? TAG_TONE[tag] : null) || "blue";
       )
     }
 
-    <div class="mx-auto max-w-3xl px-6 lg:px-0 mt-16">
-      <div class="prose prose-lg dark:prose-invert max-w-none post-prose">
-        <slot />
+    <div class="mx-auto max-w-7xl px-6 lg:px-10 xl:px-14 mt-16 post-body-grid">
+      <aside class="post-toc-wrap" aria-hidden="true">
+        <nav class="post-toc" id="post-toc">
+          <p class="post-toc-label">In this post</p>
+          <ol id="post-toc-list"></ol>
+        </nav>
+      </aside>
+      <div class="post-body">
+        <div class="prose prose-lg dark:prose-invert max-w-none post-prose" id="post-prose-body">
+          <slot />
+        </div>
       </div>
     </div>
 
@@ -113,17 +121,69 @@ const chipTone = tone || (tag ? TAG_TONE[tag] : null) || "blue";
   <script is:inline>
     (function () {
       const bar = document.getElementById("post-progress");
-      if (!bar) return;
-      const update = () => {
-        const doc = document.documentElement;
-        const scrollTop = doc.scrollTop || document.body.scrollTop;
-        const height = doc.scrollHeight - doc.clientHeight;
-        const pct = height > 0 ? (scrollTop / height) * 100 : 0;
-        bar.style.width = pct + "%";
-      };
-      window.addEventListener("scroll", update, { passive: true });
-      window.addEventListener("resize", update);
-      update();
+      if (bar) {
+        const updateBar = () => {
+          const doc = document.documentElement;
+          const scrollTop = doc.scrollTop || document.body.scrollTop;
+          const height = doc.scrollHeight - doc.clientHeight;
+          const pct = height > 0 ? (scrollTop / height) * 100 : 0;
+          bar.style.width = pct + "%";
+        };
+        window.addEventListener("scroll", updateBar, { passive: true });
+        window.addEventListener("resize", updateBar);
+        updateBar();
+      }
+
+      // Build the side TOC from h2 elements inside the prose body.
+      const body = document.getElementById("post-prose-body");
+      const list = document.getElementById("post-toc-list");
+      const tocWrap = document.querySelector(".post-toc-wrap");
+      if (body && list && tocWrap) {
+        const slugify = (s) =>
+          s.toLowerCase().trim()
+            .replace(/[^a-z0-9\s-]/g, "")
+            .replace(/\s+/g, "-")
+            .replace(/-+/g, "-")
+            .slice(0, 80);
+
+        const headings = Array.from(body.querySelectorAll("h2"));
+        if (headings.length < 2) {
+          // Not worth a TOC for one section.
+          tocWrap.style.display = "none";
+        } else {
+          tocWrap.removeAttribute("aria-hidden");
+          headings.forEach((h, i) => {
+            if (!h.id) h.id = "section-" + (slugify(h.textContent || "") || i);
+            const li = document.createElement("li");
+            const a = document.createElement("a");
+            a.href = "#" + h.id;
+            a.textContent = h.textContent || "";
+            a.dataset.target = h.id;
+            li.appendChild(a);
+            list.appendChild(li);
+          });
+
+          // Scroll-spy the active section.
+          const linksById = {};
+          list.querySelectorAll("a").forEach((a) => {
+            linksById[a.dataset.target] = a.parentElement;
+          });
+          const obs = new IntersectionObserver(
+            (entries) => {
+              entries.forEach((entry) => {
+                const li = linksById[entry.target.id];
+                if (!li) return;
+                if (entry.isIntersecting) {
+                  Object.values(linksById).forEach((l) => l.classList.remove("toc-active"));
+                  li.classList.add("toc-active");
+                }
+              });
+            },
+            { rootMargin: "-15% 0px -70% 0px", threshold: 0 },
+          );
+          headings.forEach((h) => obs.observe(h));
+        }
+      }
     })();
   </script>
 </BaseLayout>

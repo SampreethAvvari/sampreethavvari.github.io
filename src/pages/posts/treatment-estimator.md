@@ -88,6 +88,21 @@ The redesign stacks three things that tell the TC where they are:
 
 ## By the numbers
 
+<div class="post-stats-grid my-8">
+  <div class="stat-callout stat-violet">
+    <div class="stat-value">1 → 5</div>
+    <div class="stat-label">pricing model kinds, one resolver</div>
+  </div>
+  <div class="stat-callout stat-blue">
+    <div class="stat-value">$35/mo</div>
+    <div class="stat-label">target cost at S1 volume on Cloud Run</div>
+  </div>
+  <div class="stat-callout stat-emerald">
+    <div class="stat-value">100%</div>
+    <div class="stat-label">branch coverage on the pricing engine</div>
+  </div>
+</div>
+
 | | Legacy | New |
 |---|---|---|
 | Pricing models supported | 1 (flat) | 5 |
