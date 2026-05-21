@@ -239,21 +239,25 @@ const filmCredits = [
             02 — About
           </p>
           <h2 class="display-sm text-text dark:text-dk-text mb-6">
-            An engineer who happens to make movies.
+            An engineer who happens to <span class="text-secondary dark:text-dk-secondary text-shimmer">make movies</span>.
           </h2>
           <p class="text-base lg:text-lg text-text/75 dark:text-dk-text/75 leading-relaxed">
             {info.about.description}
           </p>
-          <div class="mt-8 flex flex-wrap gap-2">
+          <div class="mt-8 flex flex-wrap gap-2.5">
             {[
-              "Python", "TypeScript", "FastAPI", "Next.js", "PyTorch",
-              "Vertex AI", "Cloud Run", "Postgres", "Drizzle", "MLflow",
-            ].map((t) => (
-              <span
-                class="text-xs font-medium px-3 py-1.5 rounded-full bg-text/5 dark:bg-dk-text/10 text-text/75 dark:text-dk-text/80 border border-text/10 dark:border-dk-text/10"
-              >
-                {t}
-              </span>
+              { t: "Python", c: "p1" },
+              { t: "TypeScript", c: "p2" },
+              { t: "FastAPI", c: "p3" },
+              { t: "Next.js", c: "p4" },
+              { t: "PyTorch", c: "p5" },
+              { t: "Vertex AI", c: "p6" },
+              { t: "Cloud Run", c: "p7" },
+              { t: "Postgres", c: "p8" },
+              { t: "Drizzle", c: "p9" },
+              { t: "MLflow", c: "p10" },
+            ].map((p) => (
+              <span class={`skill-pill ${p.c}`}>{p.t}</span>
             ))}
           </div>
         </div>
@@ -261,41 +265,59 @@ const filmCredits = [
         <div class="lg:col-span-6 reveal" data-reveal>
           <div class="grid sm:grid-cols-2 gap-6 lg:gap-8">
             <div>
-              <p class="eyebrow text-text/50 dark:text-dk-text/50 mb-3">
+              <p class="eyebrow text-text/50 dark:text-dk-text/50 mb-4">
                 Education
               </p>
-              <ul class="space-y-3">
+              <ul class="space-y-4">
                 {info.about.education.map((ed) => (
-                  <li class="text-sm">
-                    <p class="font-semibold text-text dark:text-dk-text leading-snug">
-                      {ed.title}
-                    </p>
-                    <p class="text-text/60 dark:text-dk-text/60 leading-snug">
-                      {ed.location}
-                    </p>
-                    <p class="text-text/40 dark:text-dk-text/40 text-xs mt-1">
-                      {ed.date}{ed.gpa ? ` · GPA ${ed.gpa}` : ""}
-                    </p>
+                  <li class="timeline-row text-sm">
+                    <div class={`timeline-logo ${ed.logo ? "" : "logo-placeholder"}`}>
+                      {ed.logo ? (
+                        <img src={ed.logo} alt={`${ed.location} logo`} />
+                      ) : (
+                        <span>JNTU</span>
+                      )}
+                    </div>
+                    <div class="min-w-0 flex-1">
+                      <p class="font-semibold text-text dark:text-dk-text leading-snug">
+                        {ed.title}
+                      </p>
+                      <p class="text-text/60 dark:text-dk-text/60 leading-snug">
+                        {ed.location}
+                      </p>
+                      <p class="text-text/40 dark:text-dk-text/40 text-xs mt-1">
+                        {ed.date}{ed.gpa ? ` · GPA ${ed.gpa}` : ""}
+                      </p>
+                    </div>
                   </li>
                 ))}
               </ul>
             </div>
             <div>
-              <p class="eyebrow text-text/50 dark:text-dk-text/50 mb-3">
+              <p class="eyebrow text-text/50 dark:text-dk-text/50 mb-4">
                 Experience
               </p>
-              <ul class="space-y-3">
+              <ul class="space-y-4">
                 {info.about.experience.map((ex) => (
-                  <li class="text-sm">
-                    <p class="font-semibold text-text dark:text-dk-text leading-snug">
-                      {ex.title}
-                    </p>
-                    <p class="text-text/60 dark:text-dk-text/60 leading-snug">
-                      {ex.location}
-                    </p>
-                    <p class="text-text/40 dark:text-dk-text/40 text-xs mt-1">
-                      {ex.date}
-                    </p>
+                  <li class="timeline-row text-sm">
+                    <div class={`timeline-logo ${ex.logo ? "" : "logo-placeholder"}`}>
+                      {ex.logo ? (
+                        <img src={ex.logo} alt={`${ex.location} logo`} />
+                      ) : (
+                        <span>{ex.location.split(",")[0].slice(0, 2).toUpperCase()}</span>
+                      )}
+                    </div>
+                    <div class="min-w-0 flex-1">
+                      <p class="font-semibold text-text dark:text-dk-text leading-snug">
+                        {ex.title}
+                      </p>
+                      <p class="text-text/60 dark:text-dk-text/60 leading-snug">
+                        {ex.location}
+                      </p>
+                      <p class="text-text/40 dark:text-dk-text/40 text-xs mt-1">
+                        {ex.date}
+                      </p>
+                    </div>
                   </li>
                 ))}
               </ul>
@@ -324,7 +346,7 @@ const filmCredits = [
             03 — Filmmaking
           </p>
           <h2 class="display-sm text-text dark:text-dk-text mb-6">
-            "Gray characters, tight spaces, and the chaos hiding inside ordinary lives."
+            "Gray characters, <span class="text-acc-amber text-shimmer">tight spaces</span>, and the chaos hiding inside ordinary lives."
           </h2>
           <p class="text-lg text-text/70 dark:text-dk-text/70 leading-relaxed mb-8">
             I write, direct, edit, and score. <em>Among Monsters</em> is the
@@ -350,21 +372,32 @@ const filmCredits = [
         </div>
 
         <div class="lg:col-span-6 reveal" data-reveal>
-          <ul class="space-y-3">
-            {filmCredits.map((c) => (
+          <ul class="space-y-1">
+            {filmCredits.map((c, i) => (
               <li
-                class="flex items-baseline justify-between gap-6 py-3 border-b border-text/10 dark:border-dk-text/10"
+                class="group flex items-center justify-between gap-4 py-4 border-b border-text/10 dark:border-dk-text/10 hover:border-acc-amber/40 transition"
               >
-                <div class="min-w-0">
-                  <p class="text-lg font-semibold text-text dark:text-dk-text truncate">
-                    {c.title}
-                  </p>
-                  <p class="text-sm text-text/60 dark:text-dk-text/60">
-                    {c.role}
-                  </p>
+                <div class="min-w-0 flex items-center gap-4">
+                  <span class="font-mono text-xs text-acc-amber/70 tabular-nums w-8 shrink-0">
+                    {String(i + 1).padStart(2, "0")}
+                  </span>
+                  <div class="min-w-0">
+                    <p class="text-xl lg:text-2xl font-semibold text-text dark:text-dk-text group-hover:text-acc-amber transition truncate">
+                      {c.title}
+                    </p>
+                    <div class="mt-1 flex flex-wrap gap-1.5">
+                      {c.role.split(" · ").map((r) => (
+                        <span
+                          class="text-[0.65rem] font-semibold uppercase tracking-[0.12em] px-2 py-0.5 rounded-full bg-acc-amber/15 text-acc-amber border border-acc-amber/30"
+                        >
+                          {r}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
                 </div>
                 <span
-                  class="font-mono text-sm text-text/50 dark:text-dk-text/50 tabular-nums shrink-0"
+                  class="font-mono text-2xl lg:text-3xl font-bold text-text/40 dark:text-dk-text/40 group-hover:text-acc-amber tabular-nums shrink-0 transition"
                 >
                   {c.year}
                 </span>
@@ -373,7 +406,7 @@ const filmCredits = [
           </ul>
           <a
             href="/filmmaking"
-            class="link-underline text-sm font-semibold text-secondary dark:text-dk-secondary mt-6 inline-flex"
+            class="link-underline text-sm font-semibold text-acc-amber mt-6 inline-flex"
           >
             All credits, stills, and crew <span aria-hidden="true">→</span>
           </a>
