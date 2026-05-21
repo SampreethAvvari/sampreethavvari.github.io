@@ -1,5 +1,5 @@
 ---
-title: "How I rebuilt a decade-old quoting tool so the price guarantee is a DB invariant, not a PDF claim"
+title: "How I rebuilt a 10-year-old quoting tool with a real price lock"
 date: "2026-05-18"
 layout: ../../layouts/PostLayout.astro
 description: "A decade-old quoting tool, rebuilt around a Postgres trigger that makes the 6-month price guarantee a real database invariant. One month of work versus ten years of attempts."
