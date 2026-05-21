@@ -960,7 +960,8 @@ const stillsLimited = galleryItems.slice(0, 16);
   .role-tile-hover {
     position: absolute;
     inset: 0;
-    background: theme(colors.primary);
+    background: rgba(251, 251, 253, 0.97);
+    color: #1D1D1F;
     opacity: 0;
     display: flex;
     align-items: center;
@@ -968,12 +969,18 @@ const stillsLimited = galleryItems.slice(0, 16);
     padding: 1rem;
     transition: opacity 0.35s ease;
     z-index: 2;
+    pointer-events: none;
   }
   html.dark .role-tile-hover {
-    background: theme(colors.dk-primary);
+    background: rgba(0, 0, 0, 0.92);
+    color: #F5F5F7;
   }
-  .role-tile:hover .role-tile-hover {
-    opacity: 0.97;
+  .role-tile-hover ul,
+  .role-tile-hover li { color: inherit; }
+  .role-tile:hover .role-tile-hover,
+  .role-tile:focus-within .role-tile-hover {
+    opacity: 1;
+    pointer-events: auto;
   }
 
   /* ── Among Monsters detail poster ─────────────────────────────── */
