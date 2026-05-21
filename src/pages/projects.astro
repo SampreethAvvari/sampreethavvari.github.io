@@ -1,21 +1,444 @@
 ---
 import BaseLayout from "../layouts/BaseLayout.astro";
-import ProjectCard from "../components/projects_section/ProjectCard";
 import { info } from "../data/info";
+import { Image } from "astro:assets";
 
 const title = "SA: Projects";
+
+const projects = info.projects;
+
+const slug = (t: string) =>
+  t
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/^-|-$/g, "")
+    .slice(0, 60);
+
+const cleanTitle = (t: string) =>
+  t
+    .replace(/\s*\(Hybridge Implants LLC\)\s*$/i, "")
+    .replace(/\s*[—-]\s*Hybridge Implants LLC\s*$/i, "")
+    .replace(/\s*[—-]\s*Hybridge[^—-]*$/i, "")
+    .replace(/\s*-\s*Research\s*$/i, "")
+    .trim();
+
+const hybridge = projects.filter((p: any) => p.tier === "hybridge");
+const research = projects.filter((p: any) => p.tier === "research");
+const industry = projects.filter((p: any) => p.tier === "industry");
+const coursework = projects.filter((p: any) => p.tier === "coursework");
 ---
 
 <BaseLayout title={title}>
-  <div class="mx-auto w-full max-w-screen-2xl px-4 sm:px-6 lg:px-10 xl:px-14 2xl:px-20">
-    <section class="mt-24 reveal" data-reveal>
-      <p class="eyebrow text-secondary dark:text-dk-secondary mb-3">Selected work</p>
-      <h1 class="display-sm mb-10">Projects.</h1>
-      <div class="grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 items-stretch">
-        {info.projects.map((project) => (
-          <ProjectCard project={project} client:only />
-        ))}
+  <script is:inline>
+    document.documentElement.classList.add("snap-home");
+  </script>
+
+  <!-- ── Hero: Selected work ────────────────────────────────────────── -->
+  <section
+    class="relative overflow-hidden projects-hero-atmos"
+    style="min-height: 92vh; display: flex; flex-direction: column; justify-content: center; padding: 6rem 0 4rem;"
+    id="projects-top"
+  >
+    <div class="relative z-10 mx-auto w-full max-w-screen-2xl px-6 lg:px-12">
+      <div class="max-w-4xl">
+        <p class="eyebrow text-secondary dark:text-dk-secondary mb-5">
+          Selected work
+        </p>
+        <h1 class="display text-text dark:text-dk-text mb-8 glow-wave">
+          Projects.
+        </h1>
+        <p class="text-lg lg:text-2xl text-text/75 dark:text-dk-text/75 leading-relaxed max-w-3xl">
+          Production systems I shipped solo at Hybridge, plus the research and
+          coursework that taught me the patterns. Each Hybridge one gets its own
+          page; the rest live below.
+        </p>
+        <div class="mt-10 flex flex-wrap items-center gap-6 text-sm text-text/55 dark:text-dk-text/55">
+          <span class="inline-flex items-center gap-2">
+            <span class="w-1.5 h-1.5 rounded-full bg-acc-emerald"></span>
+            {hybridge.length} Hybridge systems
+          </span>
+          <span class="inline-flex items-center gap-2">
+            <span class="w-1.5 h-1.5 rounded-full bg-acc-violet"></span>
+            {research.length} research
+          </span>
+          <span class="inline-flex items-center gap-2">
+            <span class="w-1.5 h-1.5 rounded-full bg-acc-blue"></span>
+            {industry.length} industry
+          </span>
+          <span class="inline-flex items-center gap-2">
+            <span class="w-1.5 h-1.5 rounded-full bg-text/40 dark:bg-dk-text/40"></span>
+            {coursework.length} coursework
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <a
+      href={`#${slug(hybridge[0]?.title || "")}`}
+      aria-label="Scroll to first project"
+      class="no-lift absolute bottom-8 left-1/2 -translate-x-1/2 text-text/40 dark:text-dk-text/40 hover:text-text dark:hover:text-dk-text transition animate-pulse"
+    >
+      <i class="fas fa-chevron-down text-xl"></i>
+    </a>
+  </section>
+
+  <!-- ── Band A: Hybridge deep dives ────────────────────────────────── -->
+  {hybridge.map((project: any, i: number) => {
+    const flip = i % 2 === 1;
+    const display = cleanTitle(project.title);
+    const highlights = project.details?.highlights?.slice(0, 3) || [];
+    const tech = project.tech?.slice(0, 8) || [];
+    return (
+      <section
+        class="project-screen snap-chapter relative overflow-hidden"
+        id={slug(project.title)}
+      >
+        <div class={`project-screen-atmos atmos-${(i % 3) + 1}`} aria-hidden="true"></div>
+        <div class="relative z-10 mx-auto w-full max-w-screen-2xl px-6 lg:px-12 grid lg:grid-cols-12 gap-10 lg:gap-16 items-center">
+          <div class={`lg:col-span-7 ${flip ? "lg:order-2" : ""}`}>
+            <div class="relative project-screen-imagewrap">
+              <Image
+                src={project.img_path}
+                alt={project.img_alt || project.title}
+                width={1400}
+                height={875}
+                class="w-full aspect-[16/10] object-cover rounded-2xl shadow-2xl ring-1 ring-text/10 dark:ring-dk-text/15"
+              />
+            </div>
+          </div>
+          <div class="lg:col-span-5">
+            <div class="flex items-center gap-3 mb-4">
+              <span class="post-tag post-tag-emerald">
+                Hybridge · {String(i + 1).padStart(2, "0")}/{String(hybridge.length).padStart(2, "0")}
+              </span>
+              <span class="text-xs uppercase tracking-[0.18em] text-text/45 dark:text-dk-text/45 font-semibold">
+                {project.date}
+              </span>
+            </div>
+            <h2 class="display-sm text-text dark:text-dk-text mb-5 glow-wave">
+              {display}
+            </h2>
+            <p class="text-base lg:text-lg text-text/75 dark:text-dk-text/80 leading-relaxed mb-6">
+              {project.details?.summary || project.description}
+            </p>
+            {highlights.length > 0 && (
+              <ul class="space-y-2.5 mb-6">
+                {highlights.map((h: string) => (
+                  <li class="flex gap-2.5 text-sm text-text/75 dark:text-dk-text/80 leading-relaxed">
+                    <span class="mt-1.5 w-1.5 h-1.5 rounded-full bg-acc-emerald shrink-0"></span>
+                    <span>{h}</span>
+                  </li>
+                ))}
+              </ul>
+            )}
+            {tech.length > 0 && (
+              <div class="flex flex-wrap gap-2 mb-6">
+                {tech.map((t: string) => (
+                  <span class="skill-pill text-xs">{t}</span>
+                ))}
+              </div>
+            )}
+            {project.link && (
+              <a
+                href={project.link}
+                target="_blank"
+                rel="noreferrer"
+                class="link-underline text-sm font-semibold text-secondary dark:text-dk-secondary inline-flex"
+              >
+                Visit project <span aria-hidden="true">→</span>
+              </a>
+            )}
+          </div>
+        </div>
+      </section>
+    );
+  })}
+
+  <!-- ── Band B: Research ───────────────────────────────────────────── -->
+  {research.length > 0 && (
+    <section class="relative py-24 lg:py-32 bg-text/[0.02] dark:bg-dk-text/[0.03]">
+      <div class="mx-auto w-full max-w-screen-2xl px-6 lg:px-12">
+        <div class="max-w-3xl mb-12 lg:mb-16">
+          <p class="eyebrow text-acc-violet mb-4">Research</p>
+          <h2 class="display-sm text-text dark:text-dk-text glow-wave mb-4">
+            From grad school.
+          </h2>
+          <p class="text-base lg:text-lg text-text/70 dark:text-dk-text/70 leading-relaxed">
+            Papers, pipelines, and PyTorch nights. The patterns underneath what
+            I ship at work.
+          </p>
+        </div>
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          {research.map((p: any) => (
+            <article class="rounded-2xl overflow-hidden border border-text/10 dark:border-dk-text/15 bg-primary dark:bg-dk-primary/40 group hover:border-acc-violet/40 transition flex flex-col">
+              <div class="relative overflow-hidden">
+                <Image
+                  src={p.img_path}
+                  alt={p.img_alt || p.title}
+                  width={1200}
+                  height={675}
+                  class="w-full aspect-[16/9] object-cover transition duration-500 group-hover:scale-[1.03]"
+                />
+              </div>
+              <div class="p-6 lg:p-7 flex flex-col flex-1">
+                <div class="flex items-center gap-3 mb-3">
+                  <span class="post-tag post-tag-violet">Research</span>
+                  <span class="text-[0.65rem] uppercase tracking-[0.18em] text-text/40 dark:text-dk-text/40 font-semibold">
+                    {p.date}
+                  </span>
+                </div>
+                <h3 class="text-xl lg:text-2xl font-semibold text-text dark:text-dk-text leading-snug mb-3">
+                  {cleanTitle(p.title)}
+                </h3>
+                <p class="text-sm text-text/65 dark:text-dk-text/70 leading-relaxed mb-5">
+                  {p.description}
+                </p>
+                <div class="flex flex-wrap gap-1.5 mb-4 mt-auto">
+                  {(p.tech?.slice(0, 6) || []).map((t: string) => (
+                    <span class="text-[0.65rem] uppercase tracking-[0.12em] px-2 py-0.5 rounded-full bg-text/5 dark:bg-dk-text/[0.06] border border-text/10 dark:border-dk-text/15 text-text/65 dark:text-dk-text/70">
+                      {t}
+                    </span>
+                  ))}
+                </div>
+                {p.link && (
+                  <a
+                    href={p.link}
+                    target="_blank"
+                    rel="noreferrer"
+                    class="link-underline text-sm font-semibold text-acc-violet inline-flex w-fit"
+                  >
+                    Open <span aria-hidden="true">→</span>
+                  </a>
+                )}
+              </div>
+            </article>
+          ))}
+        </div>
       </div>
     </section>
-  </div>
+  )}
+
+  <!-- ── Band C: Industry ───────────────────────────────────────────── -->
+  {industry.length > 0 && (
+    <section class="relative py-24 lg:py-32">
+      <div class="mx-auto w-full max-w-screen-2xl px-6 lg:px-12">
+        <div class="max-w-3xl mb-12 lg:mb-16">
+          <p class="eyebrow text-acc-blue mb-4">Industry</p>
+          <h2 class="display-sm text-text dark:text-dk-text glow-wave mb-4">
+            Earlier industry work.
+          </h2>
+          <p class="text-base lg:text-lg text-text/70 dark:text-dk-text/70 leading-relaxed">
+            Production shipping outside Hybridge, before I went solo on AI.
+          </p>
+        </div>
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          {industry.map((p: any) => (
+            <article class="rounded-2xl overflow-hidden border border-text/10 dark:border-dk-text/15 bg-primary dark:bg-dk-primary/40 group hover:border-acc-blue/40 transition flex flex-col">
+              <div class="relative overflow-hidden">
+                <Image
+                  src={p.img_path}
+                  alt={p.img_alt || p.title}
+                  width={1200}
+                  height={675}
+                  class="w-full aspect-[16/9] object-cover transition duration-500 group-hover:scale-[1.03]"
+                />
+              </div>
+              <div class="p-6 lg:p-7 flex flex-col flex-1">
+                <div class="flex items-center gap-3 mb-3">
+                  <span class="post-tag post-tag-blue">Industry</span>
+                  <span class="text-[0.65rem] uppercase tracking-[0.18em] text-text/40 dark:text-dk-text/40 font-semibold">
+                    {p.date}
+                  </span>
+                </div>
+                <h3 class="text-xl lg:text-2xl font-semibold text-text dark:text-dk-text leading-snug mb-3">
+                  {cleanTitle(p.title)}
+                </h3>
+                <p class="text-sm text-text/65 dark:text-dk-text/70 leading-relaxed mb-5">
+                  {p.description}
+                </p>
+                <div class="flex flex-wrap gap-1.5 mb-4 mt-auto">
+                  {(p.tech?.slice(0, 6) || []).map((t: string) => (
+                    <span class="text-[0.65rem] uppercase tracking-[0.12em] px-2 py-0.5 rounded-full bg-text/5 dark:bg-dk-text/[0.06] border border-text/10 dark:border-dk-text/15 text-text/65 dark:text-dk-text/70">
+                      {t}
+                    </span>
+                  ))}
+                </div>
+                {p.link && (
+                  <a
+                    href={p.link}
+                    target="_blank"
+                    rel="noreferrer"
+                    class="link-underline text-sm font-semibold text-acc-blue inline-flex w-fit"
+                  >
+                    Open <span aria-hidden="true">→</span>
+                  </a>
+                )}
+              </div>
+            </article>
+          ))}
+        </div>
+      </div>
+    </section>
+  )}
+
+  <!-- ── Band D: Coursework archive ─────────────────────────────────── -->
+  {coursework.length > 0 && (
+    <section class="relative py-24 lg:py-32 bg-text/[0.02] dark:bg-dk-text/[0.03]">
+      <div class="mx-auto w-full max-w-screen-2xl px-6 lg:px-12">
+        <div class="max-w-3xl mb-10 lg:mb-14">
+          <p class="eyebrow text-text/55 dark:text-dk-text/55 mb-4">
+            Coursework · earlier
+          </p>
+          <h2 class="display-sm text-text dark:text-dk-text glow-wave mb-4">
+            From the NYU days.
+          </h2>
+          <p class="text-base lg:text-lg text-text/65 dark:text-dk-text/65 leading-relaxed">
+            Class projects that earned their grade and taught me something I
+            still use.
+          </p>
+        </div>
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 lg:gap-5">
+          {coursework.map((p: any) => (
+            <article class="rounded-xl border border-text/10 dark:border-dk-text/12 bg-primary dark:bg-dk-primary/40 p-5 flex flex-col hover:border-text/25 dark:hover:border-dk-text/25 transition">
+              <div class="flex items-center gap-2 mb-3">
+                <span class="text-[0.6rem] uppercase tracking-[0.18em] font-bold text-text/45 dark:text-dk-text/45">
+                  {p.date}
+                </span>
+              </div>
+              <h3 class="text-base font-semibold text-text dark:text-dk-text leading-snug mb-2">
+                {cleanTitle(p.title)}
+              </h3>
+              <p class="text-xs text-text/60 dark:text-dk-text/65 leading-relaxed mb-4 line-clamp-3">
+                {p.description}
+              </p>
+              <div class="flex flex-wrap gap-1 mt-auto mb-3">
+                {(p.tech?.slice(0, 4) || []).map((t: string) => (
+                  <span class="text-[0.6rem] uppercase tracking-[0.1em] px-1.5 py-0.5 rounded-full bg-text/5 dark:bg-dk-text/[0.06] text-text/60 dark:text-dk-text/65">
+                    {t}
+                  </span>
+                ))}
+              </div>
+              {p.link && (
+                <a
+                  href={p.link}
+                  target="_blank"
+                  rel="noreferrer"
+                  class="link-underline text-xs font-semibold text-secondary dark:text-dk-secondary inline-flex w-fit"
+                >
+                  Open <span aria-hidden="true">→</span>
+                </a>
+              )}
+            </article>
+          ))}
+        </div>
+      </div>
+    </section>
+  )}
+
+  <!-- ── Closer ─────────────────────────────────────────────────────── -->
+  <section class="relative py-24 lg:py-28">
+    <div class="mx-auto w-full max-w-screen-2xl px-6 lg:px-12 text-center">
+      <p class="eyebrow text-secondary dark:text-dk-secondary mb-4">
+        That's the work
+      </p>
+      <h2 class="text-3xl lg:text-4xl font-semibold tracking-tight text-text dark:text-dk-text mb-6">
+        Want the long form?
+      </h2>
+      <p class="text-base lg:text-lg text-text/65 dark:text-dk-text/70 max-w-2xl mx-auto leading-relaxed mb-8">
+        The Hybridge systems have full write-ups: failure modes, numbers, and
+        the decisions that didn't make the bullet list.
+      </p>
+      <div class="flex flex-wrap items-center justify-center gap-3">
+        <a
+          href="/posts"
+          class="no-lift inline-flex items-center gap-2 rounded-full px-6 py-3 bg-text text-primary dark:bg-dk-text dark:text-dk-primary text-sm font-semibold hover:opacity-85 transition"
+        >
+          Read the writing <span aria-hidden="true">→</span>
+        </a>
+        <a
+          href="/#contact"
+          class="no-lift inline-flex items-center gap-2 rounded-full px-6 py-3 border border-text/20 dark:border-dk-text/20 text-sm font-semibold text-text dark:text-dk-text hover:bg-text/5 dark:hover:bg-dk-text/10 transition"
+        >
+          Get in touch
+        </a>
+      </div>
+    </div>
+  </section>
 </BaseLayout>
+
+<style is:global>
+  /* Hero atmosphere — borrowed pattern from .landing-atmos / .writing-atmos */
+  .projects-hero-atmos {
+    position: relative;
+  }
+  .projects-hero-atmos::before {
+    content: "";
+    position: absolute;
+    inset: -10%;
+    background:
+      radial-gradient(circle at 18% 28%, rgba(52, 211, 153, 0.18), transparent 50%),
+      radial-gradient(circle at 82% 22%, rgba(167, 139, 250, 0.16), transparent 50%),
+      radial-gradient(circle at 50% 95%, rgba(91, 141, 239, 0.16), transparent 55%);
+    filter: blur(70px);
+    z-index: 0;
+    pointer-events: none;
+    animation: atmosDrift 22s ease-in-out infinite;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .projects-hero-atmos::before { animation: none; }
+  }
+
+  /* Each Hybridge deep dive: full-viewport flex column with breathing room. */
+  .project-screen {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding-top: clamp(5rem, 8vh, 7rem);
+    padding-bottom: clamp(4rem, 7vh, 6rem);
+  }
+
+  /* Soft accent backdrop per project, gently rotating accent so consecutive
+     deep-dives feel different without ever screaming for attention. */
+  .project-screen-atmos {
+    position: absolute;
+    inset: -8%;
+    filter: blur(80px);
+    z-index: 0;
+    pointer-events: none;
+    opacity: 0.9;
+    animation: atmosDrift 24s ease-in-out infinite;
+  }
+  .project-screen-atmos.atmos-1 {
+    background:
+      radial-gradient(circle at 22% 30%, rgba(52, 211, 153, 0.16), transparent 50%),
+      radial-gradient(circle at 78% 70%, rgba(34, 211, 238, 0.12), transparent 50%);
+  }
+  .project-screen-atmos.atmos-2 {
+    background:
+      radial-gradient(circle at 78% 28%, rgba(91, 141, 239, 0.14), transparent 50%),
+      radial-gradient(circle at 22% 78%, rgba(52, 211, 153, 0.14), transparent 50%);
+  }
+  .project-screen-atmos.atmos-3 {
+    background:
+      radial-gradient(circle at 50% 30%, rgba(167, 139, 250, 0.13), transparent 50%),
+      radial-gradient(circle at 50% 85%, rgba(52, 211, 153, 0.13), transparent 50%);
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .project-screen-atmos { animation: none; }
+  }
+
+  /* Image wrap with a soft halo behind it so the screenshot doesn't look
+     pasted on the page. */
+  .project-screen-imagewrap::before {
+    content: "";
+    position: absolute;
+    inset: 8% -4% -4% 8%;
+    background: linear-gradient(135deg, rgba(52, 211, 153, 0.22), rgba(91, 141, 239, 0.18));
+    filter: blur(60px);
+    z-index: -1;
+    border-radius: 2rem;
+    opacity: 0.55;
+  }
+</style>
