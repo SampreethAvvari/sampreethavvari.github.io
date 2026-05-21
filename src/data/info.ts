@@ -533,8 +533,8 @@ export const info = {
 
   contact: {
     email: "spa9659@nyu.edu",
-    linkedin: "https://hi.switchy.io/MMTw",
-    github: "https://hi.switchy.io/q37N",
-    instagram: "https://hi.switchy.io/q37U",
+    linkedin: "https://www.linkedin.com/in/sampreethavvari/",
+    github: "https://github.com/SampreethAvvari",
+    instagram: "https://www.instagram.com/sampreeth.sharma/",
   },
 };
