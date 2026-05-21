@@ -1,5 +1,5 @@
 ---
-title: "Loan Radar: building the boring parts of an ML platform on purpose"
+title: "How I built the boring parts of an ML platform on purpose, and why the gates mattered most"
 date: "2025-05-01"
 layout: ../../layouts/PostLayout.astro
 description: "A loan-default scoring service with the boring parts actually built: containerised training, MLflow lineage, quality gates, an Airflow retraining DAG. The gates mattered most."

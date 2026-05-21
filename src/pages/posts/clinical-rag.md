@@ -1,5 +1,5 @@
 ---
-title: "Scoring every dental consultation against a CEO's framework"
+title: "How I turned a CEO's 7-criterion consult rubric into a Gemini-graded pipeline"
 date: "2026-05-19"
 layout: ../../layouts/PostLayout.astro
 description: "A Zoom transcript flows in. A pipeline finds the doctor, scores the consult on a 7-criterion rubric, renders a color-coded report, appends to a master Sheet."

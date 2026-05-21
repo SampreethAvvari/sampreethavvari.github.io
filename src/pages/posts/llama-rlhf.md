@@ -1,5 +1,5 @@
 ---
-title: "Fine-tuning Llama 3.1 with RLHF for persuasive counter-arguments"
+title: "How I fine-tuned Llama 3.1 with RLHF to write more persuasive counter-arguments"
 date: "2025-09-10"
 layout: ../../layouts/PostLayout.astro
 description: "Llama 3.1 8B trained for more persuasive counter-arguments on ChangeMyView debates. SFT with QLoRA, a reward model, GRPO. Which design choices actually mattered."

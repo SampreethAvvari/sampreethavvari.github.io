@@ -1,5 +1,5 @@
 ---
-title: "On making movies, shipping AI, and the work between the two"
+title: "How making films taught me to ship AI alongside the people using it"
 date: "2026-05-20"
 layout: ../../layouts/PostLayout.astro
 description: "Two crafts I keep being told are separate. They aren't. What ten years of writing, directing, and editing short films does to the way I do engineering work."

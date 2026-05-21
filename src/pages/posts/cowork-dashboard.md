@@ -1,5 +1,5 @@
 ---
-title: "When a single connect column rescued a year of reporting"
+title: "How I rebuilt a clinic dashboard the front office actually trusts"
 date: "2026-05-12"
 layout: ../../layouts/PostLayout.astro
 description: "Two clinics, three Monday boards, a patient-to-lead join only 49% accurate. The fix wasn't an algorithm. It was reading the schema."
