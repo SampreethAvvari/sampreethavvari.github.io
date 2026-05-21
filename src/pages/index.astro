@@ -47,37 +47,71 @@ const filmmakingPhotos = filmmakingFiles.map((file) => {
 ---
 
 <BaseLayout title="Sampreeth Avvari: Home">
-  <section class="lg:h-screen lg:m-0 my-20 mx-2 relative landing-atmos" id="home">
+  <section
+    class="relative landing-atmos min-h-[88vh] flex items-center justify-center py-16 lg:py-24"
+    id="home"
+  >
     <div
-      class="flex flex-col lg:flex-row justify-center items-center h-full space-y-4 relative z-10"
+      class="relative z-10 w-full max-w-6xl mx-auto flex flex-col lg:flex-row items-center justify-center gap-10 lg:gap-20"
     >
-      <div class="profile-pic">
+      <div class="profile-pic shrink-0 floaty">
         <Image
           src={info.picture}
           alt={info.picture_alt}
-          width={200}
-          height={200}
-          class="lg:h-96 lg:w-96 h-40 w-40 rounded-full object-fill object-center space-x-8"
+          width={384}
+          height={384}
+          class="lg:h-80 lg:w-80 xl:h-96 xl:w-96 h-48 w-48 rounded-full object-cover ring-1 ring-secondary/20 dark:ring-dk-secondary/20 shadow-[0_30px_80px_-20px_rgba(91,141,239,0.35)]"
         />
       </div>
 
-      <div class="flex flex-col lg:mx-8 leading-relaxed space-y-4">
-        <h1 class="text-3xl lg:text-5xl font-bold font-serif">
-          Hi, I'm <span class="bg-clip-text animate-pulse typewriter floaty">
-            {info.name}</span
-          >
+      <div class="flex flex-col gap-5 lg:gap-7 text-center lg:text-left max-w-2xl">
+        <p
+          class="text-xs uppercase tracking-[0.32em] font-semibold text-secondary/70 dark:text-dk-secondary/70"
+        >
+          AI Engineer · New York
+        </p>
+        <h1
+          class="text-5xl lg:text-7xl xl:text-8xl font-bold tracking-[-0.03em] leading-[1.02] text-text dark:text-dk-text"
+        >
+          Hi, I'm <span class="text-secondary dark:text-dk-secondary">{info.name}</span>.
         </h1>
-        <h2 class="text-text dark:text-dk-text">{info.brief_description}</h2>
-        <p class="text-base text-secondary dark:text-dk-secondary font-normal">
-          And there's more :)
+        <p
+          class="text-xl lg:text-2xl leading-relaxed text-text/80 dark:text-dk-text/80"
+        >
+          {info.brief_description}
         </p>
-        <p class="text-2xl">
-          Based in <span class="text-secondary dark:text-dk-secondary"
-            >{info.location}</span
+        <div
+          class="flex flex-wrap items-center justify-center lg:justify-start gap-3 pt-2"
+        >
+          <a
+            href="/projects"
+            class="no-lift inline-flex items-center gap-2 rounded-full px-6 py-3 bg-secondary text-primary dark:bg-dk-secondary dark:text-dk-primary text-sm font-semibold hover:bg-accent dark:hover:bg-dk-accent transition"
           >
-        </p>
+            See the work <span aria-hidden="true">→</span>
+          </a>
+          <a
+            href="/posts"
+            class="no-lift inline-flex items-center gap-2 rounded-full px-6 py-3 border border-secondary/40 dark:border-dk-secondary/40 text-sm font-semibold text-secondary dark:text-dk-secondary hover:bg-secondary/5 dark:hover:bg-dk-secondary/10 transition"
+          >
+            Read the writing
+          </a>
+          <a
+            href="/#contact"
+            class="no-lift inline-flex items-center gap-2 rounded-full px-6 py-3 text-sm font-semibold text-text/80 dark:text-dk-text/80 hover:text-secondary dark:hover:text-dk-secondary transition"
+          >
+            Get in touch
+          </a>
+        </div>
       </div>
     </div>
+
+    <a
+      href="#about"
+      aria-label="Scroll to About"
+      class="no-lift absolute bottom-8 left-1/2 -translate-x-1/2 text-secondary/60 dark:text-dk-secondary/60 hover:text-secondary dark:hover:text-dk-secondary transition animate-pulse"
+    >
+      <i class="fas fa-chevron-down text-xl"></i>
+    </a>
   </section>
   <section class="-mt-8 mb-20 mx-2" id="about">
     <About about={info.about} client:visible />
