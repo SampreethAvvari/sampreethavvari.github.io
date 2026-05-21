@@ -26,9 +26,9 @@ const cleanTitle = (t: string) =>
 const industry = projects.filter((p: any) => p.tier === "industry");
 const academic = projects.filter((p: any) => p.tier === "academic");
 
-// Each Industry deep-dive section gets its own chip colour so the run of seven
-// doesn't read as one wall of blue. Order intentionally rotates warm/cool.
-const INDUSTRY_CHIP_TONES = ["emerald", "amber", "blue", "rose", "slate", "violet", "cyan"];
+// Industry chips stay neutral slate so the page reads as black + matte gray;
+// the colour comes only from the rotating atmos glow behind each deep dive.
+const INDUSTRY_CHIP_TONES = ["slate", "slate", "slate", "slate", "slate", "slate", "slate"];
 
 // Map project title fragments to their long-form blog post URL. Used for
 // inline "Read the write-up" links per deep dive and the closing band.
