@@ -5,6 +5,18 @@ layout: ../../layouts/PostLayout.astro
 description: "A Zoom transcript flows in. A pipeline finds the doctor, scores the consult on a 7-criterion rubric, renders a color-coded report, appends to a master Sheet."
 img_path: "/doc-coach.png"
 img_alt: "Consultation QA pipeline — Zoom transcript to color-coded report"
+tag: "MLOps"
+tone: "emerald"
+stats:
+  - value: "+130%"
+    label: "treatment acceptance"
+    tone: "emerald"
+  - value: "+43%"
+    label: "revenue growth"
+    tone: "blue"
+  - value: "-35%"
+    label: "hallucinations vs no-schema baseline"
+    tone: "violet"
 ---
 
 Our CEO, Dr. Frank LaMar, has spent years refining a seven-criterion framework for what a good implant consultation actually looks like. The whole thing lived in a Word doc. Nobody else could read a transcript and score it the way he would.
@@ -65,6 +77,11 @@ If the retry also fails, it raises, alerts, and walks away.
 
 That single contract change cut **hallucinations by ~35%** versus the no-schema baseline. The model is the same. The difference is the shape it has to produce.
 
+<div class="stat-callout stat-emerald">
+  <div class="stat-value">+130%</div>
+  <div class="stat-label">Treatment acceptance after every consult started getting coached, not just the few Frank had time for</div>
+</div>
+
 ## Color coding against a rolling baseline
 
 Each criterion gets a 1-10 score. The HTML email colors each one against the doctor's **own 30-day rolling average** for that criterion, not against a global baseline. That's the only way the report makes sense when a new TC pairs with a doctor for the first time.
@@ -77,11 +94,8 @@ Rolling averages get read out of the master Sheet every run, so the system never
 |---|---|---|
 | Consultations scored | Frank's hand-picked subset | Every implant consult, both Zoom orgs |
 | Time from transcript to coaching report | Days, sometimes weeks | 5-15 minutes |
-| Treatment acceptance | baseline | **+130%** |
-| Revenue growth | baseline | **+43%** |
-| Hallucinations vs no-schema baseline | — | **-35%** |
 
-The number I'm most attached to from an engineering standpoint is that last one. A schema and one structured retry turn the same model into a reliable producer of clean rows. The acceptance lift and revenue growth are downstream of what the coaching loop did with those rows.
+The number I'm most attached to from an engineering standpoint is the hallucination cut. A schema and one structured retry turn the same model into a reliable producer of clean rows. The acceptance lift and revenue growth are downstream of what the coaching loop did with those rows.
 
 ## Why this matters beyond the metrics
 
