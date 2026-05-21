@@ -2,7 +2,7 @@
 title: "Rebuilding a decade-old dental quoting tool around a price-freeze invariant"
 date: "2026-05-18"
 layout: ../../layouts/PostLayout.astro
-description: "The legacy tool quoted today at one price and reopened next month at a different one. The redesign makes the 6-month guarantee a real database invariant."
+description: "A decade-old quoting tool, rebuilt around a Postgres trigger that makes the 6-month price guarantee a real database invariant. One month of work versus ten years of attempts."
 img_path: "/treatment-estimator.svg"
 img_alt: "Treatment Estimator wizard, decision tree, and frozen-price snapshot"
 ---
@@ -78,7 +78,7 @@ The redesign stacks three things that tell the TC where they are:
 | 6-month price guarantee | PDF sticker | Postgres trigger |
 | Wizard orientation | "Which step am I on?" | Three stacked affordances |
 | Cost target | n/a | $35/month at S1 volume on Cloud Run |
-| Time to working end-to-end | The vendor 10 years ago: didn't ship | About two days |
+| Time to working end-to-end | The vendor 10 years ago: never shipped | About one month |
 
 Read enough code and you'll see Drizzle and Postgres and Next.js everywhere. The thing this rebuild actually did, the thing the legacy tool spent ten years avoiding, was draw a clean line between *how a quote is built* and *what those parts cost today*. Once that line is in schema and code, the next person extending the system can't blur it.
 
