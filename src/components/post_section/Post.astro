@@ -8,47 +8,45 @@ const { title, description, img_path, img_alt, date } = post.frontmatter;
 ---
 
 <div
-  class="relative bg-primary rounded-lg shadow-sm dark:shadow-dk-secondary dark:bg-dk-primary transform transition duration-500 hover:scale-105"
+  class="group relative flex h-full flex-col overflow-hidden rounded-lg bg-primary dark:bg-dk-primary shadow-sm dark:shadow-dk-secondary border border-secondary/30 dark:border-dk-secondary/30 transform transition duration-500 hover:scale-[1.02]"
 >
-  <div class="p-2 flex justify-center">
+  <a href={url} class="block flex-shrink-0">
     {
       img_path && (
-        <a href={url}>
-          <Image
-            class="rounded-md w-full md:h-56 h-28 object-cover"
-            src={img_path}
-            alt={img_alt || title}
-            width={300}
-            height={200}
-          />
-        </a>
+        <Image
+          class="h-48 w-full object-cover transition duration-500 group-hover:opacity-90 md:h-56"
+          src={img_path}
+          alt={img_alt || title}
+          width={600}
+          height={400}
+        />
       )
     }
-  </div>
+  </a>
 
-  <div class="px-4 pb-3 md:h-40 h-36">
-    <div>
-      <a href={url}>
-        <h5
-          class="text-xl font-semibold tracking-tight hover:text-secondary dark:hover:text-dk-secondary text-text dark:text-dk-text"
-        >
-          {title}
-        </h5>
+  <div class="flex flex-1 flex-col p-5">
+    <a href={url} class="block">
+      <h5
+        class="text-base md:text-lg font-semibold tracking-tight text-text dark:text-dk-text line-clamp-2 min-h-[3rem] group-hover:text-secondary dark:group-hover:text-dk-secondary transition"
+      >
+        {title}
+      </h5>
+    </a>
+
+    <p
+      class="mt-3 text-sm text-text/80 dark:text-dk-text/80 leading-relaxed line-clamp-3 min-h-[3.75rem]"
+    >
+      {description}
+    </p>
+
+    <div class="mt-auto flex items-center justify-between pt-4">
+      <a
+        href={url}
+        class="text-sm font-semibold text-secondary dark:text-dk-secondary hover:text-accent dark:hover:text-dk-accent inline-flex items-center gap-1 transition"
+      >
+        Read more <span aria-hidden="true">&rarr;</span>
       </a>
-
-      <p class="antialiased text-text dark:text-dk-text text-sm break-keep">
-        {description}
-      </p>
-      <div class="flex items-center justify-between mt-4">
-        <div class="flex items-center flex-row justify-between w-full">
-          <a
-            href={url}
-            class="text-sm font-semibold text-text dark:text-dk-text hover:underline"
-            >Read more</a
-          >
-          <p class="text-sm text-gray-600 dark:text-gray-400">{date}</p>
-        </div>
-      </div>
+      <p class="text-xs text-text/60 dark:text-dk-text/60">{date}</p>
     </div>
   </div>
 </div>

@@ -2,7 +2,7 @@
 title: "Scoring every dental consultation against a CEO's framework"
 date: "2026-05-19"
 layout: ../../layouts/PostLayout.astro
-description: "A Zoom transcript flows in. A multi-tenant pipeline finds the doctor, scores the consult against a seven-criterion rubric, renders a color-coded PDF, and lands the row in a master Sheet, with the entire flow built around a CEO's framework that lived in a Word doc."
+description: "A Zoom transcript flows in. A pipeline finds the doctor, scores the consult on a 7-criterion rubric, renders a color-coded report, appends to a master Sheet."
 img_path: "/doc-coach.png"
 img_alt: "Consultation QA pipeline — Zoom transcript to color-coded report"
 ---

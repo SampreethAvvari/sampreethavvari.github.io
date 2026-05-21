@@ -2,7 +2,7 @@
 title: "Loan Radar: building the boring parts of an ML platform on purpose"
 date: "2025-05-01"
 layout: ../../layouts/PostLayout.astro
-description: "A loan-default scoring service with the parts that usually get hand-waved actually built — containerised training, MLflow lineage, automated quality gates before promotion, retraining on Airflow, infra by Terraform, scale-out via Ray and Kubernetes. The interesting bit was the gates."
+description: "A loan-default scoring service with the boring parts actually built: containerised training, MLflow lineage, quality gates, an Airflow retraining DAG. The gates mattered most."
 img_path: "/loan-radar.svg"
 img_alt: "Loan Radar architecture — training, lineage, gates, inference, retraining"
 ---

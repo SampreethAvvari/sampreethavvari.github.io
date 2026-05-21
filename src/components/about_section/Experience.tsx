@@ -10,6 +10,36 @@ interface ExperienceProps {
   title?: string;
 }
 
+// Render an inline [text](url) markdown link as a real anchor, leaving the
+// rest of the string alone. Used so experience highlights can link out to
+// blog posts without changing the highlight data shape.
+function renderInlineMarkdown(text: string): React.ReactNode {
+  const parts: React.ReactNode[] = [];
+  const regex = /\[([^\]]+)\]\(([^)]+)\)/g;
+  let lastIndex = 0;
+  let match: RegExpExecArray | null;
+  let key = 0;
+  while ((match = regex.exec(text)) !== null) {
+    if (match.index > lastIndex) {
+      parts.push(text.slice(lastIndex, match.index));
+    }
+    parts.push(
+      <a
+        key={`lnk-${key++}`}
+        href={match[2]}
+        className="underline decoration-secondary/40 dark:decoration-dk-secondary/40 hover:text-accent dark:hover:text-dk-accent transition"
+      >
+        {match[1]}
+      </a>,
+    );
+    lastIndex = match.index + match[0].length;
+  }
+  if (lastIndex < text.length) {
+    parts.push(text.slice(lastIndex));
+  }
+  return parts.length > 0 ? parts : text;
+}
+
 export default function Experience(props: ExperienceProps) {
   const { items, title = "Experience" } = props;
 
@@ -42,8 +72,8 @@ export default function Experience(props: ExperienceProps) {
             <p className="text-xl font-normal">{exp.location}</p>
             {exp.highlights?.length ? (
               <ul className="text-base lg:text-lg font-normal list-disc pl-6 space-y-1 leading-relaxed text-text dark:text-white">
-                {exp.highlights.map((item) => (
-                  <li key={item}>{item}</li>
+                {exp.highlights.map((item, idx) => (
+                  <li key={idx}>{renderInlineMarkdown(item)}</li>
                 ))}
               </ul>
             ) : exp.description?.includes("Project 1:") ? (

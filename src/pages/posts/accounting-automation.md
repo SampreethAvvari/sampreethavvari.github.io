@@ -2,7 +2,7 @@
 title: "The dozen scripts that ate the controller's manual import work"
 date: "2026-05-20"
 layout: ../../layouts/PostLayout.astro
-description: "Hybridge's controller was hand-reformatting CSVs from five upstream systems every week. A suite of small, well-bounded Python scripts now does it, with retry/backoff against Google Sheets and a UX that respects the way an accountant actually works."
+description: "The controller was hand-reformatting CSVs from five upstream systems every week. A dozen small Python scripts now do it, with a UX that respects how accountants work."
 img_path: "/enterprise-data.svg"
 img_alt: "Accounting automation pipeline — Denticon, MagicTouch, Paychex, banks into Google Sheets and QuickBooks"
 ---

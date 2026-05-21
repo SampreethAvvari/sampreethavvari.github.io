@@ -2,7 +2,7 @@
 title: "Rebuilding a decade-old dental quoting tool around a price-freeze invariant"
 date: "2026-05-18"
 layout: ../../layouts/PostLayout.astro
-description: "The legacy estimator quoted today at one price and reopened next month at a different one. The redesign makes the 6-month guarantee a real database invariant, not a footer."
+description: "The legacy tool quoted today at one price and reopened next month at a different one. The redesign makes the 6-month guarantee a real database invariant."
 img_path: "/treatment-estimator.svg"
 img_alt: "Treatment Estimator wizard, decision tree, and frozen-price snapshot"
 ---

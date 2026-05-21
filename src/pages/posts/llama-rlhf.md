@@ -2,7 +2,7 @@
 title: "Fine-tuning Llama 3.1 with RLHF for persuasive counter-arguments"
 date: "2025-09-10"
 layout: ../../layouts/PostLayout.astro
-description: "An RLHF pipeline on Llama 3.1 8B trained to produce more persuasive counter-arguments on ChangeMyView debate data. SFT with QLoRA, a reward model that learns from chosen / rejected pairs, then policy optimisation with GRPO. Where the numbers moved, and which design choices actually mattered."
+description: "Llama 3.1 8B trained for more persuasive counter-arguments on ChangeMyView debates. SFT with QLoRA, a reward model, GRPO. Which design choices actually mattered."
 img_path: "/llm-persuasion.png"
 img_alt: "RLHF pipeline diagram — SFT, reward model, policy optimisation"
 ---

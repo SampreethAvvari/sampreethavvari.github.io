@@ -2,7 +2,7 @@
 title: "On making movies, shipping AI, and the work between the two"
 date: "2026-05-20"
 layout: ../../layouts/PostLayout.astro
-description: "Two crafts I keep being told are separate. They aren't. Here's what ten years of writing, directing, and editing short films does to the way I show up to engineering work, and why the engineering work I'm proudest of looks the way it does because of it."
+description: "Two crafts I keep being told are separate. They aren't. What ten years of writing, directing, and editing short films does to the way I do engineering work."
 img_path: "/paper.png"
 img_alt: "Film set and engineering workspace"
 ---
