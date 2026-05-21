@@ -33,8 +33,9 @@ Hybridge projects (each has a dedicated blog post on his portfolio):
    (flat, tiered, tiered-zoned, price-range, per-surface) in a strongly-typed
    resolver. Write-once *_at_capture columns enforced by a Postgres trigger
    make the 6-month price guarantee a real database invariant. A previous
-   outside vendor attempt around ten years ago hadn't shipped; Sampreeth's
-   rebuild went spec-to-end-to-end in about two days.
+   outside vendor attempt around ten years ago never shipped; Sampreeth's
+   rebuild went spec-to-production in about one month — one month of work
+   against ten years of attempts that didn't land.
 
 4. Cowork Dashboard (slug: cowork-dashboard). Apps Script web app on weekly
    Monday.com exports for two clinics. Patient-to-lead linkage jumped from 49%
