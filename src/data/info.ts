@@ -1,6 +1,6 @@
 export const info = {
   name: "Sampreeth Avvari",
-  brief_description: "Software Engineer | Specialised in ML Systems, Agentic AI and ML Infra",
+  brief_description: "AI Engineer who ships ML systems in the room with the people using them",
   role: "AI Engineer",
   picture: "/pic.png",
   picture_alt: "Sampreeth Avvari",
@@ -9,7 +9,7 @@ export const info = {
 
   about: {
     description:
-      "I’m an AI Engineer who likes turning big, messy ideas into clean, working products. I completed my MS at NYU, and I’ve built systems that help real teams move faster without losing their sanity. I care about clarity, good taste, and tech that feels human. Also: I’m happiest when the prototype survives real users and still behaves.",
+      "I’m an AI Engineer who ships in the room with the people using the work. I completed my MS at NYU and have spent the last few years inside a dental implant company, building production systems alongside the people who actually own each problem: a medical-imaging classifier with the validation team, a pricing engine with the senior treatment coordinator, a consultation scoring pipeline with the CEO, an accounting automation kit with the controller, an operations dashboard with leadership. The systems I’m proudest of are the ones that survived that contact. I also make movies — screenplay writer, editor, director — and most of the way I work with non-engineers I learned on film sets first.",
     education: [
       {
         title: "Master of Science, Computer Engineering",
