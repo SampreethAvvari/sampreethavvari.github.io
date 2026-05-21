@@ -1,28 +1,79 @@
 ---
+import { Image } from "astro:assets";
 import BaseLayout from "../layouts/BaseLayout.astro";
 import Post from "../components/post_section/Post.astro";
 
 const allPosts = await Astro.glob("../pages/posts/*.md");
+allPosts.sort(
+  (a, b) =>
+    new Date(b.frontmatter.date).getTime() -
+    new Date(a.frontmatter.date).getTime(),
+);
 
-allPosts.sort((a, b) => {
-  const dateA = new Date(a.frontmatter.date);
-  const dateB = new Date(b.frontmatter.date);
-  return dateB.getTime() - dateA.getTime();
-});
-
-const title = "SA: Writing";
+const [featured, ...rest] = allPosts;
 ---
 
-<BaseLayout title={title}>
-  <div class="mx-auto w-full max-w-screen-2xl px-4 sm:px-6 lg:px-10 xl:px-14 2xl:px-20">
-    <section class="mt-24 reveal" data-reveal>
-      <p class="eyebrow text-secondary dark:text-dk-secondary mb-3">Notes from the work</p>
-      <h1 class="display-sm mb-10">Writing.</h1>
-      <div
-        class="grid gap-6 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 items-stretch"
-      >
-        {allPosts.map((post) => <Post post={post} />)}
+<BaseLayout title="SA: Writing">
+  <main>
+    {/* Hero */}
+    <section class="posts-index-hero">
+      <div class="mx-auto w-full max-w-screen-2xl px-6 lg:px-12">
+        <p class="eyebrow text-acc-emerald dark:text-acc-emerald mb-4">
+          Notes from the work
+        </p>
+        <h1 class="display text-text dark:text-dk-text mb-5">Writing.</h1>
+        <p
+          class="text-base lg:text-lg text-text/70 dark:text-dk-text/75 leading-relaxed max-w-2xl"
+        >
+          Long-form posts from production systems I've shipped. Real numbers,
+          real failure modes, real fixes.
+        </p>
       </div>
     </section>
-  </div>
+
+    {/* Featured post (most recent) */}
+    {
+      featured && (
+        <section class="mx-auto w-full max-w-screen-2xl px-6 lg:px-12 mt-6">
+          <a href={featured.url} class="featured-post no-lift group">
+            <div>
+              <span class="featured-badge mb-4">Latest</span>
+              <p class="text-[0.7rem] uppercase tracking-[0.16em] font-semibold text-text/45 dark:text-dk-text/45 tabular-nums">
+                {featured.frontmatter.date}
+              </p>
+              <h2 class="display-sm text-text dark:text-dk-text mt-2 mb-4 group-hover:text-secondary dark:group-hover:text-dk-secondary transition">
+                {featured.frontmatter.title}
+              </h2>
+              <p class="text-base lg:text-lg text-text/65 dark:text-dk-text/75 leading-relaxed">
+                {featured.frontmatter.description}
+              </p>
+              <p class="mt-5 text-sm font-semibold text-secondary dark:text-dk-secondary inline-flex items-center gap-1.5">
+                Read the post <span aria-hidden="true">→</span>
+              </p>
+            </div>
+            <div>
+              <Image
+                src={featured.frontmatter.img_path}
+                alt={featured.frontmatter.img_alt || featured.frontmatter.title}
+                width={900}
+                height={500}
+                class="featured-post-img"
+              />
+            </div>
+          </a>
+        </section>
+      )
+    }
+
+    {/* Rest of the posts as accented cards */}
+    <section
+      class="mx-auto w-full max-w-screen-2xl px-6 lg:px-12 mt-16 mb-24"
+    >
+      <div
+        class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5"
+      >
+        {rest.map((post, i) => <Post post={post} index={i} />)}
+      </div>
+    </section>
+  </main>
 </BaseLayout>
