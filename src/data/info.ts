@@ -88,19 +88,12 @@ export const info = {
         logo: "/logos/hybridge.webp",
         logoClass: "h-12",
         highlights: [
-          "Architected an event-driven, GCP-hosted AI workflow using Python/FastAPI to ingest Zoom call webhooks, run transcript ETL plus rule-based scoring, and deliver post-consultation doctor coaching reports in under five minutes.",
-          "Built a production scoring RAG with Cloud SQL (PostgreSQL plus pgvector), GraphQL, and rubric-backed SQL analytics to persist longitudinal doctor performance and generate feedback, contributing to +130% treatment acceptance and +43% revenue growth.",
-          "Operationalized ML infra with containerized API/worker services, queue-based orchestration, and tool-agnostic CI/CD promotion gates to scale across multi-doctor concurrent workflows while reducing hallucinations by 35% under HIPAA-compliant controls.",
-        ],
-      },
-      {
-        title: "Backend Engineer Intern",
-        date: "May 2025 - Sept 2025",
-        location: "Optimal Living Systems, New York",
-        highlights: [
-          "Built an enterprise version of the Optimal Living Systems AI platform by extending and integrating core product frontend, backend, and chatbot repositories (React, Next.js, Golang), enabling modular and client-specific SaaS deployments.",
-          "Created a production-ready AMI by provisioning frontend, backend, bots, and databases (MySQL, Redis, Milvus) within a lightweight K3s Kubernetes cluster on AWS EC2, enabling seamless deployment to enterprise private clouds.",
-          "Implemented tag-scoped RAG retrieval with Milvus filtering at index and query time; added CloudWatch for on-call troubleshooting and supported cross-region migration (ap-southeast1 to us-east-1) across S3, ECR, RDS, and ElastiCache, cutting latency by 50ms.",
+          "[Consultation QA Pipeline](/posts/clinical-rag) — Cloud Run + FastAPI service that turns every Zoom consultation into a color-coded coaching report. Three-layer doctor ID, schema-validated Gemini scoring, HIPAA-compliant without Workspace DWD. +130% treatment acceptance, +43% revenue, -35% hallucinations.",
+          "[CBCT Scan Validator](/posts/cbct-scan-validator) — In-house dental CT classifier that replaced a $98K + $26K/yr vendor quote with a Cloud Run service running under $50/month. Frozen DentalSegmentator encoder + multi-scale head, OpenVINO on CPU, ~5.5s end-to-end. 20-scan CICT gate on every push.",
+          "[Treatment Estimator](/posts/treatment-estimator) — Next.js + Postgres rebuild of the decade-old quoting tool. Write-once `_at_capture` columns enforced by a Postgres trigger make the 6-month price guarantee a real database invariant. Shipped end-to-end in about two days; an earlier vendor attempt hadn't shipped at all.",
+          "[Cowork Dashboard](/posts/cowork-dashboard) — Apps Script on weekly Monday.com exports. Patient-to-lead linkage went from 49% to 99% by joining on the Monday connect column. Surfaced ~$169k of orphan revenue. Weekly reconciliation: half a day → 3 minutes.",
+          "[Accounting Automation Suite](/posts/accounting-automation) — A dozen Python scripts that replaced the controller's manual weekly imports across Denticon, MagicTouch, Paychex, and two banks. ~6-8 hours/week → ~30-45 minutes. About 400 hours/year recovered.",
+          "Cross-cutting MLOps under all of the above: a single shared ETL module so train/serve skew is impossible, hot-swap model checkpoints via GCS, tag-based Cloud Build CI/CD, OpenTelemetry observability with strict no-PHI-in-logs.",
         ],
       },
       {
@@ -248,6 +241,26 @@ export const info = {
       tech: ["Next.js 16", "TypeScript", "Drizzle", "PostgreSQL", "Auth.js", "Cloud Run", "@react-pdf/renderer", "Zod"],
       img_alt: "Treatment Estimator - Hybridge Implants LLC",
       img_path: "/treatment-estimator.svg",
+    },
+    {
+      title: "Optimal Living Systems — Enterprise SaaS AMI",
+      date: "May 2025 - Sept 2025",
+      description:
+        "Packaged the OLS AI platform into a deployable AMI: frontend, backend, chatbot, and databases inside K3s on EC2. Tag-scoped RAG retrieval. Cross-region migration to us-east-1.",
+      link: "",
+      details: {
+        summary:
+          "Turned the Optimal Living Systems platform from a single-tenant product into a per-client SaaS deployment shape. The deliverable was a production-ready AWS AMI that drops into an enterprise customer's private VPC and runs the full stack inside a lightweight Kubernetes cluster.",
+        highlights: [
+          "Extended and integrated the core frontend (React, Next.js), backend, and chatbot (Golang) into one deployable unit, enabling per-client SaaS customisations without forking the codebase.",
+          "Provisioned frontend, backend, bots, MySQL, Redis, and Milvus inside a K3s cluster on AWS EC2 and built a production-ready AMI for enterprise private clouds.",
+          "Implemented tag-scoped RAG retrieval with Milvus filtering at both index and query time so a single shared vector store could partition cleanly across tenants.",
+          "Drove a cross-region migration from ap-southeast-1 to us-east-1 across S3, ECR, RDS, and ElastiCache, cutting end-user latency by ~50ms; added CloudWatch dashboards so on-call had a real surface to work from.",
+        ],
+      },
+      tech: ["React", "Next.js", "Golang", "AWS EC2", "K3s", "MySQL", "Redis", "Milvus", "CloudWatch"],
+      img_alt: "Optimal Living Systems enterprise AMI",
+      img_path: "/enterprise-data.svg",
     },
     {
       title: "Cowork Dashboard — Hybridge Implants LLC",

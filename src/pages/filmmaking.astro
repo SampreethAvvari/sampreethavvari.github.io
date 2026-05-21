@@ -135,21 +135,18 @@ const keyCreators = [
   {
     role: "Director / Writer",
     name: "Sampreeth Sharma",
-    quote: "hahaha",
     image: crewPhoto("Sampreeth.JPG"),
     instagram: "@sampreeth.sharma",
   },
   {
     role: "Director of Photography",
     name: "Isaac Chipe",
-    quote: "hahahahahahahaha",
     image: crewPhoto("Isaac.jpg"),
     instagram: "@isaacchipedop",
   },
   {
     role: "Co-Writer",
     name: "Akash Munji",
-    quote: "",
     image: crewPhoto("Akash.jpg"),
     instagram: "@akumunji",
     compact: true,
@@ -160,14 +157,12 @@ const mainCast = [
   {
     name: "Sam Velletri",
     role: "John Reese / Harold Finch",
-    quote: "Quote coming soon.",
     image: crewPhoto("Sam Velletri.jpg"),
     instagram: "@samvelletri",
   },
   {
     name: "Matt Ehrmann",
     role: "",
-    quote: "Quote coming soon.",
     image: pickGalleryImage(),
     instagram: "@mattspaceship",
   },
@@ -467,9 +462,6 @@ const filmTimeline = [
                   )}
                 </div>
               </div>
-              {person.quote ? (
-                <p class="text-xs text-text dark:text-dk-text italic">“{person.quote}”</p>
-              ) : null}
             </div>
             <div class="w-1/3 overflow-hidden">
               <SmartImage
@@ -515,9 +507,6 @@ const filmTimeline = [
                   )}
                 </div>
               </div>
-              {member.quote ? (
-                <p class="text-xs text-text dark:text-dk-text italic">“{member.quote}”</p>
-              ) : null}
             </div>
             <div class="w-1/3 overflow-hidden">
               <SmartImage
@@ -560,9 +549,6 @@ const filmTimeline = [
                   )}
                 </div>
               </div>
-              {member.quote ? (
-                <p class="text-xs text-text dark:text-dk-text italic">“{member.quote}”</p>
-              ) : null}
             </div>
             <div class="w-1/3 overflow-hidden">
               <SmartImage

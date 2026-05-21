@@ -2,7 +2,7 @@
 title: "Shipping a CBCT scan validator in-house for $50 a month"
 date: "2026-05-02"
 layout: ../../layouts/PostLayout.astro
-description: "A vendor quoted $98K up front and $26K a year to flag bad dental CT scans. I built it instead, on a laptop GPU and a CPU-only Cloud Run service, then learned the hardest lesson of the project after we already had a model that looked good."
+description: "A vendor wanted $98K up front and $26K a year to flag bad dental CT scans. I built it in-house on Cloud Run for under $50 a month, with one painful lesson."
 img_path: "/cbct-validator.svg"
 img_alt: "CBCT volume slices, multi-task head, verdict pipeline"
 ---
