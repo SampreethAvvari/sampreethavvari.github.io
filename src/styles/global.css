@@ -310,15 +310,23 @@ button.no-lift:hover {
 }
 
 /* The home page narrative chapters: full-viewport, generous padding,
-   one bg colour each, content vertically centered. */
+   one bg colour each, content vertically centered. Padding is responsive
+   to the viewport so short screens don't force the inner content to scroll. */
 .chapter {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
   justify-content: center;
-  padding-top: clamp(4rem, 8vh, 8rem);
-  padding-bottom: clamp(4rem, 8vh, 8rem);
+  padding-top: clamp(3rem, 6vh, 6rem);
+  padding-bottom: clamp(3rem, 6vh, 6rem);
   position: relative;
+  overflow: hidden;
+}
+@media (min-height: 900px) {
+  .chapter {
+    padding-top: clamp(5rem, 9vh, 9rem);
+    padding-bottom: clamp(5rem, 9vh, 9rem);
+  }
 }
 
 /* Section eyebrow — small uppercase tracked label. */
