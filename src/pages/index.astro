@@ -104,7 +104,7 @@ const filmmakingPhotos = filmmakingFiles.map((file) => {
           View all
         </a>
       </div>
-      <div class="grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 items-start">
+      <div class="grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 items-stretch">
         {featuredProjects.map((project) => (
           <ProjectCard project={project} client:only key={project.title} />
         ))}
@@ -156,7 +156,7 @@ const filmmakingPhotos = filmmakingFiles.map((file) => {
         </a>
       </div>
       {latestPosts.length ? (
-        <div class="grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 items-start">
+        <div class="grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 items-stretch">
           {latestPosts.map((post) => (
             <div class="flex flex-col bg-primary dark:bg-dk-primary rounded-lg shadow-sm dark:shadow-dk-secondary border border-secondary/30 dark:border-dk-secondary/30 transform transition duration-500 hover:scale-105">
               <div class="p-6 flex flex-col gap-3">

@@ -12,26 +12,28 @@ export default function About(props: AboutProps) {
   const { about } = props;
 
   return (
-    <div className="flex flex-col justify-center items-center h-full space-y-12">
-      <div className="w-full max-w-6xl flex flex-col lg:flex-row gap-20 items-start justify-center">
-        <div className="flex-1 flex flex-col gap-10">
+    <div className="flex flex-col items-stretch h-full space-y-16 w-full">
+      <div className="w-full grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-14 items-start">
+        <div className="lg:col-span-7 flex flex-col gap-10">
           <div className="flex flex-col space-y-4 w-full reveal" data-reveal>
-            <h1 className="text-4xl font-bold">About me</h1>
-            <p className="text-2xl font-normal text-justify">{info.about.description}</p>
+            <h1 className="text-4xl lg:text-5xl font-bold tracking-tight">About me</h1>
+            <p className="text-xl lg:text-2xl font-normal leading-relaxed">
+              {info.about.description}
+            </p>
           </div>
-          <div className="w-full flex justify-center reveal" data-reveal>
+          <div className="w-full reveal" data-reveal>
             <Education education={about.education} />
           </div>
         </div>
-        <div className="flex-1 flex justify-center reveal" data-reveal>
+        <div className="lg:col-span-5 reveal" data-reveal>
           <Skills skills={about.skills} />
         </div>
       </div>
-      <div className="w-full max-w-6xl flex flex-col lg:flex-row gap-12 items-start">
-        <div className="w-full lg:w-1/2 flex justify-center reveal" data-reveal>
+      <div className="w-full grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-14 items-start">
+        <div className="lg:col-span-7 reveal" data-reveal>
           <Experience items={about.experience} />
         </div>
-        <div className="w-full lg:w-1/2 flex justify-center reveal" data-reveal>
+        <div className="lg:col-span-5 reveal" data-reveal>
           <Experience items={about.research} title="Research" />
         </div>
       </div>
