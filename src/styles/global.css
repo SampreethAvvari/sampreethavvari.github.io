@@ -535,6 +535,33 @@ html.dark .skill-pill.p8,
 html.dark .skill-pill.p9,
 html.dark .skill-pill.p10 { background: rgba(91, 141, 239, 0.14); }
 
+/* Brand monogram badge — replaces the white-tile institution logos so every
+   row reads identically regardless of the source logo's contrast. */
+.brand-badge {
+  flex-shrink: 0;
+  width: 3.5rem;
+  height: 3.5rem;
+  border-radius: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #FFFFFF;
+  font-weight: 800;
+  font-size: 0.95rem;
+  letter-spacing: 0.04em;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  box-shadow:
+    0 8px 22px -10px rgba(0, 0, 0, 0.55),
+    0 0 0 1px rgba(255, 255, 255, 0.06) inset;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+.timeline-row:hover .brand-badge {
+  transform: translateY(-2px);
+  box-shadow:
+    0 14px 28px -10px rgba(0, 0, 0, 0.6),
+    0 0 0 1px rgba(255, 255, 255, 0.1) inset;
+}
+
 /* Timeline rows with institutional logos. */
 .timeline-row {
   display: flex;
