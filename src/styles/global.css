@@ -260,6 +260,23 @@ button.no-lift:hover {
 .reveal-visible > .grid > *:nth-child(8),
 .reveal-visible > div > .grid > *:nth-child(8) { transition-delay: 0.40s; }
 
+/* Subtle gradient mesh behind the Writing chapter on home. */
+.writing-atmos {
+  position: absolute;
+  inset: -10%;
+  background:
+    radial-gradient(circle at 18% 30%, rgba(52, 211, 153, 0.20), transparent 50%),
+    radial-gradient(circle at 82% 20%, rgba(91, 141, 239, 0.16), transparent 50%),
+    radial-gradient(circle at 50% 95%, rgba(34, 211, 238, 0.14), transparent 55%);
+  filter: blur(80px);
+  z-index: 0;
+  pointer-events: none;
+  animation: atmosDrift 22s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .writing-atmos { animation: none; }
+}
+
 /* Subtle gradient drift behind the landing hero. */
 .landing-atmos::before {
   content: "";
@@ -300,66 +317,92 @@ button.no-lift:hover {
   box-shadow: 0 20px 40px -20px rgba(91, 141, 239, 0.35);
 }
 
-/* Colourful skill pills — gradient backgrounds, white text, subtle hover lift. */
+/* Skill pills — one coherent Apple-clean treatment. Soft blue glass with a
+   thin accent border. Per-class p1..p10 variants kept as no-ops so existing
+   markup doesn't blow up; they all render the same calm chip. */
 .skill-pill {
   display: inline-flex;
   align-items: center;
-  font-size: 0.75rem;
+  font-size: 0.78rem;
   font-weight: 600;
-  padding: 0.4rem 0.85rem;
+  padding: 0.42rem 0.9rem;
   border-radius: 9999px;
-  color: white !important;
-  border: 1px solid rgba(255, 255, 255, 0.18);
-  letter-spacing: 0.01em;
-  transition: transform 0.25s, box-shadow 0.25s, filter 0.25s;
+  letter-spacing: 0.005em;
   white-space: nowrap;
+  background: rgba(91, 141, 239, 0.10);
+  color: theme(colors.secondary);
+  border: 1px solid rgba(91, 141, 239, 0.30);
+  transition: transform 0.25s ease, background 0.25s ease, border-color 0.25s ease;
 }
 .skill-pill:hover {
   transform: translateY(-2px);
-  filter: brightness(1.1);
-  box-shadow: 0 8px 24px -8px currentColor;
+  background: rgba(91, 141, 239, 0.18);
+  border-color: rgba(91, 141, 239, 0.55);
 }
-.skill-pill.p1 { background: linear-gradient(135deg, #5B8DEF, #22D3EE); }
-.skill-pill.p2 { background: linear-gradient(135deg, #22D3EE, #34D399); }
-.skill-pill.p3 { background: linear-gradient(135deg, #A78BFA, #5B8DEF); }
-.skill-pill.p4 { background: linear-gradient(135deg, #34D399, #F5A524); }
-.skill-pill.p5 { background: linear-gradient(135deg, #5B8DEF, #A78BFA); }
-.skill-pill.p6 { background: linear-gradient(135deg, #F5A524, #22D3EE); }
-.skill-pill.p7 { background: linear-gradient(135deg, #A78BFA, #34D399); }
-.skill-pill.p8 { background: linear-gradient(135deg, #34D399, #22D3EE); }
-.skill-pill.p9 { background: linear-gradient(135deg, #F5A524, #A78BFA); }
-.skill-pill.p10 { background: linear-gradient(135deg, #22D3EE, #5B8DEF); }
+html.dark .skill-pill {
+  background: rgba(91, 141, 239, 0.14);
+  color: theme(colors.dk-secondary);
+  border-color: rgba(91, 141, 239, 0.35);
+}
+html.dark .skill-pill:hover {
+  background: rgba(91, 141, 239, 0.24);
+  border-color: rgba(91, 141, 239, 0.60);
+}
+.skill-pill.p1,
+.skill-pill.p2,
+.skill-pill.p3,
+.skill-pill.p4,
+.skill-pill.p5,
+.skill-pill.p6,
+.skill-pill.p7,
+.skill-pill.p8,
+.skill-pill.p9,
+.skill-pill.p10 { background: rgba(91, 141, 239, 0.10); }
+html.dark .skill-pill.p1,
+html.dark .skill-pill.p2,
+html.dark .skill-pill.p3,
+html.dark .skill-pill.p4,
+html.dark .skill-pill.p5,
+html.dark .skill-pill.p6,
+html.dark .skill-pill.p7,
+html.dark .skill-pill.p8,
+html.dark .skill-pill.p9,
+html.dark .skill-pill.p10 { background: rgba(91, 141, 239, 0.14); }
 
 /* Timeline rows with institutional logos. */
 .timeline-row {
   display: flex;
   align-items: flex-start;
-  gap: 1rem;
+  gap: 1.1rem;
 }
 .timeline-logo {
   flex-shrink: 0;
-  width: 3.25rem;
-  height: 3.25rem;
-  border-radius: 0.85rem;
-  background: rgba(255, 255, 255, 0.96);
-  border: 1px solid rgba(91, 141, 239, 0.18);
+  width: 4rem;
+  height: 4rem;
+  border-radius: 1rem;
+  background: #FFFFFF;
+  border: 1px solid rgba(91, 141, 239, 0.25);
   display: flex;
   align-items: center;
   justify-content: center;
   overflow: hidden;
-  padding: 0.35rem;
-  box-shadow: 0 4px 14px -6px rgba(91, 141, 239, 0.35),
-              0 1px 2px rgba(0, 0, 0, 0.06);
+  padding: 0.45rem;
+  box-shadow:
+    0 8px 24px -10px rgba(91, 141, 239, 0.55),
+    0 2px 6px rgba(0, 0, 0, 0.10),
+    0 0 0 1px rgba(91, 141, 239, 0.10) inset;
   transition: transform 0.3s ease, box-shadow 0.3s ease;
 }
 .timeline-row:hover .timeline-logo {
-  transform: translateY(-2px);
-  box-shadow: 0 10px 24px -8px rgba(91, 141, 239, 0.45),
-              0 2px 4px rgba(0, 0, 0, 0.08);
+  transform: translateY(-3px);
+  box-shadow:
+    0 14px 32px -10px rgba(91, 141, 239, 0.65),
+    0 4px 8px rgba(0, 0, 0, 0.12),
+    0 0 0 1px rgba(91, 141, 239, 0.20) inset;
 }
 html.dark .timeline-logo {
-  background: rgba(255, 255, 255, 0.96);
-  border-color: rgba(91, 141, 239, 0.28);
+  background: #FFFFFF;
+  border-color: rgba(91, 141, 239, 0.35);
 }
 .timeline-logo img {
   max-width: 100%;
@@ -484,42 +527,56 @@ html { scroll-padding-top: 4.5rem; }
   100% { background-position: 200% 0; opacity: 0; }
 }
 
-/* Text gradient shimmer for the accent name in the hero. Only kicks in
-   on dark mode — in light mode a white sweep over a light bg is invisible,
-   so light mode just shows the accent colour cleanly. */
+/* Text-shimmer kept as a passthrough so existing markup doesn't break, but
+   it no longer transforms the text in any way. The accent span uses its own
+   colour class (text-secondary, text-acc-amber, etc.) and reads cleanly. */
 .text-shimmer { color: inherit; }
 
-html.dark .text-shimmer {
-  background: linear-gradient(
-    90deg,
-    currentColor 0%,
-    currentColor 35%,
-    rgba(255, 255, 255, 0.92) 50%,
-    currentColor 65%,
-    currentColor 100%
+/* Glow wave — a faint coloured halo that drifts left-to-right BEHIND a line
+   of text. The text itself is never masked or made transparent; the glow is
+   a separate pseudo element with z-index: -1, so the words are always solid
+   and readable. Apply to a containing block-level element (display: block /
+   inline-block) for the effect to span the full line width. */
+.glow-wave {
+  position: relative;
+  isolation: isolate;
+}
+.glow-wave::after {
+  content: "";
+  position: absolute;
+  inset: -18% -4%;
+  background: radial-gradient(
+    ellipse 28% 75% at -10% 50%,
+    rgba(91, 141, 239, 0.35) 0%,
+    rgba(34, 211, 238, 0.20) 30%,
+    transparent 60%
   );
-  background-size: 220% 100%;
-  background-position: 220% 0;
-  -webkit-background-clip: text;
-  background-clip: text;
-  -webkit-text-fill-color: transparent;
-  color: transparent;
-  animation: textShimmer 6s ease-in-out infinite;
+  filter: blur(20px);
+  z-index: -1;
+  pointer-events: none;
+  animation: glowDrift 9s ease-in-out infinite;
 }
-@keyframes textShimmer {
-  0%   { background-position: 220% 0; }
-  60%  { background-position: -120% 0; }
-  100% { background-position: -120% 0; }
+html.dark .glow-wave::after {
+  background: radial-gradient(
+    ellipse 28% 75% at -10% 50%,
+    rgba(91, 141, 239, 0.55) 0%,
+    rgba(34, 211, 238, 0.32) 30%,
+    transparent 65%
+  );
 }
+@keyframes glowDrift {
+  0%   { transform: translateX(-15%); opacity: 0; }
+  12%  { opacity: 1; }
+  88%  { opacity: 1; }
+  100% { transform: translateX(115%); opacity: 0; }
+}
+.glow-delay-1::after { animation-delay: 1.2s; }
+.glow-delay-2::after { animation-delay: 2.4s; }
+.glow-delay-3::after { animation-delay: 3.6s; }
 
 @media (prefers-reduced-motion: reduce) {
   .photo-shimmer::after { animation: none; opacity: 0; }
-  html.dark .text-shimmer {
-    animation: none;
-    background: none;
-    -webkit-text-fill-color: currentColor;
-    color: inherit;
-  }
+  .glow-wave::after { animation: none; opacity: 0; }
 }
 
 /* Underline-on-hover for sleek text links. */
@@ -546,3 +603,607 @@ html.dark .text-shimmer {
   transform: scaleX(1);
   opacity: 1;
 }
+
+/* ───────────────────────────────────────────────────────────────────
+   BLOG POST — Apple-spec article layout
+   ─────────────────────────────────────────────────────────────────── */
+
+.post-article { color: theme(colors.text); }
+html.dark .post-article { color: theme(colors.dk-text); }
+
+/* Reading progress bar */
+.post-progress {
+  position: fixed;
+  top: 0;
+  left: 0;
+  height: 3px;
+  width: 0;
+  background: linear-gradient(90deg, #5B8DEF, #22D3EE, #A78BFA);
+  z-index: 60;
+  transition: width 0.1s linear;
+  pointer-events: none;
+}
+
+/* Hero — atmospheric, cinematic */
+.post-hero {
+  position: relative;
+  padding-top: 7rem;
+  padding-bottom: 2.5rem;
+  overflow: hidden;
+}
+.post-hero-atmos {
+  position: absolute;
+  inset: -15%;
+  background:
+    radial-gradient(circle at 20% 30%, rgba(91,141,239,0.22), transparent 50%),
+    radial-gradient(circle at 80% 70%, rgba(167,139,250,0.18), transparent 50%),
+    radial-gradient(circle at 50% 100%, rgba(34,211,238,0.14), transparent 55%);
+  filter: blur(80px);
+  z-index: 0;
+  pointer-events: none;
+  animation: atmosDrift 22s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .post-hero-atmos { animation: none; }
+}
+
+.post-backlink {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: theme(colors.secondary);
+  letter-spacing: 0.01em;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 2.5rem;
+  transition: transform 0.25s ease, color 0.25s ease;
+}
+html.dark .post-backlink { color: theme(colors.dk-secondary); }
+.post-backlink:hover { transform: translateX(-3px); }
+
+.post-meta {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  flex-wrap: wrap;
+  margin-bottom: 1.75rem;
+}
+.post-date {
+  font-size: 0.8rem;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: theme(colors.text);
+  opacity: 0.55;
+  font-weight: 600;
+}
+html.dark .post-date { color: theme(colors.dk-text); }
+
+.post-tag {
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  padding: 0.35rem 0.9rem;
+  border-radius: 9999px;
+  border: 1px solid currentColor;
+}
+.post-tag-blue    { color: #5B8DEF; background: rgba(91,141,239,0.10); }
+.post-tag-cyan    { color: #22D3EE; background: rgba(34,211,238,0.10); }
+.post-tag-violet  { color: #A78BFA; background: rgba(167,139,250,0.10); }
+.post-tag-emerald { color: #34D399; background: rgba(52,211,153,0.10); }
+.post-tag-amber   { color: #F5A524; background: rgba(245,165,36,0.10); }
+
+.post-title {
+  font-size: clamp(2.25rem, 5.4vw, 4.5rem);
+  line-height: 1.04;
+  letter-spacing: -0.028em;
+  font-weight: 700;
+  margin-bottom: 1.5rem;
+  color: theme(colors.text);
+}
+html.dark .post-title { color: theme(colors.dk-text); }
+
+.post-lede {
+  font-size: clamp(1.1rem, 1.6vw, 1.4rem);
+  line-height: 1.5;
+  color: theme(colors.text);
+  opacity: 0.7;
+  max-width: 56ch;
+  font-weight: 400;
+}
+html.dark .post-lede { color: theme(colors.dk-text); opacity: 0.75; }
+
+/* Cover image — rounded, soft shadow halo */
+.post-cover {
+  width: 100%;
+  aspect-ratio: 16 / 8;
+  object-fit: cover;
+  border-radius: 1.5rem;
+  box-shadow:
+    0 30px 60px -30px rgba(91,141,239,0.45),
+    0 0 0 1px rgba(91,141,239,0.12);
+}
+
+.post-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 0.85rem;
+}
+
+/* Gradient stat callouts */
+.stat-callout {
+  border-radius: 1rem;
+  padding: 1.4rem 1.5rem;
+  border: 1px solid;
+  position: relative;
+  overflow: hidden;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+.stat-callout:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 14px 30px -14px currentColor;
+}
+.stat-callout .stat-value {
+  font-size: clamp(1.5rem, 3vw, 2.25rem);
+  font-weight: 700;
+  letter-spacing: -0.025em;
+  line-height: 1.05;
+  font-variant-numeric: tabular-nums;
+}
+.stat-callout .stat-label {
+  margin-top: 0.45rem;
+  font-size: 0.78rem;
+  opacity: 0.85;
+  line-height: 1.35;
+  color: theme(colors.text);
+  font-weight: 500;
+}
+html.dark .stat-callout .stat-label { color: theme(colors.dk-text); opacity: 0.85; }
+.stat-blue    { background: linear-gradient(135deg, rgba(91,141,239,0.20), rgba(34,211,238,0.10));  border-color: rgba(91,141,239,0.38);  color: #5B8DEF; }
+.stat-cyan    { background: linear-gradient(135deg, rgba(34,211,238,0.20), rgba(91,141,239,0.10));  border-color: rgba(34,211,238,0.38);  color: #22D3EE; }
+.stat-violet  { background: linear-gradient(135deg, rgba(167,139,250,0.20), rgba(91,141,239,0.10)); border-color: rgba(167,139,250,0.38); color: #A78BFA; }
+.stat-emerald { background: linear-gradient(135deg, rgba(52,211,153,0.20), rgba(34,211,238,0.10));  border-color: rgba(52,211,153,0.38);  color: #34D399; }
+.stat-amber   { background: linear-gradient(135deg, rgba(245,165,36,0.20), rgba(220,38,38,0.08));   border-color: rgba(245,165,36,0.38);  color: #F5A524; }
+
+/* Inline stat callout inside prose — bigger */
+.post-prose .stat-callout {
+  margin: 2.75rem 0;
+  padding: 1.85rem 2rem;
+}
+.post-prose .stat-callout .stat-value {
+  font-size: clamp(2rem, 4vw, 3.25rem);
+  margin-bottom: 0.25rem;
+}
+.post-prose .stat-callout .stat-label {
+  font-size: 0.95rem;
+  margin-top: 0.4rem;
+  opacity: 0.85;
+}
+
+/* Prose — readable, breathing, with character */
+.post-prose {
+  font-size: 1.075rem;
+  line-height: 1.78;
+  color: theme(colors.text);
+}
+html.dark .post-prose { color: theme(colors.dk-text); }
+
+.post-prose > * { color: inherit; }
+.post-prose p {
+  color: theme(colors.text);
+  opacity: 0.85;
+  margin: 1.25rem 0;
+}
+html.dark .post-prose p { color: theme(colors.dk-text); opacity: 0.9; }
+
+.post-prose strong {
+  color: theme(colors.text);
+  font-weight: 600;
+  opacity: 1;
+}
+html.dark .post-prose strong { color: theme(colors.dk-text); }
+
+.post-prose em {
+  font-style: italic;
+  color: theme(colors.secondary);
+}
+html.dark .post-prose em { color: theme(colors.dk-secondary); }
+
+.post-prose h2 {
+  font-size: clamp(1.6rem, 2.8vw, 2.1rem);
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+  font-weight: 700;
+  margin-top: 4rem;
+  margin-bottom: 1.25rem;
+  padding-left: 1.1rem;
+  position: relative;
+  color: theme(colors.text);
+}
+.post-prose h2::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0.45rem;
+  bottom: 0.45rem;
+  width: 4px;
+  border-radius: 4px;
+  background: linear-gradient(180deg, #5B8DEF, #22D3EE);
+}
+html.dark .post-prose h2 { color: theme(colors.dk-text); }
+
+.post-prose h3 {
+  font-size: 1.35rem;
+  font-weight: 600;
+  margin-top: 2.5rem;
+  margin-bottom: 0.85rem;
+  letter-spacing: -0.012em;
+  color: theme(colors.text);
+}
+html.dark .post-prose h3 { color: theme(colors.dk-text); }
+
+/* Blockquotes — colored band with quote glyph */
+.post-prose blockquote {
+  position: relative;
+  margin: 2.75rem 0;
+  padding: 1.75rem 1.85rem 1.75rem 2.5rem;
+  font-size: 1.2rem;
+  font-style: italic;
+  font-weight: 500;
+  line-height: 1.5;
+  color: theme(colors.text);
+  background: linear-gradient(135deg, rgba(91,141,239,0.10), rgba(34,211,238,0.04));
+  border-left: 4px solid theme(colors.secondary);
+  border-radius: 0 1.1rem 1.1rem 0;
+}
+html.dark .post-prose blockquote {
+  color: theme(colors.dk-text);
+  background: linear-gradient(135deg, rgba(91,141,239,0.14), rgba(34,211,238,0.05));
+  border-left-color: theme(colors.dk-secondary);
+}
+.post-prose blockquote::before {
+  content: "\201C";
+  position: absolute;
+  top: -0.5rem;
+  left: 0.65rem;
+  font-size: 3.5rem;
+  font-style: normal;
+  font-family: Georgia, "Times New Roman", serif;
+  color: theme(colors.secondary);
+  opacity: 0.28;
+  line-height: 1;
+}
+html.dark .post-prose blockquote::before { color: theme(colors.dk-secondary); }
+.post-prose blockquote p {
+  margin: 0;
+  opacity: 1;
+  color: inherit;
+}
+
+/* Inline code — colorful tinted pill */
+.post-prose :not(pre) > code {
+  background: rgba(91,141,239,0.10);
+  color: theme(colors.secondary);
+  padding: 0.18em 0.45em;
+  border-radius: 0.35rem;
+  font-size: 0.92em;
+  font-weight: 500;
+  border: 1px solid rgba(91,141,239,0.18);
+  font-family: "SF Mono", "JetBrains Mono", Menlo, Monaco, Consolas, monospace;
+}
+html.dark .post-prose :not(pre) > code {
+  background: rgba(91,141,239,0.20);
+  color: theme(colors.dk-secondary);
+  border-color: rgba(91,141,239,0.32);
+}
+.post-prose :not(pre) > code::before,
+.post-prose :not(pre) > code::after { content: ""; }
+
+/* Code blocks — sleek dark card with thin colored top border */
+.post-prose pre {
+  margin: 2rem 0;
+  padding: 1.3rem 1.5rem;
+  border-radius: 1rem;
+  background: #0F172A !important;
+  border: 1px solid rgba(91,141,239,0.22);
+  overflow-x: auto;
+  font-size: 0.88rem;
+  line-height: 1.6;
+  position: relative;
+  box-shadow:
+    0 18px 36px -18px rgba(0,0,0,0.5),
+    inset 0 1px 0 rgba(255,255,255,0.04);
+}
+.post-prose pre::before {
+  content: "";
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, #5B8DEF, #22D3EE, #A78BFA);
+  opacity: 0.65;
+  border-radius: 1rem 1rem 0 0;
+}
+.post-prose pre code {
+  color: rgba(229,231,235,0.94);
+  background: transparent;
+  border: 0;
+  padding: 0;
+  font-family: "SF Mono", "JetBrains Mono", Menlo, Monaco, Consolas, monospace;
+}
+
+/* Tables — zebra stripes, accent header */
+.post-prose table {
+  width: 100%;
+  margin: 2.25rem 0;
+  border-collapse: separate;
+  border-spacing: 0;
+  border-radius: 0.9rem;
+  overflow: hidden;
+  border: 1px solid rgba(91,141,239,0.22);
+  font-size: 0.95rem;
+}
+.post-prose thead { background: rgba(91,141,239,0.12); }
+.post-prose thead th {
+  text-align: left;
+  font-weight: 700;
+  color: theme(colors.secondary);
+  padding: 0.85rem 1.1rem;
+  letter-spacing: 0.01em;
+  font-size: 0.88rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+html.dark .post-prose thead { background: rgba(91,141,239,0.18); }
+html.dark .post-prose thead th { color: theme(colors.dk-secondary); }
+.post-prose tbody td {
+  padding: 0.8rem 1.1rem;
+  border-top: 1px solid rgba(91,141,239,0.10);
+  color: theme(colors.text);
+  opacity: 0.9;
+  vertical-align: top;
+}
+html.dark .post-prose tbody td { color: theme(colors.dk-text); }
+.post-prose tbody tr:nth-child(odd) td { background: rgba(91,141,239,0.04); }
+html.dark .post-prose tbody tr:nth-child(odd) td { background: rgba(91,141,239,0.08); }
+
+/* Horizontal rule — gradient sweep */
+.post-prose hr {
+  height: 1px;
+  border: 0;
+  margin: 4.5rem 0;
+  background: linear-gradient(90deg, transparent, theme(colors.secondary), transparent);
+  opacity: 0.55;
+}
+html.dark .post-prose hr {
+  background: linear-gradient(90deg, transparent, theme(colors.dk-secondary), transparent);
+  opacity: 0.6;
+}
+
+/* Links — animated underline */
+.post-prose a {
+  color: theme(colors.secondary);
+  text-decoration: none;
+  background-image: linear-gradient(theme(colors.secondary), theme(colors.secondary));
+  background-position: 0 100%;
+  background-size: 100% 1px;
+  background-repeat: no-repeat;
+  transition: background-size 0.3s ease, color 0.3s ease;
+  font-weight: 500;
+}
+.post-prose a:hover { background-size: 100% 2px; }
+html.dark .post-prose a {
+  color: theme(colors.dk-secondary);
+  background-image: linear-gradient(theme(colors.dk-secondary), theme(colors.dk-secondary));
+}
+
+/* Lists */
+.post-prose ul,
+.post-prose ol {
+  padding-left: 1.6rem;
+  margin: 1.4rem 0;
+}
+.post-prose ul li,
+.post-prose ol li {
+  margin: 0.55rem 0;
+  color: theme(colors.text);
+  opacity: 0.88;
+}
+html.dark .post-prose ul li,
+html.dark .post-prose ol li { color: theme(colors.dk-text); }
+.post-prose ul li::marker {
+  color: theme(colors.secondary);
+}
+.post-prose ol li::marker {
+  color: theme(colors.secondary);
+  font-weight: 700;
+}
+html.dark .post-prose ul li::marker,
+html.dark .post-prose ol li::marker { color: theme(colors.dk-secondary); }
+
+/* Images inside prose */
+.post-prose img {
+  border-radius: 1rem;
+  margin: 2rem 0;
+  box-shadow: 0 20px 40px -20px rgba(0,0,0,0.4);
+}
+
+/* Author card */
+.post-author {
+  display: flex;
+  gap: 1.25rem;
+  padding: 1.85rem;
+  border-radius: 1.25rem;
+  background: linear-gradient(135deg, rgba(91,141,239,0.06), rgba(34,211,238,0.03));
+  border: 1px solid rgba(91,141,239,0.18);
+  align-items: flex-start;
+}
+html.dark .post-author {
+  background: linear-gradient(135deg, rgba(91,141,239,0.10), rgba(34,211,238,0.04));
+  border-color: rgba(91,141,239,0.22);
+}
+.post-author-pic {
+  width: 4rem;
+  height: 4rem;
+  border-radius: 9999px;
+  object-fit: cover;
+  flex-shrink: 0;
+  border: 2px solid rgba(91,141,239,0.30);
+}
+.post-author-name {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: theme(colors.text);
+  margin: 0;
+}
+html.dark .post-author-name { color: theme(colors.dk-text); }
+.post-author-role {
+  font-size: 0.85rem;
+  color: theme(colors.secondary);
+  margin: 0.1rem 0 0;
+  font-weight: 600;
+}
+html.dark .post-author-role { color: theme(colors.dk-secondary); }
+.post-author-bio {
+  font-size: 0.92rem;
+  color: theme(colors.text);
+  opacity: 0.72;
+  margin: 0.6rem 0 0.85rem;
+  line-height: 1.55;
+}
+html.dark .post-author-bio { color: theme(colors.dk-text); opacity: 0.78; }
+
+/* "Next up" footer card */
+.post-next-card {
+  margin-top: 2.5rem;
+  padding: 1.5rem 1.75rem;
+  border-radius: 1.1rem;
+  border: 1px solid rgba(91,141,239,0.20);
+  background: rgba(91,141,239,0.04);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  transition: transform 0.3s ease, border-color 0.3s ease, background 0.3s ease;
+}
+.post-next-card:hover {
+  transform: translateY(-2px);
+  border-color: rgba(91,141,239,0.45);
+  background: rgba(91,141,239,0.08);
+}
+html.dark .post-next-card {
+  background: rgba(91,141,239,0.08);
+  border-color: rgba(91,141,239,0.25);
+}
+html.dark .post-next-card:hover {
+  background: rgba(91,141,239,0.14);
+  border-color: rgba(91,141,239,0.50);
+}
+
+/* ───────────────────────────────────────────────────────────────────
+   POSTS INDEX — featured hero + grid
+   ─────────────────────────────────────────────────────────────────── */
+
+.posts-index-hero {
+  position: relative;
+  padding: 6rem 0 3rem;
+  overflow: hidden;
+}
+.posts-index-hero::before {
+  content: "";
+  position: absolute;
+  inset: -20% -10% auto -10%;
+  height: 80%;
+  background:
+    radial-gradient(circle at 30% 40%, rgba(91,141,239,0.18), transparent 50%),
+    radial-gradient(circle at 70% 60%, rgba(34,211,238,0.14), transparent 50%);
+  filter: blur(80px);
+  z-index: 0;
+  pointer-events: none;
+}
+.posts-index-hero > * { position: relative; z-index: 1; }
+
+.featured-post {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1.5rem;
+  padding: 1.5rem;
+  border-radius: 1.5rem;
+  border: 1px solid rgba(91,141,239,0.22);
+  background: linear-gradient(135deg, rgba(91,141,239,0.08), rgba(34,211,238,0.03));
+  transition: transform 0.3s ease, border-color 0.3s ease;
+  margin: 1rem 0 3rem;
+}
+@media (min-width: 1024px) {
+  .featured-post { grid-template-columns: 1.1fr 1fr; align-items: center; gap: 2.5rem; padding: 1.85rem; }
+}
+.featured-post:hover {
+  transform: translateY(-3px);
+  border-color: rgba(91,141,239,0.45);
+}
+html.dark .featured-post {
+  background: linear-gradient(135deg, rgba(91,141,239,0.12), rgba(34,211,238,0.05));
+}
+.featured-post-img {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+  border-radius: 1rem;
+  box-shadow: 0 24px 48px -24px rgba(91,141,239,0.4);
+}
+.featured-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  padding: 0.35rem 0.85rem;
+  border-radius: 9999px;
+  background: linear-gradient(135deg, #5B8DEF, #22D3EE);
+  color: white;
+}
+.featured-badge::before {
+  content: "";
+  width: 0.45rem;
+  height: 0.45rem;
+  border-radius: 9999px;
+  background: white;
+  box-shadow: 0 0 8px rgba(255,255,255,0.7);
+}
+
+/* Post card (grid) — colored top border + accent shadow */
+.post-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  border-radius: 1.1rem;
+  overflow: hidden;
+  background: rgba(255,255,255,0.5);
+  border: 1px solid rgba(91,141,239,0.16);
+  transition: transform 0.35s ease, box-shadow 0.35s ease, border-color 0.35s ease;
+}
+html.dark .post-card {
+  background: rgba(255,255,255,0.03);
+  border-color: rgba(91,141,239,0.22);
+}
+.post-card::before {
+  content: "";
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, var(--card-accent-a, #5B8DEF), var(--card-accent-b, #22D3EE));
+  z-index: 2;
+}
+.post-card:hover {
+  transform: translateY(-4px);
+  border-color: rgba(91,141,239,0.45);
+  box-shadow: 0 24px 48px -24px var(--card-accent-a, rgba(91,141,239,0.5));
+}
+.post-card-accent-blue    { --card-accent-a: #5B8DEF; --card-accent-b: #22D3EE; }
+.post-card-accent-emerald { --card-accent-a: #34D399; --card-accent-b: #22D3EE; }
+.post-card-accent-violet  { --card-accent-a: #A78BFA; --card-accent-b: #5B8DEF; }
+.post-card-accent-amber   { --card-accent-a: #F5A524; --card-accent-b: #DC2626; }
+.post-card-accent-cyan    { --card-accent-a: #22D3EE; --card-accent-b: #5B8DEF; }
