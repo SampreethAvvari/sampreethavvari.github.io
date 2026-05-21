@@ -334,23 +334,32 @@ button.no-lift:hover {
 .timeline-row {
   display: flex;
   align-items: flex-start;
-  gap: 0.85rem;
+  gap: 1rem;
 }
 .timeline-logo {
   flex-shrink: 0;
-  width: 2.75rem;
-  height: 2.75rem;
-  border-radius: 0.75rem;
-  background: rgba(255, 255, 255, 0.92);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  width: 3.25rem;
+  height: 3.25rem;
+  border-radius: 0.85rem;
+  background: rgba(255, 255, 255, 0.96);
+  border: 1px solid rgba(91, 141, 239, 0.18);
   display: flex;
   align-items: center;
   justify-content: center;
   overflow: hidden;
   padding: 0.35rem;
+  box-shadow: 0 4px 14px -6px rgba(91, 141, 239, 0.35),
+              0 1px 2px rgba(0, 0, 0, 0.06);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+.timeline-row:hover .timeline-logo {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 24px -8px rgba(91, 141, 239, 0.45),
+              0 2px 4px rgba(0, 0, 0, 0.08);
 }
 html.dark .timeline-logo {
-  background: rgba(255, 255, 255, 0.92);
+  background: rgba(255, 255, 255, 0.96);
+  border-color: rgba(91, 141, 239, 0.28);
 }
 .timeline-logo img {
   max-width: 100%;

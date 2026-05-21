@@ -21,7 +21,8 @@ export const info = {
       {
         title: "Bachelor of Technology, Computer Science and Engineering",
         date: "July 2017 - June 2021",
-        location: "Jawaharlal Nehru Technological University, India",
+        location: "GRIET (Gokaraju Rangaraju Institute of Engineering & Technology), India",
+        logo: "/logos/griet.png",
         gpa: "3.92 / 4",
       },
     ],
