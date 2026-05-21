@@ -14,26 +14,40 @@ body {
   position: relative;
 }
 
-/* Global noise dither — a tiny tile of SVG fractal noise overlays the whole
-   page at very low opacity. Breaks up 8-bit gradient banding on every soft
-   colour wash (aurora, atmos backdrops, post hero). Pointer-events:none so
-   it never intercepts clicks. */
+/* Global noise dither — fine-grain SVG fractal noise overlays the whole
+   page to break up 8-bit gradient banding on every soft colour wash
+   (aurora, atmos backdrops, post hero). Higher frequency = finer grain,
+   which reads as "4K texture" instead of visible posterised bands. */
 body::after {
   content: "";
   position: fixed;
   inset: 0;
   pointer-events: none;
-  z-index: 0;
-  opacity: 0.06;
+  z-index: 1;
+  opacity: 0.10;
   mix-blend-mode: overlay;
-  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 240 240'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 0.6 0'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
-  background-size: 240px 240px;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='1.4' numOctaves='3' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 0.7 0'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
+  background-size: 180px 180px;
   background-repeat: repeat;
 }
 html.dark body::after {
-  opacity: 0.10;
+  opacity: 0.14;
   mix-blend-mode: soft-light;
 }
+
+/* IMDb pill — official IMDb gold (#F5C518) with black text. Used wherever
+   we link to IMDb so the brand reads instantly. */
+.imdb-pill {
+  background: #F5C518;
+  color: #000000;
+  border: 1px solid rgba(0, 0, 0, 0.18);
+  box-shadow: 0 6px 16px -6px rgba(245, 197, 24, 0.55);
+}
+.imdb-pill:hover {
+  background: #FFD740;
+  box-shadow: 0 10px 22px -8px rgba(245, 197, 24, 0.75);
+}
+.imdb-pill i { color: #000; }
 html {
   scroll-behavior: smooth;
 }
@@ -945,22 +959,22 @@ html.dark .stat-callout .stat-label { color: theme(colors.dk-text); opacity: 0.8
   opacity: 0.85;
 }
 .post-prose .post-stats-grid {
-  grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(17rem, 1fr));
   gap: 0.85rem;
   margin: 2.5rem 0;
 }
 .post-prose .post-stats-grid .stat-callout {
   margin: 0;
-  padding: 1.1rem 1.25rem;
+  padding: 1rem 1.2rem;
   min-height: 5.5rem;
 }
 .post-prose .post-stats-grid .stat-callout .stat-value {
-  font-size: clamp(1.1rem, 1.7vw, 1.55rem);
-  line-height: 1.15;
-  letter-spacing: -0.02em;
-  white-space: normal;
-  word-break: keep-all;
-  overflow-wrap: normal;
+  font-size: 1.25rem;
+  line-height: 1.18;
+  letter-spacing: -0.025em;
+  white-space: nowrap;
+  overflow: visible;
+  text-overflow: clip;
 }
 .post-prose .post-stats-grid .stat-callout .stat-label {
   font-size: 0.74rem;
@@ -968,19 +982,20 @@ html.dark .stat-callout .stat-label { color: theme(colors.dk-text); opacity: 0.8
   line-height: 1.35;
 }
 
-/* Hero stats grid (top of the post) — slightly bigger than inline but still
-   reined in so values don't wrap into 3 lines. */
+/* Hero stats grid (top of the post) — slightly bigger than inline. */
 .post-stats-grid {
-  grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(17rem, 1fr));
 }
 .post-stats-grid .stat-callout {
-  padding: 1.25rem 1.4rem;
-  min-height: 6rem;
+  padding: 1.15rem 1.3rem;
+  min-height: 5.75rem;
 }
 .post-stats-grid .stat-callout .stat-value {
-  font-size: clamp(1.2rem, 1.9vw, 1.7rem);
+  font-size: 1.4rem;
   line-height: 1.15;
-  letter-spacing: -0.02em;
+  letter-spacing: -0.025em;
+  white-space: nowrap;
+  overflow: visible;
 }
 .post-stats-grid .stat-callout .stat-label {
   font-size: 0.78rem;
