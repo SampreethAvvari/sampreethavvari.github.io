@@ -19,11 +19,11 @@ stats:
     tone: "violet"
 ---
 
-Our CEO, Dr. Frank LaMar, has spent years refining a seven-criterion framework for what a good implant consultation looks like. The whole thing lived in a Word doc. Nobody else could read a transcript and score it the way he would.
+Every week, implant consultations finished and nothing happened to them. The doctor moved on. The treatment coordinator moved on. Our CEO, Dr. Frank LaMar, had a seven-criterion framework for what a good consult looks like. It lived in a Word doc. Nobody else could apply it at the speed the practice runs.
 
-So most consultations weren't being scored. The coaching loop only closed on the few Frank had time to review personally.
+So the coaching loop closed on maybe a handful of cases a week: the ones Frank had time to pull up himself. The rest were invisible.
 
-I built a pipeline that does the rest.
+I was the only engineer on this. I had Zoom webhooks, Vertex AI, and a Google Workspace with no Super Admin access. I built the pipeline that reads every transcript, scores it against Frank's rubric, and gets a color-coded report to the doctor, the TC, and Frank before the patient's follow-up window closes.
 
 ## The flow, end to end
 
@@ -99,6 +99,6 @@ The number I care most about from an engineering standpoint is the hallucination
 
 ## Why this matters beyond the metrics
 
-The pipeline is a teaching tool. Each report quotes the doctor's own words back to them, criterion by criterion, with at least one timestamped quote: where the moment landed and where it didn't. Coaching happens against a transcript the doctor remembers, not an abstract principle.
+Each report quotes the doctor's own words back to them, criterion by criterion, with at least one timestamped moment showing where the conversation landed and where it didn't. The coaching is grounded in something the doctor already remembers, not an abstract principle.
 
-The system isn't replacing Frank's judgment. It's making it scalable, so the framework gets applied to every consult, not just the ones he had time for that week.
+That is what this project actually required: sitting with the clinicians and the TC long enough to understand why Frank's Word doc worked for Frank, then translating that into a JSON Schema contract strict enough to produce clean database rows, inside a Workspace where I had no elevated admin rights and no margin for PHI leakage. The metrics are downstream of that translation. The engineering question was whether a hand-written rubric could become a repeatable system without losing what made it useful. It can.

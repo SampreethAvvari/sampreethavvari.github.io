@@ -19,13 +19,13 @@ stats:
     tone: "amber"
 ---
 
-Roughly 600 cases a month flow through our design team. About 10-15% arrive with a CBCT scan that's unusable: motion blur, metal streaks, a missing jaw region, a calibration ring of death. Designers don't catch it for twenty minutes. The case gets escalated. The patient gets a rescan appointment two days later.
+About 10-15% of the 600 CBCT scans that flow through our design team each month are unusable: motion blur, metal streaks, a missing jaw region, a calibration ring of death. A designer doesn't catch it for twenty minutes. The case gets escalated. The patient gets a rescan appointment two days later.
 
-This had been quietly happening for ten years.
+That loop had been running for ten years.
 
-A vendor offered to fix it: **$98K up front + $26K a year**. Binary good/bad classifier, no MLOps, they keep the IP.
+A vendor offered to break it: **$98K up front + $26K a year**. Binary good/bad classifier, no MLOps, they keep the IP. Hybridge would have been paying $26K a year indefinitely to flag scans it never owned the logic for.
 
-I built it instead, on a laptop GPU and a CPU-only Cloud Run service.
+So I built it instead, as sole AI engineer at Hybridge, on a laptop GPU and a CPU-only Cloud Run service.
 
 ## The cost picture, before anything else
 
@@ -128,4 +128,4 @@ Cases flow in from MagicTouch DLCPM over SFTP (no API license needed). Eventarc 
 | Wasted design-team hours / month | 60-120 | Near zero |
 | Patient case turnaround on affected cases | +24-48 hrs | Same-day |
 
-A model on its own is a science fair. A model with SFTP fan-out, Eventarc, CICT gates, a tag-based release pipeline, a hot-swap retrain loop, and a dashboard somebody actually opens: that's the thing that closes a ten-year operating loss.
+I ran six model architectures, picked the frozen-encoder design because the data supported it, and shipped 0.6309 when 0.80 would have looked nicer on a slide. A model on its own is a science fair. A model with SFTP fan-out, Eventarc, CICT gates, a tag-based release pipeline, a hot-swap retrain loop, and a dashboard somebody actually opens: that's the thing that closes a ten-year operating loss. The number that matters isn't the peak AUROC from a leaky split. It's the one you can stand behind when the next holdout runs.
