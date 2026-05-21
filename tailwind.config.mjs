@@ -6,14 +6,31 @@ export default {
 	theme: {
 		extend: {
 			colors: {
-				'primary': '#FFF',
-				'secondary': '#1D4CC4',
-				'accent': '#0D2563',
-				'text': '#353755',
-				'dk-primary': '#0C2432',
-				'dk-secondary': '#53C6FF',
-				'dk-accent': '#55C2C3',
-				'dk-text': '#C8DCF5',
+				// Apple-neutral palette: near-white in light, true near-black in dark.
+				// Accents (blue, cyan, violet, emerald, amber) are reserved for the
+				// hero number or the project name only — never the body.
+				'primary': '#FBFBFD',
+				'secondary': '#0066CC',
+				'accent': '#0040AA',
+				'text': '#1D1D1F',
+				'dk-primary': '#000000',
+				'dk-secondary': '#5B8DEF',
+				'dk-accent': '#22D3EE',
+				'dk-text': '#F5F5F7',
+				// Per-section accents (used as hex in component classes, kept here as a
+				// reference for future utilities).
+				'acc-cyan':    '#22D3EE',
+				'acc-violet':  '#A78BFA',
+				'acc-emerald': '#34D399',
+				'acc-blue':    '#5B8DEF',
+				'acc-amber':   '#F5A524',
+			},
+			fontFamily: {
+				display: [
+					'-apple-system', 'BlinkMacSystemFont', '"SF Pro Display"',
+					'"SF Pro Text"', 'Inter', '"Segoe UI"', 'Roboto',
+					'"Helvetica Neue"', 'Helvetica', 'Arial', 'sans-serif',
+				],
 			},
 		},
 	},
