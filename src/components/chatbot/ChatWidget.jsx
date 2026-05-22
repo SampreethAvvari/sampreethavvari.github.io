@@ -157,7 +157,7 @@ export default function ChatWidget() {
       </button>
 
       {isOpen && (
-        <div className="fixed right-4 bottom-28 lg:right-8 lg:bottom-32 z-50 w-[320px] lg:w-[360px] bg-primary dark:bg-dk-primary border border-secondary/30 dark:border-dk-secondary/30 rounded-xl shadow-2xl flex flex-col">
+        <div className="fixed right-4 bottom-28 lg:right-8 lg:bottom-32 z-50 w-[calc(100vw-2rem)] sm:w-[400px] lg:w-[440px] xl:w-[480px] bg-primary dark:bg-dk-primary border border-secondary/30 dark:border-dk-secondary/30 rounded-xl shadow-2xl flex flex-col max-h-[min(80vh,720px)]">
           <div className="flex items-center justify-between px-4 py-3 border-b border-secondary/20 dark:border-dk-secondary/20">
             <div>
               <p className="text-sm font-semibold text-secondary dark:text-dk-secondary">Ask Sampreeth</p>
@@ -179,15 +179,15 @@ export default function ChatWidget() {
 
           <div
             ref={scrollRef}
-            className="flex-1 px-4 py-3 space-y-3 overflow-y-auto max-h-[380px]"
+            className="flex-1 px-4 py-3 space-y-3 overflow-y-auto"
           >
             {messages.map((msg, idx) => (
               <div
                 key={`${msg.role}-${idx}`}
                 className={`rounded-lg px-3 py-2 text-sm leading-relaxed ${
                   msg.role === "user"
-                    ? "bg-secondary text-primary ml-6"
-                    : "chat-msg-rich bg-secondary/10 text-text dark:text-dk-text mr-6"
+                    ? "bg-secondary text-primary ml-8"
+                    : "chat-msg-rich bg-secondary/10 text-text dark:text-dk-text mr-4"
                 }`}
                 {...(msg.role === "assistant"
                   ? { dangerouslySetInnerHTML: { __html: renderRich(msg.content) } }
