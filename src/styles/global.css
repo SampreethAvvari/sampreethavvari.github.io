@@ -1694,3 +1694,27 @@ html.dark .post-card {
 .post-card-accent-violet  { --card-accent-a: #A78BFA; --card-accent-b: #5B8DEF; }
 .post-card-accent-amber   { --card-accent-a: #F5A524; --card-accent-b: #DC2626; }
 .post-card-accent-cyan    { --card-accent-a: #22D3EE; --card-accent-b: #5B8DEF; }
+
+/* Chat widget assistant-message rich content (markdown rendered via
+   ChatWidget.jsx's renderRich). Keep spacing tight so it fits in a 320px
+   bubble; surface links in the same accent as the rest of the site. */
+.chat-msg-rich p { margin: 0 0 0.45em 0; }
+.chat-msg-rich p:last-child { margin-bottom: 0; }
+.chat-msg-rich ul,
+.chat-msg-rich ol { margin: 0.35em 0; padding-left: 1.2em; }
+.chat-msg-rich ul { list-style: disc; }
+.chat-msg-rich ol { list-style: decimal; }
+.chat-msg-rich li { margin-bottom: 0.2em; line-height: 1.45; }
+.chat-msg-rich li:last-child { margin-bottom: 0; }
+.chat-msg-rich strong { font-weight: 600; color: #0066CC; }
+.chat-msg-rich a {
+  color: #0066CC;
+  text-decoration: underline;
+  text-underline-offset: 0.18em;
+  text-decoration-thickness: 1px;
+  transition: color 0.15s ease;
+}
+.chat-msg-rich a:hover { color: #0040AA; }
+html.dark .chat-msg-rich strong { color: #5B8DEF; }
+html.dark .chat-msg-rich a { color: #5B8DEF; }
+html.dark .chat-msg-rich a:hover { color: #22D3EE; }
