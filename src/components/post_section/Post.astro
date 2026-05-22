@@ -20,9 +20,6 @@ const accent = ACCENTS[index % ACCENTS.length];
 const chipTone = tone || TAG_TONE[tag] || "blue";
 const displayTag = tag || "Engineering";
 
-// Slug used by the view-counter (abacus.jasoncameron.dev). Stable per post.
-const slug = (url || "").replace(/^\//, "").replace(/\/$/, "").replace(/\W+/g, "-");
-
 let formattedDate = date;
 try {
   const d = new Date(date);
@@ -71,30 +68,10 @@ try {
     >
       {description}
     </p>
-    <div class="flex items-center justify-between mt-1">
-      <p
-        class="text-xs font-semibold text-secondary dark:text-dk-secondary inline-flex items-center gap-1.5"
-      >
-        Read more <span aria-hidden="true">→</span>
-      </p>
-      <span
-        class="post-views text-[0.68rem] font-medium text-text/30 dark:text-dk-text/30 inline-flex items-center gap-1 tabular-nums"
-        data-view-slug={slug}
-        aria-label="View count"
-      >
-        <svg
-          viewBox="0 0 24 24"
-          class="w-3.5 h-3.5"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="1.7"
-          aria-hidden="true"
-        >
-          <path stroke-linecap="round" stroke-linejoin="round" d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z" />
-          <circle cx="12" cy="12" r="2.6" />
-        </svg>
-        <span class="post-views-value">—</span>
-      </span>
-    </div>
+    <p
+      class="text-xs font-semibold text-secondary dark:text-dk-secondary inline-flex items-center gap-1.5 mt-1"
+    >
+      Read more <span aria-hidden="true">→</span>
+    </p>
   </div>
 </a>

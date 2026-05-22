@@ -78,29 +78,3 @@ const [featured, ...rest] = allPosts;
   </main>
 </BaseLayout>
 
-<script>
-  // Per-post view counts via abacus.jasoncameron.dev (free, no signup).
-  // We only fetch (no increment) on the listing; the post page does the hit.
-  // Compact formatter so "12300" reads as "12.3k".
-  function compact(n: number) {
-    if (n < 1000) return String(n);
-    if (n < 10000) return (n / 1000).toFixed(1).replace(/\.0$/, "") + "k";
-    if (n < 1_000_000) return Math.round(n / 1000) + "k";
-    return (n / 1_000_000).toFixed(1).replace(/\.0$/, "") + "m";
-  }
-
-  const NS = "sampreethavvari";
-  document.querySelectorAll<HTMLElement>("[data-view-slug]").forEach((el) => {
-    const slug = el.dataset.viewSlug;
-    if (!slug) return;
-    fetch(`https://abacus.jasoncameron.dev/get/${NS}/${slug}`)
-      .then((r) => (r.ok ? r.json() : null))
-      .then((data) => {
-        if (data && typeof data.value === "number") {
-          const node = el.querySelector(".post-views-value");
-          if (node) node.textContent = compact(data.value);
-        }
-      })
-      .catch(() => {});
-  });
-</script>

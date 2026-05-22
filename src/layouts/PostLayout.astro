@@ -119,21 +119,6 @@ const chipTone = tone || (tag ? TAG_TONE[tag] : null) || "blue";
   </article>
 
   <script is:inline>
-    // Increment + read this post's view count via abacus.jasoncameron.dev.
-    // sessionStorage gate prevents double-counting on SPA-style same-tab nav.
-    (function () {
-      try {
-        const slug = location.pathname.replace(/^\//, "").replace(/\/$/, "").replace(/\W+/g, "-");
-        if (!slug) return;
-        const key = "view-hit:" + slug;
-        if (sessionStorage.getItem(key)) return;
-        sessionStorage.setItem(key, "1");
-        fetch("https://abacus.jasoncameron.dev/hit/sampreethavvari/" + slug).catch(() => {});
-      } catch (e) {}
-    })();
-  </script>
-
-  <script is:inline>
     (function () {
       const bar = document.getElementById("post-progress");
       if (bar) {
