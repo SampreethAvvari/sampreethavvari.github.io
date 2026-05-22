@@ -1,13 +1,20 @@
-import { describe, test, expect, beforeEach, vi, afterEach } from "vitest";
-import { handleRequest } from "../src/handler";
-
-const env = {
-  GROQ_API_KEY: "test-key",
-  GROQ_MODEL: "llama-3.1-8b-instant",
-  ALLOWED_ORIGINS: "https://sampreethavvari.github.io,http://localhost:4321",
-};
+import { describe, test, expect, vi, afterEach } from "vitest";
+import { handleRequest, type AiBinding, type AiRunOptions, type Env } from "../src/handler";
 
 const ORIGIN = "https://sampreethavvari.github.io";
+
+function makeEnv(overrides: Partial<Env> & { ai?: AiBinding } = {}): Env {
+  const ai: AiBinding =
+    overrides.ai ?? {
+      run: vi.fn(async () => ({ response: "ok" })),
+    };
+  return {
+    AI: ai,
+    AI_MODEL: "@cf/meta/llama-3.1-8b-instruct",
+    ALLOWED_ORIGINS: "https://sampreethavvari.github.io,http://localhost:4321",
+    ...overrides,
+  };
+}
 
 function makeRequest(init: RequestInit = {}): Request {
   return new Request("https://worker.example.com/chat", {
@@ -17,21 +24,16 @@ function makeRequest(init: RequestInit = {}): Request {
   });
 }
 
-function mockGroq(reply: string) {
-  globalThis.fetch = vi.fn(async () =>
-    new Response(
-      JSON.stringify({
-        choices: [{ message: { role: "assistant", content: reply } }],
-      }),
-      { status: 200, headers: { "Content-Type": "application/json" } },
-    ),
-  ) as unknown as typeof fetch;
+function aiReturning(reply: string): AiBinding {
+  return { run: vi.fn(async () => ({ response: reply })) };
 }
 
-function mockGroqError(status: number, body: string) {
-  globalThis.fetch = vi.fn(async () =>
-    new Response(body, { status, headers: { "Content-Type": "application/json" } }),
-  ) as unknown as typeof fetch;
+function aiThrowing(): AiBinding {
+  return {
+    run: vi.fn(async () => {
+      throw new Error("upstream blew up");
+    }),
+  };
 }
 
 afterEach(() => {
@@ -49,7 +51,7 @@ describe("handler — basic plumbing", () => {
       },
     });
 
-    const res = await handleRequest(req, env);
+    const res = await handleRequest(req, makeEnv());
 
     expect(res.status).toBe(204);
     expect(res.headers.get("Access-Control-Allow-Origin")).toBe(ORIGIN);
@@ -66,7 +68,7 @@ describe("handler — basic plumbing", () => {
       },
     });
 
-    const res = await handleRequest(req, env);
+    const res = await handleRequest(req, makeEnv());
 
     expect(res.status).toBe(204);
     expect(res.headers.get("Access-Control-Allow-Origin")).toBeNull();
@@ -78,7 +80,7 @@ describe("handler — basic plumbing", () => {
       headers: { Origin: ORIGIN },
     });
 
-    const res = await handleRequest(req, env);
+    const res = await handleRequest(req, makeEnv());
 
     expect(res.status).toBe(405);
   });
@@ -86,7 +88,7 @@ describe("handler — basic plumbing", () => {
   test("POST with a missing messages field returns 400", async () => {
     const req = makeRequest({ body: JSON.stringify({ foo: "bar" }) });
 
-    const res = await handleRequest(req, env);
+    const res = await handleRequest(req, makeEnv());
 
     expect(res.status).toBe(400);
     const body = (await res.json()) as { error: string };
@@ -96,15 +98,15 @@ describe("handler — basic plumbing", () => {
   test("POST with non-JSON body returns 400", async () => {
     const req = makeRequest({ body: "not json at all", headers: { "Content-Type": "text/plain" } });
 
-    const res = await handleRequest(req, env);
+    const res = await handleRequest(req, makeEnv());
 
     expect(res.status).toBe(400);
   });
 });
 
-describe("handler — Groq integration", () => {
-  test("returns the Groq reply on a happy-path POST", async () => {
-    mockGroq("Sampreeth is an AI Engineer at Hybridge Implants.");
+describe("handler — Workers AI integration", () => {
+  test("returns the model reply on a happy-path POST", async () => {
+    const env = makeEnv({ ai: aiReturning("Sampreeth is an AI Engineer at Hybridge Implants.") });
 
     const req = makeRequest({
       body: JSON.stringify({
@@ -119,15 +121,14 @@ describe("handler — Groq integration", () => {
     expect(body.reply).toBe("Sampreeth is an AI Engineer at Hybridge Implants.");
   });
 
-  test("call to Groq includes a system prompt with Sampreeth context", async () => {
-    let captured: { url: string; init: RequestInit } | undefined;
-    globalThis.fetch = vi.fn(async (url: any, init: any) => {
-      captured = { url: String(url), init };
-      return new Response(
-        JSON.stringify({ choices: [{ message: { role: "assistant", content: "ok" } }] }),
-        { status: 200, headers: { "Content-Type": "application/json" } },
-      );
-    }) as unknown as typeof fetch;
+  test("env.AI.run receives the configured Llama model and a Sampreeth system prompt", async () => {
+    let captured: { model: string; options: AiRunOptions } | undefined;
+    const ai: AiBinding = {
+      run: vi.fn(async (model: string, options: AiRunOptions) => {
+        captured = { model, options };
+        return { response: "ok" };
+      }),
+    };
 
     const req = makeRequest({
       body: JSON.stringify({
@@ -135,19 +136,16 @@ describe("handler — Groq integration", () => {
       }),
     });
 
-    await handleRequest(req, env);
+    await handleRequest(req, makeEnv({ ai }));
 
-    expect(captured?.url).toContain("api.groq.com");
-    const payload = JSON.parse(captured!.init.body as string);
-    expect(payload.model).toBe("llama-3.1-8b-instant");
-
-    const systemMsg = payload.messages.find((m: any) => m.role === "system");
+    expect(captured?.model).toBe("@cf/meta/llama-3.1-8b-instruct");
+    const systemMsg = captured!.options.messages.find((m) => m.role === "system");
     expect(systemMsg).toBeTruthy();
-    expect(systemMsg.content.toLowerCase()).toContain("sampreeth");
+    expect(systemMsg!.content.toLowerCase()).toContain("sampreeth");
   });
 
-  test("Groq upstream failure returns 502 with a clean error body", async () => {
-    mockGroqError(500, "internal error");
+  test("AI binding throwing returns 502 with a clean error body", async () => {
+    const env = makeEnv({ ai: aiThrowing() });
 
     const req = makeRequest({
       body: JSON.stringify({
@@ -159,11 +157,25 @@ describe("handler — Groq integration", () => {
 
     expect(res.status).toBe(502);
     const body = (await res.json()) as { error: string };
-    expect(body.error).toMatch(/upstream|groq|chat/i);
+    expect(body.error).toMatch(/upstream|chat/i);
+  });
+
+  test("empty model response returns 502", async () => {
+    const env = makeEnv({ ai: aiReturning("   ") });
+
+    const req = makeRequest({
+      body: JSON.stringify({
+        messages: [{ role: "user", content: "hi" }],
+      }),
+    });
+
+    const res = await handleRequest(req, env);
+
+    expect(res.status).toBe(502);
   });
 
   test("response carries the Access-Control-Allow-Origin for the allowed caller", async () => {
-    mockGroq("hello");
+    const env = makeEnv({ ai: aiReturning("hello") });
 
     const req = makeRequest({
       body: JSON.stringify({

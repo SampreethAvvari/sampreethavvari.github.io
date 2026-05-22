@@ -1,8 +1,20 @@
 import { SITE_CONTEXT } from "./context";
 
+// Cloudflare Workers AI binding. The `Ai` type comes from
+// @cloudflare/workers-types but we keep a minimal shape here so the
+// handler stays portable / testable without pulling Workers globals in.
+export interface AiRunOptions {
+  messages: Array<{ role: string; content: string }>;
+  temperature?: number;
+  max_tokens?: number;
+}
+export interface AiBinding {
+  run(model: string, options: AiRunOptions): Promise<{ response?: string }>;
+}
+
 export interface Env {
-  GROQ_API_KEY: string;
-  GROQ_MODEL?: string;
+  AI: AiBinding;
+  AI_MODEL?: string;
   ALLOWED_ORIGINS?: string;
 }
 
@@ -11,8 +23,10 @@ interface ChatMessage {
   content: string;
 }
 
-const DEFAULT_MODEL = "llama-3.1-8b-instant";
-const GROQ_URL = "https://api.groq.com/openai/v1/chat/completions";
+// Llama 3.1 8B Instruct on Cloudflare Workers AI — free under the
+// 10K-neurons/day allowance, no separate API key, runs in the same
+// worker process via the AI binding.
+const DEFAULT_MODEL = "@cf/meta/llama-3.1-8b-instruct";
 
 function parseAllowedOrigins(env: Env): string[] {
   return (env.ALLOWED_ORIGINS ?? "")
@@ -88,8 +102,8 @@ export async function handleRequest(request: Request, env: Env): Promise<Respons
     );
   }
 
-  const groqPayload = {
-    model: env.GROQ_MODEL || DEFAULT_MODEL,
+  const model = env.AI_MODEL || DEFAULT_MODEL;
+  const aiPayload: AiRunOptions = {
     messages: [
       { role: "system", content: SITE_CONTEXT },
       ...messages
@@ -101,17 +115,10 @@ export async function handleRequest(request: Request, env: Env): Promise<Respons
     max_tokens: 512,
   };
 
-  let upstream: Response;
+  let result: { response?: string };
   try {
-    upstream = await fetch(GROQ_URL, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${env.GROQ_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(groqPayload),
-    });
-  } catch (err) {
+    result = await env.AI.run(model, aiPayload);
+  } catch {
     return jsonResponse(
       { error: "Upstream chat service unreachable" },
       502,
@@ -120,23 +127,7 @@ export async function handleRequest(request: Request, env: Env): Promise<Respons
     );
   }
 
-  if (!upstream.ok) {
-    return jsonResponse(
-      { error: `Upstream chat returned ${upstream.status}` },
-      502,
-      origin,
-      env,
-    );
-  }
-
-  let data: { choices?: Array<{ message?: { content?: string } }> };
-  try {
-    data = (await upstream.json()) as typeof data;
-  } catch {
-    return jsonResponse({ error: "Upstream returned invalid JSON" }, 502, origin, env);
-  }
-
-  const reply = data.choices?.[0]?.message?.content?.trim();
+  const reply = result?.response?.trim();
   if (!reply) {
     return jsonResponse({ error: "Upstream returned an empty reply" }, 502, origin, env);
   }
