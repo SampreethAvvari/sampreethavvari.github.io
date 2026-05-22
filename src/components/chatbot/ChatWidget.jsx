@@ -10,6 +10,59 @@ const initialMessage = {
   content: "Hey! Ask me anything about Sampreeth. Projects, experience, filmmaking, background.",
 };
 
+// Tiny safe renderer for the four markdown shapes the system prompt asks the
+// model to emit: **bold**, [text](url), '- ' bullet lists, and paragraph
+// breaks. Everything is HTML-escaped before any markdown transform runs, so
+// the model can never inject tags. URLs are whitelisted to http(s)/mailto/
+// in-site paths — anything else falls back to '#'.
+function escapeHtml(s) {
+  return s
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
+}
+
+function safeUrl(url) {
+  if (/^(https?:|mailto:)/i.test(url)) return url;
+  if (/^[/#]/.test(url)) return url;
+  return "#";
+}
+
+function applyInline(s) {
+  s = s.replace(/\[([^\]]+)\]\(([^)]+)\)/g, (_, text, url) => {
+    const safe = safeUrl(url);
+    const external = /^https?:/i.test(safe);
+    const attrs = external ? ' target="_blank" rel="noreferrer"' : "";
+    return `<a href="${safe}"${attrs}>${text}</a>`;
+  });
+  s = s.replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>");
+  return s;
+}
+
+function renderRich(content) {
+  const escaped = escapeHtml(content);
+  const paragraphs = escaped.split(/\n{2,}/);
+  return paragraphs
+    .map((para) => {
+      const lines = para.split("\n").filter((l) => l.trim().length > 0);
+      if (lines.length === 0) return "";
+      if (lines.every((l) => /^-\s/.test(l.trim()))) {
+        const items = lines
+          .map((l) => `<li>${applyInline(l.trim().replace(/^-\s*/, ""))}</li>`)
+          .join("");
+        return `<ul>${items}</ul>`;
+      }
+      if (lines.every((l) => /^\d+\.\s/.test(l.trim()))) {
+        const items = lines
+          .map((l) => `<li>${applyInline(l.trim().replace(/^\d+\.\s*/, ""))}</li>`)
+          .join("");
+        return `<ol>${items}</ol>`;
+      }
+      return `<p>${applyInline(lines.join("<br/>"))}</p>`;
+    })
+    .join("");
+}
+
 export default function ChatWidget() {
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState([initialMessage]);
@@ -134,11 +187,12 @@ export default function ChatWidget() {
                 className={`rounded-lg px-3 py-2 text-sm leading-relaxed ${
                   msg.role === "user"
                     ? "bg-secondary text-primary ml-6"
-                    : "bg-secondary/10 text-text dark:text-dk-text mr-6"
+                    : "chat-msg-rich bg-secondary/10 text-text dark:text-dk-text mr-6"
                 }`}
-              >
-                {msg.content}
-              </div>
+                {...(msg.role === "assistant"
+                  ? { dangerouslySetInnerHTML: { __html: renderRich(msg.content) } }
+                  : { children: msg.content })}
+              />
             ))}
             {isLoading && (
               <div className="text-xs text-text dark:text-dk-text">Typing…</div>
