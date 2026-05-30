@@ -187,4 +187,31 @@ describe("handler — Workers AI integration", () => {
 
     expect(res.headers.get("Access-Control-Allow-Origin")).toBe(ORIGIN);
   });
+
+  test("system prompt enforces Sampreeth-only scope and refuses general questions", async () => {
+    let captured: { model: string; options: AiRunOptions } | undefined;
+    const ai: AiBinding = {
+      run: vi.fn(async (model: string, options: AiRunOptions) => {
+        captured = { model, options };
+        return { response: "ok" };
+      }),
+    };
+
+    const req = makeRequest({
+      body: JSON.stringify({
+        messages: [{ role: "user", content: "What is the capital of France?" }],
+      }),
+    });
+
+    await handleRequest(req, makeEnv({ ai }));
+
+    const systemMsg = captured!.options.messages.find((m) => m.role === "system");
+    expect(systemMsg).toBeTruthy();
+    // Must declare it only answers about Sampreeth
+    expect(systemMsg!.content).toMatch(/only answer questions about sampreeth/i);
+    // Must explicitly forbid answering out-of-scope questions
+    expect(systemMsg!.content).toMatch(/must not answer/i);
+    // Must instruct a decline with an invite back to Sampreeth topics
+    expect(systemMsg!.content).toMatch(/just decline/i);
+  });
 });
