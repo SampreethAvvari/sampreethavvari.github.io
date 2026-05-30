@@ -135,13 +135,13 @@ const skillBuckets = [
                 alt={info.picture_alt}
                 width={420}
                 height={420}
-                class="relative lg:h-80 lg:w-80 xl:h-[22rem] xl:w-[22rem] h-48 w-48 rounded-full object-cover ring-1 ring-text/10 dark:ring-dk-text/15"
+                class="relative lg:h-80 lg:w-80 xl:h-[22rem] xl:w-[22rem] h-40 w-40 sm:h-48 sm:w-48 rounded-full object-cover ring-1 ring-text/10 dark:ring-dk-text/15"
               />
             </div>
           </div>
         </div>
 
-        <div class="lg:col-span-7 flex flex-col gap-6 text-center lg:text-left">
+        <div class="lg:col-span-7 flex flex-col gap-4 lg:gap-6 text-center lg:text-left">
           <p
             class="eyebrow text-text/60 dark:text-dk-text/60"
           >
@@ -209,20 +209,26 @@ const skillBuckets = [
                 href={s.href}
                 class="no-lift group flex flex-col lg:flex-row lg:items-center gap-3 lg:gap-8 py-4 lg:py-5 transition"
               >
-                <span
-                  class="font-mono text-sm font-semibold tabular-nums w-10 shrink-0 text-text/40 dark:text-dk-text/40"
-                >
-                  {s.n}
-                </span>
-                <div class="flex-1 min-w-0">
-                  <h3
-                    class="text-xl lg:text-2xl font-semibold tracking-tight text-text dark:text-dk-text group-hover:text-secondary dark:group-hover:text-dk-secondary transition"
+                {/* On mobile: number + title share one line via flex items-baseline.
+                    At lg: lg:contents dissolves this wrapper so both children
+                    participate directly in the parent flex row, preserving
+                    [number(w-10)] [flex-1 div] [metric(min-w-9rem)] [arrow] layout. */}
+                <div class="flex items-baseline gap-3 lg:contents">
+                  <span
+                    class="font-mono text-sm font-semibold tabular-nums w-10 shrink-0 text-text/40 dark:text-dk-text/40"
                   >
-                    {s.name}
-                  </h3>
-                  <p class="mt-0.5 text-sm text-text/65 dark:text-dk-text/65 leading-snug max-w-3xl line-clamp-2">
-                    {s.tagline}
-                  </p>
+                    {s.n}
+                  </span>
+                  <div class="flex-1 min-w-0">
+                    <h3
+                      class="text-xl lg:text-2xl font-semibold tracking-tight text-text dark:text-dk-text group-hover:text-secondary dark:group-hover:text-dk-secondary transition"
+                    >
+                      {s.name}
+                    </h3>
+                    <p class="mt-0.5 text-sm text-text/65 dark:text-dk-text/65 leading-snug max-w-3xl line-clamp-2">
+                      {s.tagline}
+                    </p>
+                  </div>
                 </div>
                 <div class="lg:text-right lg:min-w-[9rem] shrink-0">
                   <div
@@ -236,7 +242,7 @@ const skillBuckets = [
                   </div>
                 </div>
                 <span
-                  class="text-text/40 dark:text-dk-text/40 group-hover:text-secondary dark:group-hover:text-dk-secondary group-hover:translate-x-1 transition-transform"
+                  class="hidden lg:inline text-text/40 dark:text-dk-text/40 group-hover:text-secondary dark:group-hover:text-dk-secondary group-hover:translate-x-1 transition-transform"
                   aria-hidden="true"
                 >
                   →
