@@ -115,7 +115,10 @@ export default function Nav({ searchItems }) {
               {navLinks.map((link, index) => {
                 const isActive = activeMatch === link.match;
                 return (
-                  <li key={index}>
+                  <li
+                    key={index}
+                    className={isActive ? "bg-text/[0.06] dark:bg-dk-text/[0.08]" : ""}
+                  >
                     <a
                       href={link.href}
                       onClick={() => setIsNavOpen(false)}
@@ -123,7 +126,7 @@ export default function Nav({ searchItems }) {
                       title={link.name}
                       className={`flex items-center gap-3 w-full py-3.5 text-base font-semibold transition-colors ${
                         isActive
-                          ? "text-secondary dark:text-dk-secondary bg-text/[0.06] dark:bg-dk-text/[0.08] -mx-4 sm:-mx-6 px-4 sm:px-6"
+                          ? "text-secondary dark:text-dk-secondary"
                           : "text-text/60 dark:text-dk-text/60 hover:text-text dark:hover:text-dk-text"
                       }`}
                     >
@@ -133,7 +136,7 @@ export default function Nav({ searchItems }) {
                   </li>
                 );
               })}
-              <li className="py-3.5 flex flex-row items-center gap-4 border-t border-text/10 dark:border-dk-text/15">
+              <li className="py-3.5 flex flex-row items-center gap-4">
                 <ToggleDarkMode />
                 <Search items={searchItems} />
               </li>
