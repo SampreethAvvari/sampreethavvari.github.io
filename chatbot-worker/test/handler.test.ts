@@ -302,6 +302,48 @@ describe("handler — topic gate", () => {
     expect(ai.run).toHaveBeenCalledTimes(2);
   });
 
+  test("classifier returns 'NO' → off-topic refusal, answer model NOT called", async () => {
+    const ai = aiWithGate("NO", "should not be returned");
+    const env = makeEnv({ ai });
+
+    const req = makeRequest({
+      body: JSON.stringify({
+        messages: [{ role: "user", content: "What is the capital of France?" }],
+      }),
+    });
+
+    const res = await handleRequest(req, env);
+
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as { reply: string };
+    expect(body.reply).toBe(OFF_TOPIC_REPLY);
+    // Only the classifier was called — answer model must NOT have been invoked.
+    expect(ai.run).toHaveBeenCalledTimes(1);
+  });
+
+  test("classifier returns a word containing 'no' as substring (e.g. 'Now') → treated as on-topic", async () => {
+    // Regression guard: "Now", "Unknown", "NOPE" etc. contain "NO" as a substring
+    // but must NOT trigger the refusal. Only a standalone \bNO\b should refuse.
+    const ai = aiWithGate("Now", "Sampreeth directed Resonance in 2023.");
+    const env = makeEnv({ ai });
+
+    const req = makeRequest({
+      body: JSON.stringify({
+        messages: [{ role: "user", content: "What films has Sampreeth made?" }],
+      }),
+    });
+
+    const res = await handleRequest(req, env);
+
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as { reply: string };
+    // Must return the answer — NOT the canned refusal.
+    expect(body.reply).toBe("Sampreeth directed Resonance in 2023.");
+    expect(body.reply).not.toBe(OFF_TOPIC_REPLY);
+    // Both classifier AND answer model were called (fail-open → two calls).
+    expect(ai.run).toHaveBeenCalledTimes(2);
+  });
+
   test("classifier failure fails open — answer model still called and its reply returned", async () => {
     // First call (classifier) throws; second call (answer) returns a reply.
     let callCount = 0;
