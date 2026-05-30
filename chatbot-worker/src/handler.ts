@@ -68,10 +68,11 @@ async function isAboutSampreeth(
       max_tokens: 3,
     });
 
-    const raw = result?.response?.trim().toUpperCase() ?? "";
-    if (raw === "" ) return true;   // empty → fail open
-    if (raw.includes("NO")) return false;
-    return true;                    // YES, or anything unrecognised → allow
+    const raw = (result?.response ?? "").trim().toUpperCase();
+    if (raw === "") return true;            // fail-open on empty
+    if (raw.includes("YES")) return true;   // YES anywhere → allow
+    if (/\bNO\b/.test(raw)) return false;   // standalone NO → refuse
+    return true;                            // anything else → fail-open (allow)
   } catch {
     return true;                    // classifier error → fail open
   }
