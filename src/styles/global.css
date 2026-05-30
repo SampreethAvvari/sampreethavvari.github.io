@@ -1699,6 +1699,38 @@ html.dark .post-card {
 .post-card-accent-amber   { --card-accent-a: #F5A524; --card-accent-b: #DC2626; }
 .post-card-accent-cyan    { --card-accent-a: #22D3EE; --card-accent-b: #5B8DEF; }
 
+/* ───────────────────────────────────────────────────────────────────
+   MOBILE-ONLY BLOG READING REFINEMENTS (≤ 640 px)
+   Desktop rules above are intentionally untouched.
+   ─────────────────────────────────────────────────────────────────── */
+@media (max-width: 640px) {
+  /* 1. Wide tables: scroll horizontally instead of being clipped by
+        `overflow-x: hidden` on html/body. */
+  .post-prose table {
+    display: block;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    white-space: nowrap;
+  }
+
+  /* 2. Drop cap: 4.2rem is oversized on a ~375 px screen; scale it down
+        and tighten the surrounding spacing so text wraps cleanly. */
+  .post-prose > p:first-of-type::first-letter {
+    font-size: 3.1rem;
+    padding: 0.2rem 0.45rem 0 0;
+    margin: 0.15rem 0.1rem 0 -0.03rem;
+  }
+
+  /* 3. Vertical rhythm: halve the generous desktop gaps for h2 and hr so
+        the post doesn't feel sparsely padded on a phone. */
+  .post-prose h2 {
+    margin-top: 2.75rem;
+  }
+  .post-prose hr {
+    margin: 3rem 0;
+  }
+}
+
 /* Chat widget assistant-message rich content (markdown rendered via
    ChatWidget.jsx's renderRich). Keep spacing tight so it fits in a 320px
    bubble; surface links in the same accent as the rest of the site. */

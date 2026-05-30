@@ -51,7 +51,7 @@ const [featured, ...rest] = allPosts;
                 Read the post <span aria-hidden="true">→</span>
               </p>
             </div>
-            <div>
+            <div class="max-lg:order-first">
               <Image
                 src={featured.frontmatter.img_path}
                 alt={featured.frontmatter.img_alt || featured.frontmatter.title}
