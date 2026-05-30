@@ -316,7 +316,7 @@ button.no-lift:hover {
 
 /* Per-chapter atmospheres — each chapter gets its own faint colour tint so
    the home page reads as a sequence of moods, not one flat dark surface.
-   All four share the same drift animation and blur for visual coherence. */
+   All five share the same drift animation for visual coherence. */
 .writing-atmos,
 .work-atmos,
 .about-atmos,
@@ -375,7 +375,7 @@ button.no-lift:hover {
   .work-atmos,
   .about-atmos,
   .filmmaking-atmos,
-  .connect-atmos { animation: none; }
+  .connect-atmos { animation: none; will-change: auto; }
 }
 
 /* Highlight dots matching the post-tag tone, used on /projects Hybridge
@@ -403,7 +403,7 @@ button.no-lift:hover {
   transform: translateZ(0);
 }
 @media (prefers-reduced-motion: reduce) {
-  .hero-atmos { animation: none; }
+  .hero-atmos { animation: none; will-change: auto; }
 }
 
 /* Email-CTA wrap. Makes the .glow-wave's behind-blob hug just the email
@@ -437,7 +437,7 @@ button.no-lift:hover {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .landing-atmos::before { animation: none; }
+  .landing-atmos::before { animation: none; will-change: auto; }
   .reveal-visible > .grid > *,
   .reveal-visible > div > .grid > * {
     transition: none;
@@ -873,7 +873,7 @@ html.dark .post-article { color: theme(colors.dk-text); }
   transform: translateZ(0);
 }
 @media (prefers-reduced-motion: reduce) {
-  .post-hero-atmos { animation: none; }
+  .post-hero-atmos { animation: none; will-change: auto; }
 }
 
 .post-backlink {
@@ -1611,8 +1611,6 @@ html.dark .post-next-card:hover {
     radial-gradient(circle at 70% 60%, rgba(34,211,238,0.14) 0%, rgba(34,211,238,0.07) 40%, rgba(34,211,238,0) 75%);
   z-index: 0;
   pointer-events: none;
-  will-change: transform;
-  transform: translateZ(0);
 }
 .posts-index-hero > * { position: relative; z-index: 1; }
 
