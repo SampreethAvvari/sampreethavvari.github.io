@@ -435,6 +435,9 @@ const stillsLimited = galleryItems.slice(0, 16);
             <div class="role-tile-front relative z-10 flex flex-col items-center text-center px-4">
               <i class={`${role.icon} text-3xl lg:text-4xl text-white mb-3 drop-shadow-lg`}></i>
               <h3 class="text-xl lg:text-2xl font-semibold text-white drop-shadow-lg">{role.title}</h3>
+              <ul class="lg:hidden mt-3 space-y-1 text-sm text-white/85 font-medium drop-shadow">
+                {role.items.map((item) => (<li>{item}</li>))}
+              </ul>
             </div>
             <div class="role-tile-hover">
               <ul class="text-sm lg:text-base text-text dark:text-dk-text space-y-1.5 font-medium text-center">
@@ -783,6 +786,7 @@ const stillsLimited = galleryItems.slice(0, 16);
   .film-hero {
     background: #050608;
     min-height: 100vh;
+    min-height: 100svh;
     display: flex;
     align-items: center;
   }
@@ -800,7 +804,7 @@ const stillsLimited = galleryItems.slice(0, 16);
     object-fit: cover;
     filter: blur(60px) saturate(115%);
     opacity: 0.32;
-    transform: scale(1.08);
+    transform: scale(1.08) translateZ(0);
   }
   .film-hero-backdrop-veil {
     position: absolute;
@@ -971,16 +975,8 @@ const stillsLimited = galleryItems.slice(0, 16);
   .role-tile-front {
     transition: opacity 0.3s ease;
   }
-  .role-tile:hover .role-tile-front,
-  .role-tile:focus-within .role-tile-front {
-    opacity: 0;
-  }
   .role-tile-veil {
     transition: opacity 0.3s ease;
-  }
-  .role-tile:hover .role-tile-veil,
-  .role-tile:focus-within .role-tile-veil {
-    opacity: 0;
   }
   .role-tile-hover {
     position: absolute;
@@ -1002,10 +998,36 @@ const stillsLimited = galleryItems.slice(0, 16);
   }
   .role-tile-hover ul,
   .role-tile-hover li { color: inherit; }
-  .role-tile:hover .role-tile-hover,
-  .role-tile:focus-within .role-tile-hover {
-    opacity: 1;
-    pointer-events: auto;
+
+  /* Hover-swap panel: only activate on hover-capable pointer devices */
+  @media (hover: hover) and (pointer: fine) {
+    .role-tile:hover .role-tile-front,
+    .role-tile:focus-within .role-tile-front {
+      opacity: 0;
+    }
+    .role-tile:hover .role-tile-veil,
+    .role-tile:focus-within .role-tile-veil {
+      opacity: 0;
+    }
+    .role-tile:hover .role-tile-hover,
+    .role-tile:focus-within .role-tile-hover {
+      opacity: 1;
+      pointer-events: auto;
+    }
+  }
+
+  /* Mobile layout: top-align content so icon + title + film list stack neatly */
+  @media (max-width: 1023px) {
+    .role-tile {
+      align-items: flex-start;
+      justify-content: flex-start;
+      min-height: 220px;
+    }
+    .role-tile-front {
+      justify-content: flex-start;
+      padding-top: 1.25rem;
+      padding-bottom: 1.25rem;
+    }
   }
 
   /* ── Among Monsters detail poster ─────────────────────────────── */
