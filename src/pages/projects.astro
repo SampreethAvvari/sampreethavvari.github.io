@@ -77,7 +77,7 @@ const projectsWithBlog = projects
   <!-- ── Hero: Selected work ────────────────────────────────────────── -->
   <section
     class="relative overflow-hidden projects-hero-atmos snap-chapter"
-    style="min-height: 92vh; display: flex; flex-direction: column; justify-content: center; padding: 6rem 0 4rem;"
+    style="min-height: 92vh; min-height: 92svh; display: flex; flex-direction: column; justify-content: center; padding: 6rem 0 4rem;"
     id="projects-top"
   >
     <div class="relative z-10 mx-auto w-full max-w-screen-2xl px-6 lg:px-12">
@@ -454,22 +454,24 @@ const projectsWithBlog = projects
   .projects-hero-atmos::before {
     content: "";
     position: absolute;
-    inset: -10%;
+    inset: -5%;
     background:
-      radial-gradient(ellipse 55% 45% at 22% 32%, rgba(91, 141, 239, 0.10), transparent 70%),
-      radial-gradient(ellipse 55% 45% at 78% 72%, rgba(91, 141, 239, 0.07), transparent 70%);
-    filter: blur(90px);
+      radial-gradient(ellipse 72% 59% at 22% 32%, rgba(91, 141, 239, 0.10) 0%, rgba(91, 141, 239, 0.05) 40%, rgba(91, 141, 239, 0) 74%),
+      radial-gradient(ellipse 72% 59% at 78% 72%, rgba(91, 141, 239, 0.07) 0%, rgba(91, 141, 239, 0.035) 40%, rgba(91, 141, 239, 0) 74%);
     z-index: 0;
     pointer-events: none;
+    will-change: transform;
+    transform: translateZ(0);
     animation: atmosDrift 22s ease-in-out infinite;
   }
   @media (prefers-reduced-motion: reduce) {
-    .projects-hero-atmos::before { animation: none; }
+    .projects-hero-atmos::before { animation: none; will-change: auto; }
   }
 
   /* Each Hybridge deep dive: full-viewport flex column with breathing room. */
   .project-screen {
     min-height: 100vh;
+    min-height: 100svh;
     display: flex;
     flex-direction: column;
     justify-content: center;
@@ -482,44 +484,45 @@ const projectsWithBlog = projects
 
   .project-screen-atmos {
     position: absolute;
-    inset: -8%;
-    filter: blur(120px);
+    inset: -5%;
     z-index: 0;
     pointer-events: none;
     opacity: 0.55;
+    will-change: transform;
+    transform: translateZ(0);
     animation: atmosDrift 24s ease-in-out infinite;
   }
   /* Each variant matches the ambient colour of that project's hero image
      so the glow reads as a faint echo of the screenshot, never a wash. */
   .project-screen-atmos.atmos-cyan {
     background:
-      radial-gradient(ellipse 55% 45% at 22% 32%, rgba(34, 211, 238, 0.10), transparent 70%),
-      radial-gradient(ellipse 55% 45% at 78% 72%, rgba(34, 211, 238, 0.07), transparent 70%);
+      radial-gradient(ellipse 72% 59% at 22% 32%, rgba(34, 211, 238, 0.10) 0%, rgba(34, 211, 238, 0.05) 40%, rgba(34, 211, 238, 0) 74%),
+      radial-gradient(ellipse 72% 59% at 78% 72%, rgba(34, 211, 238, 0.07) 0%, rgba(34, 211, 238, 0.035) 40%, rgba(34, 211, 238, 0) 74%);
   }
   .project-screen-atmos.atmos-violet {
     background:
-      radial-gradient(ellipse 55% 45% at 22% 32%, rgba(167, 139, 250, 0.10), transparent 70%),
-      radial-gradient(ellipse 55% 45% at 78% 72%, rgba(167, 139, 250, 0.07), transparent 70%);
+      radial-gradient(ellipse 72% 59% at 22% 32%, rgba(167, 139, 250, 0.10) 0%, rgba(167, 139, 250, 0.05) 40%, rgba(167, 139, 250, 0) 74%),
+      radial-gradient(ellipse 72% 59% at 78% 72%, rgba(167, 139, 250, 0.07) 0%, rgba(167, 139, 250, 0.035) 40%, rgba(167, 139, 250, 0) 74%);
   }
   .project-screen-atmos.atmos-blue {
     background:
-      radial-gradient(ellipse 55% 45% at 22% 32%, rgba(91, 141, 239, 0.10), transparent 70%),
-      radial-gradient(ellipse 55% 45% at 78% 72%, rgba(91, 141, 239, 0.07), transparent 70%);
+      radial-gradient(ellipse 72% 59% at 22% 32%, rgba(91, 141, 239, 0.10) 0%, rgba(91, 141, 239, 0.05) 40%, rgba(91, 141, 239, 0) 74%),
+      radial-gradient(ellipse 72% 59% at 78% 72%, rgba(91, 141, 239, 0.07) 0%, rgba(91, 141, 239, 0.035) 40%, rgba(91, 141, 239, 0) 74%);
   }
   .project-screen-atmos.atmos-emerald {
     background:
-      radial-gradient(ellipse 55% 45% at 22% 32%, rgba(52, 211, 153, 0.10), transparent 70%),
-      radial-gradient(ellipse 55% 45% at 78% 72%, rgba(52, 211, 153, 0.07), transparent 70%);
+      radial-gradient(ellipse 72% 59% at 22% 32%, rgba(52, 211, 153, 0.10) 0%, rgba(52, 211, 153, 0.05) 40%, rgba(52, 211, 153, 0) 74%),
+      radial-gradient(ellipse 72% 59% at 78% 72%, rgba(52, 211, 153, 0.07) 0%, rgba(52, 211, 153, 0.035) 40%, rgba(52, 211, 153, 0) 74%);
   }
   .project-screen-atmos.atmos-amber {
     background:
-      radial-gradient(ellipse 55% 45% at 22% 32%, rgba(245, 165, 36, 0.10), transparent 70%),
-      radial-gradient(ellipse 55% 45% at 78% 72%, rgba(245, 165, 36, 0.07), transparent 70%);
+      radial-gradient(ellipse 72% 59% at 22% 32%, rgba(245, 165, 36, 0.10) 0%, rgba(245, 165, 36, 0.05) 40%, rgba(245, 165, 36, 0) 74%),
+      radial-gradient(ellipse 72% 59% at 78% 72%, rgba(245, 165, 36, 0.07) 0%, rgba(245, 165, 36, 0.035) 40%, rgba(245, 165, 36, 0) 74%);
   }
   .project-screen-atmos.atmos-slate {
     background:
-      radial-gradient(ellipse 55% 45% at 22% 32%, rgba(148, 163, 184, 0.10), transparent 70%),
-      radial-gradient(ellipse 55% 45% at 78% 72%, rgba(148, 163, 184, 0.07), transparent 70%);
+      radial-gradient(ellipse 72% 59% at 22% 32%, rgba(148, 163, 184, 0.10) 0%, rgba(148, 163, 184, 0.05) 40%, rgba(148, 163, 184, 0) 74%),
+      radial-gradient(ellipse 72% 59% at 78% 72%, rgba(148, 163, 184, 0.07) 0%, rgba(148, 163, 184, 0.035) 40%, rgba(148, 163, 184, 0) 74%);
   }
 
   /* Light-mode: lift the screen with a soft pastel wash + deeper stat
@@ -527,28 +530,28 @@ const projectsWithBlog = projects
   html:not(.dark) .project-screen-atmos { opacity: 0.85; }
   html:not(.dark) .project-screen-atmos.atmos-cyan {
     background:
-      radial-gradient(ellipse 55% 45% at 22% 32%, rgba(34, 211, 238, 0.22), transparent 72%),
-      radial-gradient(ellipse 55% 45% at 78% 72%, rgba(34, 211, 238, 0.15), transparent 72%);
+      radial-gradient(ellipse 72% 59% at 22% 32%, rgba(34, 211, 238, 0.22) 0%, rgba(34, 211, 238, 0.11) 38%, rgba(34, 211, 238, 0) 74%),
+      radial-gradient(ellipse 72% 59% at 78% 72%, rgba(34, 211, 238, 0.15) 0%, rgba(34, 211, 238, 0.075) 38%, rgba(34, 211, 238, 0) 74%);
   }
   html:not(.dark) .project-screen-atmos.atmos-violet {
     background:
-      radial-gradient(ellipse 55% 45% at 22% 32%, rgba(167, 139, 250, 0.22), transparent 72%),
-      radial-gradient(ellipse 55% 45% at 78% 72%, rgba(167, 139, 250, 0.15), transparent 72%);
+      radial-gradient(ellipse 72% 59% at 22% 32%, rgba(167, 139, 250, 0.22) 0%, rgba(167, 139, 250, 0.11) 38%, rgba(167, 139, 250, 0) 74%),
+      radial-gradient(ellipse 72% 59% at 78% 72%, rgba(167, 139, 250, 0.15) 0%, rgba(167, 139, 250, 0.075) 38%, rgba(167, 139, 250, 0) 74%);
   }
   html:not(.dark) .project-screen-atmos.atmos-blue {
     background:
-      radial-gradient(ellipse 55% 45% at 22% 32%, rgba(91, 141, 239, 0.22), transparent 72%),
-      radial-gradient(ellipse 55% 45% at 78% 72%, rgba(91, 141, 239, 0.15), transparent 72%);
+      radial-gradient(ellipse 72% 59% at 22% 32%, rgba(91, 141, 239, 0.22) 0%, rgba(91, 141, 239, 0.11) 38%, rgba(91, 141, 239, 0) 74%),
+      radial-gradient(ellipse 72% 59% at 78% 72%, rgba(91, 141, 239, 0.15) 0%, rgba(91, 141, 239, 0.075) 38%, rgba(91, 141, 239, 0) 74%);
   }
   html:not(.dark) .project-screen-atmos.atmos-emerald {
     background:
-      radial-gradient(ellipse 55% 45% at 22% 32%, rgba(16, 185, 129, 0.20), transparent 72%),
-      radial-gradient(ellipse 55% 45% at 78% 72%, rgba(16, 185, 129, 0.14), transparent 72%);
+      radial-gradient(ellipse 72% 59% at 22% 32%, rgba(16, 185, 129, 0.20) 0%, rgba(16, 185, 129, 0.10) 38%, rgba(16, 185, 129, 0) 74%),
+      radial-gradient(ellipse 72% 59% at 78% 72%, rgba(16, 185, 129, 0.14) 0%, rgba(16, 185, 129, 0.07) 38%, rgba(16, 185, 129, 0) 74%);
   }
   html:not(.dark) .project-screen-atmos.atmos-amber {
     background:
-      radial-gradient(ellipse 55% 45% at 22% 32%, rgba(245, 158, 11, 0.22), transparent 72%),
-      radial-gradient(ellipse 55% 45% at 78% 72%, rgba(245, 158, 11, 0.15), transparent 72%);
+      radial-gradient(ellipse 72% 59% at 22% 32%, rgba(245, 158, 11, 0.22) 0%, rgba(245, 158, 11, 0.11) 38%, rgba(245, 158, 11, 0) 74%),
+      radial-gradient(ellipse 72% 59% at 78% 72%, rgba(245, 158, 11, 0.15) 0%, rgba(245, 158, 11, 0.075) 38%, rgba(245, 158, 11, 0) 74%);
   }
 
   /* Stronger stat-value contrast in light mode so the numbers read. */
@@ -568,7 +571,7 @@ const projectsWithBlog = projects
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .project-screen-atmos { animation: none; }
+    .project-screen-atmos { animation: none; will-change: auto; }
   }
 
   /* Image wrap halo — neutral blue so the screenshot lifts off the page
@@ -657,6 +660,9 @@ const projectsWithBlog = projects
   .flip-card:focus-visible .flip-card-hint {
     opacity: 1;
     transform: translateX(-50%) translateY(-2px);
+  }
+  @media (hover: none) {
+    .flip-card-hint { opacity: 1; }
   }
   .flip-card-hint-icon {
     display: inline-block;
