@@ -22,7 +22,7 @@ const PUBLIC_DIR = path.resolve(__dirname, "..", "public");
 // 2x retina without paying for 4k.
 const RULES = [
   // Project hero screenshots (used at ~1400px on /projects + post hero).
-  { match: /^(cbct-validator|treatment-estimator|cowork-dashboard|doc-coach|npc-coach|loan-radar|llm-persuasion|enterprise-data|accounting-automation|film-and-engineering|optimal-living-systems|fake-news|resnet-compact|customer-segmentation|buffer_overflow|heap_exploit|comics|paper|simpsons)\.png$/i, width: 1600, quality: 78 },
+  { match: /^(cbct-validator|treatment-estimator|cowork-dashboard|doc-coach|npc-coach|loan-radar|llm-persuasion|enterprise-data|accounting-automation|pipeline-ghosting|film-and-engineering|optimal-living-systems|fake-news|resnet-compact|customer-segmentation|buffer_overflow|heap_exploit|comics|paper|simpsons)\.png$/i, width: 1600, quality: 78 },
   // Brand/avatar tiles (favicon, chatbot avatar). 256px is plenty for both.
   { match: /^logos\/samp-chat\.png$/i, width: 256, quality: 82 },
 ];
