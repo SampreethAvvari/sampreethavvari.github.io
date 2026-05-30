@@ -108,46 +108,42 @@ export default function Nav({ searchItems }) {
             />
           </div>
         </div>
-        <div
-          className={
-            !isNavOpen
-              ? "hidden"
-              : "" +
-                " h-full flex flex-col items-center text-center lg:hidden dark:text-tertiary"
-          }
-        >
-          <ul className="w-full text-secondary dark:text-dk-secondary text-xl font-semibold">
-            {navLinks.map((link, index) => {
-              const isActive = activeMatch === link.match;
-              return (
-              <li
-                key={index}
-                className={`p-4 ${isActive ? "opacity-100" : "opacity-60"}`}
-              >
-                <a
-                  href={link.href}
-                  onClick={() => setIsNavOpen(false)}
-                  className="relative group inline-flex items-center justify-center"
-                  aria-label={link.name}
-                  title={link.name}
-                >
-                  <i className={link.icon}></i>
-                  <span className="absolute -bottom-6 left-1/2 -translate-x-1/2 text-xs uppercase tracking-[0.2em] text-secondary dark:text-dk-secondary opacity-0 group-hover:opacity-100 transition-opacity">
-                    {link.name}
-                  </span>
-                </a>
+        {/* Mobile nav sheet — Apple-style full-width panel */}
+        {isNavOpen && (
+          <div className="lg:hidden bg-primary/95 dark:bg-dk-primary/95 backdrop-blur-xl border-b border-text/10 dark:border-dk-text/15 shadow-lg">
+            <ul className="w-full divide-y divide-text/5 dark:divide-dk-text/10 px-4 sm:px-6">
+              {navLinks.map((link, index) => {
+                const isActive = activeMatch === link.match;
+                return (
+                  <li key={index}>
+                    <a
+                      href={link.href}
+                      onClick={() => setIsNavOpen(false)}
+                      aria-label={link.name}
+                      title={link.name}
+                      className={`flex items-center gap-3 w-full py-3.5 text-base font-semibold transition-colors ${
+                        isActive
+                          ? "text-secondary dark:text-dk-secondary bg-text/[0.06] dark:bg-dk-text/[0.08] -mx-4 sm:-mx-6 px-4 sm:px-6"
+                          : "text-text/60 dark:text-dk-text/60 hover:text-text dark:hover:text-dk-text"
+                      }`}
+                    >
+                      <i className={`${link.icon} w-5 text-center shrink-0`} aria-hidden="true"></i>
+                      <span>{link.name}</span>
+                    </a>
+                  </li>
+                );
+              })}
+              <li className="py-3.5 flex flex-row items-center gap-4 border-t border-text/10 dark:border-dk-text/15">
+                <ToggleDarkMode />
+                <Search items={searchItems} />
               </li>
-            )})}
-            <li className="p-4 flex flex-row items-center justify-evenly">
-              <ToggleDarkMode />
-              <Search items={searchItems} />
-            </li>
-          </ul>
-        </div>
+            </ul>
+          </div>
+        )}
       </nav>
       {isNavOpen && (
         <div
-          className="fixed inset-0 blur-3xl bg-black bg-opacity-50 z-40 lg:hidden"
+          className="fixed inset-0 bg-black/40 backdrop-blur-sm z-40 lg:hidden"
           onClick={() => setIsNavOpen(false)}
         ></div>
       )}
