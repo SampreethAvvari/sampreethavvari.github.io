@@ -28,6 +28,55 @@ interface ChatMessage {
 // worker process via the AI binding.
 const DEFAULT_MODEL = "@cf/meta/llama-3.1-8b-instruct";
 
+// Canned refusal returned instantly for off-topic questions — no answer
+// model call, no tokens wasted.
+export const OFF_TOPIC_REPLY =
+  "I'm only here to answer questions about Sampreeth — ask me anything about his projects, work, or films.";
+
+const CLASSIFIER_SYSTEM_PROMPT =
+  "You are a topic classifier for Sampreeth Avvari's portfolio assistant. " +
+  "Decide if the user's LATEST message should be answered. " +
+  "Reply with EXACTLY one word: YES or NO. " +
+  "Reply YES if it is about Sampreeth Avvari (his work, engineering projects, research, filmmaking, background, education, skills, contact) " +
+  "OR a contextual follow-up in that conversation (e.g. 'tell me more', 'what about his films'). " +
+  "Reply NO only if it is clearly unrelated to Sampreeth — general knowledge, trivia, math, coding help, news, weather, definitions, or other people. " +
+  "When unsure, answer YES.";
+
+/**
+ * Lightweight YES/NO gate: asks the model whether the latest user turn is
+ * about Sampreeth. Returns true (allow) on any ambiguity or error — the
+ * hardened system prompt in the answer call is the backstop for edge cases.
+ */
+async function isAboutSampreeth(
+  env: Env,
+  model: string,
+  recentMessages: ChatMessage[],
+): Promise<boolean> {
+  // Send the last ≤4 user/assistant turns so follow-ups are judged in context.
+  const contextMessages = recentMessages
+    .filter((m) => m.role === "user" || m.role === "assistant")
+    .slice(-4)
+    .map((m) => ({ role: m.role, content: m.content }));
+
+  try {
+    const result = await env.AI.run(model, {
+      messages: [
+        { role: "system", content: CLASSIFIER_SYSTEM_PROMPT },
+        ...contextMessages,
+      ],
+      temperature: 0,
+      max_tokens: 3,
+    });
+
+    const raw = result?.response?.trim().toUpperCase() ?? "";
+    if (raw === "" ) return true;   // empty → fail open
+    if (raw.includes("NO")) return false;
+    return true;                    // YES, or anything unrecognised → allow
+  } catch {
+    return true;                    // classifier error → fail open
+  }
+}
+
 function parseAllowedOrigins(env: Env): string[] {
   return (env.ALLOWED_ORIGINS ?? "")
     .split(",")
@@ -103,6 +152,16 @@ export async function handleRequest(request: Request, env: Env): Promise<Respons
   }
 
   const model = env.AI_MODEL || DEFAULT_MODEL;
+
+  // --- Deterministic topic gate -------------------------------------------
+  // Run the lightweight classifier BEFORE the answer model. Fail-open so a
+  // classifier hiccup never blocks a legitimate question.
+  const onTopic = await isAboutSampreeth(env, model, messages);
+  if (!onTopic) {
+    return jsonResponse({ reply: OFF_TOPIC_REPLY }, 200, origin, env);
+  }
+  // ------------------------------------------------------------------------
+
   const aiPayload: AiRunOptions = {
     messages: [
       { role: "system", content: SITE_CONTEXT },
