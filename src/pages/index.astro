@@ -79,7 +79,7 @@ const filmCredits = [
 const brandFor = (loc: string) => {
   if (/Hybridge/i.test(loc)) return { acronym: "HB", from: "#1E3A8A", to: "#3B82F6", label: "Hybridge" };
   if (/Shure/i.test(loc))    return { acronym: "SH", from: "#047857", to: "#10B981", label: "Shure" };
-  if (/GRIET|Gokaraju/i.test(loc)) return { acronym: "GR", from: "#991B1B", to: "#EF4444", label: "GRIET" };
+  if (/JNTU|Jawaharlal Nehru/i.test(loc)) return { acronym: "JNTU", from: "#991B1B", to: "#EF4444", label: "JNTU" };
   if (/New York University|NYU/i.test(loc)) return { acronym: "NYU", from: "#57068C", to: "#9333EA", label: "NYU" };
   return { acronym: loc.slice(0, 2).toUpperCase(), from: "#475569", to: "#94A3B8", label: loc };
 };

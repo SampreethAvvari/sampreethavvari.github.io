@@ -16,12 +16,12 @@ export const info = {
         date: "Aug 2023 - May 2025",
         location: "New York University, NYC, NY",
         logo: "/logos/nyu.svg",
-        gpa: "3.9 / 4",
+        gpa: "3.84 / 4",
       },
       {
         title: "Bachelor of Technology, Computer Science and Engineering",
         date: "July 2017 - June 2021",
-        location: "GRIET (Gokaraju Rangaraju Institute of Engineering & Technology), India",
+        location: "Jawaharlal Nehru Technological University, India",
         logo: "/logos/griet.png",
         gpa: "3.92 / 4",
       },
@@ -89,10 +89,10 @@ export const info = {
         logo: "/logos/hybridge.webp",
         logoClass: "h-12",
         highlights: [
-          "[Consultation QA Pipeline](/posts/clinical-rag). Cloud Run + FastAPI grades every Zoom consult against a 7-criterion rubric. Schema-validated Gemini scoring, three-layer doctor ID, HIPAA-clean without Workspace DWD. +130% acceptance, +43% revenue, -35% hallucinations.",
+          "[Consultation QA Pipeline](/posts/clinical-rag). Cloud Run + FastAPI grades every Zoom consult against a 7-criterion rubric. Schema-validated Gemini scoring, three-layer doctor ID, HIPAA-clean without Workspace DWD. -35% hallucinations vs the no-schema baseline; +130% acceptance and +43% revenue downstream.",
           "[Pipeline observability hardening](/posts/pipeline-ghosting). Hardened that same QA pipeline after it kept showing ✅ complete while emails never sent and Sheet rows never appeared. Killed 9 silent-failure modes (bare-except graveyard, connection-level retry gaps, status-color drift), added durable webhook rows, a rerun-replaces-old flow, a consistency reconciler, and a plain-English Logs UI. 51/0/0 in the audit, +50 targeted tests.",
           "[CBCT Scan Validator](/posts/cbct-scan-validator). In-house dental CT classifier. Replaced a $98K + $26K/yr vendor quote with a Cloud Run service under $50/mo. Frozen DentalSegmentator + multi-scale head, OpenVINO on CPU, ~5.5s end-to-end. 20-scan CICT gate on every push.",
-          "[Treatment Estimator](/posts/treatment-estimator). Next.js + Postgres rebuild of a decade-old quoting tool. Write-once `_at_capture` columns + Postgres triggers turn the 6-month price guarantee into a real DB invariant. Shipped in two days; a prior vendor attempt never shipped.",
+          "[Treatment Estimator](/posts/treatment-estimator). Next.js + Postgres rebuild of a decade-old quoting tool. Write-once `_at_capture` columns + Postgres triggers turn the 6-month price guarantee into a real DB invariant. Shipped end-to-end in ~1 month; a prior vendor never shipped in a decade.",
           "[Cowork Dashboard](/posts/cowork-dashboard). Apps Script on weekly Monday.com exports. Patient-to-lead linkage went from 49% to 99% via the Monday connect column. Surfaced ~$169k of orphan revenue. Weekly recon: half a day → 3 minutes.",
           "[Accounting Automation Suite](/posts/accounting-automation). A dozen Python scripts that replaced the controller's manual weekly imports across Denticon, MagicTouch, Paychex, and two banks. ~6-8 hrs/week → 30-45 min. ~400 hrs/yr recovered.",
           "Cross-cutting MLOps: one shared ETL module so train/serve skew is impossible. Hot-swap checkpoints via GCS, tag-based Cloud Build CI/CD, OpenTelemetry with strict no-PHI logs.",
@@ -119,7 +119,7 @@ export const info = {
         highlights: [
           "Engineered a data pipeline using Python, SQL, and Airflow-style orchestration to ingest and clean 118 monthly CMV shards, normalize debate threads, and materialize data into preference pairs for downstream model training.",
           "Trained LLM-based reward models with Transformers, TRL, and QLoRA on GPU clusters, adding checkpointed recovery and logging loss, precision, recall, and F1 in WandB to speed up iteration.",
-          "Implemented an RLHF policy-optimization lifecycle from SFT to GRPO/ORPO, producing comparative inference artifacts to improve persuasion quality.",
+          "Implemented an RLHF policy-optimization lifecycle from SFT to GRPO/PPO, producing comparative inference artifacts to improve persuasion quality.",
         ],
       },
     ],
@@ -330,7 +330,7 @@ export const info = {
         summary_short:
           "Rebuilt a decade-old quoting tool. The 6-month price guarantee is now a database invariant.",
         stats: [
-          { value: "2 days", label: "End-to-end shipped" },
+          { value: "~1 month", label: "Spec → end-to-end (vendor: never)" },
           { value: "100%", label: "Branch coverage on pricing engine" },
           { value: "5", label: "Pricing model kinds" },
           { value: "<$35/mo", label: "Cost target hit" },
@@ -343,7 +343,7 @@ export const info = {
           process:
             "9-decision ADR with tradeoff tables and library citations before any code. 100% branch coverage on the pricing engine. Golden snapshots lock every documented wizard path. A `questions-for-Chelsea` doc with worked numbers lets the clinical SME review without reading code.",
           result:
-            "Shipped end-to-end in two days. Runs under $35/mo. A BACKLOG.md of 30+ consciously deferred items keeps scope honest.",
+            "Shipped end-to-end in about a month, what a vendor failed to ship in a decade. Runs under $35/mo. A BACKLOG.md of 30+ consciously deferred items keeps scope honest.",
         },
         summary:
           "Next.js 16 + Postgres + Drizzle for treatment coordinators across three clinics. Five pricing models with write-once price snapshots. Price-book lifecycle: proposed → approved → published.",
@@ -461,12 +461,12 @@ export const info = {
           process:
             "Doctor↔TC identity resolves per meeting via the participants list, transcript alias matching, and an LLM tie-break, with explicit failure modes. Avoided Workspace Domain-Wide Delegation by using a user-OAuth grant on the build owner's account (refresh token in Secret Manager).",
           result:
-            "+130% treatment acceptance, +43% revenue, -35% hallucinations. A 19-section, 11-acceptance-test PRD with locked column orderings serves as engineering brief and clinical-stakeholder reference.",
+            "-35% hallucinations vs the no-schema baseline is the engineering win; +130% treatment acceptance and +43% revenue followed downstream. A 19-section, 11-acceptance-test PRD with locked column orderings serves as engineering brief and clinical-stakeholder reference.",
         },
         summary:
           "Cloud Run pipeline grading every implant consultation across two Zoom Business orgs and three TCs.",
         highlights: [
-          "+130% acceptance, +43% revenue, -35% hallucinations under HIPAA controls.",
+          "-35% hallucinations vs no-schema baseline; +130% acceptance and +43% revenue downstream, under HIPAA controls.",
           "Versioned rubric prompt + JSON Schema contract for every Gemini response.",
           "19-section, 11-acceptance-test PRD with locked column orderings.",
           "Cloud SQL pgvector + GraphQL for longitudinal scoring analytics.",
