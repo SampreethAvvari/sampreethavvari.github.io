@@ -27,7 +27,7 @@ Hybridge's treatment coordinators were closing full-arch implant cases worth $24
 
 **No price freeze.** Write a $24,300 quote today. Raise prices next month. Patient comes back to accept. The legacy tool happily reads the new price book. The "6-month guarantee" at the bottom of the PDF was a promise the software couldn't keep.
 
-A vendor spent a decade trying to fix this. They never shipped. I shipped in two days.
+A vendor spent a decade trying to fix this. They never shipped. I shipped in a month.
 
 ## The decoupling that made it all work
 
