@@ -97,6 +97,20 @@ GRPO converges faster. PPO is less spiky. On this data and at this scale, the po
 | RLHF (PPO) vs base | ~66% win for RLHF |
 | Trainable parameters | ~50M LoRA adapters on Llama 3.1 8B (base in 4-bit) |
 
+## The MLE outlook: what shipping this would take
+
+The research question was "can we make it more persuasive." The engineering question I kept asking alongside it was "how would this survive contact with production," because an RLHF pipeline is mostly infrastructure wearing a research hat:
+
+| | What I built | What production needs |
+|---|---|---|
+| Reward model | Trained once, held-out checked | Versioned, monitored for drift as language shifts |
+| Pairs | 38k from CMV, split by post | A pipeline that re-mines and re-balances on a schedule |
+| Eval | BLEU/ROUGE + blind human A/B | A frozen golden set + a standing human-eval loop |
+| Serving | 4-bit base + LoRA adapter | Adapters hot-swappable without touching the base |
+| Reproducibility | Locked base checkpoint, non-collidable run IDs | The same, enforced by the launcher, not by discipline |
+
+The 4-bit-base-plus-adapter shape is the quietly important one: it means a new policy ships as a few tens of MB on top of an immutable base, the same hot-swap deploy pattern I later used for the [CBCT head checkpoint](/posts/cbct-scan-validator). RLHF feels like research until you realize the reward model is a model you have to retrain, monitor, and roll back like any other.
+
 The lesson I keep repeating to anyone trying RLHF for the first time:
 
 > The reward model is the thing. Spend the time on its data, on the pair sampling, on the length and formatting controls.
