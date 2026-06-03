@@ -26,3 +26,6 @@ supabase/.temp/
 # jetbrains setting folder
 .idea/
 */**/*.local-note.ipynb
+
+# full-res hero originals (kept locally, web uses compressed public/ copies)
+image-originals/

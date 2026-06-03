@@ -10,6 +10,9 @@ interface ProjectCardProps {
 export default function ProjectCard(props: ProjectCardProps) {
   const { project } = props;
   const hasLink = Boolean(project.link);
+  const postUrl =
+    "post" in project && typeof project.post === "string" ? project.post : "";
+  const hasPost = Boolean(postUrl);
   const hasDetails = Boolean(
     project.details?.summary || project.details?.highlights?.length
   );
@@ -106,6 +109,14 @@ export default function ProjectCard(props: ProjectCardProps) {
                 </span>
               ))}
             </div>
+            {hasPost && (
+              <a
+                href={postUrl}
+                className="inline-flex items-center gap-1.5 text-sm font-semibold text-secondary dark:text-dk-secondary hover:text-accent dark:hover:text-dk-accent"
+              >
+                Read the write-up <span aria-hidden="true">&rarr;</span>
+              </a>
+            )}
           </div>
         )}
       </div>

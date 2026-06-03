@@ -404,6 +404,7 @@ export const info = {
       description:
         "Architected end-to-end ML CI/CD for loan-default scoring with containerized training and serving, MLflow model lineage, and automated quality gates before promotion.",
       link: "https://hi.switchy.io/cv-i",
+      post: "/posts/loan-radar-mlops",
       details: {
         summary:
           "Loan Radar is a production-grade loan default scoring platform with containerized services, observability, and resilient retraining and deployment workflows.",
@@ -424,6 +425,7 @@ export const info = {
       description:
         "Built RLHF pipelines to improve persuasive counter-arguments using GRPO and PPO, with reward modeling and human evaluation.",
       link: "https://github.com/marcomorucci/LLM-Persuasion/tree/main/Sampreeth",
+      post: "/posts/llama-rlhf",
       details: {
         summary:
           "Research project focused on persuasion and argument mining using RLHF, comparing GRPO and PPO-style updates and a learned reward model.",
@@ -524,13 +526,33 @@ export const info = {
       description:
         "Fine-tuned LLaMA 3 8B (QLoRA) and RoBERTa on 1.8M+ tweets to model misinformation and sentiment; achieved 76% on LIAR and used LDA for topic-level patterns.",
       link: "https://hi.switchy.io/U4wO",
+      post: "/posts/fake-news-sentiment",
       details: {
+        summary_short:
+          "Two models on one ingest path: Llama 3 8B (QLoRA) for misinformation, RoBERTa for sentiment, over the 2020 U.S. election.",
+        stats: [
+          { value: "76%", label: "Llama 3 8B accuracy on LIAR" },
+          { value: "1.8M+", label: "tweets through the sentiment pipeline" },
+          { value: "2 models", label: "misinformation + sentiment, shared ETL" },
+          { value: "1 GPU", label: "whole fine-tune in 4-bit" },
+        ],
+        star: {
+          problem:
+            "\"Detect fake news\" hides two problems: labeling whether a claim is checkably false, and reading how a crowd of 1.8M tweets feels about it. They need different models and different data.",
+          solution:
+            "Llama 3 8B fine-tuned with QLoRA on the LIAR benchmark for misinformation, RoBERTa fine-tuned for sentiment over the tweet firehose, and LDA for topic clusters, all hanging off one shared cleaning module.",
+          process:
+            "Watched per-class precision/recall instead of trusting raw accuracy on imbalanced LIAR. Unified the tweet and LIAR cleaners to kill train/serve skew. Tuned LDA by coherence after stopword/hashtag handling.",
+          result:
+            "76% on LIAR (honest, given short politically-loaded claims), cheap RoBERTa inference across 1.8M rows, and defensible topic clusters. Route the cheap model over everything, spend the 8B only on flagged claims.",
+        },
         summary:
-          "Research project analyzing fake news and sentiment trends in 2020 U.S. election tweets using Llama 3 and RoBERTa with topic modeling.",
+          "Two-model NLP pipeline over the 2020 U.S. election: Llama 3 8B (QLoRA) for misinformation on LIAR, RoBERTa for sentiment across 1.8M+ tweets, LDA for topic-level patterns.",
         highlights: [
-          "Llama 3-based fake news detection paired with RoBERTa sentiment analysis.",
-          "Topic modeling with LDA to surface narrative clusters.",
-          "Project notebooks cover fine‑tuning, inference, and analysis workflows.",
+          "76% on the LIAR misinformation benchmark with a 4-bit Llama 3 8B + LoRA adapters.",
+          "RoBERTa, not an LLM, for the 1.8M-tweet stream, because throughput beats the last point of accuracy.",
+          "One shared cleaning module across both models to prevent train/serve skew.",
+          "LDA topic clusters tuned by coherence, not eyeballed.",
         ],
       },
       tech: ["LLaMA 3", "QLoRA", "RoBERTa", "LDA", "Python"],
@@ -544,13 +566,33 @@ export const info = {
       description:
         "Designed compact ResNet variants for CIFAR-10 under 5M parameters and achieved 97.12% accuracy on the best model.",
       link: "https://hi.switchy.io/q3I_",
+      post: "/posts/resnet-under-5m",
       details: {
+        summary_short:
+          "A 5M-parameter budget turns network design into an engineering decision. Built ResNets from scratch and spent the budget where it paid.",
+        stats: [
+          { value: "97.12%", label: "test accuracy, best model (ResNet26)" },
+          { value: "< 5M", label: "hard parameter budget, every variant" },
+          { value: "from scratch", label: "no pretrained weights" },
+          { value: "0 params", label: "cost of the augmentation that helped most" },
+        ],
+        star: {
+          problem:
+            "Beat strong CIFAR-10 accuracy with a ResNet under 5M parameters, built from scratch, no pretrained backbone. The budget is ~10x under the ResNets people reach for by reflex.",
+          solution:
+            "Several ResNet variants compared at depth/width settings under the cap, with the budget spent on residual depth (cheap accuracy per param) rather than late-network width (expensive, diminishing).",
+          process:
+            "Made the 5M cap a hard assertion in the training script. Reached for zero-parameter wins first, augmentation, cosine schedule, label smoothing, before spending any budget. Pinned seeds and configs for reproducibility.",
+          result:
+            "ResNet26 hit 97.12% test accuracy under 5M parameters. The discipline of treating size as a first-class requirement carried straight into the 500K-param CBCT head I shipped later.",
+        },
         summary:
-          "Designed ResNet variants from scratch for CIFAR‑10 while keeping model size under 5M parameters.",
+          "Designed ResNet variants from scratch for CIFAR-10 while keeping model size under 5M parameters, spending the budget on depth over width.",
         highlights: [
           "Best model (ResNet26) reached 97.12% test accuracy with <5M parameters.",
-          "Multiple architectures compared across depth/width configurations.",
-          "Training runs documented in notebooks with reproducible settings.",
+          "Parameter cap enforced as a gate in the training script, not a hope.",
+          "Biggest accuracy gains came from zero-parameter augmentation and schedule.",
+          "Fixed seeds and logged configs for reproducible runs.",
         ],
       },
       tech: ["ResNet", "PyTorch", "CIFAR-10"],
@@ -564,13 +606,33 @@ export const info = {
       description:
         "Built a Spark-based recommendation pipeline on Hadoop using MinHash LSH and ALS matrix factorization over 22M+ records, improving Precision@K by 20%.",
       link: "https://hi.switchy.io/U4wS",
+      post: "/posts/recsys-spark-bigdata",
       details: {
+        summary_short:
+          "Two-stage recommender on 22M+ records: MinHash LSH for candidates, ALS for ranking. The same architecture production recsys teams run.",
+        stats: [
+          { value: "22M+", label: "records processed on Spark / Hadoop" },
+          { value: "+20%", label: "Precision@K over a popularity baseline" },
+          { value: "2-stage", label: "candidate generation → ranking" },
+          { value: "100s", label: "candidates ranked per user, not millions" },
+        ],
+        star: {
+          problem:
+            "At 22M+ records on HDFS, scoring every user against every item is intractable. The question stops being \"which model\" and becomes \"how do I not compute the things I don't need to.\"",
+          solution:
+            "A two-stage pipeline: MinHash LSH buckets similar entities for cheap, recall-oriented candidate generation, then ALS matrix factorization ranks only the few hundred survivors per user.",
+          process:
+            "Salted hot keys and repartitioned to fix Spark data skew. Tuned LSH bands/rows against candidate recall as an explicit knob. Fell back to the popularity baseline for cold-start users.",
+          result:
+            "+20% Precision@K over the popularity baseline (the honest thing to beat) at 22M+ records. Swap LSH for ANN and ALS for a learned ranker and it's the literal production blueprint.",
+        },
         summary:
-          "A large-scale recommendation pipeline for customer segmentation using Spark on Hadoop, built to handle tens of millions of records efficiently.",
+          "A large-scale two-stage recommendation pipeline using Spark on Hadoop, built to handle tens of millions of records efficiently.",
         highlights: [
-          "MinHash LSH for candidate generation and ALS matrix factorization for personalized recommendations.",
-          "Processed 22M+ records with scalable Spark jobs on HDFS-backed storage.",
-          "Improved Precision@K by ~20% over popularity baselines.",
+          "MinHash LSH for candidate generation, ALS matrix factorization for ranking.",
+          "Processed 22M+ records with distributed Spark jobs on HDFS-backed storage.",
+          "Beat the popularity baseline (not random) on Precision@K by ~20%.",
+          "Fixed Spark data skew by salting hot keys before the join.",
         ],
       },
       tech: ["Spark", "Hadoop", "MinHash LSH", "ALS", "Python"],
