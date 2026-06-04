@@ -1,6 +1,6 @@
 export const info = {
   name: "Sampreeth Avvari",
-  brief_description: "AI Engineer who ships ML systems in the room with the people using them",
+  brief_description: "I build AI that ships — sitting right next to the people who use it.",
   role: "AI Engineer",
   picture: "/pic.png",
   picture_alt: "Sampreeth Avvari",
@@ -9,7 +9,7 @@ export const info = {
 
   about: {
     description:
-      "I’m an AI Engineer who ships in the room with the people using the work. I completed my MS at NYU and spent the last few years inside a dental implant company, building production systems alongside the people who actually own each problem. The systems I’m proudest of are the ones that survived that contact. I also make movies, and most of the way I work with non-engineers I learned on film sets first.",
+      "I'm an AI engineer, and I like building things right next to the people who'll actually use them. I did my MS at NYU, then spent the last few years at a dental implant company building real systems people use every day — not demos. The ones I'm proudest of are the ones that survived real people using them. I also make movies, and honestly that's where I learned how to work with people who don't speak code.",
     education: [
       {
         title: "Master of Science, Computer Engineering",
@@ -284,7 +284,7 @@ export const info = {
       tier: "industry",
       date: "Mar 2026 - Present",
       description:
-        "Catches bad dental CT scans before they reach the implant-design queue.",
+        "I built the tool that catches bad dental scans before they ever reach the design team.",
       link: "",
       details: {
         summary_short:
@@ -324,7 +324,7 @@ export const info = {
       tier: "industry",
       date: "May 2026 - Present",
       description:
-        "Rebuilt a decade-old quoting tool. The 6-month price guarantee is now a database invariant.",
+        "I rebuilt a 10-year-old pricing tool. The 6-month price promise is now something the database itself enforces.",
       link: "",
       details: {
         summary_short:
@@ -363,7 +363,7 @@ export const info = {
       tier: "industry",
       date: "Apr 2026 - May 2026",
       description:
-        "Replaced a brittle live-API dashboard with weekly Excel exports. Two clinics, one source of truth.",
+        "I rebuilt a flaky dashboard on weekly exports. Two clinics, one set of numbers everyone finally trusts.",
       link: "",
       details: {
         summary_short:
@@ -402,7 +402,7 @@ export const info = {
       tier: "academic",
       date: "Jan - May 2025",
       description:
-        "Architected end-to-end ML CI/CD for loan-default scoring with containerized training and serving, MLflow model lineage, and automated quality gates before promotion.",
+        "I built the whole pipeline for loan-default scoring: training and serving in containers, full model history, and quality gates before anything ships.",
       link: "https://hi.switchy.io/cv-i",
       post: "/posts/loan-radar-mlops",
       details: {
@@ -419,16 +419,16 @@ export const info = {
       img_path: "/loan-radar.png",
     },
     {
-      title: "LLM Persuasion (RLHF with GRPO/PPO)",
+      title: "Teaching Llama to Argue Better",
       tier: "research",
       date: "May 2024 - Sep 2025",
       description:
-        "Built RLHF pipelines to improve persuasive counter-arguments using GRPO and PPO, with reward modeling and human evaluation.",
-      link: "https://github.com/marcomorucci/LLM-Persuasion/tree/main/Sampreeth",
+        "I trained Llama to write more convincing counter-arguments, using a reward model and RLHF (GRPO and PPO), with real people judging the results.",
+      link: "",
       post: "/posts/llama-rlhf",
       details: {
         summary:
-          "Research project focused on persuasion and argument mining using RLHF, comparing GRPO and PPO-style updates and a learned reward model.",
+          "A research project on persuasion: I trained Llama to argue better, comparing two training methods (GRPO and PPO) against a learned reward model.",
         highlights: [
           "SFT + RLHF pipeline with QLoRA/LoRA and TRL, trained against a reward model.",
           "Compared GRPO and PPO-style optimization for persuasive response quality.",
@@ -444,7 +444,7 @@ export const info = {
       tier: "industry",
       date: "Aug 2025 - Present",
       description:
-        "Grades every implant consult from the Zoom transcript. Color-coded report to doctor, CEO, and TC.",
+        "I built the tool that grades every implant consult from its Zoom call and sends a color-coded report to the doctor and CEO.",
       link: "",
       details: {
         summary_short:
@@ -485,7 +485,7 @@ export const info = {
       tier: "industry",
       date: "Aug 2025 - Present",
       description:
-        "Agentic QA for New Patient Coordinators. Grades calls and triggers coaching.",
+        "I built an AI that grades intake calls and automatically coaches the coordinators who take them.",
       link: "",
       details: {
         summary_short:
@@ -524,12 +524,12 @@ export const info = {
       tier: "academic",
       date: "Feb - May 2024",
       description:
-        "Fine-tuned LLaMA 3 8B (QLoRA) and RoBERTa on 1.8M+ tweets to model misinformation and sentiment; achieved 76% on LIAR and used LDA for topic-level patterns.",
+        "I built two models for the 2020 election: one to flag fake news (76% on the LIAR benchmark), one to read how 1.8M tweets felt.",
       link: "https://hi.switchy.io/U4wO",
       post: "/posts/fake-news-sentiment",
       details: {
         summary_short:
-          "Two models on one ingest path: Llama 3 8B (QLoRA) for misinformation, RoBERTa for sentiment, over the 2020 U.S. election.",
+          "Two models for the 2020 election: one to catch fake news, one to read the public mood across 1.8M tweets.",
         stats: [
           { value: "76%", label: "Llama 3 8B accuracy on LIAR" },
           { value: "1.8M+", label: "tweets through the sentiment pipeline" },
@@ -564,39 +564,39 @@ export const info = {
       tier: "academic",
       date: "2024",
       description:
-        "Designed compact ResNet variants for CIFAR-10 under 5M parameters and achieved 97.12% accuracy on the best model.",
-      link: "https://hi.switchy.io/q3I_",
+        "A class competition: 55 teams, 2 weeks, CIFAR-10, under 5M params. I went from 42nd to 1st on the unseen test set by adding data, not a bigger model.",
+      link: "https://docs.google.com/spreadsheets/d/1ZGsL-hlqXFQmKHCA-6-J81xIbBcJNZBSGYnldBHzYlA/edit?usp=sharing",
       post: "/posts/resnet-under-5m",
       details: {
         summary_short:
-          "A 5M-parameter budget turns network design into an engineering decision. Built ResNets from scratch and spent the budget where it paid.",
+          "55 teams, a 5M-parameter cap, two weeks. I stopped tuning the model and started multiplying the data. We won on the images nobody had seen.",
         stats: [
-          { value: "97.12%", label: "test accuracy, best model (ResNet26)" },
-          { value: "< 5M", label: "hard parameter budget, every variant" },
-          { value: "from scratch", label: "no pretrained weights" },
-          { value: "0 params", label: "cost of the augmentation that helped most" },
+          { value: "#1 / 55", label: "on the professor's unseen test set" },
+          { value: "97.12%", label: "CIFAR-10 accuracy, up from ~92%" },
+          { value: "< 5M", label: "param cap, ResNet-only" },
+          { value: "0 params", label: "added by augmentation" },
         ],
         star: {
           problem:
-            "Beat strong CIFAR-10 accuracy with a ResNet under 5M parameters, built from scratch, no pretrained backbone. The budget is ~10x under the ResNets people reach for by reflex.",
+            "A deep-learning class competition: 55 teams, two weeks, best CIFAR-10 classifier. Hard rules: stay a ResNet, stay under 5M parameters. We cleared the 85% bar and then sat at a frustrating 42nd.",
           solution:
-            "Several ResNet variants compared at depth/width settings under the cap, with the budget spent on residual depth (cheap accuracy per param) rather than late-network width (expensive, diminishing).",
+            "The rules said no bigger model, so I added data instead. Augmentation, rotating, cropping, and flipping the CIFAR-10 images, gave the model far more to learn from without adding a single parameter.",
           process:
-            "Made the 5M cap a hard assertion in the training script. Reached for zero-parameter wins first, augmentation, cosine schedule, label smoothing, before spending any budget. Pinned seeds and configs for reproducibility.",
+            "I tried different ResNet variants and swept hyperparameters to a solid setup (~92%, 16th in class), but tuning hit a wall under the cap. I read papers and open-source repos to see how the best were doing it, then reframed the problem from 'better model' to 'more data.'",
           result:
-            "ResNet26 hit 97.12% test accuracy under 5M parameters. The discipline of treating size as a first-class requirement carried straight into the 500K-param CBCT head I shipped later.",
+            "97.12% accuracy, 2nd of 55 teams (0.17% behind 1st). On the professor's secret unseen test set, our model generalized best and finished 1st in the whole class. Earned a bonus grade point.",
         },
         summary:
-          "Designed ResNet variants from scratch for CIFAR-10 while keeping model size under 5M parameters, spending the budget on depth over width.",
+          "A CIFAR-10 class competition across 55 teams under a 5M-parameter, ResNet-only cap. I won it by augmenting the data instead of growing the model.",
         highlights: [
-          "Best model (ResNet26) reached 97.12% test accuracy with <5M parameters.",
-          "Parameter cap enforced as a gate in the training script, not a hope.",
-          "Biggest accuracy gains came from zero-parameter augmentation and schedule.",
-          "Fixed seeds and logged configs for reproducible runs.",
+          "Went from 42nd to 1st on the unseen test set by adding data, not parameters.",
+          "Augmentation (rotate/crop/flip) multiplied the training data at zero parameter cost.",
+          "Hyperparameter tuning alone stalled at ~92% under the 5M cap.",
+          "2nd of 55 on CIFAR-10 test (0.17% off 1st); 1st on the professor's unseen set.",
         ],
       },
-      tech: ["ResNet", "PyTorch", "CIFAR-10"],
-      img_alt: "ResNet Under 5M Parameters",
+      tech: ["ResNet", "PyTorch", "Data Augmentation", "CIFAR-10"],
+      img_alt: "ResNet CIFAR-10 class competition",
       img_path: "/resnet-compact.png",
     },
     {
@@ -604,12 +604,12 @@ export const info = {
       tier: "academic",
       date: "Feb - May 2024",
       description:
-        "Built a Spark-based recommendation pipeline on Hadoop using MinHash LSH and ALS matrix factorization over 22M+ records, improving Precision@K by 20%.",
+        "I built a recommender for 22M+ records: a fast step to shortlist, a smart step to rank. 20% better than just showing what's popular.",
       link: "https://hi.switchy.io/U4wS",
       post: "/posts/recsys-spark-bigdata",
       details: {
         summary_short:
-          "Two-stage recommender on 22M+ records: MinHash LSH for candidates, ALS for ranking. The same architecture production recsys teams run.",
+          "A recommender for 22M+ records: one fast step to shortlist, one smart step to rank — the same shape big rec teams use.",
         stats: [
           { value: "22M+", label: "records processed on Spark / Hadoop" },
           { value: "+20%", label: "Precision@K over a popularity baseline" },
@@ -644,7 +644,7 @@ export const info = {
       tier: "industry",
       date: "Aug 2025 - Present",
       description:
-        "Self-hosted AI workflow infra on AWS. Centralized automation across teams.",
+        "I moved every team's automations onto one self-hosted AI platform on AWS, and cut the bill doing it.",
       link: "",
       details: {
         summary_short:

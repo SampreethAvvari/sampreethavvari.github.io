@@ -1,99 +1,89 @@
 ---
-title: "A two-stage recommender on 22M records: MinHash LSH for candidates, ALS for ranking, Spark for scale"
+title: "How I built a recommender for 22 million records"
 date: "2024-05-18"
 layout: ../../layouts/PostLayout.astro
-description: "Built a recommendation pipeline on Spark over Hadoop that handles 22M+ records: MinHash LSH to generate candidates, ALS to rank them, +20% Precision@K over a popularity baseline. The architecture is the same one production recsys teams use."
+description: "I built a recommendation system that handles 22 million records: one fast step to narrow the field, one smart step to rank it. It beat 'just show what's popular' by 20%."
 img_path: "/customer-segmentation.png"
-img_alt: "Two-stage recommender: LSH candidate generation feeding ALS ranking on Spark"
+img_alt: "A big pile of data narrowed down to a short, ranked list of recommendations"
 tag: "MLOps"
 tone: "cyan"
 stats:
   - value: "22M+"
-    label: "records processed on Spark / Hadoop"
+    label: "records, handled without melting a laptop"
     tone: "cyan"
   - value: "+20%"
-    label: "Precision@K over a popularity baseline"
+    label: "better than just showing what's popular"
     tone: "emerald"
-  - value: "2-stage"
-    label: "candidate generation → ranking, the production shape"
+  - value: "2 steps"
+    label: "shortlist fast, then rank smart"
     tone: "blue"
 ---
 
-Most recommendation tutorials hand you a 10k-row dataset and a single matrix factorization, and the whole thing fits in memory. That teaches you the math and none of the engineering. The moment you have **22 million records** sitting on HDFS, the question stops being "which model" and becomes "how do I not score every user against every item." That question has a standard answer, and building it is what this project was about.
+Most recommendation tutorials hand you a tiny dataset and one neat algorithm, and everything fits in your laptop's memory. That teaches you the math and none of the real problem.
 
-This was a big-data course project, but the architecture I landed on, **two stages: cheap candidate generation, then expensive ranking**, is exactly the shape production recommenders run at companies far past 22M rows. That wasn't an accident; it's the only shape that scales.
+The real problem shows up the moment you have **22 million records**. Now you can't just compare every person to every product, that's trillions of comparisons, and your computer quietly bursts into flames. The question stops being "which fancy algorithm?" and becomes "how do I avoid doing work I don't need to do?"
 
-## Why one stage doesn't scale
+That question has a well-known answer, and building it was the whole point of this project.
 
-Naive collaborative filtering wants to score every (user, item) pair. With millions of users and items that's a number you don't write down. So real systems split the problem:
+## Why you can't do it in one shot
+
+If you try to score every user against every item, the numbers explode instantly. So real recommenders split the job into two steps, like a hiring funnel:
 
 ```
-22M+ records on HDFS
+22 million records
         │
-        ▼  Stage 1 — Candidate generation (cheap, recall-oriented)
-  MinHash LSH: bucket similar users/items,
-  only compare within buckets
-        │  a few hundred candidates per user, not millions
-        ▼  Stage 2 — Ranking (expensive, precision-oriented)
-  ALS matrix factorization: score the candidate set
+        ▼  Step 1 — Shortlist (fast and rough)
+  Group similar things together,
+  only compare within a group
+        │  a few hundred candidates per person, not millions
+        ▼  Step 2 — Rank (slow and smart)
+  Score just that shortlist properly
         │
         ▼
-  Top-K recommendations
-        │
-        ▼  Eval: Precision@K vs popularity baseline
+  Top picks for each person
 ```
 
-**Stage 1 (MinHash LSH)** throws away the obviously-irrelevant pairs fast. Instead of comparing a user to every item, LSH hashes similar entities into the same buckets, so you only ever compare within a bucket. It trades a little recall for an enormous cut in compute.
+**Step 1 is the bouncer.** Its only job is to throw out the obviously-irrelevant stuff fast. I used a trick that groups similar users and items into the same "buckets," so each person only ever gets compared to a few hundred likely matches instead of millions. It's a little sloppy on purpose, speed matters more than perfection here.
 
-**Stage 2 (ALS)** does the expensive, accurate work, matrix factorization for personalized scores, but only on the few hundred candidates Stage 1 survived, not the full catalog.
+**Step 2 is the judge.** Now that the list is short, I could afford the smarter, slower math (the part that actually learns personal taste) and run it only on the few hundred survivors. Cheap, because the bouncer already did the heavy filtering.
 
-## Spark is the point, not a detail
+## Spreading the work across many computers
 
-Running this on **Spark over Hadoop** is what made 22M records tractable. The work is distributed: the LSH bucketing, the ALS factor updates, the join between candidates and the model, all of it runs across the cluster instead of choking a single machine. Getting the partitioning and the joins right is most of the actual engineering.
+Even the shortlist step is too big for one machine at 22 million records. So the whole thing ran on **Spark**, which is basically a way to split a giant job across a cluster of computers and have them all chip away at once.
+
+Getting that split right, who does what, when the machines have to talk to each other, is honestly most of the real engineering. The algorithm is the easy part to write. Making it run across a cluster without choking is the hard part.
 
 <div class="post-stats-grid my-8">
   <div class="stat-callout stat-cyan">
     <div class="stat-value">22M+</div>
-    <div class="stat-label">records, processed distributed on Spark</div>
+    <div class="stat-label">records, split across many machines at once</div>
   </div>
   <div class="stat-callout stat-emerald">
     <div class="stat-value">+20%</div>
-    <div class="stat-label">Precision@K over the popularity baseline</div>
+    <div class="stat-label">better than just recommending what's trending</div>
   </div>
   <div class="stat-callout stat-blue">
     <div class="stat-value">100s</div>
-    <div class="stat-label">candidates ranked per user, not millions</div>
+    <div class="stat-label">items ranked per person, not millions</div>
   </div>
 </div>
 
-The **+20% Precision@K over a popularity baseline** is the number that matters, because the popularity baseline ("just recommend what's trending") is the honest thing to beat. Beating random is trivial; beating popularity means the personalization actually earned its compute.
+The number I'm proud of is **+20% better than just showing what's popular**. Beating random guessing is easy. Beating "just recommend whatever's trending" is the honest bar, because that's the lazy option that's secretly pretty good. Clearing it by 20% means the personalization actually earned its keep.
 
-## What broke and what fixing it taught me
+## What broke (and what it taught me)
 
-**Data skew killed the first Spark run.** A handful of mega-popular items pulled enormous partitions while everything else sat idle, so one executor did all the work and the job crawled. Fix: salt the hot keys and repartition before the join. Skew is the big-data failure mode the in-memory tutorials never warn you about.
+**A few mega-popular items jammed everything.** When you split work across machines, a handful of super-popular items can dump a giant pile on one poor machine while the others sit idle, and the whole job crawls. The fix is to spread those hot items out deliberately. Nobody warns you about this in the tutorials, because tutorials never have a mega-popular item.
 
-**LSH tuning is a recall/cost dial, not a setting.** Too few hash bands and good candidates fell out of every bucket; too many and Stage 1 stopped saving any compute. Fix: tune bands/rows explicitly against candidate recall, treating it as the knob it is.
+**The "shortlist" step is a dial, not a setting.** Make the buckets too tight and good matches fall out; too loose and the bouncer stops saving you any work. I had to tune it on purpose, treating it like the trade-off it is.
 
-**The cold-start gap.** ALS has nothing to say about a user with no history, and the eval quietly punished it. Fix: fall back to the popularity baseline for cold users, which is also why having that baseline wired in from the start paid off twice.
-
-## The MLE outlook: this is the production pattern
-
-The reason this project matters for an ML engineering profile isn't the dataset, it's that the architecture transfers directly:
-
-| | This project | Production recsys |
-|---|---|---|
-| Stage 1 | MinHash LSH on Spark | ANN / two-tower retrieval |
-| Stage 2 | ALS ranking | Gradient-boosted or neural ranker |
-| Scale strategy | Distributed Spark jobs | Distributed + a feature store |
-| Baseline to beat | Popularity | Popularity / last-model |
-| Metric | Precision@K | Precision@K, NDCG, online A/B |
-
-Swap LSH for an approximate-nearest-neighbor index and ALS for a learned ranker and you have the literal blueprint modern recommendation teams run. I built the small version of the real thing, which is far more useful than the perfect version of a toy.
+**New users broke the smart step.** The ranking math has nothing to say about someone with zero history. So for brand-new users, I just fell back to "show them what's popular", which is also why having that popularity baseline built in from day one paid off twice.
 
 ## The takeaway
 
-> At scale, the model is half the system. The other half is refusing to compute things you don't need to, which is what candidate generation is for.
+The lesson here isn't about the dataset. It's that the two-step shape, shortlist fast, then rank smart, is exactly how the big recommendation teams (think the "you might also like" on any huge site) keep things running. I built the small version of the real thing.
 
-The kind of engineer I want to be is the one who, looking at 22M rows, reaches for the two-stage architecture before reaching for a fancier model, because the architecture is what keeps the system standing when the data grows another order of magnitude.
+> When the data is huge, the model is only half the system. The other half is refusing to compute things you don't actually need.
+
+That stuck with me. Faced with 22 million rows, the instinct shouldn't be "find a fancier algorithm." It should be "what work can I avoid?" That's the move that keeps a system standing when the data grows another ten times bigger.
 
 Full project: [Customer Segmentation and Recommendation System](https://hi.switchy.io/U4wS).

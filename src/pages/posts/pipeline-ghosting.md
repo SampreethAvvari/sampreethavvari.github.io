@@ -1,8 +1,8 @@
 ---
-title: "How I caught my pipeline ghosting me (and made it confess)"
+title: "How I caught my pipeline lying to me (and made it confess)"
 date: "2026-05-29"
 layout: ../../layouts/PostLayout.astro
-description: "Runs showed ✅ complete while emails never sent, Sheet rows never appeared, and whole meetings just weren't there. Nine flavors of silent failure, all swallowed by bare excepts. The fix was making the dashboard stop lying."
+description: "Runs showed ✅ done while emails never sent, rows never appeared, and whole meetings just vanished. Nine kinds of silent failure, all hidden. The fix was making the dashboard stop lying."
 img_path: "/pipeline-ghosting.png"
 img_alt: "Run dashboard with a green status pill that hides amber and red failures underneath"
 tag: "Process"

@@ -1,8 +1,8 @@
 ---
-title: "How I turned a CEO's 7-criterion consult rubric into a Gemini-graded pipeline"
+title: "How I built an AI that grades every patient consult"
 date: "2026-05-19"
 layout: ../../layouts/PostLayout.astro
-description: "A Zoom transcript flows in. A pipeline finds the doctor, scores the consult on a 7-criterion rubric, renders a color-coded report, appends to a master Sheet."
+description: "A Zoom call comes in. My tool finds the doctor, grades the consult against the CEO's 7-point checklist, and emails back a color-coded report — without making things up."
 img_path: "/doc-coach.png"
 img_alt: "Consultation QA pipeline — Zoom transcript to color-coded report"
 tag: "MLOps"

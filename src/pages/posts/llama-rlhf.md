@@ -1,122 +1,94 @@
 ---
-title: "How I fine-tuned Llama 3.1 with RLHF to write more persuasive counter-arguments"
+title: "How I trained Llama to argue more convincingly"
 date: "2025-09-10"
 layout: ../../layouts/PostLayout.astro
-description: "Llama 3.1 8B trained for more persuasive counter-arguments on ChangeMyView debates. SFT with QLoRA, a reward model, GRPO. Which design choices actually mattered."
+description: "I trained Llama 3.1 to write better comebacks in online debates, using a reward model and RLHF. Here's what actually moved the needle, and what didn't."
 img_path: "/llm-persuasion.png"
-img_alt: "RLHF pipeline diagram — SFT, reward model, policy optimisation"
+img_alt: "Teaching a model to write more convincing arguments, then checking with real people"
 tag: "Research"
 tone: "violet"
 stats:
   - value: "~67%"
-    label: "RLHF (GRPO) vs base, human eval"
+    label: "of people preferred my model over the base"
     tone: "violet"
   - value: "38k"
-    label: "preference pairs from CMV"
+    label: "real 'you changed my mind' examples"
     tone: "blue"
   - value: "~71%"
-    label: "reward model held-out pair accuracy"
+    label: "how often the judge model got it right"
     tone: "emerald"
 ---
 
-The question Prof. Marco Morucci's group at NYU was working on sounds deceptively simple: given a controversial claim, can you train a model to produce counter-arguments that real humans find more persuasive than what the base model already says?
+I worked on this with Prof. Marco Morucci's group at NYU, and the question sounds simple: take a controversial claim, and train a model to write a comeback that real people find *more convincing* than what the model already said.
 
-The visible decision in any RLHF project is which optimizer to run. But by the time I got to GRPO vs PPO, that choice barely mattered. What mattered was earlier: how do you construct preference pairs that actually encode "more persuasive" rather than "longer"? How do you keep a reward model from learning surface features instead of the thing you care about? Those are harder, less discussed, and they determine most of the outcome.
+Simple to ask. Sneaky to pull off. Most people assume the magic is in which training algorithm you pick. It isn't. By the time I got to the fancy algorithm choices, that part barely mattered. The thing that decided everything was much earlier and much more boring: where do you get good examples of "convincing," and how do you stop the model from learning the wrong lesson?
 
-I joined the project to build the pipeline end to end.
+## Where do you find "convincing" arguments?
 
-## The dataset
+You need examples of arguments that actually changed someone's mind. Turns out Reddit has a perfect spot for this: a community called **ChangeMyView**, where someone posts an opinion and hands out a little award (a "delta") to any reply that genuinely changes how they think.
 
-ChangeMyView (CMV) is one of the few sizeable corpora where you can mine real persuasion signal at scale, because the OP literally awards a "delta" (∆) to commenters who change their mind. We mined 118 monthly shards and extracted preference pairs:
+That award is gold. It's a real human saying "okay, you convinced me." So I mined a few years of these debates and built pairs:
 
-- **chosen**: a comment that received a delta
-- **rejected**: a no-delta comment from the same thread
+- **the winner**: a reply that earned a "you changed my mind"
+- **the loser**: a reply in the same thread that didn't
 
-~38k clean pairs after filtering, split 90/5/5 by post (not by row, to prevent leakage of the same OP appearing in train and eval).
+That gave me about **38,000 clean pairs**. I split them carefully so the same debate never showed up in both training and testing, otherwise the model could just memorize instead of learn.
 
-## The pipeline, end to end
+## The plan, in plain English
 
 ```
-CMV monthly shards
+38k "winner vs loser" pairs
         │
-        ▼  thread walker + pair builder
-38k preference pairs
+        ├─ Step 1: show Llama lots of winning replies
+        │          (basically, "write more like this")
         │
-        ├─ SFT on `chosen` only          (Llama 3.1 8B in 4-bit, Unsloth + QLoRA)
-        ├─ Reward model on pairs         (Llama-3 8B, sequence-classification head)
-        └─ Policy optimisation            (GRPO and PPO compared on identical data)
+        ├─ Step 2: train a JUDGE model
+        │          (given two replies, which one won?)
+        │
+        └─ Step 3: let Llama practice, and reward it
+                   whenever the judge likes its answer
                 │
                 ▼
-Held-out eval: BLEU/ROUGE + Qualtrics human blind A/B
+        Test it: real people, blind, pick the better reply
 ```
 
-## What broke and what fixing it taught me
+Three moves. First, teach Llama to imitate good arguments. Second, train a separate **judge** model that can look at two replies and call the better one. Third, let Llama practice writing arguments and give it a thumbs-up whenever the judge approves. That last loop is the "RLHF" everyone talks about. It's really just practice with a scorekeeper.
 
-**Length bias in the reward model.** The first training pass produced a reward model that treated longer responses as more persuasive. The policy then collapsed onto length maximisation. Fix: length-controlled pair sampling (chosen and rejected within 0.5σ of each other).
+## What broke (and what it taught me)
 
-**Tokenisation mismatch between SFT and the reward model.** They'd been LoRA'd from slightly different base checkpoints. The reward distribution drifted oddly across training with no obvious signal. Fix: lock the base checkpoint for every pass.
+**The judge fell for long-winded answers.** My first judge quietly decided that *longer* meant *more convincing*. So when Llama practiced against it, Llama learned to just... ramble. More words, higher score, worse arguments. The fix was to make sure my winner/loser pairs were about the same length, so the judge had to learn quality, not word count.
 
-**WandB run-id collisions** overwrote one PPO run partway through. Recovered from checkpoints. Now every run gets a non-collidable prefix.
+**Two versions of "the same" model didn't match.** A couple of pieces had been built on slightly different starting points, and the scores drifted in weird ways for no obvious reason. The fix was dull and important: lock everything to the exact same starting model.
 
-## GRPO vs PPO, on identical data
+**A naming clash ate one of my runs.** Two experiments grabbed the same name and one overwrote the other halfway through. I recovered from saved checkpoints and started giving every run its own unmistakable name. Lesson learned the annoying way.
 
-I ran both PPO and GRPO from the same SFT-aligned base, same reward model, same rollout budget. The cleanest comparison I could make.
+## The fancy-algorithm showdown that... didn't matter much
 
-| | PPO | GRPO |
-|---|---|---|
-| Value head | Yes | No |
-| Steps to plateau | Baseline | ~60% of PPO |
-| Stability across batches | Smoother | Spikier (advantage normalisation within group) |
-| Won at human eval vs base | ~66% | ~67% |
-| Won at human eval vs each other | ~50/50 within rater noise |
+There are two popular ways to run that "practice with a scorekeeper" loop: one's called PPO, the other GRPO. People argue about them a lot. So I ran both from the exact same starting point, same judge, same everything, the cleanest comparison I could set up.
 
 <div class="post-stats-grid my-8">
   <div class="stat-callout stat-violet">
     <div class="stat-value">~67%</div>
-    <div class="stat-label">RLHF (GRPO) win rate vs base</div>
+    <div class="stat-label">of people preferred my trained model over the base</div>
   </div>
   <div class="stat-callout stat-blue">
-    <div class="stat-value">38k pairs</div>
-    <div class="stat-label">clean preference pairs from CMV</div>
+    <div class="stat-value">38k</div>
+    <div class="stat-label">real "you changed my mind" examples</div>
   </div>
   <div class="stat-callout stat-emerald">
     <div class="stat-value">~71%</div>
-    <div class="stat-label">reward model held-out pair accuracy</div>
+    <div class="stat-label">how often the judge model picked the true winner</div>
   </div>
 </div>
 
-GRPO converges faster. PPO is less spiky. On this data and at this scale, the policy algorithm wasn't the limiting factor.
+The result? GRPO got there faster. PPO was a bit smoother. In a blind test where real people picked the better reply, both beat the original model about **66–67%** of the time, and against each other it was basically a coin flip. The big, much-debated algorithm choice was the *least* important decision in the whole project.
 
 ## The takeaway
 
-| | Result |
-|---|---|
-| Reward model held-out pair accuracy | ~71% |
-| SFT-only vs base (blind human A/B) | ~58% win for SFT-only |
-| RLHF (GRPO) vs base | ~67% win for RLHF |
-| RLHF (PPO) vs base | ~66% win for RLHF |
-| Trainable parameters | ~50M LoRA adapters on Llama 3.1 8B (base in 4-bit) |
+> The judge model is the whole ballgame. Spend your time on the examples you feed it, not on the fancy training algorithm.
 
-## The MLE outlook: what shipping this would take
+A great judge with a basic training loop beats a weak judge with the most exotic algorithm you can find, every time. GRPO is faster. It will not save you from a judge that secretly rewards rambling.
 
-The research question was "can we make it more persuasive." The engineering question I kept asking alongside it was "how would this survive contact with production," because an RLHF pipeline is mostly infrastructure wearing a research hat:
+And the part I'm actually proud of isn't the 67%. It's that I saw the "longer = better" trap coming *before* it wasted a week of computing, because I stopped to think about how the judge could cheat. That's the kind of engineer I want to be: the one who plans around the obvious mistake before it happens, not the one who explains it afterward.
 
-| | What I built | What production needs |
-|---|---|---|
-| Reward model | Trained once, held-out checked | Versioned, monitored for drift as language shifts |
-| Pairs | 38k from CMV, split by post | A pipeline that re-mines and re-balances on a schedule |
-| Eval | BLEU/ROUGE + blind human A/B | A frozen golden set + a standing human-eval loop |
-| Serving | 4-bit base + LoRA adapter | Adapters hot-swappable without touching the base |
-| Reproducibility | Locked base checkpoint, non-collidable run IDs | The same, enforced by the launcher, not by discipline |
-
-The 4-bit-base-plus-adapter shape is the quietly important one: it means a new policy ships as a few tens of MB on top of an immutable base, the same hot-swap deploy pattern I later used for the [CBCT head checkpoint](/posts/cbct-scan-validator). RLHF feels like research until you realize the reward model is a model you have to retrain, monitor, and roll back like any other.
-
-The lesson I keep repeating to anyone trying RLHF for the first time:
-
-> The reward model is the thing. Spend the time on its data, on the pair sampling, on the length and formatting controls.
-
-A great reward model with a competent PPO loop will beat a mediocre reward model with the most exotic policy algorithm you can find. GRPO is faster. It doesn't save you from a bad reward model.
-
-The part of this project I'm most proud of isn't the ~67% win rate. It's that I anticipated the failure modes before the runs, not after. Length bias in the reward model is predictable if you think about it ahead of time. Tokenization drift is predictable. I built the controls in, ran cleaner experiments because of it, and got results I could actually trust. That's the kind of engineer I want to be: someone who designs around the obvious failure before it wastes a week of compute.
-
-Full project: [marcomorucci/LLM-Persuasion (Sampreeth)](https://github.com/marcomorucci/LLM-Persuasion/tree/main/Sampreeth).
+This was research with Prof. Marco Morucci's group at NYU.

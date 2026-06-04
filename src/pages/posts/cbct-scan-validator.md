@@ -1,5 +1,5 @@
 ---
-title: "How I shipped an in-house dental CT classifier for $50/mo instead of $98K"
+title: "How I replaced a $98K quote with a $50-a-month tool"
 date: "2026-05-02"
 layout: ../../layouts/PostLayout.astro
 description: "A vendor wanted $98K up front and $26K a year to flag bad dental CT scans. I built it in-house on Cloud Run for under $50 a month, with one painful lesson."

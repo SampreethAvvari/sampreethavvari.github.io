@@ -1,8 +1,8 @@
 ---
-title: "How I gave a non-engineer controller a dozen Python scripts he could read and edit"
+title: "How I saved our accountant 400 hours a year"
 date: "2026-05-20"
 layout: ../../layouts/PostLayout.astro
-description: "The controller was hand-reformatting CSVs from five upstream systems every week. A dozen small Python scripts now do it, with a UX that respects how accountants work."
+description: "Every week our accountant hand-copied numbers from five different systems. A dozen small Python scripts do it for him now, built the way he actually works."
 img_path: "/accounting-automation.png"
 img_alt: "Accounting automation pipeline — Denticon, MagicTouch, Paychex, banks into Google Sheets and QuickBooks"
 tag: "Process"

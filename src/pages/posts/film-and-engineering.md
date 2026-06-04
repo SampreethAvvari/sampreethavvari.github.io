@@ -1,8 +1,8 @@
 ---
-title: "How making films taught me to ship AI alongside the people using it"
+title: "How making movies made me a better engineer"
 date: "2026-05-20"
 layout: ../../layouts/PostLayout.astro
-description: "Two crafts I keep being told are separate. They aren't. What ten years of writing, directing, and editing short films does to the way I do engineering work."
+description: "People keep telling me films and engineering are separate. They're not. Here's what ten years of making movies did to the way I build."
 img_path: "/film-and-engineering.png"
 img_alt: "Film clapperboard and laptop, same craft"
 tag: "Personal"

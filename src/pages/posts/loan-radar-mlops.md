@@ -1,8 +1,8 @@
 ---
-title: "How I built the boring parts of an ML platform on purpose, and why the gates mattered most"
+title: "How I built the boring parts of an ML system on purpose"
 date: "2025-05-01"
 layout: ../../layouts/PostLayout.astro
-description: "A loan-default scoring service with the boring parts actually built: containerised training, MLflow lineage, quality gates, an Airflow retraining DAG. The gates mattered most."
+description: "A loan-scoring service where I built the unglamorous parts on purpose: training in containers, model history, quality gates, automatic retraining. The gates mattered most."
 img_path: "/loan-radar.png"
 img_alt: "Loan Radar architecture — training, lineage, gates, inference, retraining"
 tag: "MLOps"
