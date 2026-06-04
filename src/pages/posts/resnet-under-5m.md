@@ -1,99 +1,106 @@
 ---
-title: "97.12% on CIFAR-10 with a parameter budget: designing a ResNet under 5M weights"
+title: "How we went from 42nd to 1st in a class AI contest"
 date: "2024-12-08"
 layout: ../../layouts/PostLayout.astro
-description: "A budget of 5M parameters changes how you design a network. I built ResNet variants from scratch for CIFAR-10 and got 97.12% on the best one by spending the budget where it earned accuracy, not where convention put it."
+description: "A CIFAR-10 competition across 55 teams, a hard 5M-parameter cap, and two weeks. Tuning got us stuck at 92%. The thing that actually won it was almost embarrassingly simple."
 img_path: "/resnet-compact.png"
-img_alt: "Compact ResNet block diagram with a parameter budget"
+img_alt: "A compact ResNet learning from rotated, cropped, flipped CIFAR-10 images"
 tag: "Research"
 tone: "emerald"
 stats:
-  - value: "97.12%"
-    label: "test accuracy, best model (ResNet26)"
+  - value: "#1 / 55"
+    label: "on the professor's secret unseen test set"
     tone: "emerald"
-  - value: "< 5M"
-    label: "hard parameter budget, every variant"
+  - value: "97.12%"
+    label: "CIFAR-10 accuracy, up from ~92%"
     tone: "blue"
-  - value: "from scratch"
-    label: "no pretrained weights, no torchvision shortcut"
+  - value: "< 5M"
+    label: "hard parameter cap, ResNet-only"
     tone: "violet"
 ---
 
-A model with no constraints is a model with no decisions. The moment someone hands you a parameter budget, every layer has to justify itself, and the project gets interesting. The brief here was simple and unforgiving: beat strong CIFAR-10 accuracy with a ResNet **under 5 million parameters**, built from scratch. No pretrained backbone, no torchvision import. The best variant landed at **97.12%**.
+In our deep learning class, the professor turned the final into a competition. **55 teams. Two weeks. One job:** build the best image classifier for CIFAR-10. Two rules. Keep it a ResNet, and keep it **under 5 million parameters**. Inside those lines you could do anything, any ResNet variant, any trick you'd read about. The bar to clear was 85% accuracy.
 
-The budget is the whole point. 5M parameters is roughly an order of magnitude under the ResNets people reach for by reflex, and that constraint is exactly the one you hit in the real world the day a model has to fit on an edge device or under a serving latency cap.
+We cleared it. And then the leaderboard came out and we were sitting at **42nd**.
 
-## The budget reframes the design
+That did not sit right with me.
 
-Without a budget you stack depth until accuracy stops improving. With one, every parameter is a purchase, and you ask a different question on each block: *does this width or this depth buy more accuracy per parameter?*
+## Two weeks, one stubborn ceiling
 
-```
-Budget: < 5,000,000 trainable parameters
-        │
-        ▼
-Spend it on:        Don't spend it on:
-── deeper residual   ── a fat first conv
-   stacks (cheap      ── oversized FC head
-   per param)         ── redundant channel
-── BN + good init        width late in the net
-── strong augment
-   (free at inference)
-```
+So I put my head down. I tried different ResNet architectures. I swept hyperparameters, learning rates, schedules, weight decay, batch sizes, until I found a combination that genuinely worked. Our accuracy climbed to about **92%**.
 
-The cheapest accuracy in the whole project costs zero parameters: data augmentation and a good training schedule. Random crops, flips, normalization, a cosine learning-rate schedule, label smoothing. None of that touches the budget, all of it moves the number.
+I shared the winning hyperparameters with my team. That jumped us to **16th** in the class.
 
-## The variants
-
-I built several ResNet configurations from scratch and compared them at depth/width settings that all stayed under the cap:
-
-| Variant | Depth | Params | Test acc |
-|---|---|---|---|
-| ResNet (shallow) | fewer blocks | well under budget | baseline |
-| ResNet (wide) | wider channels | near budget | mid |
-| **ResNet26** | balanced depth | **< 5M** | **97.12%** |
-
-The winner wasn't the widest or the deepest. It was the one that spent the budget on residual depth (cheap accuracy per parameter) instead of channel width late in the network (expensive, diminishing).
+Better. Not good enough. Because I could see where this was going: the teams ahead of us were hitting **94 to 94.5%**, and no amount of extra tuning was closing that gap. Under a 5-million-parameter cap, the model can only get so smart. The rules said I couldn't buy more accuracy with more parameters, and I'd already squeezed hyperparameters dry. I'd hit a wall.
 
 <div class="post-stats-grid my-8">
-  <div class="stat-callout stat-emerald">
-    <div class="stat-value">97.12%</div>
-    <div class="stat-label">ResNet26 test accuracy on CIFAR-10</div>
-  </div>
-  <div class="stat-callout stat-blue">
-    <div class="stat-value">&lt; 5M</div>
-    <div class="stat-label">parameters, enforced as a hard gate</div>
+  <div class="stat-callout stat-amber">
+    <div class="stat-value">42nd → 16th</div>
+    <div class="stat-label">after architecture + hyperparameter tuning (~92%)</div>
   </div>
   <div class="stat-callout stat-violet">
-    <div class="stat-value">0 params</div>
-    <div class="stat-label">cost of the augmentation that moved the number most</div>
+    <div class="stat-value">94–94.5%</div>
+    <div class="stat-label">what the teams ahead of us were hitting</div>
+  </div>
+  <div class="stat-callout stat-blue">
+    <div class="stat-value">5M params</div>
+    <div class="stat-label">the cap that made "just tune harder" a dead end</div>
   </div>
 </div>
 
-## What broke and what fixing it taught me
+(If you want the receipts, every run and result is in our [results sheet](https://docs.google.com/spreadsheets/d/1ZGsL-hlqXFQmKHCA-6-J81xIbBcJNZBSGYnldBHzYlA/edit?usp=sharing).)
 
-**Counting parameters by hand, badly.** Early on I trusted my mental math on layer sizes and quietly blew the budget on a variant before I caught it. Fix: a parameter-count assertion in the training script that fails the run if the model exceeds 5M. The budget became a gate, not a hope. Same instinct as the [CI/CT gates](/posts/loan-radar-mlops) I lean on for everything since: if a constraint matters, make a script enforce it.
+## So I asked a different question
 
-**Overfitting the moment I added capacity.** Every time I spent budget on width, train accuracy ran away from test. Fix: the parameters I was tempted to add were better spent as augmentation and regularization, which cost nothing at inference. The budget made me reach for the free wins first.
+If the model is already as good as the rules let it be, and the hyperparameters are dialed in, what's actually left to improve?
 
-**Reproducibility drift.** Two runs of "the same" config disagreed by almost a point because seeds and augmentation order weren't pinned. Fix: fixed seeds, logged configs, reproducible settings in the notebooks. A result you can't reproduce isn't a result.
+Not the model. The **data**.
 
-## The MLE outlook: why a budget is the realistic case
+More data makes almost any model better. But there was a catch: we had to stick to CIFAR-10. We couldn't go grab more images. So how do you get more data out of a fixed dataset?
 
-Unconstrained accuracy is a leaderboard sport. Constrained accuracy is the job.
+**Augmentation.**
 
-| | Unbounded model | This project |
-|---|---|---|
-| Goal | Max accuracy | Max accuracy *per parameter* |
-| Real-world analog | Research demo | Edge / mobile / latency-capped serving |
-| Deployment | "It'll fit somewhere" | Fits a known footprint by construction |
-| Failure mode | Silent bloat | Caught by the parameter gate in CI |
+It's a simple idea. Take each training image and make new versions of it on the fly: rotate it a little, flip it, crop out a piece, nudge the colors. The label doesn't change, a cat rotated ten degrees is still a cat, but the model now sees far more variety. You get a flood of new training examples without collecting a single new image, and without adding a single parameter to the model.
 
-Every production model I've shipped since has carried a version of this constraint. The [CBCT classifier](/posts/cbct-scan-validator) runs a **500K-parameter head** on a frozen encoder precisely because a smaller head that clears the bar is cheaper to retrain, ship, and serve on CPU. This project is where that habit started: treat size as a first-class requirement, not an afterthought.
+Which was the whole point. The cap was on *parameters*, not on *data*.
 
-## The takeaway
+## The game changer
 
-> Accuracy with no constraint is a number. Accuracy under a budget is an engineering decision, and the budget tells you where to spend.
+This is where it turned. Feeding my already-good models all that augmented data, accuracy just shot up. We landed at **97.12%**.
 
-The kind of engineer I want to be is the one who, given a parameter cap, treats it as the most useful line in the spec, because it turns "stack more layers" into "earn every weight." 97.12% is the headline. The discipline of spending the budget where it pays is the part I kept.
+That put us **2nd in the entire class**, a heartbreaking **0.17%** behind the team in 1st.
 
-Full project: [ResNet Under 5M Parameters](https://hi.switchy.io/q3I_).
+<div class="stat-callout stat-emerald">
+  <div class="stat-value">97.12%</div>
+  <div class="stat-label">final CIFAR-10 accuracy — 2nd of 55 teams, 0.17% off the top spot</div>
+</div>
+
+We were thrilled. And then came the cherry on top.
+
+## The secret test set
+
+The professor had held something back: a set of images **none of us had ever seen** while building. After submissions closed, he ran every team's model against it.
+
+Every model did worse on the secret set than on CIFAR-10's own test data. That was the tell, most teams had quietly *memorized* the CIFAR-10 test images. Their models knew the test, not the world.
+
+Ours dropped the least. By a lot. Because we'd trained on all those rotated, cropped, flipped versions, our model had learned the actual shapes of things instead of the exact pixels of the test set. On data it had never seen before, **it came first in the whole class.**
+
+We did not see that coming. We partied that night. Genuinely did not know we had it in us.
+
+## Why I keep telling this one
+
+Here's the part I love. Going in, we thought we were average. Other teams were pulling out heavy machinery, teacher–student setups, exotic architectures, things we'd only half-heard of. We assumed someone like that would run away with it.
+
+Instead we:
+
+- **kept the problem simple** and refused to over-engineer it,
+- **read everything**, papers and open-source repos, to see how the best people in the world were attacking CIFAR-10,
+- **learned from them**, used a little common sense, and just put our heads down for two weeks.
+
+That's it. No magic. The team that thought it was average finished 2nd on the test set and **1st on the data that actually mattered**, the stuff the model had never seen. The professor handed us a bonus grade point for the effort.
+
+> The teams ahead of us had fancier models. We had more data and a model that generalized. On unseen data, generalization wins.
+
+The lesson stuck: when the obvious lever (a bigger model) is off the table, don't push harder on it, step back and find the lever nobody's pulling. Ours was data. It cost zero parameters and won the only test that didn't tell us the answers ahead of time.
+
+Full results: [our CIFAR-10 competition sheet](https://docs.google.com/spreadsheets/d/1ZGsL-hlqXFQmKHCA-6-J81xIbBcJNZBSGYnldBHzYlA/edit?usp=sharing).

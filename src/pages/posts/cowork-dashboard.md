@@ -1,8 +1,8 @@
 ---
-title: "How I rebuilt a clinic dashboard the front office actually trusts"
+title: "How I built a clinic dashboard people actually trust"
 date: "2026-05-12"
 layout: ../../layouts/PostLayout.astro
-description: "Two clinics, three Monday boards, a patient-to-lead join only 49% accurate. The fix wasn't an algorithm. It was reading the schema."
+description: "Two clinics, three messy boards, and a patient-to-lead match that was only 49% right. The fix wasn't a clever algorithm. It was reading the data properly."
 img_path: "/cowork-dashboard.png"
 img_alt: "Cowork Dashboard scorecards, trend chart, and funnel"
 tag: "MLOps"

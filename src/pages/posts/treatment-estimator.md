@@ -1,8 +1,8 @@
 ---
-title: "How I rebuilt a 10-year-old quoting tool with a real price lock"
+title: "How I rebuilt a 10-year-old pricing tool in a month"
 date: "2026-05-18"
 layout: ../../layouts/PostLayout.astro
-description: "A decade-old quoting tool, rebuilt around a Postgres trigger that makes the 6-month price guarantee a real database invariant. One month of work versus ten years of attempts."
+description: "A 10-year-old pricing tool, rebuilt in about a month around one database rule that makes the 6-month price promise impossible to break."
 img_path: "/treatment-estimator.png"
 img_alt: "Treatment Estimator wizard, decision tree, and frozen-price snapshot"
 tag: "Architecture"
