@@ -72,7 +72,7 @@ That put us **2nd in the entire class**, a heartbreaking **0.17%** behind the te
 
 <div class="stat-callout stat-emerald">
   <div class="stat-value">97.12%</div>
-  <div class="stat-label">final CIFAR-10 accuracy — 2nd of 55 teams, 0.17% off the top spot</div>
+  <div class="stat-label">final CIFAR-10 accuracy, 2nd of 55 teams, 0.17% off the top spot</div>
 </div>
 
 We were thrilled. And then came the cherry on top.

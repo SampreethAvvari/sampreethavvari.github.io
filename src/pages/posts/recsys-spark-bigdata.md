@@ -32,11 +32,11 @@ If you try to score every user against every item, the numbers explode instantly
 ```
 22 million records
         │
-        ▼  Step 1 — Shortlist (fast and rough)
+        ▼  Step 1: Shortlist (fast and rough)
   Group similar things together,
   only compare within a group
         │  a few hundred candidates per person, not millions
-        ▼  Step 2 — Rank (slow and smart)
+        ▼  Step 2: Rank (slow and smart)
   Score just that shortlist properly
         │
         ▼

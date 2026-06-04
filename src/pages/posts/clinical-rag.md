@@ -2,7 +2,7 @@
 title: "How I built an AI that grades every patient consult"
 date: "2026-05-19"
 layout: ../../layouts/PostLayout.astro
-description: "A Zoom call comes in. My tool finds the doctor, grades the consult against the CEO's 7-point checklist, and emails back a color-coded report — without making things up."
+description: "A Zoom call comes in. My tool finds the doctor, grades the consult against the CEO's 7-point checklist, and emails back a color-coded report, without making things up."
 img_path: "/doc-coach.png"
 img_alt: "Consultation QA pipeline — Zoom transcript to color-coded report"
 tag: "MLOps"
