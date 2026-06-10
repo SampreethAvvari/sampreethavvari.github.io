@@ -88,6 +88,10 @@ export default function FooterBar({ variant = "default" }: FooterBarProps) {
           )
         )}
       </div>
+      <p className="pb-6 px-4 text-center text-xs text-text/40 dark:text-dk-text/40 tracking-wide">
+        No cookies on this site. Visits are counted anonymously — nothing to
+        accept, nothing following you around.
+      </p>
     </footer>
   );
 }

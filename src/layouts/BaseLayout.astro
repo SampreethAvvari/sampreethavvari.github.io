@@ -99,6 +99,33 @@ import "../styles/global.css";
       rel="stylesheet"
     />
     <title>{title}</title>
+    <script is:inline>
+      // Google Analytics 4 — cookieless mode. Consent is denied before gtag
+      // loads, so GA never sets a cookie and never stores personal data.
+      // Page views, referrers, geography, and engagement time still flow.
+      (function () {
+        var GA_ID = "G-YE09C13G6G";
+        var host = location.hostname;
+        if (host === "localhost" || host === "127.0.0.1") return; // dev runs don't count
+        if (navigator.doNotTrack === "1" || window.doNotTrack === "1") return;
+        window.dataLayer = window.dataLayer || [];
+        window.gtag = function () {
+          dataLayer.push(arguments);
+        };
+        gtag("consent", "default", {
+          ad_storage: "denied",
+          ad_user_data: "denied",
+          ad_personalization: "denied",
+          analytics_storage: "denied",
+        });
+        gtag("js", new Date());
+        gtag("config", GA_ID);
+        var s = document.createElement("script");
+        s.async = true;
+        s.src = "https://www.googletagmanager.com/gtag/js?id=" + GA_ID;
+        document.head.appendChild(s);
+      })();
+    </script>
     <script>
       // On page load or when changing themes, best to add inline in `head` to avoid FOUC
       if (
