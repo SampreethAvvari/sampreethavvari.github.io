@@ -28,7 +28,6 @@
 
   // The fairy twirl: an ellipse orbit around a descending axis.
   const SPIRAL = {
-    offsetX: -14, // orbit axis sits a touch left of the dot column
     rx: 22, // horizontal twirl radius
     ry: 12, // vertical twirl radius
     wavelength: 520, // px of descent per full twirl
@@ -36,16 +35,17 @@
   };
 
   // Smudge/glitter tuning — same family as the cursor trail in Pointer.jsx,
-  // but bigger specks, wider halos and a slower twinkle so the tail smudges.
+  // but bigger specks, wider halos, fainter and slower so the tail reads as
+  // a soft smudge rather than bright sparks.
   const P = {
     radius: [0.7, 2.3] as [number, number],
-    life: [48, 92] as [number, number], // frames
+    life: [56, 104] as [number, number], // frames
     friction: 0.94,
-    haloRatio: 7,
-    fade: 0.65, // alpha = t^fade — lower = lingers longer = smudgier
+    haloRatio: 9,
+    fade: 0.52, // alpha = t^fade — lower = lingers longer = smudgier
     emitSpacing: 6, // px of comet travel per speck
     maxEmitPerFrame: 36,
-    jitter: 4, // px of scatter around the twirl
+    jitter: 6, // px of scatter around the twirl
     idleEvery: 10, // frames between idle twinkles
   };
 
@@ -62,7 +62,7 @@
     type Anchor = { el: HTMLElement; y: number; color: string };
     let anchors: Anchor[] = [];
     let headings: Anchor[] = [];
-    let colX = 64; // dot-column x; measured in build()
+    let axisX = 32; // twirl axis x — middle of the left gutter, set in build()
     let wrapTop = 0;
     let wrapH = 1;
     let built = false;
@@ -164,9 +164,13 @@
           color: ACCENTS[section?.id ?? ""] || "#5B8DEF",
         };
       });
-      // The dot column: the left content margin. Centered eyebrows (Connect)
-      // would pull the axis to mid-page, so the axis takes the leftmost dot.
-      colX = Math.min(...xs);
+      // Park the twirl axis in the unused left gutter: halfway between the
+      // viewport edge and the dot column on narrow desktops, drifting closer
+      // to (but clear of) the content on very wide screens. Centered
+      // eyebrows (Connect) would pull the column to mid-page, so it takes
+      // the leftmost dot.
+      const colX = Math.min(...xs);
+      axisX = Math.max(colX * 0.5, colX - 90);
 
       // Section headings flare when the comet passes them.
       headings = Array.from(
@@ -240,7 +244,7 @@
       const theta =
         (baseY / SPIRAL.wavelength) * Math.PI * 2 +
         performance.now() * SPIRAL.idleSpin;
-      const hx = colX + SPIRAL.offsetX + SPIRAL.rx * Math.cos(theta);
+      const hx = axisX + SPIRAL.rx * Math.cos(theta);
       const hy = baseY + SPIRAL.ry * Math.sin(theta);
 
       // Shed glitter along the actual corkscrew between frames.
@@ -258,7 +262,7 @@
             const bY = prevBaseY + (baseY - prevBaseY) * f;
             const th = prevTheta + dTheta * f;
             emit(
-              colX + SPIRAL.offsetX + SPIRAL.rx * Math.cos(th) + rand(-P.jitter, P.jitter),
+              axisX + SPIRAL.rx * Math.cos(th) + rand(-P.jitter, P.jitter),
               bY + SPIRAL.ry * Math.sin(th) + rand(-P.jitter, P.jitter),
               rand(-0.3, 0.3),
               rand(-0.3, 0.3),
@@ -300,8 +304,8 @@
         const haloR = p.r * P.haloRatio;
         const [r, g, b] = p.c;
         const grd = ctx.createRadialGradient(p.x, sy, 0, p.x, sy, haloR);
-        grd.addColorStop(0, `rgba(${r}, ${g}, ${b}, ${0.85 * alpha})`);
-        grd.addColorStop(0.35, `rgba(${r}, ${g}, ${b}, ${0.35 * alpha})`);
+        grd.addColorStop(0, `rgba(${r}, ${g}, ${b}, ${0.55 * alpha})`);
+        grd.addColorStop(0.35, `rgba(${r}, ${g}, ${b}, ${0.2 * alpha})`);
         grd.addColorStop(1, `rgba(${r}, ${g}, ${b}, 0)`);
         ctx.beginPath();
         ctx.fillStyle = grd;
@@ -314,10 +318,10 @@
       if (hvy > -60 && hvy < h + 60) {
         const pulse = 1 + 0.12 * Math.sin(performance.now() / 380);
         const [r, g, b] = accentRgb;
-        const bloomR = 30 * pulse;
+        const bloomR = 34 * pulse;
         const bloom = ctx.createRadialGradient(hx, hvy, 0, hx, hvy, bloomR);
-        bloom.addColorStop(0, `rgba(${r}, ${g}, ${b}, 0.55)`);
-        bloom.addColorStop(0.4, `rgba(${r}, ${g}, ${b}, 0.22)`);
+        bloom.addColorStop(0, `rgba(${r}, ${g}, ${b}, 0.32)`);
+        bloom.addColorStop(0.4, `rgba(${r}, ${g}, ${b}, 0.13)`);
         bloom.addColorStop(1, `rgba(${r}, ${g}, ${b}, 0)`);
         ctx.beginPath();
         ctx.fillStyle = bloom;
@@ -325,8 +329,8 @@
         ctx.fill();
 
         const core = ctx.createRadialGradient(hx, hvy, 0, hx, hvy, 7);
-        core.addColorStop(0, "rgba(255, 255, 255, 0.95)");
-        core.addColorStop(0.45, `rgba(${r}, ${g}, ${b}, 0.5)`);
+        core.addColorStop(0, "rgba(255, 255, 255, 0.65)");
+        core.addColorStop(0.45, `rgba(${r}, ${g}, ${b}, 0.32)`);
         core.addColorStop(1, `rgba(${r}, ${g}, ${b}, 0)`);
         ctx.beginPath();
         ctx.fillStyle = core;
