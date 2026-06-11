@@ -1,10 +1,14 @@
 ---
 // Scroll spine — the glowing comet that keeps you company down the home page.
-// A curved filament is generated at runtime through every chapter's eyebrow
-// dot (the [data-spine-dot] elements), born under the hero's scroll cue and
-// landing on the centered Connect dot. A comet head + trail rides the path as
-// you scroll, recoloured by the chapter it's passing through, igniting each
-// eyebrow dot on the way. Desktop only, honours prefers-reduced-motion.
+// A curved filament is generated at runtime from the very top of the page,
+// down through the hero, weaving through every chapter's eyebrow dot (the
+// [data-spine-dot] elements) and running out at the page bottom. The comet
+// rides it on pure scroll progress (top of page = top of path, full scroll =
+// bottom). Its head and glittery, smudged tail are painted on a canvas (same
+// particle language as the cursor trail in Pointer.jsx, just softer and
+// longer-lived), recoloured by the chapter it's passing through, igniting
+// eyebrow dots and flaring section headings ([data-spine-heading]) on the
+// way. Desktop only, honours prefers-reduced-motion.
 ---
 
 <div class="scroll-spine" aria-hidden="true" data-scroll-spine>
@@ -18,21 +22,12 @@
     </defs>
     <path class="spine-base" stroke="url(#spine-grad)" data-spine-base></path>
     <path class="spine-progress" stroke="url(#spine-grad)" data-spine-progress></path>
-    <path class="spine-trail" data-spine-trail></path>
-    <g class="spine-comet" style="opacity: 0" data-spine-comet>
-      <circle class="comet-halo" r="7"></circle>
-      <circle class="comet-core" r="2.2"></circle>
-      <path
-        class="comet-spark"
-        d="M0 -5.5 L1.2 -1.2 L5.5 0 L1.2 1.2 L0 5.5 L-1.2 1.2 L-5.5 0 L-1.2 -1.2 Z"
-      ></path>
-    </g>
   </svg>
+  <canvas class="spine-canvas" data-spine-canvas></canvas>
 </div>
 
 <script>
   const SVG_NS = "http://www.w3.org/2000/svg";
-  const TRAIL = 140; // px of bright streak behind the comet head
   const WEAVE = 26; // px the filament bows left/right between dots
 
   // Colour the comet takes on inside each chapter (matches eyebrow accents).
@@ -44,6 +39,20 @@
     contact: "#5B8DEF",
   };
 
+  // Smudge/glitter tuning — same family as the cursor trail in Pointer.jsx,
+  // but bigger specks, wider halos and a slower twinkle so the tail smudges.
+  const P = {
+    radius: [0.7, 2.3] as [number, number],
+    life: [48, 92] as [number, number], // frames
+    friction: 0.94,
+    haloRatio: 7,
+    fade: 0.65, // alpha = t^fade — lower = lingers longer = smudgier
+    emitSpacing: 6, // px of comet travel per speck
+    maxEmitPerFrame: 36,
+    jitter: 5, // px of scatter around the path
+    idleEvery: 10, // frames between idle twinkles when not scrolling
+  };
+
   const root = document.querySelector<HTMLElement>("[data-scroll-spine]");
   const wrapper = root?.closest<HTMLElement>(".snap-chapters");
 
@@ -52,19 +61,93 @@
     const grad = root.querySelector<SVGLinearGradientElement>("[data-spine-grad]")!;
     const basePath = root.querySelector<SVGPathElement>("[data-spine-base]")!;
     const progPath = root.querySelector<SVGPathElement>("[data-spine-progress]")!;
-    const trailPath = root.querySelector<SVGPathElement>("[data-spine-trail]")!;
-    const comet = root.querySelector<SVGGElement>("[data-spine-comet]")!;
+    const canvas = root.querySelector<HTMLCanvasElement>("[data-spine-canvas]")!;
+    const ctx = canvas.getContext("2d")!;
 
     const desktop = window.matchMedia("(min-width: 1024px)");
     const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
 
     type Anchor = { el: HTMLElement; y: number; color: string };
     let anchors: Anchor[] = [];
+    let headings: Anchor[] = [];
     let totalLen = 0;
-    let startY = 0;
-    let endY = 1;
     let wrapTop = 0;
     let built = false;
+    let cometVisible = false;
+    let head: { x: number; y: number } | null = null; // world coords
+
+    // y -> path-length lookup. The path's horizontal swoops consume length
+    // without advancing vertically, so mapping scroll straight to length
+    // makes the comet lag above the viewport. Instead we pick the comet's
+    // target y from scroll and find the matching length here.
+    let samples: { len: number; y: number }[] = [];
+    const yToLen = (ty: number) => {
+      if (!samples.length) return 0;
+      let lo = 0;
+      let hi = samples.length - 1;
+      if (ty <= samples[0].y) return samples[0].len;
+      if (ty >= samples[hi].y) return samples[hi].len;
+      while (lo + 1 < hi) {
+        const mid = (lo + hi) >> 1;
+        if (samples[mid].y < ty) lo = mid;
+        else hi = mid;
+      }
+      const a = samples[lo];
+      const b = samples[hi];
+      const f = b.y === a.y ? 0 : (ty - a.y) / (b.y - a.y);
+      return a.len + (b.len - a.len) * f;
+    };
+
+    const rand = (min: number, max: number) => Math.random() * (max - min) + min;
+
+    // ── Colour helpers ──────────────────────────────────────────────
+    const rgbOf = (hex: string): [number, number, number] => {
+      const n = parseInt(hex.slice(1), 16);
+      return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+    };
+    const mixToWhite = (c: [number, number, number], t: number) =>
+      c.map((v) => Math.round(v + (255 - v) * t)) as [number, number, number];
+
+    let accentHex = "#5B8DEF";
+    let accentRgb = rgbOf(accentHex);
+    let palette: [number, number, number][] = [];
+    const setAccent = (hex: string) => {
+      if (hex === accentHex && palette.length) return;
+      accentHex = hex;
+      accentRgb = rgbOf(hex);
+      // accent twice so it dominates, a lightened accent, a near-white spark
+      palette = [accentRgb, accentRgb, mixToWhite(accentRgb, 0.5), [244, 244, 247]];
+    };
+    setAccent(accentHex);
+
+    // ── Particles (world coordinates, drawn in viewport space) ─────
+    type Speck = {
+      x: number; y: number; vx: number; vy: number;
+      r: number; c: [number, number, number];
+      life: number; maxLife: number;
+    };
+    let specks: Speck[] = [];
+
+    const emit = (x: number, y: number, vx: number, vy: number) => {
+      specks.push({
+        x, y, vx, vy,
+        r: rand(P.radius[0], P.radius[1]),
+        c: palette[Math.floor(Math.random() * palette.length)],
+        life: rand(P.life[0], P.life[1]),
+        maxLife: 0,
+      });
+      specks[specks.length - 1].maxLife = specks[specks.length - 1].life;
+    };
+
+    let dpr = 1;
+    const sizeCanvas = () => {
+      dpr = window.devicePixelRatio || 1;
+      canvas.width = Math.floor(window.innerWidth * dpr);
+      canvas.height = Math.floor(window.innerHeight * dpr);
+      canvas.style.width = `${window.innerWidth}px`;
+      canvas.style.height = `${window.innerHeight}px`;
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    };
 
     // Transform-free coordinates relative to the wrapper, so the in-flight
     // reveal animations (translateY) don't skew where we think dots live.
@@ -111,6 +194,7 @@
       const H = wrapper.offsetHeight;
       wrapTop = wrapper.getBoundingClientRect().top + window.scrollY;
       svg.setAttribute("viewBox", `0 0 ${W} ${H}`);
+      sizeCanvas();
 
       anchors = dots.map((el) => {
         const o = offsetTo(el);
@@ -123,9 +207,22 @@
         } as Anchor & { x: number };
       });
 
-      // Waypoints: born centred under the hero's scroll cue, then weaving
-      // through every eyebrow dot, bowing alternately left/right between them.
-      const pts: { x: number; y: number }[] = [];
+      // Section headings flare when the comet passes them.
+      headings = Array.from(
+        document.querySelectorAll<HTMLElement>("[data-spine-heading]"),
+      ).map((el) => {
+        const o = offsetTo(el);
+        const section = el.closest("section");
+        const color = ACCENTS[section?.id ?? ""] || "#5B8DEF";
+        const [r, g, b] = rgbOf(color);
+        el.style.setProperty("--head-rgb", `${r}, ${g}, ${b}`);
+        return { el, y: o.y + el.offsetHeight / 2, color };
+      });
+
+      // Waypoints: from the very top of the page, straight down through the
+      // hero, then weaving through every eyebrow dot (bowing alternately
+      // left/right), and finally back to centre to run out at the bottom.
+      const pts: { x: number; y: number }[] = [{ x: W / 2, y: 4 }];
       const home = document.getElementById("home");
       if (home) {
         pts.push({ x: W / 2, y: home.offsetTop + home.offsetHeight - 24 });
@@ -133,33 +230,40 @@
       let sign = 1;
       for (const a of anchors as (Anchor & { x: number })[]) {
         const prev = pts[pts.length - 1];
-        if (prev) {
-          pts.push({
-            x: (prev.x + a.x) / 2 + sign * WEAVE,
-            y: (prev.y + a.y) / 2,
-          });
-          sign = -sign;
-        }
+        pts.push({
+          x: (prev.x + a.x) / 2 + sign * WEAVE,
+          y: (prev.y + a.y) / 2,
+        });
+        sign = -sign;
         pts.push({ x: a.x, y: a.y });
       }
+      const last = pts[pts.length - 1];
+      pts.push({
+        x: (last.x + W / 2) / 2 + sign * 18,
+        y: (last.y + (H - 6)) / 2,
+      });
+      pts.push({ x: W / 2, y: H - 6 });
 
       const d = smooth(pts);
       basePath.setAttribute("d", d);
       progPath.setAttribute("d", d);
-      trailPath.setAttribute("d", d);
 
       totalLen = progPath.getTotalLength();
-      startY = pts[0].y;
-      endY = anchors[anchors.length - 1].y;
       progPath.style.strokeDasharray = `${totalLen} ${totalLen}`;
-      trailPath.style.strokeDasharray = `${TRAIL} ${totalLen}`;
+
+      samples = [];
+      const N = 600;
+      for (let i = 0; i <= N; i++) {
+        const L = (totalLen * i) / N;
+        samples.push({ len: L, y: progPath.getPointAtLength(L).y });
+      }
 
       // Vertical gradient pinned to each chapter's dot, so the filament
       // itself shifts blue -> emerald -> amber -> blue down the page.
       grad.setAttribute("y2", String(H));
       grad.innerHTML = "";
       const stops: [number, string][] = [
-        [Math.max(0, startY / H), "#5B8DEF"],
+        [0, "#5B8DEF"],
         ...anchors.map((a): [number, string] => [a.y / H, a.color]),
       ];
       for (const [offset, color] of stops) {
@@ -170,6 +274,7 @@
       }
 
       built = true;
+      head = null; // re-anchor the smudge after a relayout
       update();
     };
 
@@ -178,22 +283,26 @@
       if (reduceMotion.matches) {
         // Static filament, fully drawn, no moving parts.
         progPath.style.strokeDashoffset = "0";
-        trailPath.style.opacity = "0";
-        comet.style.opacity = "0";
+        cometVisible = false;
         anchors.forEach((a) => a.el.classList.add("dot-lit"));
         return;
       }
 
-      const y = window.scrollY + window.innerHeight * 0.42 - wrapTop;
-      const t = Math.min(1, Math.max(0, (y - startY) / (endY - startY)));
-      const len = totalLen * t;
+      // The comet tracks the viewport: at the top of the page it sits at the
+      // top edge, sweeping down the screen as you scroll so it reaches the
+      // path's end exactly at full scroll — never above or below the fold.
+      const maxScroll = Math.max(
+        1,
+        document.documentElement.scrollHeight - window.innerHeight,
+      );
+      const t = Math.min(1, Math.max(0, window.scrollY / maxScroll));
+      const targetY = window.scrollY - wrapTop + window.innerHeight * t;
+      const len = yToLen(targetY);
 
-      progPath.style.strokeDashoffset = String(totalLen - len);
-      trailPath.style.strokeDashoffset = String(TRAIL - len);
+      progPath.style.strokeDashoffset = String(Math.max(0, totalLen - len));
 
       const pt = progPath.getPointAtLength(len);
-      comet.setAttribute("transform", `translate(${pt.x} ${pt.y})`);
-      comet.style.opacity = t > 0.002 ? "1" : "0";
+      cometVisible = true;
 
       let color = "#5B8DEF";
       for (const a of anchors) {
@@ -201,8 +310,114 @@
         a.el.classList.toggle("dot-lit", passed);
         if (passed) color = a.color;
       }
-      root.style.setProperty("--comet-color", color);
-      trailPath.style.stroke = color;
+      for (const hd of headings) {
+        hd.el.classList.toggle("heading-lit", pt.y >= hd.y - 10);
+      }
+      setAccent(color);
+
+      // Smudge the travelled segment with glitter, like the cursor trail.
+      if (cometVisible && head) {
+        const dx = pt.x - head.x;
+        const dy = pt.y - head.y;
+        const dist = Math.hypot(dx, dy);
+        if (dist > 0.5) {
+          const steps = Math.min(
+            P.maxEmitPerFrame,
+            Math.max(1, Math.floor(dist / P.emitSpacing)),
+          );
+          for (let i = 0; i < steps; i++) {
+            const f = (i + Math.random()) / steps;
+            emit(
+              head.x + dx * f + rand(-P.jitter, P.jitter),
+              head.y + dy * f + rand(-P.jitter, P.jitter),
+              dx * -0.05 + rand(-0.3, 0.3), // drift gently back along the path
+              dy * -0.05 + rand(-0.3, 0.3),
+            );
+          }
+        }
+      }
+      head = { x: pt.x, y: pt.y };
+    };
+
+    // ── Render loop: comet head + glitter smudge on the canvas ─────
+    let frameCount = 0;
+    const render = () => {
+      requestAnimationFrame(render);
+      if (!built || !desktop.matches || reduceMotion.matches) return;
+      frameCount++;
+
+      const w = window.innerWidth;
+      const h = window.innerHeight;
+      ctx.clearRect(0, 0, w, h);
+      const viewY = window.scrollY - wrapTop;
+
+      ctx.globalCompositeOperation = "lighter";
+
+      // Idle twinkle so the comet glitters even between scrolls.
+      if (cometVisible && head && frameCount % P.idleEvery === 0) {
+        emit(
+          head.x + rand(-7, 7),
+          head.y + rand(-7, 7),
+          rand(-0.35, 0.35),
+          rand(-0.35, 0.35),
+        );
+      }
+
+      // Specks — soft radial halos twinkling out, smudgier than the cursor's.
+      for (let i = specks.length - 1; i >= 0; i--) {
+        const p = specks[i];
+        p.vx *= P.friction;
+        p.vy *= P.friction;
+        p.x += p.vx;
+        p.y += p.vy;
+        p.life -= 1;
+        if (p.life <= 0) {
+          specks.splice(i, 1);
+          continue;
+        }
+        const sy = p.y - viewY;
+        if (sy < -80 || sy > h + 80) continue;
+        const alpha = Math.pow(p.life / p.maxLife, P.fade);
+        const haloR = p.r * P.haloRatio;
+        const [r, g, b] = p.c;
+        const grd = ctx.createRadialGradient(p.x, sy, 0, p.x, sy, haloR);
+        grd.addColorStop(0, `rgba(${r}, ${g}, ${b}, ${0.85 * alpha})`);
+        grd.addColorStop(0.35, `rgba(${r}, ${g}, ${b}, ${0.35 * alpha})`);
+        grd.addColorStop(1, `rgba(${r}, ${g}, ${b}, 0)`);
+        ctx.beginPath();
+        ctx.fillStyle = grd;
+        ctx.arc(p.x, sy, haloR, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      // Comet head — a big soft breathing bloom with a hot white core.
+      if (cometVisible && head) {
+        const hy = head.y - viewY;
+        if (hy > -60 && hy < h + 60) {
+          const pulse = 1 + 0.12 * Math.sin(performance.now() / 380);
+          const [r, g, b] = accentRgb;
+          const bloomR = 30 * pulse;
+          const bloom = ctx.createRadialGradient(head.x, hy, 0, head.x, hy, bloomR);
+          bloom.addColorStop(0, `rgba(${r}, ${g}, ${b}, 0.55)`);
+          bloom.addColorStop(0.4, `rgba(${r}, ${g}, ${b}, 0.22)`);
+          bloom.addColorStop(1, `rgba(${r}, ${g}, ${b}, 0)`);
+          ctx.beginPath();
+          ctx.fillStyle = bloom;
+          ctx.arc(head.x, hy, bloomR, 0, Math.PI * 2);
+          ctx.fill();
+
+          const core = ctx.createRadialGradient(head.x, hy, 0, head.x, hy, 7);
+          core.addColorStop(0, "rgba(255, 255, 255, 0.95)");
+          core.addColorStop(0.45, `rgba(${r}, ${g}, ${b}, 0.5)`);
+          core.addColorStop(1, `rgba(${r}, ${g}, ${b}, 0)`);
+          ctx.beginPath();
+          ctx.fillStyle = core;
+          ctx.arc(head.x, hy, 7, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      }
+
+      ctx.globalCompositeOperation = "source-over";
     };
 
     let ticking = false;
@@ -227,5 +442,6 @@
     desktop.addEventListener("change", build);
     reduceMotion.addEventListener("change", build);
     build();
+    requestAnimationFrame(render);
   }
 </script>

@@ -80,7 +80,7 @@ const projectsWithBlog = projects
   <!-- ── Hero: Selected work ────────────────────────────────────────── -->
   <section
     class="relative overflow-hidden projects-hero-atmos snap-chapter"
-    style="min-height: 92vh; min-height: 92svh; display: flex; flex-direction: column; justify-content: center; padding: 6rem 0 4rem;"
+    style="min-height: 72vh; min-height: 72svh; display: flex; flex-direction: column; justify-content: center; padding: 7rem 0 4rem;"
     id="projects-top"
   >
     <div class="relative z-10 mx-auto w-full max-w-screen-2xl px-6 lg:px-12">
@@ -251,7 +251,7 @@ const projectsWithBlog = projects
 
   <!-- ── Band B: Research ───────────────────────────────────────────── -->
   {research.length > 0 && (
-    <section class="snap-chapter relative py-24 lg:py-32">
+    <section class="snap-chapter relative py-16 lg:py-20">
       <div class="mx-auto w-full max-w-screen-2xl px-6 lg:px-12">
         <div class="max-w-3xl mb-12 lg:mb-16">
           <p class="eyebrow text-acc-violet mb-4">Research</p>
@@ -324,7 +324,7 @@ const projectsWithBlog = projects
 
   <!-- ── Band C: Academic ───────────────────────────────────────────── -->
   {academic.length > 0 && (
-    <section class="snap-chapter relative py-24 lg:py-32">
+    <section class="snap-chapter relative py-16 lg:py-20">
       <div class="mx-auto w-full max-w-screen-2xl px-6 lg:px-12">
         <div class="max-w-3xl mb-12 lg:mb-16">
           <p class="eyebrow text-text/60 dark:text-dk-text/60 mb-4">Academic</p>
@@ -397,7 +397,7 @@ const projectsWithBlog = projects
 
   <!-- ── Band D: Read the deep dives (related blog posts) ──────────── -->
   {projectsWithBlog.length > 0 && (
-    <section class="snap-chapter relative py-24 lg:py-32 bg-text/[0.02] dark:bg-dk-text/[0.03]">
+    <section class="snap-chapter relative py-16 lg:py-20 bg-text/[0.02] dark:bg-dk-text/[0.03]">
       <div class="mx-auto w-full max-w-screen-2xl px-6 lg:px-12">
         <div class="max-w-3xl mb-12 lg:mb-16">
           <p class="eyebrow text-secondary dark:text-dk-secondary mb-4">
@@ -437,7 +437,7 @@ const projectsWithBlog = projects
   )}
 
   <!-- ── Closer ─────────────────────────────────────────────────────── -->
-  <section class="snap-chapter relative py-24 lg:py-32">
+  <section class="snap-chapter relative py-16 lg:py-20">
     <div class="mx-auto w-full max-w-screen-2xl px-6 lg:px-12 text-center">
       <p class="eyebrow text-secondary dark:text-dk-secondary mb-4">
         That's the work
@@ -491,15 +491,15 @@ const projectsWithBlog = projects
     .projects-hero-atmos::before { animation: none; will-change: auto; }
   }
 
-  /* Each Hybridge deep dive: full-viewport flex column with breathing room. */
+  /* Each Hybridge deep dive: sized by its content with one consistent
+     padding band (Apple-style), so scrolling between projects never crosses
+     a dead screen. */
   .project-screen {
-    min-height: 100vh;
-    min-height: 100svh;
     display: flex;
     flex-direction: column;
     justify-content: center;
-    padding-top: clamp(5rem, 8vh, 7rem);
-    padding-bottom: clamp(4rem, 7vh, 6rem);
+    padding-top: clamp(3.5rem, 7vh, 5.5rem);
+    padding-bottom: clamp(3.5rem, 7vh, 5.5rem);
   }
 
   /* No per-screen bg fills. Every project sits on the body bg so the only
