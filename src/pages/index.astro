@@ -2,6 +2,7 @@
 import BaseLayout from "../layouts/BaseLayout.astro";
 import { info } from "../data/info";
 import Contact from "../components/contact_section/Contact";
+import ScrollSpine from "../components/ScrollSpine.astro";
 import { Image } from "astro:assets";
 
 const allPosts = await Astro.glob("../pages/posts/*.md");
@@ -84,26 +85,30 @@ const brandFor = (loc: string) => {
   return { acronym: loc.slice(0, 2).toUpperCase(), from: "#475569", to: "#94A3B8", label: loc };
 };
 
-// Skills grouped by tone. ML/AI in blue, data & cloud in emerald,
-// software & testing in amber. Order intentional: most-used first per bucket.
-// Literal class strings so Tailwind's JIT can detect them.
+// Skills grouped by tone, rendered as three accent bento cards. ML/AI in
+// blue, data & cloud in emerald, software & testing in amber. Order
+// intentional: most-used first per bucket. The icon + label carry the
+// colour; chips stay neutral so the inventory reads calm.
 const skillBuckets = [
   {
     label: "Machine learning & MLOps",
-    labelClass: "text-acc-blue",
-    pillClass: "skill-pill skill-pill-blue",
+    icon: "fa-solid fa-brain",
+    accent: "#5B8DEF",
+    rgb: "91, 141, 239",
     items: ["PyTorch", "Transformers", "HuggingFace", "TRL", "Unsloth", "RLHF (GRPO/PPO)", "OpenVINO", "MONAI", "nnU-Net v2", "LangChain", "MLflow", "Weights & Biases"],
   },
   {
     label: "Data & cloud",
-    labelClass: "text-acc-emerald",
-    pillClass: "skill-pill skill-pill-emerald",
+    icon: "fa-solid fa-database",
+    accent: "#34D399",
+    rgb: "52, 211, 153",
     items: ["PostgreSQL", "BigQuery", "Milvus", "pgvector", "Firestore", "Vertex AI Gemini", "Cloud Run", "Pub/Sub", "Eventarc", "Redis", "DynamoDB", "S3 · EC2 · RDS"],
   },
   {
     label: "Software & testing",
-    labelClass: "text-acc-amber",
-    pillClass: "skill-pill skill-pill-amber",
+    icon: "fa-solid fa-code",
+    accent: "#F5A524",
+    rgb: "245, 165, 36",
     items: ["Python", "TypeScript", "Go", "React", "Next.js 16", "FastAPI", "Drizzle ORM", "Docker", "Kubernetes", "Terraform", "GitHub Actions", "pytest · Vitest"],
   },
 ];
@@ -113,11 +118,12 @@ const skillBuckets = [
   <script is:inline>
     document.documentElement.classList.add("snap-home");
   </script>
-  <div class="snap-chapters">
+  <div class="snap-chapters relative">
+    <ScrollSpine />
 
     <!-- ── Chapter 1: Hero ───────────────────────────────────────────────── -->
     <section
-      class="chapter snap-chapter relative landing-atmos overflow-hidden"
+      class="chapter chapter-full snap-chapter relative landing-atmos overflow-hidden"
       id="home"
     >
       <div
@@ -189,7 +195,7 @@ const skillBuckets = [
     <section class="chapter snap-chapter chapter-fade" id="work">
       <div class="mx-auto w-full max-w-screen-2xl px-6 lg:px-12">
         <div class="max-w-4xl reveal" data-reveal>
-          <p class="eyebrow text-secondary dark:text-dk-secondary mb-3">
+          <p class="eyebrow text-secondary dark:text-dk-secondary mb-3" data-spine-dot>
             01 / The work
           </p>
           <h2 class="display-sm text-text dark:text-dk-text mb-3 glow-wave">
@@ -271,7 +277,7 @@ const skillBuckets = [
       <div class="mx-auto w-full max-w-screen-2xl px-6 lg:px-12">
         <div class="grid lg:grid-cols-12 gap-10 lg:gap-16 items-start">
           <div class="lg:col-span-7 reveal" data-reveal>
-            <p class="eyebrow text-secondary dark:text-dk-secondary mb-5">
+            <p class="eyebrow text-secondary dark:text-dk-secondary mb-5" data-spine-dot>
               02 / About
             </p>
             <h2 class="display-sm text-text dark:text-dk-text mb-6 glow-wave max-w-2xl">
@@ -360,15 +366,18 @@ const skillBuckets = [
 
         <div class="mt-14 lg:mt-16 pt-10 lg:pt-12 border-t border-text/10 dark:border-dk-text/10 reveal" data-reveal>
           <p class="eyebrow text-text/55 dark:text-dk-text/55 mb-6">Skills</p>
-          <div class="grid grid-cols-1 md:grid-cols-3 gap-x-10 lg:gap-x-14 gap-y-8">
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
             {skillBuckets.map((b) => (
-              <div>
-                <p class={`text-[0.66rem] uppercase tracking-[0.18em] font-bold mb-4 ${b.labelClass}`}>
-                  {b.label}
-                </p>
+              <div class="skills-card" style={`--sk: ${b.accent}; --sk-rgb: ${b.rgb};`}>
+                <div class="skills-card-head">
+                  <span class="skills-card-icon" aria-hidden="true">
+                    <i class={b.icon}></i>
+                  </span>
+                  <p class="skills-card-label">{b.label}</p>
+                </div>
                 <div class="flex flex-wrap gap-2">
                   {b.items.map((s) => (
-                    <span class={b.pillClass}>{s}</span>
+                    <span class="skill-chip">{s}</span>
                   ))}
                 </div>
               </div>
@@ -383,7 +392,7 @@ const skillBuckets = [
       <div class="mx-auto w-full max-w-screen-2xl px-6 lg:px-12">
         <div class="flex items-end justify-between mb-10 reveal" data-reveal>
           <div>
-            <p class="eyebrow text-acc-emerald dark:text-acc-emerald mb-4">
+            <p class="eyebrow text-acc-emerald dark:text-acc-emerald mb-4" data-spine-dot>
               03 / Writing
             </p>
             <h2 class="display-sm text-text dark:text-dk-text glow-wave">
@@ -460,7 +469,7 @@ const skillBuckets = [
         class="mx-auto w-full max-w-screen-2xl px-6 lg:px-12 grid lg:grid-cols-12 gap-12 items-center"
       >
         <div class="lg:col-span-6 reveal" data-reveal>
-          <p class="eyebrow text-acc-amber dark:text-acc-amber mb-4">
+          <p class="eyebrow text-acc-amber dark:text-acc-amber mb-4" data-spine-dot>
             04 / Filmmaking
           </p>
           <h2 class="display-sm text-text dark:text-dk-text mb-6 glow-wave">
@@ -526,7 +535,7 @@ const skillBuckets = [
         class="relative z-10 mx-auto w-full max-w-screen-2xl px-6 lg:px-12 text-center reveal"
         data-reveal
       >
-        <p class="eyebrow text-secondary dark:text-dk-secondary mb-4">
+        <p class="eyebrow text-secondary dark:text-dk-secondary mb-4" data-spine-dot>
           05 / Connect
         </p>
         <h2 class="display text-text dark:text-dk-text mb-6 glow-wave">

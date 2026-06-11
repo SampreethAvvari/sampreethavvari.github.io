@@ -652,25 +652,182 @@ html.snap-home {
 }
 .chapter-fade > * { position: relative; z-index: 1; }
 
-/* The home page narrative chapters: full-viewport, generous padding,
-   one bg colour each, content vertically centered. Padding is responsive
-   to the viewport so short screens don't force the inner content to scroll. */
+/* The home page narrative chapters. Apple-style hybrid: only the hero
+   (.chapter-full) is forced to fill the viewport; every other chapter is
+   sized by its content with one generous, consistent padding band, so the
+   scroll always has the next thing arriving instead of dead black space. */
 .chapter {
-  min-height: 100vh;
-  min-height: 100svh;
   display: flex;
   flex-direction: column;
   justify-content: center;
-  padding-top: clamp(3rem, 6vh, 6rem);
-  padding-bottom: clamp(3rem, 6vh, 6rem);
+  padding-top: clamp(4rem, 9vh, 7rem);
+  padding-bottom: clamp(4rem, 9vh, 7rem);
   position: relative;
   overflow: hidden;
 }
-@media (min-height: 900px) {
-  .chapter {
-    padding-top: clamp(5rem, 9vh, 9rem);
-    padding-bottom: clamp(5rem, 9vh, 9rem);
-  }
+.chapter-full {
+  min-height: 100vh;
+  min-height: 100svh;
+}
+
+/* ───────────────────────────────────────────────────────────────────
+   SCROLL SPINE — the glowing comet that accompanies you down the page.
+   A hair-thin curved filament runs from under the hero through every
+   chapter's eyebrow dot; a comet head with a soft trail rides it as you
+   scroll, taking on each chapter's accent colour. Decorative only:
+   pointer-events none, behind all content, desktop only.
+   ─────────────────────────────────────────────────────────────────── */
+.scroll-spine {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  --comet-color: #5B8DEF;
+}
+.scroll-spine svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+@media (max-width: 1023px) {
+  .scroll-spine { display: none; }
+}
+
+/* Dormant filament — always there, barely-there. */
+.spine-base {
+  fill: none;
+  stroke-width: 1.25;
+  opacity: 0.16;
+}
+html:not(.dark) .spine-base { opacity: 0.22; }
+
+/* Travelled portion — draws in behind the comet. */
+.spine-progress {
+  fill: none;
+  stroke-width: 1.5;
+  opacity: 0.5;
+}
+
+/* Comet trail — short bright streak right behind the head. */
+.spine-trail {
+  fill: none;
+  stroke-width: 2.5;
+  stroke-linecap: round;
+  opacity: 0.9;
+  filter: drop-shadow(0 0 6px var(--comet-color));
+}
+
+.spine-comet {
+  transition: opacity 0.4s ease;
+}
+.spine-comet .comet-halo {
+  fill: var(--comet-color);
+  opacity: 0.3;
+  filter: blur(4px);
+  transition: fill 0.6s ease;
+  animation: cometBreathe 2.6s ease-in-out infinite;
+}
+.spine-comet .comet-core {
+  fill: #ffffff;
+  filter: drop-shadow(0 0 4px var(--comet-color));
+  transition: filter 0.6s ease;
+}
+html:not(.dark) .spine-comet .comet-core {
+  fill: var(--comet-color);
+}
+.spine-comet .comet-spark {
+  fill: #ffffff;
+  opacity: 0.8;
+  transform-origin: center;
+  animation: sparkTwinkle 1.9s ease-in-out infinite;
+}
+html:not(.dark) .spine-comet .comet-spark { fill: var(--comet-color); }
+
+@keyframes cometBreathe {
+  0%, 100% { opacity: 0.22; }
+  50%      { opacity: 0.42; }
+}
+@keyframes sparkTwinkle {
+  0%, 100% { transform: scale(0.5) rotate(0deg); opacity: 0.35; }
+  50%      { transform: scale(1) rotate(90deg); opacity: 0.9; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .spine-comet .comet-halo,
+  .spine-comet .comet-spark { animation: none; }
+}
+
+/* ───────────────────────────────────────────────────────────────────
+   SKILLS BENTO CARDS — three accent-tinted glass cards replace the bare
+   pill columns. The icon + label carry the colour; chips stay neutral so
+   36 of them read as a calm inventory, not confetti.
+   Each card sets --sk (hex) and --sk-rgb ("r, g, b") inline.
+   ─────────────────────────────────────────────────────────────────── */
+.skills-card {
+  border-radius: 1.25rem;
+  padding: 1.5rem 1.5rem 1.65rem;
+  background: linear-gradient(165deg, rgba(var(--sk-rgb), 0.07), rgba(var(--sk-rgb), 0.02) 55%, transparent);
+  border: 1px solid rgba(var(--sk-rgb), 0.22);
+  transition: transform 0.35s ease, border-color 0.35s ease, box-shadow 0.35s ease;
+}
+html.dark .skills-card {
+  background: linear-gradient(165deg, rgba(var(--sk-rgb), 0.10), rgba(var(--sk-rgb), 0.03) 55%, transparent);
+}
+.skills-card:hover {
+  transform: translateY(-3px);
+  border-color: rgba(var(--sk-rgb), 0.45);
+  box-shadow: 0 18px 40px -22px rgba(var(--sk-rgb), 0.55);
+}
+.skills-card-head {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  margin-bottom: 1.15rem;
+}
+.skills-card-icon {
+  width: 2.3rem;
+  height: 2.3rem;
+  border-radius: 0.72rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  font-size: 0.95rem;
+  color: var(--sk);
+  background: rgba(var(--sk-rgb), 0.14);
+  border: 1px solid rgba(var(--sk-rgb), 0.28);
+}
+.skills-card-label {
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.17em;
+  font-weight: 700;
+  color: var(--sk) !important;
+  margin: 0;
+  line-height: 1.4;
+}
+.skill-chip {
+  display: inline-flex;
+  align-items: center;
+  font-size: 0.78rem;
+  font-weight: 600;
+  padding: 0.4rem 0.85rem;
+  border-radius: 9999px;
+  white-space: nowrap;
+  letter-spacing: 0.005em;
+  background: rgba(var(--sk-rgb), 0.10);
+  color: theme(colors.text);
+  transition: background 0.25s ease, transform 0.25s ease;
+}
+html.dark .skill-chip {
+  background: rgba(var(--sk-rgb), 0.14);
+  color: theme(colors.dk-text);
+}
+.skill-chip:hover {
+  background: rgba(var(--sk-rgb), 0.22);
+  transform: translateY(-1px);
 }
 
 /* Section eyebrow — small uppercase tracked label with a leading dot. */
@@ -690,6 +847,15 @@ html.snap-home {
   border-radius: 9999px;
   background: currentColor;
   display: inline-block;
+  transition: box-shadow 0.6s ease, transform 0.6s ease;
+}
+/* Ignited by the scroll spine: when the comet passes a chapter's eyebrow,
+   its dot lights up like the comet just lit a lamp on its way down. */
+.eyebrow.dot-lit::before {
+  box-shadow:
+    0 0 6px currentColor,
+    0 0 16px currentColor;
+  transform: scale(1.3);
 }
 /* nav offset so anchor jumps + first chapter clear the fixed top bar */
 html { scroll-padding-top: 4.5rem; }

@@ -1,0 +1,231 @@
+---
+// Scroll spine — the glowing comet that keeps you company down the home page.
+// A curved filament is generated at runtime through every chapter's eyebrow
+// dot (the [data-spine-dot] elements), born under the hero's scroll cue and
+// landing on the centered Connect dot. A comet head + trail rides the path as
+// you scroll, recoloured by the chapter it's passing through, igniting each
+// eyebrow dot on the way. Desktop only, honours prefers-reduced-motion.
+---
+
+<div class="scroll-spine" aria-hidden="true" data-scroll-spine>
+  <svg preserveAspectRatio="none" data-spine-svg>
+    <defs>
+      <linearGradient
+        id="spine-grad"
+        gradientUnits="userSpaceOnUse"
+        x1="0" y1="0" x2="0" y2="1"
+        data-spine-grad></linearGradient>
+    </defs>
+    <path class="spine-base" stroke="url(#spine-grad)" data-spine-base></path>
+    <path class="spine-progress" stroke="url(#spine-grad)" data-spine-progress></path>
+    <path class="spine-trail" data-spine-trail></path>
+    <g class="spine-comet" style="opacity: 0" data-spine-comet>
+      <circle class="comet-halo" r="7"></circle>
+      <circle class="comet-core" r="2.2"></circle>
+      <path
+        class="comet-spark"
+        d="M0 -5.5 L1.2 -1.2 L5.5 0 L1.2 1.2 L0 5.5 L-1.2 1.2 L-5.5 0 L-1.2 -1.2 Z"
+      ></path>
+    </g>
+  </svg>
+</div>
+
+<script>
+  const SVG_NS = "http://www.w3.org/2000/svg";
+  const TRAIL = 140; // px of bright streak behind the comet head
+  const WEAVE = 26; // px the filament bows left/right between dots
+
+  // Colour the comet takes on inside each chapter (matches eyebrow accents).
+  const ACCENTS: Record<string, string> = {
+    work: "#5B8DEF",
+    about: "#5B8DEF",
+    writing: "#34D399",
+    filmmaking: "#F5A524",
+    contact: "#5B8DEF",
+  };
+
+  const root = document.querySelector<HTMLElement>("[data-scroll-spine]");
+  const wrapper = root?.closest<HTMLElement>(".snap-chapters");
+
+  if (root && wrapper) {
+    const svg = root.querySelector<SVGSVGElement>("[data-spine-svg]")!;
+    const grad = root.querySelector<SVGLinearGradientElement>("[data-spine-grad]")!;
+    const basePath = root.querySelector<SVGPathElement>("[data-spine-base]")!;
+    const progPath = root.querySelector<SVGPathElement>("[data-spine-progress]")!;
+    const trailPath = root.querySelector<SVGPathElement>("[data-spine-trail]")!;
+    const comet = root.querySelector<SVGGElement>("[data-spine-comet]")!;
+
+    const desktop = window.matchMedia("(min-width: 1024px)");
+    const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
+
+    type Anchor = { el: HTMLElement; y: number; color: string };
+    let anchors: Anchor[] = [];
+    let totalLen = 0;
+    let startY = 0;
+    let endY = 1;
+    let wrapTop = 0;
+    let built = false;
+
+    // Transform-free coordinates relative to the wrapper, so the in-flight
+    // reveal animations (translateY) don't skew where we think dots live.
+    const offsetTo = (el: HTMLElement) => {
+      let x = 0;
+      let y = 0;
+      let n: HTMLElement | null = el;
+      while (n && n !== wrapper) {
+        x += n.offsetLeft;
+        y += n.offsetTop;
+        n = n.offsetParent as HTMLElement | null;
+      }
+      return { x, y };
+    };
+
+    // Catmull-Rom through the waypoints -> smooth cubic bezier path.
+    const smooth = (pts: { x: number; y: number }[]) => {
+      let d = `M ${pts[0].x.toFixed(1)} ${pts[0].y.toFixed(1)}`;
+      for (let i = 0; i < pts.length - 1; i++) {
+        const p0 = pts[i - 1] || pts[i];
+        const p1 = pts[i];
+        const p2 = pts[i + 1];
+        const p3 = pts[i + 2] || p2;
+        const c1x = p1.x + (p2.x - p0.x) / 6;
+        const c1y = p1.y + (p2.y - p0.y) / 6;
+        const c2x = p2.x - (p3.x - p1.x) / 6;
+        const c2y = p2.y - (p3.y - p1.y) / 6;
+        d += ` C ${c1x.toFixed(1)} ${c1y.toFixed(1)} ${c2x.toFixed(1)} ${c2y.toFixed(1)} ${p2.x.toFixed(1)} ${p2.y.toFixed(1)}`;
+      }
+      return d;
+    };
+
+    const build = () => {
+      if (!desktop.matches) {
+        built = false;
+        return;
+      }
+      const dots = Array.from(
+        document.querySelectorAll<HTMLElement>("[data-spine-dot]"),
+      );
+      if (dots.length < 2) return;
+
+      const W = wrapper.clientWidth;
+      const H = wrapper.offsetHeight;
+      wrapTop = wrapper.getBoundingClientRect().top + window.scrollY;
+      svg.setAttribute("viewBox", `0 0 ${W} ${H}`);
+
+      anchors = dots.map((el) => {
+        const o = offsetTo(el);
+        const section = el.closest("section");
+        return {
+          el,
+          y: o.y + el.offsetHeight / 2,
+          x: o.x + 3.2, // centre of the 0.4rem eyebrow dot
+          color: ACCENTS[section?.id ?? ""] || "#5B8DEF",
+        } as Anchor & { x: number };
+      });
+
+      // Waypoints: born centred under the hero's scroll cue, then weaving
+      // through every eyebrow dot, bowing alternately left/right between them.
+      const pts: { x: number; y: number }[] = [];
+      const home = document.getElementById("home");
+      if (home) {
+        pts.push({ x: W / 2, y: home.offsetTop + home.offsetHeight - 24 });
+      }
+      let sign = 1;
+      for (const a of anchors as (Anchor & { x: number })[]) {
+        const prev = pts[pts.length - 1];
+        if (prev) {
+          pts.push({
+            x: (prev.x + a.x) / 2 + sign * WEAVE,
+            y: (prev.y + a.y) / 2,
+          });
+          sign = -sign;
+        }
+        pts.push({ x: a.x, y: a.y });
+      }
+
+      const d = smooth(pts);
+      basePath.setAttribute("d", d);
+      progPath.setAttribute("d", d);
+      trailPath.setAttribute("d", d);
+
+      totalLen = progPath.getTotalLength();
+      startY = pts[0].y;
+      endY = anchors[anchors.length - 1].y;
+      progPath.style.strokeDasharray = `${totalLen} ${totalLen}`;
+      trailPath.style.strokeDasharray = `${TRAIL} ${totalLen}`;
+
+      // Vertical gradient pinned to each chapter's dot, so the filament
+      // itself shifts blue -> emerald -> amber -> blue down the page.
+      grad.setAttribute("y2", String(H));
+      grad.innerHTML = "";
+      const stops: [number, string][] = [
+        [Math.max(0, startY / H), "#5B8DEF"],
+        ...anchors.map((a): [number, string] => [a.y / H, a.color]),
+      ];
+      for (const [offset, color] of stops) {
+        const stop = document.createElementNS(SVG_NS, "stop");
+        stop.setAttribute("offset", offset.toFixed(4));
+        stop.setAttribute("stop-color", color);
+        grad.appendChild(stop);
+      }
+
+      built = true;
+      update();
+    };
+
+    const update = () => {
+      if (!built || !desktop.matches) return;
+      if (reduceMotion.matches) {
+        // Static filament, fully drawn, no moving parts.
+        progPath.style.strokeDashoffset = "0";
+        trailPath.style.opacity = "0";
+        comet.style.opacity = "0";
+        anchors.forEach((a) => a.el.classList.add("dot-lit"));
+        return;
+      }
+
+      const y = window.scrollY + window.innerHeight * 0.42 - wrapTop;
+      const t = Math.min(1, Math.max(0, (y - startY) / (endY - startY)));
+      const len = totalLen * t;
+
+      progPath.style.strokeDashoffset = String(totalLen - len);
+      trailPath.style.strokeDashoffset = String(TRAIL - len);
+
+      const pt = progPath.getPointAtLength(len);
+      comet.setAttribute("transform", `translate(${pt.x} ${pt.y})`);
+      comet.style.opacity = t > 0.002 ? "1" : "0";
+
+      let color = "#5B8DEF";
+      for (const a of anchors) {
+        const passed = pt.y >= a.y - 6;
+        a.el.classList.toggle("dot-lit", passed);
+        if (passed) color = a.color;
+      }
+      root.style.setProperty("--comet-color", color);
+      trailPath.style.stroke = color;
+    };
+
+    let ticking = false;
+    const onScroll = () => {
+      if (ticking) return;
+      ticking = true;
+      requestAnimationFrame(() => {
+        update();
+        ticking = false;
+      });
+    };
+
+    let resizeTimer: ReturnType<typeof setTimeout>;
+    const onResize = () => {
+      clearTimeout(resizeTimer);
+      resizeTimer = setTimeout(build, 200);
+    };
+
+    window.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("resize", onResize);
+    window.addEventListener("load", build);
+    desktop.addEventListener("change", build);
+    reduceMotion.addEventListener("change", build);
+    build();
+  }
+</script>
