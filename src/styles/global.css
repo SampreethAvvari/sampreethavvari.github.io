@@ -671,48 +671,22 @@ html.snap-home {
 }
 
 /* ───────────────────────────────────────────────────────────────────
-   SCROLL SPINE — the glowing comet that accompanies you down the page.
-   A hair-thin curved filament runs from under the hero through every
-   chapter's eyebrow dot; a comet head with a soft trail rides it as you
-   scroll, taking on each chapter's accent colour. Decorative only:
-   pointer-events none, behind all content, desktop only.
+   SCROLL SPINE — the fairy-comet that twirls down the left margin as you
+   scroll. No visible path: only the comet head + glitter smudge, painted
+   on a viewport-fixed canvas (same particle language as the cursor trail
+   in Pointer.jsx, smudgier). Painted behind all section content because
+   .scroll-spine sits first in the wrapper. Decorative only: pointer-events
+   none, desktop only.
    ─────────────────────────────────────────────────────────────────── */
 .scroll-spine {
   position: absolute;
   inset: 0;
   pointer-events: none;
   z-index: 0;
-  --comet-color: #5B8DEF;
-}
-.scroll-spine svg {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  overflow: visible;
 }
 @media (max-width: 1023px) {
   .scroll-spine { display: none; }
 }
-
-/* Dormant filament — always there, barely-there. */
-.spine-base {
-  fill: none;
-  stroke-width: 1.25;
-  opacity: 0.16;
-}
-html:not(.dark) .spine-base { opacity: 0.22; }
-
-/* Travelled portion — draws in behind the comet. */
-.spine-progress {
-  fill: none;
-  stroke-width: 1.5;
-  opacity: 0.5;
-}
-
-/* Comet head + glitter smudge live on a viewport-fixed canvas (same particle
-   language as the cursor trail in Pointer.jsx, smudgier). Painted behind all
-   section content because .scroll-spine sits first in the wrapper. */
 .spine-canvas {
   position: fixed;
   top: 0;
