@@ -9,6 +9,7 @@ export default function Nav({ searchItems }) {
 
   const navLinks = [
     { name: "Home", href: "/#home", icon: "fas fa-home", match: "home" },
+    { name: "Work", href: "/work", icon: "fas fa-layer-group", match: "work" },
     { name: "Projects", href: "/projects", icon: "fas fa-code", match: "projects" },
     { name: "Filmmaking", href: "/filmmaking", icon: "fas fa-clapperboard", match: "filmmaking" },
     { name: "Blog", href: "/posts", icon: "fas fa-pen-nib", match: "posts" },
