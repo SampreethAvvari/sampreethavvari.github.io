@@ -40,7 +40,7 @@ Hybridge projects (each has a dedicated blog post on his portfolio):
 4. Cowork Dashboard (slug: cowork-dashboard). Apps Script web app on weekly
    Monday.com exports for two clinics. Patient-to-lead linkage jumped from 49%
    to 99% by joining on the Monday connect column rather than a name composite.
-   ~$169k of orphan re-treatment revenue surfaced. Weekly reconciliation went
+   ~$460k of orphan patient value surfaced. Weekly reconciliation went
    from half a day to 3 minutes.
 
 5. Accounting Automation Suite (slug: accounting-automation). A dozen Python
