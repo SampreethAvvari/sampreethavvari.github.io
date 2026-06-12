@@ -1,0 +1,33 @@
+---
+// Sub-tab navigation for the /work area. Sticky under the navbar; the
+// active tab is tinted with its discipline accent. `active` is "all" on
+// the /work index or a discipline slug on detail pages.
+import { disciplines } from "../../data/disciplines";
+
+interface Props {
+  active: "all" | "aie" | "fde" | "mle" | "sde";
+}
+const { active } = Astro.props;
+---
+
+<nav class="work-tabs" aria-label="Work disciplines">
+  <a
+    href="/work"
+    class={`no-lift work-tab ${active === "all" ? "active" : ""}`}
+    style="--dx: #0066CC; --dx-rgb: 0, 102, 204;"
+  >
+    <i class="fa-solid fa-grip text-xs" aria-hidden="true"></i>
+    Overview
+  </a>
+  {disciplines.map((d) => (
+    <a
+      href={`/work/${d.slug}`}
+      class={`no-lift work-tab ${active === d.slug ? "active" : ""}`}
+      style={`--dx: ${d.accent}; --dx-rgb: ${d.rgb};`}
+    >
+      <i class={`${d.icon} text-xs`} aria-hidden="true"></i>
+      <span class="hidden sm:inline">{d.name}</span>
+      <span class="sm:hidden font-mono tracking-widest">{d.acronym}</span>
+    </a>
+  ))}
+</nav>

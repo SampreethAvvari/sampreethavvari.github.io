@@ -1,0 +1,205 @@
+---
+// /work/<slug> — one in-depth page per discipline (aie, fde, mle, sde).
+// Hero with generated artwork + narrative, strengths grid, full project
+// cards with status chips and highlights, articles strip, prev/next nav.
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import WorkTabs from "../../components/work_section/WorkTabs.astro";
+import { disciplines } from "../../data/disciplines";
+import { Image } from "astro:assets";
+
+export function getStaticPaths() {
+  return disciplines.map((d) => ({ params: { slug: d.slug }, props: { d } }));
+}
+
+const { d } = Astro.props;
+const idx = disciplines.findIndex((x) => x.slug === d.slug);
+const prev = disciplines[(idx + disciplines.length - 1) % disciplines.length];
+const next = disciplines[(idx + 1) % disciplines.length];
+
+const statusTone = (s: string) =>
+  s === "In production" || s === "Live" || s === "Running program"
+    ? "dx-chip-live"
+    : s === "Pilot-ready" || s === "In build"
+      ? "dx-chip-soon"
+      : "dx-chip-design";
+---
+
+<BaseLayout title={`${d.name} — Sampreeth Avvari`}>
+  <div
+    class="mx-auto w-full max-w-screen-2xl px-6 lg:px-12 pt-24 lg:pt-32 pb-20"
+    style={`--dx: ${d.accent}; --dx-rgb: ${d.rgb};`}
+  >
+    <WorkTabs active={d.slug} />
+
+    <!-- Hero -->
+    <header class="mt-8 grid lg:grid-cols-12 gap-10 lg:gap-14 items-center reveal" data-reveal>
+      <div class="lg:col-span-7">
+        <div class="flex items-center gap-3 mb-5">
+          <span class="dx-acronym">{d.acronym}</span>
+          <span class="text-xs uppercase tracking-[0.18em] text-text/45 dark:text-dk-text/45 font-semibold">
+            Discipline {String(idx + 1).padStart(2, "0")} / 04
+          </span>
+        </div>
+        <h1 class="display text-text dark:text-dk-text mb-6 glow-wave">
+          <span style={`color: ${d.accent};`}>{d.name}</span>
+        </h1>
+        <p class="text-lg lg:text-xl text-text/75 dark:text-dk-text/75 leading-relaxed max-w-2xl">
+          {d.tagline}
+        </p>
+      </div>
+      <div class="lg:col-span-5">
+        <div class="work-hero-img">
+          <Image
+            src={d.heroImg}
+            alt={`${d.name} abstract artwork`}
+            width={960}
+            height={540}
+            class="w-full aspect-video object-cover"
+          />
+        </div>
+      </div>
+    </header>
+
+    <!-- Narrative -->
+    <section class="mt-14 lg:mt-20 max-w-3xl reveal" data-reveal>
+      <p class="eyebrow mb-5" style={`color: ${d.accent};`}>The story</p>
+      <div class="space-y-5">
+        {d.narrative.map((para) => (
+          <p class="text-base lg:text-lg text-text/75 dark:text-dk-text/75 leading-relaxed">
+            {para}
+          </p>
+        ))}
+      </div>
+    </section>
+
+    <!-- Strengths -->
+    <section class="mt-14 lg:mt-20 reveal" data-reveal>
+      <p class="eyebrow mb-6" style={`color: ${d.accent};`}>What I bring</p>
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+        {d.strengths.map((s) => (
+          <div class="skills-card" style={`--sk: ${d.accent}; --sk-rgb: ${d.rgb};`}>
+            <p class="text-sm font-bold text-text dark:text-dk-text mb-2 tracking-tight">
+              {s.title}
+            </p>
+            <p class="text-[0.82rem] text-text/65 dark:text-dk-text/65 leading-relaxed">
+              {s.body}
+            </p>
+          </div>
+        ))}
+      </div>
+    </section>
+
+    <!-- Projects -->
+    <section class="mt-14 lg:mt-20 reveal" data-reveal>
+      <p class="eyebrow mb-2" style={`color: ${d.accent};`}>The projects</p>
+      <h2 class="display-sm text-text dark:text-dk-text mb-8">
+        Built, shipped, and used.
+      </h2>
+      <div class="flex flex-col gap-5">
+        {d.projects.map((p) => (
+          <article class="work-project-card">
+            {p.img ? (
+              <Image src={p.img} alt={`${p.name} preview`} width={480} height={320} class="work-project-img" />
+            ) : (
+              <div
+                class="work-project-img grid place-items-center text-3xl"
+                style={`background: rgba(${d.rgb}, 0.07); color: ${d.accent};`}
+                aria-hidden="true"
+              >
+                <i class={d.icon}></i>
+              </div>
+            )}
+            <div>
+              <div class="flex items-center flex-wrap gap-3 mb-2">
+                <h3 class="text-xl lg:text-2xl font-bold tracking-tight text-text dark:text-dk-text">
+                  {p.href ? (
+                    <a href={p.href} class="no-lift hover:text-[var(--dx)] transition">{p.name}</a>
+                  ) : (
+                    p.name
+                  )}
+                </h3>
+                <span class={`dx-chip ${statusTone(p.status)}`} style="margin-top: 0;">{p.status}</span>
+              </div>
+              <p class="text-sm lg:text-base text-text/70 dark:text-dk-text/70 leading-relaxed mb-4 max-w-3xl">
+                {p.oneLiner}
+              </p>
+              {p.highlights && (
+                <ul class="grid sm:grid-cols-2 gap-x-8 gap-y-2 mb-4">
+                  {p.highlights.map((h) => (
+                    <li class="work-highlight">{h}</li>
+                  ))}
+                </ul>
+              )}
+              {p.href && (
+                <a
+                  href={p.href}
+                  class="link-underline text-sm font-semibold"
+                  style={`color: ${d.accent};`}
+                >
+                  Read the full story <span aria-hidden="true">→</span>
+                </a>
+              )}
+            </div>
+          </article>
+        ))}
+      </div>
+    </section>
+
+    <!-- Articles -->
+    <section class="mt-14 lg:mt-20 reveal" data-reveal>
+      <p class="eyebrow mb-2" style={`color: ${d.accent};`}>The writing</p>
+      <h2 class="display-sm text-text dark:text-dk-text mb-8">
+        Notes from this side of the work.
+      </h2>
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+        {d.articles.map((a) => (
+          <a href={a.href} class="no-lift post-card group flex flex-col">
+            {a.img && (
+              <div class="relative overflow-hidden">
+                <Image
+                  src={a.img}
+                  alt=""
+                  width={600}
+                  height={320}
+                  class="w-full h-36 object-cover transition duration-500 group-hover:scale-[1.04]"
+                />
+              </div>
+            )}
+            <div class="p-5 flex flex-col gap-2 flex-1">
+              <h3 class="text-base lg:text-lg font-bold tracking-tight text-text dark:text-dk-text leading-snug group-hover:text-[var(--dx)] transition">
+                {a.title}
+              </h3>
+              <span class="text-xs font-semibold mt-auto" style={`color: ${d.accent};`}>
+                Read <span aria-hidden="true">→</span>
+              </span>
+            </div>
+          </a>
+        ))}
+      </div>
+    </section>
+
+    <!-- Prev / next -->
+    <nav class="mt-16 pt-8 border-t border-text/10 dark:border-dk-text/10 flex items-center justify-between gap-4" aria-label="Discipline navigation">
+      <a
+        href={`/work/${prev.slug}`}
+        class="no-lift group inline-flex items-center gap-3 text-sm font-semibold text-text/60 dark:text-dk-text/60 hover:text-text dark:hover:text-dk-text transition"
+      >
+        <span aria-hidden="true" class="transition-transform group-hover:-translate-x-1">←</span>
+        <span>
+          <span class="block text-[0.62rem] uppercase tracking-[0.16em] text-text/40 dark:text-dk-text/40">Previous</span>
+          {prev.name}
+        </span>
+      </a>
+      <a
+        href={`/work/${next.slug}`}
+        class="no-lift group inline-flex items-center gap-3 text-sm font-semibold text-text/60 dark:text-dk-text/60 hover:text-text dark:hover:text-dk-text transition text-right"
+      >
+        <span>
+          <span class="block text-[0.62rem] uppercase tracking-[0.16em] text-text/40 dark:text-dk-text/40">Next</span>
+          {next.name}
+        </span>
+        <span aria-hidden="true" class="transition-transform group-hover:translate-x-1">→</span>
+      </a>
+    </nav>
+  </div>
+</BaseLayout>
