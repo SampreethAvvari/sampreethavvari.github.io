@@ -93,7 +93,7 @@ export const info = {
           "[Pipeline observability hardening](/posts/pipeline-ghosting). Hardened that same QA pipeline after it kept showing ✅ complete while emails never sent and Sheet rows never appeared. Killed 9 silent-failure modes (bare-except graveyard, connection-level retry gaps, status-color drift), added durable webhook rows, a rerun-replaces-old flow, a consistency reconciler, and a plain-English Logs UI. 51/0/0 in the audit, +50 targeted tests.",
           "[CBCT Scan Validator](/posts/cbct-scan-validator). In-house dental CT classifier. Replaced a $98K + $26K/yr vendor quote with a Cloud Run service under $50/mo. Frozen DentalSegmentator + multi-scale head, OpenVINO on CPU, ~5.5s end-to-end. 20-scan CICT gate on every push.",
           "[Treatment Estimator](/posts/treatment-estimator). Next.js + Postgres rebuild of a decade-old quoting tool. Write-once `_at_capture` columns + Postgres triggers turn the 6-month price guarantee into a real DB invariant. Shipped end-to-end in ~1 month; a prior vendor never shipped in a decade.",
-          "[Cowork Dashboard](/posts/cowork-dashboard). Apps Script on weekly Monday.com exports. Patient-to-lead linkage went from 49% to 99% via the Monday connect column. Surfaced ~$169k of orphan revenue. Weekly recon: half a day → 3 minutes.",
+          "[Cowork Dashboard](/posts/cowork-dashboard). Apps Script on weekly Monday.com exports. Patient-to-lead linkage went from 49% to 99% via the Monday connect column. Surfaced ~$460k of orphan patient value. Weekly recon: half a day → 3 minutes.",
           "[Accounting Automation Suite](/posts/accounting-automation). A dozen Python scripts that replaced the controller's manual weekly imports across Denticon, MagicTouch, Paychex, and two banks. ~6-8 hrs/week → 30-45 min. ~400 hrs/yr recovered.",
           "Cross-cutting MLOps: one shared ETL module so train/serve skew is impossible. Hot-swap checkpoints via GCS, tag-based Cloud Build CI/CD, OpenTelemetry with strict no-PHI logs.",
         ],
@@ -370,7 +370,7 @@ export const info = {
           "Replaced a brittle live-API dashboard with weekly Excel exports. Two clinics, one source of truth.",
         stats: [
           { value: "49% → 99%", label: "Patient ↔ lead linkage" },
-          { value: "$169k", label: "Orphan revenue surfaced" },
+          { value: "~$460k", label: "Orphan value surfaced" },
           { value: "½ day → 3 min", label: "Weekly recon time" },
           { value: "6 tabs, 1 truth", label: "Shared metrics module" },
         ],
@@ -382,7 +382,7 @@ export const info = {
           process:
             "Found that Monday's connect column (a real board_relation, not a mirror) survives Excel export. Encoded every business rule explicitly: marketing taxonomy, location filter, excluded reasons, scheduled-date semantics, consult-show parsing.",
           result:
-            "Linkage 49.5% / 65.3% → 98.8% / 99.9% across two boards. Weekly recon: half a day → 3 minutes. Surfaced 24 orphan re-treatment patients worth $169k of YTD treatment value.",
+            "Linkage 49.5% / 65.3% → 98.8% / 99.9% across two boards. Weekly recon: half a day → 3 minutes. Surfaced orphan re-treatment patients worth ~$460k of treatment value.",
         },
         summary:
           "Apps Script web app on weekly Monday.com exports for two clinics (Rochester / Buffalo).",
@@ -390,7 +390,7 @@ export const info = {
           "Linkage 49% → 99% via the Monday connect column.",
           "Weekly recon: half a day → 3 minutes.",
           "Six tabs share one filter bar and one metric module.",
-          "Surfaced $169k of orphan revenue the old dashboard was silently dropping.",
+          "Surfaced ~$460k of orphan patient value the old dashboard was silently dropping.",
         ],
       },
       tech: ["Google Apps Script", "Monday.com GraphQL", "Drive API", "Chart.js", "JavaScript"],

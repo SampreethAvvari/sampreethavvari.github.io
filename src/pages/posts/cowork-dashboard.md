@@ -11,8 +11,8 @@ stats:
   - value: "49% → 99%"
     label: "patient-to-lead linkage"
     tone: "blue"
-  - value: "~$169k"
-    label: "revenue surfaced"
+  - value: "~$460k"
+    label: "orphan value surfaced"
     tone: "emerald"
   - value: "½ day → 3 min"
     label: "weekly reconciliation"
@@ -42,11 +42,11 @@ Both Patient boards already had a real pointer field back to the Leads board. Mo
 
 I switched the join from "match by name + creation date" to "match by the linked lead's name string." That one change took the linkage to 99%.
 
-The 25 leftover patients were re-treatment cases the ops team had filed without creating a Lead row. Combined treatment value: **~$169k of YTD revenue** that nobody had been counting.
+The 25 leftover patients were re-treatment cases the ops team had filed without creating a Lead row. Combined treatment value: **~$460k of patient value** that nobody had been attributing.
 
 <div class="stat-callout stat-emerald">
-  <div class="stat-value">$169k</div>
-  <div class="stat-label">Orphan re-treatment revenue surfaced after a single schema fix</div>
+  <div class="stat-value">~$460k</div>
+  <div class="stat-label">Orphan patient value surfaced after a single schema fix</div>
 </div>
 
 ## One source of truth, finally
