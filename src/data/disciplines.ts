@@ -57,9 +57,9 @@ export const disciplines: Discipline[] = [
     summary:
       "I build LLM pipelines for healthcare, where a made-up sentence isn't a quirk, it's a liability. Every system I ship forces the model into a schema, makes it cite its evidence, strips patient data before inference, and routes anything uncertain to a person.",
     narrative: [
-      "Most of my AI work runs inside a dental implant company, which means HIPAA, real patients, and zero tolerance for confident nonsense. That constraint shaped how I build: the model never free-writes. It fills a validated JSON schema, cites a verbatim transcript quote for every claim it makes, and gets one retry with a hardened prompt before the pipeline escalates to a human.",
+      "Most of my AI work has shipped inside Hybridge, a dental implant company. That means HIPAA, real patients, and zero tolerance for confident nonsense. The constraint shaped how I build: the model never free-writes. It fills a validated JSON schema, cites a verbatim transcript quote for every claim it makes, and gets one retry with a hardened prompt before the pipeline escalates to a human.",
       "The pattern repeats across systems. The consultation grader scores doctors against their own 30-day average, not an arbitrary bar. The call-coaching pipeline runs Cloud DLP de-identification before the model ever sees a transcript, so the LLM physically can't leak what it never saw. Patient de-duplication proposes matches with confidence scores but never merges on its own.",
-      "I think of it as designing the cage before admiring the animal. The interesting work isn't the prompt, it's everything around it: schemas, retries, idempotency, audit trails, and the judgment call about where a human stays in the loop.",
+      "The interesting work isn't the prompt. It's everything around it: schemas, retries, idempotency, audit trails, and deciding where a human stays in the loop.",
     ],
     strengths: [
       {
@@ -81,7 +81,7 @@ export const disciplines: Discipline[] = [
     ],
     projects: [
       {
-        name: "Doc Coach — Consultation QA",
+        name: "Doc Coach: Consultation QA",
         status: "In production",
         oneLiner:
           "Every Zoom consult scored against a 7-criterion clinical rubric by Gemini with structured output, delivered as color-coded coaching reports to doctors and the CEO within minutes of the call.",
@@ -95,7 +95,7 @@ export const disciplines: Discipline[] = [
         ],
       },
       {
-        name: "NPC Coach — Call Coaching",
+        name: "NPC Coach: Call Coaching",
         status: "Pilot-ready",
         oneLiner:
           "A Pub/Sub pipeline that coaches new-patient phone calls: bilingual transcription, Cloud DLP de-identification before the LLM, rubric scoring with hard gates, and per-coordinator trend reports.",
@@ -105,7 +105,7 @@ export const disciplines: Discipline[] = [
           "PHI stripped via Cloud DLP before any model sees the text",
           "Hard gates cap the score: miss patient identification and no rubric points save you",
           "Emergency-call logic: financial pressure on an urgent caller is a major penalty",
-          "Booking rate deliberately not a success metric — correctness over conversion",
+          "Booking rate is deliberately not a success metric. Correctness over conversion",
         ],
       },
       {
@@ -115,7 +115,7 @@ export const disciplines: Discipline[] = [
           "Inside the CRM blueprint: LLM-proposed patient de-duplication with mandatory human review, and structured extraction of five thousand free-text activity logs with the originals preserved verbatim.",
         img: "/cowork-dashboard.png",
         highlights: [
-          "No autonomous merges, ever — the data has 74 shared phone numbers (married couples)",
+          "No autonomous merges, ever. The data has 74 shared phone numbers (married couples)",
           "Every parse carries a confidence score and source reference for re-runs",
           "Consent tokens extracted into an append-only ledger",
         ],
@@ -150,17 +150,17 @@ export const disciplines: Discipline[] = [
     tagline:
       "Embedded with doctors, finance, and ops. Find the real problem, ship into their workflow, teach them to run it.",
     summary:
-      "I'm the only engineer at a dental implant company, which makes every project forward-deployed: sit with the person who has the problem, dig the requirements out of their actual data, ship into the tools they already use, then train them until they don't need me in the loop.",
+      "At Hybridge, a dental implant company, I've been the only engineer in the building. That makes every project forward-deployed: sit with the person who has the problem, dig the requirements out of their actual data, ship into the tools they already use, then train them until they don't need me in the loop.",
     narrative: [
-      "My job title says AI engineer, but the actual job is closer to embedded engineer: the stakeholders are surgeons, a CFO, treatment coordinators, and a chief sales officer, and none of them write tickets. Requirements live in their spreadsheets, their meeting transcripts, and their workarounds. The discovery work is the work.",
+      "My role at Hybridge is titled AI engineer, but the actual work is closer to embedded engineering: the stakeholders are surgeons, a CFO, treatment coordinators, and a chief sales officer, and none of them write tickets. Requirements live in their spreadsheets, their meeting transcripts, and their workarounds. The discovery work is the work.",
       "The dashboard is the cleanest example. Leadership ran the company on a hand-built Excel sheet with patient-to-lead links that silently broke on duplicate names. I rebuilt it where ops already lives (Google Sheets), encoded the ops manager's exact business rules as reviewable config, iterated on it live in meetings with the CSO, and backed every number with an independent verification harness. Fixing the linkage surfaced roughly $460K of patient value the old reports were quietly dropping.",
-      "The other half of forward-deployed work is enablement. One engineer doesn't scale; an organization that uses AI well does. I run a weekly AI Power Hour plus office hours for seven non-technical departments, built from a needs survey rather than a hype deck, with privacy and compliance addressed in every single session.",
+      "The other half of forward-deployed work is enablement. One engineer doesn't scale; an organization that uses AI well does. At Hybridge I started a weekly AI Power Hour plus office hours for seven non-technical departments, built from a needs survey rather than a hype deck, with privacy and compliance addressed in every single session.",
       "And sometimes the most valuable deliverable is the honest no. The CRM blueprint I wrote tells leadership plainly: if you won't fund ongoing engineering, the correct decision is to stay on the current vendor. Knowing when not to build is part of the job.",
     ],
     strengths: [
       {
         title: "Discovery from primary sources",
-        body: "Requirements pulled from real exports, meeting transcripts, and shadowing sessions — eight catalogued data-quality problems with row counts, not vibes.",
+        body: "Requirements pulled from real exports, meeting transcripts, and shadowing sessions: eight catalogued data quality problems with row counts, not vibes.",
       },
       {
         title: "Ship into existing workflows",
@@ -198,7 +198,7 @@ export const disciplines: Discipline[] = [
         img: "/film-and-engineering.png",
         highlights: [
           "Curriculum built from a structured 7-department needs assessment",
-          "Decks generated programmatically from a build script — versioned like code",
+          "Decks generated programmatically from a build script, versioned like code",
           "Plain language, no jargon, no code; HIPAA awareness in every session",
         ],
       },
@@ -227,7 +227,7 @@ export const disciplines: Discipline[] = [
         ],
       },
       {
-        name: "CDF — diagnostic operating system",
+        name: "CDF: diagnostic operating system",
         status: "Design complete",
         oneLiner:
           "Current frontier: a product design framework built with Hybridge's founder for unifying every imaging modality into AI-assisted, doctor-validated diagnostic reporting.",
@@ -256,9 +256,9 @@ export const disciplines: Discipline[] = [
     summary:
       "I train and ship models with the unglamorous parts done properly: versioned data pipelines with no train/serve skew, holdout gates that block bad models from promoting, experiment tracking, and honest evals. Flagship: a medical-imaging system that replaced a $98K vendor quote for about $25 a month.",
     narrative: [
-      "The CBCT scan validator is the project that taught me what production ML actually costs. The model is the small part: a self-supervised spatiotemporal masked autoencoder that runs inference in 58 milliseconds on half a gigabyte of VRAM. The big part is everything that keeps it honest — a fully automated, versioned training-data pipeline where training and inference share one preprocessing path, and a weekly CI/CT job that evaluates against a deterministic holdout and refuses to promote a model that fails the gate.",
+      "The CBCT scan validator at Hybridge is the project that taught me what production ML actually costs. The model is the small part: a self-supervised spatiotemporal masked autoencoder that runs inference in 58 milliseconds on half a gigabyte of VRAM. The big part is everything that keeps it honest: a fully automated, versioned training data pipeline where training and inference share one preprocessing path, and a weekly CI/CT job that evaluates against a deterministic holdout and refuses to promote a model that fails the gate.",
       "I benchmarked six architectures behind one shared interface before picking the production model: a 2D ConvNeXt baseline, a hybrid transformer, a 3D CNN, an nnU-Net adapter, a VAE anomaly detector, and the ST-MAE that won. When the model is wrong, confidence thresholds route the scan to a human instead of pretending.",
-      "Before Hybridge, I spent a year and a half at NYU researching whether RLHF-family methods (PPO, GRPO) could make Llama a measurably better persuader — reward modeling and preference optimization, the same machinery behind modern aligned models, pointed at argument quality. That training-side depth is why I trust myself to debug the serving side.",
+      "Before Hybridge, I spent a year and a half at NYU researching whether RLHF methods (PPO, GRPO) could make Llama a measurably better persuader. Reward modeling and preference optimization, the same machinery behind modern aligned models, pointed at argument quality. That training-side depth is why I trust myself to debug the serving side.",
     ],
     strengths: [
       {
@@ -271,7 +271,7 @@ export const disciplines: Discipline[] = [
       },
       {
         title: "Training-side depth",
-        body: "RLHF, GRPO, PPO, reward modeling at NYU; self-supervised pretraining (DINO, ST-MAE) at work. Not just an API consumer.",
+        body: "RLHF, GRPO, PPO, reward modeling at NYU; self-supervised pretraining (DINO, ST-MAE) at Hybridge. Not just an API consumer.",
       },
       {
         title: "Cost-conscious serving",
@@ -289,7 +289,7 @@ export const disciplines: Discipline[] = [
         highlights: [
           "Six architectures benchmarked behind one interface; ST-MAE won on accuracy-per-watt",
           "Event-driven inference: scan lands in storage, verdict email in ~20 seconds",
-          "Fully automated versioned training pipeline — new labeled scans flow in continuously",
+          "Fully automated versioned training pipeline; new labeled scans flow in continuously",
           "~$125K year-one cost displacement vs the vendor proposal",
         ],
       },
@@ -297,7 +297,7 @@ export const disciplines: Discipline[] = [
         name: "LLM Persuasion (NYU research)",
         status: "Research",
         oneLiner:
-          "Eighteen months of research on making Llama argue better: reward modeling over argument quality, then PPO and GRPO fine-tuning against it — the full RLHF stack, hands-on.",
+          "Eighteen months of research on making Llama argue better: reward modeling over argument quality, then PPO and GRPO fine-tuning against it. The full RLHF stack, hands on.",
         img: "/llm-persuasion.png",
         href: "/posts/llama-rlhf",
         highlights: [
@@ -328,7 +328,7 @@ export const disciplines: Discipline[] = [
         name: "RecSys at 22M records",
         status: "Academic",
         oneLiner:
-          "Spark pipeline with LSH candidate generation and ALS collaborative filtering — recommendation at a scale where O(n²) is a budget line.",
+          "Spark pipeline with LSH candidate generation and ALS collaborative filtering, built for a scale where O(n²) is a budget line.",
         img: "/customer-segmentation.png",
         href: "/posts/recsys-spark-bigdata",
       },
@@ -351,11 +351,11 @@ export const disciplines: Discipline[] = [
     tagline:
       "The foundation under everything else: schemas with invariants, test pyramids, infrastructure as code, and systems that survive their author.",
     summary:
-      "Every AI system I ship is wrapped in software built to last: databases that enforce their own rules, sixteen-thousand-line codebases held to strict typing and seven hundred tests, Terraform for everything, and runbooks so the next engineer isn't archaeology-ing my decisions.",
+      "Every AI system I ship is wrapped in software built to last: databases that enforce their own rules, codebases held to strict typing and seven hundred tests, Terraform for everything, and runbooks so the next engineer can pick it up without me.",
     narrative: [
-      "My favorite class of bug is the one the database makes impossible. The treatment estimator rewrite freezes every price at the moment it's captured — write-once columns enforced by triggers, full revision snapshots on every status change — because a patient quoted $38,000 in March deserves the same number in September, and a policy memo is weaker than a constraint.",
-      "I hold solo projects to team standards, because at a company with one engineer there's no one else to catch it: strict typing across the board, four-tier test pyramids with golden-file fixtures, idempotency at every boundary so replays never duplicate, CI/CD with keyless auth, and infrastructure that rebuilds from a clean checkout with one command.",
-      "The discipline pays off in unglamorous ways. The dashboard ships with a second, independent implementation of every metric purely as an audit oracle. The accounting platform's tests verify outputs byte-for-byte. The NPC pipeline's 734 tests run against in-memory fakes, so no test ever touches real patient data. Boring, deliberate, durable.",
+      "My favorite class of bug is the one the database makes impossible. The treatment estimator rewrite freezes every price at the moment it's captured, with write-once columns enforced by triggers and full revision snapshots on every status change, because a patient quoted $38,000 in March deserves the same number in September, and a policy memo is weaker than a constraint.",
+      "I hold solo projects to team standards, because when you're the only engineer there is no one else to catch it: strict typing across the board, four-tier test pyramids with golden-file fixtures, idempotency at every boundary so replays never duplicate, CI/CD with keyless auth, and infrastructure that rebuilds from a clean checkout with one command.",
+      "The discipline pays off in unglamorous ways. The dashboard ships with a second, independent implementation of every metric purely as an audit oracle. The accounting platform's tests verify outputs byte for byte. The NPC pipeline's 734 tests run against in-memory fakes, so no test ever touches real patient data. Boring on purpose, and durable because of it.",
     ],
     strengths: [
       {
@@ -364,7 +364,7 @@ export const disciplines: Discipline[] = [
       },
       {
         title: "Test discipline at solo scale",
-        body: "734 tests on one system, strict typing, golden-file fixtures, in-memory fakes — no real cloud, no real PHI in any test.",
+        body: "734 tests on one system, strict typing, golden-file fixtures, in-memory fakes. No real cloud, no real PHI in any test.",
       },
       {
         title: "Idempotency everywhere",
@@ -380,12 +380,12 @@ export const disciplines: Discipline[] = [
         name: "Treatment Estimator",
         status: "In production",
         oneLiner:
-          "The pricing tool coordinators use chairside during live consults — shipped in about a month after a vendor failed at it for ten years, now being rebuilt as a Next.js 16 + Postgres app with a five-model pricing engine.",
+          "The pricing tool Hybridge coordinators use chairside during live consults. Shipped in about a month after a vendor failed at it for ten years, now being rebuilt as a Next.js 16 + Postgres app with a five-model pricing engine.",
         img: "/treatment-estimator.png",
         href: "/posts/treatment-estimator",
         highlights: [
           "Frozen-price invariant: write-once columns enforced by database triggers",
-          "Per-location price books with propose/approve workflows — no developer needed for pricing changes",
+          "Per-location price books with propose/approve workflows, so pricing changes need no developer",
           "Six-year estimate reproducibility for HIPAA record-keeping",
           "~$35/month total cloud footprint",
         ],
@@ -399,7 +399,7 @@ export const disciplines: Discipline[] = [
         href: "/posts/accounting-automation",
         highlights: [
           "Golden-file tests: outputs verified byte-identical against fixtures",
-          "In-browser script editing that commits to GitHub — fixes ship without a terminal",
+          "In-browser script editing that commits to GitHub, so fixes ship without a terminal",
           "Keyless CI/CD via Workload Identity Federation",
         ],
       },
@@ -412,14 +412,14 @@ export const disciplines: Discipline[] = [
         href: "/posts/pipeline-ghosting",
         highlights: [
           "Adapter-pattern ingestion: a new call source is one new module",
-          "Four-tier test pyramid against in-memory fakes — zero PHI in the repo",
+          "Four-tier test pyramid against in-memory fakes, with zero PHI in the repo",
         ],
       },
       {
         name: "JobPilot",
         status: "Prototype",
         oneLiner:
-          "A personal SaaS prototype for job-search automation — scraping, matching, and an LLM judge — built to scratch my own itch and learn the full product loop.",
+          "A personal SaaS prototype for job search automation: scraping, matching, and an LLM judge, built to scratch my own itch and learn the full product loop.",
         img: "/jobpilot.png",
         href: "/posts/jobpilot-v2",
         highlights: [
