@@ -436,7 +436,16 @@ const liveSections = sections.filter((s) => s.count > 0).length;
     chips.forEach((chip, key) => {
       const on = key === slug;
       chip.classList.toggle("work-chip-active", on);
-      if (on) chip.scrollIntoView({ block: "nearest", inline: "nearest", behavior: "smooth" });
+      if (on) {
+        // Scroll only the horizontal rail, never the page: scrollIntoView
+        // walks every scrollable ancestor and yanks the document's vertical
+        // scroll back toward the sticky rail while the user is scrolling.
+        const track = chip.closest<HTMLElement>(".work-rail-track");
+        if (track) {
+          const left = chip.offsetLeft - (track.clientWidth - chip.offsetWidth) / 2;
+          track.scrollTo({ left: Math.max(0, left), behavior: "smooth" });
+        }
+      }
     });
   };
 
