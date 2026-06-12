@@ -1,0 +1,99 @@
+---
+// Landing-page "01 / What I do" section: the four disciplines as side-by-side
+// accent-washed panels. Each panel previews two projects + one article and
+// links into its /work/<slug> deep dive. Data: src/data/disciplines.ts.
+import { disciplines } from "../../data/disciplines";
+import { Image } from "astro:assets";
+
+const statusTone = (s: string) =>
+  s === "In production" || s === "Live" || s === "Running program"
+    ? "dx-chip-live"
+    : s === "Pilot-ready" || s === "In build"
+      ? "dx-chip-soon"
+      : "dx-chip-design";
+---
+
+<section class="chapter snap-chapter chapter-fade" id="disciplines">
+  <div class="mx-auto w-full max-w-screen-2xl px-6 lg:px-12">
+    <div class="max-w-4xl reveal" data-reveal>
+      <p class="eyebrow text-secondary dark:text-dk-secondary mb-3" data-spine-dot>
+        01 / What I do
+      </p>
+      <h2 class="display-sm text-text dark:text-dk-text mb-3 glow-wave" data-spine-heading>
+        Four disciplines, one job.
+      </h2>
+      <p class="text-base lg:text-lg text-text/70 dark:text-dk-text/70 leading-relaxed max-w-2xl">
+        Solo AI engineer at a dental implant company. The work splits into four
+        kinds of engineering, and every shipped system borrows from all of them.
+      </p>
+    </div>
+
+    <div
+      class="mt-8 lg:mt-12 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 lg:gap-5 reveal"
+      data-reveal
+    >
+      {disciplines.map((d, i) => (
+        <a
+          href={`/work/${d.slug}`}
+          class={`no-lift dx-panel group dx-delay-${i}`}
+          style={`--dx: ${d.accent}; --dx-rgb: ${d.rgb};`}
+        >
+          <div class="dx-panel-head">
+            <span class="dx-acronym">{d.acronym}</span>
+            <span class="dx-icon" aria-hidden="true"><i class={d.icon}></i></span>
+          </div>
+          <h3 class="dx-name">{d.name}</h3>
+          <p class="dx-tagline">{d.tagline}</p>
+
+          <ul class="dx-previews">
+            {d.projects.slice(0, 2).map((p) => (
+              <li class="dx-preview-row">
+                {p.img && (
+                  <Image
+                    src={p.img}
+                    alt=""
+                    width={96}
+                    height={64}
+                    class="dx-thumb"
+                  />
+                )}
+                <div class="min-w-0">
+                  <p class="dx-preview-name">{p.name}</p>
+                  <span class={`dx-chip ${statusTone(p.status)}`}>{p.status}</span>
+                </div>
+              </li>
+            ))}
+            {d.articles.slice(0, 1).map((a) => (
+              <li class="dx-preview-row dx-preview-article">
+                {a.img && (
+                  <Image src={a.img} alt="" width={96} height={64} class="dx-thumb" />
+                )}
+                <div class="min-w-0">
+                  <p class="dx-preview-kicker">From the blog</p>
+                  <p class="dx-preview-name">{a.title}</p>
+                </div>
+              </li>
+            ))}
+          </ul>
+
+          <span class="dx-explore">
+            Explore {d.acronym}
+            <span aria-hidden="true" class="transition-transform group-hover:translate-x-1">→</span>
+          </span>
+        </a>
+      ))}
+    </div>
+
+    <div class="mt-8 flex items-center justify-between flex-wrap gap-4">
+      <a
+        href="/work"
+        class="link-underline text-sm font-semibold text-secondary dark:text-dk-secondary"
+      >
+        The full work breakdown <span aria-hidden="true">→</span>
+      </a>
+      <p class="text-xs text-text/40 dark:text-dk-text/40">
+        AIE and FDE are where I live; MLE and SDE are how it ships
+      </p>
+    </div>
+  </div>
+</section>

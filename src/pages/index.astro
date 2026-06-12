@@ -3,6 +3,7 @@ import BaseLayout from "../layouts/BaseLayout.astro";
 import { info } from "../data/info";
 import Contact from "../components/contact_section/Contact";
 import ScrollSpine from "../components/ScrollSpine.astro";
+import DisciplineGrid from "../components/work_section/DisciplineGrid.astro";
 import { Image } from "astro:assets";
 
 const allPosts = await Astro.glob("../pages/posts/*.md");
@@ -51,8 +52,8 @@ const systems = [
     name: "Cowork Dashboard",
     tagline:
       "I fixed the link between patients and leads (49% → 99%) and found six figures of revenue the old dashboard was quietly dropping.",
-    metric: "$169k",
-    metricLabel: "of revenue surfaced",
+    metric: "~$460K",
+    metricLabel: "of orphan revenue surfaced",
     accent: "#5B8DEF",
     href: "/posts/cowork-dashboard",
   },
@@ -161,7 +162,7 @@ const skillBuckets = [
           </p>
           <div class="flex flex-wrap items-center justify-center lg:justify-start gap-3 pt-2">
             <a
-              href="#work"
+              href="#disciplines"
               class="no-lift inline-flex items-center gap-2 rounded-full px-6 py-3 bg-text text-primary dark:bg-dk-text dark:text-dk-primary text-sm font-semibold hover:opacity-85 transition"
             >
               See the work <span aria-hidden="true">↓</span>
@@ -183,7 +184,7 @@ const skillBuckets = [
       </div>
 
       <a
-        href="#work"
+        href="#disciplines"
         aria-label="Scroll"
         class="no-lift absolute bottom-8 left-1/2 -translate-x-1/2 text-text/40 dark:text-dk-text/40 hover:text-text dark:hover:text-dk-text transition animate-pulse"
       >
@@ -191,12 +192,15 @@ const skillBuckets = [
       </a>
     </section>
 
-    <!-- ── Chapter 2: The work ───────────────────────────────────────────── -->
+    <!-- ── Chapter 2: What I do (four disciplines) ───────────────────────── -->
+    <DisciplineGrid />
+
+    <!-- ── Chapter 3: The work ───────────────────────────────────────────── -->
     <section class="chapter snap-chapter chapter-fade" id="work">
       <div class="mx-auto w-full max-w-screen-2xl px-6 lg:px-12">
         <div class="max-w-4xl reveal" data-reveal>
           <p class="eyebrow text-secondary dark:text-dk-secondary mb-3" data-spine-dot>
-            01 / The work
+            02 / The work
           </p>
           <h2 class="display-sm text-text dark:text-dk-text mb-3 glow-wave" data-spine-heading>
             Five systems, inside a dental practice.
@@ -278,7 +282,7 @@ const skillBuckets = [
         <div class="grid lg:grid-cols-12 gap-10 lg:gap-16 items-start">
           <div class="lg:col-span-7 reveal" data-reveal>
             <p class="eyebrow text-secondary dark:text-dk-secondary mb-5" data-spine-dot>
-              02 / About
+              03 / About
             </p>
             <h2 class="display-sm text-text dark:text-dk-text mb-6 glow-wave max-w-2xl" data-spine-heading>
               An engineer who happens to <span class="text-secondary dark:text-dk-secondary">make movies</span>.
@@ -393,7 +397,7 @@ const skillBuckets = [
         <div class="flex items-end justify-between mb-10 reveal" data-reveal>
           <div>
             <p class="eyebrow text-acc-emerald dark:text-acc-emerald mb-4" data-spine-dot>
-              03 / Writing
+              04 / Writing
             </p>
             <h2 class="display-sm text-text dark:text-dk-text glow-wave" data-spine-heading>
               Notes from <span class="text-acc-emerald">the work</span>.
@@ -470,7 +474,7 @@ const skillBuckets = [
       >
         <div class="lg:col-span-6 reveal" data-reveal>
           <p class="eyebrow text-acc-amber dark:text-acc-amber mb-4" data-spine-dot>
-            04 / Filmmaking
+            05 / Filmmaking
           </p>
           <h2 class="display-sm text-text dark:text-dk-text mb-6 glow-wave" data-spine-heading>
             "Gray characters, <span class="text-acc-amber">tight spaces</span>, and the chaos hiding inside ordinary lives."
@@ -536,7 +540,7 @@ const skillBuckets = [
         data-reveal
       >
         <p class="eyebrow text-secondary dark:text-dk-secondary mb-4" data-spine-dot>
-          05 / Connect
+          06 / Connect
         </p>
         <h2 class="display text-text dark:text-dk-text mb-6 glow-wave" data-spine-heading>
           Let's build <span class="text-secondary dark:text-dk-secondary">something</span>.
