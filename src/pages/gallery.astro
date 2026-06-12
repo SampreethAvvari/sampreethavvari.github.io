@@ -1,0 +1,837 @@
+﻿---
+import BaseLayout from "../layouts/BaseLayout.astro";
+import fs from "node:fs";
+import path from "node:path";
+
+const title = "SA: Gallery";
+
+/*
+  Filesystem-driven gallery.
+
+  Drop screenshots (png / jpg / jpeg / webp / gif / avif) and documents (pdf)
+  into  public/gallery/<project-slug>/  and they appear here on the next build.
+  - File order: alphabetical with numeric awareness â€” prefix "01-", "02-" to control order.
+  - Captions: derived from the filename ("03-analyze-tab dark.png" â†’ "analyze tab dark").
+  - New project: create a new folder under public/gallery/. It shows up automatically
+    with a title derived from the folder name. Add it to PROJECTS below whenever
+    you want a custom title, blurb, or accent.
+*/
+
+const ACCENTS = ["#22D3EE", "#34D399", "#5B8DEF", "#A78BFA", "#F5A524", "#FB7185"];
+
+const PROJECTS = [
+  {
+    slug: "doc-coach",
+    title: "Doc Coach",
+    blurb:
+      "Every implant consultation, graded on the CEO's seven-criterion rubric and delivered as a color-coded coaching report.",
+    accent: "#22D3EE",
+  },
+  {
+    slug: "treatment-estimator",
+    title: "Treatment Estimator",
+    blurb:
+      "The quoting platform treatment coordinators use mid-consult, with price locks the database itself enforces.",
+    accent: "#34D399",
+  },
+  {
+    slug: "cowork-dashboard",
+    title: "Cowork Dashboard",
+    blurb: "Two clinics, six tabs, one set of numbers everyone finally trusts.",
+    accent: "#5B8DEF",
+  },
+  {
+    slug: "npc-coach",
+    title: "NPC Coach",
+    blurb:
+      "Agentic grading for every intake call, with coaching that reaches coordinators automatically.",
+    accent: "#A78BFA",
+  },
+  {
+    slug: "ai-hour",
+    title: "AI Hour",
+    blurb:
+      "The weekly hands-on lab where the whole corporate team learns what AI can actually do.",
+    accent: "#F5A524",
+  },
+  {
+    slug: "cbct-scan-validator",
+    title: "CBCT Scan Validator",
+    blurb:
+      "The quality gate that catches bad dental CT scans before they ever reach the design queue.",
+    accent: "#FB7185",
+  },
+];
+
+const workRoot = path.join(process.cwd(), "public", "gallery");
+const IMG_RE = /\.(png|jpe?g|webp|gif|avif)$/i;
+const PDF_RE = /\.pdf$/i;
+
+const listDir = (slug: string): string[] => {
+  try {
+    return fs.readdirSync(path.join(workRoot, slug));
+  } catch {
+    return [];
+  }
+};
+
+const humanSize = (bytes: number): string => {
+  if (bytes >= 1024 * 1024) return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  if (bytes >= 1024) return `${Math.round(bytes / 1024)} KB`;
+  return `${bytes} B`;
+};
+
+const captionFor = (file: string): string =>
+  file
+    .replace(/\.[^/.]+$/, "")
+    .replace(/^\d+[-_. ]+/, "")
+    .replace(/[-_]+/g, " ")
+    .trim();
+
+const titleFromSlug = (slug: string): string =>
+  slug.replace(/[-_]+/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+
+// Folders on disk that aren't configured above still get a section.
+let discovered: string[] = [];
+try {
+  discovered = fs
+    .readdirSync(workRoot, { withFileTypes: true })
+    .filter((d) => d.isDirectory())
+    .map((d) => d.name);
+} catch {
+  discovered = [];
+}
+const known = new Set(PROJECTS.map((p) => p.slug));
+const extras = discovered
+  .filter((slug) => !known.has(slug))
+  .sort()
+  .map((slug, i) => ({
+    slug,
+    title: titleFromSlug(slug),
+    blurb: "",
+    accent: ACCENTS[(PROJECTS.length + i) % ACCENTS.length],
+  }));
+
+const sections = [...PROJECTS, ...extras].map((cfg, idx) => {
+  const files = listDir(cfg.slug).sort((a, b) =>
+    a.localeCompare(b, undefined, { numeric: true, sensitivity: "base" })
+  );
+  const images = files
+    .filter((f) => IMG_RE.test(f))
+    .map((f) => ({
+      src: `/gallery/${encodeURIComponent(cfg.slug)}/${encodeURIComponent(f)}`,
+      caption: captionFor(f),
+    }));
+  const docs = files
+    .filter((f) => PDF_RE.test(f))
+    .map((f) => {
+      let size = "";
+      try {
+        size = humanSize(fs.statSync(path.join(workRoot, cfg.slug, f)).size);
+      } catch {
+        size = "";
+      }
+      return {
+        href: `/gallery/${encodeURIComponent(cfg.slug)}/${encodeURIComponent(f)}`,
+        name: captionFor(f),
+        size,
+      };
+    });
+  return {
+    ...cfg,
+    number: String(idx + 1).padStart(2, "0"),
+    images,
+    docs,
+    count: images.length + docs.length,
+  };
+});
+
+const totalImages = sections.reduce((n, s) => n + s.images.length, 0);
+const totalDocs = sections.reduce((n, s) => n + s.docs.length, 0);
+const liveSections = sections.filter((s) => s.count > 0).length;
+---
+
+<BaseLayout title={title}>
+  <div class="work-gallery-page">
+    <!-- â”€â”€ Hero â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ -->
+    <header class="mx-auto w-full max-w-screen-2xl px-6 lg:px-12 pt-32 lg:pt-40 reveal" data-reveal>
+      <p class="eyebrow text-secondary dark:text-dk-secondary mb-4">
+        The work Â· up close
+      </p>
+      <h1 class="display text-text dark:text-dk-text">Proof of work.</h1>
+      <p class="mt-5 max-w-2xl text-base lg:text-lg text-text/65 dark:text-dk-text/65 leading-relaxed">
+        Screenshots and documents straight from the systems I build and run in
+        production, organized by project. Everything here is live software that
+        real people at a real company use every week.
+      </p>
+      <p class="mt-4 font-mono text-xs tracking-wide text-text/45 dark:text-dk-text/45 tabular-nums">
+        {totalImages} screenshots Â· {totalDocs} documents Â· {liveSections}/{sections.length} projects live
+      </p>
+    </header>
+
+    <!-- â”€â”€ Sticky project rail â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ -->
+    <nav
+      class="work-rail sticky top-14 lg:top-16 z-40 mt-10 bg-primary/80 dark:bg-dk-primary/75 backdrop-blur-xl backdrop-saturate-150 border-y border-text/5 dark:border-dk-text/10"
+      aria-label="Projects on this page"
+    >
+      <div class="mx-auto w-full max-w-screen-2xl px-6 lg:px-12">
+        <div class="work-rail-track flex items-center gap-2 overflow-x-auto py-3">
+          {sections.map((s) => (
+            <a
+              href={`#p-${s.slug}`}
+              class="work-chip no-lift"
+              data-chip={s.slug}
+              style={`--pa: ${s.accent};`}
+            >
+              <span class="work-chip-dot" aria-hidden="true"></span>
+              <span>{s.title}</span>
+              {s.count > 0 && (
+                <span class="work-chip-count tabular-nums">{s.count}</span>
+              )}
+            </a>
+          ))}
+        </div>
+      </div>
+    </nav>
+
+    <!-- â”€â”€ Project sections â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ -->
+    {sections.map((s) => (
+      <section
+        id={`p-${s.slug}`}
+        data-spy={s.slug}
+        class="mx-auto w-full max-w-screen-2xl px-6 lg:px-12 mt-20 lg:mt-28 scroll-mt-36 lg:scroll-mt-40"
+        style={`--pa: ${s.accent};`}
+      >
+        <div class="max-w-3xl reveal" data-reveal>
+          <p class="eyebrow mb-3" style={`color: ${s.accent};`}>
+            {s.number} / {s.title}
+          </p>
+          <h2 class="display-sm text-text dark:text-dk-text">{s.title}.</h2>
+          {s.blurb && (
+            <p class="mt-3 text-base lg:text-lg text-text/65 dark:text-dk-text/65 leading-relaxed">
+              {s.blurb}
+            </p>
+          )}
+          {s.count > 0 && (
+            <p class="mt-3 font-mono text-[0.7rem] tracking-wide text-text/40 dark:text-dk-text/40 tabular-nums">
+              {s.images.length} screenshots{s.docs.length ? ` Â· ${s.docs.length} documents` : ""}
+            </p>
+          )}
+        </div>
+
+        {s.count === 0 ? (
+          <div class="work-empty mt-8">
+            <span class="work-empty-dot" aria-hidden="true"></span>
+            <p class="text-sm font-medium text-text/55 dark:text-dk-text/55">
+              Curating screenshots for this one â€” soon.
+            </p>
+          </div>
+        ) : (
+          <>
+            {s.images.length > 0 && (
+              <div class="work-masonry mt-10">
+                {s.images.map((img, i) => (
+                  <figure class="shot">
+                    <button
+                      type="button"
+                      class="shot-frame no-lift"
+                      data-shot
+                      data-group={s.slug}
+                      data-index={i}
+                      data-full={img.src}
+                      data-caption={img.caption}
+                      aria-label={`View screenshot: ${img.caption}`}
+                    >
+                      <span class="shot-bar" aria-hidden="true">
+                        <span class="shot-dots">
+                          <span></span><span></span><span></span>
+                        </span>
+                        <span class="shot-title">{img.caption}</span>
+                        <span class="shot-expand">
+                          <i class="fas fa-up-right-and-down-left-from-center"></i>
+                        </span>
+                      </span>
+                      <img
+                        src={img.src}
+                        alt={img.caption || `${s.title} screenshot`}
+                        loading="lazy"
+                        decoding="async"
+                        class="shot-img"
+                      />
+                    </button>
+                  </figure>
+                ))}
+              </div>
+            )}
+
+            {s.docs.length > 0 && (
+              <div class="mt-10 reveal" data-reveal>
+                <p class="text-[0.7rem] uppercase tracking-[0.22em] text-text/40 dark:text-dk-text/40 font-semibold mb-4">
+                  Documents
+                </p>
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {s.docs.map((doc) => (
+                    <a
+                      href={doc.href}
+                      target="_blank"
+                      rel="noreferrer"
+                      class="work-doc no-lift group"
+                    >
+                      <span class="work-doc-icon" aria-hidden="true">
+                        <i class="fas fa-file-pdf"></i>
+                      </span>
+                      <span class="min-w-0 flex-1">
+                        <span class="block text-sm font-semibold text-text dark:text-dk-text leading-snug truncate capitalize">
+                          {doc.name}
+                        </span>
+                        <span class="block mt-0.5 font-mono text-[0.68rem] text-text/45 dark:text-dk-text/45 tabular-nums">
+                          PDF{doc.size ? ` Â· ${doc.size}` : ""}
+                        </span>
+                      </span>
+                      <span class="work-doc-open" aria-hidden="true">â†—</span>
+                    </a>
+                  ))}
+                </div>
+              </div>
+            )}
+          </>
+        )}
+      </section>
+    ))}
+
+    <div class="h-24 lg:h-32"></div>
+
+    <!-- â”€â”€ Lightbox â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ -->
+    <div id="wlb" class="wlb" hidden role="dialog" aria-modal="true" aria-label="Screenshot viewer">
+      <div class="wlb-backdrop" data-wlb-close></div>
+      <button type="button" class="wlb-btn wlb-close no-lift" data-wlb-close aria-label="Close viewer">
+        <i class="fas fa-xmark"></i>
+      </button>
+      <button type="button" class="wlb-btn wlb-prev no-lift" data-wlb-prev aria-label="Previous screenshot">
+        <i class="fas fa-chevron-left"></i>
+      </button>
+      <figure class="wlb-stage">
+        <img id="wlb-img" alt="" />
+        <figcaption class="wlb-caption">
+          <span id="wlb-cap" class="capitalize"></span>
+          <span id="wlb-count" class="font-mono tabular-nums"></span>
+        </figcaption>
+      </figure>
+      <button type="button" class="wlb-btn wlb-next no-lift" data-wlb-next aria-label="Next screenshot">
+        <i class="fas fa-chevron-right"></i>
+      </button>
+    </div>
+  </div>
+</BaseLayout>
+
+<script>
+  // â”€â”€ Lightbox â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  const wlb = document.getElementById("wlb");
+  const wlbImg = document.getElementById("wlb-img") as HTMLImageElement | null;
+  const wlbCap = document.getElementById("wlb-cap");
+  const wlbCount = document.getElementById("wlb-count");
+
+  type Item = { src: string; caption: string };
+  let items: Item[] = [];
+  let cursor = 0;
+
+  const collect = (group: string): Item[] =>
+    Array.from(
+      document.querySelectorAll<HTMLElement>(`[data-shot][data-group="${group}"]`)
+    ).map((el) => ({
+      src: el.dataset.full || "",
+      caption: el.dataset.caption || "",
+    }));
+
+  const preload = (i: number) => {
+    const it = items[i];
+    if (it) new Image().src = it.src;
+  };
+
+  const render = () => {
+    if (!wlbImg || !wlbCap || !wlbCount) return;
+    const it = items[cursor];
+    if (!it) return;
+    wlbImg.classList.remove("wlb-img-in");
+    wlbImg.onload = () => wlbImg.classList.add("wlb-img-in");
+    wlbImg.src = it.src;
+    wlbImg.alt = it.caption;
+    wlbCap.textContent = it.caption;
+    wlbCount.textContent = `${cursor + 1} / ${items.length}`;
+    preload(cursor + 1);
+    preload(cursor - 1);
+  };
+
+  const open = (group: string, index: number) => {
+    if (!wlb) return;
+    items = collect(group);
+    cursor = Math.min(Math.max(index, 0), items.length - 1);
+    wlb.hidden = false;
+    requestAnimationFrame(() => wlb.classList.add("wlb-open"));
+    document.documentElement.classList.add("wlb-lock");
+    render();
+  };
+
+  const close = () => {
+    if (!wlb) return;
+    wlb.classList.remove("wlb-open");
+    document.documentElement.classList.remove("wlb-lock");
+    window.setTimeout(() => {
+      wlb.hidden = true;
+    }, 220);
+  };
+
+  const step = (delta: number) => {
+    if (!items.length) return;
+    cursor = (cursor + delta + items.length) % items.length;
+    render();
+  };
+
+  document.addEventListener("click", (e) => {
+    const target = e.target as HTMLElement;
+    const shot = target.closest<HTMLElement>("[data-shot]");
+    if (shot) {
+      open(shot.dataset.group || "", Number(shot.dataset.index || 0));
+      return;
+    }
+    if (target.closest("[data-wlb-close]")) close();
+    if (target.closest("[data-wlb-prev]")) step(-1);
+    if (target.closest("[data-wlb-next]")) step(1);
+  });
+
+  document.addEventListener("keydown", (e) => {
+    if (!wlb || wlb.hidden) return;
+    if (e.key === "Escape") close();
+    if (e.key === "ArrowLeft") step(-1);
+    if (e.key === "ArrowRight") step(1);
+  });
+
+  // Swipe navigation on touch devices.
+  let touchX: number | null = null;
+  wlb?.addEventListener(
+    "touchstart",
+    (e) => {
+      touchX = e.touches[0]?.clientX ?? null;
+    },
+    { passive: true }
+  );
+  wlb?.addEventListener(
+    "touchend",
+    (e) => {
+      if (touchX === null) return;
+      const dx = (e.changedTouches[0]?.clientX ?? touchX) - touchX;
+      if (Math.abs(dx) > 48) step(dx < 0 ? 1 : -1);
+      touchX = null;
+    },
+    { passive: true }
+  );
+
+  // â”€â”€ Scrollspy for the project rail â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  const chips = new Map<string, HTMLElement>();
+  document
+    .querySelectorAll<HTMLElement>("[data-chip]")
+    .forEach((chip) => chips.set(chip.dataset.chip || "", chip));
+
+  const setActive = (slug: string) => {
+    chips.forEach((chip, key) => {
+      const on = key === slug;
+      chip.classList.toggle("work-chip-active", on);
+      if (on) chip.scrollIntoView({ block: "nearest", inline: "nearest", behavior: "smooth" });
+    });
+  };
+
+  if ("IntersectionObserver" in window) {
+    const spy = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            setActive((entry.target as HTMLElement).dataset.spy || "");
+          }
+        });
+      },
+      { rootMargin: "-25% 0px -65% 0px" }
+    );
+    document.querySelectorAll<HTMLElement>("[data-spy]").forEach((el) => spy.observe(el));
+  }
+</script>
+
+<style is:global>
+  /* â”€â”€ Work gallery page â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+
+  /* Project rail */
+  .work-rail-track {
+    scrollbar-width: none;
+  }
+  .work-rail-track::-webkit-scrollbar {
+    display: none;
+  }
+  .work-chip {
+    --pa: #5b8def;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.55rem;
+    flex: 0 0 auto;
+    padding: 0.42rem 0.95rem;
+    border-radius: 9999px;
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: rgb(29 29 31 / 0.62);
+    border: 1px solid rgb(29 29 31 / 0.1);
+    background: transparent;
+    transition: color 0.25s ease, border-color 0.25s ease, background 0.25s ease,
+      box-shadow 0.25s ease;
+    white-space: nowrap;
+  }
+  html.dark .work-chip {
+    color: rgb(245 245 247 / 0.6);
+    border-color: rgb(245 245 247 / 0.14);
+  }
+  .work-chip-dot {
+    width: 0.42rem;
+    height: 0.42rem;
+    border-radius: 9999px;
+    background: var(--pa);
+    box-shadow: 0 0 8px color-mix(in srgb, var(--pa) 65%, transparent);
+    flex: 0 0 auto;
+  }
+  .work-chip-count {
+    font-family: "SF Mono", "JetBrains Mono", Menlo, Monaco, Consolas, monospace;
+    font-size: 0.66rem;
+    padding: 0.1rem 0.42rem;
+    border-radius: 9999px;
+    background: color-mix(in srgb, var(--pa) 14%, transparent);
+    color: color-mix(in srgb, var(--pa) 80%, #1d1d1f);
+  }
+  html.dark .work-chip-count {
+    color: color-mix(in srgb, var(--pa) 85%, #f5f5f7);
+  }
+  .work-chip:hover {
+    color: #1d1d1f;
+    border-color: color-mix(in srgb, var(--pa) 45%, rgb(29 29 31 / 0.1));
+  }
+  html.dark .work-chip:hover {
+    color: #f5f5f7;
+    border-color: color-mix(in srgb, var(--pa) 50%, rgb(245 245 247 / 0.14));
+  }
+  .work-chip-active {
+    color: #1d1d1f;
+    border-color: color-mix(in srgb, var(--pa) 60%, transparent);
+    background: color-mix(in srgb, var(--pa) 10%, transparent);
+    box-shadow: 0 0 18px -6px color-mix(in srgb, var(--pa) 55%, transparent);
+  }
+  html.dark .work-chip-active {
+    color: #f5f5f7;
+    background: color-mix(in srgb, var(--pa) 16%, transparent);
+  }
+
+  /* Masonry flow */
+  .work-masonry {
+    columns: 1;
+    column-gap: 1.1rem;
+  }
+  @media (min-width: 640px) {
+    .work-masonry {
+      columns: 2;
+    }
+  }
+  @media (min-width: 1024px) {
+    .work-masonry {
+      columns: 3;
+    }
+  }
+  .shot {
+    break-inside: avoid;
+    margin: 0 0 1.1rem;
+  }
+
+  /* Screenshot framed as a tiny app window */
+  .shot-frame {
+    --pa: #5b8def;
+    display: block;
+    width: 100%;
+    text-align: left;
+    border-radius: 0.85rem;
+    overflow: hidden;
+    background: #fff;
+    border: 1px solid rgb(29 29 31 / 0.1);
+    box-shadow: 0 10px 28px -18px rgb(0 0 0 / 0.35);
+    cursor: zoom-in;
+    transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.4s ease,
+      border-color 0.4s ease;
+  }
+  html.dark .shot-frame {
+    background: #0f1014;
+    border-color: rgb(245 245 247 / 0.12);
+    box-shadow: 0 10px 28px -16px rgb(0 0 0 / 0.6);
+  }
+  .shot-frame:hover {
+    transform: translateY(-4px);
+    border-color: color-mix(in srgb, var(--pa) 55%, transparent);
+    box-shadow:
+      0 22px 44px -20px rgb(0 0 0 / 0.45),
+      0 0 30px -8px color-mix(in srgb, var(--pa) 38%, transparent);
+  }
+  .shot-bar {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.5rem 0.75rem;
+    border-bottom: 1px solid rgb(29 29 31 / 0.07);
+    background: rgb(29 29 31 / 0.025);
+  }
+  html.dark .shot-bar {
+    border-bottom-color: rgb(245 245 247 / 0.08);
+    background: rgb(245 245 247 / 0.04);
+  }
+  .shot-dots {
+    display: inline-flex;
+    gap: 0.32rem;
+    flex: 0 0 auto;
+  }
+  .shot-dots span {
+    width: 0.5rem;
+    height: 0.5rem;
+    border-radius: 9999px;
+    background: rgb(29 29 31 / 0.14);
+    transition: background 0.3s ease;
+  }
+  html.dark .shot-dots span {
+    background: rgb(245 245 247 / 0.18);
+  }
+  .shot-frame:hover .shot-dots span {
+    background: color-mix(in srgb, var(--pa) 75%, transparent);
+  }
+  .shot-frame:hover .shot-dots span:nth-child(2) {
+    background: color-mix(in srgb, var(--pa) 50%, transparent);
+  }
+  .shot-frame:hover .shot-dots span:nth-child(3) {
+    background: color-mix(in srgb, var(--pa) 30%, transparent);
+  }
+  .shot-title {
+    flex: 1 1 auto;
+    min-width: 0;
+    font-size: 0.68rem;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    color: rgb(29 29 31 / 0.5);
+    text-transform: capitalize;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    text-align: center;
+  }
+  html.dark .shot-title {
+    color: rgb(245 245 247 / 0.5);
+  }
+  .shot-expand {
+    flex: 0 0 auto;
+    font-size: 0.6rem;
+    color: rgb(29 29 31 / 0.3);
+    opacity: 0;
+    transform: translateX(-2px);
+    transition: opacity 0.3s ease, transform 0.3s ease, color 0.3s ease;
+  }
+  html.dark .shot-expand {
+    color: rgb(245 245 247 / 0.35);
+  }
+  .shot-frame:hover .shot-expand {
+    opacity: 1;
+    transform: translateX(0);
+    color: color-mix(in srgb, var(--pa) 80%, transparent);
+  }
+  .shot-img {
+    display: block;
+    width: 100%;
+    height: auto;
+  }
+
+  /* Empty state */
+  .work-empty {
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+    padding: 1.6rem 1.5rem;
+    border-radius: 1rem;
+    border: 1.5px dashed color-mix(in srgb, var(--pa) 35%, rgb(29 29 31 / 0.15));
+    background: color-mix(in srgb, var(--pa) 3%, transparent);
+  }
+  html.dark .work-empty {
+    border-color: color-mix(in srgb, var(--pa) 35%, rgb(245 245 247 / 0.15));
+  }
+  .work-empty-dot {
+    width: 0.55rem;
+    height: 0.55rem;
+    border-radius: 9999px;
+    background: var(--pa);
+    box-shadow: 0 0 10px color-mix(in srgb, var(--pa) 60%, transparent);
+    animation: workEmptyPulse 2.4s ease-in-out infinite;
+    flex: 0 0 auto;
+  }
+  @keyframes workEmptyPulse {
+    0%, 100% { opacity: 0.45; transform: scale(0.9); }
+    50% { opacity: 1; transform: scale(1.1); }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .work-empty-dot { animation: none; }
+  }
+
+  /* Document cards */
+  .work-doc {
+    display: flex;
+    align-items: center;
+    gap: 0.9rem;
+    padding: 0.95rem 1.05rem;
+    border-radius: 0.9rem;
+    border: 1px solid rgb(29 29 31 / 0.1);
+    transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1), border-color 0.35s ease,
+      box-shadow 0.35s ease;
+  }
+  html.dark .work-doc {
+    border-color: rgb(245 245 247 / 0.12);
+  }
+  .work-doc:hover {
+    transform: translateY(-3px);
+    border-color: color-mix(in srgb, var(--pa) 50%, transparent);
+    box-shadow: 0 16px 32px -20px rgb(0 0 0 / 0.4),
+      0 0 24px -10px color-mix(in srgb, var(--pa) 35%, transparent);
+  }
+  .work-doc-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.5rem;
+    height: 2.5rem;
+    border-radius: 0.65rem;
+    font-size: 1rem;
+    flex: 0 0 auto;
+    color: color-mix(in srgb, var(--pa) 85%, #1d1d1f);
+    background: color-mix(in srgb, var(--pa) 12%, transparent);
+  }
+  html.dark .work-doc-icon {
+    color: color-mix(in srgb, var(--pa) 88%, #f5f5f7);
+    background: color-mix(in srgb, var(--pa) 16%, transparent);
+  }
+  .work-doc-open {
+    flex: 0 0 auto;
+    font-size: 0.85rem;
+    color: rgb(29 29 31 / 0.3);
+    transition: color 0.3s ease, transform 0.3s ease;
+  }
+  html.dark .work-doc-open {
+    color: rgb(245 245 247 / 0.35);
+  }
+  .work-doc:hover .work-doc-open {
+    color: color-mix(in srgb, var(--pa) 80%, transparent);
+    transform: translate(2px, -2px);
+  }
+
+  /* â”€â”€ Lightbox â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+  html.wlb-lock,
+  html.wlb-lock body {
+    overflow: hidden;
+  }
+  .wlb {
+    position: fixed;
+    inset: 0;
+    z-index: 90;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: opacity 0.22s ease;
+  }
+  .wlb.wlb-open {
+    opacity: 1;
+  }
+  .wlb-backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgb(5 6 8 / 0.92);
+    backdrop-filter: blur(14px) saturate(120%);
+    -webkit-backdrop-filter: blur(14px) saturate(120%);
+  }
+  .wlb-stage {
+    position: relative;
+    z-index: 1;
+    margin: 0;
+    max-width: min(92vw, 1400px);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.9rem;
+    pointer-events: none;
+  }
+  #wlb-img {
+    max-width: 100%;
+    max-height: 82vh;
+    object-fit: contain;
+    border-radius: 0.6rem;
+    box-shadow: 0 40px 90px -30px rgb(0 0 0 / 0.9);
+    opacity: 0;
+    transform: scale(0.985);
+    transition: opacity 0.28s ease, transform 0.28s ease;
+    pointer-events: auto;
+  }
+  #wlb-img.wlb-img-in {
+    opacity: 1;
+    transform: scale(1);
+  }
+  .wlb-caption {
+    display: flex;
+    align-items: baseline;
+    gap: 1rem;
+    font-size: 0.82rem;
+    color: rgb(255 255 255 / 0.7);
+    pointer-events: auto;
+  }
+  #wlb-count {
+    font-size: 0.7rem;
+    color: rgb(255 255 255 / 0.4);
+  }
+  .wlb-btn {
+    position: absolute;
+    z-index: 2;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.75rem;
+    height: 2.75rem;
+    border-radius: 9999px;
+    color: rgb(255 255 255 / 0.85);
+    background: rgb(255 255 255 / 0.08);
+    border: 1px solid rgb(255 255 255 / 0.12);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    font-size: 0.95rem;
+    transition: background 0.25s ease, transform 0.25s ease;
+  }
+  .wlb-btn:hover {
+    background: rgb(255 255 255 / 0.18);
+    transform: scale(1.06);
+  }
+  .wlb-close {
+    top: 1.25rem;
+    right: 1.25rem;
+  }
+  .wlb-prev {
+    left: 1rem;
+    top: 50%;
+    transform: translateY(-50%);
+  }
+  .wlb-prev:hover {
+    transform: translateY(-50%) scale(1.06);
+  }
+  .wlb-next {
+    right: 1rem;
+    top: 50%;
+    transform: translateY(-50%);
+  }
+  .wlb-next:hover {
+    transform: translateY(-50%) scale(1.06);
+  }
+  @media (max-width: 640px) {
+    .wlb-prev { left: 0.5rem; }
+    .wlb-next { right: 0.5rem; }
+    #wlb-img { max-height: 74vh; }
+  }
+</style>
