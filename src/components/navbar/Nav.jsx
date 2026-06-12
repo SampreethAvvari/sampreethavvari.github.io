@@ -11,6 +11,7 @@ export default function Nav({ searchItems }) {
     { name: "Home", href: "/#home", icon: "fas fa-home", match: "home" },
     { name: "Work", href: "/work", icon: "fas fa-layer-group", match: "work" },
     { name: "Projects", href: "/projects", icon: "fas fa-code", match: "projects" },
+    { name: "Gallery", href: "/gallery", icon: "fas fa-images", match: "gallery" },
     { name: "Filmmaking", href: "/filmmaking", icon: "fas fa-clapperboard", match: "filmmaking" },
     { name: "Blog", href: "/posts", icon: "fas fa-pen-nib", match: "posts" },
     { name: "Contact", href: "/#contact", icon: "fas fa-envelope", match: "contact" },
