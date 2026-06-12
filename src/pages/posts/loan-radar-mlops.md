@@ -6,7 +6,7 @@ description: "A loan-scoring service where I built the unglamorous parts on purp
 img_path: "/loan-radar.png"
 img_alt: "Loan Radar architecture — training, lineage, gates, inference, retraining"
 tag: "MLOps"
-tone: "cyan"
+tone: "violet"
 stats:
   - value: "0.79 ms"
     label: "median single-caller latency"

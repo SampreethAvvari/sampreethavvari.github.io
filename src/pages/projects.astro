@@ -34,16 +34,20 @@ const INDUSTRY_CHIP_TONES = ["slate", "slate", "slate", "slate", "slate", "slate
 // Each project's atmos glow takes the ambient colour of its hero image —
 // keeps the screen black/matte gray, lets the floating glow do the colour
 // signaling. Mapped per filename so adding a new project is one line.
+// Tones follow the discipline colours: AIE emerald, FDE amber, MLE violet, SDE blue.
 const ATMOS_BY_IMG: Record<string, string> = {
-  "/cbct-validator.png": "cyan",
-  "/treatment-estimator.png": "violet",
-  "/cowork-dashboard.png": "cyan",
-  "/loan-radar.png": "blue",
+  "/cbct-validator.png": "violet",
+  "/treatment-estimator.png": "blue",
+  "/cowork-dashboard.png": "amber",
+  "/loan-radar.png": "violet",
   "/llm-persuasion.png": "violet",
   "/doc-coach.png": "emerald",
   "/npc-coach.png": "emerald",
   "/accounting-automation.png": "amber",
-  "/enterprise-data.png": "amber",
+  "/enterprise-data.png": "blue",
+  "/fake-news.png": "violet",
+  "/resnet-compact.png": "violet",
+  "/customer-segmentation.png": "violet",
 };
 const atmosToneFor = (p: any) => ATMOS_BY_IMG[p.img_path] || "slate";
 

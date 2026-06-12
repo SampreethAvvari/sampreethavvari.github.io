@@ -6,7 +6,7 @@ description: "A CIFAR-10 competition across 55 teams, a hard 5M-parameter cap, a
 img_path: "/resnet-compact.png"
 img_alt: "A compact ResNet learning from rotated, cropped, flipped CIFAR-10 images"
 tag: "Research"
-tone: "emerald"
+tone: "violet"
 stats:
   - value: "#1 / 55"
     label: "on the professor's secret unseen test set"

@@ -6,7 +6,7 @@ description: "I built a recommendation system that handles 22 million records: o
 img_path: "/customer-segmentation.png"
 img_alt: "A big pile of data narrowed down to a short, ranked list of recommendations"
 tag: "MLOps"
-tone: "cyan"
+tone: "violet"
 stats:
   - value: "22M+"
     label: "records, handled without melting a laptop"
