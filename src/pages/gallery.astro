@@ -749,6 +749,12 @@ const liveSections = sections.filter((s) => s.count > 0).length;
     opacity: 0;
     transition: opacity 0.22s ease;
   }
+  /* display: flex above overrides the hidden attribute's UA display: none,
+     leaving an invisible full-screen overlay that eats every click (nav
+     included). Restore it explicitly. */
+  .wlb[hidden] {
+    display: none;
+  }
   .wlb.wlb-open {
     opacity: 1;
   }
