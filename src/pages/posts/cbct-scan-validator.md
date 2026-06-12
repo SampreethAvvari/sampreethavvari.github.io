@@ -6,7 +6,7 @@ description: "A vendor wanted $98K up front and $26K a year to flag bad dental C
 img_path: "/cbct-validator.png"
 img_alt: "CBCT volume slices, multi-task head, verdict pipeline"
 tag: "MLOps"
-tone: "cyan"
+tone: "violet"
 stats:
   - value: "$50/mo"
     label: "vs the $124K year-one vendor quote"

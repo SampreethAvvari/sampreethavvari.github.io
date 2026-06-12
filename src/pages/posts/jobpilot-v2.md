@@ -6,7 +6,7 @@ description: "JobPilot, one day later: a ResumeWorded-style judge that scores ev
 img_path: "/jobpilot-judge.png"
 img_alt: "A resume being graded by a glowing rubric machine, red marks turning green"
 tag: "Process"
-tone: "amber"
+tone: "emerald"
 stats:
   - value: "73 → 82"
     label: "real ResumeWorded score, one calibration loop in"

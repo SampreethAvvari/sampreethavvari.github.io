@@ -6,7 +6,7 @@ description: "Runs showed ✅ done while emails never sent, rows never appeared,
 img_path: "/pipeline-ghosting.png"
 img_alt: "Run dashboard with a green status pill that hides amber and red failures underneath"
 tag: "Process"
-tone: "amber"
+tone: "blue"
 stats:
   - value: "51 / 0 / 0"
     label: "green / amber / red in the consistency audit"

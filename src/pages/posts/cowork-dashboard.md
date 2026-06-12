@@ -6,7 +6,7 @@ description: "Two clinics, three messy boards, and a patient-to-lead match that 
 img_path: "/cowork-dashboard.png"
 img_alt: "Cowork Dashboard scorecards, trend chart, and funnel"
 tag: "MLOps"
-tone: "blue"
+tone: "amber"
 stats:
   - value: "49% → 99%"
     label: "patient-to-lead linkage"
