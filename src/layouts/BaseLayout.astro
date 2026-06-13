@@ -110,28 +110,19 @@ import "../styles/global.css";
     />
     <title>{title}</title>
     <script is:inline>
-      // Google Analytics 4. Analytics storage is granted so visits register
-      // in reports; ad storage stays denied — traffic stats only, no ad
-      // tracking or personalization.
+      // Cloudflare Web Analytics — privacy-first, cookieless, no consent
+      // banner needed. Just basic traffic stats. Replaces GA4.
+      // Get the token: dash.cloudflare.com → Web Analytics → Add a site
+      // (manual) → copy the value of "token" and paste it below.
       (function () {
-        var GA_ID = "G-YE09C13G6G";
+        var CF_BEACON_TOKEN = "643bcd2b05614ef2b29da4c4f0409d04";
         var host = location.hostname;
         if (host === "localhost" || host === "127.0.0.1") return; // dev runs don't count
-        window.dataLayer = window.dataLayer || [];
-        window.gtag = function () {
-          dataLayer.push(arguments);
-        };
-        gtag("consent", "default", {
-          ad_storage: "denied",
-          ad_user_data: "denied",
-          ad_personalization: "denied",
-          analytics_storage: "granted",
-        });
-        gtag("js", new Date());
-        gtag("config", GA_ID);
+        if (!CF_BEACON_TOKEN || CF_BEACON_TOKEN.indexOf("__") === 0) return; // token not set yet
         var s = document.createElement("script");
-        s.async = true;
-        s.src = "https://www.googletagmanager.com/gtag/js?id=" + GA_ID;
+        s.defer = true;
+        s.src = "https://static.cloudflareinsights.com/beacon.min.js";
+        s.setAttribute("data-cf-beacon", JSON.stringify({ token: CF_BEACON_TOKEN }));
         document.head.appendChild(s);
       })();
     </script>
