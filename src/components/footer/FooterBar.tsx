@@ -89,8 +89,8 @@ export default function FooterBar({ variant = "default" }: FooterBarProps) {
         )}
       </div>
       <p className="pb-6 px-4 text-center text-xs text-text/40 dark:text-dk-text/40 tracking-wide">
-        Visits are counted with Google Analytics. Basic traffic stats only,
-        no ads, no cross-site tracking.
+        Visits are counted with Cloudflare Web Analytics. Basic traffic stats
+        only, no cookies, no ads, no cross-site tracking.
       </p>
     </footer>
   );
