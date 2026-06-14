@@ -4,8 +4,41 @@ import TopButton from "../components/TopButton";
 import Pointer from "../components/Pointer";
 import ChatWidget from "../components/chatbot/ChatWidget";
 import FooterBar from "../components/footer/FooterBar";
+import { info } from "../data/info";
 
-const { title, footerVariant = "default" } = Astro.props;
+const {
+  title,
+  description = "AI Engineer specializing in agentic AI, RAG, and ML systems.",
+  footerVariant = "default",
+} = Astro.props;
+
+// Canonical URL for the current page (no query strings), absolute via astro.config `site`.
+const canonicalURL = new URL(Astro.url.pathname, Astro.site).toString();
+// Absolute URL for social-share / structured-data image.
+const ogImage = new URL(info.picture, Astro.site).toString();
+
+// Person structured data. The `sameAs` array tells Google the portfolio,
+// LinkedIn, and GitHub all belong to the same Sampreeth Avvari.
+const personSchema = {
+  "@context": "https://schema.org",
+  "@type": "Person",
+  name: info.name,
+  jobTitle: info.role,
+  url: Astro.site?.toString(),
+  image: ogImage,
+  email: info.contact.email,
+  address: {
+    "@type": "PostalAddress",
+    addressLocality: "New York",
+    addressRegion: "NY",
+    addressCountry: "US",
+  },
+  alumniOf: {
+    "@type": "CollegeOrUniversity",
+    name: "New York University",
+  },
+  sameAs: [info.contact.linkedin, info.contact.github, info.contact.instagram],
+};
 const posts = await Astro.glob("../pages/posts/*.md");
 const pages = [
   {
@@ -67,10 +100,8 @@ import "../styles/global.css";
 <html lang="en" translate="no">
   <head>
     <meta charset="UTF-8" />
-    <meta
-      name="description"
-      content="AI Engineer specializing in agentic AI, RAG, and ML systems."
-    />
+    <meta name="description" content={description} />
+    <link rel="canonical" href={canonicalURL} />
     <meta name="keywords" content="Sampreeth Avvari, AI engineer, agentic AI, RAG, ML, MLOps, NYU" />
     <meta name="author" content="Sampreeth Avvari" />
     <meta http-equiv="Content-Language" content="en" />
@@ -85,6 +116,19 @@ import "../styles/global.css";
       href={`${Astro.site}rss.xml`}
     />
     <meta name="generator" content={Astro.generator} />
+    <!-- Open Graph / social share -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Sampreeth Avvari" />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={canonicalURL} />
+    <meta property="og:image" content={ogImage} />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content={title} />
+    <meta name="twitter:description" content={description} />
+    <meta name="twitter:image" content={ogImage} />
+    <!-- Person structured data: links portfolio + LinkedIn + GitHub as one identity -->
+    <script type="application/ld+json" set:html={JSON.stringify(personSchema)} />
     <script type="text/javascript">
       (function () {
         var css = document.createElement("link");
