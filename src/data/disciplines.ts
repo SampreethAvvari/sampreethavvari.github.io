@@ -136,7 +136,7 @@ export const disciplines: Discipline[] = [
     articles: [
       { title: "How I built an AI that grades every patient consult", href: "/posts/clinical-rag", img: "/doc-coach.png" },
       { title: "Doctor report cards", href: "/posts/doctor-report-cards", img: "/doctor-report-cards.png" },
-      { title: "Job Pilot v2", href: "/posts/jobpilot-v2", img: "/jobpilot-judge.png" },
+      { title: "JobPilot: my open-source job-hunt app", href: "/posts/jobpilot-v2", img: "/jobpilot-flagship.png" },
     ],
     heroImg: "/discipline-aie.png",
   },
@@ -417,13 +417,15 @@ export const disciplines: Discipline[] = [
       },
       {
         name: "JobPilot",
-        status: "Prototype",
+        status: "Live",
         oneLiner:
-          "A personal SaaS prototype for job search automation: scraping, matching, and an LLM judge, built to scratch my own itch and learn the full product loop.",
-        img: "/jobpilot.png",
+          "My open-source job-hunt autopilot: 160+ company boards watched directly, schema-locked LLM scoring, a calibrated resume judge with a truth-locked rewrite loop, and a Next.js console behind IAP. The one project that spans all four disciplines.",
+        img: "/jobpilot-flagship.png",
         href: "/posts/jobpilot-v2",
         highlights: [
-          "Two full iterations; v2 rebuilt around an evaluation-first design",
+          "Open-sourced under MIT with a fork guide written to hand to an AI coding agent",
+          "Tailors a resume and cover letter per match; every resume ships its own ATS report",
+          "Grounded AI copilot with a per-job chat drawer over the live job description",
         ],
       },
       {
