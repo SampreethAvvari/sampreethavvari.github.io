@@ -2,6 +2,8 @@
 import BaseLayout from "../layouts/BaseLayout.astro";
 import { info } from "../data/info";
 import { Image } from "astro:assets";
+import fs from "node:fs";
+import path from "node:path";
 
 const title = "SA: Projects";
 
@@ -74,6 +76,38 @@ const postFor = (title: string) => {
 const projectsWithBlog = projects
   .map((p: any) => ({ p, post: postFor(p.title) }))
   .filter((x: any) => x.post);
+
+// Per-project gallery deep links. Mirrors the gallery page's filesystem-driven
+// model: a project gets a "Screenshots" link only when public/gallery/<slug>/
+// actually holds images or docs. Most projects map to their title-slug; the
+// few whose gallery folder name differs are listed explicitly below.
+const GALLERY_SLUG_FOR: Record<string, string> = {
+  "Doc Coach": "doc-coach",
+};
+const gallerySlugFor = (title: string) => {
+  for (const k of Object.keys(GALLERY_SLUG_FOR)) {
+    if (title.includes(k)) return GALLERY_SLUG_FOR[k];
+  }
+  return slug(title);
+};
+const galleryRoot = path.join(process.cwd(), "public", "gallery");
+const MEDIA_RE = /\.(png|jpe?g|webp|gif|avif|pdf)$/i;
+const liveGallerySlugs = new Set<string>();
+try {
+  for (const d of fs.readdirSync(galleryRoot, { withFileTypes: true })) {
+    if (!d.isDirectory()) continue;
+    const hasMedia = fs
+      .readdirSync(path.join(galleryRoot, d.name))
+      .some((f) => MEDIA_RE.test(f));
+    if (hasMedia) liveGallerySlugs.add(d.name);
+  }
+} catch {
+  // No gallery folder yet — links simply won't render.
+}
+const galleryFor = (title: string) => {
+  const s = gallerySlugFor(title);
+  return liveGallerySlugs.has(s) ? s : null;
+};
 ---
 
 <BaseLayout title={title}>
@@ -132,6 +166,7 @@ const projectsWithBlog = projects
     const tech = project.tech?.slice(0, 8) || [];
     const chipTone = INDUSTRY_CHIP_TONES[i % INDUSTRY_CHIP_TONES.length];
     const blog = postFor(project.title);
+    const gallerySlug = galleryFor(project.title);
     return (
       <section
         class="project-screen snap-chapter relative overflow-hidden"
@@ -234,6 +269,14 @@ const projectsWithBlog = projects
                   class="link-underline text-sm font-semibold text-secondary dark:text-dk-secondary inline-flex"
                 >
                   Read the write-up <span aria-hidden="true">→</span>
+                </a>
+              )}
+              {gallerySlug && (
+                <a
+                  href={`/gallery#p-${gallerySlug}`}
+                  class="link-underline text-sm font-semibold text-text/60 dark:text-dk-text/60 inline-flex"
+                >
+                  Screenshots <span aria-hidden="true">→</span>
                 </a>
               )}
               {project.link && (
