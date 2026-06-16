@@ -1,6 +1,6 @@
 export const info = {
   name: "Sampreeth Avvari",
-  brief_description: "I turn messy real-world problems into software that works.",
+  brief_description: "AI engineer and filmmaker. I build software people actually use.",
   role: "AI Engineer",
   picture: "/pic.png",
   picture_alt: "Sampreeth Avvari",
@@ -9,7 +9,7 @@ export const info = {
 
   about: {
     description:
-      "I'm an AI engineer, and I like building things right next to the people who'll actually use them. I did my MS at NYU, then spent the last few years at a dental implant company building real systems people use every day, not demos. The ones I'm proudest of are the ones that survived real people using them. I also make movies, and honestly that's where I learned how to work with people who don't speak code.",
+      "I'm an AI engineer who likes building things right next to the people who'll actually use them. After my MS at NYU, I spent the last few years as the only engineer at a dental implant company, shipping real systems people use every day, not demos. I also make movies, which is where I learned to work with people who don't write code.",
     education: [
       {
         title: "Master of Science, Computer Engineering",
