@@ -4,6 +4,7 @@ import { info } from "../data/info";
 import Contact from "../components/contact_section/Contact";
 import ScrollSpine from "../components/ScrollSpine.astro";
 import DisciplineGrid from "../components/work_section/DisciplineGrid.astro";
+import { disciplines } from "../data/disciplines";
 import { Image } from "astro:assets";
 
 const allPosts = await Astro.glob("../pages/posts/*.md");
@@ -155,19 +156,24 @@ const skillBuckets = [
             AI Engineer · New York
           </p>
           <h1 class="display text-text dark:text-dk-text glow-wave">
-            Hi, I'm <span class="text-secondary dark:text-dk-secondary text-shimmer">Sampreeth.</span>
+            I'm <span class="text-secondary dark:text-dk-secondary text-shimmer">Sampreeth.</span> I ship AI and direct films.
           </h1>
           <p class="text-xl lg:text-2xl text-text/75 dark:text-dk-text/75 leading-relaxed glow-wave glow-delay-2">
-            I turn messy real-world problems into software that works. Usually solo, usually fast.
+            Whether it's a model or a movie, the job is making the messy thing make sense to someone else.
           </p>
-          <div class="flex items-center justify-center lg:justify-start gap-2.5 font-mono text-[0.72rem] font-bold tracking-[0.2em] tabular-nums pt-1" aria-label="Disciplines">
-            <a href="/work/aie" class="no-lift hover:opacity-75 transition" style="color: #34D399;">AIE</a>
-            <span class="text-text/25 dark:text-dk-text/25 select-none">|</span>
-            <a href="/work/fde" class="no-lift hover:opacity-75 transition" style="color: #F5A524;">FDE</a>
-            <span class="text-text/25 dark:text-dk-text/25 select-none">|</span>
-            <a href="/work/mle" class="no-lift hover:opacity-75 transition" style="color: #A78BFA;">MLE</a>
-            <span class="text-text/25 dark:text-dk-text/25 select-none">|</span>
-            <a href="/work/sde" class="no-lift hover:opacity-75 transition" style="color: #5B8DEF;">SDE</a>
+          <div class="flex flex-wrap items-center justify-center lg:justify-start gap-2.5 pt-1" aria-label="Disciplines">
+            {disciplines.map((d) => (
+              <a
+                href={`/work/${d.slug}`}
+                class="dx-pill no-lift"
+                style={`--dx: ${d.accent}; --dx-rgb: ${d.rgb};`}
+                title={d.name}
+                aria-label={d.name}
+              >
+                <span class="dx-pill-dot" aria-hidden="true"></span>
+                <span>{d.acronym}</span>
+              </a>
+            ))}
           </div>
           <div class="flex flex-wrap items-center justify-center lg:justify-start gap-3 pt-2">
             <a
@@ -574,3 +580,47 @@ const skillBuckets = [
 
   </div>
 </BaseLayout>
+
+<style>
+  /* Hero discipline chips — equal accent pills replacing the piped acronyms.
+     Each carries its discipline colour via --dx / --dx-rgb set inline. */
+  .dx-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    padding: 0.4rem 0.9rem;
+    border-radius: 9999px;
+    font-family: "SF Mono", "JetBrains Mono", Menlo, Monaco, Consolas, monospace;
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.18em;
+    line-height: 1;
+    color: rgb(29 29 31 / 0.7);
+    border: 1px solid rgba(var(--dx-rgb), 0.28);
+    background: rgba(var(--dx-rgb), 0.06);
+    transition: color 0.25s ease, border-color 0.25s ease, background 0.25s ease,
+      transform 0.25s ease, box-shadow 0.25s ease;
+  }
+  :global(html.dark) .dx-pill {
+    color: rgb(245 245 247 / 0.72);
+  }
+  .dx-pill-dot {
+    width: 0.4rem;
+    height: 0.4rem;
+    border-radius: 9999px;
+    background: var(--dx);
+    box-shadow: 0 0 8px color-mix(in srgb, var(--dx) 60%, transparent);
+    flex: 0 0 auto;
+  }
+  .dx-pill:hover {
+    color: var(--dx);
+    border-color: rgba(var(--dx-rgb), 0.6);
+    background: rgba(var(--dx-rgb), 0.12);
+    transform: translateY(-1px);
+    box-shadow: 0 6px 18px -10px rgba(var(--dx-rgb), 0.55);
+  }
+  .dx-pill:focus-visible {
+    outline: 2px solid rgba(var(--dx-rgb), 0.6);
+    outline-offset: 3px;
+  }
+</style>
