@@ -58,7 +58,7 @@ export const disciplines: Discipline[] = [
       "I build LLM pipelines for healthcare, where a made-up sentence isn't a quirk, it's a liability. Every system I ship forces the model into a schema, makes it cite its evidence, strips patient data before inference, and routes anything uncertain to a person.",
     narrative: [
       "Most of my AI work has shipped inside Hybridge, a dental implant company. That means HIPAA, real patients, and zero tolerance for confident nonsense. The constraint shaped how I build: the model never free-writes. It fills a validated JSON schema, cites a verbatim transcript quote for every claim it makes, and gets one retry with a hardened prompt before the pipeline escalates to a human.",
-      "The pattern repeats across systems. The consultation grader scores doctors against their own 30-day average, not an arbitrary bar. The call-coaching pipeline runs Cloud DLP de-identification before the model ever sees a transcript, so the LLM physically can't leak what it never saw. Patient de-duplication proposes matches with confidence scores but never merges on its own.",
+      "The pattern repeats across systems. The consultation grader scores doctors against their own 30-day average, not an arbitrary bar. The call-coaching platform gates every real-PHI path behind one compliance switch and keeps the patient's name and transcript out of every log line, so a demo or a test can't touch real data by accident. Patient de-duplication proposes matches with confidence scores but never merges on its own.",
       "The interesting work isn't the prompt. It's everything around it: schemas, retries, idempotency, audit trails, and deciding where a human stays in the loop.",
     ],
     strengths: [
@@ -96,15 +96,15 @@ export const disciplines: Discipline[] = [
       },
       {
         name: "NPC Coach: Call Coaching",
-        status: "Pilot-ready",
+        status: "Live on real calls",
         oneLiner:
-          "A Pub/Sub pipeline that coaches new-patient phone calls: bilingual transcription, Cloud DLP de-identification before the LLM, rubric scoring with hard gates, and per-coordinator trend reports.",
+          "A pipeline that coaches new-patient phone calls: it finds the relevant calls among thousands, scores each against the practice playbook with a verbatim quote behind every criterion, and writes per-coordinator trend reports. A full rebuild of an n8n prototype.",
         img: "/npc-coach.png",
-        href: "/posts/doctor-report-cards",
+        href: "/posts/npc-coach-rebuild",
         highlights: [
-          "PHI stripped via Cloud DLP before any model sees the text",
-          "Hard gates cap the score: miss patient identification and no rubric points save you",
-          "Emergency-call logic: financial pressure on an urgent caller is a major penalty",
+          "A verbatim transcript quote behind every one of six scoring criteria",
+          "Hard gates are flags, not caps: a call can score 84 and still carry a red 'missed a non-negotiable' badge",
+          "Patient-urgency override: schedule a consult-only for someone in real pain and it's recorded as a safety failure",
           "Booking rate is deliberately not a success metric. Correctness over conversion",
         ],
       },
@@ -351,11 +351,11 @@ export const disciplines: Discipline[] = [
     tagline:
       "The foundation under everything else: schemas with invariants, test pyramids, infrastructure as code, and systems that survive their author.",
     summary:
-      "Every AI system I ship is wrapped in software built to last: databases that enforce their own rules, codebases held to strict typing and seven hundred tests, Terraform for everything, and runbooks so the next engineer can pick it up without me.",
+      "Every AI system I ship is wrapped in software built to last: databases that enforce their own rules, codebases held to strict typing and more than a thousand tests, Terraform for everything, and runbooks so the next engineer can pick it up without me.",
     narrative: [
       "My favorite class of bug is the one the database makes impossible. The treatment estimator rewrite freezes every price at the moment it's captured, with write-once columns enforced by triggers and full revision snapshots on every status change, because a patient quoted $38,000 in March deserves the same number in September, and a policy memo is weaker than a constraint.",
       "I hold solo projects to team standards, because when you're the only engineer there is no one else to catch it: strict typing across the board, four-tier test pyramids with golden-file fixtures, idempotency at every boundary so replays never duplicate, CI/CD with keyless auth, and infrastructure that rebuilds from a clean checkout with one command.",
-      "The discipline pays off in unglamorous ways. The dashboard ships with a second, independent implementation of every metric purely as an audit oracle. The accounting platform's tests verify outputs byte for byte. The NPC pipeline's 734 tests run against in-memory fakes, so no test ever touches real patient data. Boring on purpose, and durable because of it.",
+      "The discipline pays off in unglamorous ways. The dashboard ships with a second, independent implementation of every metric purely as an audit oracle. The accounting platform's tests verify outputs byte for byte. The NPC pipeline's 1,156 tests run against in-memory fakes, so no test ever touches real patient data. Boring on purpose, and durable because of it.",
     ],
     strengths: [
       {
@@ -364,7 +364,7 @@ export const disciplines: Discipline[] = [
       },
       {
         title: "Test discipline at solo scale",
-        body: "734 tests on one system, strict typing, golden-file fixtures, in-memory fakes. No real cloud, no real PHI in any test.",
+        body: "1,156 tests on one system, strict typing, golden-file fixtures, in-memory fakes. No real cloud, no real PHI in any test.",
       },
       {
         title: "Idempotency everywhere",
@@ -405,14 +405,14 @@ export const disciplines: Discipline[] = [
       },
       {
         name: "NPC pipeline engineering",
-        status: "Pilot-ready",
+        status: "Live on real calls",
         oneLiner:
-          "The software story under the AI: 16K lines, 167 modules, 734 tests, mypy strict, event-driven microservices on Pub/Sub with dead-letter handling and dual-source dedup.",
+          "The software story under the AI: 19K lines of Python across 19 modules, 1,156 tests, strict typing, ports-and-adapters with dual-source dedup and an interim single-process pipeline ahead of the event-driven mesh.",
         img: "/npc-coach.png",
-        href: "/posts/pipeline-ghosting",
+        href: "/posts/npc-coach-architecture",
         highlights: [
-          "Adapter-pattern ingestion: a new call source is one new module",
-          "Four-tier test pyramid against in-memory fakes, with zero PHI in the repo",
+          "Ports-and-adapters: a new call source is one new adapter; tests bind in-memory fakes",
+          "One NPC_BAA_ACCEPTED switch gates all real PHI; 1,156 tests touch no cloud and no PHI",
         ],
       },
       {

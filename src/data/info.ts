@@ -91,6 +91,7 @@ export const info = {
         highlights: [
           "[Consultation QA Pipeline](/posts/clinical-rag). Cloud Run + FastAPI grades every Zoom consult against a 7-criterion rubric. Schema-validated Gemini scoring, three-layer doctor ID, HIPAA-clean without Workspace DWD. -35% hallucinations vs the no-schema baseline; +130% acceptance and +43% revenue downstream.",
           "[Pipeline observability hardening](/posts/pipeline-ghosting). Hardened that same QA pipeline after it kept showing ✅ complete while emails never sent and Sheet rows never appeared. Killed 9 silent-failure modes (bare-except graveyard, connection-level retry gaps, status-color drift), added durable webhook rows, a rerun-replaces-old flow, a consistency reconciler, and a plain-English Logs UI. 51/0/0 in the audit, +50 targeted tests.",
+          "[NPC Coach](/posts/npc-coach-rebuild). Rebuilt a brittle n8n call grader into a coaching platform for the front desk: it finds every new-patient call, grades it against the practice playbook with a verbatim transcript quote behind each of six criteria, and tracks each coordinator's trend in BigQuery behind a 23-endpoint React dashboard. 40/40/20 weighted score plus 3 hard gates as flags, not caps; ports-and-adapters gated by one NPC_BAA_ACCEPTED switch so 1,156 tests run with no cloud and no PHI. Day one on live calls: ~285 ingested, 40 scored, 3 voicemails auto-filtered, 28 flagged.",
           "[CBCT Scan Validator](/posts/cbct-scan-validator). In-house dental CT classifier. Replaced a $98K + $26K/yr vendor quote with a Cloud Run service under $50/mo. Frozen DentalSegmentator + multi-scale head, OpenVINO on CPU, ~5.5s end-to-end. 20-scan CICT gate on every push.",
           "[Treatment Estimator](/posts/treatment-estimator). Next.js + Postgres rebuild of a decade-old quoting tool. Write-once `_at_capture` columns + Postgres triggers turn the 6-month price guarantee into a real DB invariant. Shipped end-to-end in ~1 month; a prior vendor never shipped in a decade.",
           "[Cowork Dashboard](/posts/cowork-dashboard). Apps Script on weekly Monday.com exports. Patient-to-lead linkage went from 49% to 99% via the Monday connect column. Surfaced ~$460k of orphan patient value. Weekly recon: half a day → 3 minutes.",
@@ -485,37 +486,39 @@ export const info = {
       tier: "industry",
       date: "Aug 2025 - Present",
       description:
-        "I built an AI that grades intake calls and automatically coaches the coordinators who take them.",
+        "I rebuilt a brittle n8n call grader into a coaching platform: it finds every new-patient call, grades it with a quoted transcript line behind each score, and tracks each coordinator's trend.",
       link: "",
       details: {
         summary_short:
-          "Agentic QA for New Patient Coordinators. Grades calls and triggers coaching.",
+          "Finds the new-patient calls among thousands, grades each against the practice playbook with a verbatim quote behind every criterion, and tracks each coordinator's trend. A full rebuild of an n8n prototype.",
         stats: [
-          { value: "3% → 12%", label: "Intake conversion" },
-          { value: "6-phase", label: "Grading rubric" },
-          { value: "Real-time", label: "Coaching feedback" },
-          { value: "n8n", label: "Agentic orchestration" },
+          { value: "1,156", label: "Tests on the green gate" },
+          { value: "40 / 40 / 20", label: "Weighted score + 3 hard gates" },
+          { value: "285 → 40", label: "Calls ingested → scored, day one" },
+          { value: "$50-250/mo", label: "Cloud cost at full volume" },
         ],
         star: {
           problem:
-            "NPCs convert intake calls into consultations, but quality was uneven and feedback was ad-hoc. No one had a scorecard.",
+            "An earlier n8n grader proved the idea, scoring each call out of 60 from recordings it pulled off SFTP every hour. But it emitted a brittle semicolon-delimited blob into a single Google Doc, carried no transcript evidence, computed no real score, shared the patient's name and full transcript company-wide, and silently skipped any call when the workflow died mid-run.",
           solution:
-            "n8n-orchestrated agentic system. A chain-of-thought grading engine scores every call against a 6-phase performance rubric.",
+            "A full rebuild on a HIPAA-scoped Google Cloud footprint. A pipeline ingests recordings from SFTP and CallRail, transcribes with Vertex Gemini, classifies the call, scores relevant new-patient calls on six criteria with a verbatim quote behind each, resolves a stable patient ID, and writes a validated verdict to BigQuery with the report in Cloud Storage.",
           process:
-            "pgvector-backed memory tracks per-NPC trend. Automated feedback emails go out after each call.",
+            "Ports-and-adapters so the same code runs on in-memory fakes in tests and real cloud in prod, gated by one NPC_BAA_ACCEPTED compliance switch. The scoring math is pure Python, not the model: the 0-100 headline is a 40/40/20 weighted sum, while three hard gates and a patient-urgency override ride alongside as loud flags, never a hidden score cap.",
           result:
-            "Intake conversion 3% → 12% with real-time coaching in the loop.",
+            "First full day on live calls: ~285 recordings ingested, 40 real new-patient calls scored with quoted evidence, 3 voicemails auto-filtered, 28 flagged for missing a non-negotiable. 1,156 tests green. Live on Cloud Run behind Google sign-in, locked to the practice domain.",
         },
         summary:
-          "n8n-based agentic QA grading performance and triggering coaching feedback for NPCs.",
+          "A New Patient Coordinator coaching platform for Hybridge and Elmwood. It finds the new-patient calls among thousands, grades each against Dr. Frank LaMar's playbook, and gives coordinators and managers per-call reports plus team trends. Correctness over conversion; no PHI in logs.",
         highlights: [
-          "Intake conversion 3% → 12%.",
-          "6-phase performance rubric with CoT grading.",
-          "Automated feedback emails, n8n orchestration.",
+          "Full rebuild of an n8n prototype: weighted 40/40/20 score, 3 hard gates, a patient-urgency override.",
+          "A verbatim transcript quote behind every one of six scoring criteria.",
+          "Ports-and-adapters plus one NPC_BAA_ACCEPTED switch gate all real PHI; 1,156 tests run with no cloud.",
+          "BigQuery system of record feeding a 23-endpoint React dashboard with per-coordinator trends.",
+          "Deterministic call IDs so a call is never graded twice or lost; voicemails auto-filtered.",
         ],
       },
       imageStyle: "object-position: center 20%;",
-      tech: ["n8n", "Gemini 3 Pro", "JavaScript", "pgvector", "Automation"],
+      tech: ["Python", "FastAPI", "Vertex AI Gemini", "React", "TypeScript", "BigQuery", "Cloud Storage", "Cloud Run", "pytest"],
       img_alt: "NPC Coach - Hybridge Implants LLC",
       img_path: "/npc-coach.png",
     },
