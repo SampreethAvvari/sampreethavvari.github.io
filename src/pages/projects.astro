@@ -764,7 +764,19 @@ const galleryFor = (title: string) => {
     max-height: 100%;
   }
   @media (max-width: 720px) {
-    .flip-card-back-grid { grid-template-columns: 1fr; gap: 0.6rem; }
+    .flip-card-back-grid { grid-template-columns: 1fr; gap: 0.55rem; }
+    /* The 16/10 card is short on a phone, so the four STAR sections would
+       clip. Start from the top, tighten the type, and let the case study
+       scroll inside the card — nothing gets cut off. */
+    .flip-card-back {
+      justify-content: flex-start;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      padding: 0.85rem 0.95rem;
+    }
+    .flip-section-label { font-size: 0.58rem; margin-bottom: 0.2rem; }
+    .flip-section-body { font-size: 0.72rem; line-height: 1.38; }
+    .flip-card-hint-back { display: none; }
   }
   .flip-section-label {
     font-size: 0.66rem;

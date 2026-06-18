@@ -2243,4 +2243,18 @@ html.dark .work-highlight { color: rgba(245, 245, 247, 0.68); }
 
   /* Writing cards: a slightly shorter hero image moves a stacked column along. */
   .post-card img { height: 9.5rem !important; }
+
+  /* /work discipline tabs: fit all five on one row instead of scrolling off
+     the right edge. Equal-width segments, icons dropped, short labels
+     (All · AIE · FDE · MLE · SDE). */
+  .work-tabs { overflow-x: visible; gap: 0.3rem; }
+  .work-tab {
+    flex: 1 1 0;
+    min-width: 0;
+    justify-content: center;
+    gap: 0;
+    padding: 0.5rem 0.25rem;
+    font-size: 0.78rem;
+  }
+  .work-tab i { display: none; }
 }
