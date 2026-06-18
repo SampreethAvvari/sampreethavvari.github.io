@@ -6,7 +6,7 @@ description: "A wheel that passed a thousand tests and still failed to deploy. 4
 img_path: "/npc-coach-bugs.png"
 img_alt: "A green test gate next to a red production failure — the gap between code that runs and code that ships"
 tag: "Process"
-tone: "amber"
+tone: "blue"
 stats:
   - value: "1,156 green"
     label: "tests that still missed the packaging break and the 40% drop-out"

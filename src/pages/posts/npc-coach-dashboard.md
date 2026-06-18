@@ -5,12 +5,12 @@ layout: ../../layouts/PostLayout.astro
 description: "Eight surfaces behind Google sign-in: a live pipeline stepper, the scoring math on the screen instead of hidden in the model, and a rubric you can edit in the browser. The features real reports demanded, not the spec."
 img_path: "/npc-coach-dashboard.png"
 img_alt: "Coaching dashboard — a call list with score bands, hard-gate flags, and a per-criterion breakdown"
-tag: "Engineering"
-tone: "cyan"
+tag: "Frontend"
+tone: "amber"
 stats:
   - value: "23"
     label: "API endpoints behind one domain-locked React app"
-    tone: "cyan"
+    tone: "amber"
   - value: "8 surfaces"
     label: "sign-in, dashboard, all calls, detail, submission, stats, analytics, settings"
     tone: "blue"
@@ -44,7 +44,7 @@ It opens with the identity and metadata, then a **live pipeline stepper** — In
 - A **score-breakdown panel** that lays out the three buckets (rapport 40%, classification 40%, scheduling 20%) as bars, then the weighted sum and the final number. The math is on the screen, not hidden in the model.
 - **Each of the six criteria** with its score out of 10, a color-coded bar, the model's rationale, the verbatim quote it cited from the transcript, and a one-line coaching note.
 
-<div class="stat-callout stat-cyan">
+<div class="stat-callout stat-amber">
   <div class="stat-value">every judgment, a quote</div>
   <div class="stat-label">A coach doesn't just see the number — they see the exact moment in the transcript that earned it. The coaching is grounded in something the coordinator already remembers.</div>
 </div>
