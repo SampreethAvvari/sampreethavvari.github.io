@@ -2257,4 +2257,10 @@ html.dark .work-highlight { color: rgba(245, 245, 247, 0.68); }
     font-size: 0.78rem;
   }
   .work-tab i { display: none; }
+
+  /* /work images: on a phone these stack vertically, so the mismatched
+     proportions (hero 16/9, project thumbs 3/2) read as untidy. Give them a
+     consistent, contained banner so the page feels deliberate, not blocky. */
+  .work-hero-img img { aspect-ratio: 16 / 9; height: 11rem; object-fit: cover; }
+  .work-project-img { aspect-ratio: 16 / 9; max-height: 11rem; }
 }
