@@ -17,7 +17,8 @@ const { active } = Astro.props;
     style="--dx: #8A8A8E; --dx-rgb: 138, 138, 142;"
   >
     <i class="fa-solid fa-grip text-xs" aria-hidden="true"></i>
-    Overview
+    <span class="hidden sm:inline">Overview</span>
+    <span class="sm:hidden font-mono tracking-widest">All</span>
   </a>
   {disciplines.map((d) => (
     <a
