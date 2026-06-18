@@ -70,6 +70,7 @@ export default function ChatWidget() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
   const [showNudge, setShowNudge] = useState(false);
+  const [compact, setCompact] = useState(false);
   const scrollRef = useRef(null);
 
   useEffect(() => {
@@ -79,13 +80,23 @@ export default function ChatWidget() {
   }, [messages, isOpen]);
 
   useEffect(() => {
-    if (isOpen) return;
+    if (isOpen || compact) return;
     const interval = setInterval(() => {
       setShowNudge(true);
       setTimeout(() => setShowNudge(false), 3000);
     }, 10000);
     return () => clearInterval(interval);
-  }, [isOpen]);
+  }, [isOpen, compact]);
+
+  // Shrink the launcher into a quiet, compact circle once the visitor scrolls
+  // past the hero, so it stops occupying the screen while they read. It pops
+  // back to full size at the top — and a tap always opens the full chat.
+  useEffect(() => {
+    const onScroll = () => setCompact(window.scrollY > 140);
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
 
   const sendMessage = async () => {
     const trimmed = input.trim();
@@ -134,8 +145,12 @@ export default function ChatWidget() {
   return (
     <>
       <button
-        className={`fixed right-4 bottom-28 lg:right-8 lg:bottom-32 z-50 w-14 h-14 lg:w-16 lg:h-16 rounded-full bg-primary text-secondary border border-secondary dark:bg-dk-primary dark:text-dk-secondary dark:border-dk-secondary shadow-lg transition chat-attention ${
+        className={`fixed right-4 bottom-28 lg:right-8 lg:bottom-32 z-50 rounded-full bg-primary text-secondary border border-secondary dark:bg-dk-primary dark:text-dk-secondary dark:border-dk-secondary shadow-lg transition-all duration-300 ease-out ${
           isOpen ? "hidden" : ""
+        } ${
+          compact
+            ? "w-11 h-11 lg:w-12 lg:h-12 opacity-80 hover:opacity-100 hover:scale-105"
+            : "w-14 h-14 lg:w-16 lg:h-16 chat-attention"
         }`}
         aria-label="Open chatbot"
         onClick={() => setIsOpen(true)}
@@ -143,17 +158,19 @@ export default function ChatWidget() {
         <img
           src="/logos/samp-chat.png"
           alt="Samp-chat avatar"
-          className="absolute -left-12 -bottom-2 w-10 h-10 rounded-full border border-secondary/50 dark:border-dk-secondary/50 shadow-md bg-primary dark:bg-dk-primary"
+          className={`absolute -left-12 -bottom-2 w-10 h-10 rounded-full border border-secondary/50 dark:border-dk-secondary/50 shadow-md bg-primary dark:bg-dk-primary transition-all duration-300 ${
+            compact ? "opacity-0 scale-50 pointer-events-none" : "opacity-100 scale-100"
+          }`}
         />
-        {showNudge && (
+        {showNudge && !compact && (
           <div className="absolute -left-44 -top-8 lg:-top-10">
             <div className="bg-secondary text-primary px-3 py-2 rounded-full text-xs lg:text-sm shadow-lg animate-fade-in-out whitespace-nowrap">
               Ask anything about Sampreeth
             </div>
           </div>
         )}
-        <i className="fas fa-comment-dots text-2xl lg:text-3xl"></i>
-        <span className="absolute -top-1 -right-1 w-3.5 h-3.5 lg:w-4.5 lg:h-4.5 bg-red-500 rounded-full ring-2 ring-primary dark:ring-dk-primary"></span>
+        <i className={`fas fa-comment-dots transition-all duration-300 ${compact ? "text-lg lg:text-xl" : "text-2xl lg:text-3xl"}`}></i>
+        <span className={`absolute -top-1 -right-1 w-3.5 h-3.5 lg:w-4.5 lg:h-4.5 bg-red-500 rounded-full ring-2 ring-primary dark:ring-dk-primary transition-opacity duration-300 ${compact ? "opacity-0" : "opacity-100"}`}></span>
       </button>
 
       {isOpen && (

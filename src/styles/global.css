@@ -1854,6 +1854,25 @@ html.dark .post-card {
   .post-prose hr {
     margin: 3rem 0;
   }
+
+  /* 4. Post detail header: trim the desktop hero padding, scale the title
+        down with a balanced wrap, and tighten the meta gaps so the lede
+        arrives sooner on a phone. */
+  .post-hero {
+    padding-top: 5.25rem;
+    padding-bottom: 1.75rem;
+  }
+  .post-backlink { margin-bottom: 1.5rem; }
+  .post-meta { margin-bottom: 1.15rem; }
+  .post-title {
+    font-size: clamp(1.95rem, 8vw, 2.6rem);
+    line-height: 1.1;
+    margin-bottom: 1.1rem;
+    text-wrap: balance;
+  }
+
+  /* 5. Posts index hero: same calmer top band as the rest of the phone UI. */
+  .posts-index-hero { padding: 4.75rem 0 2.25rem; }
 }
 
 /* Chat widget assistant-message rich content (markdown rendered via
@@ -2200,8 +2219,16 @@ html.dark .work-highlight { color: rgba(245, 245, 247, 0.68); }
     padding-bottom: 3rem;
   }
 
-  /* Hero: keep the brand moment centered, balanced, and comfortably spaced;
-     the lead sentence eases down from 20px so it reads, not shouts. */
+  /* Hero sits below the fixed nav (top-aligned) so the photo never tucks
+     under the bar, no matter how tall the stacked content runs. */
+  #home {
+    justify-content: flex-start;
+    padding-top: 4.75rem;
+    padding-bottom: 2.5rem;
+  }
+
+  /* Hero: keep the brand moment balanced and comfortably spaced; the lead
+     sentence eases down from 20px so it reads, not shouts. */
   #home .hero-copy { gap: 1.05rem; }
   #home .hero-lead {
     font-size: 1.075rem;
