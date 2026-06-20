@@ -1,6 +1,6 @@
 ---
 title: "How I taught a model to grade a phone call, then took the math away from it"
-date: "2026-06-17"
+date: "2026-06-20"
 layout: ../../layouts/PostLayout.astro
 description: "Six criteria, three hard gates, a patient-safety override, and a 40/40/20 weighted sum — with the arithmetic kept out of the model on purpose. Plus the one scoring decision I reversed after watching real reports."
 img_path: "/npc-coach-scoring.png"
@@ -69,6 +69,10 @@ On top of the number sit two layers that have nothing to do with how *nice* the 
 ## Intent, not script
 
 Every example phrase in the playbook is *illustrative*. A coordinator earns full credit for achieving the intent in their own words — the grader is told so explicitly. The only things penalized are the actual anti-patterns: retail framing, sales pressure, downplaying urgency, quoting a treatment cost, reading a feature menu off a card. Say it your way; just don't do the thing the playbook warns against.
+
+## Keeping the input clean and the output queryable
+
+Two things grew around the score once real calls started flowing. First, eligibility became its own strict gate ahead of scoring: a Gemini-Pro relevance check decides whether a call is genuinely a new-patient conversation before the rubric ever runs, so voicemails, wrong numbers, and existing-patient calls never reach the scorer and never dilute a coordinator's average. Second, every scored result is stored in a structured form rather than as prose, every criterion score, gate boolean, urgency state, and final number, per call. That structured store is what lets the dashboard answer how someone is trending over 90 days with a query instead of a re-read.
 
 ## Why I took the math away from the model
 

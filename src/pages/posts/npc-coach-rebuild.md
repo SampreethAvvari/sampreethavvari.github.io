@@ -1,6 +1,6 @@
 ---
 title: "How I rebuilt a brittle call grader into a coaching platform"
-date: "2026-06-18"
+date: "2026-06-20"
 layout: ../../layouts/PostLayout.astro
 description: "An n8n prototype scored each front-desk call out of 60 and emailed a link to a Google Doc. I rebuilt it: evidence behind every score, patient safety as a loud flag, a queryable system of record. Here's the before and after."
 img_path: "/npc-coach.png"
@@ -82,19 +82,19 @@ Getting there wasn't clean. Roughly 40% of the first real batch came back "not g
 
 ## Where it stands
 
-This is the last stage, not the finish line. The dashboard runs on Cloud Run behind Google sign-in, locked to the practice domain, showing real processed calls — and a practice manager can actually live in it (here's [the dashboard, screen by screen](/posts/npc-coach-dashboard)). What's left before full go-live is scoped and queued: MP3 transcoding with an in-dashboard player, email delivery with a send identity, the extension-to-coordinator mapping confirmed with the team, patient-name extraction wired as its own step, and the move from the interim single-process pipeline to the full event-driven mesh once the Cloud BAA is formally accepted. None of those are unknowns.
+This is the last stage, not the finish line. The dashboard runs on Cloud Run behind Google sign-in, locked to the practice domain, showing real processed calls, and a practice manager can actually live in it (here's [the dashboard, screen by screen](/posts/npc-coach-dashboard)). Most of what used to sit on the pre-go-live list has since shipped. Recordings now transcode from the phone system's GSM 6.10 format to MP3 and play inline in the dashboard. Each scored call's coaching report can be opened in a tab, printed to PDF, downloaded as formatted HTML colored against the team's averages, and emailed, either by hand from the report or auto-sent the moment a call is scored, through a real Gmail send identity rather than a service account. A strict relevance gate keeps non-new-patient calls off the dashboard, every call's scores are stored in a structured form for trend analysis, and a daily 5pm summary rolls the day's calls into one coaching digest. What genuinely remains is the move from the interim single-process pipeline to the full event-driven mesh once the Cloud BAA is formally accepted, plus confirming the extension-to-coordinator mapping with the team. None of those are unknowns.
 
 ## The numbers, with no rounding up
 
 | Metric | Value |
 |---|---|
-| Calendar time, first to latest commit | 16 days (2026-06-02 → 2026-06-18) |
-| Commits / PRs merged | 399 / 31 |
-| Python source | 19,441 lines, 190 files, 19 modules |
+| Calendar time, first to latest commit | 18 days (2026-06-02 → 2026-06-19) |
+| Commits / PRs merged | 437 / 41 |
+| Python source | 20,813 lines, 198 files, 20 modules |
 | Tests | 1,156 passing on the latest green gate |
-| Frontend | 4,623 lines of TypeScript and React |
-| Design & planning docs | 75 markdown files (5 ADRs, 10 specs, 29 plans) |
-| API endpoints | 23 |
+| Frontend | 4,839 lines of TypeScript and React |
+| Design & planning docs | 79 markdown files (ADRs, specs, plans, runbooks, handoffs) |
+| API endpoints | 26 |
 | First live day | ~285 ingested · 40 scored · 3 voicemails caught · 28 flagged |
 | Scoring | 6 criteria · 3 hard gates · 40/40/20 weighting · 4 bands |
 | Target volume / cost | 1,000-5,000 calls/month · ~$50-250/month |

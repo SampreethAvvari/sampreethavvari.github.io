@@ -1,6 +1,6 @@
 ---
 title: "The dashboard a practice manager actually opens"
-date: "2026-06-17"
+date: "2026-06-20"
 layout: ../../layouts/PostLayout.astro
 description: "Eight surfaces behind Google sign-in: a live pipeline stepper, the scoring math on the screen instead of hidden in the model, and a rubric you can edit in the browser. The features real reports demanded, not the spec."
 img_path: "/npc-coach-dashboard.png"
@@ -8,7 +8,7 @@ img_alt: "Coaching dashboard — a call list with score bands, hard-gate flags, 
 tag: "Frontend"
 tone: "amber"
 stats:
-  - value: "23"
+  - value: "26"
     label: "API endpoints behind one domain-locked React app"
     tone: "amber"
   - value: "8 surfaces"
@@ -21,7 +21,7 @@ stats:
 
 *Part of a series on the [New Patient Coordinator coaching platform](/posts/npc-coach-rebuild). The pipeline grades the calls; this is the surface a coordinator and a manager actually live in.*
 
-The dashboard is a single-page React app behind Google sign-in, backed by 23 API endpoints. A mantra stays pinned in the sidebar the whole time: *correctness over conversion, no PHI in logs.* There are eight working surfaces, and every one of them earns its place by answering a question someone actually asks.
+The dashboard is a single-page React app behind Google sign-in, backed by 26 API endpoints. A mantra stays pinned in the sidebar the whole time: *correctness over conversion, no PHI in logs.* There are eight working surfaces, and every one of them earns its place by answering a question someone actually asks.
 
 ## The everyday surfaces
 
@@ -49,6 +49,8 @@ It opens with the identity and metadata, then a **live pipeline stepper** — In
   <div class="stat-label">A coach doesn't just see the number — they see the exact moment in the transcript that earned it. The coaching is grounded in something the coordinator already remembers.</div>
 </div>
 
+**The recording and the report, in one place.** A call's recording is fetched on demand and plays inline. Recordings that arrive in the phone system's GSM 6.10 format get transcoded to MP3 first, because the browser flatly refuses to play the raw format. The coaching report sits right there too: open it in its own tab, print it to PDF, or download it as formatted HTML that colors every criterion against the team's averages, and email it to yourself or any allowed-domain address straight from the report. The pipeline can also auto-send a call's report the moment it's scored, all through a Gmail send identity rather than a service account.
+
 There's also a **New Submission** surface for scoring a call by hand: paste a CallRail id or a recording URL, hit Check to see whether it's already scored, then Submit — and a second submit of the same call becomes a no-op instead of a duplicate run.
 
 ## Settings: the rubric as code
@@ -59,7 +61,7 @@ The six criteria appear as color-coded chips with editable labels. The prompt it
 
 ## The features the spec never anticipated
 
-The plan covered ingestion, classification, transcription, scoring, identity, reports, and a dashboard. Real calls surfaced needs no spec predicted, and each of these came straight out of looking at actual output: a **voicemail tag** that pulls voicemails off the grader entirely (it caught 3 on the first batch), an **uncooperative-caller flag** and a **scheduling-callback tag** so calls that can't be fairly graded don't drag down an average, the **eval-time relevance gate** that came out of the 40%-not-gradeable hunt, the **date-range presets** wired through every endpoint, and the **hard-gate badge** itself — a feature that exists only because watching real reports made the old score cap obviously wrong.
+The plan covered ingestion, classification, transcription, scoring, identity, reports, and a dashboard. Real calls surfaced needs no spec predicted, and each of these came straight out of looking at actual output: a **voicemail tag** that pulls voicemails off the grader entirely (it caught 3 on the first batch), an **uncooperative-caller flag** and a **scheduling-callback tag** so calls that can't be fairly graded don't drag down an average, the **eval-time relevance gate** that came out of the 40%-not-gradeable hunt, the **date-range presets** wired through every endpoint, and the **hard-gate badge** itself — a feature that exists only because watching real reports made the old score cap obviously wrong. The whole report-delivery layer and a **daily 5pm summary**, where Gemini rolls the day's scored calls into one digest for the manager, came the same way: once there were real reports worth reading, sending and summarizing them became the obvious next thing to build.
 
 ## Nothing on screen that you can't audit
 

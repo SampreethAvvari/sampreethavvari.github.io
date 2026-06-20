@@ -1,6 +1,6 @@
 ---
 title: "The compliance switch and other architecture I'd do again"
-date: "2026-06-17"
+date: "2026-06-20"
 layout: ../../layouts/PostLayout.astro
 description: "Ports and adapters so the cloud is swappable, one flag that keeps real patient data out by default, scoring math kept out of the model, and the smaller correct thing I shipped before the full event mesh."
 img_path: "/npc-coach-architecture.png"
@@ -52,7 +52,7 @@ Inbound calls already arrive with a CallRail transcript, so we never pay to tran
 
 The full design is an event-driven mesh: Pub/Sub topics between every stage, Eventarc triggers, dead-letter queues. For the first real run I deliberately did *not* build all of that.
 
-Instead I wired a direct, single-process pipeline backed by Vertex Gemini and Cloud Storage, so the dashboard could light up on real calls while the heavier eventing waits for its turn. Shipping the smaller correct thing first beat waiting on the full mesh — and it meant real calls, not my assumptions, got to vote on what to build next. The mesh is designed and queued; it just isn't the thing standing between the coordinators and their first coaching report.
+Instead I wired a direct, single-process pipeline backed by Vertex Gemini and Cloud Storage, so the dashboard could light up on real calls while the heavier eventing waits for its turn. Shipping the smaller correct thing first beat waiting on the full mesh — and it meant real calls, not my assumptions, got to vote on what to build next. The mesh is designed and queued; it just isn't the thing standing between the coordinators and their first coaching report. Since then that same single-process pipeline has quietly grown the delivery layer the coordinators actually feel: reports emailed through a Gmail send identity, recordings transcoded and served on demand, a strict relevance gate, and a daily Gemini summary. All of it shipped without the mesh, which still waits on the formal Cloud BAA. That is the interim choice paying off twice, once by getting real calls scored early, and again by letting the delivery features land on a simple pipeline instead of blocking on the full eventing.
 
 ## The thread through all of it
 
