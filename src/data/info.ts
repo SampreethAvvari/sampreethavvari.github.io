@@ -91,11 +91,13 @@ export const info = {
         highlights: [
           "[Consultation QA Pipeline](/posts/clinical-rag). Cloud Run + FastAPI grades every Zoom consult against a 7-criterion rubric. Schema-validated Gemini scoring, three-layer doctor ID, HIPAA-clean without Workspace DWD. -35% hallucinations vs the no-schema baseline; +130% acceptance and +43% revenue downstream.",
           "[Pipeline observability hardening](/posts/pipeline-ghosting). Hardened that same QA pipeline after it kept showing ✅ complete while emails never sent and Sheet rows never appeared. Killed 9 silent-failure modes (bare-except graveyard, connection-level retry gaps, status-color drift), added durable webhook rows, a rerun-replaces-old flow, a consistency reconciler, and a plain-English Logs UI. 51/0/0 in the audit, +50 targeted tests.",
-          "[NPC Coach](/posts/npc-coach-rebuild). Rebuilt a brittle n8n call grader into a coaching platform for the front desk: it finds every new-patient call, grades it against the practice playbook with a verbatim transcript quote behind each of six criteria, and tracks each coordinator's trend in BigQuery behind a 23-endpoint React dashboard. 40/40/20 weighted score plus 3 hard gates as flags, not caps; ports-and-adapters gated by one NPC_BAA_ACCEPTED switch so 1,156 tests run with no cloud and no PHI. Day one on live calls: ~285 ingested, 40 scored, 3 voicemails auto-filtered, 28 flagged.",
+          "[NPC Coach](/posts/npc-coach-rebuild). Rebuilt a brittle n8n call grader into a coaching platform for the front desk: it finds every new-patient call, grades it against the practice playbook with a verbatim transcript quote behind each of six criteria, and tracks each coordinator's trend in BigQuery behind a 26-endpoint React dashboard. 40/40/20 weighted score plus 3 hard gates as flags, not caps; ports-and-adapters gated by one NPC_BAA_ACCEPTED switch so 1,156 tests run with no cloud and no PHI. Day one on live calls: ~285 ingested, 40 scored, 3 voicemails auto-filtered, 28 flagged.",
           "[CBCT Scan Validator](/posts/cbct-scan-validator). In-house dental CT classifier. Replaced a $98K + $26K/yr vendor quote with a Cloud Run service under $50/mo. Frozen DentalSegmentator + multi-scale head, OpenVINO on CPU, ~5.5s end-to-end. 20-scan CICT gate on every push.",
           "[Treatment Estimator](/posts/treatment-estimator). Next.js + Postgres rebuild of a decade-old quoting tool. Write-once `_at_capture` columns + Postgres triggers turn the 6-month price guarantee into a real DB invariant. Shipped end-to-end in ~1 month; a prior vendor never shipped in a decade.",
           "[Cowork Dashboard](/posts/cowork-dashboard). Apps Script on weekly Monday.com exports. Patient-to-lead linkage went from 49% to 99% via the Monday connect column. Surfaced ~$460k of orphan patient value. Weekly recon: half a day → 3 minutes.",
           "[Accounting Automation Suite](/posts/accounting-automation). A dozen Python scripts that replaced the controller's manual weekly imports across Denticon, MagicTouch, Paychex, and two banks. ~6-8 hrs/week → 30-45 min. ~400 hrs/yr recovered.",
+          "[Reconciliation](/posts/reconciliation). A deterministic engine that cross-checks the schedule, production ledger, and clinical notes across Eaglesoft and Denticon to confirm every patient seen got documented and billed, surfacing only the exceptions. ~6 staff-hours/day of manual cross-checking down to a few minutes; 150+ tests on synthetic fixtures, no PHI in git; live on Cloud Run (v1.6.0).",
+          "[Centralized Diagnostic Filter](/posts/cdf-diagnostic-filter). Turning the founder's diagnostic model into a standardized, HYBRIDGE-owned system: every scan, photo, and survey into one report with a 0-200 risk score and a treatment leaning, where AI assists and doctors validate. Phase 1, the owned in-house intake on Google Cloud, in progress.",
           "Cross-cutting MLOps: one shared ETL module so train/serve skew is impossible. Hot-swap checkpoints via GCS, tag-based Cloud Build CI/CD, OpenTelemetry with strict no-PHI logs.",
         ],
       },
@@ -513,14 +515,95 @@ export const info = {
           "Full rebuild of an n8n prototype: weighted 40/40/20 score, 3 hard gates, a patient-urgency override.",
           "A verbatim transcript quote behind every one of six scoring criteria.",
           "Ports-and-adapters plus one NPC_BAA_ACCEPTED switch gate all real PHI; 1,156 tests run with no cloud.",
-          "BigQuery system of record feeding a 23-endpoint React dashboard with per-coordinator trends.",
+          "BigQuery system of record feeding a 26-endpoint React dashboard with per-coordinator trends.",
           "Deterministic call IDs so a call is never graded twice or lost; voicemails auto-filtered.",
+          "Reports view, print, download, and email through a Gmail send identity; recordings transcode to MP3 and play inline.",
         ],
       },
       imageStyle: "object-position: center 20%;",
       tech: ["Python", "FastAPI", "Vertex AI Gemini", "React", "TypeScript", "BigQuery", "Cloud Storage", "Cloud Run", "pytest"],
       img_alt: "NPC Coach - Hybridge Implants LLC",
       img_path: "/npc-coach.png",
+    },
+    {
+      title: "Reconciliation",
+      tier: "industry",
+      date: "Jun 2026 - Present",
+      description:
+        "I replaced a daily six-hour manual cross-check with an engine that reads three exports and shows staff only the flagged patients.",
+      link: "",
+      details: {
+        summary_short:
+          "Confirms every patient seen got both documented and billed, across two practice-management systems, and surfaces only the exceptions. Shipped and live.",
+        stats: [
+          { value: "6 hrs → minutes", label: "Daily cross-check vs exception review" },
+          { value: "2 systems, 1 engine", label: "Eaglesoft + Denticon through one core" },
+          { value: "150+ tests", label: "All on synthetic fixtures, no PHI in git" },
+          { value: "v1.6.0", label: "Shipped and live on Cloud Run" },
+        ],
+        star: {
+          problem:
+            "Two front-office staff spent about three hours each every day cross-checking the schedule, the production ledger, and the clinical notes by hand to confirm every patient seen got documented and billed. It was slow and it failed exactly where mistakes cost the most: care documented but never billed, or billed with no note behind it.",
+          solution:
+            "A pure, deterministic reconciliation engine wrapped in a thin FastAPI app. Two source adapters (Eaglesoft CSV, Denticon xlsx) normalize hostile exports into the same typed models, the matcher keys everything on patient_id, and a small set of honest buckets separates verified patients from the handful that need a human.",
+          process:
+            "The engine has no network, no database, and no clock, and it takes the timestamp as a parameter, so identical inputs give byte-identical output and every count traces to a source row. Columns map by name and a missing one fails loud. 150+ tests run on synthetic fixtures that mirror every real quirk, plus an opt-in golden test against a real day, so no PHI ever enters the repo.",
+          result:
+            "Shipped and live at v1.6.0 on Cloud Run. About six person-hours of daily cross-checking became a few minutes of exception review; roughly 30 of 41 patients a day clear automatically. A Gemini clinical matcher is built and waiting behind a preview-mode rollout.",
+        },
+        summary:
+          "A HIPAA-safe reconciliation tool for a multi-location dental group. A deterministic Python engine confirms each patient seen was documented and billed across Eaglesoft and Denticon; the FastAPI shell adds auth, a dashboard, history, and Gmail delivery.",
+        highlights: [
+          "Pure deterministic engine split from the app shell: same inputs, byte-identical, auditable output.",
+          "Two practice-management systems normalized into one set of typed models via a source-adapter registry.",
+          "Matching keyed on patient_id with a fuzzy-name fallback that flags low-confidence rather than guessing.",
+          "150+ tests on synthetic fixtures plus an opt-in golden test; no patient data in git, ever.",
+          "Gemini clinical matcher (tooth, surface, procedure code) built but gated behind a preview rollout.",
+        ],
+      },
+      tech: ["Python", "FastAPI", "Vertex AI Gemini", "Firestore", "Cloud Run", "Google OAuth", "pytest"],
+      img_alt: "Reconciliation - Hybridge Implants LLC",
+      img_path: "/reconciliation.png",
+    },
+    {
+      title: "Centralized Diagnostic Filter",
+      tier: "industry",
+      date: "Jun 2026 - Present",
+      description:
+        "I am turning a founder's diagnostic mental model into a standardized system: every scan, photo, and survey into one report, with the doctor validating every finding.",
+      link: "",
+      details: {
+        summary_short:
+          "A standardized restorative prognosis operating system for complex implant cases. AI assists, doctors validate. Phase 1, the in-house intake, is in progress.",
+        stats: [
+          { value: "4 phases", label: "Intake to report to AI findings to scale" },
+          { value: "0-200", label: "Future tooth-loss risk score, 4 bands" },
+          { value: "14 to 9", label: "Input classes into report sections" },
+          { value: "Phase 1", label: "In progress on Google Cloud" },
+        ],
+        star: {
+          problem:
+            "The practice's diagnostic intelligence lived in the founder's head and a third-party intake tool. Assessments were screenshotted by hand, filed manually, duplicated across three markets, and the HIPAA posture was unverified. There was no standardized, owned way to turn a complex case into one consistent report.",
+          solution:
+            "The Centralized Diagnostic Filter: a HYBRIDGE-owned system that pulls CBCT, scans, photos, and a risk survey into one standardized report across nine sections, with a future-tooth-loss risk score and a treatment leaning, never a final diagnosis. The governing rule is AI assists, doctors validate.",
+          process:
+            "Phased to de-risk. Phase 1 replaces the third-party intake with an owned, BAA-covered questionnaire and premium PDF on Google Cloud; later phases add the unified diagnostic report, AI-assisted radiograph and bone-support findings behind a doctor validation queue, and practice-management integrations. Schema-versioned, auditable, and role-based from the first commit.",
+          result:
+            "Phase 1 is in progress: spec and architecture approved, private repo and Terraform-managed GCP foundation live, brand and six cover concepts done, the 0-200 risk model preserved, and the questionnaire schema, patient form, PDF generator, and delivery pipeline underway.",
+        },
+        summary:
+          "A standardized diagnostic operating system for complex restorative and implant dentistry, built with the practice founder. One report from every modality, a preserved 0-200 risk model, and a human-in-the-loop AI layer where every finding is doctor-confirmed.",
+        highlights: [
+          "Translates a veteran clinician's diagnostic model into a buildable, phased spec.",
+          "Standardized Bone Support Visualization: current bone architecture against an ideal reference.",
+          "A 0-200 future tooth-loss risk score across four bands, preserved from the existing model.",
+          "AI assists, doctors validate: every AI finding is provisional until a doctor signs it.",
+          "HYBRIDGE-owned on Google Cloud, schema-versioned and auditable from day one.",
+        ],
+      },
+      tech: ["Python", "Google Cloud", "Terraform", "Vertex AI", "DICOM / CBCT", "PDF generation", "HIPAA"],
+      img_alt: "Centralized Diagnostic Filter - Hybridge Implants LLC",
+      img_path: "/cdf-diagnostic-filter.png",
     },
     {
       title: "Fake News and Sentiment Analysis",

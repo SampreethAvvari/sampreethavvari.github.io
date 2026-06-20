@@ -1,6 +1,6 @@
 ---
 title: "Four bugs my test suite couldn't catch"
-date: "2026-06-17"
+date: "2026-06-20"
 layout: ../../layouts/PostLayout.astro
 description: "A wheel that passed a thousand tests and still failed to deploy. 40% of real calls coming back 'not gradeable.' Reruns that forked a call's history. A transcriber that heard the practice name a dozen wrong ways. Real episodes, real fixes."
 img_path: "/npc-coach-bugs.png"
@@ -65,6 +65,16 @@ stats:
 **Action.** Re-transcribing costs money, so instead I edit the stored transcript text in place for the known misheard names, and going forward I feed the real practice names into the transcription prompt so the model has the right vocabulary up front.
 
 **Result.** Cleaner transcripts and cleaner reports, at no extra transcription cost.
+
+## Recordings that played fine for the phone system and not at all in a browser
+
+**Situation.** Recording playback landed in the dashboard, and the files would not play. The phone system stores call recordings as GSM 6.10, a codec a browser's audio element does not handle.
+
+**Task.** Get recordings playing inline so a coach can listen to the exact moment a quote came from, without re-fetching or re-processing them on every view.
+
+**Action.** The recording is fetched on demand and transcoded to MP3 before it reaches the browser, so the player gets a format it actually supports while the stored source stays untouched.
+
+**Result.** Recordings play inline right next to the report. A coach can hear the call instead of taking the transcript's word for it, which matters when the whole system is built on quoting the transcript back.
 
 ## The thread
 
