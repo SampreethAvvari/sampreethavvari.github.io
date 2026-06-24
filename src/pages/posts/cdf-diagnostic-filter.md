@@ -1,31 +1,67 @@
 ---
-title: "Turning a clinician's diagnostic instinct into a system"
+title: "Teaching an AI to read the whole patient and lean toward a treatment, before the doctor does"
 date: "2026-06-20"
 layout: ../../layouts/PostLayout.astro
-description: "The Centralized Diagnostic Filter takes every input a complex restorative case generates (CBCT, scans, photos, a risk survey) and produces one standardized report, with the doctor validating every finding. This is the FDE problem at its hardest: translating a veteran clinician's mental model into a buildable, phased system. Phase 1 is in progress."
+description: "The Centralized Diagnostic Filter is HYBRIDGE's diagnostic operating system. AI reads every input a complex case generates (CBCT, intraoral scans, clinical photos, radiographs, a risk survey), surfaces the findings, scores future tooth-loss risk, and leans toward a treatment direction, all before the consult. Then the doctor validates every finding. This is the forward-deployed problem at its hardest: turning a veteran clinician's mental model into a buildable, phased system. Phase 1 is in build."
 img_path: "/cdf-diagnostic-filter.png"
 img_alt: "Centralized Diagnostic Filter: CBCT, intraoral scans, photographs, and a risk survey converging into one standardized diagnostic report"
 tag: "FDE"
 tone: "amber"
 stats:
-  - value: "4 phases"
-    label: "a de-risked roadmap from intake to AI findings; Phase 1 in progress"
-    tone: "amber"
-  - value: "0-200"
-    label: "future tooth-loss risk score across four bands, preserved from the existing model"
-    tone: "blue"
-  - value: "AI assists"
-    label: "doctors validate; every clinical finding is doctor-confirmed, by design"
+  - value: "AI reads first"
+    label: "decay, missing teeth, bone levels, prognosis, then a treatment leaning, before the consult"
     tone: "emerald"
+  - value: "0-200"
+    label: "future tooth-loss risk score across four bands, kept from the model the practice already trusts"
+    tone: "blue"
+  - value: "doctors validate"
+    label: "every AI finding stays provisional until a doctor signs it, wired into the architecture"
+    tone: "amber"
 ---
 
-Most of my projects start from a broken workflow. This one started from a clinician's head.
+Most of my projects start from a broken workflow. This one started from a clinician's head, and it is the only one I have built where the point is to have an AI read the patient before the doctor walks in.
 
-Dr. Frank LaMar, who founded the practice, has a way of reading a complex restorative case. He looks at the bone, the wear, the decay pattern, the patient's own words about pain and confidence, and he forms a judgment about whether the natural teeth are a dependable long-term bet or whether the honest conversation is about replacement. The Centralized Diagnostic Filter, CDF, is the attempt to turn that judgment into a standardized system: one that organizes every input a case generates, frames the findings the same way every time, and helps every doctor read the same document, without ever taking the diagnosis out of the doctor's hands.
+Dr. Frank LaMar, who founded the practice, has a way of reading a complex restorative case. He looks at the bone, the wear, the decay pattern, the patient's own words about pain and confidence, and he forms a judgment about whether the natural teeth are a dependable long-term bet or whether the honest conversation is about replacement. The Centralized Diagnostic Filter, CDF, is the attempt to put that first read into software: take every input a case generates, let the AI surface the findings and lean toward a treatment direction, and hand the doctor a finished assessment to confirm or correct, before the consultation even begins.
 
-That last part is the whole philosophy. The CDF is not AI that reads x-rays. It is a standardized restorative prognosis operating system, and its governing rule is simple: **AI assists, doctors validate.** Every clinical finding is provisional until a doctor signs it.
+That last part is the whole philosophy. The CDF is not AI that replaces the dentist, and it is not AI that just reads x-rays. It is a standardized restorative prognosis operating system, and its governing rule is simple: **AI assists, doctors validate.** The AI does the first pass. Every finding it produces is provisional until a doctor signs it.
 
 This was the hardest requirements job I have done. The other systems replaced a spreadsheet or a brittle script. This one had to extract a thirty-year mental model from the person who has it, and shape it into something a computer can carry without flattening the clinical nuance that makes it useful.
+
+## What "reading the patient" actually means
+
+A complex case is not one image. It is a pile of them, plus everything the patient says. The CDF pulls fourteen input classes into one place and analyses each for something specific:
+
+<div class="aside">
+
+- **CBCT scan**, and a panoramic view derived from that same scan, not a separate one: 3D bone, ridge architecture, available bone for implants.
+- **Intraoral scans** from the TRIOS scanner: missing teeth, wear, occlusion, supraeruption, crowding, collapse.
+- **Clinical photo series** (full-face smile, retracted frontal, occlusal, buccal, profile): aesthetics, recession, support loss, visible deterioration.
+- **Bitewings and periapicals**: decay, recurrent decay, restorations, root canals, structural breakdown.
+- **Risk survey**: pain, embarrassment, function, urgency, dry mouth, smoking, grinding, medical risk, and treatment goals.
+
+</div>
+
+The AI's job is to look across all of that and surface what a doctor would otherwise reconstruct by hand: where the decay is, which teeth are gone, what is restored, how much bone support is left, and how the upper and lower jaws are each holding up.
+
+## The output the doctor is meant to confirm
+
+The CDF walks into the consult having already done the reading. For every case it produces the same artifact: findings surfaced, risk scored, prognosis classified for each jaw, and a single treatment-direction leaning chosen from a fixed ladder.
+
+| Leaning | What it says |
+|---|---|
+| Conventional Viable | The natural teeth are a dependable long-term bet |
+| Conventional Compromised | Restoration is possible, but the risk factors are real |
+| Localized Implant Enhancement | A segment needs implants, the rest can stay |
+| Full Arch Consider | Replacement is worth the honest conversation |
+| Full Arch Likely | Replacement is the more predictable path |
+| Full Arch Highly Appropriate | Replacement is clearly the better long-term bet |
+
+It never states a final diagnosis. It proposes a direction, shows the evidence behind it, and leaves the call to the doctor. That is the difference between a treatment leaning and a treatment decision, and the whole system is built to respect it.
+
+<div class="stat-callout stat-amber">
+  <div class="stat-value">the doctor always confirms</div>
+  <div class="stat-label">The report suggests a leaning and surfaces the evidence for it. It never delivers a final diagnosis. That boundary is clinical and legal, and it is wired into the architecture, not left to discipline.</div>
+</div>
 
 ## Phase 1: own the front door first
 
@@ -35,7 +71,7 @@ Today the patient assessment lives in a third-party intake platform. The HIPAA p
 
 Phase 1 replaces all of that with a HYBRIDGE-owned intake on Google Cloud: one questionnaire with location-aware routing for all three markets, a premium patient-facing PDF delivered the moment the patient submits, automatic filing into the patient's Drive folder with no human in the loop, and self-serve admin so the practice's intake lead can edit questions, manage recipients per office, and add team members without filing a ticket. BAA-covered, audit-logged, role-based from the first commit.
 
-It reads less like a dental form and more like an Apple product. That is deliberate. A premium intake experience is the first thing a patient touches, and it sets the tone for everything the CDF does later.
+It reads less like a dental form and more like an Apple product. That is deliberate. A premium intake experience is the first thing a patient touches, and it is also the data plane the AI reads from later, so it has to be owned and structured from day one.
 
 ## The risk model, kept intact on purpose
 
@@ -52,9 +88,9 @@ It is twelve weighted questions. Smoking, uncontrolled diabetes, dry mouth, and 
 
 The score is not a diagnosis. It is a way to frame the restore-versus-replace conversation in a consistent, defensible way. Keeping the existing scale and bands means a patient who took the old questionnaire and the new one will not see a confusing numeric shift. Same clinical meaning, better instrument.
 
-## The system Phase 1 plugs into
+## The full report, in nine sections
 
-Phase 2 is the report Dr. Frank actually sketched: every patient produces the same artifact set, and every doctor reads the same document. It pulls fourteen input classes (the CBCT scan and a pano derived from that same scan, intraoral scans, a standardized clinical photo series, bitewings and periapicals, and the risk survey) into one visual report organized into nine sections.
+Phase 2 is the report Dr. Frank actually sketched: every patient produces the same artifact set, and every doctor reads the same document. Those fourteen inputs land in one visual report organized into nine sections.
 
 - **Executive Summary** answers four questions in plain language: what is happening, how severe, the long-term outlook, and the most reasonable treatment direction.
 - **Risk Scoring** carries the 0 to 200 score and a separate read on long-term predictability.
@@ -64,12 +100,7 @@ Phase 2 is the report Dr. Frank actually sketched: every patient produces the sa
 - **Functional Analysis** grades occlusal wear, guidance, posterior support, parafunction, and occlusal disease from none to severe.
 - **Prognosis** classifies the maxilla and mandible separately, because an upper jaw can be poor while the lower is fair, and that distinction changes the plan.
 - **Patient Impact** surfaces the emotional and functional drivers from the survey: this is the "why now" that a consultation lives or dies on.
-- **Treatment Leaning** suggests a direction (Conventional, through Localized Implant Enhancement, to Full Arch) without ever stating a final diagnosis. The doctor always confirms.
-
-<div class="stat-callout stat-amber">
-  <div class="stat-value">the doctor always confirms</div>
-  <div class="stat-label">The report suggests a treatment leaning and surfaces evidence for it. It never delivers a final diagnosis. That boundary is clinical and legal, and it is wired into the architecture, not left to discipline.</div>
-</div>
+- **Treatment Leaning** picks a direction off the ladder above without ever stating a final diagnosis. The doctor always confirms.
 
 ## The centerpiece: bone support, current versus ideal
 
@@ -81,7 +112,9 @@ There is a clinical insight underneath it that the system has to respect: not ev
 
 ## The AI layer, and where it is allowed to act
 
-Phase 3 is the differentiator, and it is also where the "AI assists, doctors validate" rule earns its keep. The AI does the reading: decay, missing teeth, restorations, and root-canal identification on 2D radiographs, and the bone-level mapping that feeds the visualization. But every AI output lands in a doctor validation queue and stays provisional until a doctor signs it. Those corrections are not discarded. They feed a continuous-learning loop on HYBRIDGE's own validated cases, so every signed case strengthens the next prediction. The data compounds, and it stays ours.
+Phase 3 is the part that makes the heading literal: the AI does the reading. Decay, missing teeth, restorations, and root-canal identification on 2D radiographs, plus the bone-level mapping that feeds the visualization. It assembles all of that into the draft assessment before anyone sits down with the patient.
+
+But every AI output lands in a doctor validation queue and stays provisional until a doctor signs it. Those corrections are not discarded. They feed a continuous-learning loop on HYBRIDGE's own validated cases, so every signed case strengthens the next prediction. The AI reads first, the doctor decides, and the doctor's decisions are what teach the AI. The data compounds, and it stays ours.
 
 That ownership is a principle, not an afterthought. Data, code, brand, and integrations live under HYBRIDGE accounts with no vendor lock-in, the schema is versioned and auditable from day one so Phase 4 plugs in without re-architecture, and Phase 4 itself is the integration layer: write-back into practice-management software so nobody re-keys data, outcome tracking that validates predictability against real results, multi-office rollout, and a pre-consult patient portal.
 
@@ -91,8 +124,8 @@ Each phase ships independently and delivers visible value without waiting on the
 
 | Phase | Scope | Status |
 |---|---|---|
-| 1: Questionnaire system | HYBRIDGE-owned premium intake, PDF, auto-distribution, self-serve admin | In progress |
-| 2: Diagnostic report (CDF v1) | One report from three inputs, consult dashboard, risk + treatment lean | Designed, queued |
+| 1: Questionnaire system | HYBRIDGE-owned premium intake, PDF, auto-distribution, self-serve admin | In build |
+| 2: Diagnostic report (CDF v1) | One report from fourteen inputs, consult dashboard, risk + treatment lean | Designed, queued |
 | 3: AI-assisted findings | Radiograph assist, bone-support visualization, doctor validation queue | Designed |
 | 4: Scale and integrations | PMS write-back, outcome tracking, multi-office, patient portal | Planned |
 
@@ -100,4 +133,4 @@ What is actually in place today, with no rounding up: the spec is written and th
 
 ## Why this one is the interesting problem
 
-The engineering here is real, but it is not the hard part. The hard part is the elicitation: sitting with a clinician, pulling the structure out of how he actually reasons, and deciding what a system should standardize versus what it must leave to the doctor. Get that boundary wrong in either direction and you have either a glorified form or a liability. Phasing it is how you de-risk it: own the front door first, prove the intake, then build the report, then let the AI read but never decide. The goal was never to automate the diagnosis. It was to make the diagnosis more consistent, more legible to the patient, and more predictable over time, with the doctor still holding the pen.
+The engineering here is real, but it is not the hard part. The hard part is the elicitation: sitting with a clinician, pulling the structure out of how he actually reasons, and deciding what a system should standardize versus what it must leave to the doctor. Get that boundary wrong in either direction and you have either a glorified form or a liability. Phasing it is how you de-risk it: own the front door first, prove the intake, then build the report, then let the AI read but never decide. The goal was never to automate the diagnosis. It was to have the AI do the first read so the doctor walks in already holding a consistent, legible, evidence-backed assessment, and still holds the pen.

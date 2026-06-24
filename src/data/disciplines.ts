@@ -123,6 +123,20 @@ export const disciplines: Discipline[] = [
         ],
       },
       {
+        name: "CDF: AI-assisted diagnosis",
+        status: "In build",
+        oneLiner:
+          "The diagnostic layer where AI reads the patient before the doctor does: it analyses CBCT, radiographs, intraoral scans, and clinical photos to surface decay, missing teeth, restorations, and bone-support patterns, then routes every finding to a doctor validation queue. AI assists, the doctor signs.",
+        img: "/cdf-diagnostic-filter.png",
+        href: "/posts/cdf-diagnostic-filter",
+        highlights: [
+          "AI-assisted findings on 2D radiographs and CBCT: decay, missing teeth, restorations, bone levels",
+          "Every AI finding stays provisional until a doctor confirms it in a validation queue",
+          "Signed corrections feed a continuous-learning loop on the practice's own validated cases",
+          "Standardized bone-support visualization: current architecture against an ideal reference",
+        ],
+      },
+      {
         name: "CRM intelligence layer",
         status: "Design complete",
         oneLiner:
@@ -192,6 +206,20 @@ export const disciplines: Discipline[] = [
     ],
     projects: [
       {
+        name: "Centralized Diagnostic Filter",
+        status: "In build",
+        oneLiner:
+          "The current frontier: a standardized diagnostic operating system built with the practice founder, unifying every imaging modality (CBCT, intraoral scans, photos, a risk survey) into one AI-assisted, doctor-validated report. The hardest forward-deployed job there is, turning a clinician's thirty-year mental model into a buildable, phased system.",
+        img: "/cdf-diagnostic-filter.png",
+        href: "/posts/cdf-diagnostic-filter",
+        highlights: [
+          "Elicited a veteran clinician's diagnostic model into a phased, buildable spec",
+          "Fourteen input classes mapped to nine standardized report sections",
+          "A preserved 0-200 future-tooth-loss risk score across four bands",
+          "Governing rule: AI assists, doctors validate, every finding doctor-confirmed",
+        ],
+      },
+      {
         name: "Cowork Dashboard",
         status: "In production",
         oneLiner:
@@ -239,16 +267,6 @@ export const disciplines: Discipline[] = [
         highlights: [
           "Zero-trust access via Cloud IAP; adding a user is a UI action, not a gcloud command",
           "Success criterion: the engineer is no longer needed in the loop",
-        ],
-      },
-      {
-        name: "CDF: diagnostic operating system",
-        status: "Design complete",
-        oneLiner:
-          "Current frontier: a product design framework built with Hybridge's founder for unifying every imaging modality into AI-assisted, doctor-validated diagnostic reporting.",
-        highlights: [
-          "Fourteen input classes mapped to nine standardized report sections",
-          "Governing rule: AI assists, doctors validate",
         ],
       },
     ],
@@ -441,6 +459,7 @@ export const disciplines: Discipline[] = [
           "Open-sourced under MIT with a fork guide written to hand to an AI coding agent",
           "Tailors a resume and cover letter per match; every resume ships its own ATS report",
           "Grounded AI copilot with a per-job chat drawer over the live job description",
+          "A multi-page Next.js console behind IAP, the Google Sheet as the database, keyless CI/CD on Workload Identity Federation",
         ],
       },
       {
