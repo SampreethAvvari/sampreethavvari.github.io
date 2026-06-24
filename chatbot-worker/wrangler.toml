@@ -3,12 +3,13 @@ main = "src/index.ts"
 compatibility_date = "2026-05-01"
 compatibility_flags = ["nodejs_compat"]
 
-# Llama 3.1 8B Instruct (fast variant) on Cloudflare Workers AI. Free under
-# the 10,000-neurons/day allowance, no API key, native to this worker via the
-# AI binding. The base "@cf/meta/llama-3.1-8b-instruct" slug was deprecated by
-# Cloudflare on 2026-05-30; the -fast and -lora variants stay active.
+# Gemma 4 26B (a4b mixture-of-experts, ~4B active) on Cloudflare Workers AI.
+# Free under the 10,000-neurons/day allowance, no API key, native to this
+# worker via the AI binding. Replaced "@cf/meta/llama-3.1-8b-instruct", which
+# Cloudflare deprecated on 2026-05-30; Gemma 4 is cheaper per token, has a 256k
+# context window, and follows the system prompt more cleanly.
 [vars]
-AI_MODEL = "@cf/meta/llama-3.1-8b-instruct-fast"
+AI_MODEL = "@cf/google/gemma-4-26b-a4b-it"
 ALLOWED_ORIGINS = "https://sampreethavvari.github.io,http://localhost:4321,http://localhost:3000"
 
 [ai]
