@@ -140,6 +140,26 @@ describe("handler — Workers AI integration", () => {
     expect(body.reply).toBe("Sampreeth is an AI Engineer at Hybridge Implants.");
   });
 
+  test("reads OpenAI-style choices[].message.content (Gemma 4 / gpt-oss shape)", async () => {
+    const ai: AiBinding = {
+      run: vi.fn(async () => ({
+        choices: [{ message: { content: "Sampreeth builds production AI systems." } }],
+      })),
+    };
+
+    const req = makeRequest({
+      body: JSON.stringify({
+        messages: [{ role: "user", content: "Who is Sampreeth?" }],
+      }),
+    });
+
+    const res = await handleRequest(req, makeEnv({ ai }));
+
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as { reply: string };
+    expect(body.reply).toBe("Sampreeth builds production AI systems.");
+  });
+
   test("env.AI.run receives the configured Gemma model and a Sampreeth system prompt", async () => {
     const calls: Array<{ model: string; options: AiRunOptions }> = [];
     const ai: AiBinding = {

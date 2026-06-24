@@ -8,8 +8,34 @@ export interface AiRunOptions {
   temperature?: number;
   max_tokens?: number;
 }
+
+// Workers AI returns different response shapes per model family. The legacy
+// text-generation models (Llama 3.1, etc.) use { response: string }, while
+// newer ones (Gemma 4, gpt-oss) use the OpenAI-compatible
+// { choices: [{ message: { content } }] }. We read whichever is present so a
+// model swap can never silently produce an empty reply again.
+export interface AiResult {
+  response?: string | { content?: string };
+  choices?: Array<{ message?: { content?: string }; text?: string }>;
+}
 export interface AiBinding {
-  run(model: string, options: AiRunOptions): Promise<{ response?: string }>;
+  run(model: string, options: AiRunOptions): Promise<AiResult>;
+}
+
+export function extractReply(result: AiResult | null | undefined): string {
+  if (!result) return "";
+  if (typeof result.response === "string") return result.response.trim();
+  if (
+    result.response &&
+    typeof result.response === "object" &&
+    typeof result.response.content === "string"
+  ) {
+    return result.response.content.trim();
+  }
+  const choice = result.choices?.[0];
+  if (choice?.message?.content) return String(choice.message.content).trim();
+  if (typeof choice?.text === "string") return choice.text.trim();
+  return "";
 }
 
 export interface Env {
@@ -70,7 +96,7 @@ async function isAboutSampreeth(
       max_tokens: 3,
     });
 
-    const raw = (result?.response ?? "").trim().toUpperCase();
+    const raw = extractReply(result).toUpperCase();
     if (raw === "") return true;            // fail-open on empty
     if (raw.includes("YES")) return true;   // YES anywhere → allow
     if (/\bNO\b/.test(raw)) return false;   // standalone NO → refuse
@@ -177,7 +203,7 @@ export async function handleRequest(request: Request, env: Env): Promise<Respons
     max_tokens: 512,
   };
 
-  let result: { response?: string };
+  let result: AiResult;
   try {
     result = await env.AI.run(model, aiPayload);
   } catch {
@@ -189,7 +215,7 @@ export async function handleRequest(request: Request, env: Env): Promise<Respons
     );
   }
 
-  const reply = result?.response?.trim();
+  const reply = extractReply(result);
   if (!reply) {
     return jsonResponse({ error: "Upstream returned an empty reply" }, 502, origin, env);
   }
