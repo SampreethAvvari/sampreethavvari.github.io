@@ -814,19 +814,20 @@ export const info = {
       date: "2026 - Present",
       description:
         "My open-source job-hunt autopilot. It watches 160+ company boards directly, scores each role against my profile, and tailors a resume and cover letter per match, with a calibrated AI judge keeping the rewrites honest.",
-      link: "https://github.com/SampreethAvvari",
+      link: "https://github.com/SampreethAvvari/job-pilot",
       post: "/posts/jobpilot-v2",
       details: {
         summary:
-          "An open-source job-hunt platform: direct board watching, schema-locked LLM scoring, a calibrated resume judge with a truth-locked rewrite loop, and a Next.js console behind IAP. The one project that spans all four disciplines.",
+          "An open-source job-hunt platform: direct board watching across eleven sources, schema-locked LLM scoring, a calibrated resume judge with a truth-locked rewrite loop, recruiter outreach drafted but never auto-sent, and a multi-page Next.js console behind IAP. The one project that spans all four disciplines.",
         highlights: [
           "160+ company boards watched directly, not scraped through a job aggregator.",
           "Schema-locked LLM scoring per role, plus a per-job chat copilot grounded in the live description.",
           "A calibrated resume judge with a truth-locked rewrite loop, so a tailored resume never invents experience.",
+          "A company watchlist that auto-detects each board's ATS; recruiter and cold outreach drafted into Gmail (never auto-sent), and replies flagged the moment they land.",
           "Open-sourced under MIT with a fork guide written to hand to an AI coding agent.",
         ],
       },
-      tech: ["Next.js", "TypeScript", "FastAPI", "LLM scoring", "PostgreSQL", "Cloud IAP", "GitHub Actions"],
+      tech: ["Python", "Next.js", "Vertex AI Gemini", "LaTeX", "Google Sheets", "Cloud Run", "Cloud IAP", "GitHub Actions"],
       img_alt: "JobPilot open-source job-hunt autopilot",
       img_path: "/jobpilot-flagship.png",
     },

@@ -31,7 +31,7 @@ That is the whole daily ritual. No scrolling LinkedIn, no rereading the same rep
 
 ## Where the jobs actually come from
 
-The trick is still to skip the aggregator lag and read companies' own boards. JobPilot now watches **160+ company career pages directly** across seven ATS types (Greenhouse, Lever, Ashby, Workday, SmartRecruiters, Workable, Recruitee), plus RemoteOK, Hacker News "Who is Hiring," Adzuna, and LinkedIn through a pay-per-result Apify actor. Free sources get polled **every hour**; the full run (LinkedIn, tailoring, outreach, digest) fires **four times a day**.
+The trick is still to skip the aggregator lag and read companies' own boards. JobPilot now watches **160+ company career pages directly** across seven ATS types (Greenhouse, Lever, Ashby, Workday, SmartRecruiters, Workable, Recruitee), plus RemoteOK, Hacker News "Who is Hiring," Adzuna, and LinkedIn through a pay-per-result Apify actor. Adding a company is one row in a watchlist: I paste a name and a careers URL, a resolver works out which of the seven ATSs it runs on, and that board joins the next poll. Eleven source adapters, one normalized job behind them. Free sources get polled **every hour**; the full run (LinkedIn, tailoring, outreach, digest) fires **four times a day**.
 
 Two walls run before any compute is spent. A regex wall drops citizenship, clearance, and "cannot sponsor" postings, plus senior/staff/contract titles I'd never apply to. A new **US-only location wall** drops non-US roles entirely, and it knows that a state code beats a city-name collision, so "Vancouver, WA" stays and "Vancouver, BC" goes. A job posted on a company's board this morning is in my console by the next hourly run.
 
@@ -51,9 +51,13 @@ Up to ten attempts, early exit at 90, and the best attempt wins. A rewrite that 
 
 The biggest addition since launch is a grounded chat assistant. It loads a knowledge pack (my GitHub, this portfolio, my resumes, my profile) and answers through a guardrailed Vertex chat, so it talks about *my* search with real context instead of guessing. Every job row also has a **💬** that opens its own independent chat drawer with the live job description fetched on the spot, and I can attach a PDF or an image (a JD screenshot, a recruiter's note) straight into the conversation. There's also a manual-job tailor flow for the role a friend forwards that no board ever surfaced.
 
+## More than a table
+
+The console grew with the search. It is no longer one screen but a small app: a jobs registry I triage every morning, an applied funnel that advances itself as replies arrive, a replies feed, a resume armory that shows each of the four variants with its live ATS score and a one-click rebuild, a companies watchlist with per-board health, and an outreach console where the drafts wait. The Google Sheet underneath is still the database, so I can fix anything from my phone and the console just reflects it.
+
 ## It never sends anything on its own
 
-Two rules I refuse to ship without. The system **never sends an email by itself**: recruiter outreach is looked up through Apollo, written, and dropped into my Gmail drafts for me to send. And automation **never overwrites my manual edits**; it only moves a status forward.
+Two rules I refuse to ship without. The system **never sends an email by itself**: recruiter outreach is looked up through Apollo, written, and dropped into my Gmail drafts for me to send. For a company on my watchlist I have not applied to yet, it can find two or three hiring contacts and draft a cold intro the same way. Every one waits in drafts until I read it and hit send. And automation **never overwrites my manual edits**; it only moves a status forward.
 
 The reply tracking got smarter too. An hourly inbox watcher reads the last couple of days across every inbox I connect, and a genuine next step (interview invite, scheduling request, assessment) triggers an **instant alert email** telling me which company replied in which inbox, with a link to the exact message. Rejections quietly update the tracker; "thanks for applying" autoresponders are ignored.
 
