@@ -4,7 +4,7 @@ date: "2025-05-01"
 layout: ../../layouts/PostLayout.astro
 description: "A loan-scoring service where I built the unglamorous parts on purpose: training in containers, model history, quality gates, automatic retraining. The gates mattered most."
 img_path: "/loan-radar.png"
-img_alt: "Loan Radar architecture — training, lineage, gates, inference, retraining"
+img_alt: "Loan Radar architecture: training, lineage, gates, inference, retraining"
 tag: "MLOps"
 tone: "violet"
 stats:

@@ -81,6 +81,20 @@ export const disciplines: Discipline[] = [
     ],
     projects: [
       {
+        name: "Enterprise Search (RAG)",
+        status: "In build",
+        oneLiner:
+          "An internal AI search over all of Hybridge's knowledge. Hybrid retrieval, reranking, deterministic conflict resolution, and citations, with an honest 'I don't know' when the evidence is thin. Built trustworthy-first and shipped stage by stage.",
+        img: "/enterprise-search.png",
+        href: "/posts/enterprise-search",
+        highlights: [
+          "Hybrid retrieval (BM25 + pgvector) fused with RRF and reranked, not vector-only",
+          "Conflict resolution by rule: validity, authority, recency, else declare the disagreement",
+          "Group access enforced as a pre-retrieval filter, so restricted docs never leak into a search",
+          "An eval harness (recall, nDCG, MRR, faithfulness) decides when complexity earns its place",
+        ],
+      },
+      {
         name: "Doc Coach: Consultation QA",
         status: "In production",
         oneLiner:
@@ -100,7 +114,7 @@ export const disciplines: Discipline[] = [
         oneLiner:
           "A pipeline that coaches new-patient phone calls: it finds the relevant calls among thousands, scores each against the practice playbook with a verbatim quote behind every criterion, and writes per-coordinator trend reports. A full rebuild of an n8n prototype.",
         img: "/npc-coach.png",
-        href: "/posts/npc-coach-rebuild",
+        href: "/posts/npc-coach",
         highlights: [
           "A verbatim transcript quote behind every one of six scoring criteria",
           "Hard gates are flags, not caps: a call can score 84 and still carry a red 'missed a non-negotiable' badge",
@@ -134,8 +148,9 @@ export const disciplines: Discipline[] = [
       },
     ],
     articles: [
+      { title: "Building an enterprise search that knows when to say 'I don't know'", href: "/posts/enterprise-search", img: "/enterprise-search.png" },
       { title: "How I built an AI that grades every patient consult", href: "/posts/clinical-rag", img: "/doc-coach.png" },
-      { title: "Doctor report cards", href: "/posts/doctor-report-cards", img: "/doctor-report-cards.png" },
+      { title: "Rebuilding a brittle call grader into a coaching platform", href: "/posts/npc-coach", img: "/npc-coach.png" },
       { title: "JobPilot: my open-source job-hunt app", href: "/posts/jobpilot-v2", img: "/jobpilot-flagship.png" },
     ],
     heroImg: "/discipline-aie.png",
@@ -409,7 +424,7 @@ export const disciplines: Discipline[] = [
         oneLiner:
           "The software story under the AI: 19K lines of Python across 19 modules, 1,156 tests, strict typing, ports-and-adapters with dual-source dedup and an interim single-process pipeline ahead of the event-driven mesh.",
         img: "/npc-coach.png",
-        href: "/posts/npc-coach-architecture",
+        href: "/posts/npc-coach",
         highlights: [
           "Ports-and-adapters: a new call source is one new adapter; tests bind in-memory fakes",
           "One NPC_BAA_ACCEPTED switch gates all real PHI; 1,156 tests touch no cloud and no PHI",

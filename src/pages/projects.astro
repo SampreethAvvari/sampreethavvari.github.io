@@ -25,9 +25,14 @@ const cleanTitle = (t: string) =>
     .replace(/\s*-\s*Research\s*$/i, "")
     .trim();
 
-const industry = projects.filter((p: any) => p.tier === "industry");
+// Industry deep dives lead with the flagships (lower flagshipRank first); the
+// rest keep their array order behind them (Array.sort is stable).
+const industry = projects
+  .filter((p: any) => p.tier === "industry")
+  .sort((a: any, b: any) => (a.flagshipRank ?? 99) - (b.flagshipRank ?? 99));
 const research = projects.filter((p: any) => p.tier === "research");
 const academic = projects.filter((p: any) => p.tier === "academic");
+const personal = projects.filter((p: any) => p.tier === "personal");
 
 // Industry chips stay neutral slate so the page reads as black + matte gray;
 // the colour comes only from the atmos glow behind each deep dive.
@@ -38,6 +43,8 @@ const INDUSTRY_CHIP_TONES = ["slate", "slate", "slate", "slate", "slate", "slate
 // signaling. Mapped per filename so adding a new project is one line.
 // Tones follow the discipline colours: AIE emerald, FDE amber, MLE violet, SDE blue.
 const ATMOS_BY_IMG: Record<string, string> = {
+  "/enterprise-search.png": "emerald",
+  "/jobpilot-flagship.png": "blue",
   "/cbct-validator.png": "violet",
   "/treatment-estimator.png": "blue",
   "/cowork-dashboard.png": "amber",
@@ -56,12 +63,14 @@ const atmosToneFor = (p: any) => ATMOS_BY_IMG[p.img_path] || "slate";
 // Map project title fragments to their long-form blog post URL. Used for
 // inline "Read the write-up" links per deep dive and the closing band.
 const POST_FOR: Record<string, string> = {
+  "Enterprise Search": "/posts/enterprise-search",
+  "JobPilot": "/posts/jobpilot-v2",
   "CBCT Scan Validator": "/posts/cbct-scan-validator",
   "Treatment Estimator": "/posts/treatment-estimator",
   "Cowork Dashboard": "/posts/cowork-dashboard",
   "Doc Coach": "/posts/clinical-rag",
   "Consultation QA": "/posts/clinical-rag",
-  "NPC": "/posts/npc-coach-rebuild",
+  "NPC": "/posts/npc-coach",
   "Reconciliation": "/posts/reconciliation",
   "Centralized Diagnostic Filter": "/posts/cdf-diagnostic-filter",
   "Loan Radar": "/posts/loan-radar-mlops",
@@ -298,6 +307,79 @@ const galleryFor = (title: string) => {
       </section>
     );
   })}
+
+  <!-- ── Band: Open source / personal ───────────────────────────────── -->
+  {personal.length > 0 && (
+    <section class="snap-chapter relative py-16 lg:py-20">
+      <div class="mx-auto w-full max-w-screen-2xl px-6 lg:px-12">
+        <div class="max-w-3xl mb-12 lg:mb-16">
+          <p class="eyebrow text-secondary dark:text-dk-secondary mb-4">Open source</p>
+          <h2 class="display-sm text-text dark:text-dk-text glow-wave mb-4">
+            Built in the open.
+          </h2>
+          <p class="text-base lg:text-lg text-text/70 dark:text-dk-text/70 leading-relaxed">
+            The project I build for myself, on my own time, and ship under MIT.
+            It is the one that spans all four disciplines at once.
+          </p>
+        </div>
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+          {personal.map((p: any) => (
+            <article class="rounded-xl border border-text/10 dark:border-dk-text/15 bg-primary dark:bg-dk-primary/40 overflow-hidden flex flex-col hover:border-text/30 dark:hover:border-dk-text/25 transition">
+              <div class="relative overflow-hidden">
+                <Image
+                  src={p.img_path}
+                  alt={p.img_alt || p.title}
+                  width={900}
+                  height={500}
+                  class="w-full aspect-[16/9] object-cover transition duration-500 hover:scale-[1.03]"
+                />
+              </div>
+              <div class="p-5 flex flex-col flex-1">
+                <div class="flex items-center gap-2 mb-3">
+                  <span class="text-[0.6rem] uppercase tracking-[0.18em] font-bold text-secondary dark:text-dk-secondary">
+                    Open source · {p.date}
+                  </span>
+                </div>
+                <h3 class="text-base lg:text-lg font-semibold text-text dark:text-dk-text leading-snug mb-2">
+                  {cleanTitle(p.title)}
+                </h3>
+                <p class="text-xs lg:text-sm text-text/60 dark:text-dk-text/65 leading-relaxed mb-4 line-clamp-3">
+                  {p.description}
+                </p>
+                <div class="flex flex-wrap gap-1 mt-auto mb-3">
+                  {(p.tech?.slice(0, 5) || []).map((t: string) => (
+                    <span class="text-[0.62rem] uppercase tracking-[0.1em] px-1.5 py-0.5 rounded-full bg-text/5 dark:bg-dk-text/[0.06] text-text/60 dark:text-dk-text/65">
+                      {t}
+                    </span>
+                  ))}
+                </div>
+                <div class="flex flex-wrap items-center gap-3 mt-1">
+                  {postFor(p.title) && (
+                    <a
+                      href={postFor(p.title)}
+                      class="link-underline text-xs font-semibold text-secondary dark:text-dk-secondary inline-flex"
+                    >
+                      Read the write-up <span aria-hidden="true">→</span>
+                    </a>
+                  )}
+                  {p.link && (
+                    <a
+                      href={p.link}
+                      target="_blank"
+                      rel="noreferrer"
+                      class="link-underline text-xs font-semibold text-text/55 dark:text-dk-text/55 inline-flex"
+                    >
+                      View on GitHub <span aria-hidden="true">↗</span>
+                    </a>
+                  )}
+                </div>
+              </div>
+            </article>
+          ))}
+        </div>
+      </div>
+    </section>
+  )}
 
   <!-- ── Band B: Research ───────────────────────────────────────────── -->
   {research.length > 0 && (

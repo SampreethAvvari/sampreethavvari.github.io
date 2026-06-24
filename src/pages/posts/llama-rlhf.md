@@ -81,7 +81,7 @@ There are two popular ways to run that "practice with a scorekeeper" loop: one's
   </div>
 </div>
 
-The result? GRPO got there faster. PPO was a bit smoother. In a blind test where real people picked the better reply, both beat the original model about **66–67%** of the time, and against each other it was basically a coin flip. The big, much-debated algorithm choice was the *least* important decision in the whole project.
+The result? GRPO got there faster. PPO was a bit smoother. In a blind test where real people picked the better reply, both beat the original model about **66 to 67%** of the time, and against each other it was basically a coin flip. The big, much-debated algorithm choice was the *least* important decision in the whole project.
 
 ## The takeaway
 

@@ -145,66 +145,59 @@ export default function ChatWidget() {
   return (
     <>
       <button
-        className={`fixed right-4 bottom-28 lg:right-8 lg:bottom-32 z-50 rounded-full bg-primary text-secondary border border-secondary dark:bg-dk-primary dark:text-dk-secondary dark:border-dk-secondary shadow-lg transition-all duration-300 ease-out ${
-          isOpen ? "hidden" : ""
+        className={`chat-launcher fixed right-4 bottom-24 lg:right-7 lg:bottom-28 z-50 rounded-full transition-all duration-300 ease-out ${
+          isOpen ? "hidden" : "inline-flex"
         } ${
           compact
-            ? "w-11 h-11 lg:w-12 lg:h-12 opacity-80 hover:opacity-100 hover:scale-105"
+            ? "w-12 h-12 opacity-90 hover:opacity-100"
             : "w-14 h-14 lg:w-16 lg:h-16 chat-attention"
         }`}
-        aria-label="Open chatbot"
+        aria-label="Open chat"
         onClick={() => setIsOpen(true)}
       >
         <img
           src="/logos/samp-chat.png"
-          alt="Samp-chat avatar"
-          className={`absolute -left-12 -bottom-2 w-10 h-10 rounded-full border border-secondary/50 dark:border-dk-secondary/50 shadow-md bg-primary dark:bg-dk-primary transition-all duration-300 ${
-            compact ? "opacity-0 scale-50 pointer-events-none" : "opacity-100 scale-100"
-          }`}
+          alt="Chat with Sampreeth's assistant"
+          className="w-full h-full rounded-full object-cover p-[3px]"
         />
+        <span className="chat-online-dot" aria-hidden="true"></span>
         {showNudge && !compact && (
-          <div className="absolute -left-44 -top-8 lg:-top-10">
-            <div className="bg-secondary text-primary px-3 py-2 rounded-full text-xs lg:text-sm shadow-lg animate-fade-in-out whitespace-nowrap">
-              Ask anything about Sampreeth
-            </div>
-          </div>
+          <span className="chat-nudge animate-fade-in-out">Ask me anything about Sampreeth</span>
         )}
-        <i className={`fas fa-comment-dots transition-all duration-300 ${compact ? "text-lg lg:text-xl" : "text-2xl lg:text-3xl"}`}></i>
-        <span className={`absolute -top-1 -right-1 w-3.5 h-3.5 lg:w-4.5 lg:h-4.5 bg-red-500 rounded-full ring-2 ring-primary dark:ring-dk-primary transition-opacity duration-300 ${compact ? "opacity-0" : "opacity-100"}`}></span>
       </button>
 
       {isOpen && (
-        <div className="fixed right-4 bottom-28 lg:right-8 lg:bottom-32 z-50 w-[calc(100vw-2rem)] sm:w-[400px] lg:w-[440px] xl:w-[480px] bg-primary dark:bg-dk-primary border border-secondary/30 dark:border-dk-secondary/30 rounded-xl shadow-2xl flex flex-col max-h-[min(80vh,720px)]">
-          <div className="flex items-center justify-between px-4 py-3 border-b border-secondary/20 dark:border-dk-secondary/20">
-            <div>
-              <p className="text-sm font-semibold text-secondary dark:text-dk-secondary">Ask Sampreeth</p>
-              <p className="text-xs text-text dark:text-dk-text">Friendly, short, and to the point.</p>
+        <div className="chat-panel fixed right-4 bottom-24 lg:right-7 lg:bottom-28 z-50 w-[calc(100vw-2rem)] sm:w-[392px] flex flex-col max-h-[min(78vh,640px)]">
+          <div className="flex items-center gap-3 px-4 py-3.5 border-b border-text/10 dark:border-dk-text/10">
+            <span className="relative shrink-0">
+              <img
+                src="/logos/samp-chat.png"
+                alt=""
+                className="w-9 h-9 rounded-full object-cover ring-1 ring-text/15 dark:ring-dk-text/20"
+              />
+              <span className="chat-online-dot" aria-hidden="true"></span>
+            </span>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-semibold text-text dark:text-dk-text leading-tight">Ask Sampreeth</p>
+              <p className="text-[0.7rem] text-text/55 dark:text-dk-text/55 leading-tight">Usually answers in a sentence or two</p>
             </div>
-            <img
-              src="/logos/samp-chat.png"
-              alt="Samp-chat avatar"
-              className="w-16 h-16 rounded-full border border-secondary/40 dark:border-dk-secondary/40"
-            />
             <button
-              className="text-secondary dark:text-dk-secondary hover:text-accent dark:hover:text-dk-accent"
-              aria-label="Close chatbot"
+              className="chat-icon-btn"
+              aria-label="Close chat"
               onClick={() => setIsOpen(false)}
             >
-              <i className="fas fa-times"></i>
+              <i className="fas fa-xmark"></i>
             </button>
           </div>
 
-          <div
-            ref={scrollRef}
-            className="flex-1 px-4 py-3 space-y-3 overflow-y-auto"
-          >
+          <div ref={scrollRef} className="chat-scroll flex-1 px-4 py-4 space-y-3 overflow-y-auto">
             {messages.map((msg, idx) => (
               <div
                 key={`${msg.role}-${idx}`}
-                className={`rounded-lg px-3 py-2 text-sm leading-relaxed ${
+                className={`max-w-[86%] rounded-2xl px-3.5 py-2.5 text-[0.86rem] leading-relaxed ${
                   msg.role === "user"
-                    ? "bg-secondary text-primary ml-8"
-                    : "chat-msg-rich bg-secondary/10 text-text dark:text-dk-text mr-4"
+                    ? "ml-auto chat-bubble-user"
+                    : "chat-bubble-bot chat-msg-rich"
                 }`}
                 {...(msg.role === "assistant"
                   ? { dangerouslySetInnerHTML: { __html: renderRich(msg.content) } }
@@ -212,29 +205,32 @@ export default function ChatWidget() {
               />
             ))}
             {isLoading && (
-              <div className="text-xs text-text dark:text-dk-text">Typing…</div>
+              <div className="chat-bubble-bot rounded-2xl px-3.5 py-3 w-fit">
+                <span className="chat-typing" aria-label="Typing">
+                  <i></i><i></i><i></i>
+                </span>
+              </div>
             )}
-            {error && (
-              <div className="text-xs text-red-500">{error}</div>
-            )}
+            {error && <div className="text-xs text-rose-500 px-1">{error}</div>}
           </div>
 
-          <div className="border-t border-secondary/20 dark:border-dk-secondary/20 px-3 py-3">
-            <div className="flex items-center gap-2">
+          <div className="p-3 border-t border-text/10 dark:border-dk-text/10">
+            <div className="chat-composer">
               <textarea
-                className="flex-1 resize-none rounded-lg border border-secondary/30 dark:border-dk-secondary/30 bg-primary dark:bg-dk-primary px-3 py-2 text-sm text-text dark:text-dk-text focus:outline-none"
-                rows={2}
+                className="chat-input"
+                rows={1}
                 placeholder="Ask about Sampreeth…"
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={handleKeyDown}
               />
               <button
-                className="px-3 py-2 rounded-lg bg-secondary text-primary text-sm font-semibold hover:bg-accent transition"
+                className="chat-send"
                 onClick={sendMessage}
-                disabled={isLoading}
+                disabled={isLoading || !input.trim()}
+                aria-label="Send message"
               >
-                Send
+                <i className="fas fa-arrow-up"></i>
               </button>
             </div>
           </div>

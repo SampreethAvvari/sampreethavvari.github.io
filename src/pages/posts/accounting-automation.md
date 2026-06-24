@@ -4,7 +4,7 @@ date: "2026-05-20"
 layout: ../../layouts/PostLayout.astro
 description: "Every week our accountant hand-copied numbers from five different systems. A dozen small Python scripts do it for him now, built the way he actually works."
 img_path: "/accounting-automation.png"
-img_alt: "Accounting automation pipeline — Denticon, MagicTouch, Paychex, banks into Google Sheets and QuickBooks"
+img_alt: "Accounting automation pipeline: Denticon, MagicTouch, Paychex, banks into Google Sheets and QuickBooks"
 tag: "Process"
 tone: "amber"
 stats:

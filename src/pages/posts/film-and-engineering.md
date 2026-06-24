@@ -6,7 +6,7 @@ description: "People keep telling me films and engineering are separate. They're
 img_path: "/film-and-engineering.png"
 img_alt: "Film clapperboard and laptop, same craft"
 tag: "Personal"
-tone: "amber"
+tone: "film"
 stats:
   - value: "7 films"
     label: "directed, written, edited, or scored"
@@ -85,7 +85,7 @@ Three things, all downstream of the same instinct:
 
 > The customer is the cast. The system is the scene. The job is to make the scene work for them.
 
-**The systems I ship survive contact with non-engineers.** Every quirk in the dashboard, the estimator, the consultation pipeline — the deliberate inclusion of "Hung up" leads in the Scheduled count, the orphan re-treatment patients shown in a Data Quality panel but still counted in CA, the three-affordance wizard orientation — none of those are technical decisions. They're judgement calls from arguments with the people who'd be using the thing.
+**The systems I ship survive contact with non-engineers.** Consider the quirks in the dashboard, the estimator, the consultation pipeline: the deliberate inclusion of "Hung up" leads in the Scheduled count, the orphan re-treatment patients shown in a Data Quality panel but still counted in CA, the three-affordance wizard orientation. None of those are technical decisions. They're judgement calls from arguments with the people who'd be using the thing.
 
 **I can work alone in scopes that would normally need a team.** A director on a small short is the writer, the editor, the colourist, the producer's bad cop, the actor's good cop. I went into engineering already used to wearing eight hats on a project. The single-person Hybridge work (CBCT validator + estimator + consultation pipeline + dashboard + accounting suite) wouldn't have been possible without that muscle.
 
@@ -93,6 +93,6 @@ Three things, all downstream of the same instinct:
 
 ## The version a hiring manager wants
 
-If you're hiring an engineer who can sit with a customer until the system you ship is the system they needed — that's the work I want. The Hybridge portfolio is what comes out the other end when you treat every project like a small film. A spec written before the schema. A handful of department heads who all need to be heard. A scene that needs to actually work. A cut that gets shorter every week until it's the right length.
+If you're hiring an engineer who can sit with a customer until the system you ship is the system they needed, that's the work I want. The Hybridge portfolio is what comes out the other end when you treat every project like a small film. A spec written before the schema. A handful of department heads who all need to be heard. A scene that needs to actually work. A cut that gets shorter every week until it's the right length.
 
 Two crafts, same muscle.

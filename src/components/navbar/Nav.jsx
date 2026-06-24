@@ -6,6 +6,14 @@ import { info } from "../../data/info";
 
 export default function Nav({ searchItems }) {
   const [isNavOpen, setIsNavOpen] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
+
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 24);
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
 
   const navLinks = [
     { name: "Home", href: "/#home", icon: "fas fa-home", match: "home" },
@@ -40,20 +48,20 @@ export default function Nav({ searchItems }) {
 
   return (
     <>
-      <nav className="fixed top-0 left-0 right-0 z-50 bg-primary/75 dark:bg-dk-primary/70 backdrop-blur-xl backdrop-saturate-150 border-b border-text/5 dark:border-dk-text/10">
-        <div className="mx-auto w-full max-w-screen-2xl px-4 sm:px-6 lg:px-10 xl:px-14 2xl:px-20 h-14 lg:h-16 flex items-center gap-4">
+      <nav className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${scrolled ? "pt-3 nav-shrink" : "nav-glass"}`}>
+        <div className={`nav-bar flex items-center gap-4 transition-all duration-300 ${scrolled ? "nav-island nav-glass h-12" : "mx-auto w-full max-w-screen-2xl px-4 sm:px-6 lg:px-10 xl:px-14 2xl:px-20 h-14 lg:h-16"}`}>
           {/* Brand */}
           <a className="font-semibold text-lg lg:text-xl tracking-tight text-text dark:text-dk-text shrink-0" href="/#home">
             <span className="text-secondary dark:text-dk-secondary">
               {"</" + extractInitials(info.name) + ">"}
             </span>
-            <span className="hidden md:inline-block ml-2 text-text/60 dark:text-dk-text/60 font-normal">
+            <span className={`ml-2 text-text/60 dark:text-dk-text/60 font-normal whitespace-nowrap ${scrolled ? "hidden" : "hidden md:inline-block"}`}>
               {info.name}
             </span>
           </a>
 
           {/* Desktop nav (links centered, actions right) */}
-          <div className="hidden lg:flex flex-1 items-center justify-center">
+          <div className={`hidden lg:flex items-center justify-center ${scrolled ? "" : "flex-1"}`}>
             <ul className="inline-flex items-center gap-1 text-sm font-medium text-text/70 dark:text-dk-text/70">
               {navLinks.map((link, index) => {
                 const isActive = activeMatch === link.match;
@@ -61,7 +69,7 @@ export default function Nav({ searchItems }) {
                 <li key={index}>
                   <a
                     href={link.href}
-                    className={`no-lift inline-flex items-center gap-2 px-4 py-2 rounded-full transition ${
+                    className={`no-lift nav-link inline-flex items-center gap-2 px-4 py-2 rounded-full transition ${
                       isActive
                         ? "text-text dark:text-dk-text bg-text/[0.06] dark:bg-dk-text/[0.08]"
                         : "hover:text-text dark:hover:text-dk-text hover:bg-text/[0.04] dark:hover:bg-dk-text/[0.05]"
@@ -70,7 +78,7 @@ export default function Nav({ searchItems }) {
                     title={link.name}
                   >
                     <i className={`${link.icon} text-base`} aria-hidden="true"></i>
-                    <span>{link.name}</span>
+                    <span className="nav-label">{link.name}</span>
                   </a>
                 </li>
               )})}

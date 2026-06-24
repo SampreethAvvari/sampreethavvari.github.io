@@ -39,7 +39,7 @@ Better. Not good enough. Because I could see where this was going: the teams ahe
     <div class="stat-label">after architecture + hyperparameter tuning (~92%)</div>
   </div>
   <div class="stat-callout stat-violet">
-    <div class="stat-value">94–94.5%</div>
+    <div class="stat-value">94 to 94.5%</div>
     <div class="stat-label">what the teams ahead of us were hitting</div>
   </div>
   <div class="stat-callout stat-blue">
@@ -89,7 +89,7 @@ We did not see that coming. We partied that night. Genuinely did not know we had
 
 ## Why I keep telling this one
 
-Here's the part I love. Going in, we thought we were average. Other teams were pulling out heavy machinery, teacher–student setups, exotic architectures, things we'd only half-heard of. We assumed someone like that would run away with it.
+Here's the part I love. Going in, we thought we were average. Other teams were pulling out heavy machinery, teacher-student setups, exotic architectures, things we'd only half-heard of. We assumed someone like that would run away with it.
 
 Instead we:
 
