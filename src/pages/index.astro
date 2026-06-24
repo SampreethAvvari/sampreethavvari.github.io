@@ -723,26 +723,6 @@ const skillGroups = [
       return s;
     });
 
-    // Glass-bead sprite per colour: a translucent marble with a baked specular
-    // highlight and a soft coloured edge, so each node reads as a little glass
-    // blob in a glassy (light-tinted) colour, not a flat glowing dot.
-    const beads = COLORS.map(([r, g, b]) => {
-      const s = document.createElement("canvas"); s.width = s.height = 64;
-      const c = s.getContext("2d");
-      const lr = (r * 0.45 + 140) | 0, lg = (g * 0.45 + 140) | 0, lb = (b * 0.45 + 140) | 0;
-      const body = c.createRadialGradient(26, 23, 1, 32, 32, 30);
-      body.addColorStop(0, "rgba(255,255,255,0.95)");
-      body.addColorStop(0.22, "rgba(" + lr + "," + lg + "," + lb + ",0.78)");
-      body.addColorStop(0.6, "rgba(" + r + "," + g + "," + b + ",0.34)");
-      body.addColorStop(1, "rgba(" + r + "," + g + "," + b + ",0)");
-      c.fillStyle = body; c.beginPath(); c.arc(32, 32, 30, 0, Math.PI * 2); c.fill();
-      const spec = c.createRadialGradient(24, 21, 0, 24, 21, 7);
-      spec.addColorStop(0, "rgba(255,255,255,0.95)");
-      spec.addColorStop(1, "rgba(255,255,255,0)");
-      c.fillStyle = spec; c.beginPath(); c.arc(24, 21, 7, 0, Math.PI * 2); c.fill();
-      return s;
-    });
-
     // Dense point sphere; nearest-neighbour edges = the mesh. Each point keeps
     // its own cursor-pull displacement (cdx/cdy) so the bulge is localised.
     const N = 360;
@@ -834,27 +814,15 @@ const skillGroups = [
         const lift = Math.min(1, Math.hypot(p.cdx, p.cdy) / (infl * 0.45));
         proj[i] = { sx: bx + p.cdx, sy: by + p.cdy, depth, persp, lift };
       }
-      // Glass links: each edge is a glass rod — a translucent, light-tinted
-      // coloured body with a thin bright specular core running down it.
-      ctx.lineCap = "round";
       for (let e = 0; e < edges.length; e++) {
         const pa = proj[edges[e][0]], pb = proj[edges[e][1]];
         const dep = (pa.depth + pb.depth) / 2;
         const lift = pa.lift > pb.lift ? pa.lift : pb.lift;
         const col = COLORS[pts[edges[e][0]].ci];
-        const lr = (col[0] * 0.5 + 128) | 0, lg = (col[1] * 0.5 + 128) | 0, lb = (col[2] * 0.5 + 128) | 0;
-        // translucent glass body, a touch thick
-        ctx.strokeStyle = "rgba(" + lr + "," + lg + "," + lb + "," + (((dark ? 0.10 : 0.12) + dep * 0.16) * (1 + lift * 2.0)).toFixed(3) + ")";
-        ctx.lineWidth = 1.2 + dep * 1.4 + lift * 1.3;
+        ctx.strokeStyle = "rgba(" + col[0] + "," + col[1] + "," + col[2] + "," + (((dark ? 0.08 : 0.06) + dep * 0.12) * (1 + lift * 2.4)).toFixed(3) + ")";
+        ctx.lineWidth = 0.5 + dep * 0.5 + lift * 0.8;
         ctx.beginPath(); ctx.moveTo(pa.sx, pa.sy); ctx.lineTo(pb.sx, pb.sy); ctx.stroke();
-        // bright specular core (front rods only) — the shine on the glass
-        if (dep > 0.4 || lift > 0.05) {
-          ctx.strokeStyle = "rgba(255,255,255," + (((dark ? 0.10 : 0.16) + dep * 0.22) * (1 + lift * 1.8)).toFixed(3) + ")";
-          ctx.lineWidth = 0.5 + dep * 0.5 + lift * 0.7;
-          ctx.beginPath(); ctx.moveTo(pa.sx, pa.sy); ctx.lineTo(pb.sx, pb.sy); ctx.stroke();
-        }
       }
-      ctx.lineCap = "butt";
       for (const pu of pulses) {
         pu.t += pu.sp;
         if (pu.t > 1) { pu.t = 0; pu.e = (Math.random() * edges.length) | 0; }
@@ -865,12 +833,15 @@ const skillGroups = [
         ctx.drawImage(sprites[pts[edges[pu.e][0]].ci], px - R, py - R, R * 2, R * 2);
       }
       ctx.globalAlpha = 1;
-      // Glass blobs: each node is a translucent glass bead with a baked shine.
       for (let i = 0; i < N; i++) {
         const pr = proj[i];
-        const R = (1.5 + pr.depth * 3.4) * pr.persp * (1 + pr.lift * 1.6);
-        ctx.globalAlpha = Math.min(1, ((dark ? 0.4 : 0.52) + pr.depth * 0.5) * (1 + pr.lift * 1.1));
-        ctx.drawImage(beads[pts[i].ci], pr.sx - R, pr.sy - R, R * 2, R * 2);
+        const R = (1.8 + pr.depth * 4.5) * pr.persp * (1 + pr.lift * 1.9);
+        ctx.globalAlpha = Math.min(1, ((dark ? 0.16 : 0.14) + pr.depth * (dark ? 0.5 : 0.42)) * (1 + pr.lift * 1.8));
+        ctx.drawImage(sprites[pts[i].ci], pr.sx - R, pr.sy - R, R * 2, R * 2);
+        const col = COLORS[pts[i].ci];
+        ctx.globalAlpha = Math.min(1, (0.4 + pr.depth * 0.5) * (1 + pr.lift));
+        ctx.fillStyle = dark ? "rgba(255,255,255," + (0.4 + pr.depth * 0.4).toFixed(2) + ")" : "rgba(" + col[0] + "," + col[1] + "," + col[2] + ",0.85)";
+        ctx.beginPath(); ctx.arc(pr.sx, pr.sy, Math.max(0.5, pr.depth * 1.5), 0, Math.PI * 2); ctx.fill();
       }
       ctx.globalAlpha = 1;
     }
