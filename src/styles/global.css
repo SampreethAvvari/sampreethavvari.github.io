@@ -2378,12 +2378,14 @@ html.dark .work-highlight { color: rgba(245, 245, 247, 0.68); }
     font-size: 1.075rem;
     line-height: 1.55;
   }
-  /* Resize the portrait and tighten the band so the hero composes on a single
-     screen instead of stacking a tall photo you have to scroll past. The
-     smaller frame sits over the sphere + aurora so they read as one piece. */
+  /* Mobile hero = a two-column header (text left, photo top-right) with the
+     interactive sphere dropped into the space below. The photo fits its column;
+     the wavy aurora band is hidden so the nebula "supernova" backdrop carries
+     the mood on its own. */
   #home { padding-bottom: 1.75rem; }
-  #home .hero-portrait { max-width: 9.5rem; margin-inline: auto; margin-top: 0.25rem; }
-  #home .hero-portrait-glow { inset: -0.9rem; filter: blur(32px); opacity: 0.55; }
+  #home .hero-portrait { max-width: 100%; }
+  #home .hero-portrait-glow { inset: -0.7rem; filter: blur(26px); opacity: 0.5; }
+  #home .hero-aurora { display: none !important; }
 
   /* Skills bento: denser cards + chips so 36 skills aren't a scroll marathon. */
   .skills-card { padding: 1.15rem 1.15rem 1.3rem; border-radius: 1rem; }
