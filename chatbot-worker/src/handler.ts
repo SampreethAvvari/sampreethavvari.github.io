@@ -49,12 +49,12 @@ interface ChatMessage {
   content: string;
 }
 
-// Gemma 4 26B (a4b mixture-of-experts, ~4B active) on Cloudflare Workers AI:
-// free under the 10K-neurons/day allowance, no separate API key, runs in the
-// same worker process via the AI binding. Replaced the Llama 3.1 8B slug that
-// Cloudflare deprecated on 2026-05-30; Gemma 4 is cheaper per token and has a
-// 256k context window.
-const DEFAULT_MODEL = "@cf/google/gemma-4-26b-a4b-it";
+// Llama 3.3 70B Instruct (fp8, fast) on Cloudflare Workers AI: free under the
+// 10K-neurons/day allowance, no separate API key, runs in the same worker
+// process via the AI binding. A plain (non-reasoning) instruct model that
+// answers directly; Gemma 4's reasoning mode left substantive replies empty.
+// Replaced the Llama 3.1 8B slug Cloudflare deprecated on 2026-05-30.
+const DEFAULT_MODEL = "@cf/meta/llama-3.3-70b-instruct-fp8-fast";
 
 // Canned refusal returned instantly for off-topic questions — no answer
 // model call, no tokens wasted.

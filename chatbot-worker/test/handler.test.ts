@@ -11,7 +11,7 @@ function makeEnv(overrides: Partial<Env> & { ai?: AiBinding } = {}): Env {
     };
   return {
     AI: ai,
-    AI_MODEL: "@cf/google/gemma-4-26b-a4b-it",
+    AI_MODEL: "@cf/meta/llama-3.3-70b-instruct-fp8-fast",
     ALLOWED_ORIGINS: "https://sampreethavvari.github.io,http://localhost:4321",
     ...overrides,
   };
@@ -160,7 +160,7 @@ describe("handler — Workers AI integration", () => {
     expect(body.reply).toBe("Sampreeth builds production AI systems.");
   });
 
-  test("env.AI.run receives the configured Gemma model and a Sampreeth system prompt", async () => {
+  test("env.AI.run receives the configured model and a Sampreeth system prompt", async () => {
     const calls: Array<{ model: string; options: AiRunOptions }> = [];
     const ai: AiBinding = {
       run: vi.fn(async (model: string, options: AiRunOptions) => {
@@ -187,7 +187,7 @@ describe("handler — Workers AI integration", () => {
       ),
     );
     expect(answerCall).toBeTruthy();
-    expect(answerCall!.model).toBe("@cf/google/gemma-4-26b-a4b-it");
+    expect(answerCall!.model).toBe("@cf/meta/llama-3.3-70b-instruct-fp8-fast");
     const systemMsg = answerCall!.options.messages.find((m) => m.role === "system");
     expect(systemMsg).toBeTruthy();
     expect(systemMsg!.content.toLowerCase()).toContain("sampreeth");
