@@ -2378,6 +2378,12 @@ html.dark .work-highlight { color: rgba(245, 245, 247, 0.68); }
     font-size: 1.075rem;
     line-height: 1.55;
   }
+  /* Resize the portrait and tighten the band so the hero composes on a single
+     screen instead of stacking a tall photo you have to scroll past. The
+     smaller frame sits over the sphere + aurora so they read as one piece. */
+  #home { padding-bottom: 1.75rem; }
+  #home .hero-portrait { max-width: 9.5rem; margin-inline: auto; margin-top: 0.25rem; }
+  #home .hero-portrait-glow { inset: -0.9rem; filter: blur(32px); opacity: 0.55; }
 
   /* Skills bento: denser cards + chips so 36 skills aren't a scroll marathon. */
   .skills-card { padding: 1.15rem 1.15rem 1.3rem; border-radius: 1rem; }
@@ -2628,6 +2634,9 @@ html:not(.dark) .project-screen-imagewrap img {
      wrapper is pointer-transparent except for its actual links/buttons, so the
      object can be touched across the whole hero without blocking the CTAs. */
   pointer-events: auto;
+  /* Let a finger scroll the page vertically while the sphere still tracks the
+     touch (so it stays interactive on mobile without trapping the scroll). */
+  touch-action: pan-y;
 }
 .hero-copy { pointer-events: none; }
 .hero-copy a { pointer-events: auto; }
