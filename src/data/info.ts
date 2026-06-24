@@ -91,7 +91,7 @@ export const info = {
         highlights: [
           "[Consultation QA Pipeline](/posts/clinical-rag). Cloud Run + FastAPI grades every Zoom consult against a 7-criterion rubric. Schema-validated Gemini scoring, three-layer doctor ID, HIPAA-clean without Workspace DWD. -35% hallucinations vs the no-schema baseline; +130% acceptance and +43% revenue downstream.",
           "[Pipeline observability hardening](/posts/pipeline-ghosting). Hardened that same QA pipeline after it kept showing ✅ complete while emails never sent and Sheet rows never appeared. Killed 9 silent-failure modes (bare-except graveyard, connection-level retry gaps, status-color drift), added durable webhook rows, a rerun-replaces-old flow, a consistency reconciler, and a plain-English Logs UI. 51/0/0 in the audit, +50 targeted tests.",
-          "[NPC Coach](/posts/npc-coach-rebuild). Rebuilt a brittle n8n call grader into a coaching platform for the front desk: it finds every new-patient call, grades it against the practice playbook with a verbatim transcript quote behind each of six criteria, and tracks each coordinator's trend in BigQuery behind a 26-endpoint React dashboard. 40/40/20 weighted score plus 3 hard gates as flags, not caps; ports-and-adapters gated by one NPC_BAA_ACCEPTED switch so 1,156 tests run with no cloud and no PHI. Day one on live calls: ~285 ingested, 40 scored, 3 voicemails auto-filtered, 28 flagged.",
+          "[NPC Coach](/posts/npc-coach). Rebuilt a brittle n8n call grader into a coaching platform for the front desk: it finds every new-patient call, grades it against the practice playbook with a verbatim transcript quote behind each of six criteria, and tracks each coordinator's trend in BigQuery behind a 26-endpoint React dashboard. 40/40/20 weighted score plus 3 hard gates as flags, not caps; ports-and-adapters gated by one NPC_BAA_ACCEPTED switch so 1,156 tests run with no cloud and no PHI. Day one on live calls: ~285 ingested, 40 scored, 3 voicemails auto-filtered, 28 flagged.",
           "[CBCT Scan Validator](/posts/cbct-scan-validator). In-house dental CT classifier. Replaced a $98K + $26K/yr vendor quote with a Cloud Run service under $50/mo. Frozen DentalSegmentator + multi-scale head, OpenVINO on CPU, ~5.5s end-to-end. 20-scan CICT gate on every push.",
           "[Treatment Estimator](/posts/treatment-estimator). Next.js + Postgres rebuild of a decade-old quoting tool. Write-once `_at_capture` columns + Postgres triggers turn the 6-month price guarantee into a real DB invariant. Shipped end-to-end in ~1 month; a prior vendor never shipped in a decade.",
           "[Cowork Dashboard](/posts/cowork-dashboard). Apps Script on weekly Monday.com exports. Patient-to-lead linkage went from 49% to 99% via the Monday connect column. Surfaced ~$460k of orphan patient value. Weekly recon: half a day → 3 minutes.",
@@ -283,8 +283,50 @@ export const info = {
 
   projects: [
     {
+      title: "Enterprise Search",
+      tier: "industry",
+      flagshipRank: 1,
+      date: "Jun 2026 - Present",
+      description:
+        "I am building an internal AI search over all of Hybridge's knowledge. Ask a question in plain language, get a cited answer, and get an honest 'I don't know' when the evidence is not there.",
+      link: "",
+      details: {
+        summary_short:
+          "An agentic enterprise-search RAG for Hybridge. Hybrid retrieval, reranking, deterministic conflict resolution, and citations, built trustworthy-first on Google Cloud and shipped stage by stage.",
+        stats: [
+          { value: "Hybrid + rerank", label: "BM25 + dense retrieval, fused and reranked, not vector-only" },
+          { value: "Cite or abstain", label: "answers are grounded in retrieved evidence, or it says it does not know" },
+          { value: "Authority + recency", label: "conflicts resolved by rule, or the disagreement is declared" },
+          { value: "Foundation shipped", label: "auth + infra live; ingestion in build; query + eval designed" },
+        ],
+        star: {
+          problem:
+            "Company knowledge is scattered across drives, decks, and people's heads, and in a HIPAA shop a confident wrong answer is a liability, not a demo bug. A basic chunk-embed-and-pray RAG fails on exact terms, on conflicting documents, and on access control.",
+          solution:
+            "A trust-first RAG. The read path filters by permission, retrieves with BM25 and pgvector together, fuses with RRF, reranks a bounded top-k, resolves conflicts deterministically, and answers with citations or abstains. The governed write path dedups, parses with layout awareness, chunks semantically, and stamps every chunk with its model and strategy versions.",
+          process:
+            "Built like a curriculum, one stage at a time, with an eval harness as the referee: recall, nDCG, MRR, and faithfulness measured against a managed baseline before any answer is trusted. The agentic corrective loop is gated behind a confidence check, so it never runs on a simple query.",
+          result:
+            "Foundation and auth shipped: domain-locked Identity Platform sign-in, roles and groups, Terraform, and tested CI/CD, all GCP-native and HIPAA-eligible. Ingestion is fully specified and in build; query serving, evaluation, and the front ends are designed and queued.",
+        },
+        summary:
+          "An internal enterprise-search RAG on Google Cloud. Employees Ask Hybridge in a chat experience; authorized users add documents through a governed Dropoff portal. Hybrid retrieval, reranking, conflict resolution, grounded generation with citations, and a gated agentic loop, all measured by an eval harness.",
+        highlights: [
+          "Hybrid retrieval (BM25 + pgvector) fused with RRF and reranked, beats vector-only on exact terms.",
+          "Deterministic conflict resolution: validity, then authority, then recency, else declare the disagreement.",
+          "Group access enforced as a pre-retrieval filter, so restricted docs never enter a non-member's search.",
+          "Agentic corrective loop gated by a confidence grader, kept off the hot path of simple queries.",
+          "Eval harness (recall, nDCG, MRR, faithfulness) vs a managed baseline decides when complexity earns its place.",
+        ],
+      },
+      tech: ["FastAPI", "Cloud Run", "Cloud SQL pgvector", "Vertex AI Gemini", "Document AI", "Pub/Sub", "Identity Platform", "Terraform"],
+      img_alt: "Enterprise Search - Hybridge Implants LLC",
+      img_path: "/enterprise-search.png",
+    },
+    {
       title: "CBCT Scan Validator",
       tier: "industry",
+      flagshipRank: 3,
       date: "Mar 2026 - Present",
       description:
         "I built the tool that catches bad dental scans before they ever reach the design team.",
@@ -311,7 +353,7 @@ export const info = {
         summary:
           "End-to-end MLOps. SFTP ingest from MagicTouch DLCPM → parity-checked ETL → frozen DentalSegmentator + multi-task head → OpenVINO on Cloud Run → verdict PDF + email + write-back. ~5.5s end-to-end, CPU-only, scale-to-zero.",
         highlights: [
-          "Bake-off across six architectures (A–F), then iterated through Models G, H, J.",
+          "Bake-off across six architectures (A through F), then iterated through Models G, H, J.",
           "Model H: frozen DentalSegmentator nnU-Net v2 encoder + multi-scale taps + compact 500K-param head. Cost-tuned threshold (FN cost = 15× FP).",
           "20-scan CICT holdout in GitHub Actions caught a leaky AUROC 0.80.",
           "Tag-based CI/CD with hot-swap checkpoint via GCS, no OpenVINO IR rebuild.",
@@ -445,6 +487,7 @@ export const info = {
     {
       title: "Doc Coach, Consultation QA Pipeline",
       tier: "industry",
+      flagshipRank: 2,
       date: "Aug 2025 - Present",
       description:
         "I built the tool that grades every implant consult from its Zoom call and sends a color-coded report to the doctor and CEO.",
@@ -486,6 +529,7 @@ export const info = {
     {
       title: "NPC Coach",
       tier: "industry",
+      flagshipRank: 5,
       date: "Aug 2025 - Present",
       description:
         "I rebuilt a brittle n8n call grader into a coaching platform: it finds every new-patient call, grades it with a quoted transcript line behind each score, and tracks each coordinator's trend.",
@@ -568,6 +612,7 @@ export const info = {
     {
       title: "Centralized Diagnostic Filter",
       tier: "industry",
+      flagshipRank: 4,
       date: "Jun 2026 - Present",
       description:
         "I am turning a founder's diagnostic mental model into a standardized system: every scan, photo, and survey into one report, with the doctor validating every finding.",
@@ -762,6 +807,28 @@ export const info = {
       tech: ["AWS", "Docker", "n8n", "Data Pipelines", "Automation"],
       img_alt: "Enterprise Data Project - Hybridge Implants LLC",
       img_path: "/enterprise-data.png",
+    },
+    {
+      title: "JobPilot",
+      tier: "personal",
+      date: "2026 - Present",
+      description:
+        "My open-source job-hunt autopilot. It watches 160+ company boards directly, scores each role against my profile, and tailors a resume and cover letter per match, with a calibrated AI judge keeping the rewrites honest.",
+      link: "https://github.com/SampreethAvvari",
+      post: "/posts/jobpilot-v2",
+      details: {
+        summary:
+          "An open-source job-hunt platform: direct board watching, schema-locked LLM scoring, a calibrated resume judge with a truth-locked rewrite loop, and a Next.js console behind IAP. The one project that spans all four disciplines.",
+        highlights: [
+          "160+ company boards watched directly, not scraped through a job aggregator.",
+          "Schema-locked LLM scoring per role, plus a per-job chat copilot grounded in the live description.",
+          "A calibrated resume judge with a truth-locked rewrite loop, so a tailored resume never invents experience.",
+          "Open-sourced under MIT with a fork guide written to hand to an AI coding agent.",
+        ],
+      },
+      tech: ["Next.js", "TypeScript", "FastAPI", "LLM scoring", "PostgreSQL", "Cloud IAP", "GitHub Actions"],
+      img_alt: "JobPilot open-source job-hunt autopilot",
+      img_path: "/jobpilot-flagship.png",
     },
   ],
 

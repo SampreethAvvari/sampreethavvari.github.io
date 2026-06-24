@@ -40,7 +40,7 @@ So I built it instead, as sole AI engineer at Hybridge, on a laptop GPU and a CP
   </div>
   <div class="stat-callout stat-blue">
     <div class="stat-value">100%</div>
-    <div class="stat-label">IP retained — weights, code, MLOps stack</div>
+    <div class="stat-label">IP retained: weights, code, MLOps stack</div>
   </div>
 </div>
 
@@ -50,7 +50,7 @@ So I built it instead, as sole AI engineer at Hybridge, on a laptop GPU and a CP
 | Year 2 onward | $26K / yr | < $600 / yr |
 | IP | Vendor keeps it | 100% ours |
 | Scope | Binary classifier | 13-class taxonomy + 4-family routing + active learning + full MLOps |
-| Hardware | TBD | None bought — RTX 4080 laptop existed |
+| Hardware | TBD | None bought, RTX 4080 laptop existed |
 
 ## The model picked itself
 
