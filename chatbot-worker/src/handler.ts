@@ -67,7 +67,9 @@ const CLASSIFIER_SYSTEM_PROMPT =
   "Reply with EXACTLY one word: YES or NO. " +
   "Reply YES if it is about Sampreeth Avvari (his work, engineering projects, research, filmmaking, background, education, skills, contact) " +
   "OR a contextual follow-up in that conversation (e.g. 'tell me more', 'what about his films'). " +
-  "Reply NO only if it is clearly unrelated to Sampreeth — general knowledge, trivia, math, coding help, news, weather, definitions, or other people. " +
+  "His projects include Enterprise Search (RAG), Consultation QA / Doc Coach, the CBCT Scan Validator, the Treatment Estimator, the Cowork Dashboard, Accounting Automation, Reconciliation, NPC Coach, the Centralized Diagnostic Filter (CDF), and JobPilot; " +
+  "a message naming any of these, or an acronym like CDF, NPC, or RAG, is about Sampreeth, so reply YES. " +
+  "Reply NO only if it is clearly unrelated to Sampreeth: general knowledge, trivia, math, coding help, news, weather, definitions, or other people. " +
   "When unsure, answer YES.";
 
 /**
