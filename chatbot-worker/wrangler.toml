@@ -3,13 +3,13 @@ main = "src/index.ts"
 compatibility_date = "2026-05-01"
 compatibility_flags = ["nodejs_compat"]
 
-# Gemma 4 26B (a4b mixture-of-experts, ~4B active) on Cloudflare Workers AI.
-# Free under the 10,000-neurons/day allowance, no API key, native to this
-# worker via the AI binding. Replaced "@cf/meta/llama-3.1-8b-instruct", which
-# Cloudflare deprecated on 2026-05-30; Gemma 4 is cheaper per token, has a 256k
-# context window, and follows the system prompt more cleanly.
+# Llama 3.3 70B Instruct (fp8, fast) on Cloudflare Workers AI. Free under the
+# 10,000-neurons/day allowance, no API key, native to this worker via the AI
+# binding. A plain (non-reasoning) instruct model: it answers directly instead
+# of spending the token budget "thinking", which is what left Gemma 4's replies
+# empty. Replaced "@cf/meta/llama-3.1-8b-instruct" (deprecated 2026-05-30).
 [vars]
-AI_MODEL = "@cf/google/gemma-4-26b-a4b-it"
+AI_MODEL = "@cf/meta/llama-3.3-70b-instruct-fp8-fast"
 ALLOWED_ORIGINS = "https://sampreethavvari.github.io,http://localhost:4321,http://localhost:3000"
 
 [ai]
