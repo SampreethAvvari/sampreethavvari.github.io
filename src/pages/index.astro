@@ -725,7 +725,7 @@ const skillGroups = [
 
     // Dense point sphere; nearest-neighbour edges = the mesh. Each point keeps
     // its own cursor-pull displacement (cdx/cdy) so the bulge is localised.
-    const N = 320;
+    const N = 360;
     const pts = Array.from({ length: N }, (_, i) => {
       const yy = 1 - (i / (N - 1)) * 2;
       const rad = Math.sqrt(Math.max(0, 1 - yy * yy));
@@ -742,12 +742,12 @@ const skillGroups = [
         d.push([dx * dx + dy * dy + dz * dz, j]);
       }
       d.sort((a, b) => a[0] - b[0]);
-      for (let k = 0; k < 3; k++) {
+      for (let k = 0; k < 6; k++) {
         const j = d[k][1], a = Math.min(i, j), b = Math.max(i, j), key = a + "-" + b;
         if (!seenE.has(key)) { seenE.add(key); edges.push([a, b]); }
       }
     }
-    const pulses = Array.from({ length: 16 }, () => ({ e: (Math.random() * edges.length) | 0, t: Math.random(), sp: 0.004 + Math.random() * 0.01 }));
+    const pulses = Array.from({ length: 24 }, () => ({ e: (Math.random() * edges.length) | 0, t: Math.random(), sp: 0.004 + Math.random() * 0.01 }));
 
     let W = 0, H = 0, dpr = 1, cx = 0, cy = 0, radius = 0, t = 0, vis = true;
     let angY = 0, angX = 0, curX = 0, curY = 0, curOn = false;
@@ -765,7 +765,7 @@ const skillGroups = [
       canvas.width = Math.max(1, W * dpr); canvas.height = Math.max(1, H * dpr);
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
       cx = W / 2; cy = H * 0.48;
-      radius = Math.min(W, H) * (W < 1024 ? 0.29 : 0.25);
+      radius = Math.min(W, H) * (W < 1024 ? 0.24 : 0.205);
     }
     function frame() {
       requestAnimationFrame(frame);
@@ -836,6 +836,56 @@ const skillGroups = [
         ctx.beginPath(); ctx.arc(pr.sx, pr.sy, Math.max(0.5, pr.depth * 1.5), 0, Math.PI * 2); ctx.fill();
       }
       ctx.globalAlpha = 1;
+
+      // --- Liquid-glass shell -------------------------------------------------
+      // A stylized reflective dome over the node mesh. NOT a literal mirror of
+      // the page (true reflections would need WebGL, which we removed): it
+      // catches ambient light and the cursor as soft speculars so the sphere
+      // reads as liquid glass. Drawn source-over, on top of the mesh.
+      ctx.globalCompositeOperation = "source-over";
+      const gr = radius * 1.1;
+      ctx.save();
+      ctx.beginPath(); ctx.arc(cx, cy, gr, 0, Math.PI * 2); ctx.clip();
+      // glass body: faint volume, lit from the upper-left, cool toward the rim
+      const body = ctx.createRadialGradient(cx - gr * 0.28, cy - gr * 0.32, gr * 0.06, cx, cy, gr);
+      body.addColorStop(0, dark ? "rgba(255,255,255,0.07)" : "rgba(255,255,255,0.12)");
+      body.addColorStop(0.62, "rgba(255,255,255,0)");
+      body.addColorStop(1, dark ? "rgba(130,170,255,0.06)" : "rgba(70,110,200,0.05)");
+      ctx.fillStyle = body; ctx.fillRect(cx - gr, cy - gr, gr * 2, gr * 2);
+      // slow liquid sheen sweeping across
+      const sweep = ((t * 0.12) % 1.4) - 0.2;
+      const sxp = cx - gr + sweep * gr * 2;
+      const sh = ctx.createLinearGradient(sxp - gr * 0.5, cy - gr, sxp + gr * 0.5, cy + gr);
+      sh.addColorStop(0, "rgba(255,255,255,0)");
+      sh.addColorStop(0.5, dark ? "rgba(185,210,255,0.07)" : "rgba(255,255,255,0.13)");
+      sh.addColorStop(1, "rgba(255,255,255,0)");
+      ctx.fillStyle = sh; ctx.fillRect(cx - gr, cy - gr, gr * 2, gr * 2);
+      // cursor-tracking specular: a soft highlight slides toward the cursor, so
+      // the cursor reads as a light reflecting off the glass.
+      let hx = cx - gr * 0.34, hy = cy - gr * 0.4;
+      if (curOn) {
+        const dx = curX - cx, dy = curY - cy, dd = Math.hypot(dx, dy) || 1;
+        const kk = Math.min(1, dd / gr);
+        hx = cx + (dx / dd) * gr * 0.5 * kk; hy = cy + (dy / dd) * gr * 0.5 * kk;
+      }
+      const hi = ctx.createRadialGradient(hx, hy, 0, hx, hy, gr * 0.55);
+      hi.addColorStop(0, dark ? "rgba(255,255,255,0.20)" : "rgba(255,255,255,0.52)");
+      hi.addColorStop(1, "rgba(255,255,255,0)");
+      ctx.fillStyle = hi; ctx.fillRect(cx - gr, cy - gr, gr * 2, gr * 2);
+      // small back-reflection for glassy depth
+      const h2 = ctx.createRadialGradient(cx + gr * 0.3, cy + gr * 0.36, 0, cx + gr * 0.3, cy + gr * 0.36, gr * 0.4);
+      h2.addColorStop(0, dark ? "rgba(160,200,255,0.10)" : "rgba(200,225,255,0.2)");
+      h2.addColorStop(1, "rgba(255,255,255,0)");
+      ctx.fillStyle = h2; ctx.fillRect(cx - gr, cy - gr, gr * 2, gr * 2);
+      ctx.restore();
+      // fresnel rim — bright edge that sells the glass
+      ctx.lineWidth = 1.4;
+      const rim = ctx.createLinearGradient(cx - gr, cy - gr, cx + gr, cy + gr);
+      rim.addColorStop(0, dark ? "rgba(255,255,255,0.18)" : "rgba(255,255,255,0.55)");
+      rim.addColorStop(0.5, dark ? "rgba(255,255,255,0.04)" : "rgba(255,255,255,0.14)");
+      rim.addColorStop(1, dark ? "rgba(150,190,255,0.16)" : "rgba(120,160,230,0.38)");
+      ctx.strokeStyle = rim;
+      ctx.beginPath(); ctx.arc(cx, cy, gr, 0, Math.PI * 2); ctx.stroke();
     }
     size();
     window.addEventListener("resize", size, { passive: true });
