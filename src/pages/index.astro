@@ -219,8 +219,8 @@ const skillGroups = [
       </div>
 
       <div class="relative z-10 pointer-events-none mx-auto w-full max-w-screen-2xl px-6 lg:px-12">
-        <div class="grid grid-cols-1 lg:grid-cols-12 items-center gap-10 lg:gap-8">
-          <div class="hero-copy lg:col-span-7 flex flex-col items-center lg:items-start gap-4 lg:gap-6 text-center lg:text-left">
+        <div class="grid grid-cols-[1.55fr_1fr] lg:grid-cols-12 items-start lg:items-center gap-4 lg:gap-8">
+          <div class="hero-copy lg:col-span-7 flex flex-col items-start gap-4 lg:gap-6 text-left">
             <p class="eyebrow text-text/60 dark:text-dk-text/60">
               AI Engineer · New York
             </p>
@@ -258,7 +258,7 @@ const skillGroups = [
             </div>
           </div>
 
-          <div class="lg:col-span-5 flex justify-center lg:justify-end">
+          <div class="lg:col-span-5 flex justify-end items-start lg:items-center">
             <figure class="hero-portrait floaty">
               <span class="hero-portrait-glow" aria-hidden="true"></span>
               <div class="hero-portrait-frame photo-shimmer">
@@ -723,6 +723,26 @@ const skillGroups = [
       return s;
     });
 
+    // Glass-bead sprite per colour: a translucent marble with a baked specular
+    // highlight and a soft coloured edge, so each node reads as a little glass
+    // blob in a glassy (light-tinted) colour, not a flat glowing dot.
+    const beads = COLORS.map(([r, g, b]) => {
+      const s = document.createElement("canvas"); s.width = s.height = 64;
+      const c = s.getContext("2d");
+      const lr = (r * 0.45 + 140) | 0, lg = (g * 0.45 + 140) | 0, lb = (b * 0.45 + 140) | 0;
+      const body = c.createRadialGradient(26, 23, 1, 32, 32, 30);
+      body.addColorStop(0, "rgba(255,255,255,0.95)");
+      body.addColorStop(0.22, "rgba(" + lr + "," + lg + "," + lb + ",0.78)");
+      body.addColorStop(0.6, "rgba(" + r + "," + g + "," + b + ",0.34)");
+      body.addColorStop(1, "rgba(" + r + "," + g + "," + b + ",0)");
+      c.fillStyle = body; c.beginPath(); c.arc(32, 32, 30, 0, Math.PI * 2); c.fill();
+      const spec = c.createRadialGradient(24, 21, 0, 24, 21, 7);
+      spec.addColorStop(0, "rgba(255,255,255,0.95)");
+      spec.addColorStop(1, "rgba(255,255,255,0)");
+      c.fillStyle = spec; c.beginPath(); c.arc(24, 21, 7, 0, Math.PI * 2); c.fill();
+      return s;
+    });
+
     // Dense point sphere; nearest-neighbour edges = the mesh. Each point keeps
     // its own cursor-pull displacement (cdx/cdy) so the bulge is localised.
     const N = 360;
@@ -772,8 +792,8 @@ const skillGroups = [
       W = canvas.clientWidth; H = canvas.clientHeight;
       canvas.width = Math.max(1, W * dpr); canvas.height = Math.max(1, H * dpr);
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-      cx = W / 2; cy = H * (W < 1024 ? 0.4 : 0.48);  // sit higher on mobile
-      radius = Math.min(W, H) * (W < 1024 ? 0.24 : 0.205);
+      cx = W / 2; cy = H * (W < 1024 ? 0.64 : 0.48);  // drop low on mobile (where the photo used to sit)
+      radius = Math.min(W, H) * (W < 1024 ? 0.26 : 0.205);
     }
     function frame() {
       requestAnimationFrame(frame);
@@ -814,15 +834,27 @@ const skillGroups = [
         const lift = Math.min(1, Math.hypot(p.cdx, p.cdy) / (infl * 0.45));
         proj[i] = { sx: bx + p.cdx, sy: by + p.cdy, depth, persp, lift };
       }
+      // Glass links: each edge is a glass rod — a translucent, light-tinted
+      // coloured body with a thin bright specular core running down it.
+      ctx.lineCap = "round";
       for (let e = 0; e < edges.length; e++) {
         const pa = proj[edges[e][0]], pb = proj[edges[e][1]];
         const dep = (pa.depth + pb.depth) / 2;
         const lift = pa.lift > pb.lift ? pa.lift : pb.lift;
         const col = COLORS[pts[edges[e][0]].ci];
-        ctx.strokeStyle = "rgba(" + col[0] + "," + col[1] + "," + col[2] + "," + (((dark ? 0.08 : 0.06) + dep * 0.12) * (1 + lift * 2.4)).toFixed(3) + ")";
-        ctx.lineWidth = 0.5 + dep * 0.5 + lift * 0.8;
+        const lr = (col[0] * 0.5 + 128) | 0, lg = (col[1] * 0.5 + 128) | 0, lb = (col[2] * 0.5 + 128) | 0;
+        // translucent glass body, a touch thick
+        ctx.strokeStyle = "rgba(" + lr + "," + lg + "," + lb + "," + (((dark ? 0.10 : 0.12) + dep * 0.16) * (1 + lift * 2.0)).toFixed(3) + ")";
+        ctx.lineWidth = 1.2 + dep * 1.4 + lift * 1.3;
         ctx.beginPath(); ctx.moveTo(pa.sx, pa.sy); ctx.lineTo(pb.sx, pb.sy); ctx.stroke();
+        // bright specular core (front rods only) — the shine on the glass
+        if (dep > 0.4 || lift > 0.05) {
+          ctx.strokeStyle = "rgba(255,255,255," + (((dark ? 0.10 : 0.16) + dep * 0.22) * (1 + lift * 1.8)).toFixed(3) + ")";
+          ctx.lineWidth = 0.5 + dep * 0.5 + lift * 0.7;
+          ctx.beginPath(); ctx.moveTo(pa.sx, pa.sy); ctx.lineTo(pb.sx, pb.sy); ctx.stroke();
+        }
       }
+      ctx.lineCap = "butt";
       for (const pu of pulses) {
         pu.t += pu.sp;
         if (pu.t > 1) { pu.t = 0; pu.e = (Math.random() * edges.length) | 0; }
@@ -833,67 +865,14 @@ const skillGroups = [
         ctx.drawImage(sprites[pts[edges[pu.e][0]].ci], px - R, py - R, R * 2, R * 2);
       }
       ctx.globalAlpha = 1;
+      // Glass blobs: each node is a translucent glass bead with a baked shine.
       for (let i = 0; i < N; i++) {
         const pr = proj[i];
-        const R = (1.8 + pr.depth * 4.5) * pr.persp * (1 + pr.lift * 1.9);
-        ctx.globalAlpha = Math.min(1, ((dark ? 0.16 : 0.14) + pr.depth * (dark ? 0.5 : 0.42)) * (1 + pr.lift * 1.8));
-        ctx.drawImage(sprites[pts[i].ci], pr.sx - R, pr.sy - R, R * 2, R * 2);
-        const col = COLORS[pts[i].ci];
-        ctx.globalAlpha = Math.min(1, (0.4 + pr.depth * 0.5) * (1 + pr.lift));
-        ctx.fillStyle = dark ? "rgba(255,255,255," + (0.4 + pr.depth * 0.4).toFixed(2) + ")" : "rgba(" + col[0] + "," + col[1] + "," + col[2] + ",0.85)";
-        ctx.beginPath(); ctx.arc(pr.sx, pr.sy, Math.max(0.5, pr.depth * 1.5), 0, Math.PI * 2); ctx.fill();
+        const R = (1.5 + pr.depth * 3.4) * pr.persp * (1 + pr.lift * 1.6);
+        ctx.globalAlpha = Math.min(1, ((dark ? 0.4 : 0.52) + pr.depth * 0.5) * (1 + pr.lift * 1.1));
+        ctx.drawImage(beads[pts[i].ci], pr.sx - R, pr.sy - R, R * 2, R * 2);
       }
       ctx.globalAlpha = 1;
-
-      // --- Liquid-glass shell -------------------------------------------------
-      // A stylized reflective dome over the node mesh. NOT a literal mirror of
-      // the page (true reflections would need WebGL, which we removed): it
-      // catches ambient light and the cursor as soft speculars so the sphere
-      // reads as liquid glass. Drawn source-over, on top of the mesh.
-      ctx.globalCompositeOperation = "source-over";
-      const gr = radius * 1.1;
-      ctx.save();
-      ctx.beginPath(); ctx.arc(cx, cy, gr, 0, Math.PI * 2); ctx.clip();
-      // glass body: faint volume, lit from the upper-left, cool toward the rim
-      const body = ctx.createRadialGradient(cx - gr * 0.28, cy - gr * 0.32, gr * 0.06, cx, cy, gr);
-      body.addColorStop(0, dark ? "rgba(255,255,255,0.07)" : "rgba(255,255,255,0.12)");
-      body.addColorStop(0.62, "rgba(255,255,255,0)");
-      body.addColorStop(1, dark ? "rgba(130,170,255,0.06)" : "rgba(70,110,200,0.05)");
-      ctx.fillStyle = body; ctx.fillRect(cx - gr, cy - gr, gr * 2, gr * 2);
-      // slow liquid sheen sweeping across
-      const sweep = ((t * 0.12) % 1.4) - 0.2;
-      const sxp = cx - gr + sweep * gr * 2;
-      const sh = ctx.createLinearGradient(sxp - gr * 0.5, cy - gr, sxp + gr * 0.5, cy + gr);
-      sh.addColorStop(0, "rgba(255,255,255,0)");
-      sh.addColorStop(0.5, dark ? "rgba(185,210,255,0.07)" : "rgba(255,255,255,0.13)");
-      sh.addColorStop(1, "rgba(255,255,255,0)");
-      ctx.fillStyle = sh; ctx.fillRect(cx - gr, cy - gr, gr * 2, gr * 2);
-      // cursor-tracking specular: a soft highlight slides toward the cursor, so
-      // the cursor reads as a light reflecting off the glass.
-      let hx = cx - gr * 0.34, hy = cy - gr * 0.4;
-      if (curOn) {
-        const dx = curX - cx, dy = curY - cy, dd = Math.hypot(dx, dy) || 1;
-        const kk = Math.min(1, dd / gr);
-        hx = cx + (dx / dd) * gr * 0.5 * kk; hy = cy + (dy / dd) * gr * 0.5 * kk;
-      }
-      const hi = ctx.createRadialGradient(hx, hy, 0, hx, hy, gr * 0.55);
-      hi.addColorStop(0, dark ? "rgba(255,255,255,0.20)" : "rgba(255,255,255,0.52)");
-      hi.addColorStop(1, "rgba(255,255,255,0)");
-      ctx.fillStyle = hi; ctx.fillRect(cx - gr, cy - gr, gr * 2, gr * 2);
-      // small back-reflection for glassy depth
-      const h2 = ctx.createRadialGradient(cx + gr * 0.3, cy + gr * 0.36, 0, cx + gr * 0.3, cy + gr * 0.36, gr * 0.4);
-      h2.addColorStop(0, dark ? "rgba(160,200,255,0.10)" : "rgba(200,225,255,0.2)");
-      h2.addColorStop(1, "rgba(255,255,255,0)");
-      ctx.fillStyle = h2; ctx.fillRect(cx - gr, cy - gr, gr * 2, gr * 2);
-      ctx.restore();
-      // fresnel rim — bright edge that sells the glass
-      ctx.lineWidth = 1.4;
-      const rim = ctx.createLinearGradient(cx - gr, cy - gr, cx + gr, cy + gr);
-      rim.addColorStop(0, dark ? "rgba(255,255,255,0.18)" : "rgba(255,255,255,0.55)");
-      rim.addColorStop(0.5, dark ? "rgba(255,255,255,0.04)" : "rgba(255,255,255,0.14)");
-      rim.addColorStop(1, dark ? "rgba(150,190,255,0.16)" : "rgba(120,160,230,0.38)");
-      ctx.strokeStyle = rim;
-      ctx.beginPath(); ctx.arc(cx, cy, gr, 0, Math.PI * 2); ctx.stroke();
     }
     size();
     window.addEventListener("resize", size, { passive: true });
