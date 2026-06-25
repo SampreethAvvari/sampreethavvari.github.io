@@ -37,7 +37,13 @@ const personSchema = {
     "@type": "CollegeOrUniversity",
     name: "New York University",
   },
-  sameAs: [info.contact.linkedin, info.contact.github, info.contact.instagram],
+  // Canonical profile URLs (NOT the Switchy short links in info.contact) so the
+  // structured data establishes identity correctly for search engines.
+  sameAs: [
+    "https://www.linkedin.com/in/sampreethavvari/",
+    "https://github.com/SampreethAvvari",
+    "https://www.instagram.com/sampreeth.sharma/",
+  ],
 };
 const posts = await Astro.glob("../pages/posts/*.md");
 const pages = [

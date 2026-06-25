@@ -814,7 +814,7 @@ export const info = {
       date: "2026 - Present",
       description:
         "My open-source job-hunt autopilot. It watches 160+ company boards directly, scores each role against my profile, and tailors a resume and cover letter per match, with a calibrated AI judge keeping the rewrites honest.",
-      link: "https://github.com/SampreethAvvari/job-pilot",
+      link: "https://hi.switchy.io/yIOl",
       post: "/posts/jobpilot-v2",
       details: {
         summary:
@@ -835,8 +835,10 @@ export const info = {
 
   contact: {
     email: "spa9659@nyu.edu",
-    linkedin: "https://www.linkedin.com/in/sampreethavvari/",
-    github: "https://github.com/SampreethAvvari",
-    instagram: "https://www.instagram.com/sampreeth.sharma/",
+    // Switchy short links so outbound clicks are tracked. The canonical profile
+    // URLs stay in the JSON-LD sameAs (BaseLayout) for name-SEO, not here.
+    linkedin: "https://hi.switchy.io/q378",
+    github: "https://hi.switchy.io/q37N",
+    instagram: "https://hi.switchy.io/q37U",
   },
 };
