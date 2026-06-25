@@ -50,6 +50,20 @@ export default function Nav({ searchItems }) {
     <>
       <nav className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${scrolled ? "pt-3 nav-shrink" : "nav-glass"}`}>
         <div className={`nav-bar flex items-center gap-4 transition-all duration-300 ${scrolled ? "nav-island nav-glass h-12" : "mx-auto w-full max-w-screen-2xl px-4 sm:px-6 lg:px-10 xl:px-14 2xl:px-20 h-14 lg:h-16"}`}>
+          {/* Mobile menu button — left side, like a native mobile app */}
+          <span className="relative inline-flex lg:hidden shrink-0">
+            <Hamburger
+              onClick={() => setIsNavOpen(!isNavOpen)}
+              isNavOpen={isNavOpen}
+            />
+            {!isNavOpen && (
+              <span
+                className="absolute -top-0.5 -right-0.5 h-2 w-2 rounded-full bg-secondary dark:bg-dk-secondary animate-pulse pointer-events-none"
+                aria-hidden="true"
+              ></span>
+            )}
+          </span>
+
           {/* Brand */}
           <a className="font-semibold text-lg lg:text-xl tracking-tight text-text dark:text-dk-text shrink-0" href="/#home">
             <span className="text-secondary dark:text-dk-secondary">
@@ -109,19 +123,6 @@ export default function Nav({ searchItems }) {
             </a>
             <ToggleDarkMode />
             <Search items={searchItems} />
-            <span className="relative inline-flex">
-              <Hamburger
-                onClick={() => setIsNavOpen(!isNavOpen)}
-                isNavOpen={isNavOpen}
-              />
-              {/* Pulsing accent dot hints there's more nav behind the menu. */}
-              {!isNavOpen && (
-                <span
-                  className="absolute -top-0.5 -right-0.5 h-2 w-2 rounded-full bg-secondary dark:bg-dk-secondary animate-pulse pointer-events-none"
-                  aria-hidden="true"
-                ></span>
-              )}
-            </span>
           </div>
         </div>
         {/* Mobile nav sheet — Apple-style full-width panel */}

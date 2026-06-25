@@ -2371,58 +2371,52 @@ html.dark .work-highlight { color: rgba(245, 245, 247, 0.68); }
     padding-bottom: 2.5rem;
   }
 
-  /* Mobile hero: text + photo header on top (photo fills the header height),
-     pills in one row and CTAs below, all full-width. The wavy aurora band is
-     hidden so the nebula "supernova" backdrop carries the mood; the sphere
-     drops into the space below and is fidget-interactive (see .hero-fidget). */
+  /* Mobile hero (redesigned): a clean centered stack — photo, name, a one-line
+     tagline, the four discipline pills in one row, and all three CTAs in one
+     row. The lead paragraph is dropped here for breathing room. The neural
+     sphere sits low in the open space below and stays fidget-interactive
+     (canvas owns the touch), while the content above scrolls normally. */
   #home { padding-bottom: 1.5rem; }
   #home .hero-aurora { display: none !important; }
 
   .hero-shell {
-    grid-template-columns: 1.7fr 1fr;
-    grid-template-areas:
-      "copy  photo"
-      "pills pills"
-      "cta   cta";
-    column-gap: 0.9rem;
-    row-gap: 0.95rem;
-    align-items: stretch;
-  }
-  #home .hero-copy { gap: 0.55rem; }
-  #home .hero-eyebrow { white-space: nowrap; font-size: 0.6rem; letter-spacing: 0.11em; }
-  #home .hero-line-title { display: block; font-size: 1.5rem; line-height: 1.08; }
-  #home .hero-line-sub { display: block; font-size: 0.85rem; line-height: 1.1; white-space: nowrap; }
-  #home .hero-lead { font-size: 0.84rem; line-height: 1.4; }
-
-  /* Photo fills the full height of the copy block and aligns to it. */
-  #home .hero-photo { align-items: stretch; }
-  #home .hero-portrait { max-width: 100%; width: 100%; height: 100%; }
-  #home .hero-portrait-glow { inset: -0.5rem; filter: blur(22px); opacity: 0.45; }
-  #home .hero-portrait-frame { height: 100%; }
-  #home .hero-portrait-img { height: 100%; aspect-ratio: auto; object-fit: cover; }
-
-  /* CTAs: "See the work" + "Read the writing" share a row; "Get in touch" centered below. */
-  .hero-cta {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 0.55rem;
-  }
-  .hero-cta > a { width: 100%; justify-content: center; }
-  .hero-cta > a:nth-child(3) { grid-column: 1 / -1; width: auto; justify-self: center; }
-
-  /* Sphere fidget zone: a circle over the sphere captures touch (no page scroll)
-     while the rest of the hero scrolls; the canvas is pointer-transparent here. */
-  #home .hero-canvas { pointer-events: none; }
-  .hero-fidget {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 1.1rem;
     pointer-events: auto;
-    touch-action: none;
-    left: 50%;
-    top: 64%;
-    transform: translate(-50%, -50%);
-    width: 60vw;
-    height: 60vw;
-    border-radius: 50%;
   }
+  #home .hero-photo { order: -1; justify-content: center; }
+  #home .hero-portrait { width: 9rem; max-width: 9rem; height: auto; }
+  #home .hero-portrait-frame { height: auto; }
+  #home .hero-portrait-img { height: auto; aspect-ratio: 4 / 5; object-fit: cover; }
+  #home .hero-portrait-glow { inset: -0.6rem; filter: blur(26px); opacity: 0.5; }
+
+  #home .hero-copy { pointer-events: auto; align-items: center; text-align: center; gap: 0.5rem; }
+  #home .hero-eyebrow { white-space: nowrap; font-size: 0.62rem; letter-spacing: 0.14em; }
+  #home .hero-line-title { display: block; font-size: 2rem; line-height: 1.04; }
+  #home .hero-line-sub { display: block; font-size: 1.1rem; line-height: 1.12; }
+  #home .hero-lead { display: none; }
+
+  .hero-pills { justify-content: center; flex-wrap: nowrap; gap: 0.4rem; }
+
+  /* All three CTAs in a single row, equal width so they always fit. */
+  .hero-cta { width: 100%; flex-wrap: nowrap; justify-content: center; gap: 0.4rem; }
+  .hero-cta > a {
+    flex: 1 1 0;
+    min-width: 0;
+    height: 2.5rem;
+    padding: 0 0.4rem;
+    font-size: 0.68rem;
+    white-space: nowrap;
+    justify-content: center;
+  }
+
+  /* Sphere stays fidget-interactive on touch (no page scroll over it); the
+     content above scrolls because it is pointer-events:auto and the canvas is
+     pointer-transparent only where content sits on top of it. */
+  #home .hero-canvas { touch-action: none; }
 
   /* Skills bento: denser cards + chips so 36 skills aren't a scroll marathon. */
   .skills-card { padding: 1.15rem 1.15rem 1.3rem; border-radius: 1rem; }
@@ -2700,8 +2694,6 @@ html:not(.dark) .project-screen-imagewrap img {
 .hero-photo { grid-area: photo; display: flex; justify-content: flex-end; align-items: center; }
 .hero-pills { grid-area: pills; display: flex; flex-wrap: wrap; gap: 0.6rem; }
 .hero-cta { grid-area: cta; display: flex; flex-wrap: wrap; gap: 0.75rem; }
-/* Transparent touch zone over the sphere (positioned on mobile only). */
-.hero-fidget { position: absolute; pointer-events: none; }
 /* Film grain that shimmers, layered over everything for texture. */
 .hero-grain {
   position: absolute;
