@@ -214,51 +214,27 @@ const skillGroups = [
         <span class="hero-orb hero-orb-emerald" data-parallax="0.06"></span>
         <span class="hero-orb hero-orb-amber" data-parallax="0.07"></span>
         <canvas class="hero-canvas" data-hero-canvas></canvas>
+        <div class="hero-fidget" data-hero-fidget aria-hidden="true"></div>
         <div class="hero-grain"></div>
         <div class="hero-scrim"></div>
       </div>
 
       <div class="relative z-10 pointer-events-none mx-auto w-full max-w-screen-2xl px-6 lg:px-12">
-        <div class="grid grid-cols-[1.55fr_1fr] lg:grid-cols-12 items-start lg:items-center gap-4 lg:gap-8">
-          <div class="hero-copy lg:col-span-7 flex flex-col items-start gap-4 lg:gap-6 text-left">
-            <p class="eyebrow text-text/60 dark:text-dk-text/60">
+        <div class="hero-shell">
+          <div class="hero-copy">
+            <p class="eyebrow hero-eyebrow text-text/60 dark:text-dk-text/60">
               AI Engineer · New York
             </p>
             <h1 class="hero-title text-text dark:text-dk-text glow-wave">
-              <span class="hero-line">I'm <span class="text-secondary dark:text-dk-secondary text-shimmer">Sampreeth.</span></span>
-              <span class="hero-line">I ship AI and direct films.</span>
+              <span class="hero-line hero-line-title">I'm <span class="text-secondary dark:text-dk-secondary text-shimmer">Sampreeth.</span></span>
+              <span class="hero-line hero-line-sub">I ship AI and direct films.</span>
             </h1>
-            <p class="hero-lead text-xl lg:text-2xl text-text/75 dark:text-dk-text/75 leading-relaxed glow-wave glow-delay-2 max-w-xl">
+            <p class="hero-lead text-lg lg:text-2xl text-text/75 dark:text-dk-text/75 leading-relaxed glow-wave glow-delay-2 max-w-xl">
               Whether it's a model or a movie, the job is making the messy thing make sense to someone else.
             </p>
-            <div class="flex flex-wrap items-center justify-center lg:justify-start gap-2.5 pt-1" aria-label="Disciplines">
-              {disciplines.map((d) => (
-                <a
-                  href={`/work/${d.slug}`}
-                  class="dx-pill no-lift"
-                  style={`--dx: ${d.accent}; --dx-rgb: ${d.rgb};`}
-                  title={d.name}
-                  aria-label={d.name}
-                >
-                  <span class="dx-pill-dot" aria-hidden="true"></span>
-                  <span>{d.acronym}</span>
-                </a>
-              ))}
-            </div>
-            <div class="flex flex-wrap items-center justify-center lg:justify-start gap-3 pt-3">
-              <a href="#disciplines" class="hero-btn hero-btn-primary no-lift">
-                See the work <span aria-hidden="true">↓</span>
-              </a>
-              <a href="/posts" class="hero-btn hero-btn-ghost no-lift">
-                Read the writing
-              </a>
-              <a href="#contact" class="hero-btn hero-btn-ghost no-lift">
-                Get in touch
-              </a>
-            </div>
           </div>
 
-          <div class="lg:col-span-5 flex justify-end items-start lg:items-center">
+          <div class="hero-photo">
             <figure class="hero-portrait floaty">
               <span class="hero-portrait-glow" aria-hidden="true"></span>
               <div class="hero-portrait-frame photo-shimmer">
@@ -271,6 +247,33 @@ const skillGroups = [
                 />
               </div>
             </figure>
+          </div>
+
+          <div class="hero-pills" aria-label="Disciplines">
+            {disciplines.map((d) => (
+              <a
+                href={`/work/${d.slug}`}
+                class="dx-pill no-lift"
+                style={`--dx: ${d.accent}; --dx-rgb: ${d.rgb};`}
+                title={d.name}
+                aria-label={d.name}
+              >
+                <span class="dx-pill-dot" aria-hidden="true"></span>
+                <span>{d.acronym}</span>
+              </a>
+            ))}
+          </div>
+
+          <div class="hero-cta">
+            <a href="#disciplines" class="hero-btn hero-btn-primary no-lift">
+              See the work <span aria-hidden="true">↓</span>
+            </a>
+            <a href="/posts" class="hero-btn hero-btn-ghost no-lift">
+              Read the writing
+            </a>
+            <a href="#contact" class="hero-btn hero-btn-ghost no-lift">
+              Get in touch
+            </a>
           </div>
         </div>
       </div>
@@ -758,14 +761,19 @@ const skillGroups = [
       curX = e.clientX - r.left; curY = e.clientY - r.top; curOn = true;
     };
     const release = () => { curOn = false; };
-    // Mouse AND touch: pointermove drives the bulge on desktop; pointerdown +
-    // up/cancel make a finger drag work on mobile (touch-action: pan-y keeps
-    // vertical scrolling intact while the sphere still tracks the finger).
-    canvas.addEventListener("pointermove", aim, { passive: true });
-    canvas.addEventListener("pointerdown", aim, { passive: true });
-    canvas.addEventListener("pointerup", release, { passive: true });
-    canvas.addEventListener("pointercancel", release, { passive: true });
-    canvas.addEventListener("pointerleave", release, { passive: true });
+    // Desktop: hovering the canvas drives the bulge. Mobile: the canvas is
+    // pointer-transparent so the page scrolls, and a circular fidget zone over
+    // the sphere (touch-action: none) lets a finger play with it without
+    // scrolling. Both feed the same handlers, mapped to canvas coordinates.
+    const fidget = hero.querySelector("[data-hero-fidget]");
+    for (const el of [canvas, fidget]) {
+      if (!el) continue;
+      el.addEventListener("pointermove", aim, { passive: true });
+      el.addEventListener("pointerdown", aim, { passive: true });
+      el.addEventListener("pointerup", release, { passive: true });
+      el.addEventListener("pointercancel", release, { passive: true });
+      el.addEventListener("pointerleave", release, { passive: true });
+    }
 
     function size() {
       dpr = Math.min(window.devicePixelRatio || 1, 2);
