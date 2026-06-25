@@ -29,10 +29,9 @@ export default function FooterBar({ variant = "default" }: FooterBarProps) {
       label: "Instagram",
     },
     {
-      icon: "fas fa-file-pdf",
+      icon: "fas fa-file-lines",
       href: info.cv,
-      label: "Resume PDF",
-      download: true,
+      label: "Resume",
     },
   ];
 

@@ -5,7 +5,7 @@ export const info = {
   picture: "/pic.png",
   picture_alt: "Sampreeth Avvari",
   location: "New York, NY",
-  cv: "/resume.pdf",
+  cv: "/resume",
 
   about: {
     description:
