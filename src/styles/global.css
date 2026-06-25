@@ -2371,21 +2371,58 @@ html.dark .work-highlight { color: rgba(245, 245, 247, 0.68); }
     padding-bottom: 2.5rem;
   }
 
-  /* Hero: keep the brand moment balanced and comfortably spaced; the lead
-     sentence eases down from 20px so it reads, not shouts. */
-  #home .hero-copy { gap: 1.05rem; }
-  #home .hero-lead {
-    font-size: 1.075rem;
-    line-height: 1.55;
-  }
-  /* Mobile hero = a two-column header (text left, photo top-right) with the
-     interactive sphere dropped into the space below. The photo fits its column;
-     the wavy aurora band is hidden so the nebula "supernova" backdrop carries
-     the mood on its own. */
-  #home { padding-bottom: 1.75rem; }
-  #home .hero-portrait { max-width: 100%; }
-  #home .hero-portrait-glow { inset: -0.7rem; filter: blur(26px); opacity: 0.5; }
+  /* Mobile hero: text + photo header on top (photo fills the header height),
+     pills in one row and CTAs below, all full-width. The wavy aurora band is
+     hidden so the nebula "supernova" backdrop carries the mood; the sphere
+     drops into the space below and is fidget-interactive (see .hero-fidget). */
+  #home { padding-bottom: 1.5rem; }
   #home .hero-aurora { display: none !important; }
+
+  .hero-shell {
+    grid-template-columns: 1.7fr 1fr;
+    grid-template-areas:
+      "copy  photo"
+      "pills pills"
+      "cta   cta";
+    column-gap: 0.9rem;
+    row-gap: 0.95rem;
+    align-items: stretch;
+  }
+  #home .hero-copy { gap: 0.55rem; }
+  #home .hero-eyebrow { white-space: nowrap; font-size: 0.6rem; letter-spacing: 0.11em; }
+  #home .hero-line-title { display: block; font-size: 1.5rem; line-height: 1.08; }
+  #home .hero-line-sub { display: block; font-size: 0.85rem; line-height: 1.1; white-space: nowrap; }
+  #home .hero-lead { font-size: 0.84rem; line-height: 1.4; }
+
+  /* Photo fills the full height of the copy block and aligns to it. */
+  #home .hero-photo { align-items: stretch; }
+  #home .hero-portrait { max-width: 100%; width: 100%; height: 100%; }
+  #home .hero-portrait-glow { inset: -0.5rem; filter: blur(22px); opacity: 0.45; }
+  #home .hero-portrait-frame { height: 100%; }
+  #home .hero-portrait-img { height: 100%; aspect-ratio: auto; object-fit: cover; }
+
+  /* CTAs: "See the work" + "Read the writing" share a row; "Get in touch" centered below. */
+  .hero-cta {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.55rem;
+  }
+  .hero-cta > a { width: 100%; justify-content: center; }
+  .hero-cta > a:nth-child(3) { grid-column: 1 / -1; width: auto; justify-self: center; }
+
+  /* Sphere fidget zone: a circle over the sphere captures touch (no page scroll)
+     while the rest of the hero scrolls; the canvas is pointer-transparent here. */
+  #home .hero-canvas { pointer-events: none; }
+  .hero-fidget {
+    pointer-events: auto;
+    touch-action: none;
+    left: 50%;
+    top: 64%;
+    transform: translate(-50%, -50%);
+    width: 60vw;
+    height: 60vw;
+    border-radius: 50%;
+  }
 
   /* Skills bento: denser cards + chips so 36 skills aren't a scroll marathon. */
   .skills-card { padding: 1.15rem 1.15rem 1.3rem; border-radius: 1rem; }
@@ -2636,12 +2673,35 @@ html:not(.dark) .project-screen-imagewrap img {
      wrapper is pointer-transparent except for its actual links/buttons, so the
      object can be touched across the whole hero without blocking the CTAs. */
   pointer-events: auto;
-  /* Let a finger scroll the page vertically while the sphere still tracks the
-     touch (so it stays interactive on mobile without trapping the scroll). */
-  touch-action: pan-y;
 }
-.hero-copy { pointer-events: none; }
+
+/* Hero content grid: copy + photo form the top header; pills and CTAs are their
+   own areas so mobile can drop them full-width below the header. */
+.hero-shell {
+  display: grid;
+  grid-template-columns: 7fr 5fr;
+  grid-template-areas:
+    "copy  photo"
+    "pills photo"
+    "cta   photo";
+  column-gap: 2rem;
+  row-gap: 1.4rem;
+  align-items: center;
+}
+.hero-copy {
+  grid-area: copy;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  min-width: 0;
+  pointer-events: none;
+}
 .hero-copy a { pointer-events: auto; }
+.hero-photo { grid-area: photo; display: flex; justify-content: flex-end; align-items: center; }
+.hero-pills { grid-area: pills; display: flex; flex-wrap: wrap; gap: 0.6rem; }
+.hero-cta { grid-area: cta; display: flex; flex-wrap: wrap; gap: 0.75rem; }
+/* Transparent touch zone over the sphere (positioned on mobile only). */
+.hero-fidget { position: absolute; pointer-events: none; }
 /* Film grain that shimmers, layered over everything for texture. */
 .hero-grain {
   position: absolute;
