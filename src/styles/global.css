@@ -2389,16 +2389,17 @@ html.dark .work-highlight { color: rgba(245, 245, 247, 0.68); }
     gap: 0.95rem;
     pointer-events: auto;
   }
+  /* Order: eyebrow + name + tagline (copy, natural order so the eyebrow is on
+     top), then pills, then photo, then See/Read, then Get in touch. */
   #home .hero-copy { order: 1; pointer-events: auto; align-items: center; text-align: center; gap: 0.4rem; width: 100%; }
-  #home .hero-copy .hero-title { order: -1; }   /* name + tagline above the eyebrow */
-  #home .hero-cta-primary { order: 2; }
-  #home .hero-pills { order: 3; }
-  #home .hero-photo { order: 4; justify-content: center; }
+  #home .hero-pills { order: 2; }
+  #home .hero-photo { order: 3; justify-content: center; }
+  #home .hero-cta-primary { order: 4; }
   #home .hero-cta-secondary { order: 5; }
 
   #home .hero-eyebrow { white-space: nowrap; font-size: 0.62rem; letter-spacing: 0.14em; }
-  #home .hero-line-title { display: block; font-size: 2rem; line-height: 1.05; }
-  #home .hero-line-sub { display: block; font-size: 1.08rem; line-height: 1.12; }
+  #home .hero-line-title { display: block; font-size: 2.5rem; line-height: 1.03; }
+  #home .hero-line-sub { display: block; font-size: 1.3rem; line-height: 1.14; }
   #home .hero-lead { display: none; }
 
   #home .hero-portrait { width: 8.5rem; max-width: 8.5rem; height: auto; }
