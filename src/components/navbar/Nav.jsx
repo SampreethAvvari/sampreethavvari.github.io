@@ -109,15 +109,24 @@ export default function Nav({ searchItems }) {
             </a>
             <ToggleDarkMode />
             <Search items={searchItems} />
-            <Hamburger
-              onClick={() => setIsNavOpen(!isNavOpen)}
-              isNavOpen={isNavOpen}
-            />
+            <span className="relative inline-flex">
+              <Hamburger
+                onClick={() => setIsNavOpen(!isNavOpen)}
+                isNavOpen={isNavOpen}
+              />
+              {/* Pulsing accent dot hints there's more nav behind the menu. */}
+              {!isNavOpen && (
+                <span
+                  className="absolute -top-0.5 -right-0.5 h-2 w-2 rounded-full bg-secondary dark:bg-dk-secondary animate-pulse pointer-events-none"
+                  aria-hidden="true"
+                ></span>
+              )}
+            </span>
           </div>
         </div>
         {/* Mobile nav sheet — Apple-style full-width panel */}
         {isNavOpen && (
-          <div className="lg:hidden bg-primary/95 dark:bg-dk-primary/95 backdrop-blur-xl border-b border-text/10 dark:border-dk-text/15 shadow-lg">
+          <div className="lg:hidden mx-3 mt-2 rounded-2xl overflow-hidden border border-text/12 dark:border-dk-text/15 bg-primary/65 dark:bg-dk-primary/70 backdrop-blur-2xl backdrop-saturate-150 shadow-2xl ring-1 ring-white/10 dark:ring-white/5">
             <ul className="w-full divide-y divide-text/5 dark:divide-dk-text/10 px-4 sm:px-6">
               {navLinks.map((link, index) => {
                 const isActive = activeMatch === link.match;
