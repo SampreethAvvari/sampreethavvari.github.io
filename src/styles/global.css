@@ -2398,8 +2398,8 @@ html.dark .work-highlight { color: rgba(245, 245, 247, 0.68); }
   #home .hero-cta-secondary { order: 5; }
 
   #home .hero-eyebrow { white-space: nowrap; font-size: 0.62rem; letter-spacing: 0.14em; }
-  #home .hero-line-title { display: block; font-size: 2.5rem; line-height: 1.03; }
-  #home .hero-line-sub { display: block; font-size: 1.3rem; line-height: 1.14; }
+  #home .hero-line-title { display: block; font-size: 52px; line-height: 1.02; }
+  #home .hero-line-sub { display: block; font-size: 35px; line-height: 1.1; }
   #home .hero-lead { display: none; }
 
   #home .hero-portrait { width: 8.5rem; max-width: 8.5rem; height: auto; }
