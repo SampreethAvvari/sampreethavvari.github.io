@@ -263,13 +263,15 @@ const skillGroups = [
             ))}
           </div>
 
-          <div class="hero-cta">
+          <div class="hero-cta hero-cta-primary">
             <a href="#disciplines" class="hero-btn hero-btn-primary no-lift">
               See the work <span aria-hidden="true">↓</span>
             </a>
             <a href="/posts" class="hero-btn hero-btn-ghost no-lift">
               Read the writing
             </a>
+          </div>
+          <div class="hero-cta hero-cta-secondary">
             <a href="#contact" class="hero-btn hero-btn-ghost no-lift">
               Get in touch
             </a>
@@ -774,8 +776,8 @@ const skillGroups = [
       W = canvas.clientWidth; H = canvas.clientHeight;
       canvas.width = Math.max(1, W * dpr); canvas.height = Math.max(1, H * dpr);
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-      cx = W / 2; cy = H * (W < 1024 ? 0.7 : 0.48);  // sit low on mobile, in the open space below the content
-      radius = Math.min(W, H) * (W < 1024 ? 0.24 : 0.205);
+      cx = W / 2; cy = H * 0.48;  // centered backdrop behind the hero content
+      radius = Math.min(W, H) * (W < 1024 ? 0.27 : 0.205);
     }
     function frame() {
       requestAnimationFrame(frame);
