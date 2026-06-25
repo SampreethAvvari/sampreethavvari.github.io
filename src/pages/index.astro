@@ -214,7 +214,6 @@ const skillGroups = [
         <span class="hero-orb hero-orb-emerald" data-parallax="0.06"></span>
         <span class="hero-orb hero-orb-amber" data-parallax="0.07"></span>
         <canvas class="hero-canvas" data-hero-canvas></canvas>
-        <div class="hero-fidget" data-hero-fidget aria-hidden="true"></div>
         <div class="hero-grain"></div>
         <div class="hero-scrim"></div>
       </div>
@@ -761,27 +760,22 @@ const skillGroups = [
       curX = e.clientX - r.left; curY = e.clientY - r.top; curOn = true;
     };
     const release = () => { curOn = false; };
-    // Desktop: hovering the canvas drives the bulge. Mobile: the canvas is
-    // pointer-transparent so the page scrolls, and a circular fidget zone over
-    // the sphere (touch-action: none) lets a finger play with it without
-    // scrolling. Both feed the same handlers, mapped to canvas coordinates.
-    const fidget = hero.querySelector("[data-hero-fidget]");
-    for (const el of [canvas, fidget]) {
-      if (!el) continue;
-      el.addEventListener("pointermove", aim, { passive: true });
-      el.addEventListener("pointerdown", aim, { passive: true });
-      el.addEventListener("pointerup", release, { passive: true });
-      el.addEventListener("pointercancel", release, { passive: true });
-      el.addEventListener("pointerleave", release, { passive: true });
-    }
+    // Mouse hover (desktop) and finger drag (mobile) both drive the bulge. On
+    // mobile the canvas has touch-action:none so a drag plays with the sphere
+    // without scrolling, while the content above (pointer-events:auto) scrolls.
+    canvas.addEventListener("pointermove", aim, { passive: true });
+    canvas.addEventListener("pointerdown", aim, { passive: true });
+    canvas.addEventListener("pointerup", release, { passive: true });
+    canvas.addEventListener("pointercancel", release, { passive: true });
+    canvas.addEventListener("pointerleave", release, { passive: true });
 
     function size() {
       dpr = Math.min(window.devicePixelRatio || 1, 2);
       W = canvas.clientWidth; H = canvas.clientHeight;
       canvas.width = Math.max(1, W * dpr); canvas.height = Math.max(1, H * dpr);
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-      cx = W / 2; cy = H * (W < 1024 ? 0.64 : 0.48);  // drop low on mobile (where the photo used to sit)
-      radius = Math.min(W, H) * (W < 1024 ? 0.26 : 0.205);
+      cx = W / 2; cy = H * (W < 1024 ? 0.7 : 0.48);  // sit low on mobile, in the open space below the content
+      radius = Math.min(W, H) * (W < 1024 ? 0.24 : 0.205);
     }
     function frame() {
       requestAnimationFrame(frame);
