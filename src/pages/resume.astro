@@ -1,0 +1,172 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+
+const title = "SA: Resume";
+
+// One resume per discipline, each in its accent colour. The PDFs live in
+// public/ and open in a new tab (no forced download) so a recruiter can read
+// first and save only if they want to.
+const RESUMES = [
+  {
+    acronym: "AIE",
+    name: "AI Engineering",
+    accent: "#34D399",
+    rgb: "52, 211, 153",
+    file: "/Sampreeth_Avvari_AIE.pdf",
+    blurb: "RAG, LLM systems, and production AI shipped to real users.",
+  },
+  {
+    acronym: "FDE",
+    name: "Forward-Deployed Engineering",
+    accent: "#F5A524",
+    rgb: "245, 165, 36",
+    file: "/Sampreeth_Avvari_FDE.pdf",
+    blurb: "Embedded with the customer: find the problem, ship, hand it off.",
+  },
+  {
+    acronym: "MLE",
+    name: "Machine Learning Engineering",
+    accent: "#A78BFA",
+    rgb: "167, 139, 250",
+    file: "/Sampreeth_Avvari_MLE.pdf",
+    blurb: "Models, MLOps, and evaluation from training through serving.",
+  },
+  {
+    acronym: "SDE",
+    name: "Software Engineering",
+    accent: "#5B8DEF",
+    rgb: "91, 141, 239",
+    file: "/Sampreeth_Avvari_SDE.pdf",
+    blurb: "Typed, tested services and the platforms that run them.",
+  },
+];
+---
+
+<BaseLayout title={title}>
+  <main class="mx-auto w-full max-w-screen-xl px-6 lg:px-12 py-20 lg:py-28">
+    <div class="max-w-2xl">
+      <p class="eyebrow text-secondary dark:text-dk-secondary mb-4">Resume</p>
+      <h1 class="text-4xl lg:text-5xl font-bold tracking-tight text-text dark:text-dk-text">
+        Four resumes, one for each discipline.
+      </h1>
+      <p class="mt-5 text-lg text-text/70 dark:text-dk-text/70 leading-relaxed">
+        Same person, four lenses. Open the one that fits the role. Each opens in
+        a new tab so you can read it there and download only if you want to.
+      </p>
+    </div>
+
+    <div class="resume-grid mt-12 lg:mt-14">
+      {RESUMES.map((r) => (
+        <a
+          class="resume-card no-lift"
+          href={r.file}
+          target="_blank"
+          rel="noopener"
+          style={`--accent:${r.accent};--rgb:${r.rgb};`}
+          aria-label={`Open the ${r.name} resume in a new tab`}
+        >
+          <span class="resume-acr">{r.acronym}</span>
+          <span class="resume-name text-text dark:text-dk-text">{r.name}</span>
+          <span class="resume-blurb text-text/65 dark:text-dk-text/65">{r.blurb}</span>
+          <span class="resume-open">
+            Open PDF <span aria-hidden="true">↗</span>
+          </span>
+        </a>
+      ))}
+    </div>
+  </main>
+</BaseLayout>
+
+<style>
+  .resume-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1.25rem;
+  }
+  @media (min-width: 720px) {
+    .resume-grid {
+      grid-template-columns: 1fr 1fr;
+      gap: 1.5rem;
+    }
+  }
+
+  /* Liquid-glass card carrying its discipline colour via --accent / --rgb. */
+  .resume-card {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 0.45rem;
+    padding: 1.7rem 1.6rem 1.5rem;
+    border-radius: 1.25rem;
+    border: 1px solid rgba(var(--rgb), 0.32);
+    background:
+      linear-gradient(150deg, rgba(var(--rgb), 0.16), rgba(var(--rgb), 0.04) 58%, transparent),
+      rgba(255, 255, 255, 0.04);
+    -webkit-backdrop-filter: blur(16px) saturate(165%);
+    backdrop-filter: blur(16px) saturate(165%);
+    box-shadow: 0 12px 44px -26px rgba(var(--rgb), 0.6);
+    overflow: hidden;
+    transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
+  }
+  .resume-card::before {
+    content: "";
+    position: absolute;
+    inset: 0 0 auto 0;
+    height: 3px;
+    background: linear-gradient(90deg, rgba(var(--rgb), 0.95), rgba(var(--rgb), 0.08));
+  }
+  .resume-card:hover {
+    transform: translateY(-5px);
+    border-color: rgba(var(--rgb), 0.7);
+    box-shadow: 0 24px 64px -28px rgba(var(--rgb), 0.85);
+  }
+
+  .resume-acr {
+    font-family: "SF Mono", "JetBrains Mono", Menlo, Monaco, Consolas, monospace;
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.2em;
+    color: var(--accent);
+  }
+  .resume-name {
+    font-size: 1.35rem;
+    font-weight: 700;
+    line-height: 1.15;
+    margin-top: 0.15rem;
+  }
+  .resume-blurb {
+    font-size: 0.92rem;
+    line-height: 1.5;
+  }
+  .resume-open {
+    margin-top: 0.85rem;
+    align-self: flex-start;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.5rem 1.05rem;
+    border-radius: 9999px;
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: var(--accent);
+    border: 1px solid rgba(var(--rgb), 0.42);
+    background: rgba(var(--rgb), 0.12);
+    -webkit-backdrop-filter: blur(8px);
+    backdrop-filter: blur(8px);
+    transition: background 0.25s ease, gap 0.25s ease;
+  }
+  .resume-card:hover .resume-open {
+    background: rgba(var(--rgb), 0.22);
+    gap: 0.62rem;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .resume-card,
+    .resume-open {
+      transition: none;
+    }
+    .resume-card:hover {
+      transform: none;
+    }
+  }
+</style>

@@ -91,10 +91,9 @@ export default function Nav({ searchItems }) {
             <ToggleDarkMode />
             <a
               href={info.cv}
-              download
               className="no-lift ml-2 inline-flex items-center gap-2 px-4 py-2 rounded-full bg-text text-primary dark:bg-dk-text dark:text-dk-primary text-sm font-semibold hover:opacity-85 transition"
             >
-              <i className="fas fa-download text-xs" aria-hidden="true"></i>
+              <i className="fas fa-file-lines text-xs" aria-hidden="true"></i>
               Resume
             </a>
           </div>
@@ -103,10 +102,9 @@ export default function Nav({ searchItems }) {
           <div className="flex lg:hidden ml-auto items-center gap-2">
             <a
               href={info.cv}
-              download
               className="no-lift inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-text text-primary dark:bg-dk-text dark:text-dk-primary text-xs font-semibold"
             >
-              <i className="fas fa-download text-[0.65rem]" aria-hidden="true"></i>
+              <i className="fas fa-file-lines text-[0.65rem]" aria-hidden="true"></i>
               Resume
             </a>
             <ToggleDarkMode />
