@@ -209,7 +209,10 @@ import "../styles/global.css";
                 }
               });
             },
-            { threshold: 0.2 }
+            // threshold 0 (not 0.2) so sections taller than ~5x the viewport
+            // still reveal — at 0.2 a very tall section (e.g. AIE's 6 project
+            // cards on mobile) could never reach 20% visibility and stayed hidden.
+            { threshold: 0, rootMargin: "0px 0px -10% 0px" }
           );
         }
 
