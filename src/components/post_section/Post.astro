@@ -1,5 +1,5 @@
 ---
-import { Image } from "astro:assets";
+import Picture from "../common/Picture.astro";
 
 const { post, index = 0 } = Astro.props;
 const { url } = post;
@@ -37,7 +37,7 @@ try {
   {
     img_path && (
       <div class="relative overflow-hidden">
-        <Image
+        <Picture
           src={img_path}
           alt={img_alt || title}
           width={600}

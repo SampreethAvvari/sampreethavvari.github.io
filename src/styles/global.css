@@ -2648,6 +2648,13 @@ html:not(.dark) .project-screen-imagewrap img {
    the About chapter. Theme-aware: bright-on-black in dark, soft-on-white
    in light. All decorative, pointer-events none, reduced-motion safe.
    ─────────────────────────────────────────────────────────────────── */
+/* <picture> wrappers (see components/common/Picture.astro) must not generate
+   a box of their own — the inner <img> keeps every layout/positioning rule it
+   had as a bare <img>. display:contents makes the wrapper layout-transparent. */
+picture {
+  display: contents;
+}
+
 .hero-bg {
   position: absolute;
   inset: 0;

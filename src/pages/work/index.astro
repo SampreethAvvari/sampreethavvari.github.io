@@ -4,7 +4,7 @@
 import BaseLayout from "../../layouts/BaseLayout.astro";
 import WorkTabs from "../../components/work_section/WorkTabs.astro";
 import { disciplines } from "../../data/disciplines";
-import { Image } from "astro:assets";
+import Picture from "../../components/common/Picture.astro";
 
 const statusTone = (s: string) =>
   s === "In production" || s === "Live" || s === "Running program"
@@ -55,7 +55,7 @@ const statusTone = (s: string) =>
         >
           <div class={`lg:col-span-5 ${i % 2 === 1 ? "lg:order-2" : ""}`}>
             <div class="work-hero-img">
-              <Image
+              <Picture
                 src={d.heroImg}
                 alt={`${d.name} abstract artwork`}
                 width={960}
@@ -87,7 +87,7 @@ const statusTone = (s: string) =>
                     class="no-lift group flex items-center gap-4 rounded-xl px-3.5 py-2.5 border border-text/10 dark:border-dk-text/10 hover:border-[rgba(var(--dx-rgb),0.45)] transition"
                   >
                     {p.img && (
-                      <Image src={p.img} alt="" width={120} height={80} class="w-14 h-9 object-cover rounded-md shrink-0" />
+                      <Picture src={p.img} alt="" width={120} height={80} class="w-14 h-9 object-cover rounded-md shrink-0" />
                     )}
                     <span class="flex-1 min-w-0">
                       <span class="block text-sm font-semibold text-text dark:text-dk-text truncate group-hover:text-[var(--dx)] transition">

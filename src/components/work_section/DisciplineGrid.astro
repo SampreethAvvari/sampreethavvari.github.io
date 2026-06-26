@@ -3,7 +3,7 @@
 // accent-washed panels. Each panel previews two projects + one article and
 // links into its /work/<slug> deep dive. Data: src/data/disciplines.ts.
 import { disciplines } from "../../data/disciplines";
-import { Image } from "astro:assets";
+import Picture from "../common/Picture.astro";
 
 const statusTone = (s: string) =>
   s === "In production" || s === "Live" || s === "Running program"
@@ -44,7 +44,7 @@ const statusTone = (s: string) =>
           class="no-lift group block relative overflow-hidden max-lg:aspect-[16/9] lg:min-h-full"
           aria-label="Read the JobPilot story"
         >
-          <Image
+          <Picture
             src="/jobpilot-flagship.png"
             alt="JobPilot: four colored data streams converging into one tailored resume taking flight"
             width={900}
@@ -120,7 +120,7 @@ const statusTone = (s: string) =>
             {d.projects.slice(0, 2).map((p) => (
               <li class="dx-preview-row">
                 {p.img && (
-                  <Image
+                  <Picture
                     src={p.img}
                     alt=""
                     width={96}
@@ -137,7 +137,7 @@ const statusTone = (s: string) =>
             {d.articles.slice(0, 1).map((a) => (
               <li class="dx-preview-row dx-preview-article">
                 {a.img && (
-                  <Image src={a.img} alt="" width={96} height={64} class="dx-thumb" />
+                  <Picture src={a.img} alt="" width={96} height={64} class="dx-thumb" />
                 )}
                 <div class="min-w-0">
                   <p class="dx-preview-kicker">From the blog</p>

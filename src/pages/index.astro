@@ -5,7 +5,7 @@ import Contact from "../components/contact_section/Contact";
 import ScrollSpine from "../components/ScrollSpine.astro";
 import DisciplineGrid from "../components/work_section/DisciplineGrid.astro";
 import { disciplines } from "../data/disciplines";
-import { Image } from "astro:assets";
+import Picture from "../components/common/Picture.astro";
 
 const allPosts = await Astro.glob("../pages/posts/*.md");
 const latestPosts = allPosts
@@ -189,7 +189,7 @@ const skillGroups = [
 ];
 ---
 
-<BaseLayout title="Sampreeth Avvari">
+<BaseLayout title="Sampreeth Avvari" preloadImage="/pic.avif">
   <script is:inline>
     document.documentElement.classList.add("snap-home");
   </script>
@@ -206,10 +206,10 @@ const skillGroups = [
            still, parallax glow orbs, and a readability scrim. The portrait
            that used to sit here now floats in the About chapter. -->
       <div class="hero-bg" aria-hidden="true">
-        <img class="hero-nebula hero-nebula-dark" src="/hero-nebula-dark.png" alt="" data-parallax="0.012" />
-        <img class="hero-nebula hero-nebula-light" src="/hero-nebula-light.png" alt="" data-parallax="0.012" />
-        <img class="hero-aurora hero-aurora-dark" src="/hero-aurora-dark.png" alt="" data-parallax="0.026" />
-        <img class="hero-aurora hero-aurora-light" src="/hero-aurora-light.png" alt="" data-parallax="0.026" />
+        <Picture class="hero-nebula hero-nebula-dark" src="/hero-nebula-dark.png" alt="" data-parallax="0.012" loading="eager" />
+        <Picture class="hero-nebula hero-nebula-light" src="/hero-nebula-light.png" alt="" data-parallax="0.012" loading="eager" />
+        <Picture class="hero-aurora hero-aurora-dark" src="/hero-aurora-dark.png" alt="" data-parallax="0.026" loading="eager" />
+        <Picture class="hero-aurora hero-aurora-light" src="/hero-aurora-light.png" alt="" data-parallax="0.026" loading="eager" />
         <div class="hero-field"></div>
         <span class="hero-orb hero-orb-emerald" data-parallax="0.06"></span>
         <span class="hero-orb hero-orb-amber" data-parallax="0.07"></span>
@@ -237,12 +237,14 @@ const skillGroups = [
             <figure class="hero-portrait floaty">
               <span class="hero-portrait-glow" aria-hidden="true"></span>
               <div class="hero-portrait-frame photo-shimmer">
-                <Image
+                <Picture
                   src={info.picture}
                   alt={info.picture_alt}
                   width={520}
                   height={640}
                   class="hero-portrait-img"
+                  loading="eager"
+                  fetchpriority="high"
                 />
               </div>
             </figure>
@@ -534,7 +536,7 @@ const skillGroups = [
               >
                 {post.frontmatter.img_path && (
                   <div class="relative overflow-hidden">
-                    <Image
+                    <Picture
                       src={post.frontmatter.img_path}
                       alt={post.frontmatter.img_alt || post.frontmatter.title}
                       width={600}
