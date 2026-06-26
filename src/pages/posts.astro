@@ -1,5 +1,5 @@
 ---
-import { Image } from "astro:assets";
+import Picture from "../components/common/Picture.astro";
 import BaseLayout from "../layouts/BaseLayout.astro";
 import Post from "../components/post_section/Post.astro";
 
@@ -11,9 +11,11 @@ allPosts.sort(
 );
 
 const [featured, ...rest] = allPosts;
+// Preload the featured cover (the LCP element) as AVIF.
+const featuredPreload = featured?.frontmatter.img_path?.replace(/\.(png|jpe?g)$/i, ".avif");
 ---
 
-<BaseLayout title="SA: Writing">
+<BaseLayout title="SA: Writing" preloadImage={featuredPreload}>
   <main>
     {/* Hero */}
     <section class="posts-index-hero">
@@ -52,12 +54,14 @@ const [featured, ...rest] = allPosts;
               </p>
             </div>
             <div class="max-lg:order-first">
-              <Image
+              <Picture
                 src={featured.frontmatter.img_path}
                 alt={featured.frontmatter.img_alt || featured.frontmatter.title}
                 width={900}
                 height={500}
                 class="featured-post-img"
+                loading="eager"
+                fetchpriority="high"
               />
             </div>
           </a>

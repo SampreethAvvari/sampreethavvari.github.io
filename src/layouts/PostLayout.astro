@@ -1,5 +1,5 @@
 ---
-import { Image } from "astro:assets";
+import Picture from "../components/common/Picture.astro";
 
 import BaseLayout from "./BaseLayout.astro";
 
@@ -30,9 +30,11 @@ const TAG_TONE: Record<string, string> = {
 };
 
 const chipTone = tone || (tag ? TAG_TONE[tag] : null) || "blue";
+// Preload the cover (the LCP element on a post page) as AVIF.
+const coverPreload = img_path?.replace(/\.(png|jpe?g)$/i, ".avif");
 ---
 
-<BaseLayout title={title}>
+<BaseLayout title={title} preloadImage={coverPreload}>
   <div class="post-progress" id="post-progress"></div>
 
   <article class="post-article">
@@ -59,12 +61,14 @@ const chipTone = tone || (tag ? TAG_TONE[tag] : null) || "blue";
     {
       img_path && (
         <div class="mx-auto max-w-5xl px-6 lg:px-0">
-          <Image
+          <Picture
             src={img_path}
             alt={img_alt || title}
             class="post-cover"
             width={1200}
             height={600}
+            loading="eager"
+            fetchpriority="high"
           />
         </div>
       )
@@ -101,7 +105,7 @@ const chipTone = tone || (tag ? TAG_TONE[tag] : null) || "blue";
 
     <div class="mx-auto max-w-3xl px-6 lg:px-0 mt-20 mb-24">
       <div class="post-author">
-        <Image
+        <Picture
           src={info.picture}
           alt={info.picture_alt}
           class="post-author-pic"

@@ -1,5 +1,6 @@
 ﻿---
 import BaseLayout from "../layouts/BaseLayout.astro";
+import { optimizedSources } from "../utils/optimizedImage";
 import fs from "node:fs";
 import path from "node:path";
 
@@ -118,10 +119,10 @@ const sections = [...PROJECTS, ...extras].map((cfg, idx) => {
   );
   const images = files
     .filter((f) => IMG_RE.test(f))
-    .map((f) => ({
-      src: `/gallery/${encodeURIComponent(cfg.slug)}/${encodeURIComponent(f)}`,
-      caption: captionFor(f),
-    }));
+    .map((f) => {
+      const src = `/gallery/${encodeURIComponent(cfg.slug)}/${encodeURIComponent(f)}`;
+      return { src, opt: optimizedSources(src), caption: captionFor(f) };
+    });
   const docs = files
     .filter((f) => PDF_RE.test(f))
     .map((f) => {
@@ -238,7 +239,7 @@ const liveSections = sections.filter((s) => s.count > 0).length;
                       data-shot
                       data-group={s.slug}
                       data-index={i}
-                      data-full={img.src}
+                      data-full={img.opt?.avif ?? img.src}
                       data-caption={img.caption}
                       aria-label={`View screenshot: ${img.caption}`}
                     >
@@ -251,13 +252,27 @@ const liveSections = sections.filter((s) => s.count > 0).length;
                           <i class="fas fa-up-right-and-down-left-from-center"></i>
                         </span>
                       </span>
-                      <img
-                        src={img.src}
-                        alt={img.caption || `${s.title} screenshot`}
-                        loading="lazy"
-                        decoding="async"
-                        class="shot-img"
-                      />
+                      {img.opt ? (
+                        <picture>
+                          <source srcset={img.opt.avif} type="image/avif" />
+                          <source srcset={img.opt.webp} type="image/webp" />
+                          <img
+                            src={img.opt.webp}
+                            alt={img.caption || `${s.title} screenshot`}
+                            loading="lazy"
+                            decoding="async"
+                            class="shot-img"
+                          />
+                        </picture>
+                      ) : (
+                        <img
+                          src={img.src}
+                          alt={img.caption || `${s.title} screenshot`}
+                          loading="lazy"
+                          decoding="async"
+                          class="shot-img"
+                        />
+                      )}
                     </button>
                   </figure>
                 ))}

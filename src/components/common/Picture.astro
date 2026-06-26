@@ -1,0 +1,69 @@
+---
+// Drop-in replacement for a raw <img>/<Image> that points at a /public file.
+// Emits a <picture> serving AVIF -> WebP -> original-file fallback. The
+// generated .avif/.webp siblings come from scripts/optimize-images.mjs.
+//
+// Layout-neutral: global.css sets `picture { display: contents }`, so the
+// wrapper produces no box and the <img> behaves exactly as it did before.
+// Every passed attribute (class, style, data-parallax, sizes, ...) is
+// forwarded to the <img>, so existing CSS/JS that targets it keeps working.
+import { optimizedSources } from "../../utils/optimizedImage";
+
+type Props = {
+  src: string;
+  alt: string;
+  width?: number;
+  height?: number;
+  class?: string;
+  loading?: "eager" | "lazy";
+  fetchpriority?: "high" | "low" | "auto";
+  decoding?: "async" | "sync" | "auto";
+  [key: string]: unknown;
+};
+
+const {
+  src,
+  alt,
+  width,
+  height,
+  class: className,
+  loading = "lazy",
+  fetchpriority,
+  decoding = "async",
+  ...rest
+} = Astro.props as Props;
+
+const opt = optimizedSources(src);
+---
+
+{
+  opt ? (
+    <picture>
+      <source srcset={opt.avif} type="image/avif" />
+      <source srcset={opt.webp} type="image/webp" />
+      <img
+        src={opt.webp}
+        alt={alt}
+        width={width}
+        height={height}
+        class={className}
+        loading={loading}
+        fetchpriority={fetchpriority}
+        decoding={decoding}
+        {...rest}
+      />
+    </picture>
+  ) : (
+    <img
+      src={src}
+      alt={alt}
+      width={width}
+      height={height}
+      class={className}
+      loading={loading}
+      fetchpriority={fetchpriority}
+      decoding={decoding}
+      {...rest}
+    />
+  )
+}

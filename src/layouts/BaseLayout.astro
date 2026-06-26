@@ -10,6 +10,9 @@ const {
   title,
   description = "AI Engineer specializing in agentic AI, RAG, and ML systems.",
   footerVariant = "default",
+  // Optional LCP image to preload (an AVIF path). Pages pass their above-the-fold
+  // hero/cover so the browser fetches it before it discovers the <img> in markup.
+  preloadImage,
 } = Astro.props;
 
 // Canonical URL for the current page (no query strings), absolute via astro.config `site`.
@@ -113,6 +116,17 @@ import "../styles/global.css";
     <meta http-equiv="Content-Language" content="en" />
     <meta name="google" content="notranslate" />
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    {
+      preloadImage && (
+        <link
+          rel="preload"
+          as="image"
+          href={preloadImage}
+          type="image/avif"
+          fetchpriority="high"
+        />
+      )
+    }
     <link rel="icon" type="image/png" href="/logos/samp-chat.png" />
     <link rel="apple-touch-icon" href="/logos/samp-chat.png" />
     <link
