@@ -2654,6 +2654,12 @@ html:not(.dark) .project-screen-imagewrap img {
 picture {
   display: contents;
 }
+/* With display:contents the <source> children would otherwise be promoted into
+   a parent grid/flex as invisible items (eating cells). Hide them from layout —
+   they still drive format selection regardless of CSS display. */
+picture > source {
+  display: none;
+}
 
 .hero-bg {
   position: absolute;
