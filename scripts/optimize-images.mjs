@@ -25,7 +25,8 @@ for (const name of files) {
   const meta = await sharp(src).metadata();
   const origSize = (await stat(src)).size;
   const targetW = Math.min(meta.width, MAX_W);
-  const pipe = () => sharp(src).resize({ width: targetW, withoutEnlargement: true });
+  // .rotate() with no args bakes EXIF orientation so phone photos aren't sideways.
+  const pipe = () => sharp(src).rotate().resize({ width: targetW, withoutEnlargement: true });
 
   const avifPath = path.join(PUBLIC, base + ".avif");
   const webpPath = path.join(PUBLIC, base + ".webp");

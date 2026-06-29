@@ -1,6 +1,6 @@
 ﻿---
 import BaseLayout from "../layouts/BaseLayout.astro";
-import { optimizedSources } from "../utils/optimizedImage";
+import { optimizedSources, canonicalImageList } from "../utils/optimizedImage";
 import fs from "node:fs";
 import path from "node:path";
 
@@ -117,8 +117,8 @@ const sections = [...PROJECTS, ...extras].map((cfg, idx) => {
   const files = listDir(cfg.slug).sort((a, b) =>
     a.localeCompare(b, undefined, { numeric: true, sensitivity: "base" })
   );
-  const images = files
-    .filter((f) => IMG_RE.test(f))
+  const images = canonicalImageList(files.filter((f) => IMG_RE.test(f)))
+    .sort((a, b) => a.localeCompare(b, undefined, { numeric: true, sensitivity: "base" }))
     .map((f) => {
       const src = `/gallery/${encodeURIComponent(cfg.slug)}/${encodeURIComponent(f)}`;
       return { src, opt: optimizedSources(src), caption: captionFor(f) };
