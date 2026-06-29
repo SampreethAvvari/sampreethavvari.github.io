@@ -70,8 +70,8 @@ for (const file of all) {
     const w = Math.min(meta.width, MAX_W);
     const buf =
       ext === ".avif"
-        ? await sharp(file).resize({ width: w, withoutEnlargement: true }).avif({ quality: 62, effort: 4 }).toBuffer()
-        : await sharp(file).resize({ width: w, withoutEnlargement: true }).jpeg({ quality: 82, mozjpeg: true }).toBuffer();
+        ? await sharp(file).rotate().resize({ width: w, withoutEnlargement: true }).avif({ quality: 62, effort: 4 }).toBuffer()
+        : await sharp(file).rotate().resize({ width: w, withoutEnlargement: true }).jpeg({ quality: 82, mozjpeg: true }).toBuffer();
     const { writeFileSync } = await import("node:fs");
     writeFileSync(file, buf);
     origTotal += size; newTotal += buf.length;
@@ -80,7 +80,7 @@ for (const file of all) {
     backup(file);
     const meta = await sharp(file).metadata();
     const w = Math.min(meta.width, MAX_W);
-    const buf = await sharp(file).resize({ width: w, withoutEnlargement: true }).avif({ quality: 62, effort: 4 }).toBuffer();
+    const buf = await sharp(file).rotate().resize({ width: w, withoutEnlargement: true }).avif({ quality: 62, effort: 4 }).toBuffer();
     const { writeFileSync } = await import("node:fs");
     writeFileSync(file, buf);
     origTotal += size; newTotal += buf.length;
@@ -90,9 +90,10 @@ for (const file of all) {
     const base = file.replace(RASTER, "");
     const meta = await sharp(file).metadata();
     const w = Math.min(meta.width, MAX_W);
-    const pipe = () => sharp(file).resize({ width: w, withoutEnlargement: true });
-    await pipe().avif({ quality: 62, effort: 4 }).toFile(base + ".avif");
-    await pipe().webp({ quality: 84, effort: 5 }).toFile(base + ".webp");
+    // .rotate() bakes EXIF orientation; q72/q88 keeps photographic detail crisp.
+    const pipe = () => sharp(file).rotate().resize({ width: w, withoutEnlargement: true });
+    await pipe().avif({ quality: 72, effort: 4 }).toFile(base + ".avif");
+    await pipe().webp({ quality: 88, effort: 5 }).toFile(base + ".webp");
     const a = statSync(base + ".avif").size;
     origTotal += size; newTotal += a; // avif is what visitors download
     rows.push({ rel, mode: "additive", from: size, to: a });

@@ -3,6 +3,7 @@ import BaseLayout from "../layouts/BaseLayout.astro";
 import fs from "node:fs";
 import path from "node:path";
 import SmartImage from "../components/common/SmartImage.astro";
+import { canonicalImageList } from "../utils/optimizedImage";
 
 const title = "SA: Filmmaking";
 const playlistUrl = "https://hi.switchy.io/gB-4";
@@ -15,10 +16,11 @@ const posterSrc = "/among-monsters-poster.jpg";
 const galleryDir = path.join(process.cwd(), "public", "Photo Gallery");
 let galleryFiles = [];
 try {
-  galleryFiles = fs
-    .readdirSync(galleryDir)
-    .filter((file) => /\.(png|jpe?g|webp|gif|avif)$/i.test(file))
-    .sort((a, b) => a.localeCompare(b));
+  galleryFiles = canonicalImageList(
+    fs
+      .readdirSync(galleryDir)
+      .filter((file) => /\.(png|jpe?g|webp|gif|avif)$/i.test(file))
+  ).sort((a, b) => a.localeCompare(b));
 } catch (error) {
   galleryFiles = [];
 }
@@ -33,10 +35,11 @@ const galleryItems = galleryFiles.map((file) => {
 const swechchaDir = path.join(galleryDir, "Swechcha");
 let swechchaFiles = [];
 try {
-  swechchaFiles = fs
-    .readdirSync(swechchaDir)
-    .filter((file) => /\.(png|jpe?g|webp|gif|avif)$/i.test(file))
-    .sort((a, b) => a.localeCompare(b));
+  swechchaFiles = canonicalImageList(
+    fs
+      .readdirSync(swechchaDir)
+      .filter((file) => /\.(png|jpe?g|webp|gif|avif)$/i.test(file))
+  ).sort((a, b) => a.localeCompare(b));
 } catch (error) {
   swechchaFiles = [];
 }
@@ -113,15 +116,18 @@ const roles = [
   },
 ];
 
-let galleryCursor = 0;
-const pickGalleryImage = () => {
-  if (!galleryItems.length) {
-    return { src: "/paper.png", alt: "Placeholder image" };
-  }
-  const item = galleryItems[galleryCursor % galleryItems.length];
-  galleryCursor += 1;
-  return item;
-};
+// Cast/crew without a real headshot get a clean initials placeholder rather
+// than reusing an on-set still — reusing stills made the same photo appear
+// twice on the page and mislabeled a scene as someone's "portrait".
+const pickGalleryImage = () => ({ placeholder: true });
+const initials = (name) =>
+  (name || "")
+    .split(/\s+/)
+    .map((w) => w[0])
+    .filter(Boolean)
+    .slice(0, 2)
+    .join("")
+    .toUpperCase();
 
 const keyCreators = [
   {
@@ -570,7 +576,7 @@ const stillsLimited = galleryItems.slice(0, 16);
       <p class="text-[0.7rem] uppercase tracking-[0.22em] text-text/40 dark:text-dk-text/40 font-semibold mb-4">
         Above the line
       </p>
-      <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 mb-12">
+      <div class="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 gap-2.5 lg:gap-3 mb-12">
         {keyCreators.map((person) => (
           <article class="people-card group">
             <SmartImage
@@ -604,16 +610,22 @@ const stillsLimited = galleryItems.slice(0, 16);
       <p class="text-[0.7rem] uppercase tracking-[0.22em] text-text/40 dark:text-dk-text/40 font-semibold mb-4">
         Cast
       </p>
-      <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 mb-12">
+      <div class="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 gap-2.5 lg:gap-3 mb-12">
         {[...mainCast, ...supportingCast].map((member) => (
           <article class="people-card group">
-            <SmartImage
-              src={member.image.src}
-              alt={`${member.name} portrait`}
-              class="people-card-img"
-              style={member.imageStyle}
-              loading="lazy"
-            />
+            {member.image?.placeholder ? (
+              <div class="people-card-img people-card-ph" aria-hidden="true">
+                <span>{initials(member.name)}</span>
+              </div>
+            ) : (
+              <SmartImage
+                src={member.image.src}
+                alt={`${member.name} portrait`}
+                class="people-card-img"
+                style={member.imageStyle}
+                loading="lazy"
+              />
+            )}
             <div class="people-card-veil"></div>
             <div class="people-card-meta">
               <p class="people-card-name">{member.name}</p>
@@ -639,16 +651,22 @@ const stillsLimited = galleryItems.slice(0, 16);
       <p class="text-[0.7rem] uppercase tracking-[0.22em] text-text/40 dark:text-dk-text/40 font-semibold mb-4">
         Music
       </p>
-      <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+      <div class="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 gap-2.5 lg:gap-3">
         {musicCredits.map((member) => (
           <article class="people-card group">
-            <SmartImage
-              src={member.image.src}
-              alt={`${member.name} portrait`}
-              class="people-card-img"
-              style={member.imageStyle}
-              loading="lazy"
-            />
+            {member.image?.placeholder ? (
+              <div class="people-card-img people-card-ph" aria-hidden="true">
+                <span>{initials(member.name)}</span>
+              </div>
+            ) : (
+              <SmartImage
+                src={member.image.src}
+                alt={`${member.name} portrait`}
+                class="people-card-img"
+                style={member.imageStyle}
+                loading="lazy"
+              />
+            )}
             <div class="people-card-veil"></div>
             <div class="people-card-meta">
               <p class="people-card-name">{member.name}</p>
@@ -684,13 +702,13 @@ const stillsLimited = galleryItems.slice(0, 16);
       </div>
 
       {stillsLimited.length ? (
-        <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-4">
+        <div class="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-6 gap-2.5 lg:gap-3">
           {stillsLimited.map((item) => (
             <SmartImage
               src={item.src}
               alt={item.alt}
               loading="lazy"
-              class="w-full aspect-[4/5] object-cover rounded-xl"
+              class="w-full aspect-[4/5] object-cover rounded-lg"
             />
           ))}
         </div>
@@ -714,13 +732,13 @@ const stillsLimited = galleryItems.slice(0, 16);
       </div>
 
       {swechchaItems.length ? (
-        <div class="grid grid-cols-2 lg:grid-cols-3 gap-3 lg:gap-4">
+        <div class="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 gap-2.5 lg:gap-3">
           {swechchaItems.map((item) => (
             <SmartImage
               src={item.src}
               alt={item.alt}
               loading="lazy"
-              class="w-full aspect-[4/5] object-cover rounded-xl"
+              class="w-full aspect-[4/5] object-cover rounded-lg"
             />
           ))}
         </div>
@@ -1053,14 +1071,16 @@ const stillsLimited = galleryItems.slice(0, 16);
   .people-card {
     position: relative;
     aspect-ratio: 4 / 5;
-    border-radius: 0.85rem;
+    border-radius: 0.6rem;
     overflow: hidden;
     background: #0f1014;
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.06);
     transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.4s ease;
   }
   .people-card:hover {
     transform: translateY(-3px);
-    box-shadow: 0 18px 36px -18px rgba(0,0,0,0.55);
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.12),
+      0 16px 34px -20px rgba(0, 0, 0, 0.6);
   }
   .people-card-img {
     position: absolute;
@@ -1074,6 +1094,16 @@ const stillsLimited = galleryItems.slice(0, 16);
   .people-card:hover .people-card-img {
     transform: scale(1.04);
   }
+  .people-card-ph {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(150deg, #1b1d24, #0f1014 65%);
+    color: rgba(255, 255, 255, 0.34);
+    font-size: 1.4rem;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+  }
   .people-card-veil {
     position: absolute;
     inset: 0;
@@ -1085,21 +1115,21 @@ const stillsLimited = galleryItems.slice(0, 16);
     left: 0;
     right: 0;
     bottom: 0;
-    padding: 0.85rem 0.9rem;
+    padding: 0.6rem 0.65rem;
     z-index: 2;
   }
   .people-card-name {
-    font-size: 0.88rem;
+    font-size: 0.78rem;
     font-weight: 600;
     color: #ffffff;
-    line-height: 1.25;
-    letter-spacing: -0.005em;
-    margin-bottom: 0.2rem;
+    line-height: 1.22;
+    letter-spacing: -0.01em;
+    margin-bottom: 0.15rem;
   }
   .people-card-role {
-    font-size: 0.65rem;
+    font-size: 0.58rem;
     text-transform: uppercase;
-    letter-spacing: 0.18em;
+    letter-spacing: 0.14em;
     color: rgba(255,255,255,0.55);
     font-weight: 600;
     line-height: 1.3;
