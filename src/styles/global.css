@@ -2709,7 +2709,14 @@ picture > source {
   min-width: 0;
   pointer-events: none;
 }
-.hero-copy a { pointer-events: auto; }
+/* The hero content wrapper is pointer-events:none so the interactive canvas
+   behind it stays touchable in the gaps. Re-enable it on the actual links/
+   buttons — the CTAs and pills live in their own grid areas (.hero-cta /
+   .hero-pills), not in .hero-copy, so they need this too or clicks fall
+   through into the canvas (desktop only; mobile re-enables via media query). */
+.hero-copy a,
+.hero-pills a,
+.hero-cta a { pointer-events: auto; }
 .hero-photo { grid-area: photo; display: flex; justify-content: flex-end; align-items: center; }
 .hero-pills { grid-area: pills; display: flex; flex-wrap: wrap; gap: 0.6rem; }
 .hero-cta { display: flex; flex-wrap: wrap; gap: 0.75rem; align-items: center; }
