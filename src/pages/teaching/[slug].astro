@@ -1,0 +1,199 @@
+---
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import MaterialActions from "../../components/teaching/MaterialActions.tsx";
+import TeachingBranding from "../../components/teaching/TeachingBranding.astro";
+import { teaching, streamMeta, typeMeta } from "../../data/teaching";
+
+export function getStaticPaths() {
+  return teaching.map((m) => ({ params: { slug: m.slug }, props: { m } }));
+}
+
+const { m } = Astro.props;
+const stream = streamMeta[m.stream];
+const tm = typeMeta[m.type];
+
+// Normalize a video URL to an embeddable form for the inline player.
+function embedUrl(url: string): string {
+  const yt = url.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/))([\w-]+)/);
+  if (yt) return `https://www.youtube.com/embed/${yt[1]}`;
+  const vm = url.match(/vimeo\.com\/(\d+)/);
+  if (vm) return `https://player.vimeo.com/video/${vm[1]}`;
+  return url;
+}
+---
+
+<BaseLayout title={`SA: ${m.title}`}>
+  <article class="teach-article">
+    <header class="mx-auto w-full max-w-4xl px-6 lg:px-0 pt-32 lg:pt-36">
+      <a href="/teaching" class="teach-back">← All teaching</a>
+      <div class="teach-meta-row" style={`--pa: ${stream.accent};`}>
+        <span class="teach-meta-stream"><span class="teach-dot" aria-hidden="true"></span>{stream.acronym} · {stream.label}</span>
+        <span class="teach-meta-type"><i class={tm.icon} aria-hidden="true"></i> {tm.label}</span>
+      </div>
+      <h1 class="teach-h1">{m.title}</h1>
+
+      <div class="teach-expect">
+        <p class="teach-expect-label">What to expect</p>
+        <p class="teach-expect-body">{m.whatToExpect}</p>
+      </div>
+
+      <MaterialActions client:load slug={m.slug} file={m.file} title={m.title} />
+    </header>
+
+    <section class="mx-auto w-full max-w-5xl px-6 lg:px-8 mt-10">
+      {m.type === "pdf" && m.file && (
+        <iframe
+          src={`${m.file}#view=FitH`}
+          title={m.title}
+          class="teach-viewer-pdf"
+          loading="lazy"
+        />
+      )}
+      {m.type === "video" && m.videoUrl && (
+        <div class="teach-viewer-video">
+          <iframe
+            src={embedUrl(m.videoUrl)}
+            title={m.title}
+            loading="lazy"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+            allowfullscreen
+          />
+        </div>
+      )}
+      {m.type === "blog" && m.body && (
+        <div class="teach-viewer-blog" set:html={m.body} />
+      )}
+    </section>
+
+    <TeachingBranding />
+  </article>
+</BaseLayout>
+
+<style is:global>
+  .teach-back {
+    display: inline-block;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: rgb(29 29 31 / 0.5);
+    margin-bottom: 1.2rem;
+    transition: color 0.2s ease;
+  }
+  html.dark .teach-back { color: rgb(245 245 247 / 0.5); }
+  .teach-back:hover { color: var(--secondary, #5b8def); }
+
+  .teach-meta-row { display: flex; flex-wrap: wrap; align-items: center; gap: 0.9rem; margin-bottom: 0.9rem; }
+  .teach-meta-stream {
+    display: inline-flex; align-items: center; gap: 0.45rem;
+    font-size: 0.68rem; font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase;
+    color: color-mix(in srgb, var(--pa) 72%, #1d1d1f);
+  }
+  html.dark .teach-meta-stream { color: color-mix(in srgb, var(--pa) 82%, #f5f5f7); }
+  .teach-meta-type {
+    display: inline-flex; align-items: center; gap: 0.35rem;
+    font-size: 0.66rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase;
+    padding: 0.2rem 0.55rem; border-radius: 9999px;
+    color: rgb(29 29 31 / 0.6); border: 1px solid rgb(29 29 31 / 0.14);
+  }
+  html.dark .teach-meta-type { color: rgb(245 245 247 / 0.6); border-color: rgb(245 245 247 / 0.16); }
+  .teach-dot { width: 0.45rem; height: 0.45rem; border-radius: 9999px; background: var(--pa); box-shadow: 0 0 8px color-mix(in srgb, var(--pa) 65%, transparent); }
+
+  .teach-h1 {
+    font-size: clamp(1.9rem, 4.5vw, 3rem);
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    line-height: 1.06;
+    color: #1d1d1f;
+  }
+  html.dark .teach-h1 { color: #f5f5f7; }
+
+  .teach-expect {
+    margin-top: 1.5rem;
+    padding: 1.1rem 1.25rem;
+    border-radius: 1rem;
+    border-left: 3px solid var(--pa, #34d399);
+    background: rgb(29 29 31 / 0.025);
+  }
+  html.dark .teach-expect { background: rgb(245 245 247 / 0.04); }
+  .teach-expect-label {
+    font-size: 0.64rem; font-weight: 700; letter-spacing: 0.2em; text-transform: uppercase;
+    color: rgb(29 29 31 / 0.45); margin-bottom: 0.4rem;
+  }
+  html.dark .teach-expect-label { color: rgb(245 245 247 / 0.45); }
+  .teach-expect-body { font-size: 1rem; line-height: 1.6; color: rgb(29 29 31 / 0.78); }
+  html.dark .teach-expect-body { color: rgb(245 245 247 / 0.78); }
+
+  /* ── Actions bar (React island) ─────────────────────────────────────── */
+  .teach-actions {
+    margin-top: 1.6rem;
+    display: flex; flex-wrap: wrap; align-items: center; gap: 1.2rem;
+  }
+  .teach-actions-stats {
+    display: flex; flex-wrap: wrap; gap: 1.1rem;
+    font-size: 0.8rem; font-weight: 600; color: rgb(29 29 31 / 0.55);
+    font-variant-numeric: tabular-nums;
+  }
+  html.dark .teach-actions-stats { color: rgb(245 245 247 / 0.55); }
+  .teach-actions-stats i { opacity: 0.65; margin-right: 0.2rem; }
+  .teach-dl-btn {
+    display: inline-flex; align-items: center; gap: 0.5rem;
+    padding: 0.65rem 1.25rem; border-radius: 9999px;
+    font-size: 0.85rem; font-weight: 700;
+    color: #04150f; background: linear-gradient(135deg, #34d399, #10b981);
+    border: none; cursor: pointer;
+    box-shadow: 0 10px 26px -12px rgba(16, 185, 129, 0.8);
+    transition: transform 0.2s ease, opacity 0.2s ease;
+  }
+  .teach-dl-btn:hover { transform: translateY(-2px); opacity: 0.95; }
+
+  /* ── PDF / video / blog viewers ─────────────────────────────────────── */
+  .teach-viewer-pdf {
+    width: 100%; height: 82vh; min-height: 30rem;
+    border: 1px solid rgb(29 29 31 / 0.12); border-radius: 1rem;
+    background: #fff;
+  }
+  html.dark .teach-viewer-pdf { border-color: rgb(245 245 247 / 0.12); }
+  .teach-viewer-video { position: relative; width: 100%; aspect-ratio: 16 / 9; border-radius: 1rem; overflow: hidden; }
+  .teach-viewer-video iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
+  .teach-viewer-blog { font-size: 1.02rem; line-height: 1.7; color: rgb(29 29 31 / 0.82); }
+  html.dark .teach-viewer-blog { color: rgb(245 245 247 / 0.82); }
+
+  /* ── Review-gate modal ──────────────────────────────────────────────── */
+  .teach-modal { position: fixed; inset: 0; z-index: 95; display: flex; align-items: center; justify-content: center; padding: 1.2rem; }
+  .teach-modal-backdrop { position: absolute; inset: 0; background: rgb(5 6 8 / 0.78); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); }
+  .teach-modal-card {
+    position: relative; z-index: 1; width: 100%; max-width: 30rem;
+    background: #14161c; color: #f5f5f7;
+    border: 1px solid rgb(245 245 247 / 0.12); border-radius: 1.25rem;
+    padding: 1.6rem 1.5rem; box-shadow: 0 40px 90px -30px rgb(0 0 0 / 0.9);
+  }
+  .teach-modal-x {
+    position: absolute; top: 0.9rem; right: 0.9rem;
+    width: 2rem; height: 2rem; border-radius: 9999px;
+    color: rgb(245 245 247 / 0.7); background: rgb(255 255 255 / 0.08);
+    border: 1px solid rgb(255 255 255 / 0.12); cursor: pointer;
+  }
+  .teach-modal-x:hover { background: rgb(255 255 255 / 0.16); }
+  .teach-modal-eyebrow { font-size: 0.62rem; font-weight: 700; letter-spacing: 0.22em; text-transform: uppercase; color: #34d399; }
+  .teach-modal-title { font-size: 1.25rem; font-weight: 700; margin: 0.3rem 0 0.5rem; line-height: 1.2; }
+  .teach-modal-sub { font-size: 0.85rem; line-height: 1.5; color: rgb(245 245 247 / 0.6); margin-bottom: 1.1rem; }
+  .teach-stars { display: flex; gap: 0.35rem; margin-bottom: 1rem; }
+  .teach-star { background: none; border: none; cursor: pointer; font-size: 1.5rem; color: rgb(245 245 247 / 0.25); padding: 0.15rem; transition: transform 0.15s ease; }
+  .teach-star:hover { transform: scale(1.15); }
+  .teach-textarea {
+    width: 100%; resize: vertical; min-height: 5.5rem;
+    background: rgb(255 255 255 / 0.05); color: #f5f5f7;
+    border: 1px solid rgb(255 255 255 / 0.14); border-radius: 0.75rem;
+    padding: 0.7rem 0.85rem; font-size: 0.9rem; line-height: 1.5;
+    margin-bottom: 1rem;
+  }
+  .teach-textarea::placeholder { color: rgb(245 245 247 / 0.4); }
+  .teach-textarea:focus { outline: none; border-color: rgba(52, 211, 153, 0.6); }
+  .teach-submit {
+    width: 100%; padding: 0.8rem 1rem; border-radius: 0.75rem; border: none; cursor: pointer;
+    font-size: 0.9rem; font-weight: 700; color: #04150f;
+    background: linear-gradient(135deg, #34d399, #10b981);
+    transition: opacity 0.2s ease;
+  }
+  .teach-submit:disabled { opacity: 0.4; cursor: not-allowed; }
+  .teach-submit:not(:disabled):hover { opacity: 0.94; }
+</style>
