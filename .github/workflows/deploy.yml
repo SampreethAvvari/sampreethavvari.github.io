@@ -34,6 +34,7 @@ jobs:
         run: npm run build
         env:
           PUBLIC_CHAT_ENDPOINT: ${{ vars.PUBLIC_CHAT_ENDPOINT }}
+          PUBLIC_TEACHING_API: ${{ vars.PUBLIC_TEACHING_API }}
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3

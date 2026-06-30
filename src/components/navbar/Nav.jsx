@@ -21,6 +21,7 @@ export default function Nav({ searchItems }) {
     { name: "Projects", href: "/projects", icon: "fas fa-code", match: "projects" },
     { name: "Filmmaking", href: "/filmmaking", icon: "fas fa-clapperboard", match: "filmmaking" },
     { name: "Blog", href: "/posts", icon: "fas fa-pen-nib", match: "posts" },
+    { name: "Teaching", href: "/teaching", icon: "fas fa-graduation-cap", match: "teaching" },
     { name: "Contact", href: "/#contact", icon: "fas fa-envelope", match: "contact" },
   ];
 

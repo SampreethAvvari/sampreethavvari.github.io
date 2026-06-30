@@ -1,0 +1,23 @@
+name = "sampreeth-teaching"
+main = "src/index.ts"
+compatibility_date = "2026-05-01"
+
+# Teaching Hub backend: per-material view/download counters and private reviews
+# (rating + feedback) stored in Cloudflare D1, with feedback emailed to the
+# owner via Resend.
+#
+# RESEND_API_KEY is a SECRET — do NOT put it here. Set it with:
+#   wrangler secret put RESEND_API_KEY
+[vars]
+ALLOWED_ORIGINS = "https://sampreethavvari.github.io,http://localhost:4321,http://localhost:3000"
+FEEDBACK_TO = "spa9659@nyu.edu"
+
+[[d1_databases]]
+binding = "TEACHING_DB"
+database_name = "sampreeth-teaching"
+# Replace this placeholder with the real id printed by:
+#   wrangler d1 create sampreeth-teaching
+database_id = "PLACEHOLDER-set-after-wrangler-d1-create"
+
+[observability]
+enabled = true

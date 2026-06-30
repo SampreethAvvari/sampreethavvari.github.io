@@ -3,6 +3,7 @@
 
 interface ImportMetaEnv {
   readonly PUBLIC_CHAT_ENDPOINT?: string;
+  readonly PUBLIC_TEACHING_API?: string;
 }
 
 interface ImportMeta {
