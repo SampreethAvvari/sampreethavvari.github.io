@@ -49,7 +49,7 @@ for attempt in range(MAX_RETRIES):
         return fn()
     except RETRYABLE as e:
         if attempt == MAX_RETRIES - 1:
-            raise            # loud — surfaces as amber, never swallowed
+            raise            # loud: surfaces as amber, never swallowed
         sleep(BASE * 2**attempt + jitter())
 ```
 

@@ -45,9 +45,9 @@ export const teaching: TeachingMaterial[] = [
     stream: "aie",
     title: "The AI Engineer's Handbook",
     description:
-      "A practical field guide to building real AI systems — RAG, agents, evals, and shipping.",
+      "A working guide to building AI systems that ship: retrieval, agents, evaluation, and everything around them.",
     whatToExpect:
-      "A hands-on handbook for engineers building production AI: how to design retrieval that stays grounded, when to actually reach for agents, how to evaluate systems you can't fully predict, and the operational habits that keep them trustworthy. Written from systems shipped to real users, not demos.",
+      "Written for engineers who have to put AI in front of real users. It covers retrieval that stays grounded, deciding when an agent earns its complexity, evaluating systems you cannot fully predict, and the habits that keep them reliable once people depend on them. Everything here is drawn from work that runs in production.",
     cover: "/teaching/ai-engineers-handbook.png",
     addedAt: "2026-06-30",
     file: "/teaching/ai-engineers-handbook.pdf",

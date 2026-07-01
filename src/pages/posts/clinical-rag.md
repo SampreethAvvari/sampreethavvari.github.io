@@ -33,14 +33,14 @@ Zoom consultation finishes
         ▼  recording.transcript_completed webhook
 Cloud Run (FastAPI)
         │
-        ├─ filter — is this actually a consult?
-        ├─ resolve identity — who's the doctor, the patient, the TC?
-        ├─ score — Vertex AI Gemini, schema-validated, retry once on fail
-        ├─ render — color-coded HTML + PDF report
-        ├─ archive — Drive folder by location / month / patient
-        ├─ send — Gmail to doctor + CEO + TC
-        ├─ append — one row to a master Google Sheet (48 columns, locked)
-        └─ audit — BigQuery row with no PHI
+        ├─ filter: is this actually a consult?
+        ├─ resolve identity: who's the doctor, the patient, the TC?
+        ├─ score: Vertex AI Gemini, schema-validated, retry once on fail
+        ├─ render: color-coded HTML + PDF report
+        ├─ archive: Drive folder by location / month / patient
+        ├─ send: Gmail to doctor + CEO + TC
+        ├─ append: one row to a master Google Sheet (48 columns, locked)
+        └─ audit: BigQuery row with no PHI
 
 Total time from transcript-ready to email in inbox: 5-15 minutes.
 ```
@@ -60,7 +60,7 @@ Total time from transcript-ready to email in inbox: 5-15 minutes.
 2.  Transcript speakers  →  "Dr Mike:" speaker labels + alias match
 3.  Gemini extraction    →  scorecard's doctor_name_candidates
 4.  Unresolved           →  send to CEO only, prefix subject
-                            [QA — DOCTOR UNRESOLVED]
+                            [QA: DOCTOR UNRESOLVED]
 ```
 
 Each layer returns a unique match, an ambiguous match, or no match. Ambiguity falls through. Unresolved cases don't get silently dropped. They get flagged.

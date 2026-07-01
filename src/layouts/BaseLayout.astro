@@ -174,7 +174,7 @@ import "../styles/global.css";
     />
     <title>{title}</title>
     <script is:inline>
-      // Cloudflare Web Analytics — privacy-first, cookieless, no consent
+      // Cloudflare Web Analytics: privacy-first, cookieless, no consent
       // banner needed. Just basic traffic stats. Replaces GA4.
       // Get the token: dash.cloudflare.com → Web Analytics → Add a site
       // (manual) → copy the value of "token" and paste it below.
@@ -224,7 +224,7 @@ import "../styles/global.css";
               });
             },
             // threshold 0 (not 0.2) so sections taller than ~5x the viewport
-            // still reveal — at 0.2 a very tall section (e.g. AIE's 6 project
+            // still reveal, at 0.2 a very tall section (e.g. AIE's 6 project
             // cards on mobile) could never reach 20% visibility and stayed hidden.
             { threshold: 0, rootMargin: "0px 0px -10% 0px" }
           );
