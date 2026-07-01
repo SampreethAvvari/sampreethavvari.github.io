@@ -110,7 +110,7 @@ export const disciplines: Discipline[] = [
       },
       {
         name: "NPC Coach: Call Coaching",
-        status: "Live on real calls",
+        status: "In production",
         oneLiner:
           "A pipeline that coaches new-patient phone calls: it finds the relevant calls among thousands, scores each against the practice playbook with a verbatim quote behind every criterion, and writes per-coordinator trend reports. A full rebuild of an n8n prototype.",
         img: "/npc-coach.png",
@@ -438,7 +438,7 @@ export const disciplines: Discipline[] = [
       },
       {
         name: "NPC pipeline engineering",
-        status: "Live on real calls",
+        status: "In production",
         oneLiner:
           "The software story under the AI: 19K lines of Python across 19 modules, 1,156 tests, strict typing, ports-and-adapters with dual-source dedup and an interim single-process pipeline ahead of the event-driven mesh.",
         img: "/npc-coach.png",

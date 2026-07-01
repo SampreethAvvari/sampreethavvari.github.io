@@ -3,6 +3,8 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
 import MaterialActions from "../../components/teaching/MaterialActions.tsx";
 import TeachingBranding from "../../components/teaching/TeachingBranding.astro";
 import { teaching, streamMeta, typeMeta } from "../../data/teaching";
+import Picture from "../../components/common/Picture.astro";
+import { info } from "../../data/info";
 
 export function getStaticPaths() {
   return teaching.map((m) => ({ params: { slug: m.slug }, props: { m } }));
@@ -24,26 +26,46 @@ function embedUrl(url: string): string {
 
 <BaseLayout title={`SA: ${m.title}`}>
   <article class="teach-article">
-    <header class="mx-auto w-full max-w-4xl px-6 lg:px-0 pt-32 lg:pt-36">
+    <header class="mx-auto w-full max-w-5xl px-6 lg:px-8 pt-32 lg:pt-36">
       <a href="/teaching" class="teach-back">← All teaching</a>
-      <div class="teach-meta-row" style={`--pa: ${stream.accent};`}>
-        <span class="teach-meta-stream"><span class="teach-dot" aria-hidden="true"></span>{stream.acronym} · {stream.label}</span>
-        <span class="teach-meta-type"><i class={tm.icon} aria-hidden="true"></i> {tm.label}</span>
-      </div>
-      <h1 class="teach-h1">{m.title}</h1>
+      <div class="teach-head">
+        <div class="teach-head-main" style={`--pa: ${stream.accent};`}>
+          <div class="teach-meta-row">
+            <span class="teach-meta-stream"><span class="teach-dot" aria-hidden="true"></span>{stream.acronym} · {stream.label}</span>
+            <span class="teach-meta-type"><i class={tm.icon} aria-hidden="true"></i> {tm.label}</span>
+          </div>
+          <h1 class="teach-h1">{m.title}</h1>
 
-      <div class="teach-expect">
-        <p class="teach-expect-label">What to expect</p>
-        <p class="teach-expect-body">{m.whatToExpect}</p>
-      </div>
+          <div class="teach-expect">
+            <p class="teach-expect-label">What to expect</p>
+            <p class="teach-expect-body">{m.whatToExpect}</p>
+          </div>
 
-      <MaterialActions client:load slug={m.slug} file={m.file} title={m.title} />
+          <MaterialActions client:load slug={m.slug} file={m.file} title={m.title} />
+        </div>
+
+        <aside class="teach-connect">
+          <div class="teach-connect-id">
+            <div class="teach-connect-ava">
+              <Picture src={info.picture} alt={info.picture_alt} width={96} height={96} loading="lazy" />
+            </div>
+            <div class="min-w-0">
+              <p class="teach-connect-name">{info.name}</p>
+              <p class="teach-connect-role">{info.role} · {info.location}</p>
+            </div>
+          </div>
+          <p class="teach-connect-note">Questions, or ideas for what I should cover next? Reach out.</p>
+          <a class="teach-connect-btn teach-connect-primary no-lift" href={info.contact.linkedin} target="_blank" rel="noreferrer"><i class="fab fa-linkedin"></i> Connect on LinkedIn</a>
+          <a class="teach-connect-btn no-lift" href={`mailto:${info.contact.email}`}><i class="fas fa-envelope"></i> Email me</a>
+          <a class="teach-connect-btn no-lift" href={info.contact.github} target="_blank" rel="noreferrer"><i class="fab fa-github"></i> GitHub</a>
+        </aside>
+      </div>
     </header>
 
     <section class="mx-auto w-full max-w-5xl px-6 lg:px-8 mt-10">
       {m.type === "pdf" && m.file && (
         <iframe
-          src={`${m.file}#view=FitH`}
+          src={`${m.file}#toolbar=0&navpanes=0&view=FitH`}
           title={m.title}
           class="teach-viewer-pdf"
           loading="lazy"
@@ -135,15 +157,64 @@ function embedUrl(url: string): string {
   html.dark .teach-actions-stats { color: rgb(245 245 247 / 0.55); }
   .teach-actions-stats i { opacity: 0.65; margin-right: 0.2rem; }
   .teach-dl-btn {
-    display: inline-flex; align-items: center; gap: 0.5rem;
-    padding: 0.65rem 1.25rem; border-radius: 9999px;
-    font-size: 0.85rem; font-weight: 700;
-    color: #04150f; background: linear-gradient(135deg, #34d399, #10b981);
+    display: inline-flex; align-items: center; gap: 0.55rem;
+    padding: 0.8rem 1.6rem; border-radius: 9999px;
+    font-size: 0.95rem; font-weight: 800; letter-spacing: 0.01em;
+    color: #04150f; background: #34d399;
     border: none; cursor: pointer;
-    box-shadow: 0 10px 26px -12px rgba(16, 185, 129, 0.8);
-    transition: transform 0.2s ease, opacity 0.2s ease;
+    box-shadow: 0 0 0 1px rgba(52, 211, 153, 0.55), 0 14px 30px -12px rgba(16, 185, 129, 0.95);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
   }
-  .teach-dl-btn:hover { transform: translateY(-2px); opacity: 0.95; }
+  .teach-dl-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 0 0 1px rgba(52, 211, 153, 0.85), 0 18px 38px -12px rgba(16, 185, 129, 1);
+  }
+
+  /* ── Header layout with right-side connect card ─────────────────────── */
+  .teach-head { display: block; }
+  @media (min-width: 1024px) {
+    .teach-head { display: grid; grid-template-columns: minmax(0, 1fr) 16.5rem; gap: 2.75rem; align-items: start; }
+  }
+  .teach-connect {
+    margin-top: 1.75rem;
+    border-radius: 1.1rem;
+    padding: 1.15rem 1.15rem 1.25rem;
+    background:
+      radial-gradient(130% 130% at 100% 0%, rgba(52, 211, 153, 0.1), transparent 55%),
+      rgb(29 29 31 / 0.02);
+    border: 1px solid rgb(29 29 31 / 0.1);
+  }
+  html.dark .teach-connect {
+    background:
+      radial-gradient(130% 130% at 100% 0%, rgba(52, 211, 153, 0.16), transparent 55%),
+      rgb(245 245 247 / 0.03);
+    border-color: rgb(245 245 247 / 0.12);
+  }
+  @media (min-width: 1024px) { .teach-connect { position: sticky; top: 6.5rem; margin-top: 0; } }
+  .teach-connect-id { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.85rem; }
+  .teach-connect-ava {
+    width: 2.8rem; height: 2.8rem; border-radius: 9999px; overflow: hidden; flex: 0 0 auto;
+    box-shadow: 0 0 0 1px rgb(255 255 255 / 0.12), 0 0 18px -8px rgba(52, 211, 153, 0.7);
+  }
+  .teach-connect-ava :global(img) { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .teach-connect-name { font-weight: 700; font-size: 0.95rem; color: #1d1d1f; line-height: 1.15; }
+  html.dark .teach-connect-name { color: #f5f5f7; }
+  .teach-connect-role { font-size: 0.72rem; color: rgb(29 29 31 / 0.55); }
+  html.dark .teach-connect-role { color: rgb(245 245 247 / 0.55); }
+  .teach-connect-note { font-size: 0.82rem; line-height: 1.5; color: rgb(29 29 31 / 0.62); margin-bottom: 0.9rem; }
+  html.dark .teach-connect-note { color: rgb(245 245 247 / 0.62); }
+  .teach-connect-btn {
+    display: flex; align-items: center; gap: 0.55rem;
+    padding: 0.55rem 0.85rem; border-radius: 0.7rem;
+    font-size: 0.8rem; font-weight: 600; margin-bottom: 0.45rem;
+    border: 1px solid rgb(29 29 31 / 0.12); color: rgb(29 29 31 / 0.78);
+    transition: transform 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+  }
+  html.dark .teach-connect-btn { color: rgb(245 245 247 / 0.8); border-color: rgb(245 245 247 / 0.14); }
+  .teach-connect-btn:hover { transform: translateY(-1px); border-color: rgba(52, 211, 153, 0.5); }
+  .teach-connect-btn i { width: 1rem; text-align: center; opacity: 0.85; }
+  .teach-connect-primary { background: linear-gradient(135deg, #34d399, #10b981); color: #04150f; border-color: transparent; }
+  .teach-connect-primary:hover { color: #04150f; opacity: 0.95; }
 
   /* ── PDF / video / blog viewers ─────────────────────────────────────── */
   .teach-viewer-pdf {

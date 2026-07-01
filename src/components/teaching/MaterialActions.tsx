@@ -7,8 +7,6 @@ import {
   type Stat,
 } from "../../lib/teachingApi";
 
-const fmt = (n: number | undefined) => (n == null ? "—" : String(n));
-
 export default function MaterialActions({
   slug,
   file,
@@ -76,18 +74,20 @@ export default function MaterialActions({
 
   return (
     <div className="teach-actions">
-      <div className="teach-actions-stats">
-        <span title="Views"><i className="fas fa-eye" /> {fmt(stat?.views)} views</span>
-        <span title="Downloads"><i className="fas fa-download" /> {fmt(stat?.downloads)} downloads</span>
-        {stat && stat.ratingCount > 0 && (
-          <span title="Average rating"><i className="fas fa-star" /> {stat.ratingAvg.toFixed(1)} ({stat.ratingCount})</span>
-        )}
-      </div>
-
       {file && (
         <button type="button" className="teach-dl-btn no-lift" onClick={onDownloadClick}>
           <i className="fas fa-download" /> Download PDF
         </button>
+      )}
+
+      {stat && (
+        <div className="teach-actions-stats">
+          <span title="Views"><i className="fas fa-eye" /> {stat.views} views</span>
+          <span title="Downloads"><i className="fas fa-download" /> {stat.downloads} downloads</span>
+          {stat.ratingCount > 0 && (
+            <span title="Average rating"><i className="fas fa-star" /> {stat.ratingAvg.toFixed(1)} ({stat.ratingCount})</span>
+          )}
+        </div>
       )}
 
       {open && (
@@ -99,7 +99,7 @@ export default function MaterialActions({
             </button>
             <p className="teach-modal-eyebrow">One quick thing</p>
             <h3 className="teach-modal-title">Rate “{title}” to download</h3>
-            <p className="teach-modal-sub">Your feedback comes straight to me and shapes what I write next. It's private — never shown on the site.</p>
+            <p className="teach-modal-sub">Your feedback comes straight to me and shapes what I write next. It stays private and never appears on the site.</p>
 
             <div className="teach-stars" role="radiogroup" aria-label="Rating out of 5">
               {[1, 2, 3, 4, 5].map((n) => (

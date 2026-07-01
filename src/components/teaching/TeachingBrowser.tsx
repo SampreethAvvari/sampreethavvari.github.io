@@ -17,8 +17,7 @@ const SORTS: { key: SortKey; label: string }[] = [
   { key: "rating", label: "Top rated" },
 ];
 
-const fmt = (n: number | undefined) =>
-  n == null ? "—" : n >= 1000 ? `${(n / 1000).toFixed(1)}k` : String(n);
+const fmt = (n: number) => (n >= 1000 ? `${(n / 1000).toFixed(1)}k` : String(n));
 
 function cover(c: string) {
   return {
@@ -138,13 +137,15 @@ export default function TeachingBrowser({
                   </p>
                   <h3 className="teach-card-title">{m.title}</h3>
                   <p className="teach-card-desc">{m.description}</p>
-                  <div className="teach-card-stats">
-                    <span title="Views"><i className="fas fa-eye" /> {fmt(s?.views)}</span>
-                    <span title="Downloads"><i className="fas fa-download" /> {fmt(s?.downloads)}</span>
-                    <span title="Average rating">
-                      <i className="fas fa-star" /> {s && s.ratingCount > 0 ? s.ratingAvg.toFixed(1) : "—"}
-                    </span>
-                  </div>
+                  {s && (
+                    <div className="teach-card-stats">
+                      <span title="Views"><i className="fas fa-eye" /> {fmt(s.views)}</span>
+                      <span title="Downloads"><i className="fas fa-download" /> {fmt(s.downloads)}</span>
+                      {s.ratingCount > 0 && (
+                        <span title="Average rating"><i className="fas fa-star" /> {s.ratingAvg.toFixed(1)}</span>
+                      )}
+                    </div>
+                  )}
                 </div>
               </a>
             );
