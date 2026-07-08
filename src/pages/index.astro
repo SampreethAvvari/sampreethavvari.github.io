@@ -1,11 +1,12 @@
 ---
 import BaseLayout from "../layouts/BaseLayout.astro";
 import { info } from "../data/info";
-import Contact from "../components/contact_section/Contact";
-import ScrollSpine from "../components/ScrollSpine.astro";
-import DisciplineGrid from "../components/work_section/DisciplineGrid.astro";
 import { disciplines } from "../data/disciplines";
+import Contact from "../components/contact_section/Contact";
 import Picture from "../components/common/Picture.astro";
+import Icon from "../components/common/Icon.astro";
+import GlassHero from "../components/hero/GlassHero.astro";
+import { readingTime } from "../utils/readingTime";
 
 const allPosts = await Astro.glob("../pages/posts/*.md");
 const latestPosts = allPosts
@@ -15,14 +16,15 @@ const latestPosts = allPosts
       new Date(a.frontmatter.date).getTime(),
   )
   .slice(0, 4);
+const [featuredPost, ...sidePosts] = latestPosts;
 
-// The six flagship Hybridge systems, in display order on the home strip.
+// The six flagship Hybridge systems. Metrics that are plain numbers carry
+// count-up data attributes; textual metrics render as-is.
 const systems = [
   {
     n: "01",
-    name: "Enterprise Search (RAG)",
-    tagline:
-      "Ask the whole company's knowledge in plain language, and get a cited answer or an honest \"I don't know.\"",
+    name: "Enterprise Search",
+    tagline: "The whole company's knowledge, answered with citations or an honest no.",
     metric: "cite or abstain",
     metricLabel: "a RAG that refuses to bluff",
     accent: "#34D399",
@@ -30,10 +32,10 @@ const systems = [
   },
   {
     n: "02",
-    name: "Consultation QA Pipeline",
-    tagline:
-      "Scores every patient consult from its Zoom call and turns it into instant coaching.",
+    name: "Consultation QA",
+    tagline: "Every patient consult scored from its Zoom call, turned into coaching.",
     metric: "+130%",
+    count: { value: 130, prefix: "+", suffix: "%" },
     metricLabel: "treatment acceptance",
     accent: "#22D3EE",
     href: "/posts/clinical-rag",
@@ -41,9 +43,9 @@ const systems = [
   {
     n: "03",
     name: "CBCT Scan Validator",
-    tagline:
-      "Catches bad dental CT scans before they reach the design queue.",
+    tagline: "Bad dental CT scans caught before they reach the design queue.",
     metric: "$50/mo",
+    count: { value: 50, prefix: "$", suffix: "/mo" },
     metricLabel: "vs the $124K year-one quote",
     accent: "#A78BFA",
     href: "/posts/cbct-scan-validator",
@@ -51,9 +53,8 @@ const systems = [
   {
     n: "04",
     name: "NPC Coach",
-    tagline:
-      "Finds the new-patient calls among thousands and coaches them, with a transcript quote behind every score.",
-    metric: "285 to 40",
+    tagline: "Finds the new-patient calls among thousands, then coaches them.",
+    metric: "285 → 40",
     metricLabel: "calls ingested, then scored, day one",
     accent: "#5B8DEF",
     href: "/posts/npc-coach",
@@ -61,845 +62,603 @@ const systems = [
   {
     n: "05",
     name: "Treatment Estimator",
-    tagline:
-      "Live quoting for coordinators, with the price promise the database itself enforces.",
+    tagline: "Live quoting with a price promise the database itself enforces.",
     metric: "1 month",
-    metricLabel: "vs the decade-long vendor attempt that never shipped",
+    metricLabel: "vs the decade-long vendor attempt",
     accent: "#F5A524",
     href: "/posts/treatment-estimator",
   },
   {
     n: "06",
-    name: "Centralized Diagnostic Filter",
-    tagline:
-      "AI assesses the patient before the doctor walks in, and the doctor still signs every finding.",
-    metric: "0 to 200",
-    metricLabel: "tooth-loss risk, scored before the consult",
-    accent: "#FB7185",
+    name: "Diagnostic Filter",
+    tagline: "AI assesses the patient first. The doctor still signs every finding.",
+    metric: "0 → 200",
+    metricLabel: "tooth-loss risk, scored pre-consult",
+    accent: "#F43F5E",
     href: "/posts/cdf-diagnostic-filter",
   },
 ];
 
+// One-line versions of the four disciplines for the tiles.
+const disciplineLines: Record<string, string> = {
+  aie: "RAG, agents, evals, guardrails. Systems that answer honestly or not at all.",
+  mle: "PyTorch, vision, RLHF. Models trained, shrunk, and shipped to real hardware.",
+  fde: "Discovery and enablement, the last mile where software meets people.",
+  sde: "Python, TypeScript, Go. APIs, pipelines, and infra that stay up.",
+};
+
 const filmCredits = [
   { title: "Among Monsters", year: "2026", role: "Director · Writer · Editor · Music" },
-  { title: "Extraordinary Lives", year: "upcoming", role: "Director · Writer" },
+  { title: "Extraordinary Lives", year: "soon", role: "Director · Writer" },
   { title: "Tiger Man", year: "2022", role: "Director · Writer · Editor" },
   { title: "Strangers", year: "2019", role: "Cinematographer · Music" },
 ];
 
-// Brand monograms for the Education/Experience timeline rows. Same colour
-// language across all four so Shure is as readable as NYU.
-const brandFor = (loc: string) => {
-  if (/Hybridge/i.test(loc)) return { acronym: "HB", from: "#1E3A8A", to: "#3B82F6", label: "Hybridge" };
-  if (/Shure/i.test(loc))    return { acronym: "SH", from: "#047857", to: "#10B981", label: "Shure" };
-  if (/JNTU|Jawaharlal Nehru/i.test(loc)) return { acronym: "JNTU", from: "#991B1B", to: "#EF4444", label: "JNTU" };
-  if (/New York University|NYU/i.test(loc)) return { acronym: "NYU", from: "#57068C", to: "#9333EA", label: "NYU" };
-  return { acronym: loc.slice(0, 2).toUpperCase(), from: "#475569", to: "#94A3B8", label: loc };
+// Institution logos for the Education/Experience rows. Falls back to a
+// gradient monogram for anywhere without a logo file.
+const orgFor = (loc: string) => {
+  if (/Hybridge/i.test(loc)) return { logo: "/logos/hybridge.webp", label: "Hybridge Implants" };
+  if (/Shure/i.test(loc)) return { logo: "/logos/shure.svg", label: "Shure" };
+  if (/JNTU|Jawaharlal Nehru|Gokaraju/i.test(loc)) return { logo: "/logos/griet.png", label: "Gokaraju Rangaraju Institute of Engineering and Technology" };
+  if (/New York University|NYU/i.test(loc)) return { logo: "/logos/nyu.svg", label: "New York University" };
+  return { logo: null, acronym: loc.slice(0, 2).toUpperCase(), label: loc };
 };
 
-// Skills organized into the four disciplines (AIE, MLE, FDE, SDE), matching
-// the disciplines section's colours. Every skill is a labelled tile: an
-// official logo (self-hosted SVG) or a FontAwesome icon for things with no
-// brand mark, plus the name and a hover tooltip with the project count.
-// Curated to the meaningful, role-relevant tools. `projects` is the number of
-// these projects that used it (minimum 1).
-const skillGroups = [
-  {
-    label: "AI Engineering",
-    acronym: "AIE",
-    accent: "#34D399",
-    rgb: "52, 211, 153",
-    items: [
-      { name: "Vertex Gemini", file: "googlegemini", projects: 5 },
-      { name: "Hugging Face", file: "huggingface", projects: 3 },
-      { name: "LangChain", file: "langchain", projects: 1 },
-      { name: "OpenAI", icon: "fa-solid fa-robot", projects: 1 },
-      { name: "Anthropic", file: "anthropic", projects: 1 },
-      { name: "Pydantic", file: "pydantic", projects: 4 },
-      { name: "RAG", icon: "fa-solid fa-magnifying-glass", projects: 2 },
-      { name: "pgvector", icon: "fa-solid fa-diagram-project", projects: 2 },
-      { name: "Reranking", icon: "fa-solid fa-arrow-down-wide-short", projects: 1 },
-      { name: "Structured output", icon: "fa-solid fa-code", projects: 4 },
-      { name: "Evals", icon: "fa-solid fa-clipboard-check", projects: 2 },
-      { name: "Guardrails", icon: "fa-solid fa-shield-halved", projects: 1 },
-    ],
-  },
-  {
-    label: "Machine Learning",
-    acronym: "MLE",
-    accent: "#A78BFA",
-    rgb: "167, 139, 250",
-    items: [
-      { name: "PyTorch", file: "pytorch", projects: 4 },
-      { name: "scikit-learn", file: "scikitlearn", projects: 2 },
-      { name: "NumPy", file: "numpy", projects: 4 },
-      { name: "OpenCV", file: "opencv", projects: 2 },
-      { name: "ONNX", file: "onnx", projects: 1 },
-      { name: "W&B", file: "wandb", projects: 2 },
-      { name: "MLflow", file: "mlflow", projects: 1 },
-      { name: "MONAI", icon: "fa-solid fa-staff-snake", projects: 1 },
-      { name: "nnU-Net", icon: "fa-solid fa-diagram-project", projects: 1 },
-      { name: "OpenVINO", icon: "fa-solid fa-microchip", projects: 1 },
-      { name: "TRL", icon: "fa-solid fa-dumbbell", projects: 2 },
-      { name: "RLHF", icon: "fa-solid fa-thumbs-up", projects: 1 },
-    ],
-  },
-  {
-    label: "Forward-Deployed",
-    acronym: "FDE",
-    accent: "#F5A524",
-    rgb: "245, 165, 36",
-    items: [
-      { name: "Google Cloud", file: "googlecloud", projects: 8 },
-      { name: "BigQuery", file: "googlebigquery", projects: 3 },
-      { name: "Gmail API", file: "gmail", projects: 3 },
-      { name: "Sheets API", file: "googlesheets", projects: 2 },
-      { name: "Looker", file: "looker", projects: 1 },
-      { name: "Zoom", file: "zoom", projects: 2 },
-      { name: "Figma", file: "figma", projects: 2 },
-      { name: "Apps Script", icon: "fa-solid fa-file-code", projects: 2 },
-      { name: "Monday.com", icon: "fa-solid fa-table-columns", projects: 2 },
-      { name: "Slack", icon: "fa-brands fa-slack", projects: 1 },
-      { name: "Discovery", icon: "fa-solid fa-compass", projects: 9 },
-      { name: "Enablement", icon: "fa-solid fa-chalkboard-user", projects: 1 },
-    ],
-  },
-  {
-    label: "Software Engineering",
-    acronym: "SDE",
-    accent: "#5B8DEF",
-    rgb: "91, 141, 239",
-    items: [
-      { name: "Python", file: "python", projects: 9 },
-      { name: "TypeScript", file: "typescript", projects: 4 },
-      { name: "Go", file: "go", projects: 2 },
-      { name: "React", file: "react", projects: 3 },
-      { name: "Next.js", file: "nextdotjs", projects: 2 },
-      { name: "FastAPI", file: "fastapi", projects: 7 },
-      { name: "PostgreSQL", file: "postgresql", projects: 3 },
-      { name: "Docker", file: "docker", projects: 4 },
-      { name: "Kubernetes", file: "kubernetes", projects: 1 },
-      { name: "Terraform", file: "terraform", projects: 3 },
-      { name: "GitHub Actions", file: "githubactions", projects: 4 },
-      { name: "pytest", file: "pytest", projects: 4 },
-      { name: "Redis", file: "redis", projects: 2 },
-      { name: "Node.js", file: "nodedotjs", projects: 2 },
-    ],
-  },
+// Toolkit marquee, replacing the four skill tile walls.
+const marqueeItems = [
+  { name: "Python", accent: "#5B8DEF" },
+  { name: "PyTorch", accent: "#A78BFA" },
+  { name: "RAG", accent: "#34D399" },
+  { name: "Vertex Gemini", accent: "#34D399" },
+  { name: "FastAPI", accent: "#5B8DEF" },
+  { name: "BigQuery", accent: "#F5A524" },
+  { name: "TypeScript", accent: "#5B8DEF" },
+  { name: "Hugging Face", accent: "#A78BFA" },
+  { name: "pgvector", accent: "#34D399" },
+  { name: "Terraform", accent: "#5B8DEF" },
+  { name: "Evals", accent: "#34D399" },
+  { name: "React", accent: "#5B8DEF" },
+  { name: "RLHF", accent: "#A78BFA" },
+  { name: "Docker", accent: "#5B8DEF" },
+  { name: "Looker", accent: "#F5A524" },
+  { name: "Guardrails", accent: "#34D399" },
+  { name: "PostgreSQL", accent: "#5B8DEF" },
+  { name: "OpenCV", accent: "#A78BFA" },
+];
+
+const sections = [
+  { id: "home", label: "Top" },
+  { id: "disciplines", label: "Disciplines" },
+  { id: "work", label: "Work" },
+  { id: "about", label: "About" },
+  { id: "writing", label: "Writing" },
+  { id: "filmmaking", label: "Film" },
+  { id: "contact", label: "Contact" },
 ];
 ---
 
 <BaseLayout title="Sampreeth Avvari" preloadImage="/pic.avif">
-  <script is:inline>
-    document.documentElement.classList.add("snap-home");
-  </script>
-  <div class="snap-chapters relative">
-    <ScrollSpine />
+  <nav class="rail" aria-label="Page sections">
+    {sections.map((s) => (
+      <a href={`#${s.id}`} data-rail={s.id} aria-label={s.label}></a>
+    ))}
+  </nav>
 
-    <!-- ── Chapter 1: Hero ───────────────────────────────────────────────── -->
-    <section
-      class="chapter chapter-full snap-chapter relative landing-atmos overflow-hidden"
-      id="home"
-    >
-      <!-- Full-bleed aurora background: an animated four-discipline colour
-           field always, a generated dark-mode Veo clip, the generated aurora
-           still, parallax glow orbs, and a readability scrim. The portrait
-           that used to sit here now floats in the About chapter. -->
-      <div class="hero-bg" aria-hidden="true">
-        <Picture class="hero-nebula hero-nebula-dark" src="/hero-nebula-dark.png" alt="" data-parallax="0.012" loading="eager" />
-        <Picture class="hero-nebula hero-nebula-light" src="/hero-nebula-light.png" alt="" data-parallax="0.012" loading="eager" />
-        <Picture class="hero-aurora hero-aurora-dark" src="/hero-aurora-dark.png" alt="" data-parallax="0.026" loading="eager" />
-        <Picture class="hero-aurora hero-aurora-light" src="/hero-aurora-light.png" alt="" data-parallax="0.026" loading="eager" />
-        <div class="hero-field"></div>
-        <span class="hero-orb hero-orb-emerald" data-parallax="0.06"></span>
-        <span class="hero-orb hero-orb-amber" data-parallax="0.07"></span>
-        <canvas class="hero-canvas" data-hero-canvas></canvas>
-        <div class="hero-grain"></div>
-        <div class="hero-scrim"></div>
-      </div>
+  <!-- ── Hero ─────────────────────────────────────────────────────────── -->
+  <section id="home" class="relative min-h-[100svh] flex items-center overflow-hidden pt-24 pb-16">
+    <GlassHero />
+    <span class="glow" style="width:630px;height:630px;--gc:#5B8DEF;top:-90px;left:-120px;" aria-hidden="true"></span>
+    <span class="glow glow-2" style="width:540px;height:540px;--gc:#22D3EE;bottom:-80px;right:-70px;" aria-hidden="true"></span>
+    <span class="space-el" style="width:143px;height:39px;top:14%;left:5%;" aria-hidden="true"><span class="comet-glow" style="--sr-rgb:91,141,239;"></span><span class="space-comet" style="--sr-rgb:91,141,239;--rz:-16deg;"></span></span>
+    <span class="space-el" style="width:117px;height:33px;bottom:18%;right:7%;" aria-hidden="true"><span class="comet-glow" style="--sr-rgb:34,211,238;"></span><span class="space-comet" style="--sr-rgb:34,211,238;--rz:12deg;"></span></span>
 
-      <div class="relative z-10 pointer-events-none mx-auto w-full max-w-screen-2xl px-6 lg:px-12">
-        <div class="hero-shell">
-          <div class="hero-copy">
-            <p class="eyebrow hero-eyebrow text-text/60 dark:text-dk-text/60">
-              AI Engineer · New York
-            </p>
-            <h1 class="hero-title text-text dark:text-dk-text glow-wave">
-              <span class="hero-line hero-line-title">I'm <span class="text-secondary dark:text-dk-secondary text-shimmer">Sampreeth.</span></span>
-              <span class="hero-line hero-line-sub">I ship AI and direct films.</span>
-            </h1>
-            <p class="hero-lead text-lg lg:text-2xl text-text/75 dark:text-dk-text/75 leading-relaxed glow-wave glow-delay-2 max-w-xl">
-              Whether it's a model or a movie, the job is making the messy thing make sense to someone else.
-            </p>
-          </div>
-
-          <div class="hero-photo">
-            <figure class="hero-portrait floaty">
-              <span class="hero-portrait-glow" aria-hidden="true"></span>
-              <div class="hero-portrait-frame photo-shimmer">
-                <Picture
-                  src={info.picture}
-                  alt={info.picture_alt}
-                  width={520}
-                  height={640}
-                  class="hero-portrait-img"
-                  loading="eager"
-                  fetchpriority="high"
-                />
-              </div>
-            </figure>
-          </div>
-
-          <div class="hero-pills" aria-label="Disciplines">
+    <div class="relative z-10 mx-auto w-full max-w-screen-2xl px-6 lg:px-12">
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-14 items-center">
+        <div class="lg:col-span-7" data-arrive>
+          <p class="eyebrow text-text/60 dark:text-dk-text/60 mb-5">
+            AI Engineer · New York
+          </p>
+          <h1 class="text-[2.6rem] leading-[1.04] sm:text-6xl lg:text-7xl font-bold tracking-[-0.04em] text-text dark:text-dk-text [text-wrap:balance]">
+            I'm <span class="name-shimmer">Sampreeth</span>.<br />
+            I ship AI and direct films.
+          </h1>
+          <p class="mt-6 text-lg lg:text-xl text-text/70 dark:text-dk-text/70 leading-relaxed max-w-xl">
+            Whether it's a model or a movie, the job is making the messy thing make sense to someone else.
+          </p>
+          <div class="mt-7 flex flex-wrap gap-2" aria-label="Disciplines">
             {disciplines.map((d) => (
               <a
                 href={`/work/${d.slug}`}
-                class="dx-pill no-lift"
+                class="no-lift dpill"
+                data-magnetic
                 style={`--dx: ${d.accent}; --dx-rgb: ${d.rgb};`}
-                title={d.name}
                 aria-label={d.name}
               >
-                <span class="dx-pill-dot" aria-hidden="true"></span>
+                <i aria-hidden="true"></i>
                 <span>{d.acronym}</span>
               </a>
             ))}
           </div>
-
-          <div class="hero-cta hero-cta-primary">
-            <a href="#disciplines" class="hero-btn hero-btn-primary no-lift">
-              See the work <span aria-hidden="true">↓</span>
+          <div class="mt-8 flex flex-wrap gap-3">
+            <a href="#work" class="no-lift gbtn" data-magnetic>
+              See the work <Icon name="arrow-down" size={15} />
             </a>
-            <a href="/posts" class="hero-btn hero-btn-ghost no-lift">
+            <a href="/posts" class="no-lift gbtn-ghost" data-magnetic>
               Read the writing
             </a>
           </div>
-          <div class="hero-cta hero-cta-secondary">
-            <a href="#contact" class="hero-btn hero-btn-ghost no-lift">
-              Get in touch
+        </div>
+
+        <div class="lg:col-span-5 flex justify-center lg:justify-end" data-arrive>
+          <figure class="pane pane-glare p-3 w-[min(320px,78vw)]" data-tilt data-tiltmax="5">
+            <Picture
+              src={info.picture}
+              alt={info.picture_alt}
+              width={520}
+              height={640}
+              class="block w-full h-auto aspect-[520/640] object-cover rounded-2xl"
+              loading="eager"
+              fetchpriority="high"
+            />
+            <figcaption class="sr-only">{info.name}</figcaption>
+          </figure>
+        </div>
+      </div>
+    </div>
+
+    <a class="scroll-cue no-lift" href="#disciplines" aria-label="Scroll to disciplines">
+      <Icon name="arrow-down" size={20} />
+    </a>
+  </section>
+
+  <!-- ── Toolkit marquee ──────────────────────────────────────────────── -->
+  <div class="mq" aria-hidden="true">
+    <div class="mq-track">
+      {[0, 1].map(() =>
+        marqueeItems.map((it) => (
+          <span style={`--mc: ${it.accent}`}>
+            <b>{it.name}</b> ·
+          </span>
+        )),
+      )}
+    </div>
+  </div>
+
+  <!-- ── Disciplines ──────────────────────────────────────────────────── -->
+  <section id="disciplines" class="relative overflow-hidden py-24 lg:py-32">
+    <span class="glow" style="width:600px;height:600px;--gc:#A78BFA;top:6%;right:-120px;" aria-hidden="true"></span>
+    <span class="glow glow-3" style="width:510px;height:510px;--gc:#F5A524;bottom:-70px;left:-90px;" aria-hidden="true"></span>
+    <span class="space-el" style="width:150px;height:39px;top:8%;right:5%;" aria-hidden="true"><span class="comet-glow" style="--sr-rgb:167,139,250;"></span><span class="space-comet" style="--sr-rgb:167,139,250;--rz:-18deg;"></span></span>
+    <span class="space-el" style="width:117px;height:33px;bottom:12%;left:4%;" aria-hidden="true"><span class="comet-glow" style="--sr-rgb:167,139,250;"></span><span class="space-comet" style="--sr-rgb:167,139,250;--rz:10deg;"></span></span>
+    <div class="relative z-[1] mx-auto w-full max-w-screen-2xl px-6 lg:px-12">
+      <div class="max-w-3xl" data-arrive>
+        <p class="eyebrow text-acc-violet mb-3">01 · What I do</p>
+        <h2 class="display-sm text-text dark:text-dk-text mb-4">
+          One engineer, <span class="text-acc-violet">four disciplines</span>.
+        </h2>
+        <p class="text-base lg:text-lg text-text/65 dark:text-dk-text/65 leading-relaxed max-w-2xl">
+          The same instinct runs through all four: sit next to the person with the problem, then build the thing they actually needed.
+        </p>
+      </div>
+      <div class="mt-10 grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4" data-arrive>
+        {disciplines.map((d) => (
+          <a
+            href={`/work/${d.slug}`}
+            class="no-lift pane pane-glare orbit-glow overflow-hidden p-6 flex flex-col gap-2 group"
+            data-tilt
+            data-tiltmax="4"
+            style={`--oc: ${d.accent};`}
+          >
+            <span
+              class="font-mono text-[0.7rem] font-extrabold tracking-[0.2em]"
+              style={`color: ${d.accent};`}
+            >
+              {d.acronym}
+            </span>
+            <h3 class="text-lg font-semibold tracking-tight text-text dark:text-dk-text">
+              {d.name}
+            </h3>
+            <p class="relative z-[1] text-sm text-text/60 dark:text-dk-text/60 leading-snug">
+              {disciplineLines[d.slug]}
+            </p>
+            <span class="mt-auto pt-3 text-[0.78rem] font-bold inline-flex items-center gap-1.5" style={`color: ${d.accent};`}>
+              {d.projects.length} project{d.projects.length === 1 ? "" : "s"}
+              <Icon name="arrow-right" size={13} />
+            </span>
+          </a>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Work ─────────────────────────────────────────────────────────── -->
+  <section id="work" class="relative overflow-hidden py-24 lg:py-32">
+    <span class="glow" style="width:660px;height:660px;--gc:#F5A524;top:-110px;left:28%;" aria-hidden="true"></span>
+    <span class="glow glow-2" style="width:510px;height:510px;--gc:#F5A524;bottom:-90px;right:-70px;" aria-hidden="true"></span>
+    <span class="space-el" style="width:156px;height:39px;top:7%;right:5%;" aria-hidden="true"><span class="comet-glow" style="--sr-rgb:245,165,36;"></span><span class="space-comet" style="--sr-rgb:245,165,36;--rz:-14deg;"></span></span>
+    <span class="space-el" style="width:117px;height:33px;bottom:9%;left:4%;" aria-hidden="true"><span class="comet-glow" style="--sr-rgb:245,165,36;"></span><span class="space-comet" style="--sr-rgb:245,165,36;--rz:12deg;"></span></span>
+    <div class="relative z-[1] mx-auto w-full max-w-screen-2xl px-6 lg:px-12">
+      <div class="max-w-3xl" data-arrive>
+        <p class="eyebrow text-acc-amber mb-3">02 · The work</p>
+        <h2 class="display-sm text-text dark:text-dk-text mb-4">
+          Six systems, inside a <span class="text-acc-amber">dental practice</span>.
+        </h2>
+        <p class="text-base lg:text-lg text-text/65 dark:text-dk-text/65 leading-relaxed max-w-2xl">
+          Real AI built next to the people who use it every day. The ones worth showing survived real people using them.
+        </p>
+      </div>
+
+      <ul class="mt-10 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 list-none p-0 m-0" data-arrive>
+        {systems.map((s) => (
+          <li class="h-full">
+            <a
+              href={s.href}
+              class="no-lift pane pane-glare h-full p-6 flex flex-col gap-2 group"
+              data-tilt
+              data-tiltmax="4"
+            >
+              <span class="font-mono text-[0.68rem] font-bold tabular-nums text-text/35 dark:text-dk-text/35">
+                {s.n}
+              </span>
+              <span
+                class="metric text-2xl lg:text-[1.7rem] font-bold tabular-nums tracking-tight leading-none"
+                style={`color: ${s.accent};`}
+                {...(s.count
+                  ? {
+                      "data-count": s.count.value,
+                      "data-prefix": s.count.prefix,
+                      "data-suffix": s.count.suffix,
+                    }
+                  : {})}
+              >
+                {s.metric}
+              </span>
+              <h3 class="text-lg font-semibold tracking-tight text-text dark:text-dk-text group-hover:text-secondary dark:group-hover:text-dk-secondary transition">
+                {s.name}
+              </h3>
+              <p class="text-sm text-text/60 dark:text-dk-text/60 leading-snug">
+                {s.tagline}
+              </p>
+              <span class="mt-auto pt-3 text-[0.62rem] uppercase tracking-[0.16em] font-semibold text-text/40 dark:text-dk-text/40">
+                {s.metricLabel}
+              </span>
+            </a>
+          </li>
+        ))}
+      </ul>
+
+      <div class="mt-9" data-arrive>
+        <a href="/projects" class="link-underline text-sm font-semibold text-acc-amber inline-flex items-center gap-1.5">
+          Browse all 15 projects <Icon name="arrow-right" size={14} />
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── About ────────────────────────────────────────────────────────── -->
+  <section id="about" class="relative overflow-hidden py-24 lg:py-32">
+    <span class="glow" style="width:570px;height:570px;--gc:#5B8DEF;top:8%;left:-110px;" aria-hidden="true"></span>
+    <span class="glow glow-3" style="width:450px;height:450px;--gc:#5B8DEF;bottom:-80px;right:-60px;" aria-hidden="true"></span>
+    <span class="space-el" style="width:137px;height:36px;top:8%;right:7%;" aria-hidden="true"><span class="comet-glow" style="--sr-rgb:91,141,239;"></span><span class="space-comet" style="--sr-rgb:91,141,239;--rz:-12deg;"></span></span>
+    <div class="relative z-[1] mx-auto w-full max-w-screen-2xl px-6 lg:px-12">
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-16 items-start" data-arrive>
+        <div class="lg:col-span-5">
+          <p class="eyebrow text-secondary dark:text-dk-secondary mb-4">03 · About</p>
+          <h2 class="display-sm text-text dark:text-dk-text mb-5">
+            An engineer who happens to <span class="text-secondary dark:text-dk-secondary">make movies</span>.
+          </h2>
+          <p class="text-base lg:text-lg text-text/70 dark:text-dk-text/70 leading-relaxed">
+            {info.about.description}
+          </p>
+          <div class="mt-7 flex flex-wrap gap-x-6 gap-y-2">
+            <a href="/projects" class="link-underline text-sm font-semibold text-secondary dark:text-dk-secondary inline-flex items-center gap-1.5">
+              See all the projects <Icon name="arrow-right" size={14} />
+            </a>
+            <a href="/resume" class="link-underline text-sm font-semibold text-secondary dark:text-dk-secondary inline-flex items-center gap-1.5">
+              Full toolkit on the resume <Icon name="arrow-right" size={14} />
             </a>
           </div>
         </div>
+
+        <div class="lg:col-span-7 grid grid-cols-1 sm:grid-cols-2 gap-x-10 gap-y-9">
+          <div id="education">
+            <p class="eyebrow text-secondary/80 dark:text-dk-secondary/80 mb-5">Education</p>
+            <ul class="space-y-5 list-none p-0 m-0">
+              {info.about.education.map((ed) => {
+                const b = orgFor(ed.location);
+                return (
+                  <li class="timeline-row text-sm">
+                    {b.logo ? (
+                      <div class="org-badge">
+                        <img src={b.logo} alt={b.label} loading="lazy" />
+                      </div>
+                    ) : (
+                      <div class="org-badge org-badge-mono" aria-label={b.label}>
+                        <span>{b.acronym}</span>
+                      </div>
+                    )}
+                    <div class="min-w-0 flex-1">
+                      <p class="font-semibold text-text dark:text-dk-text leading-snug">{ed.title}</p>
+                      <p class="text-text/60 dark:text-dk-text/60 leading-snug">{ed.location}</p>
+                      <p class="text-text/40 dark:text-dk-text/40 text-xs mt-1">
+                        {ed.date}{ed.gpa ? ` · GPA ${ed.gpa}` : ""}
+                      </p>
+                    </div>
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
+          <div id="experience">
+            <p class="eyebrow text-acc-amber/90 mb-5">Experience</p>
+            <ul class="space-y-5 list-none p-0 m-0">
+              {info.about.experience.map((ex) => {
+                const b = orgFor(ex.location);
+                return (
+                  <li class="timeline-row text-sm">
+                    {b.logo ? (
+                      <div class="org-badge">
+                        <img src={b.logo} alt={b.label} loading="lazy" />
+                      </div>
+                    ) : (
+                      <div class="org-badge org-badge-mono" aria-label={b.label}>
+                        <span>{b.acronym}</span>
+                      </div>
+                    )}
+                    <div class="min-w-0 flex-1">
+                      <p class="font-semibold text-text dark:text-dk-text leading-snug">{ex.title}</p>
+                      <p class="text-text/60 dark:text-dk-text/60 leading-snug">{ex.location}</p>
+                      <p class="text-text/40 dark:text-dk-text/40 text-xs mt-1">{ex.date}</p>
+                    </div>
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
+        </div>
       </div>
+    </div>
+  </section>
 
-      <a
-        href="#disciplines"
-        aria-label="Scroll"
-        class="no-lift absolute bottom-8 left-1/2 -translate-x-1/2 text-text/40 dark:text-dk-text/40 hover:text-text dark:hover:text-dk-text transition animate-pulse"
-      >
-        <i class="fas fa-chevron-down text-xl"></i>
-      </a>
-    </section>
-
-    <!-- ── Chapter 2: What I do (four disciplines) ───────────────────────── -->
-    <DisciplineGrid />
-
-    <!-- ── Chapter 3: The work ───────────────────────────────────────────── -->
-    <section class="chapter snap-chapter chapter-fade" id="work">
-      <div class="mx-auto w-full max-w-screen-2xl px-6 lg:px-12">
-        <div class="max-w-4xl reveal" data-reveal>
-          <p class="eyebrow text-secondary dark:text-dk-secondary mb-3" data-spine-dot>
-            02 / The work
-          </p>
-          <h2 class="display-sm text-text dark:text-dk-text mb-3 glow-wave" data-spine-heading>
-            Six systems, inside a dental practice.
+  <!-- ── Writing ──────────────────────────────────────────────────────── -->
+  <section id="writing" class="relative overflow-hidden py-24 lg:py-32">
+    <span class="glow" style="width:570px;height:570px;--gc:#34D399;top:14%;left:-100px;" aria-hidden="true"></span>
+    <span class="glow glow-3" style="width:480px;height:480px;--gc:#34D399;bottom:-70px;right:8%;" aria-hidden="true"></span>
+    <span class="space-el" style="width:143px;height:38px;top:10%;right:6%;" aria-hidden="true"><span class="comet-glow" style="--sr-rgb:52,211,153;"></span><span class="space-comet" style="--sr-rgb:52,211,153;--rz:-16deg;"></span></span>
+    <div class="relative z-[1] mx-auto w-full max-w-screen-2xl px-6 lg:px-12">
+      <div class="flex items-end justify-between gap-6 mb-10" data-arrive>
+        <div>
+          <p class="eyebrow text-acc-emerald mb-3">04 · Writing</p>
+          <h2 class="display-sm text-text dark:text-dk-text mb-3">
+            Notes from <span class="text-acc-emerald">the work</span>.
           </h2>
-          <p class="text-base lg:text-lg text-text/70 dark:text-dk-text/70 leading-relaxed max-w-2xl">
-            Real AI I built next to the people who use it every day. The
-            coordinator, the controller, the CEO. The ones I'm proudest of
-            are the ones that survived real people using them.
+          <p class="text-base lg:text-lg text-text/65 dark:text-dk-text/65 leading-relaxed max-w-2xl">
+            Real numbers, real screwups, real fixes.
           </p>
         </div>
+        <a href="/posts" class="link-underline text-sm font-semibold text-acc-emerald hidden lg:inline-flex items-center gap-1.5 shrink-0">
+          All posts <Icon name="arrow-right" size={14} />
+        </a>
+      </div>
 
-        <ul class="mt-8 lg:mt-12 divide-y divide-text/10 dark:divide-dk-text/10 reveal" data-reveal>
-          {systems.map((s) => (
-            <li>
-              <a
-                href={s.href}
-                class="no-lift group flex flex-col lg:flex-row lg:items-center gap-3 lg:gap-8 py-4 lg:py-5 transition"
-              >
-                {/* On mobile: number + title share one line via flex items-baseline.
-                    At lg: lg:contents dissolves this wrapper so both children
-                    participate directly in the parent flex row, preserving
-                    [number(w-10)] [flex-1 div] [metric(min-w-9rem)] [arrow] layout. */}
-                <div class="flex items-baseline gap-3 lg:contents">
-                  <span
-                    class="font-mono text-sm font-semibold tabular-nums w-10 shrink-0 text-text/40 dark:text-dk-text/40"
-                  >
-                    {s.n}
-                  </span>
-                  <div class="flex-1 min-w-0">
-                    <h3
-                      class="text-xl lg:text-2xl font-semibold tracking-tight text-text dark:text-dk-text group-hover:text-secondary dark:group-hover:text-dk-secondary transition"
-                    >
-                      {s.name}
-                    </h3>
-                    <p class="mt-0.5 text-sm text-text/65 dark:text-dk-text/65 leading-snug max-w-3xl line-clamp-2">
-                      {s.tagline}
-                    </p>
-                  </div>
+      <div class="grid grid-cols-1 lg:grid-cols-5 gap-4" data-arrive>
+        {featuredPost && (
+          <a
+            href={featuredPost.url}
+            class="no-lift pane pane-glare pane-rim overflow-hidden lg:col-span-3 flex flex-col group"
+            data-tilt
+            data-tiltmax="2"
+          >
+            {featuredPost.frontmatter.img_path && (
+              <div class="relative overflow-hidden rounded-t-[24px]">
+                <Picture
+                  src={featuredPost.frontmatter.img_path}
+                  alt={featuredPost.frontmatter.img_alt || featuredPost.frontmatter.title}
+                  width={900}
+                  height={480}
+                  class="w-full h-56 lg:h-72 object-cover transition duration-500 group-hover:scale-[1.03]"
+                />
+                <span class="absolute top-3 right-3 featured-badge text-[0.62rem]">Latest</span>
+              </div>
+            )}
+            <div class="p-6 lg:p-7 flex flex-col gap-3 flex-1">
+              <p class="text-[0.66rem] uppercase tracking-[0.18em] font-semibold text-text/40 dark:text-dk-text/40 tabular-nums inline-flex items-center gap-2">
+                {featuredPost.frontmatter.date}
+                <span aria-hidden="true">·</span>
+                <span class="inline-flex items-center gap-1"><Icon name="clock" size={12} /> {readingTime(featuredPost.rawContent())} min</span>
+              </p>
+              <h3 class="text-xl lg:text-3xl font-bold tracking-tight text-text dark:text-dk-text leading-[1.12] group-hover:text-secondary dark:group-hover:text-dk-secondary transition">
+                {featuredPost.frontmatter.title}
+              </h3>
+              <p class="text-sm lg:text-base text-text/60 dark:text-dk-text/60 leading-relaxed line-clamp-2">
+                {featuredPost.frontmatter.description}
+              </p>
+            </div>
+          </a>
+        )}
+        <div class="lg:col-span-2 grid grid-cols-1 gap-4">
+          {sidePosts.map((post) => (
+            <a
+              href={post.url}
+              class="no-lift pane pane-glare overflow-hidden flex items-stretch group"
+              data-tilt
+              data-tiltmax="3"
+            >
+              {post.frontmatter.img_path && (
+                <div class="w-32 shrink-0 overflow-hidden">
+                  <Picture
+                    src={post.frontmatter.img_path}
+                    alt={post.frontmatter.img_alt || post.frontmatter.title}
+                    width={300}
+                    height={220}
+                    class="w-full h-full object-cover transition duration-500 group-hover:scale-[1.05]"
+                  />
                 </div>
-                <div class="lg:text-right lg:min-w-[9rem] shrink-0">
-                  <div
-                    class="text-xl lg:text-2xl font-semibold tabular-nums tracking-tight"
-                    style={`color: ${s.accent};`}
-                  >
-                    {s.metric}
-                  </div>
-                  <div class="text-[0.65rem] uppercase tracking-[0.18em] text-text/45 dark:text-dk-text/45 mt-0.5">
-                    {s.metricLabel}
-                  </div>
-                </div>
-                <span
-                  class="hidden lg:inline text-text/40 dark:text-dk-text/40 group-hover:text-secondary dark:group-hover:text-dk-secondary group-hover:translate-x-1 lg:transition-transform"
-                  aria-hidden="true"
-                >
-                  →
+              )}
+              <div class="p-4 lg:p-5 flex flex-col justify-center gap-2 min-w-0">
+                <p class="text-[0.64rem] uppercase tracking-[0.18em] font-semibold text-text/40 dark:text-dk-text/40 tabular-nums inline-flex items-center gap-2">
+                  {post.frontmatter.date}
+                  <span aria-hidden="true">·</span>
+                  <span class="inline-flex items-center gap-1"><Icon name="clock" size={11} /> {readingTime(post.rawContent())} min</span>
+                </p>
+                <h3 class="text-base lg:text-lg font-bold tracking-tight text-text dark:text-dk-text leading-snug line-clamp-2 group-hover:text-secondary dark:group-hover:text-dk-secondary transition">
+                  {post.frontmatter.title}
+                </h3>
+              </div>
+            </a>
+          ))}
+        </div>
+      </div>
+
+      <a href="/posts" class="link-underline text-sm font-semibold text-acc-emerald mt-8 inline-flex lg:hidden items-center gap-1.5">
+        All posts <Icon name="arrow-right" size={14} />
+      </a>
+    </div>
+  </section>
+
+  <!-- ── Filmmaking ───────────────────────────────────────────────────── -->
+  <section id="filmmaking" class="relative overflow-hidden py-24 lg:py-32">
+    <span class="glow" style="width:630px;height:630px;--gc:#F43F5E;top:-90px;right:-130px;" aria-hidden="true"></span>
+    <span class="glow glow-2" style="width:480px;height:480px;--gc:#F43F5E;bottom:-70px;left:-60px;" aria-hidden="true"></span>
+    <span class="space-el" style="width:163px;height:40px;top:10%;left:4%;" aria-hidden="true"><span class="comet-glow" style="--sr-rgb:244,63,94;"></span><span class="space-comet" style="--sr-rgb:244,63,94;--rz:14deg;"></span></span>
+    <div class="relative z-[1] mx-auto w-full max-w-screen-2xl px-6 lg:px-12 grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
+      <div class="lg:col-span-6" data-arrive>
+        <p class="eyebrow text-acc-film mb-4">05 · Filmmaking</p>
+        <h2 class="display-sm text-text dark:text-dk-text mb-6">
+          "Gray characters, <span class="text-acc-film">tight spaces</span>, and the chaos hiding inside ordinary lives."
+        </h2>
+        <p class="text-base lg:text-lg text-text/70 dark:text-dk-text/70 leading-relaxed mb-8 max-w-xl">
+          I write, direct, edit, and score. <em class="not-italic font-semibold text-text dark:text-dk-text">Among Monsters</em> is the independent feature I'm cutting between work weeks.
+        </p>
+        <div class="flex flex-wrap items-center gap-3">
+          <a
+            href="https://www.imdb.com/title/tt39700295/"
+            target="_blank"
+            rel="noreferrer"
+            class="no-lift gbtn-ghost"
+            data-magnetic
+          >
+            <span class="imdb-wordmark">IMDb</span> Among Monsters <Icon name="arrow-up-right" size={14} />
+          </a>
+          <a href="/filmmaking" class="no-lift gbtn-ghost" data-magnetic>
+            The full slate
+          </a>
+        </div>
+      </div>
+
+      <div class="lg:col-span-6" data-arrive>
+        <ul class="list-none p-0 m-0">
+          {filmCredits.map((c, i) => (
+            <li class="group flex items-center justify-between gap-4 py-4 border-b border-text/10 dark:border-dk-text/10 hover:border-acc-film/60 transition-colors">
+              <div class="min-w-0 flex items-center gap-4">
+                <span class="font-mono text-[0.7rem] text-text/35 dark:text-dk-text/40 tabular-nums w-7 shrink-0">
+                  {String(i + 1).padStart(2, "0")}
                 </span>
-              </a>
+                <div class="min-w-0">
+                  <p class="text-lg lg:text-xl font-semibold text-text dark:text-dk-text group-hover:text-acc-film transition truncate">
+                    {c.title}
+                  </p>
+                  <p class="mt-0.5 text-[0.7rem] uppercase tracking-[0.16em] text-text/50 dark:text-dk-text/55 font-medium">
+                    {c.role}
+                  </p>
+                </div>
+              </div>
+              <span class="font-mono text-lg font-semibold text-text/40 dark:text-dk-text/45 group-hover:text-acc-film tabular-nums shrink-0 transition">
+                {c.year}
+              </span>
             </li>
           ))}
         </ul>
-
-        <div class="mt-10 flex items-center justify-between flex-wrap gap-4">
-          <a
-            href="/projects"
-            class="link-underline text-sm font-semibold text-secondary dark:text-dk-secondary"
-          >
-            Browse all 15 projects <span aria-hidden="true">→</span>
-          </a>
-          <p class="text-xs text-text/40 dark:text-dk-text/40">
-            Scroll for the rest of the story
-          </p>
-        </div>
-      </div>
-    </section>
-
-    <!-- ── Chapter 3: About ──────────────────────────────────────────────── -->
-    <section class="chapter snap-chapter chapter-fade" id="about">
-      <div class="mx-auto w-full max-w-screen-2xl px-6 lg:px-12">
-        <!-- Intro left, education + experience right, so the row reads full. -->
-        <div class="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-16 items-start reveal" data-reveal>
-          <div class="lg:col-span-5">
-            <p class="eyebrow text-secondary dark:text-dk-secondary mb-5" data-spine-dot>
-              03 / About
-            </p>
-            <h2 class="display-sm text-text dark:text-dk-text mb-6 glow-wave" data-spine-heading>
-              An engineer who happens to <span class="text-secondary dark:text-dk-secondary">make movies</span>.
-            </h2>
-            <p class="text-base lg:text-lg text-text/75 dark:text-dk-text/75 leading-relaxed">
-              {info.about.description}
-            </p>
-            <a
-              href="/projects"
-              class="link-underline text-sm font-semibold text-secondary dark:text-dk-secondary mt-7 inline-flex"
-            >
-              See all the projects <span aria-hidden="true">→</span>
-            </a>
-          </div>
-
-          <div class="lg:col-span-7 grid grid-cols-1 sm:grid-cols-2 gap-x-10 gap-y-9">
-            <div id="education">
-              <p class="eyebrow text-secondary/80 dark:text-dk-secondary/80 mb-5">
-                Education
-              </p>
-              <ul class="space-y-5">
-                {info.about.education.map((ed) => {
-                  const b = brandFor(ed.location);
-                  return (
-                    <li class="timeline-row text-sm">
-                      <div
-                        class="brand-badge"
-                        style={`background: linear-gradient(135deg, ${b.from}, ${b.to});`}
-                        aria-label={b.label}
-                      >
-                        <span>{b.acronym}</span>
-                      </div>
-                      <div class="min-w-0 flex-1">
-                        <p class="font-semibold text-text dark:text-dk-text leading-snug">
-                          {ed.title}
-                        </p>
-                        <p class="text-text/60 dark:text-dk-text/60 leading-snug">
-                          {ed.location}
-                        </p>
-                        <p class="text-text/40 dark:text-dk-text/40 text-xs mt-1">
-                          {ed.date}{ed.gpa ? ` · GPA ${ed.gpa}` : ""}
-                        </p>
-                      </div>
-                    </li>
-                  );
-                })}
-              </ul>
-            </div>
-            <div id="experience">
-              <p class="eyebrow text-acc-amber/90 mb-5">
-                Experience
-              </p>
-              <ul class="space-y-5">
-                {info.about.experience.map((ex) => {
-                  const b = brandFor(ex.location);
-                  return (
-                    <li class="timeline-row text-sm">
-                      <div
-                        class="brand-badge"
-                        style={`background: linear-gradient(135deg, ${b.from}, ${b.to});`}
-                        aria-label={b.label}
-                      >
-                        <span>{b.acronym}</span>
-                      </div>
-                      <div class="min-w-0 flex-1">
-                        <p class="font-semibold text-text dark:text-dk-text leading-snug">
-                          {ex.title}
-                        </p>
-                        <p class="text-text/60 dark:text-dk-text/60 leading-snug">
-                          {ex.location}
-                        </p>
-                        <p class="text-text/40 dark:text-dk-text/40 text-xs mt-1">
-                          {ex.date}
-                        </p>
-                      </div>
-                    </li>
-                  );
-                })}
-              </ul>
-            </div>
-          </div>
-        </div>
-
-        <div id="skills" class="mt-14 lg:mt-16 pt-10 lg:pt-12 border-t border-text/10 dark:border-dk-text/10 reveal" data-reveal>
-          <p class="eyebrow text-text/55 dark:text-dk-text/55 mb-2">Skills</p>
-          <p class="text-sm text-text/55 dark:text-dk-text/55 mb-6 max-w-2xl">
-            The toolkit, grouped the way I think about the work: four disciplines, AI engineering first.
-          </p>
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
-            {skillGroups.map((b) => (
-              <div class="skills-card" style={`--sk: ${b.accent}; --sk-rgb: ${b.rgb};`}>
-                <div class="skills-card-head">
-                  <span class="skills-card-acronym" aria-hidden="true">{b.acronym}</span>
-                  <p class="skills-card-label">{b.label}</p>
-                </div>
-                <div class="skill-tile-grid">
-                  {b.items.map((it) => (
-                    <span class="skill-tile">
-                      <span class="skill-logo">
-                        {it.file ? (
-                          <img src={`/logos/skills/${it.file}.svg`} alt={it.name} loading="lazy" width="26" height="26" />
-                        ) : (
-                          <i class={it.icon} aria-hidden="true"></i>
-                        )}
-                      </span>
-                      <span class="skill-tile-name">{it.name}</span>
-                      <span class="skill-tip">{it.projects} project{it.projects > 1 ? "s" : ""}</span>
-                    </span>
-                  ))}
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- ── Chapter 4: Writing ────────────────────────────────────────────── -->
-    <section class="chapter snap-chapter chapter-fade" id="writing">
-      <div class="mx-auto w-full max-w-screen-2xl px-6 lg:px-12">
-        <div class="flex items-end justify-between mb-10 reveal" data-reveal>
-          <div>
-            <p class="eyebrow text-acc-emerald dark:text-acc-emerald mb-4" data-spine-dot>
-              04 / Writing
-            </p>
-            <h2 class="display-sm text-text dark:text-dk-text glow-wave" data-spine-heading>
-              Notes from <span class="text-acc-emerald">the work</span>.
-            </h2>
-            <p class="mt-4 text-base lg:text-lg text-text/65 dark:text-dk-text/70 leading-relaxed max-w-2xl">
-              Stories from the systems I've built. Real numbers, real screwups, real fixes.
-            </p>
-          </div>
-          <a
-            href="/posts"
-            class="link-underline text-sm font-semibold text-acc-emerald hidden lg:inline-flex"
-          >
-            All posts <span aria-hidden="true">→</span>
-          </a>
-        </div>
-
-        <div
-          class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 reveal"
-          data-reveal
-        >
-          {latestPosts.map((post, i) => {
-            const accents = ["blue", "emerald", "violet", "amber"];
-            const accent = accents[i % accents.length];
-            return (
-              <a
-                href={post.url}
-                class={`no-lift post-card post-card-accent-${accent} group flex flex-col`}
-              >
-                {post.frontmatter.img_path && (
-                  <div class="relative overflow-hidden">
-                    <Picture
-                      src={post.frontmatter.img_path}
-                      alt={post.frontmatter.img_alt || post.frontmatter.title}
-                      width={600}
-                      height={320}
-                      class="w-full h-44 object-cover transition duration-500 group-hover:scale-[1.04]"
-                    />
-                    {i === 0 && (
-                      <span class="absolute top-3 right-3 featured-badge text-[0.62rem]">
-                        Latest
-                      </span>
-                    )}
-                  </div>
-                )}
-                <div class="p-5 flex flex-col gap-3 flex-1">
-                  <p class="text-[0.66rem] uppercase tracking-[0.18em] font-semibold text-text/40 dark:text-dk-text/40 tabular-nums">
-                    {post.frontmatter.date}
-                  </p>
-                  <h3 class="text-lg lg:text-xl font-bold tracking-tight text-text dark:text-dk-text leading-[1.15] line-clamp-3 group-hover:text-secondary dark:group-hover:text-dk-secondary transition">
-                    {post.frontmatter.title}
-                  </h3>
-                  <p class="text-[0.78rem] text-text/55 dark:text-dk-text/55 leading-relaxed line-clamp-2 mt-auto">
-                    {post.frontmatter.description}
-                  </p>
-                </div>
-              </a>
-            );
-          })}
-        </div>
-
-        <a
-          href="/posts"
-          class="link-underline text-sm font-semibold text-acc-emerald mt-8 inline-flex lg:hidden"
-        >
-          All posts <span aria-hidden="true">→</span>
+        <a href="/filmmaking" class="link-underline text-sm font-semibold text-acc-film mt-6 inline-flex items-center gap-1.5">
+          All credits, stills, and crew <Icon name="arrow-right" size={14} />
         </a>
       </div>
-    </section>
+    </div>
+  </section>
 
-    <!-- ── Chapter 5: Filmmaking ─────────────────────────────────────────── -->
-    <section class="chapter snap-chapter chapter-fade" id="filmmaking">
-      <div
-        class="mx-auto w-full max-w-screen-2xl px-6 lg:px-12 grid grid-cols-1 lg:grid-cols-12 gap-12 items-center"
+  <!-- ── Contact ──────────────────────────────────────────────────────── -->
+  <section id="contact" class="relative overflow-hidden py-28 lg:py-36 text-center">
+    <span class="glow" style="width:690px;height:690px;--gc:#0066CC;top:-110px;left:50%;margin-left:-230px;" aria-hidden="true"></span>
+    <span class="glow glow-2" style="width:450px;height:450px;--gc:#22D3EE;bottom:-80px;right:12%;" aria-hidden="true"></span>
+    <span class="space-el" style="width:143px;height:38px;top:14%;left:8%;" aria-hidden="true"><span class="comet-glow" style="--sr-rgb:91,141,239;"></span><span class="space-comet" style="--sr-rgb:91,141,239;--rz:-12deg;"></span></span>
+    <span class="space-el" style="width:117px;height:33px;bottom:12%;right:9%;" aria-hidden="true"><span class="comet-glow" style="--sr-rgb:34,211,238;"></span><span class="space-comet" style="--sr-rgb:34,211,238;--rz:10deg;"></span></span>
+    <div class="relative z-[1] mx-auto w-full max-w-screen-2xl px-6 lg:px-12" data-arrive>
+      <p class="eyebrow text-secondary dark:text-dk-secondary mb-4">06 · Connect</p>
+      <h2 class="display text-text dark:text-dk-text mb-5">
+        Let's build <span class="text-secondary dark:text-dk-secondary">something</span>.
+      </h2>
+      <p class="text-lg lg:text-xl text-text/70 dark:text-dk-text/70 max-w-2xl mx-auto leading-relaxed mb-10">
+        Hiring for forward-deployed, applied AI, or anything in between? I'd love to hear what you're working on.
+      </p>
+      <a
+        href={`mailto:${info.contact.email}`}
+        class="no-lift pane pane-glare inline-flex items-center gap-3 px-8 py-5 text-lg lg:text-xl font-bold tracking-tight text-text dark:text-dk-text"
+        data-magnetic
+        style="border-radius: 9999px;"
       >
-        <div class="lg:col-span-6 reveal" data-reveal>
-          <p class="eyebrow text-acc-film dark:text-acc-film mb-4" data-spine-dot>
-            05 / Filmmaking
-          </p>
-          <h2 class="display-sm text-text dark:text-dk-text mb-6 glow-wave" data-spine-heading>
-            "Gray characters, <span class="text-acc-film">tight spaces</span>, and the chaos hiding inside ordinary lives."
-          </h2>
-          <p class="text-base lg:text-lg text-text/70 dark:text-dk-text/70 leading-relaxed mb-8 max-w-xl">
-            I write, direct, edit, and score. <em class="not-italic font-semibold text-text dark:text-dk-text">Among Monsters</em> is the independent feature I'm cutting between work weeks. The way I work alongside non-engineers, I learned on film sets first.
-          </p>
-          <div class="flex flex-wrap items-center gap-3">
-            <a
-              href="https://www.imdb.com/title/tt39700295/"
-              target="_blank"
-              rel="noreferrer"
-              class="no-lift imdb-pill inline-flex items-center gap-2 rounded-full px-5 py-2.5 text-sm font-bold transition"
-            >
-              <span class="imdb-wordmark">IMDb</span> Among Monsters <span aria-hidden="true">↗</span>
-            </a>
-            <a
-              href="/filmmaking"
-              class="no-lift inline-flex items-center gap-2 rounded-full px-5 py-2.5 border border-text/20 dark:border-dk-text/20 text-sm font-semibold text-text dark:text-dk-text hover:bg-text/5 dark:hover:bg-dk-text/10 transition"
-            >
-              See the full slate
-            </a>
-          </div>
-        </div>
-
-        <div class="lg:col-span-6 reveal" data-reveal>
-          <ul class="space-y-0.5">
-            {filmCredits.map((c, i) => (
-              <li class="group flex items-center justify-between gap-4 py-3.5 border-b border-text/10 dark:border-dk-text/10 hover:border-text/30 dark:hover:border-dk-text/25 transition">
-                <div class="min-w-0 flex items-center gap-4">
-                  <span class="font-mono text-[0.7rem] text-text/35 dark:text-dk-text/40 tabular-nums w-7 shrink-0">
-                    {String(i + 1).padStart(2, "0")}
-                  </span>
-                  <div class="min-w-0">
-                    <p class="text-lg lg:text-xl font-semibold text-text dark:text-dk-text group-hover:text-acc-film transition truncate">
-                      {c.title}
-                    </p>
-                    <p class="mt-0.5 text-[0.72rem] uppercase tracking-[0.16em] text-text/50 dark:text-dk-text/55 font-medium">
-                      {c.role}
-                    </p>
-                  </div>
-                </div>
-                <span class="font-mono text-lg lg:text-xl font-semibold text-text/40 dark:text-dk-text/45 group-hover:text-acc-film tabular-nums shrink-0 transition">
-                  {c.year}
-                </span>
-              </li>
-            ))}
-          </ul>
-          <a
-            href="/filmmaking"
-            class="link-underline text-sm font-semibold text-acc-film mt-6 inline-flex"
-          >
-            All credits, stills, and crew <span aria-hidden="true">→</span>
-          </a>
-        </div>
+        <Icon name="mail" size={20} class="text-secondary dark:text-dk-secondary" />
+        {info.contact.email}
+      </a>
+      <div class="mt-12 flex justify-center relative z-10">
+        <Contact contact={info.contact} size="md" client:visible />
       </div>
-    </section>
-
-    <!-- ── Chapter 6: Connect ────────────────────────────────────────────── -->
-    <section class="chapter snap-chapter chapter-fade relative overflow-hidden" id="contact">
-      <div
-        class="relative z-10 mx-auto w-full max-w-screen-2xl px-6 lg:px-12 text-center reveal"
-        data-reveal
-      >
-        <p class="eyebrow text-secondary dark:text-dk-secondary mb-4" data-spine-dot>
-          06 / Connect
-        </p>
-        <h2 class="display text-text dark:text-dk-text mb-6 glow-wave" data-spine-heading>
-          Let's build <span class="text-secondary dark:text-dk-secondary">something</span>.
-        </h2>
-        <p class="text-lg lg:text-xl text-text/70 dark:text-dk-text/70 max-w-2xl mx-auto leading-relaxed mb-10">
-          Hiring for forward-deployed, applied AI, or anything in between?
-          I'd love to hear what you're working on.
-        </p>
-        <div class="email-cta-wrap glow-wave glow-delay-1">
-          <a
-            href={`mailto:${info.contact.email}`}
-            class="no-lift inline-flex items-center rounded-full px-7 py-4 bg-text text-primary dark:bg-dk-text dark:text-dk-primary text-base font-semibold hover:opacity-85 transition"
-          >
-            {info.contact.email}
-          </a>
-        </div>
-        <div class="mt-12 flex justify-center relative z-10">
-          <Contact contact={info.contact} size="md" client:visible />
-        </div>
-      </div>
-    </section>
-
-  </div>
+    </div>
+  </section>
 </BaseLayout>
 
 <script>
-  // Landing hero: CSS-var parallax + a 3D cursor-steered sphere of glowing
-  // light points (the centrepiece "object") over ambient drift. Sprite-based
-  // rendering keeps it smooth. All gated on reduced-motion.
+  import {
+    initGlare,
+    initTilt,
+    initMagnetic,
+    initArrive,
+    initCountUps,
+    initAmbient,
+    initComets,
+  } from "../scripts/spatial";
+
+  initGlare(".pane-glare");
+  initTilt("[data-tilt]");
+  initMagnetic("[data-magnetic]");
+  initArrive("[data-arrive]");
+  initCountUps("[data-count]");
+  initComets(".space-el");
+  // Ambient colour flow anchored to the real section positions, so each
+  // section shows its own hue: hero blue/cyan, disciplines violet/amber,
+  // work amber, about blue, writing emerald, film red, contact brand blue.
+  initAmbient(
+    [
+      ["91,141,239", "34,211,238"],
+      ["167,139,250", "245,165,36"],
+      ["245,165,36", "245,165,36"],
+      ["91,141,239", "91,141,239"],
+      ["52,211,153", "91,141,239"],
+      ["244,63,94", "244,63,94"],
+      ["0,102,204", "34,211,238"],
+    ],
+    ["home", "disciplines", "work", "about", "writing", "filmmaking", "contact"],
+  );
+
+  // Progress rail: highlight the dot for the section in view.
   (function () {
-    const hero = document.getElementById("home");
-    if (!hero) return;
-    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    const bg = hero.querySelector(".hero-bg");
-    const COLORS = [[52, 211, 153], [245, 165, 36], [167, 139, 250], [91, 141, 239]];
-
-    // Pointer state, shared by parallax, the 3D tilt, and the sphere rotation.
-    let mx = 0, my = 0, sy = 0;
-
-    if (!reduce && window.matchMedia("(pointer: fine)").matches) {
-      const layers = Array.from(hero.querySelectorAll("[data-parallax]"));
-      let raf = 0;
-      const apply = () => {
-        raf = 0;
-        for (const el of layers) {
-          const f = parseFloat(el.getAttribute("data-parallax")) || 0;
-          el.style.setProperty("--px", (mx * f * 120).toFixed(1) + "px");
-          el.style.setProperty("--py", (my * f * 120 + sy * f * 0.5).toFixed(1) + "px");
+    const links = new Map<string, HTMLElement>();
+    document
+      .querySelectorAll<HTMLElement>(".rail a[data-rail]")
+      .forEach((a) => links.set(a.dataset.rail || "", a));
+    if (!links.size || !("IntersectionObserver" in window)) return;
+    const io = new IntersectionObserver(
+      (entries) => {
+        for (const en of entries) {
+          if (!en.isIntersecting) continue;
+          links.forEach((a) => a.classList.remove("on"));
+          links.get(en.target.id)?.classList.add("on");
         }
-        if (bg) {
-          bg.style.setProperty("--bg-rx", (mx * 6).toFixed(2) + "deg");
-          bg.style.setProperty("--bg-ry", (-my * 6).toFixed(2) + "deg");
-        }
-      };
-      const queue = () => { if (!raf) raf = requestAnimationFrame(apply); };
-      window.addEventListener("mousemove", (e) => {
-        mx = e.clientX / window.innerWidth - 0.5;
-        my = e.clientY / window.innerHeight - 0.5;
-        queue();
-      }, { passive: true });
-      window.addEventListener("scroll", () => { sy = window.scrollY; queue(); }, { passive: true });
-    }
-
-    const canvas = hero.querySelector("[data-hero-canvas]");
-    if (!canvas || reduce) return;
-    const ctx = canvas.getContext("2d");
-    const isDark = () => document.documentElement.classList.contains("dark");
-
-    // Tight glow sprite per colour (sharp core).
-    const sprites = COLORS.map(([r, g, b]) => {
-      const s = document.createElement("canvas"); s.width = s.height = 64;
-      const c = s.getContext("2d");
-      const gr = c.createRadialGradient(32, 32, 0, 32, 32, 32);
-      gr.addColorStop(0, "rgba(" + r + "," + g + "," + b + ",1)");
-      gr.addColorStop(0.35, "rgba(" + r + "," + g + "," + b + ",0.32)");
-      gr.addColorStop(1, "rgba(" + r + "," + g + "," + b + ",0)");
-      c.fillStyle = gr; c.fillRect(0, 0, 64, 64);
-      return s;
+      },
+      { threshold: 0.35 },
+    );
+    links.forEach((_, id) => {
+      const s = document.getElementById(id);
+      if (s) io.observe(s);
     });
-
-    // Dense point sphere; nearest-neighbour edges = the mesh. Each point keeps
-    // its own cursor-pull displacement (cdx/cdy) so the bulge is localised.
-    const N = 360;
-    const pts = Array.from({ length: N }, (_, i) => {
-      const yy = 1 - (i / (N - 1)) * 2;
-      const rad = Math.sqrt(Math.max(0, 1 - yy * yy));
-      const th = i * 2.399963229;
-      return { x: Math.cos(th) * rad, y: yy, z: Math.sin(th) * rad, ci: i % COLORS.length, cdx: 0, cdy: 0 };
-    });
-    const edges = [];
-    const seenE = new Set();
-    for (let i = 0; i < N; i++) {
-      const d = [];
-      for (let j = 0; j < N; j++) {
-        if (i === j) continue;
-        const dx = pts[i].x - pts[j].x, dy = pts[i].y - pts[j].y, dz = pts[i].z - pts[j].z;
-        d.push([dx * dx + dy * dy + dz * dz, j]);
-      }
-      d.sort((a, b) => a[0] - b[0]);
-      for (let k = 0; k < 6; k++) {
-        const j = d[k][1], a = Math.min(i, j), b = Math.max(i, j), key = a + "-" + b;
-        if (!seenE.has(key)) { seenE.add(key); edges.push([a, b]); }
-      }
-    }
-    const pulses = Array.from({ length: 24 }, () => ({ e: (Math.random() * edges.length) | 0, t: Math.random(), sp: 0.004 + Math.random() * 0.01 }));
-
-    let W = 0, H = 0, dpr = 1, cx = 0, cy = 0, radius = 0, t = 0, vis = true;
-    let angY = 0, angX = 0, curX = 0, curY = 0, curOn = false;
-    const proj = new Array(N);
-
-    const aim = (e) => {
-      const r = canvas.getBoundingClientRect();
-      curX = e.clientX - r.left; curY = e.clientY - r.top; curOn = true;
-    };
-    const release = () => { curOn = false; };
-    // Mouse hover (desktop) and finger drag (mobile) both drive the bulge. On
-    // mobile the canvas has touch-action:none so a drag plays with the sphere
-    // without scrolling, while the content above (pointer-events:auto) scrolls.
-    canvas.addEventListener("pointermove", aim, { passive: true });
-    canvas.addEventListener("pointerdown", aim, { passive: true });
-    canvas.addEventListener("pointerup", release, { passive: true });
-    canvas.addEventListener("pointercancel", release, { passive: true });
-    canvas.addEventListener("pointerleave", release, { passive: true });
-
-    function size() {
-      dpr = Math.min(window.devicePixelRatio || 1, 2);
-      W = canvas.clientWidth; H = canvas.clientHeight;
-      canvas.width = Math.max(1, W * dpr); canvas.height = Math.max(1, H * dpr);
-      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-      cx = W / 2; cy = H * 0.48;  // centered backdrop behind the hero content
-      radius = Math.min(W, H) * (W < 1024 ? 0.27 : 0.205);
-    }
-    function frame() {
-      requestAnimationFrame(frame);
-      if (!vis || !W) return;
-      t += 0.0022;
-      angY += 0.0016;                 // gentle constant spin, no cursor rotation
-      angX = Math.sin(t * 0.5) * 0.1; // slow wobble for life
-      const dark = isDark();
-      ctx.clearRect(0, 0, W, H);
-      ctx.globalCompositeOperation = dark ? "lighter" : "source-over";
-
-      const cosY = Math.cos(angY), sinY = Math.sin(angY), cosX = Math.cos(angX), sinX = Math.sin(angX);
-      const infl = Math.min(W, H) * 0.26;   // radius of the cursor's gravity well
-      for (let i = 0; i < N; i++) {
-        const p = pts[i];
-        let x = p.x * cosY - p.z * sinY;
-        let z = p.x * sinY + p.z * cosY;
-        const y = p.y * cosX - z * sinX;
-        z = p.y * sinX + z * cosX;
-        const persp = 1.7 / (1.7 - z);
-        const depth = (z + 1) / 2;
-        const bx = cx + x * radius * persp, by = cy + y * radius * persp;
-        // Localised pull: only front-facing points inside the influence radius
-        // are drawn toward the cursor, with a smooth falloff — a tidal bulge
-        // that follows the cursor. The rest of the sphere stays put.
-        let tdx = 0, tdy = 0;
-        if (curOn && depth > 0.4) {
-          const dx = curX - bx, dy = curY - by, dist = Math.hypot(dx, dy) || 1;
-          if (dist < infl) {
-            let f = 1 - dist / infl; f *= f * (3 - 2 * f); // smoothstep falloff
-            const pull = f * infl * 0.52;
-            tdx = (dx / dist) * pull; tdy = (dy / dist) * pull;
-          }
-        }
-        // snappy but fluid spring toward the target displacement
-        p.cdx += (tdx - p.cdx) * 0.2;
-        p.cdy += (tdy - p.cdy) * 0.2;
-        const lift = Math.min(1, Math.hypot(p.cdx, p.cdy) / (infl * 0.45));
-        proj[i] = { sx: bx + p.cdx, sy: by + p.cdy, depth, persp, lift };
-      }
-      for (let e = 0; e < edges.length; e++) {
-        const pa = proj[edges[e][0]], pb = proj[edges[e][1]];
-        const dep = (pa.depth + pb.depth) / 2;
-        const lift = pa.lift > pb.lift ? pa.lift : pb.lift;
-        const col = COLORS[pts[edges[e][0]].ci];
-        ctx.strokeStyle = "rgba(" + col[0] + "," + col[1] + "," + col[2] + "," + (((dark ? 0.08 : 0.06) + dep * 0.12) * (1 + lift * 2.4)).toFixed(3) + ")";
-        ctx.lineWidth = 0.5 + dep * 0.5 + lift * 0.8;
-        ctx.beginPath(); ctx.moveTo(pa.sx, pa.sy); ctx.lineTo(pb.sx, pb.sy); ctx.stroke();
-      }
-      for (const pu of pulses) {
-        pu.t += pu.sp;
-        if (pu.t > 1) { pu.t = 0; pu.e = (Math.random() * edges.length) | 0; }
-        const pa = proj[edges[pu.e][0]], pb = proj[edges[pu.e][1]];
-        const px = pa.sx + (pb.sx - pa.sx) * pu.t, py = pa.sy + (pb.sy - pa.sy) * pu.t;
-        const R = 4.5 * ((pa.depth + pb.depth) / 2 + 0.3);
-        ctx.globalAlpha = dark ? 0.8 : 0.55;
-        ctx.drawImage(sprites[pts[edges[pu.e][0]].ci], px - R, py - R, R * 2, R * 2);
-      }
-      ctx.globalAlpha = 1;
-      for (let i = 0; i < N; i++) {
-        const pr = proj[i];
-        const R = (1.8 + pr.depth * 4.5) * pr.persp * (1 + pr.lift * 1.9);
-        ctx.globalAlpha = Math.min(1, ((dark ? 0.16 : 0.14) + pr.depth * (dark ? 0.5 : 0.42)) * (1 + pr.lift * 1.8));
-        ctx.drawImage(sprites[pts[i].ci], pr.sx - R, pr.sy - R, R * 2, R * 2);
-        const col = COLORS[pts[i].ci];
-        ctx.globalAlpha = Math.min(1, (0.4 + pr.depth * 0.5) * (1 + pr.lift));
-        ctx.fillStyle = dark ? "rgba(255,255,255," + (0.4 + pr.depth * 0.4).toFixed(2) + ")" : "rgba(" + col[0] + "," + col[1] + "," + col[2] + ",0.85)";
-        ctx.beginPath(); ctx.arc(pr.sx, pr.sy, Math.max(0.5, pr.depth * 1.5), 0, Math.PI * 2); ctx.fill();
-      }
-      ctx.globalAlpha = 1;
-    }
-    size();
-    window.addEventListener("resize", size, { passive: true });
-    document.addEventListener("visibilitychange", () => { vis = !document.hidden; });
-    frame();
   })();
 </script>
-
-<style>
-  /* Hero discipline chips — equal accent pills replacing the piped acronyms.
-     Each carries its discipline colour via --dx / --dx-rgb set inline. */
-  .dx-pill {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.45rem;
-    padding: 0.4rem 0.9rem;
-    border-radius: 9999px;
-    font-family: "SF Mono", "JetBrains Mono", Menlo, Monaco, Consolas, monospace;
-    font-size: 0.72rem;
-    font-weight: 700;
-    letter-spacing: 0.18em;
-    line-height: 1;
-    color: rgb(29 29 31 / 0.7);
-    border: 1px solid rgba(var(--dx-rgb), 0.28);
-    background: rgba(var(--dx-rgb), 0.06);
-    -webkit-backdrop-filter: blur(10px) saturate(150%);
-    backdrop-filter: blur(10px) saturate(150%);
-    transition: color 0.25s ease, border-color 0.25s ease, background 0.25s ease,
-      transform 0.25s ease, box-shadow 0.25s ease;
-  }
-  :global(html.dark) .dx-pill {
-    color: rgb(245 245 247 / 0.72);
-  }
-  .dx-pill-dot {
-    width: 0.4rem;
-    height: 0.4rem;
-    border-radius: 9999px;
-    background: var(--dx);
-    box-shadow: 0 0 8px color-mix(in srgb, var(--dx) 60%, transparent);
-    flex: 0 0 auto;
-  }
-  .dx-pill:hover {
-    color: var(--dx);
-    border-color: rgba(var(--dx-rgb), 0.6);
-    background: rgba(var(--dx-rgb), 0.12);
-    transform: translateY(-1px);
-    box-shadow: 0 6px 18px -10px rgba(var(--dx-rgb), 0.55);
-  }
-  .dx-pill:focus-visible {
-    outline: 2px solid rgba(var(--dx-rgb), 0.6);
-    outline-offset: 3px;
-  }
-</style>

@@ -1,0 +1,250 @@
+---
+// Full-page universe backdrop, hand-written WebGL (no dependencies), on
+// every page via BaseLayout. Three systems share one canvas:
+//  - Nebula (desktop): a faint fbm-noise gas layer tinted by the section
+//    theme, drifting slowly and sliding with the camera.
+//  - Stars: ~1400 soft gaussian points at many depths. Each star is born,
+//    drifts, twinkles, fades out, and respawns somewhere new. Scrolling
+//    flies the camera forward; fast scrolling streaks the stars radially
+//    like accelerating through space.
+// All colours come from the section theme: the ambient field writes
+// --amb1/--amb2 as it lerps on scroll and the shaders tint from the same
+// values. Off under reduced motion and when WebGL is unavailable.
+---
+
+<canvas class="spacefield" data-spacefield aria-hidden="true"></canvas>
+
+<style>
+  .spacefield {
+    position: fixed;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    z-index: -1; /* above the body background, below all content */
+    pointer-events: none;
+    display: none;
+  }
+  :global(html.spacefield-on) .spacefield { display: block; }
+</style>
+
+<script>
+  (function () {
+    const canvas = document.querySelector<HTMLCanvasElement>("[data-spacefield]");
+    if (!canvas) return;
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+
+    const gl = canvas.getContext("webgl", {
+      alpha: true,
+      antialias: false,
+      premultipliedAlpha: false,
+    });
+    if (!gl) return;
+
+    const STAR_VS = `
+attribute float aZ;     // depth seed in [0,1)
+attribute float aS;     // per-star seed in [0,1)
+uniform float uCam; uniform float uT; uniform float uAspect; uniform float uDpr;
+uniform vec3 uTheme1; uniform vec3 uTheme2;
+varying vec3 vC; varying float vA; varying float vAng; varying float vStr;
+const float DEPTH = 40.0;
+float hash(float n) { return fract(sin(n) * 43758.5453); }
+void main() {
+  // Life cycle: fade in, live, fade out, respawn at a fresh position.
+  float period = 6.0 + aS * 10.0;
+  float cycle = floor(uT / period + aS * 7.0);
+  float phase = fract(uT / period + aS * 7.0);
+  float hx = hash(aS * 127.1 + cycle * 311.7);
+  float hy = hash(aS * 269.5 + cycle * 183.3);
+  vec2 base = (vec2(hx, hy) * 2.0 - 1.0) * 7.0;
+  base += vec2(sin(uT * 0.2 + aS * 40.0), cos(uT * 0.17 + aS * 29.0)) * 0.25;
+  float z = mod(aZ * DEPTH - uCam, DEPTH) + 0.6;
+  vec2 ndc = vec2(base.x / (z * 0.16 * uAspect), base.y / (z * 0.16));
+  gl_Position = vec4(ndc, 0.0, 1.0);
+  float life = smoothstep(0.0, 0.16, phase) * (1.0 - smoothstep(0.82, 1.0, phase));
+  float tw = 0.78 + 0.22 * sin(uT * (0.5 + aS * 1.6) + aS * 43.0);
+  float far = clamp(1.6 - z / 26.0, 0.12, 1.0);
+  float near = smoothstep(0.6, 2.2, z);
+  vA = life * tw * far * near;
+  vec3 theme = mix(uTheme1, uTheme2, hash(aS * 7.3));
+  vC = mix(vec3(0.94, 0.95, 1.0), theme, hash(aS * 17.7) * 0.85);
+  // Radial angle of this star on screen, so the fragment can streak it
+  // outward from center when the camera accelerates (warp feel). Near
+  // stars streak more than far ones.
+  vAng = atan(ndc.y, ndc.x);
+  vStr = mix(2.4, 0.4, clamp(z / DEPTH, 0.0, 1.0));
+  gl_PointSize = clamp((0.7 + aS * 1.6) * (22.0 / z) * uDpr, 1.0, 26.0);
+}`;
+    const STAR_FS = `
+precision mediump float;
+uniform float uVel;
+varying vec3 vC; varying float vA; varying float vAng; varying float vStr;
+void main() {
+  vec2 p = gl_PointCoord - 0.5;
+  float c = cos(vAng), s = sin(vAng);
+  p = vec2(c * p.x + s * p.y, -s * p.x + c * p.y); // +x = radially outward
+  p.x /= (1.0 + uVel * vStr);                       // streak with speed
+  float d2 = dot(p, p);
+  float core = exp(-d2 * 95.0);                     // soft gaussian core
+  float halo = exp(-d2 * 13.0) * 0.32;              // wide faint halo
+  float a = (core + halo) * vA;
+  gl_FragColor = vec4(vC + vec3(core * 0.32), min(a, 1.0));
+}`;
+
+    const NEB_VS = `
+attribute vec2 aP;
+varying vec2 vUv;
+void main() { gl_Position = vec4(aP, 0.0, 1.0); vUv = aP; }`;
+    const NEB_FS = `
+precision mediump float;
+varying vec2 vUv;
+uniform float uT; uniform float uCam; uniform float uAspect;
+uniform vec3 uTheme1; uniform vec3 uTheme2;
+float vhash(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
+float noise(vec2 p) {
+  vec2 i = floor(p), f = fract(p);
+  f = f * f * (3.0 - 2.0 * f);
+  return mix(
+    mix(vhash(i), vhash(i + vec2(1.0, 0.0)), f.x),
+    mix(vhash(i + vec2(0.0, 1.0)), vhash(i + vec2(1.0, 1.0)), f.x),
+    f.y
+  );
+}
+float fbm(vec2 p) {
+  float v = 0.0, a = 0.5;
+  for (int i = 0; i < 4; i++) { v += a * noise(p); p = p * 2.13 + vec2(7.3, 3.1); a *= 0.5; }
+  return v;
+}
+void main() {
+  vec2 uv = vec2(vUv.x * uAspect, vUv.y);
+  uv.y += uCam * 0.12;                    // gas slides past as you fly
+  float n1 = fbm(uv * 1.4 + uT * 0.014);
+  float n2 = fbm(uv * 2.3 - uT * 0.01 + 5.0);
+  float neb = smoothstep(0.52, 0.86, n1) * 0.55 + smoothstep(0.6, 0.9, n2) * 0.3;
+  vec3 col = mix(uTheme1, uTheme2, noise(uv * 0.8 + 2.0));
+  gl_FragColor = vec4(col, neb * 0.13);
+}`;
+
+    function compile(type: number, src: string) {
+      const s = gl.createShader(type);
+      if (!s) return null;
+      gl.shaderSource(s, src);
+      gl.compileShader(s);
+      if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) return null;
+      return s;
+    }
+    function program(vsSrc: string, fsSrc: string) {
+      const vs = compile(gl.VERTEX_SHADER, vsSrc);
+      const fs = compile(gl.FRAGMENT_SHADER, fsSrc);
+      if (!vs || !fs) return null;
+      const p = gl.createProgram();
+      if (!p) return null;
+      gl.attachShader(p, vs);
+      gl.attachShader(p, fs);
+      gl.linkProgram(p);
+      if (!gl.getProgramParameter(p, gl.LINK_STATUS)) return null;
+      return p;
+    }
+    const starPr = program(STAR_VS, STAR_FS);
+    if (!starPr) return;
+    const isMobile = window.matchMedia("(max-width: 1023px)").matches;
+    const nebPr = isMobile ? null : program(NEB_VS, NEB_FS);
+
+    const N_STARS = isMobile ? 500 : 1400;
+
+    const makeBuffer = (data: Float32Array) => {
+      const b = gl.createBuffer();
+      gl.bindBuffer(gl.ARRAY_BUFFER, b);
+      gl.bufferData(gl.ARRAY_BUFFER, data, gl.STATIC_DRAW);
+      return b;
+    };
+    const rand = (n: number) => Float32Array.from({ length: n }, () => Math.random());
+    const starZ = makeBuffer(rand(N_STARS));
+    const starS = makeBuffer(rand(N_STARS));
+    const quad = makeBuffer(new Float32Array([-1, -1, 3, -1, -1, 3]));
+
+    const bind = (pr: WebGLProgram, name: string, buf: WebGLBuffer, size = 1) => {
+      const loc = gl.getAttribLocation(pr, name);
+      if (loc === -1) return;
+      gl.bindBuffer(gl.ARRAY_BUFFER, buf);
+      gl.enableVertexAttribArray(loc);
+      gl.vertexAttribPointer(loc, size, gl.FLOAT, false, 0, 0);
+    };
+    const U = (pr: WebGLProgram, n: string) => gl.getUniformLocation(pr, n);
+    const su = {
+      cam: U(starPr, "uCam"), t: U(starPr, "uT"), asp: U(starPr, "uAspect"),
+      dpr: U(starPr, "uDpr"), vel: U(starPr, "uVel"),
+      t1: U(starPr, "uTheme1"), t2: U(starPr, "uTheme2"),
+    };
+    const nu = nebPr
+      ? { t: U(nebPr, "uT"), cam: U(nebPr, "uCam"), asp: U(nebPr, "uAspect"), t1: U(nebPr, "uTheme1"), t2: U(nebPr, "uTheme2") }
+      : null;
+
+    // The ambient field (initAmbient) writes --amb1/--amb2 as it lerps on
+    // scroll; the sky reads the same values so starlight follows the page.
+    const ambientEl = document.querySelector<HTMLElement>("[data-ambient]");
+    const parseRgb = (s: string, fb: number[]) => {
+      const p = (s || "").split(",").map(Number);
+      return p.length === 3 && p.every((n) => !isNaN(n)) ? p.map((n) => n / 255) : fb;
+    };
+
+    gl.enable(gl.BLEND);
+    gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+
+    let dpr = 1;
+    function size() {
+      dpr = Math.min(window.devicePixelRatio || 1, 1.5);
+      canvas.width = Math.max(1, Math.floor(canvas.clientWidth * dpr));
+      canvas.height = Math.max(1, Math.floor(canvas.clientHeight * dpr));
+      gl.viewport(0, 0, canvas.width, canvas.height);
+    }
+
+    document.documentElement.classList.add("spacefield-on");
+    size();
+    window.addEventListener("resize", size, { passive: true });
+
+    let hidden = false;
+    document.addEventListener("visibilitychange", () => { hidden = document.hidden; });
+
+    let cam = 0, vel = 0;
+    const t0 = performance.now();
+    (function frame() {
+      requestAnimationFrame(frame);
+      if (hidden) return;
+      const t = (performance.now() - t0) / 1000;
+      const target = window.scrollY * 0.006 + t * 0.22;
+      const prev = cam;
+      cam += (target - cam) * 0.08;
+      // Smoothed camera speed drives the warp streaks.
+      vel += (Math.min(Math.abs(cam - prev) * 26, 2.2) - vel) * 0.1;
+      const th1 = parseRgb(ambientEl?.style.getPropertyValue("--amb1") ?? "", [0.36, 0.55, 0.94]);
+      const th2 = parseRgb(ambientEl?.style.getPropertyValue("--amb2") ?? "", [0.2, 0.83, 0.6]);
+      const aspect = canvas.width / Math.max(1, canvas.height);
+
+      gl.clearColor(0, 0, 0, 0);
+      gl.clear(gl.COLOR_BUFFER_BIT);
+
+      if (nebPr && nu) {
+        gl.useProgram(nebPr);
+        bind(nebPr, "aP", quad, 2);
+        gl.uniform1f(nu.t, t);
+        gl.uniform1f(nu.cam, cam);
+        gl.uniform1f(nu.asp, aspect);
+        gl.uniform3f(nu.t1, th1[0], th1[1], th1[2]);
+        gl.uniform3f(nu.t2, th2[0], th2[1], th2[2]);
+        gl.drawArrays(gl.TRIANGLES, 0, 3);
+      }
+
+      gl.useProgram(starPr);
+      bind(starPr, "aZ", starZ);
+      bind(starPr, "aS", starS);
+      gl.uniform1f(su.cam, cam);
+      gl.uniform1f(su.t, t);
+      gl.uniform1f(su.asp, aspect);
+      gl.uniform1f(su.dpr, dpr);
+      gl.uniform1f(su.vel, vel);
+      gl.uniform3f(su.t1, th1[0], th1[1], th1[2]);
+      gl.uniform3f(su.t2, th2[0], th2[1], th2[2]);
+      gl.drawArrays(gl.POINTS, 0, N_STARS);
+    })();
+  })();
+</script>

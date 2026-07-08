@@ -5,6 +5,8 @@ import BaseLayout from "./BaseLayout.astro";
 
 import { info } from "../data/info";
 import Contact from "../components/contact_section/Contact";
+// Article styles live in their own sheet so only post pages download them.
+import "../styles/post-article.css";
 
 const { frontmatter } = Astro.props;
 

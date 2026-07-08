@@ -53,6 +53,7 @@ export default function DarkModeUtility() {
         <svg
           className="fill-secondary hover:fill-accent stroke-2"
           xmlns="http://www.w3.org/2000/svg"
+          viewBox="0 0 40 40"
           height="40"
           width="40"
         >
@@ -63,6 +64,7 @@ export default function DarkModeUtility() {
         <svg
           className="fill-dk-secondary hover:fill-dk-accent stroke-2"
           xmlns="http://www.w3.org/2000/svg"
+          viewBox="0 0 40 40"
           height="40"
           width="40"
         >
