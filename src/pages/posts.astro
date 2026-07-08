@@ -1,7 +1,8 @@
 ---
-import Picture from "../components/common/Picture.astro";
 import BaseLayout from "../layouts/BaseLayout.astro";
-import Post from "../components/post_section/Post.astro";
+import Picture from "../components/common/Picture.astro";
+import Icon from "../components/common/Icon.astro";
+import { readingTime } from "../utils/readingTime";
 
 const allPosts = await Astro.glob("../pages/posts/*.md");
 allPosts.sort(
@@ -10,75 +11,361 @@ allPosts.sort(
     new Date(a.frontmatter.date).getTime(),
 );
 
-const [featured, ...rest] = allPosts;
+const [featured] = allPosts;
 // Preload the featured cover (the LCP element) as AVIF.
 const featuredPreload = featured?.frontmatter.img_path?.replace(/\.(png|jpe?g)$/i, ".avif");
+
+// Discipline tags per post, for the filter pills. A post can carry more
+// than one discipline.
+const dxFor: Record<string, string[]> = {
+  "enterprise-search": ["aie"],
+  "clinical-rag": ["aie", "fde"],
+  "doctor-report-cards": ["aie", "fde"],
+  "pipeline-ghosting": ["sde"],
+  "npc-coach": ["aie"],
+  "cbct-scan-validator": ["mle"],
+  "jobpilot-v2": ["sde", "aie"],
+  "jobpilot": ["sde", "aie"],
+  "llama-rlhf": ["mle"],
+  "resnet-under-5m": ["mle"],
+  "recsys-spark-bigdata": ["mle", "sde"],
+  "fake-news-sentiment": ["mle"],
+  "loan-radar-mlops": ["mle"],
+  "treatment-estimator": ["sde", "fde"],
+  "cowork-dashboard": ["fde"],
+  "cdf-diagnostic-filter": ["aie"],
+  "reconciliation": ["fde", "sde"],
+  "accounting-automation": ["fde"],
+  "film-and-engineering": [],
+};
+
+// Impact order: the projects that changed the most for the people using
+// them, in the order they shipped. Enterprise RAG work first, then Doc
+// Coach and its pipeline hardening, NPC Coach, the CBCT validator,
+// JobPilot, the research work, the estimator, the dashboard, CDF, and the
+// rest ranked by content.
+const impactOrder = [
+  "enterprise-search",
+  "clinical-rag",
+  "doctor-report-cards",
+  "pipeline-ghosting",
+  "npc-coach",
+  "cbct-scan-validator",
+  "jobpilot-v2",
+  "jobpilot",
+  "llama-rlhf",
+  "resnet-under-5m",
+  "recsys-spark-bigdata",
+  "fake-news-sentiment",
+  "loan-radar-mlops",
+  "treatment-estimator",
+  "cowork-dashboard",
+  "cdf-diagnostic-filter",
+  "reconciliation",
+  "accounting-automation",
+  "film-and-engineering",
+];
+
+const slugOf = (url: string | undefined) => (url || "").split("/").filter(Boolean).pop() || "";
+const impactRank = (slug: string) => {
+  const i = impactOrder.indexOf(slug);
+  return i === -1 ? 500 : i;
+};
+
+const accents = [
+  { hex: "#5B8DEF", rgb: "91, 141, 239" },
+  { hex: "#34D399", rgb: "52, 211, 153" },
+  { hex: "#A78BFA", rgb: "167, 139, 250" },
+  { hex: "#F5A524", rgb: "245, 165, 36" },
+];
+
+const dxPills = [
+  { key: "all", label: "All", accent: "#5B8DEF", rgb: "91, 141, 239" },
+  { key: "aie", label: "AIE", accent: "#34D399", rgb: "52, 211, 153" },
+  { key: "mle", label: "MLE", accent: "#A78BFA", rgb: "167, 139, 250" },
+  { key: "fde", label: "FDE", accent: "#F5A524", rgb: "245, 165, 36" },
+  { key: "sde", label: "SDE", accent: "#5B8DEF", rgb: "91, 141, 239" },
+];
+
+const featuredSlug = slugOf(featured?.url);
 ---
 
 <BaseLayout title="SA: Writing" preloadImage={featuredPreload}>
-  <main>
-    {/* Hero */}
-    <section class="posts-index-hero">
-      <div class="mx-auto w-full max-w-screen-2xl px-6 lg:px-12">
-        <p class="eyebrow text-acc-emerald dark:text-acc-emerald mb-4">
-          Notes from the work
-        </p>
-        <h1 class="display text-text dark:text-dk-text mb-5">Writing.</h1>
-        <p
-          class="text-base lg:text-lg text-text/70 dark:text-dk-text/75 leading-relaxed max-w-2xl"
-        >
-          Stories from the systems I've built. Real numbers, real screwups,
-          real fixes.
+  <main class="relative overflow-hidden">
+    <span class="glow" style="width:630px;height:630px;--gc:#34D399;top:-100px;left:-120px;" aria-hidden="true"></span>
+    <span class="glow glow-2" style="width:570px;height:570px;--gc:#5B8DEF;top:34%;right:-110px;" aria-hidden="true"></span>
+    <span class="glow glow-3" style="width:510px;height:510px;--gc:#A78BFA;bottom:-80px;left:22%;" aria-hidden="true"></span>
+
+    {/* Header */}
+    <section class="relative z-[1] pt-32 lg:pt-40 pb-8">
+      <span class="space-el" style="width:143px;height:38px;top:26%;right:5%;" aria-hidden="true"><span class="comet-glow" style="--sr-rgb:52,211,153;"></span><span class="space-comet" style="--sr-rgb:52,211,153;--rz:-14deg;"></span></span>
+      <div class="mx-auto w-full max-w-screen-2xl px-6 lg:px-12" data-arrive>
+        <p class="eyebrow text-acc-emerald mb-4">Notes from the work</p>
+        <h1 class="display text-text dark:text-dk-text mb-4">Writing.</h1>
+        <p class="text-base lg:text-lg text-text/65 dark:text-dk-text/70 leading-relaxed max-w-2xl">
+          Stories from the systems I've built. Real numbers, real screwups, real fixes.
         </p>
       </div>
     </section>
 
-    {/* Featured post (most recent) */}
+    {/* Featured latest post (shown in the default view) */}
     {
       featured && (
-        <section class="mx-auto w-full max-w-screen-2xl px-6 lg:px-12 mt-6">
-          <a href={featured.url} class="featured-post no-lift group">
-            <div>
-              <span class="featured-badge mb-4">Latest</span>
-              <p class="text-[0.7rem] uppercase tracking-[0.16em] font-semibold text-text/45 dark:text-dk-text/45 tabular-nums">
-                {featured.frontmatter.date}
-              </p>
-              <h2 class="display-sm text-text dark:text-dk-text mt-2 mb-4 group-hover:text-secondary dark:group-hover:text-dk-secondary transition">
-                {featured.frontmatter.title}
-              </h2>
-              <p class="text-base lg:text-lg text-text/65 dark:text-dk-text/75 leading-relaxed">
-                {featured.frontmatter.description}
-              </p>
-              <p class="mt-5 text-sm font-semibold text-secondary dark:text-dk-secondary inline-flex items-center gap-1.5">
-                Read the post <span aria-hidden="true">→</span>
-              </p>
-            </div>
-            <div class="max-lg:order-first">
+        <section id="featured-panel" class="relative z-[1] mx-auto w-full max-w-screen-2xl px-6 lg:px-12" data-arrive>
+          <a
+            href={featured.url}
+            class="no-lift pane pane-glare pane-rim overflow-hidden grid grid-cols-1 lg:grid-cols-2 group"
+            data-tilt
+            data-tiltmax="1.5"
+          >
+            <div class="relative overflow-hidden max-lg:order-first">
               <Picture
                 src={featured.frontmatter.img_path}
                 alt={featured.frontmatter.img_alt || featured.frontmatter.title}
                 width={900}
                 height={500}
-                class="featured-post-img"
+                class="w-full h-full min-h-[240px] lg:min-h-[360px] object-cover transition duration-500 group-hover:scale-[1.03]"
                 loading="eager"
                 fetchpriority="high"
               />
+              <span class="absolute top-4 left-4 featured-badge text-[0.62rem]">Latest</span>
+            </div>
+            <div class="p-7 lg:p-10 flex flex-col justify-center gap-4">
+              <p class="text-[0.68rem] uppercase tracking-[0.18em] font-semibold text-text/45 dark:text-dk-text/45 tabular-nums inline-flex items-center gap-2">
+                {featured.frontmatter.date}
+                <span aria-hidden="true">·</span>
+                <span class="inline-flex items-center gap-1">
+                  <Icon name="clock" size={12} /> {readingTime(featured.rawContent())} min read
+                </span>
+              </p>
+              <h2 class="text-2xl lg:text-4xl font-bold tracking-tight leading-[1.1] text-text dark:text-dk-text group-hover:text-secondary dark:group-hover:text-dk-secondary transition [text-wrap:balance]">
+                {featured.frontmatter.title}
+              </h2>
+              <p class="text-base lg:text-lg text-text/60 dark:text-dk-text/65 leading-relaxed line-clamp-3">
+                {featured.frontmatter.description}
+              </p>
+              <p class="text-sm font-bold text-secondary dark:text-dk-secondary inline-flex items-center gap-1.5 mt-1">
+                Read the post <Icon name="arrow-right" size={14} />
+              </p>
             </div>
           </a>
         </section>
       )
     }
 
-    {/* Rest of the posts as accented cards */}
-    <section
-      class="mx-auto w-full max-w-screen-2xl px-6 lg:px-12 mt-16 mb-24"
-    >
-      <div
-        class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5"
-      >
-        {rest.map((post, i) => <Post post={post} index={i} />)}
+    {/* Filter + sort controls */}
+    <section class="relative z-[1] mx-auto w-full max-w-screen-2xl px-6 lg:px-12 mt-10 lg:mt-14">
+      <div class="flex flex-wrap items-center justify-between gap-4" data-arrive>
+        <div class="flex flex-wrap items-center gap-2" role="group" aria-label="Filter posts by discipline">
+          {dxPills.map((p) => (
+            <button
+              type="button"
+              class={`dpill wr-filter ${p.key === "all" ? "wr-filter-active" : ""}`}
+              data-filter={p.key}
+              style={`--dx: ${p.accent}; --dx-rgb: ${p.rgb};`}
+            >
+              <i aria-hidden="true"></i>
+              <span>{p.label}</span>
+            </button>
+          ))}
+        </div>
+        <div class="wr-sort" role="group" aria-label="Sort posts">
+          <button type="button" class="wr-sort-btn wr-sort-active" data-sort="date">Newest</button>
+          <button type="button" class="wr-sort-btn" data-sort="impact">Impact</button>
+        </div>
       </div>
+      <p id="impact-note" class="hidden mt-4 text-sm text-text/55 dark:text-dk-text/55 leading-relaxed max-w-3xl">
+        Posts ranked by how much the project behind each one moved the company.
+      </p>
+    </section>
+
+    {/* All posts */}
+    <section class="relative z-[1] mx-auto w-full max-w-screen-2xl px-6 lg:px-12 mt-8 mb-28">
+      <span class="space-el" style="width:130px;height:35px;top:4%;left:2%;" aria-hidden="true"><span class="comet-glow" style="--sr-rgb:167,139,250;"></span><span class="space-comet" style="--sr-rgb:167,139,250;--rz:12deg;"></span></span>
+      <div id="wr-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {allPosts.map((post, i) => {
+          const accent = accents[i % accents.length];
+          const slug = slugOf(post.url);
+          const dx = dxFor[slug] || [];
+          return (
+            <a
+              href={post.url}
+              class="no-lift pane pane-glare overflow-hidden flex flex-col group h-full"
+              data-tilt
+              data-tiltmax="3"
+              data-slug={slug}
+              data-date={new Date(post.frontmatter.date).getTime()}
+              data-impact={impactRank(slug)}
+              data-dx={dx.join(" ")}
+              data-latest={slug === featuredSlug ? "1" : undefined}
+            >
+              {post.frontmatter.img_path && (
+                <div class="relative overflow-hidden">
+                  <Picture
+                    src={post.frontmatter.img_path}
+                    alt={post.frontmatter.img_alt || post.frontmatter.title}
+                    width={600}
+                    height={320}
+                    class="w-full h-44 object-cover transition duration-500 group-hover:scale-[1.04]"
+                  />
+                  <span
+                    class="absolute inset-x-0 bottom-0 h-[2.5px]"
+                    style={`background: linear-gradient(90deg, ${accent.hex}, transparent);`}
+                    aria-hidden="true"
+                  ></span>
+                  {dx.length > 0 && (
+                    <span class="absolute top-3 right-3 flex gap-1.5">
+                      {dx.map((d) => (
+                        <span class="wr-dx-chip">{d.toUpperCase()}</span>
+                      ))}
+                    </span>
+                  )}
+                </div>
+              )}
+              <div class="p-5 flex flex-col gap-2.5 flex-1">
+                <p class="text-[0.64rem] uppercase tracking-[0.18em] font-semibold text-text/40 dark:text-dk-text/40 tabular-nums inline-flex items-center gap-2">
+                  {post.frontmatter.date}
+                  <span aria-hidden="true">·</span>
+                  <span class="inline-flex items-center gap-1">
+                    <Icon name="clock" size={11} /> {readingTime(post.rawContent())} min
+                  </span>
+                </p>
+                <h3 class="text-lg font-bold tracking-tight text-text dark:text-dk-text leading-[1.2] line-clamp-2 group-hover:text-secondary dark:group-hover:text-dk-secondary transition">
+                  {post.frontmatter.title}
+                </h3>
+                <p class="text-[0.82rem] text-text/55 dark:text-dk-text/55 leading-relaxed line-clamp-2 mt-auto">
+                  {post.frontmatter.description}
+                </p>
+              </div>
+            </a>
+          );
+        })}
+      </div>
+      <p id="wr-empty" class="hidden mt-10 text-center text-text/50 dark:text-dk-text/50">
+        No posts in this discipline yet.
+      </p>
     </section>
   </main>
 </BaseLayout>
 
+<style>
+  .wr-filter { cursor: pointer; }
+  .wr-filter-active {
+    color: var(--dx);
+    border-color: rgba(var(--dx-rgb), 0.65);
+    background: rgba(var(--dx-rgb), 0.14);
+    box-shadow: 0 8px 22px -10px rgba(var(--dx-rgb), 0.7);
+  }
+  .wr-sort {
+    display: inline-flex;
+    padding: 4px;
+    border-radius: 9999px;
+    background: var(--glass);
+    border: 1px solid var(--glass-brd);
+    -webkit-backdrop-filter: blur(14px);
+    backdrop-filter: blur(14px);
+  }
+  .wr-sort-btn {
+    padding: 7px 16px;
+    border-radius: 9999px;
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: rgb(29 29 31 / 0.55);
+    cursor: pointer;
+    transition: color 0.2s ease, background 0.2s ease;
+  }
+  :global(html.dark) .wr-sort-btn { color: rgb(245 245 247 / 0.55); }
+  .wr-sort-active {
+    color: #fff !important;
+    background: linear-gradient(135deg, #0066cc, #1e86e0);
+  }
+  :global(html.dark) .wr-sort-active {
+    background: linear-gradient(135deg, #5b8def, #3f6fdd);
+  }
+  .wr-dx-chip {
+    font-family: "SF Mono", ui-monospace, Menlo, Consolas, monospace;
+    font-size: 0.56rem;
+    font-weight: 800;
+    letter-spacing: 0.12em;
+    color: #fff;
+    background: rgba(0, 0, 0, 0.45);
+    -webkit-backdrop-filter: blur(8px);
+    backdrop-filter: blur(8px);
+    padding: 4px 8px;
+    border-radius: 9999px;
+  }
+</style>
+
+<script>
+  import {
+    initGlare,
+    initTilt,
+    initArrive,
+    initAmbient,
+    initComets,
+  } from "../scripts/spatial";
+  initGlare(".pane-glare");
+  initTilt("[data-tilt]");
+  initArrive("[data-arrive]");
+  initComets(".space-el");
+  initAmbient([
+    ["52,211,153", "91,141,239"],
+    ["91,141,239", "167,139,250"],
+    ["167,139,250", "52,211,153"],
+  ]);
+
+  // Filtering and sorting. Default view: newest first with the featured
+  // panel pinned on top and its card hidden from the grid to avoid the
+  // duplicate. Any other view hides the featured panel and shows every
+  // post in the grid.
+  (function () {
+    const grid = document.getElementById("wr-grid");
+    const featuredPanel = document.getElementById("featured-panel");
+    const impactNote = document.getElementById("impact-note");
+    const empty = document.getElementById("wr-empty");
+    if (!grid) return;
+    const cards = Array.from(grid.children) as HTMLElement[];
+
+    let filter = "all";
+    let sort = "date";
+
+    const apply = () => {
+      const isDefault = filter === "all" && sort === "date";
+      if (featuredPanel) featuredPanel.classList.toggle("hidden", !isDefault);
+      if (impactNote) impactNote.classList.toggle("hidden", sort !== "impact");
+
+      const sorted = [...cards].sort((a, b) =>
+        sort === "impact"
+          ? parseInt(a.dataset.impact || "999") - parseInt(b.dataset.impact || "999")
+          : parseInt(b.dataset.date || "0") - parseInt(a.dataset.date || "0"),
+      );
+      let shown = 0;
+      for (const card of sorted) {
+        const dx = (card.dataset.dx || "").split(" ").filter(Boolean);
+        const hideAsDup = isDefault && card.dataset.latest === "1";
+        const hideByFilter = filter !== "all" && !dx.includes(filter);
+        const hidden = hideAsDup || hideByFilter;
+        card.classList.toggle("hidden", hidden);
+        if (!hidden) shown++;
+        grid.appendChild(card);
+      }
+      if (empty) empty.classList.toggle("hidden", shown > 0);
+    };
+
+    document.querySelectorAll<HTMLElement>(".wr-filter").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        filter = btn.dataset.filter || "all";
+        document.querySelectorAll(".wr-filter").forEach((b) => b.classList.toggle("wr-filter-active", b === btn));
+        apply();
+      });
+    });
+    document.querySelectorAll<HTMLElement>(".wr-sort-btn").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        sort = btn.dataset.sort || "date";
+        document.querySelectorAll(".wr-sort-btn").forEach((b) => b.classList.toggle("wr-sort-active", b === btn));
+        apply();
+      });
+    });
+    apply();
+  })();
+</script>

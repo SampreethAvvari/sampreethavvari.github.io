@@ -7,6 +7,14 @@ export default function Pointer() {
   const canvasRef = useRef(null);
 
   useEffect(() => {
+    // No trail for users who asked for less motion, and no work on touch
+    // devices where the canvas is hidden anyway.
+    if (
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches ||
+      !window.matchMedia("(pointer: fine)").matches
+    ) {
+      return;
+    }
     const canvas = canvasRef.current;
     const ctx = canvas.getContext("2d");
     let particles = [];
@@ -90,7 +98,17 @@ export default function Pointer() {
 
     const emitter = setInterval(emit, cfg.interval);
 
+    // Pause everything while the tab is hidden.
+    let hidden = document.hidden;
+    const onVisibility = () => {
+      hidden = document.hidden;
+      if (hidden) particles = [];
+    };
+    document.addEventListener("visibilitychange", onVisibility);
+
     function frame() {
+      raf = requestAnimationFrame(frame);
+      if (hidden) return;
       ctx.clearRect(0, 0, canvas.width / dpr, canvas.height / dpr);
       // Additive blending makes overlapping specks twinkle instead of muddy out.
       ctx.globalCompositeOperation = "lighter";
@@ -100,7 +118,6 @@ export default function Pointer() {
         else p.update();
       }
       ctx.globalCompositeOperation = "source-over";
-      raf = requestAnimationFrame(frame);
     }
     raf = requestAnimationFrame(frame);
 
@@ -110,6 +127,7 @@ export default function Pointer() {
       window.removeEventListener("resize", onResize);
       document.removeEventListener("mousemove", onMouseMove);
       document.removeEventListener("mouseout", onMouseOut);
+      document.removeEventListener("visibilitychange", onVisibility);
       particles = [];
     };
   }, []);

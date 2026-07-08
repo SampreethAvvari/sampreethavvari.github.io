@@ -1,0 +1,640 @@
+/* ─────────────────────────────────────────────────────────────────────
+   Glass design language for the landing and blogs pages.
+   Tokens first, then the surface classes. Dark values under html.dark.
+   ───────────────────────────────────────────────────────────────────── */
+:root {
+  --glass: rgba(255, 255, 255, 0.52);
+  --glass-hi: rgba(255, 255, 255, 0.75);
+  --glass-brd: rgba(255, 255, 255, 0.6);
+  --glare: rgba(255, 255, 255, 0.9);
+  --glow-op: 0.17;
+  --pane-blur: 22px;
+}
+html.dark {
+  --glass: rgba(22, 22, 28, 0.46);
+  --glass-hi: rgba(255, 255, 255, 0.1);
+  --glass-brd: rgba(255, 255, 255, 0.14);
+  --glare: rgba(255, 255, 255, 0.16);
+  --glow-op: 0.14;
+}
+@media (max-width: 1023px) {
+  :root { --pane-blur: 12px; }
+}
+
+/* Glass surface. Featured panes add .pane-rim for the chromatic edge. */
+.pane {
+  position: relative;
+  border-radius: 24px;
+  background: var(--glass);
+  border: 1px solid var(--glass-brd);
+  -webkit-backdrop-filter: blur(var(--pane-blur)) saturate(170%);
+  backdrop-filter: blur(var(--pane-blur)) saturate(170%);
+  box-shadow:
+    0 1px 0 var(--glass-hi) inset,
+    0 30px 70px -42px rgba(15, 23, 42, 0.5);
+}
+html.dark .pane {
+  box-shadow:
+    0 1px 0 var(--glass-hi) inset,
+    0 30px 70px -42px rgba(0, 0, 0, 0.75);
+}
+.pane-glare::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  background: radial-gradient(
+    320px circle at var(--gx, 50%) var(--gy, -40%),
+    var(--glare),
+    transparent 62%
+  );
+  opacity: 0.5;
+  mix-blend-mode: soft-light;
+}
+.pane-rim::before {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(
+    135deg,
+    var(--glass-brd),
+    rgba(52, 211, 153, 0.35),
+    rgba(91, 141, 239, 0.35),
+    rgba(167, 139, 250, 0.3),
+    var(--glass-brd)
+  );
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+}
+
+/* Drifting glows behind section content: huge, ultra-diffuse washes of the
+   section colour (set via --gc inline), not defined orbs. The long radial
+   falloff plus heavy blur reads as a soft cloud of light sliding by. */
+.glow {
+  position: absolute;
+  border-radius: 9999px;
+  background: radial-gradient(closest-side, var(--gc, #5b8def), transparent 72%);
+  filter: blur(70px);
+  opacity: var(--glow-op);
+  pointer-events: none;
+  z-index: 0;
+  animation: glow-drift 18s ease-in-out infinite alternate;
+}
+.glow-2 { animation-duration: 24s; animation-delay: -8s; }
+.glow-3 { animation-duration: 30s; animation-delay: -14s; }
+@keyframes glow-drift {
+  from { transform: translate(0, 0) scale(1); }
+  to { transform: translate(110px, -80px) scale(1.18); }
+}
+@media (max-width: 1023px) {
+  .glow { filter: blur(60px); animation: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .glow { animation: none; }
+}
+
+/* The starfield canvas is fixed at z 0; the footer is not positioned, so
+   without this it would paint underneath the stars. */
+footer {
+  position: relative;
+  z-index: 1;
+}
+
+/* Fixed film grain. */
+.grain {
+  position: fixed;
+  inset: 0;
+  z-index: 70;
+  pointer-events: none;
+  opacity: 0.05;
+  mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)' opacity='0.6'/%3E%3C/svg%3E");
+}
+
+/* Discipline pills. --dx / --dx-rgb carry the accent, set inline. */
+.dpill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.5rem 0.95rem;
+  border-radius: 9999px;
+  font-family: "SF Mono", ui-monospace, Menlo, Consolas, monospace;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  line-height: 1;
+  color: rgb(29 29 31 / 0.65);
+  border: 1px solid rgba(var(--dx-rgb), 0.3);
+  background: rgba(var(--dx-rgb), 0.08);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+  transition: color 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease;
+  will-change: transform;
+}
+html.dark .dpill { color: rgb(245 245 247 / 0.68); }
+.dpill i {
+  width: 7px;
+  height: 7px;
+  border-radius: 9999px;
+  background: var(--dx);
+  box-shadow: 0 0 8px rgba(var(--dx-rgb), 0.7);
+  flex: 0 0 auto;
+}
+.dpill:hover,
+.dpill:focus-visible {
+  color: var(--dx);
+  border-color: rgba(var(--dx-rgb), 0.6);
+  box-shadow: 0 8px 22px -10px rgba(var(--dx-rgb), 0.7);
+}
+.dpill:focus-visible {
+  outline: 2px solid rgba(var(--dx-rgb), 0.6);
+  outline-offset: 3px;
+}
+
+/* Buttons. */
+.gbtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.8rem 1.5rem;
+  border-radius: 9999px;
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: #fff;
+  background: linear-gradient(135deg, #0066cc, #1e86e0);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.35) inset,
+    0 10px 26px -10px rgba(0, 102, 204, 0.8);
+  will-change: transform;
+  transition: box-shadow 0.25s ease;
+}
+html.dark .gbtn {
+  background: linear-gradient(135deg, #5b8def, #3f6fdd);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.35) inset,
+    0 10px 26px -10px rgba(91, 141, 239, 0.7);
+}
+.gbtn:hover { box-shadow: 0 1px 0 rgba(255, 255, 255, 0.35) inset, 0 14px 32px -10px rgba(0, 102, 204, 0.9); }
+html.dark .gbtn:hover { box-shadow: 0 1px 0 rgba(255, 255, 255, 0.35) inset, 0 14px 32px -10px rgba(91, 141, 239, 0.85); }
+.gbtn-ghost {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.8rem 1.5rem;
+  border-radius: 9999px;
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: #1d1d1f;
+  background: var(--glass);
+  border: 1px solid var(--glass-brd);
+  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
+  box-shadow: 0 1px 0 var(--glass-hi) inset;
+  will-change: transform;
+  transition: border-color 0.25s ease;
+}
+html.dark .gbtn-ghost { color: #f5f5f7; }
+.gbtn-ghost:hover { border-color: rgb(29 29 31 / 0.25); }
+html.dark .gbtn-ghost:hover { border-color: rgb(245 245 247 / 0.3); }
+.gbtn:focus-visible,
+.gbtn-ghost:focus-visible {
+  outline: 2px solid #0066cc;
+  outline-offset: 3px;
+}
+html.dark .gbtn:focus-visible,
+html.dark .gbtn-ghost:focus-visible { outline-color: #5b8def; }
+
+/* Marquee strip. Content duplicated once in markup; track scrolls -50%. */
+.mq {
+  position: relative;
+  z-index: 1;
+  border-top: 1px solid rgb(29 29 31 / 0.08);
+  border-bottom: 1px solid rgb(29 29 31 / 0.08);
+  background: var(--glass);
+  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
+  overflow: hidden;
+}
+html.dark .mq {
+  border-color: rgb(245 245 247 / 0.1);
+}
+.mq-track {
+  display: flex;
+  width: max-content;
+  white-space: nowrap;
+  padding: 0.9rem 0;
+  animation: mq-scroll 44s linear infinite;
+}
+.mq:hover .mq-track { animation-play-state: paused; }
+@media (max-width: 1023px) {
+  .mq-track { animation-duration: 64s; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .mq-track { animation: none; }
+}
+@keyframes mq-scroll {
+  to { transform: translateX(-50%); }
+}
+.mq-track span {
+  font-family: "SF Mono", ui-monospace, Menlo, Consolas, monospace;
+  font-size: 0.74rem;
+  font-weight: 600;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: rgb(29 29 31 / 0.5);
+  padding: 0 1.3rem;
+}
+html.dark .mq-track span { color: rgb(245 245 247 / 0.5); }
+.mq-track span b {
+  font-weight: 800;
+  color: var(--mc, #0066cc);
+}
+
+/* Progress rail, left edge, desktop only. */
+.rail {
+  position: fixed;
+  left: 18px;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 50;
+  display: none;
+  flex-direction: column;
+  gap: 13px;
+}
+@media (min-width: 1024px) {
+  .rail { display: flex; }
+}
+.rail a {
+  width: 9px;
+  height: 9px;
+  border-radius: 9999px;
+  background: rgb(29 29 31 / 0.12);
+  border: 1px solid rgb(29 29 31 / 0.25);
+  transition: transform 0.3s ease, background 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+}
+html.dark .rail a {
+  background: rgb(245 245 247 / 0.14);
+  border-color: rgb(245 245 247 / 0.3);
+}
+.rail a.on {
+  background: #0066cc;
+  border-color: #0066cc;
+  box-shadow: 0 0 12px rgba(0, 102, 204, 0.7);
+  transform: scale(1.3);
+}
+html.dark .rail a.on {
+  background: #5b8def;
+  border-color: #5b8def;
+  box-shadow: 0 0 12px rgba(91, 141, 239, 0.7);
+}
+.rail a:focus-visible {
+  outline: 2px solid #0066cc;
+  outline-offset: 3px;
+}
+
+/* Orbiting glow used inside discipline tiles. */
+.orbit-glow::before {
+  content: "";
+  position: absolute;
+  width: 140px;
+  height: 140px;
+  border-radius: 9999px;
+  top: -36px;
+  right: -36px;
+  background: var(--oc, #5b8def);
+  filter: blur(52px);
+  opacity: 0.32;
+  animation: orbit-turn 10s linear infinite;
+  pointer-events: none;
+}
+@keyframes orbit-turn {
+  from { transform: rotate(0deg) translateX(24px) rotate(0deg); }
+  to { transform: rotate(360deg) translateX(24px) rotate(-360deg); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .orbit-glow::before { animation: none; }
+}
+
+/* Name shimmer in the hero headline. */
+.name-shimmer {
+  background: linear-gradient(100deg, #0066cc, #22d3ee 32%, #a78bfa 62%, #0066cc);
+  background-size: 220% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: name-slide 7s ease-in-out infinite;
+}
+html.dark .name-shimmer {
+  background-image: linear-gradient(100deg, #5b8def, #22d3ee 32%, #a78bfa 62%, #5b8def);
+  background-size: 220% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+}
+@keyframes name-slide {
+  0%, 100% { background-position: 0% 0; }
+  50% { background-position: 100% 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .name-shimmer { animation: none; }
+}
+
+/* Institution logo badges in Education / Experience rows. White ground in
+   both themes because the marks are drawn for light backgrounds. */
+.org-badge {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 64px;
+  height: 44px;
+  border-radius: 12px;
+  background: #fff;
+  border: 1px solid rgb(29 29 31 / 0.1);
+  padding: 5px 7px;
+  flex: 0 0 auto;
+}
+html.dark .org-badge {
+  border-color: rgb(245 245 247 / 0.18);
+  box-shadow: 0 0 0 1px rgb(245 245 247 / 0.04);
+}
+.org-badge img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+.org-badge-mono {
+  background: linear-gradient(135deg, #475569, #94a3b8);
+  color: #fff;
+  font-weight: 800;
+  font-size: 0.7rem;
+  letter-spacing: 0.06em;
+}
+
+/* ── Space decor with real z-depth. The outer .space-el carries the scroll
+      parallax (JS) and the perspective; the inner element lives tilted in
+      3D: orbit rings lying in the z-plane with a satellite riding them,
+      and glass planks floating at an angle with a light sweep. The page
+      content sits flat in front, so the scene reads as depth behind it.
+      Decorative only, aria-hidden. ── */
+.space-el {
+  position: absolute;
+  z-index: 0;
+  pointer-events: none;
+  perspective: 900px;
+}
+/* Alive objects: clickable. On click they fly into the depth of space and
+   respawn elsewhere (see initSpaceObjects). */
+.space-el.space-live {
+  pointer-events: auto;
+  cursor: pointer;
+}
+/* Clicked objects recede into the abyss: they shrink into the distance,
+   soften with blur, and dim out slowly, no sideways theatrics. Respawn
+   emerges from the same depth. */
+.space-fly {
+  animation: space-fly 2s cubic-bezier(0.3, 0.5, 0.5, 1) forwards !important;
+}
+@keyframes space-fly {
+  0% { opacity: 1; }
+  55% { opacity: 0.5; }
+  100% {
+    transform: scale(0.03);
+    opacity: 0;
+    filter: blur(5px) brightness(0.6);
+  }
+}
+.space-spawn {
+  animation: space-spawn 1.8s cubic-bezier(0.3, 0.5, 0.4, 1) !important;
+}
+@keyframes space-spawn {
+  from {
+    transform: scale(0.03);
+    opacity: 0;
+    filter: blur(5px) brightness(0.6);
+  }
+  60% { opacity: 0.6; }
+  to {
+    transform: none;
+    opacity: 1;
+    filter: none;
+  }
+}
+
+/* One continuous colour field for the whole page; hues interpolate on
+   scroll (see initAmbient), replacing the per-section glow orbs that used
+   to cut off at section borders. */
+.ambient {
+  position: fixed;
+  inset: 0;
+  z-index: -1; /* above the body background, below all content */
+  pointer-events: none;
+  background:
+    radial-gradient(56% 48% at 22% 30%, rgba(var(--amb1, 91, 141, 239), 0.11), transparent 68%),
+    radial-gradient(52% 46% at 78% 70%, rgba(var(--amb2, 52, 211, 153), 0.09), transparent 68%);
+}
+/* Flare: a bright star with four diffraction spikes, like a light source
+   caught by a lens. Breathes slowly. */
+.space-flare {
+  position: relative;
+  display: block;
+  width: 100%;
+  height: 100%;
+  animation: flare-pulse 5.5s ease-in-out infinite;
+}
+.space-flare::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(90deg, transparent, rgba(var(--sr-rgb, 91, 141, 239), 0.85), transparent) center / 100% 1.5px no-repeat,
+    linear-gradient(0deg, transparent, rgba(var(--sr-rgb, 91, 141, 239), 0.85), transparent) center / 1.5px 100% no-repeat;
+  filter: drop-shadow(0 0 6px rgba(var(--sr-rgb, 91, 141, 239), 0.8));
+}
+.space-flare::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 16px;
+  height: 16px;
+  margin: -8px 0 0 -8px;
+  border-radius: 9999px;
+  background: radial-gradient(circle, #fff, rgba(var(--sr-rgb, 91, 141, 239), 0.9) 32%, transparent 72%);
+  box-shadow:
+    0 0 26px 5px rgba(var(--sr-rgb, 91, 141, 239), 0.55),
+    0 0 60px 14px rgba(var(--sr-rgb, 91, 141, 239), 0.18);
+}
+@keyframes flare-pulse {
+  0%, 100% { transform: scale(0.9); opacity: 0.72; }
+  50% { transform: scale(1.06); opacity: 1; }
+}
+/* Soft ambient aura around a section comet, the faint colour wash the old
+   glow orbs used to give each section. Rendered as a sibling behind the
+   comet inside the same .space-el wrapper. */
+.comet-glow {
+  position: absolute;
+  inset: -70px;
+  border-radius: 9999px;
+  background: radial-gradient(circle, rgba(var(--sr-rgb, 91, 141, 239), 0.12), transparent 70%);
+  filter: blur(26px);
+  animation: comet-glow-breathe 8s ease-in-out infinite;
+  pointer-events: none;
+}
+@keyframes comet-glow-breathe {
+  0%, 100% { opacity: 0.65; transform: scale(0.94); }
+  50% { opacity: 1; transform: scale(1.06); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .comet-glow { animation: none; }
+}
+
+/* Comet: a glowing head trailing a long fading tail, drifting slowly. */
+.space-comet {
+  position: relative;
+  display: block;
+  width: 100%;
+  height: 100%;
+  transform: rotate(var(--rz, -22deg));
+  animation: comet-drift 11s ease-in-out infinite alternate;
+}
+.space-comet::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 10px;
+  top: 50%;
+  height: 2px;
+  margin-top: -1px;
+  border-radius: 2px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(var(--sr-rgb, 91, 141, 239), 0.35) 70%,
+    rgba(255, 255, 255, 0.6)
+  );
+  filter: blur(1.4px);
+}
+.space-comet::after {
+  content: "";
+  position: absolute;
+  right: 0;
+  top: 50%;
+  width: 8px;
+  height: 8px;
+  margin-top: -4px;
+  border-radius: 9999px;
+  background: radial-gradient(circle at 40% 40%, rgba(255, 255, 255, 0.85), rgba(var(--sr-rgb, 91, 141, 239), 0.8) 45%, transparent 80%);
+  filter: blur(0.7px);
+  box-shadow:
+    0 0 14px 4px rgba(var(--sr-rgb, 91, 141, 239), 0.45),
+    0 0 40px 14px rgba(var(--sr-rgb, 91, 141, 239), 0.16);
+}
+@keyframes comet-drift {
+  from { transform: rotate(var(--rz, -22deg)) translateX(0); opacity: 0.82; }
+  to { transform: rotate(var(--rz, -22deg)) translateX(36px); opacity: 1; }
+}
+/* Glowstar: a soft ball of light, no outline, just luminance breathing. */
+.space-glowstar {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border-radius: 9999px;
+  background: radial-gradient(
+    circle,
+    rgba(255, 255, 255, 0.9),
+    rgba(var(--sr-rgb, 91, 141, 239), 0.5) 26%,
+    rgba(var(--sr-rgb, 91, 141, 239), 0.12) 55%,
+    transparent 76%
+  );
+  animation: glowstar-breathe 6.5s ease-in-out infinite;
+}
+@keyframes glowstar-breathe {
+  0%, 100% { transform: scale(0.88); opacity: 0.68; }
+  50% { transform: scale(1.08); opacity: 1; }
+}
+.space-plank {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border-radius: 14px;
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(
+    135deg,
+    rgba(var(--sr-rgb, 91, 141, 239), 0.09),
+    rgba(var(--sr-rgb, 91, 141, 239), 0.02) 55%,
+    rgba(255, 255, 255, 0.05)
+  );
+  border: 1px solid rgba(var(--sr-rgb, 91, 141, 239), 0.45);
+  -webkit-backdrop-filter: blur(4px);
+  backdrop-filter: blur(4px);
+  box-shadow:
+    0 0 30px -8px rgba(var(--sr-rgb, 91, 141, 239), 0.5),
+    inset 0 0 26px -14px rgba(var(--sr-rgb, 91, 141, 239), 0.35),
+    inset 0 1px 0 rgba(255, 255, 255, 0.22);
+  animation: plank-float 8s ease-in-out infinite alternate;
+}
+.space-plank::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 36%;
+  left: -44%;
+  background: linear-gradient(105deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+  animation: plank-sheen 6.5s ease-in-out infinite;
+}
+@keyframes plank-float {
+  from { transform: rotateX(54deg) rotateZ(var(--rz, -14deg)) translateZ(0); }
+  to { transform: rotateX(44deg) rotateZ(calc(var(--rz, -14deg) + 7deg)) translateZ(52px); }
+}
+@keyframes plank-sheen {
+  0%, 55% { left: -44%; }
+  85%, 100% { left: 120%; }
+}
+.space-dot {
+  display: block;
+  width: 6px;
+  height: 6px;
+  border-radius: 9999px;
+  background: rgba(var(--sr-rgb, 91, 141, 239), 0.85);
+  box-shadow: 0 0 14px rgba(var(--sr-rgb, 91, 141, 239), 0.85);
+  animation: dot-twinkle 4.5s ease-in-out infinite;
+}
+@keyframes dot-twinkle {
+  0%, 100% { opacity: 0.4; transform: scale(0.85); }
+  50% { opacity: 1; transform: scale(1.2); }
+}
+@media (max-width: 1023px) {
+  .space-el { display: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .space-halo { animation: none; transform: rotateX(58deg); }
+  .space-planet { animation: none; }
+  .space-plank { animation: none; transform: rotateX(54deg) rotateZ(var(--rz, -14deg)); }
+  .space-plank::after { animation: none; }
+  .space-dot { animation: none; }
+}
+
+/* Scroll cue. */
+.scroll-cue {
+  position: absolute;
+  bottom: 22px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 5;
+  color: rgb(29 29 31 / 0.4);
+  animation: cue-bob 2.1s ease-in-out infinite;
+}
+html.dark .scroll-cue { color: rgb(245 245 247 / 0.4); }
+@keyframes cue-bob {
+  0%, 100% { transform: translate(-50%, 0); }
+  50% { transform: translate(-50%, 8px); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .scroll-cue { animation: none; }
+}

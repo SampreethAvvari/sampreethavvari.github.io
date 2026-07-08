@@ -1,167 +1,131 @@
 import { useEffect, useState } from "react";
-import ToggleDarkMode from "../ToggleDarkMode";
 import Search from "../search/Search";
 import Hamburger from "./Hamburger";
 import { info } from "../../data/info";
 
+// Small stroke icons so the dock reads visually, not just as text.
+const ICONS = {
+  home: "m3 10 9-7 9 7v10a1 1 0 0 1-1 1h-5v-7h-6v7H4a1 1 0 0 1-1-1V10Z",
+  work: "M12 3 3 8l9 5 9-5-9-5Zm-9 10 9 5 9-5",
+  projects: "m8 7-5 5 5 5m8-10 5 5-5 5",
+  posts: "M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5Z",
+  teaching: "M22 10 12 5 2 10l10 5 10-5Zm-16 3v4c0 1.7 2.7 3 6 3s6-1.3 6-3v-4",
+  filmmaking: "M7 4v16M17 4v16M3 8h4m10 0h4M3 12h18M3 16h4m10 0h4M5 4h14a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2Z",
+  contact: "m4 7 8 6 8-6M5 5h14a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1Z",
+};
+
+function LinkIcon({ match }) {
+  const d = ICONS[match];
+  if (!d) return null;
+  return (
+    <svg
+      width="15"
+      height="15"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.9"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+      className="gdock-link-icon"
+    >
+      <path d={d} />
+    </svg>
+  );
+}
+
+// Floating glass dock. Sits top right at the top of the page; once you
+// scroll it detaches and glides to the top center as a compact dynamic
+// island (labels collapse, icons stay). A separate SA glass button sits
+// fixed top left as the way home.
 export default function Nav({ searchItems }) {
   const [isNavOpen, setIsNavOpen] = useState(false);
-  const [scrolled, setScrolled] = useState(false);
+  const [activeMatch, setActiveMatch] = useState("home");
+  const [island, setIsland] = useState(false);
+
+  const navLinks = [
+    { name: "Home", href: "/#home", match: "home" },
+    { name: "Work", href: "/work", match: "work" },
+    { name: "Projects", href: "/projects", match: "projects" },
+    { name: "Writing", href: "/posts", match: "posts" },
+    { name: "Teaching", href: "/teaching", match: "teaching" },
+    { name: "Film", href: "/filmmaking", match: "filmmaking" },
+    { name: "Contact", href: "/#contact", match: "contact" },
+  ];
+
+  const sheetLinks = [
+    ...navLinks,
+    { name: "Gallery", href: "/gallery", match: "gallery" },
+    { name: "Resume", href: info.cv, match: "resume" },
+  ];
 
   useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 24);
+    const path = window.location.pathname || "/";
+    if (path === "/" || path === "") setActiveMatch("home");
+    else setActiveMatch(path.replace("/", "").split("/")[0] || "home");
+  }, []);
+
+  useEffect(() => {
+    const onScroll = () => setIsland(window.scrollY > 90);
     onScroll();
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
-  const navLinks = [
-    { name: "Home", href: "/#home", icon: "fas fa-home", match: "home" },
-    { name: "Work", href: "/work", icon: "fas fa-layer-group", match: "work" },
-    { name: "Projects", href: "/projects", icon: "fas fa-code", match: "projects" },
-    { name: "Filmmaking", href: "/filmmaking", icon: "fas fa-clapperboard", match: "filmmaking" },
-    { name: "Blog", href: "/posts", icon: "fas fa-pen-nib", match: "posts" },
-    { name: "Teaching", href: "/teaching", icon: "fas fa-graduation-cap", match: "teaching" },
-    { name: "Contact", href: "/#contact", icon: "fas fa-envelope", match: "contact" },
-  ];
-
-  const extractInitials = (name) => {
-    const names = name.split(" ");
-    let initials = "";
-    names.forEach((name) => {
-      initials += name.charAt(0);
-    });
-    return initials;
-  };
-
-  const [activeMatch, setActiveMatch] = useState("home");
-
-  useEffect(() => {
-    const resolveMatch = () => {
-      const path = window.location.pathname || "/";
-      if (path === "/" || path === "") return "home";
-      const segment = path.replace("/", "").split("/")[0];
-      return segment || "home";
-    };
-
-    setActiveMatch(resolveMatch());
-  }, []);
-
   return (
     <>
-      <nav className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${scrolled ? "pt-3 nav-shrink" : "nav-glass"}`}>
-        <div className={`nav-bar flex items-center gap-4 transition-all duration-300 ${scrolled ? "nav-island nav-glass h-12" : "mx-auto w-full max-w-screen-2xl px-4 sm:px-6 lg:px-10 xl:px-14 2xl:px-20 h-14 lg:h-16"}`}>
-          {/* Mobile menu button — left side, like a native mobile app */}
-          <span className="relative inline-flex lg:hidden shrink-0">
+      <a className="gdock-sa" href="/#home" aria-label="Home">
+        SA
+      </a>
+
+      <nav className={`gdock ${island ? "gdock-island" : ""}`} aria-label="Primary">
+        <ul className="gdock-links hidden lg:flex">
+          {navLinks.map((link) => (
+            <li key={link.match}>
+              <a
+                href={link.href}
+                className={`no-lift gdock-link ${activeMatch === link.match ? "gdock-link-active" : ""}`}
+                title={link.name}
+              >
+                <LinkIcon match={link.match} />
+                <span className="gdock-label">{link.name}</span>
+              </a>
+            </li>
+          ))}
+        </ul>
+
+        <div className="gdock-actions">
+          <Search items={searchItems} />
+          <a href={info.cv} className="no-lift gdock-cta hidden sm:inline-flex">
+            Resume
+          </a>
+          <span className="inline-flex lg:hidden">
             <Hamburger
               onClick={() => setIsNavOpen(!isNavOpen)}
               isNavOpen={isNavOpen}
             />
-            {!isNavOpen && (
-              <span
-                className="absolute -top-0.5 -right-0.5 h-2 w-2 rounded-full bg-secondary dark:bg-dk-secondary animate-pulse pointer-events-none"
-                aria-hidden="true"
-              ></span>
-            )}
           </span>
-
-          {/* Brand */}
-          <a className="font-semibold text-lg lg:text-xl tracking-tight text-text dark:text-dk-text shrink-0" href="/#home">
-            <span className="text-secondary dark:text-dk-secondary">
-              {"</" + extractInitials(info.name) + ">"}
-            </span>
-            <span className={`ml-2 text-text/60 dark:text-dk-text/60 font-normal whitespace-nowrap ${scrolled ? "hidden" : "hidden md:inline-block"}`}>
-              {info.name}
-            </span>
-          </a>
-
-          {/* Desktop nav (links centered, actions right) */}
-          <div className={`hidden lg:flex items-center justify-center ${scrolled ? "" : "flex-1"}`}>
-            <ul className="inline-flex items-center gap-1 text-sm font-medium text-text/70 dark:text-dk-text/70">
-              {navLinks.map((link, index) => {
-                const isActive = activeMatch === link.match;
-                return (
-                <li key={index}>
-                  <a
-                    href={link.href}
-                    className={`no-lift nav-link inline-flex items-center gap-2 px-4 py-2 rounded-full transition ${
-                      isActive
-                        ? "text-text dark:text-dk-text bg-text/[0.06] dark:bg-dk-text/[0.08]"
-                        : "hover:text-text dark:hover:text-dk-text hover:bg-text/[0.04] dark:hover:bg-dk-text/[0.05]"
-                    }`}
-                    aria-label={link.name}
-                    title={link.name}
-                  >
-                    <i className={`${link.icon} text-base`} aria-hidden="true"></i>
-                    <span className="nav-label">{link.name}</span>
-                  </a>
-                </li>
-              )})}
-            </ul>
-          </div>
-
-          {/* Right-side actions */}
-          <div className="hidden lg:flex items-center gap-2 shrink-0">
-            <Search items={searchItems} />
-            <ToggleDarkMode />
-            <a
-              href={info.cv}
-              className="no-lift ml-2 inline-flex items-center gap-2 px-4 py-2 rounded-full bg-text text-primary dark:bg-dk-text dark:text-dk-primary text-sm font-semibold hover:opacity-85 transition"
-            >
-              <i className="fas fa-file-lines text-xs" aria-hidden="true"></i>
-              Resume
-            </a>
-          </div>
-
-          {/* Mobile right cluster */}
-          <div className="flex lg:hidden ml-auto items-center gap-2">
-            <a
-              href={info.cv}
-              className="no-lift inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-text text-primary dark:bg-dk-text dark:text-dk-primary text-xs font-semibold"
-            >
-              <i className="fas fa-file-lines text-[0.65rem]" aria-hidden="true"></i>
-              Resume
-            </a>
-            <ToggleDarkMode />
-            <Search items={searchItems} />
-          </div>
         </div>
-        {/* Mobile nav sheet — Apple-style full-width panel */}
-        {isNavOpen && (
-          <div className="lg:hidden mx-3 mt-2 rounded-2xl overflow-hidden border border-text/12 dark:border-dk-text/15 bg-primary/65 dark:bg-dk-primary/70 backdrop-blur-2xl backdrop-saturate-150 shadow-2xl ring-1 ring-white/10 dark:ring-white/5">
-            <ul className="w-full divide-y divide-text/5 dark:divide-dk-text/10 px-4 sm:px-6">
-              {navLinks.map((link, index) => {
-                const isActive = activeMatch === link.match;
-                return (
-                  <li
-                    key={index}
-                    className={isActive ? "bg-text/[0.06] dark:bg-dk-text/[0.08]" : ""}
-                  >
-                    <a
-                      href={link.href}
-                      onClick={() => setIsNavOpen(false)}
-                      aria-label={link.name}
-                      title={link.name}
-                      className={`flex items-center gap-3 w-full py-3.5 text-base font-semibold transition-colors ${
-                        isActive
-                          ? "text-secondary dark:text-dk-secondary"
-                          : "text-text/60 dark:text-dk-text/60 hover:text-text dark:hover:text-dk-text"
-                      }`}
-                    >
-                      <i className={`${link.icon} w-5 text-center shrink-0`} aria-hidden="true"></i>
-                      <span>{link.name}</span>
-                    </a>
-                  </li>
-                );
-              })}
-              <li className="py-3.5 flex flex-row items-center gap-4">
-                <ToggleDarkMode />
-                <Search items={searchItems} />
-              </li>
-            </ul>
-          </div>
-        )}
       </nav>
+
+      {isNavOpen && (
+        <div className="gdock-sheet lg:hidden" role="dialog" aria-label="Navigation">
+          <ul>
+            {sheetLinks.map((link) => (
+              <li key={link.name}>
+                <a
+                  href={link.href}
+                  onClick={() => setIsNavOpen(false)}
+                  className={`gdock-sheet-link ${activeMatch === link.match ? "gdock-sheet-link-active" : ""}`}
+                >
+                  {link.name}
+                </a>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
       {isNavOpen && (
         <div
           className="fixed inset-0 bg-black/40 backdrop-blur-sm z-40 lg:hidden"
