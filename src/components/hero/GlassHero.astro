@@ -1,24 +1,19 @@
 ---
 // Raymarched glass metaballs, hand-written WebGL (no dependencies). Three
-// blobs melt into each other; one follows the cursor. Fresnel rim light in
-// the four discipline colours, refraction of a flowing gradient, specular.
-// The canvas only runs on desktop fine-pointer devices with motion allowed;
-// everyone else gets the static aurora field. The rAF loop pauses whenever
-// the canvas is offscreen or the tab is hidden.
-import Picture from "../common/Picture.astro";
+// blobs melt into each other; one follows the cursor or the last touch, and
+// drifts on its own when nobody is interacting. Fresnel rim light in the
+// four discipline colours, refraction of a flowing gradient, specular.
+// Runs on every device with WebGL and motion allowed; without it the hero
+// simply sits on the SpaceField sky. The rAF loop pauses whenever the
+// canvas is offscreen or the tab is hidden.
 ---
 
 <div class="glass-hero" aria-hidden="true">
   <canvas class="glass-hero-canvas" data-glasshero></canvas>
-  <div class="glass-hero-fallback">
-    <Picture class="glass-hero-img glass-hero-img-dark" src="/hero-aurora-dark.png" alt="" loading="eager" />
-    <Picture class="glass-hero-img glass-hero-img-light" src="/hero-aurora-light.png" alt="" loading="eager" />
-  </div>
 </div>
 
 <style>
-  .glass-hero,
-  .glass-hero-fallback {
+  .glass-hero {
     position: absolute;
     inset: 0;
     overflow: hidden;
@@ -32,18 +27,6 @@ import Picture from "../common/Picture.astro";
   }
   /* html gets .glasshero-on from the script only when WebGL actually runs. */
   :global(html.glasshero-on) .glass-hero-canvas { display: block; }
-  :global(html.glasshero-on) .glass-hero-fallback { display: none; }
-  .glass-hero-img {
-    position: absolute;
-    inset: 0;
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    opacity: 0.85;
-  }
-  .glass-hero-img-dark { display: none; }
-  :global(html.dark) .glass-hero-img-dark { display: block; }
-  :global(html.dark) .glass-hero-img-light { display: none; }
 </style>
 
 <script>
@@ -51,9 +34,7 @@ import Picture from "../common/Picture.astro";
     const canvas = document.querySelector<HTMLCanvasElement>("[data-glasshero]");
     if (!canvas) return;
     const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    const fine = window.matchMedia("(pointer: fine)").matches;
-    const wide = window.matchMedia("(min-width: 1024px)").matches;
-    if (reduce || !fine || !wide) return;
+    if (reduce) return;
 
     const gl = canvas.getContext("webgl", {
       alpha: true,
@@ -164,12 +145,15 @@ void main(){
     gl.enable(gl.BLEND);
     gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
 
-    // WebGL is alive: switch from fallback image to canvas.
+    // WebGL is alive: show the canvas.
     document.documentElement.classList.add("glasshero-on");
 
     let mx = 0.6, my = 0.1, tmx = 0.6, tmy = 0.1;
     let visible = true, hidden = false;
     let ckX = 0, ckY = 0, ckAt = -1e9;
+    // On phones there is no hovering cursor, so the third blob drifts on a
+    // slow lissajous path whenever nobody has touched or moved in a while.
+    let lastInputAt = -1e9;
 
     const sceneCoords = (clientX: number, clientY: number) => {
       const r = canvas.getBoundingClientRect();
@@ -181,20 +165,23 @@ void main(){
       };
     };
 
+    // pointermove covers both the mouse and a finger dragging on the glass.
     window.addEventListener(
-      "mousemove",
+      "pointermove",
       (e) => {
         const c = sceneCoords(e.clientX, e.clientY);
         if (!c) return;
         tmx = c.x;
         tmy = c.y;
+        lastInputAt = performance.now();
       },
       { passive: true },
     );
 
-    // Clicking anywhere in the hero fires a shockwave from the click point:
-    // the blobs get shoved and wobble back, and a chromatic refraction
-    // ripple expands outward.
+    // Clicking or tapping anywhere in the hero fires a shockwave from that
+    // point: the blobs get shoved and wobble back, and a chromatic
+    // refraction ripple expands outward. The tap also pulls the follower
+    // blob toward the touch point.
     const heroSection = canvas.closest("section");
     (heroSection || canvas).addEventListener(
       "pointerdown",
@@ -204,6 +191,9 @@ void main(){
         ckX = c.x;
         ckY = c.y;
         ckAt = performance.now();
+        tmx = c.x;
+        tmy = c.y;
+        lastInputAt = ckAt;
       },
       { passive: true },
     );
@@ -225,14 +215,20 @@ void main(){
     (function frame() {
       requestAnimationFrame(frame);
       if (!visible || hidden) return;
+      const now = performance.now();
+      if (now - lastInputAt > 2500) {
+        const t = (now - t0) / 1000;
+        tmx = Math.sin(t * 0.26) * 0.55;
+        tmy = Math.cos(t * 0.19) * 0.35 + 0.05;
+      }
       mx += (tmx - mx) * 0.06;
       my += (tmy - my) * 0.06;
       gl.uniform2f(uRes, canvas.width, canvas.height);
-      gl.uniform1f(uT, (performance.now() - t0) / 1000);
+      gl.uniform1f(uT, (now - t0) / 1000);
       gl.uniform2f(uM, mx, my);
       gl.uniform1f(uDark, isDark() ? 1 : 0);
       gl.uniform2f(uCk, ckX, ckY);
-      gl.uniform1f(uCkT, (performance.now() - ckAt) / 1000);
+      gl.uniform1f(uCkT, (now - ckAt) / 1000);
       gl.clearColor(0, 0, 0, 0);
       gl.clear(gl.COLOR_BUFFER_BIT);
       gl.drawArrays(gl.TRIANGLES, 0, 3);

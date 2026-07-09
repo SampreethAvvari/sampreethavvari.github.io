@@ -181,6 +181,28 @@ html.dark .gbtn {
 }
 .gbtn:hover { box-shadow: 0 1px 0 rgba(255, 255, 255, 0.35) inset, 0 14px 32px -10px rgba(0, 102, 204, 0.9); }
 html.dark .gbtn:hover { box-shadow: 0 1px 0 rgba(255, 255, 255, 0.35) inset, 0 14px 32px -10px rgba(91, 141, 239, 0.85); }
+/* Amber variant, matched to the JobPilot cockpit colours. */
+.gbtn-amber {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.8rem 1.5rem;
+  border-radius: 9999px;
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: #17130a;
+  background: linear-gradient(135deg, #ffb000, #f5a524);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.4) inset,
+    0 10px 26px -10px rgba(245, 165, 36, 0.8);
+  will-change: transform;
+  transition: box-shadow 0.25s ease;
+}
+.gbtn-amber:hover {
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.4) inset,
+    0 14px 32px -10px rgba(245, 165, 36, 0.95);
+}
 .gbtn-ghost {
   display: inline-flex;
   align-items: center;
@@ -202,12 +224,14 @@ html.dark .gbtn-ghost { color: #f5f5f7; }
 .gbtn-ghost:hover { border-color: rgb(29 29 31 / 0.25); }
 html.dark .gbtn-ghost:hover { border-color: rgb(245 245 247 / 0.3); }
 .gbtn:focus-visible,
+.gbtn-amber:focus-visible,
 .gbtn-ghost:focus-visible {
   outline: 2px solid #0066cc;
   outline-offset: 3px;
 }
 html.dark .gbtn:focus-visible,
 html.dark .gbtn-ghost:focus-visible { outline-color: #5b8def; }
+html.dark .gbtn-amber:focus-visible { outline-color: #f5a524; }
 
 /* Marquee strip. Content duplicated once in markup; track scrolls -50%. */
 .mq {
