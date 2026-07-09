@@ -40,6 +40,20 @@ export const typeMeta: Record<MaterialType, { label: string; icon: string }> = {
 
 export const teaching: TeachingMaterial[] = [
   {
+    slug: "the-rag-compass",
+    type: "pdf",
+    stream: "aie",
+    title: "The RAG Compass",
+    description:
+      "A visual, first principles masterclass on retrieval: one mental model that runs from a bare baseline to what the best companies ship in production.",
+    whatToExpect:
+      "Everything in retrieval maps to one mental model, the five station compass, and this volume walks it end to end. It moves from the simplest baseline to agentic retrieval, weighs vector, graph, and vectorless approaches, tears down how real companies run RAG in healthcare, legal, and finance, and names the places where people usually go wrong. It closes with a 45 question interview dojo so you can test yourself on all of it.",
+    cover: "/teaching/the-rag-compass.png",
+    addedAt: "2026-07-08",
+    file: "/teaching/the-rag-compass.pdf",
+    pages: 105,
+  },
+  {
     slug: "ai-engineers-handbook",
     type: "pdf",
     stream: "aie",

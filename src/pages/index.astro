@@ -337,6 +337,68 @@ const sections = [
         ))}
       </ul>
 
+      <!-- JobPilot live demo: the one project you can fly yourself -->
+      <div class="mt-10" data-arrive>
+        <div class="pane pane-glare p-0 overflow-hidden" data-tilt data-tiltmax="2">
+          <div class="grid grid-cols-1 lg:grid-cols-12">
+            <div class="lg:col-span-7 p-7 lg:p-9 flex flex-col justify-center">
+              <p class="eyebrow text-acc-amber mb-3">open source · live demo</p>
+              <h3 class="text-2xl lg:text-3xl font-bold tracking-tight text-text dark:text-dk-text">
+                Fly <span class="text-acc-amber">JobPilot</span> yourself.
+              </h3>
+              <p class="mt-3 text-sm lg:text-base text-text/65 dark:text-dk-text/65 leading-relaxed max-w-xl">
+                My job-hunt autopilot: it finds jobs every hour, scores them against
+                me, tailors one-page resumes with receipts, drafts the cold outreach,
+                and watches the inbox for replies. The demo is the real console flying
+                a fictional pilot. Take the two-minute tour, tailor your own resume
+                bullets on a live model, then run the whole thing on your own cloud
+                for pennies.
+              </p>
+              <div class="mt-6 flex flex-wrap gap-3">
+                <a href="https://jobpilot-demo.pages.dev" target="_blank" rel="noopener"
+                   class="no-lift gbtn" data-magnetic>
+                  Explore JobPilot <Icon name="arrow-right" size={15} />
+                </a>
+                <a href="/posts/jobpilot-v2" class="no-lift gbtn-ghost" data-magnetic>
+                  How I built it
+                </a>
+              </div>
+            </div>
+            <div class="lg:col-span-5 relative hidden sm:block" aria-hidden="true">
+              <div class="absolute inset-0"
+                   style="background: radial-gradient(500px 300px at 80% 20%, rgba(255,176,0,0.10), transparent 65%), #0a0d10;"></div>
+              <div class="relative h-full p-6 lg:p-8 flex items-center">
+                <div class="w-full rounded-xl border border-white/10 bg-[#0e1318] font-mono text-[11px] leading-relaxed shadow-2xl">
+                  <div class="flex items-center justify-between border-b border-white/10 px-4 py-2.5">
+                    <span class="font-bold tracking-tight text-[#e8e4da]">JOB<span style="color:#ffb000;">PILOT</span></span>
+                    <span class="rounded bg-[#ffb000] px-2 py-0.5 text-[9px] font-bold text-black">⟳ Refresh jobs</span>
+                  </div>
+                  {[
+                    { fit: "96", c: "#5bd97a", role: "Forward Deployed Engineer", co: "Marrowstone AI" },
+                    { fit: "94", c: "#5bd97a", role: "AI Engineer, Applied Models", co: "Osprey Compute" },
+                    { fit: "91", c: "#5bd97a", role: "ML Engineer, Risk", co: "Bluewater Ledger" },
+                    { fit: "88", c: "#ffb000", role: "AI Engineer, Insights", co: "Driftwood Metrics" },
+                  ].map((r) => (
+                    <div class="flex items-center gap-3 border-b border-white/5 px-4 py-2 text-[#e8e4da]/80">
+                      <span class="font-bold" style={`color:${r.c};`}>{r.fit}</span>
+                      <span class="h-1 w-8 overflow-hidden rounded bg-white/10">
+                        <span class="block h-full rounded" style={`width:${r.fit}%;background:${r.c};`}></span>
+                      </span>
+                      <span class="truncate">{r.role}</span>
+                      <span class="ml-auto shrink-0 text-[#e8e4da]/40">{r.co}</span>
+                    </div>
+                  ))}
+                  <div class="flex items-center justify-between px-4 py-2.5 text-[9px] uppercase tracking-[0.18em] text-[#e8e4da]/35">
+                    <span>fictional data · real product</span>
+                    <span style="color:#ffb000;">▸ take the tour</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <div class="mt-9" data-arrive>
         <a href="/projects" class="link-underline text-sm font-semibold text-acc-amber inline-flex items-center gap-1.5">
           Browse all 15 projects <Icon name="arrow-right" size={14} />
