@@ -80,7 +80,7 @@ export default function Nav({ searchItems }) {
       </a>
 
       <nav className={`gdock ${island ? "gdock-island" : ""}`} aria-label="Primary">
-        <ul className="gdock-links hidden lg:flex">
+        <ul className="gdock-links flex">
           {navLinks.map((link) => (
             <li key={link.match}>
               <a

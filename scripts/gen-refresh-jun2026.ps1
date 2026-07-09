@@ -1,9 +1,10 @@
-# Generates the Enterprise Search cover and the landing hero aurora art
-# (dark + light variants) in the site house style via Vertex nano-banana.
+# Generates the Enterprise Search cover in the site house style via Vertex
+# nano-banana. (The hero aurora art is gone; the hero renders live WebGL on
+# every device now.)
 param(
   [string]$Project = "hybridge-npc-prod",
   [string]$Model = "gemini-2.5-flash-image",
-  [string[]]$Only = @("enterprise-search", "hero-dark", "hero-light")
+  [string[]]$Only = @("enterprise-search")
 )
 [Net.ServicePointManager]::Expect100Continue = $false
 [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
@@ -13,18 +14,8 @@ $entPrompt = @"
 Dark cinematic 3D render on a near-black background, premium tech-editorial style. A central translucent glass panel glowing with thin neon emerald and cyan edges, representing a single clean search answer. Flowing into it from the left, two parallel streams of small glowing particles converge, one cobalt-blue stream of sharp angular shards suggesting keyword search and one emerald stream of soft rounded nodes suggesting semantic vectors, merging into one brighter beam just before the panel. Thin glowing connector lines link the panel to a few small translucent source cards floating behind it, suggesting citations. Soft emerald and cyan volumetric fog low in the frame, gentle haze, floating dust particles. No text, no letters, no numbers, no people, no logos. Minimalist, lots of negative space, dark moody lighting, 16:9 composition.
 "@
 
-$heroDarkPrompt = @"
-Dark cinematic 3D render on a deep near-black background, premium tech-editorial style. Four luminous translucent ribbons of light, one emerald green, one warm amber gold, one soft violet, one cobalt blue, flowing and braiding gracefully across a very wide frame like a calm aurora, concentrated through the middle band with lots of empty dark space above and below for text. Soft glowing particles drifting, gentle volumetric haze, faint bloom, deep negative space. No text, no letters, no numbers, no people, no logos. Minimalist, dark moody lighting, ultra-wide cinematic 16:9 composition.
-"@
-
-$heroLightPrompt = @"
-Soft luminous 3D render on a clean near-white background, premium airy tech-editorial style. Four glowing translucent ribbons of light, one emerald green, one warm amber gold, one soft violet, one cobalt blue, flowing and braiding gracefully across a very wide frame like a bright aurora, concentrated through the middle band with lots of clean white space above and below for text. Saturated enough to read clearly on white, gentle pastel bloom, soft floating particles, airy haze. No text, no letters, no numbers, no people, no logos. Minimalist, bright soft lighting, ultra-wide cinematic 16:9 composition.
-"@
-
 $jobs = @(
-  @{ Key = "enterprise-search"; Out = (Join-Path $root "public\enterprise-search.png"); Prompt = $entPrompt },
-  @{ Key = "hero-dark";         Out = (Join-Path $root "public\hero-aurora-dark.png"); Prompt = $heroDarkPrompt },
-  @{ Key = "hero-light";        Out = (Join-Path $root "public\hero-aurora-light.png"); Prompt = $heroLightPrompt }
+  @{ Key = "enterprise-search"; Out = (Join-Path $root "public\enterprise-search.png"); Prompt = $entPrompt }
 )
 
 $token = (gcloud auth print-access-token) 2>$null

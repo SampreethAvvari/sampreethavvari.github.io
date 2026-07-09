@@ -1746,42 +1746,56 @@ html.dark .gdock::after {
 @media (prefers-reduced-motion: reduce) {
   .gdock::after { animation: none; }
 }
-/* Dynamic island state (desktop): centered, compact, icons only. */
+/* Dynamic island state (all sizes): centered, compact, icons only. */
+.gdock-island {
+  right: 50%;
+  transform: translateX(50%);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.5) inset,
+    0 22px 54px -24px rgba(15, 23, 42, 0.6);
+}
+html.dark .gdock-island {
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.08) inset,
+    0 22px 54px -24px rgba(0, 0, 0, 0.85);
+}
+/* Labels are collapsed by default (phones and tablets run icons only, so
+   every destination fits in one dock); desktop shows them until the dock
+   detaches into the island. */
+.gdock-label {
+  max-width: 0;
+  opacity: 0;
+  margin: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  transition: max-width 0.35s ease, opacity 0.25s ease, margin 0.35s ease;
+}
 @media (min-width: 1024px) {
-  .gdock-island {
-    right: 50%;
-    transform: translateX(50%);
-    box-shadow:
-      0 1px 0 rgba(255, 255, 255, 0.5) inset,
-      0 22px 54px -24px rgba(15, 23, 42, 0.6);
-  }
-  html.dark .gdock-island {
-    box-shadow:
-      0 1px 0 rgba(255, 255, 255, 0.08) inset,
-      0 22px 54px -24px rgba(0, 0, 0, 0.85);
-  }
-  .gdock-label {
+  .gdock:not(.gdock-island) .gdock-label {
     max-width: 7rem;
     opacity: 1;
-    overflow: hidden;
-    white-space: nowrap;
-    transition: max-width 0.35s ease, opacity 0.25s ease, margin 0.35s ease;
+    margin: 0 0 0 7px;
   }
-  .gdock-island .gdock-label {
-    max-width: 0;
-    opacity: 0;
-    margin: 0;
+  .gdock:not(.gdock-island) .gdock-link {
+    padding-left: 12px;
+    padding-right: 12px;
   }
-  .gdock-island .gdock-link {
-    padding-left: 10px;
-    padding-right: 10px;
-  }
-  .gdock-island .gdock-link-icon { margin-right: 0; }
 }
 .gdock-link-icon {
   flex: 0 0 auto;
-  margin-right: 7px;
   opacity: 0.85;
+}
+/* Squeeze the dock a touch further on narrow phones so all seven links,
+   search, and the menu button share one row. */
+@media (max-width: 389px) {
+  .gdock { padding: 6px 6px 6px 8px; }
+  .gdock-link { padding: 7px 6px; }
+  .gdock-actions { margin-left: 2px; gap: 2px; }
+}
+/* The dock carries a Home link everywhere, so the separate SA button only
+   earns its spot when there is room for it. */
+@media (max-width: 639px) {
+  .gdock-sa { display: none; }
 }
 @media (prefers-reduced-motion: reduce) {
   .gdock,
@@ -1800,7 +1814,7 @@ html.dark .gdock::after {
 .gdock-link {
   display: inline-flex;
   align-items: center;
-  padding: 8px 12px;
+  padding: 8px 9px;
   border-radius: 9999px;
   font-size: 0.8rem;
   font-weight: 600;
