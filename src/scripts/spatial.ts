@@ -262,6 +262,10 @@ export function initComets(selector = ".space-el"): void {
   const comets: CometState[] = [];
 
   for (const wrap of wraps) {
+    // Both the layout and a page script may call initComets; each comet
+    // joins exactly one engine.
+    if (wrap.dataset.cometInit) continue;
+    wrap.dataset.cometInit = "1";
     const parent = wrap.parentElement as HTMLElement | null;
     if (!parent) continue;
     const comet = wrap.querySelector<HTMLElement>(".space-comet");
@@ -305,6 +309,7 @@ export function initComets(selector = ".space-el"): void {
     (st as CometState & { respawn?: () => void }).respawn = respawn;
     comets.push(st);
   }
+  if (!comets.length) return;
 
   let last = performance.now();
   (function tick(now: number = performance.now()) {

@@ -62,7 +62,7 @@ void main() {
   gl_Position = vec4(ndc, 0.0, 1.0);
   float life = smoothstep(0.0, 0.16, phase) * (1.0 - smoothstep(0.82, 1.0, phase));
   float tw = 0.78 + 0.22 * sin(uT * (0.5 + aS * 1.6) + aS * 43.0);
-  float far = clamp(1.6 - z / 26.0, 0.12, 1.0);
+  float far = clamp(1.6 - z / 26.0, 0.18, 1.0);
   float near = smoothstep(0.6, 2.2, z);
   vA = life * tw * far * near;
   vec3 theme = mix(uTheme1, uTheme2, hash(aS * 7.3));
@@ -85,9 +85,9 @@ void main() {
   p.x /= (1.0 + uVel * vStr);                       // streak with speed
   float d2 = dot(p, p);
   float core = exp(-d2 * 95.0);                     // soft gaussian core
-  float halo = exp(-d2 * 13.0) * 0.32;              // wide faint halo
+  float halo = exp(-d2 * 13.0) * 0.4;               // wide faint halo
   float a = (core + halo) * vA;
-  gl_FragColor = vec4(vC + vec3(core * 0.32), min(a, 1.0));
+  gl_FragColor = vec4(vC + vec3(core * 0.35), min(a * 1.15, 1.0));
 }`;
 
     const NEB_VS = `
@@ -149,7 +149,7 @@ void main() {
     const isMobile = window.matchMedia("(max-width: 1023px)").matches;
     const nebPr = isMobile ? null : program(NEB_VS, NEB_FS);
 
-    const N_STARS = isMobile ? 500 : 1400;
+    const N_STARS = isMobile ? 1500 : 4200;
 
     const makeBuffer = (data: Float32Array) => {
       const b = gl.createBuffer();

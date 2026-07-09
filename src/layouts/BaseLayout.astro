@@ -53,6 +53,36 @@ const personSchema = {
 import { searchItems } from "../data/searchItems";
 
 import "../styles/global.css";
+
+// Section-coloured comets for every page. Home and the writing index place
+// their own per section, so they are skipped here; every other route gets a
+// page-spanning layer whose colours match that tab's theme.
+const pathname = Astro.url.pathname.replace(/\/+$/, "") || "/";
+const hasOwnComets = pathname === "/" || pathname === "/posts";
+const cometPalettes: Array<[string, string[]]> = [
+  ["/work", ["52,211,153", "167,139,250", "245,165,36", "91,141,239"]],
+  ["/projects", ["91,141,239", "34,211,238", "167,139,250"]],
+  ["/gallery", ["167,139,250", "91,141,239"]],
+  ["/filmmaking", ["244,63,94", "167,139,250"]],
+  ["/teaching", ["34,211,238", "91,141,239"]],
+  ["/resume", ["91,141,239", "52,211,153"]],
+  ["/posts/", ["52,211,153", "91,141,239"]],
+];
+const palette = hasOwnComets
+  ? null
+  : cometPalettes.find(([p]) => pathname === p || pathname.startsWith(p))?.[1] ??
+    ["91,141,239", "52,211,153"];
+// Eight comets spread down the page, alternating sides.
+const pageComets = palette
+  ? Array.from({ length: 8 }, (_, i) => ({
+      color: palette[i % palette.length],
+      top: [5, 17, 30, 43, 56, 69, 81, 91][i],
+      side: i % 2 === 0 ? "right" : "left",
+      inset: 4 + ((i * 9) % 26),
+      w: 104 + ((i * 13) % 40),
+      rz: [-16, 12, -8, 18, -20, 6, 14, -12][i],
+    }))
+  : [];
 ---
 
 <!doctype html>
@@ -193,20 +223,35 @@ import "../styles/global.css";
       }
     </script>
   </head>
-  <body class="bg-primary dark:bg-dk-primary text-text dark:text-dk-text w-full overflow-x-hidden font-display">
+  <body class="relative bg-primary dark:bg-dk-primary text-text dark:text-dk-text w-full overflow-x-hidden font-display">
     <!-- Shared space backdrop on every page: starfield, ambient colour
          flow, and film grain. All behind the content (z -1, grain overlay). -->
     <SpaceField />
     <div class="ambient" data-ambient aria-hidden="true"></div>
     <div class="grain" aria-hidden="true"></div>
+    {pageComets.length > 0 && (
+      <div class="page-comets" aria-hidden="true" style="position:absolute; inset:0; overflow:hidden; z-index:0; pointer-events:none;">
+        {pageComets.map((c) => (
+          <span
+            class="space-el"
+            style={`width:${c.w}px;height:${Math.round(c.w * 0.28)}px;top:${c.top}%;${c.side}:${c.inset}%;`}
+          >
+            <span class="comet-glow" style={`--sr-rgb:${c.color};`}></span>
+            <span class="space-comet" style={`--sr-rgb:${c.color};--rz:${c.rz}deg;`}></span>
+          </span>
+        ))}
+      </div>
+    )}
     <script>
       // Default ambient colour flow; pages with their own section stops
-      // (landing, writing) call initAmbient again and win.
-      import { initAmbient } from "../scripts/spatial";
+      // (landing, writing) call initAmbient again and win. The comet engine
+      // is idempotent per element, so page-level calls coexist with this.
+      import { initAmbient, initComets } from "../scripts/spatial";
       initAmbient([
         ["91,141,239", "52,211,153"],
         ["167,139,250", "34,211,238"],
       ]);
+      initComets(".space-el");
     </script>
     <Nav client:visible searchItems={searchItems} />
     <main class="w-full">
