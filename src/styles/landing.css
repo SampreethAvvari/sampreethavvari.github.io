@@ -387,10 +387,16 @@ html.dark .org-badge {
   perspective: 900px;
 }
 /* Alive objects: clickable. On click they fly into the depth of space and
-   respawn elsewhere (see initSpaceObjects). */
+   respawn elsewhere. */
 .space-el.space-live {
   pointer-events: auto;
   cursor: pointer;
+}
+/* Layout-level comets (all tabs) roam the whole page, so they must never
+   sit between the cursor and real content. */
+.page-comets .space-el.space-live {
+  pointer-events: none;
+  cursor: default;
 }
 /* Clicked objects recede into the abyss: they shrink into the distance,
    soften with blur, and dim out slowly, no sideways theatrics. Respawn
