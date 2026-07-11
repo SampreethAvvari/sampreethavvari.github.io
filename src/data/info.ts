@@ -89,7 +89,7 @@ export const info = {
         logo: "/logos/hybridge.webp",
         logoClass: "h-12",
         highlights: [
-          "[Consultation QA Pipeline](/posts/clinical-rag). Cloud Run + FastAPI grades every Zoom consult against a 7-criterion rubric. Schema-validated Gemini scoring, three-layer doctor ID, HIPAA-clean without Workspace DWD. -35% hallucinations vs the no-schema baseline; +130% acceptance and +43% revenue downstream.",
+          "[Consultation QA Pipeline](/posts/clinical-rag). Cloud Run + FastAPI grades every Zoom consult against a 7-criterion rubric. Schema-validated Gemini scoring, three-layer doctor ID, HIPAA-clean without Workspace DWD. -35% hallucinations vs the no-schema baseline; +130% acceptance and +43% revenue downstream. Now also drafts the doctor's clinical note from the transcript, iterated with the clinical team and guarded so a truncated note can never ship.",
           "[Pipeline observability hardening](/posts/pipeline-ghosting). Hardened that same QA pipeline after it kept showing ✅ complete while emails never sent and Sheet rows never appeared. Killed 9 silent-failure modes (bare-except graveyard, connection-level retry gaps, status-color drift), added durable webhook rows, a rerun-replaces-old flow, a consistency reconciler, and a plain-English Logs UI. 51/0/0 in the audit, +50 targeted tests.",
           "[NPC Coach](/posts/npc-coach). Rebuilt a brittle n8n call grader into a coaching platform for the front desk: it finds every new-patient call, grades it against the practice playbook with a verbatim transcript quote behind each of six criteria, and tracks each coordinator's trend in BigQuery behind a 26-endpoint React dashboard. 40/40/20 weighted score plus 3 hard gates as flags, not caps; ports-and-adapters gated by one NPC_BAA_ACCEPTED switch so 1,156 tests run with no cloud and no PHI. Day one on live calls: ~285 ingested, 40 scored, 3 voicemails auto-filtered, 28 flagged.",
           "[CBCT Scan Validator](/posts/cbct-scan-validator). In-house dental CT classifier. Replaced a $98K + $26K/yr vendor quote with a Cloud Run service under $50/mo. Frozen DentalSegmentator + multi-scale head, OpenVINO on CPU, ~5.5s end-to-end. 20-scan CICT gate on every push.",
@@ -97,7 +97,7 @@ export const info = {
           "[Cowork Dashboard](/posts/cowork-dashboard). Apps Script on weekly Monday.com exports. Patient-to-lead linkage went from 49% to 99% via the Monday connect column. Surfaced ~$460k of orphan patient value. Weekly recon: half a day → 3 minutes.",
           "[Accounting Automation Suite](/posts/accounting-automation). A dozen Python scripts that replaced the controller's manual weekly imports across Denticon, MagicTouch, Paychex, and two banks. ~6-8 hrs/week → 30-45 min. ~400 hrs/yr recovered.",
           "[Reconciliation](/posts/reconciliation). A deterministic engine that cross-checks the schedule, production ledger, and clinical notes across Eaglesoft and Denticon to confirm every patient seen got documented and billed, surfacing only the exceptions. ~6 staff-hours/day of manual cross-checking down to a few minutes; 150+ tests on synthetic fixtures, no PHI in git; live on Cloud Run (v1.6.0).",
-          "[Centralized Diagnostic Filter](/posts/cdf-diagnostic-filter). Turning the founder's diagnostic model into a standardized, HYBRIDGE-owned system: every scan, photo, and survey into one report with a 0-200 risk score and a treatment leaning, where AI assists and doctors validate. Phase 1, the owned in-house intake on Google Cloud, in progress.",
+          "[Centralized Diagnostic Filter](/posts/cdf-diagnostic-filter). Turning the founder's diagnostic model into a standardized, HYBRIDGE-owned system where AI assists and doctors validate. The owned intake is live on Google Cloud for all three markets, and a Gemini engine now reads the panorex under the founder's own written ruleset (v2 after his review of the first outputs), generating doctor and consultation reports from an internal dashboard.",
           "Cross-cutting MLOps: one shared ETL module so train/serve skew is impossible. Hot-swap checkpoints via GCS, tag-based Cloud Build CI/CD, OpenTelemetry with strict no-PHI logs.",
         ],
       },
@@ -297,7 +297,7 @@ export const info = {
           { value: "Hybrid + rerank", label: "BM25 + dense retrieval, fused and reranked, not vector-only" },
           { value: "Cite or abstain", label: "answers are grounded in retrieved evidence, or it says it does not know" },
           { value: "Authority + recency", label: "conflicts resolved by rule, or the disagreement is declared" },
-          { value: "Foundation shipped", label: "auth + infra live; ingestion in build; query + eval designed" },
+          { value: "End to end", label: "auth, ingestion, serving, and both front ends shipped; eval in build" },
         ],
         star: {
           problem:
@@ -307,7 +307,7 @@ export const info = {
           process:
             "Built like a curriculum, one stage at a time, with an eval harness as the referee: recall, nDCG, MRR, and faithfulness measured against a managed baseline before any answer is trusted. The agentic corrective loop is gated behind a confidence check, so it never runs on a simple query.",
           result:
-            "Foundation and auth shipped: domain-locked Identity Platform sign-in, roles and groups, Terraform, and tested CI/CD, all GCP-native and HIPAA-eligible. Ingestion is fully specified and in build; query serving, evaluation, and the front ends are designed and queued.",
+            "The loop runs end to end as of July 2026: domain-locked sign-in, documents added through the governed Dropoff portal with visibility, tags, class, and effective date set at upload, and cited answers streaming back in a chat with conversation history. The abstain rule is enforced in code, an empty retrieval short-circuits with no model call. The eval harness is the remaining referee, so no quality numbers are quoted until it produces them.",
         },
         summary:
           "An internal enterprise-search RAG on Google Cloud. Employees Ask Hybridge in a chat experience; authorized users add documents through a governed Dropoff portal. Hybrid retrieval, reranking, conflict resolution, grounded generation with citations, and a gated agentic loop, all measured by an eval harness.",
@@ -619,34 +619,34 @@ export const info = {
       link: "",
       details: {
         summary_short:
-          "A standardized restorative prognosis operating system for complex implant cases. AI assists, doctors validate. Phase 1, the in-house intake, is in progress.",
+          "A standardized restorative prognosis operating system for complex implant cases. AI assists, doctors validate. The intake is live in production and the AI panorex read runs under the founder's own reviewed ruleset.",
         stats: [
-          { value: "4 phases", label: "Intake to report to AI findings to scale" },
+          { value: "Live", label: "Intake, PDF, Drive filing, dashboard in production" },
           { value: "0-200", label: "Future tooth-loss risk score, 4 bands" },
-          { value: "14 to 9", label: "Input classes into report sections" },
-          { value: "Phase 1", label: "In progress on Google Cloud" },
+          { value: "v2", label: "Doctor-reviewed ruleset behind the AI read" },
+          { value: "3", label: "AI generators per clinical report" },
         ],
         star: {
           problem:
             "The practice's diagnostic intelligence lived in the founder's head and a third-party intake tool. Assessments were screenshotted by hand, filed manually, duplicated across three markets, and the HIPAA posture was unverified. There was no standardized, owned way to turn a complex case into one consistent report.",
           solution:
-            "The Centralized Diagnostic Filter: a HYBRIDGE-owned system that pulls CBCT, scans, photos, and a risk survey into one standardized report across nine sections, with a future-tooth-loss risk score and a treatment leaning, never a final diagnosis. The governing rule is AI assists, doctors validate.",
+            "The Centralized Diagnostic Filter: a HYBRIDGE-owned system that pulls CBCT, scans, photos, and a risk survey into one standardized report, with a future-tooth-loss risk score and a treatment leaning, never a final diagnosis. The governing rule is AI assists, doctors validate.",
           process:
-            "Phased to de-risk. Phase 1 replaces the third-party intake with an owned, BAA-covered questionnaire and premium PDF on Google Cloud; later phases add the unified diagnostic report, AI-assisted radiograph and bone-support findings behind a doctor validation queue, and practice-management integrations. Schema-versioned, auditable, and role-based from the first commit.",
+            "Phased to de-risk. Phase 1 replaced the third-party intake with an owned, BAA-covered questionnaire and premium PDF on Google Cloud. I then recorded the founder reading four real cases, turned his narration into a written panorex ruleset with per-rule citations, and implemented it as a Gemini engine on Vertex AI with structured output, where the model observes and the code recomputes every count.",
           result:
-            "Phase 1 is in progress: spec and architecture approved, private repo and Terraform-managed GCP foundation live, brand and six cover concepts done, the 0-200 risk model preserved, and the questionnaire schema, patient form, PDF generator, and delivery pipeline underway.",
+            "Intake, PDF delivery, and Drive filing are live for all three markets with a nightly end-to-end smoke test. An internal dashboard links cases to Drive folders and generates doctor and consultation reports on demand from three chained AI generators. The founder reviewed the first AI reads and his corrections shipped as ruleset v2; tooth numbering is in a measured eval before more diagnostic scope is added.",
         },
         summary:
           "A standardized diagnostic operating system for complex restorative and implant dentistry, built with the practice founder. One report from every modality, a preserved 0-200 risk model, and a human-in-the-loop AI layer where every finding is doctor-confirmed.",
         highlights: [
-          "Translates a veteran clinician's diagnostic model into a buildable, phased spec.",
-          "Standardized Bone Support Visualization: current bone architecture against an ideal reference.",
+          "Turns a veteran clinician's diagnostic model into a written, cited panorex ruleset and a running Gemini engine.",
+          "The validation loop is real: the founder's review of the first AI reads shipped as ruleset v2.",
           "A 0-200 future tooth-loss risk score across four bands, preserved from the existing model.",
-          "AI assists, doctors validate: every AI finding is provisional until a doctor signs it.",
+          "Three chained AI generators per report, with one source of truth so pages never contradict.",
           "HYBRIDGE-owned on Google Cloud, schema-versioned and auditable from day one.",
         ],
       },
-      tech: ["Python", "Google Cloud", "Terraform", "Vertex AI", "DICOM / CBCT", "PDF generation", "HIPAA"],
+      tech: ["TypeScript", "Next.js", "Google Cloud", "Terraform", "Vertex AI Gemini", "Cloud Run", "PDF generation", "HIPAA"],
       img_alt: "Centralized Diagnostic Filter - Hybridge Implants LLC",
       img_path: "/cdf-diagnostic-filter.png",
     },
