@@ -1,21 +1,21 @@
 ---
 title: "Teaching an AI to read the whole patient and lean toward a treatment, before the doctor does"
-date: "2026-06-20"
+date: "2026-07-10"
 layout: ../../layouts/PostLayout.astro
-description: "The Centralized Diagnostic Filter is HYBRIDGE's diagnostic operating system. AI reads every input a complex case generates (CBCT, intraoral scans, clinical photos, radiographs, a risk survey), surfaces the findings, scores future tooth-loss risk, and leans toward a treatment direction, all before the consult. Then the doctor validates every finding. This is the forward-deployed problem at its hardest: turning a veteran clinician's mental model into a buildable, phased system. Phase 1 is in build."
+description: "The Centralized Diagnostic Filter is HYBRIDGE's diagnostic operating system. AI reads every input a complex case generates, surfaces the findings, scores future tooth-loss risk, and leans toward a treatment direction, all before the consult. Then the doctor validates every finding. The intake shipped and is live in production, the AI panorex read is real and running under a written ruleset extracted from the founder, and his review of the first outputs has already revised that ruleset once. The validation loop is not a diagram anymore."
 img_path: "/cdf-diagnostic-filter.png"
 img_alt: "Centralized Diagnostic Filter: CBCT, intraoral scans, photographs, and a risk survey converging into one standardized diagnostic report"
 tag: "FDE"
 tone: "amber"
 stats:
   - value: "AI reads first"
-    label: "decay, missing teeth, bone levels, prognosis, then a treatment leaning, before the consult"
+    label: "the panorex read is live: tooth by tooth findings, a destruction score, bone loss, per arch verdicts, before the consult"
     tone: "emerald"
   - value: "0-200"
     label: "future tooth-loss risk score across four bands, kept from the model the practice already trusts"
     tone: "blue"
   - value: "doctors validate"
-    label: "every AI finding stays provisional until a doctor signs it, wired into the architecture"
+    label: "Dr. Frank reviewed the first AI reads and his written corrections became ruleset v2. The loop is running, not planned."
     tone: "amber"
 ---
 
@@ -63,15 +63,23 @@ It never states a final diagnosis. It proposes a direction, shows the evidence b
   <div class="stat-label">The report suggests a leaning and surfaces the evidence for it. It never delivers a final diagnosis. That boundary is clinical and legal, and it is wired into the architecture, not left to discipline.</div>
 </div>
 
-## Phase 1: own the front door first
+## Phase 1: own the front door first. It shipped.
 
-You do not build the operating system on day one. You build the thing the rest of it plugs into, and you ship it.
+You do not build the operating system on day one. You build the thing the rest of it plugs into, and you ship it. We did.
 
-Today the patient assessment lives in a third-party intake platform. The HIPAA posture is unverified, one person is the single point of edit, output gets screenshotted by hand into OneNote, each patient's Drive folder is populated manually, and there are three duplicate questionnaires for the three markets (Rochester, Buffalo, Syracuse). It works, but it is fragile and it is not ours.
+When this project started, the patient assessment lived in a third-party intake platform. The HIPAA posture was unverified, one person was the single point of edit, output got screenshotted by hand into OneNote, each patient's Drive folder was populated manually, and there were three duplicate questionnaires for the three markets (Rochester, Buffalo, Syracuse). It worked, but it was fragile and it was not ours.
 
-Phase 1 replaces all of that with a HYBRIDGE-owned intake on Google Cloud: one questionnaire with location-aware routing for all three markets, a premium patient-facing PDF delivered the moment the patient submits, automatic filing into the patient's Drive folder with no human in the loop, and self-serve admin so the practice's intake lead can edit questions, manage recipients per office, and add team members without filing a ticket. BAA-covered, audit-logged, role-based from the first commit.
+That is replaced. The HYBRIDGE-owned intake is live in production on Google Cloud: one questionnaire with location-aware routing for all three markets, a premium patient-facing PDF delivered the moment the patient submits, and automatic filing into the patient's Drive folder with no human in the loop. BAA-covered, audit-logged, role-based, deployed through a tagged CI pipeline with a nightly end-to-end smoke test that submits a real assessment and checks that the PDF actually lands.
+
+Two shipping details I care about. The copy on every screen was rewritten with the practice's intake lead, question by question, because she is the one who answers the phone when a patient is confused. And the patient's copy of the report is deliberately a cover plus a one-page summary with **no risk score on it**. The 0 to 200 number frames a clinical conversation; it is for the doctor to deliver in the room, not for a patient to Google alone the night before.
 
 It reads less like a dental form and more like an Apple product. That is deliberate. A premium intake experience is the first thing a patient touches, and it is also the data plane the AI reads from later, so it has to be owned and structured from day one.
+
+## The dashboard where the reports live
+
+Once real submissions started flowing, the practice needed a place to work with them, so Phase 1 grew an internal dashboard. Sign-in is Google OAuth locked to the company domain, sessions fail closed if the secret is missing, and the whole thing runs as its own service next to the questionnaire.
+
+The dashboard is a patient table, and each row opens into the case: the submitted answers, the risk score, and the generated reports streaming in place. It also solves the unglamorous problem that actually blocks automation: matching a submission to the right patient folder in Drive. The system indexes the patient folders, normalizes the names, and ranks match candidates; when it is confident it links automatically, and when it is not, a human picks from the ranked suggestions and the link sticks, with merges de-duplicated so nothing gets filed twice. Every case has a Regenerate button, separate downloads for the doctor and consultation report variants, and a thumbs up or down with comments on each generated report, which is the seed of the feedback loop the AI phase depends on.
 
 ## The risk model, kept intact on purpose
 
@@ -110,13 +118,52 @@ Standardized Bone Support Visualization Mapping renders a patient's current bone
 
 There is a clinical insight underneath it that the system has to respect: not every heavily restored mouth is failing. The design distinguishes a generalized terminal dentition from a stable restorative adaptation, evaluating bone support, decay pattern, maintainability, biological risk, functional stability, and restorative burden rather than just counting fillings. That distinction came straight out of early testing, and getting it wrong would make the system confidently misleading.
 
-## The AI layer, and where it is allowed to act
+## Extracting the ruleset: four cases, read aloud
 
-Phase 3 is the part that makes the heading literal: the AI does the reading. Decay, missing teeth, restorations, and root-canal identification on 2D radiographs, plus the bone-level mapping that feeds the visualization. It assembles all of that into the draft assessment before anyone sits down with the patient.
+The AI layer is no longer a plan. Here is how it became real, because the process is the part worth copying.
 
-But every AI output lands in a doctor validation queue and stays provisional until a doctor signs it. Those corrections are not discarded. They feed a continuous-learning loop on HYBRIDGE's own validated cases, so every signed case strengthens the next prediction. The AI reads first, the doctor decides, and the doctor's decisions are what teach the AI. The data compounds, and it stays ours.
+I asked Dr. Frank to do what he does anyway, on camera: read panorexes for four real cases and narrate every judgment as he made it. Where he starts, what he marks, what makes a tooth hopeless, when a heavily restored mouth is stable and when it is failing. Then I turned those recordings into a written ruleset where every rule carries a citation back to the case and timestamp where he said it, and anything I synthesized across cases is explicitly marked as needing his confirmation rather than passed off as his words.
 
-That ownership is a principle, not an afterthought. Data, code, brand, and integrations live under HYBRIDGE accounts with no vendor lock-in, the schema is versioned and auditable from day one so Phase 4 plugs in without re-architecture, and Phase 4 itself is the integration layer: write-back into practice-management software so nobody re-keys data, outcome tracking that validates predictability against real results, multi-office rollout, and a pre-consult patient portal.
+That document, not a prompt I invented, is what the diagnostic engine implements:
+
+<div class="aside">
+
+- **A fixed reading sequence**, the same one he runs on every film: orient right versus left first, mark current bone levels, then work through the dentition.
+- **Tooth by tooth classification** on the standard 1 to 32 numbering, wisdom teeth excluded from the missing count, with each tooth landing in exactly one bucket. A tooth with both decay and a filling counts once, as decayed, because decay outranks the repair.
+- **A dental destruction score**, a modified radiographic DMFT, with bands he confirmed: 0 to 12 low, 13 to 16 moderate, 17 to 19 high, 20 and above very high. The score means accumulated disease and restorative history. It does not by itself make anything hopeless.
+- **Bone loss estimated the way he does it**: calibrate against the roughly 11 mm crown of a front tooth, account for panoramic magnification, and band the loss from minimal to advanced, with 30 percent as the flag threshold.
+- **Two axes, per arch**: dental destruction and periodontal support are scored separately for the upper and lower jaw, and the overall read is the worse of the two. An upper jaw can be failing while the lower is maintainable, and the plan changes on exactly that.
+- **Modifiers only raise risk.** Smoking, uncontrolled diabetes, dry mouth, grinding can push the risk up a level. Their absence never pulls a bad radiographic finding back down.
+- **Calibrated honesty about the film itself.** A panorex cannot definitively diagnose decay, so the engine grades findings as obvious, suspected, or needing clinical confirmation instead of pretending to certainty the image cannot support.
+
+</div>
+
+The engine runs on Gemini on Vertex AI with structured output, and there is one implementation detail that matters more than the model choice: **the code recomputes every total**. The model lists which teeth are decayed, missing, and filled; arithmetic is done in plain code, because the one consistent failure we caught in testing was the model counting its own lists wrong. The model observes, the code counts.
+
+## The loop closed, which was the whole point
+
+"AI assists, doctors validate" was always the governing rule. In July it stopped being an architecture diagram and happened for real: Dr. Frank sat with the first AI-generated diagnostic reads, reviewed them against his own reading, and sent back written corrections. Those corrections became version 2 of the ruleset, which is what runs in production now. He renamed the score so it could not be mistaken for a formal clinical index, corrected the counts on the calibration cases, pinned the exact band boundaries, and drew a line the engine now respects: a single hopeless tooth does not make an arch hopeless, and an arch is never judged hopeless by percentages alone when only a few teeth remain.
+
+<div class="stat-callout stat-amber">
+  <div class="stat-value">ruleset v1 → v2</div>
+  <div class="stat-label">The first doctor review pass produced written corrections, and the corrections shipped. This is the validation loop the whole system was designed around, running once, end to end.</div>
+</div>
+
+One thing is deliberately still missing. The ruleset covers diagnosis, not treatment selection, so the "which path" block in the report is clearly labelled as pending his calibration rather than filled with a guess. The next recorded session is him explaining how he goes from a risk read to a recommended path. Same extraction method, next layer of the model.
+
+## Three generators, one source of truth
+
+The clinical report is now assembled by three AI generators, and the order matters. The **CDF diagnostic read** runs first, over the panorex and photos pulled from the patient's linked Drive folder. The **holistic risk analysis** consumes that read as its source of truth for the destruction score and bone loss instead of estimating its own, so two pages of the same report can never quietly disagree. And a **psychographic profile** reads the survey answers for the "why now": what the patient is afraid of, what they want back, how they talk about their own mouth. That one renders only in the doctor's variant. From the dashboard, one click regenerates the whole chain and produces the doctor and consultation PDFs.
+
+## Where the model is still weak, measured instead of hidden
+
+Here is the honest part. Gemini reads pathology usefully, but its spatial localization on a panorex is bad: in our testing it puts findings on the wrong tooth number 50 to 70 percent of the time. For a report a doctor validates tooth by tooth, that is not a rounding error, it is the difference between useful and dangerous.
+
+So tooth numbering became its own evaluation track before any more diagnostic capability gets added. Phase 1 of that eval does exactly one thing: detect every present tooth on the film, assign the correct number, and flag missing positions, benchmarked against purpose-built dental detectors rather than a general vision model. Per-tooth condition detection stays out of scope until the numbering is trustworthy, because every downstream finding hangs off the number being right. The research finding so far: a packaged, ready-to-run open model for tooth numbering essentially does not exist, so this is being built as a proper evaluation of the candidates that do.
+
+## Ownership, and what plugs in next
+
+That ownership is a principle, not an afterthought. Data, code, brand, and integrations live under HYBRIDGE accounts with no vendor lock-in, the schema is versioned and auditable from day one so Phase 4 plugs in without re-architecture, and Phase 4 itself is the integration layer: write-back into practice-management software so nobody re-keys data, outcome tracking that validates predictability against real results, multi-office rollout, and a pre-consult patient portal. Every doctor correction collected along the way stays ours, and every signed case strengthens the next read.
 
 ## The roadmap, with honest status
 
@@ -124,12 +171,12 @@ Each phase ships independently and delivers visible value without waiting on the
 
 | Phase | Scope | Status |
 |---|---|---|
-| 1: Questionnaire system | HYBRIDGE-owned premium intake, PDF, auto-distribution, self-serve admin | In build |
-| 2: Diagnostic report (CDF v1) | One report from fourteen inputs, consult dashboard, risk + treatment lean | Designed, queued |
-| 3: AI-assisted findings | Radiograph assist, bone-support visualization, doctor validation queue | Designed |
+| 1: Questionnaire system | HYBRIDGE-owned premium intake, PDF, auto-distribution, internal dashboard | **Shipped, live in production** |
+| 2: Diagnostic report (CDF v1) | Doctor + consultation reports, Drive-linked cases, regenerate + feedback | **Generating end to end** |
+| 3: AI-assisted findings | Panorex diagnostic read under the doctor's ruleset, validation loop | **Live behind doctor review; tooth-numbering eval underway** |
 | 4: Scale and integrations | PMS write-back, outcome tracking, multi-office, patient portal | Planned |
 
-What is actually in place today, with no rounding up: the spec is written and the architecture approved, with a 19-task implementation plan and three planning sessions done with the practice's intake lead. The private repository is live under the HYBRIDGE org. The Google Cloud foundation is set up with a dedicated billing account, isolated dev and prod projects, Terraform-managed infrastructure, and HIPAA-eligible services only. The brand system is applied, six cover concepts are designed for the patient PDF, and the risk model is preserved at its existing scale and bands. Underway right now: the questionnaire schema (thirty-plus questions with conditional logic, fully tested), the patient form interface, the PDF report generator, and the email-and-Drive delivery pipeline.
+What is actually in place today, with no rounding up: the intake, PDF delivery, and Drive filing run live on Google Cloud for all three markets, deployed by tagged CI with a nightly end-to-end smoke test. The internal dashboard is in daily shape: patient table, Drive folder matching, streamed reports, regenerate, downloads, and per-report feedback. The diagnostic engine produces the full doctor and consultation reports from a real case folder, implementing ruleset v2 that Dr. Frank reviewed and corrected himself. Treatment-path selection is deliberately unbuilt pending his calibration session, and tooth-level localization is in a measured evaluation because the general model's numbering accuracy is not good enough to trust yet. The 0 to 200 risk model is preserved at its existing scale and bands, and it stays separate from the radiographic read until he confirms how the two should combine.
 
 ## Why this one is the interesting problem
 

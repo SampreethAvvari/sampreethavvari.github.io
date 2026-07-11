@@ -88,11 +88,20 @@ Each criterion gets a 1-10 score. The HTML email colors each one against the doc
 
 Rolling averages are read from the master Sheet every run, so the system never drifts from the ledger.
 
+## Update, July 2026: it grades the consult, and now it drafts the note
+
+The newest layer came from watching what doctors do after the consult: they write a clinical note about it, by hand, from memory. The pipeline already has the transcript, so now it drafts that note too, and sends it as its own email in plain copyable text, with a watch-the-recording button at the top so the doctor can verify against the source before pasting anything into the chart.
+
+Getting it trusted took the same loop as the scoring rubric: the clinical team marked up early drafts, and their corrections went into the prompt. Terminology had to match how the practice actually stages treatment, palliative options had to be offered in the right order, and one hard rule got wired in after a near miss: the system never sends a truncated note. A partial clinical note that looks complete is worse than no note, so if the output does not check out whole, it does not ship.
+
+The same period hardened the plumbing: one row per consultation no matter how many retries or reruns happen underneath it, auto-retry that follows the newest attempt across rerun lineages, and crash-orphaned runs that heal themselves in minutes instead of sitting stuck.
+
 ## What it produced
 
 | | Before | After |
 |---|---|---|
 | Consultations scored | Frank's hand-picked subset | Every implant consult, both Zoom orgs |
+| Clinical note after the consult | Doctor writes it by hand, from memory | Drafted from the transcript, doctor verifies and pastes |
 | Time from transcript to coaching report | Days, sometimes weeks | 5-15 minutes |
 
 The number I care most about from an engineering standpoint is the hallucination cut. A schema and one structured retry turn the same model into a reliable producer of clean rows. The acceptance lift and revenue growth are downstream of what the coaching loop did with those rows.

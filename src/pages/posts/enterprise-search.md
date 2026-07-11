@@ -15,7 +15,7 @@ stats:
     label: "the model answers from retrieved evidence, or it says it doesn't know"
     tone: "blue"
   - value: "stage by stage"
-    label: "foundation and auth shipped; ingestion designed; built like a curriculum"
+    label: "foundation, ingestion, serving, and both front ends shipped; evaluation is the referee still being built"
     tone: "amber"
 ---
 
@@ -132,11 +132,13 @@ I am building this the way you would teach it, one stage at a time, because each
 | Stage | What it owns | Status |
 |---|---|---|
 | Foundation and auth | GCP setup, domain-locked sign-in, roles and groups, secrets, CI/CD, infrastructure as code | Shipped |
-| Ingestion | upload, dedup, parse, chunk, metadata, embed, index | Designed, in build |
-| Query serving | rewrite, filter, hybrid retrieval, rerank, conflict resolution, grounded answer | Designed |
-| Evaluation | retrieval and faithfulness metrics, conflict tests, managed baseline | Grows alongside the two above |
-| Search and Dropoff front ends | the chat experience and the upload portal | Designed |
+| Ingestion | upload, dedup, parse, chunk, metadata, embed, index | Shipped |
+| Query serving | filter, hybrid retrieval, rerank, grounded streaming answer, abstain guardrail | Shipped, first version |
+| Evaluation | retrieval and faithfulness metrics, conflict tests, managed baseline | In build; the numbers are not published until it says so |
+| Search and Dropoff front ends | the chat experience and the upload portal | Shipped |
 
-What is real today: the foundation and authentication layer is shipped and running. Sign-in is locked to the company domain, roles and groups are enforced, and the whole thing stands up from a clean checkout through Terraform and a tested CI/CD pipeline. The ingestion pipeline is fully specified and in build. The rest is designed in detail and queued behind it.
+What is real today, as of July 2026: the whole loop works end to end. You sign in with your company account, ask a question, and watch a cited answer stream back from documents you are allowed to see, with conversation history kept. The abstain rule is not a prompt suggestion anymore, it is enforced in code: if retrieval comes back empty, the system short-circuits and says it does not have the answer, and the model is never even called. Authorized people add documents through the Dropoff portal, scoping each one at upload time with its visibility, tags, document class, and effective date, exactly the metadata the conflict ladder needs later, and then watch it move through the pipeline. Tabs and uploads are gated by role, and the API degrades gracefully instead of hallucinating when the AI backend is unavailable.
 
-That is the honest status. I would rather show you a trustworthy foundation and a clear plan than a flashy demo that falls over the first time two documents disagree. The whole point of this system is to not do that.
+The evaluation harness is the part still being built, and it is the reason I am not quoting recall or faithfulness numbers here. The referee gets built before the victory lap.
+
+One war story from shipping it, because it repeats a pattern I keep seeing: the bug that blocked every single login for a day was not the retrieval stack or the model. It was an auth SDK that needed initializing before its first token check. The AI is rarely the thing that breaks. The plumbing is.
