@@ -96,7 +96,7 @@ export const info = {
           "[Treatment Estimator](/posts/treatment-estimator). Next.js + Postgres rebuild of a decade-old quoting tool. Write-once `_at_capture` columns + Postgres triggers turn the 6-month price guarantee into a real DB invariant. Shipped end-to-end in ~1 month; a prior vendor never shipped in a decade.",
           "[Cowork Dashboard](/posts/cowork-dashboard). Apps Script on weekly Monday.com exports. Patient-to-lead linkage went from 49% to 99% via the Monday connect column. Surfaced ~$460k of orphan patient value. Weekly recon: half a day → 3 minutes.",
           "[Accounting Automation Suite](/posts/accounting-automation). A dozen Python scripts that replaced the controller's manual weekly imports across Denticon, MagicTouch, Paychex, and two banks. ~6-8 hrs/week → 30-45 min. ~400 hrs/yr recovered.",
-          "[Reconciliation](/posts/reconciliation). A deterministic engine that cross-checks the schedule, production ledger, and clinical notes across Eaglesoft and Denticon to confirm every patient seen got documented and billed, surfacing only the exceptions. ~6 staff-hours/day of manual cross-checking down to a few minutes; 150+ tests on synthetic fixtures, no PHI in git; live on Cloud Run (v1.6.0).",
+          "[Reconciliation](/posts/reconciliation). A deterministic engine that cross checks the schedule, production ledger, and clinical notes across Eaglesoft and Denticon to confirm every patient seen got documented and billed correctly, surfacing only the exceptions. ~70 hours/week of manual cross checking by a three person insurance team down to an exception review; 200+ tests on synthetic fixtures, no PHI in git; live on Cloud Run.",
           "[Centralized Diagnostic Filter](/posts/cdf-diagnostic-filter). Turning the founder's diagnostic model into a standardized, HYBRIDGE-owned system where AI assists and doctors validate. The owned intake is live on Google Cloud for all three markets, and a Gemini engine now reads the panorex under the founder's own written ruleset (v2 after his review of the first outputs), generating doctor and consultation reports from an internal dashboard.",
           "Cross-cutting MLOps: one shared ETL module so train/serve skew is impossible. Hot-swap checkpoints via GCS, tag-based Cloud Build CI/CD, OpenTelemetry with strict no-PHI logs.",
         ],
@@ -574,26 +574,26 @@ export const info = {
       tier: "industry",
       date: "Jun 2026 - Present",
       description:
-        "I replaced a daily six-hour manual cross-check with an engine that reads three exports and shows staff only the flagged patients.",
+        "I replaced 70 hours a week of manual cross checking with an engine that reads three exports and shows the insurance team only the flagged patients.",
       link: "",
       details: {
         summary_short:
-          "Confirms every patient seen got both documented and billed, across two practice-management systems, and surfaces only the exceptions. Shipped and live.",
+          "Confirms every patient seen got documented and billed correctly, across two practice-management systems, and surfaces only the exceptions. Shipped and live.",
         stats: [
-          { value: "6 hrs → minutes", label: "Daily cross-check vs exception review" },
+          { value: "70 hrs/week", label: "Manual cross checking returned to a three person team" },
           { value: "2 systems, 1 engine", label: "Eaglesoft + Denticon through one core" },
-          { value: "150+ tests", label: "All on synthetic fixtures, no PHI in git" },
-          { value: "v1.6.0", label: "Shipped and live on Cloud Run" },
+          { value: "200+ tests", label: "All on synthetic fixtures, no PHI in git" },
+          { value: "8 of 120", label: "Typical flags per day, everyone else clears automatically" },
         ],
         star: {
           problem:
-            "Two front-office staff spent about three hours each every day cross-checking the schedule, the production ledger, and the clinical notes by hand to confirm every patient seen got documented and billed. It was slow and it failed exactly where mistakes cost the most: care documented but never billed, or billed with no note behind it.",
+            "A three person insurance team spent about 70 hours a week cross checking the schedule, the production ledger, and the clinical notes by hand to confirm every patient seen got documented and billed under the right doctor. It was slow and it failed exactly where mistakes cost the most: care documented but never billed, billed with no note behind it, or billed under the wrong provider.",
           solution:
-            "A pure, deterministic reconciliation engine wrapped in a thin FastAPI app. Two source adapters (Eaglesoft CSV, Denticon xlsx) normalize hostile exports into the same typed models, the matcher keys everything on patient_id, and a small set of honest buckets separates verified patients from the handful that need a human.",
+            "A pure, deterministic reconciliation engine wrapped in a thin FastAPI app. Two source adapters (Eaglesoft CSV, Denticon xlsx) normalize hostile exports into the same typed models, the matcher keys everything on patient_id, and a stack of checks (money vs note, billing provider vs the doctor named in the note, note-claimed codes vs the ledger, perio charting proof, office policy rules) separates verified patients from the handful that need a human.",
           process:
-            "The engine has no network, no database, and no clock, and it takes the timestamp as a parameter, so identical inputs give byte-identical output and every count traces to a source row. Columns map by name and a missing one fails loud. 150+ tests run on synthetic fixtures that mirror every real quirk, plus an opt-in golden test against a real day, so no PHI ever enters the repo.",
+            "The engine has no network, no database, and no clock, and it takes the timestamp as a parameter, so identical inputs give byte-identical output and every count traces to a source row. Columns map by name and a missing one fails loud; the app also checks the dates inside every file and warns when an export covers the wrong day. 200+ tests run on synthetic fixtures that mirror every real quirk, plus an opt-in golden test against a real day, so no PHI ever enters the repo. Every false flag the team reported got traced, fixed, tested, and redeployed the same day.",
           result:
-            "Shipped and live at v1.6.0 on Cloud Run. About six person-hours of daily cross-checking became a few minutes of exception review; roughly 30 of 41 patients a day clear automatically. A Gemini clinical matcher is built and waiting behind a preview-mode rollout.",
+            "Shipped and live on Cloud Run, in daily use. About 70 hours a week of manual cross checking became an exception review of roughly a dozen flags out of ~120 patients a day, over 3,600 hours a year returned. A Gemini clinical matcher is built and waiting behind a preview-mode rollout.",
         },
         summary:
           "A HIPAA-safe reconciliation tool for a multi-location dental group. A deterministic Python engine confirms each patient seen was documented and billed across Eaglesoft and Denticon; the FastAPI shell adds auth, a dashboard, history, and Gmail delivery.",
@@ -601,7 +601,8 @@ export const info = {
           "Pure deterministic engine split from the app shell: same inputs, byte-identical, auditable output.",
           "Two practice-management systems normalized into one set of typed models via a source-adapter registry.",
           "Matching keyed on patient_id with a fuzzy-name fallback that flags low-confidence rather than guessing.",
-          "150+ tests on synthetic fixtures plus an opt-in golden test; no patient data in git, ever.",
+          "Reads free-text notes despite human habits: nicknames, typos, and template lines that look like exams but are not.",
+          "200+ tests on synthetic fixtures plus an opt-in golden test; no patient data in git, ever.",
           "Gemini clinical matcher (tooth, surface, procedure code) built but gated behind a preview rollout.",
         ],
       },

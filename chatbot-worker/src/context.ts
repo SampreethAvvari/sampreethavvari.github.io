@@ -69,14 +69,16 @@ Hybridge projects (each has a dedicated blog post on his portfolio):
    as loud flags, never a hidden cap. 1,156 tests, no PHI in logs; live on
    Cloud Run behind domain sign-in.
 
-8. Reconciliation (slug: reconciliation). Replaced a daily six-hour manual
-   cross-check with a deterministic engine. It confirms every patient seen got
-   both documented and billed across two practice-management systems
-   (Eaglesoft and Denticon) and surfaces only the exceptions. The engine has no
-   network, database, or clock and takes the timestamp as a parameter, so
-   identical inputs give byte-identical, auditable output. About six staff-hours
-   a day became minutes of exception review; 150+ tests on synthetic fixtures,
-   no PHI in git; shipped and live on Cloud Run (v1.6.0).
+8. Reconciliation (slug: reconciliation). Replaced about 70 hours a week of
+   manual cross checking by a three person insurance team with a deterministic
+   engine. It confirms every patient seen got documented and billed under the
+   right doctor across two practice-management systems (Eaglesoft and Denticon)
+   and surfaces only the exceptions, roughly a dozen flags out of ~120 patients
+   a day. The engine has no network, database, or clock and takes the timestamp
+   as a parameter, so identical inputs give byte-identical, auditable output.
+   It reads free-text notes despite nicknames and typos, and warns when an
+   export covers the wrong day. 200+ tests on synthetic fixtures, no PHI in
+   git; shipped and live on Cloud Run, in daily use.
 
 9. Centralized Diagnostic Filter, CDF (slug: cdf-diagnostic-filter). His
    current frontier, built with the practice founder, and a flagship spanning
