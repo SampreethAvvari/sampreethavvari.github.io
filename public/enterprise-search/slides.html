@@ -1,0 +1,410 @@
+<!doctype html><html><head><title>Hybridge Enterprise Search: Slides</title><meta name="description" content="Slide walkthrough of Hybridge Enterprise Search: how knowledge gets in, how answers come out, and why every claim carries a citation."><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1"><style>:root{color-scheme:light}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}</style></head><body>
+
+<style>
+  :root{
+    --paper:#F3EBDC; --cream:#FBF6EC; --sand:#ECE0C8; --line:#E2D5BC; --line2:#D5C4A3;
+    --ink:#33261A; --muted:#8A7558; --faint:#B0A084;
+    --brown:#9A5B23; --amber:#C2772E; --soft:#F0E2CC; --clay:#B0472E; --ok:#3f7d4e;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{ --paper:#191410; --cream:#211a14; --sand:#2b2219; --line:#332920; --line2:#453728;
+      --ink:#EDE4D5; --muted:#B39E7F; --faint:#7d6c54; --brown:#D89A55; --amber:#E0A055;
+      --soft:#332818; --clay:#E08A6E; --ok:#7fb08a; }
+  }
+  :root[data-theme="dark"]{ --paper:#191410; --cream:#211a14; --sand:#2b2219; --line:#332920; --line2:#453728;
+    --ink:#EDE4D5; --muted:#B39E7F; --faint:#7d6c54; --brown:#D89A55; --amber:#E0A055; --soft:#332818; --clay:#E08A6E; --ok:#7fb08a; }
+  :root[data-theme="light"]{ --paper:#F3EBDC; --cream:#FBF6EC; --sand:#ECE0C8; --line:#E2D5BC; --line2:#D5C4A3;
+    --ink:#33261A; --muted:#8A7558; --faint:#B0A084; --brown:#9A5B23; --amber:#C2772E; --soft:#F0E2CC; --clay:#B0472E; --ok:#3f7d4e; }
+
+  *{box-sizing:border-box;}
+  html{ scroll-snap-type:y mandatory; }
+  body{ margin:0; background:var(--paper); color:var(--ink);
+    font-family:ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif; }
+  @media (prefers-reduced-motion: no-preference){ html{ scroll-behavior:smooth; } }
+
+  section.slide{ min-height:100vh; scroll-snap-align:start; display:flex; flex-direction:column;
+    justify-content:center; padding:7vh 8vw; position:relative; }
+  section.slide:nth-child(even){ background:var(--cream); }
+
+  .eyebrow{ text-transform:uppercase; letter-spacing:.16em; font-size:12px; color:var(--amber); font-weight:700; margin-bottom:14px; }
+  h1{ font-family:Georgia,"Times New Roman",serif; font-weight:600; font-size:clamp(40px,7vw,76px); line-height:1.08; margin:0; text-wrap:balance; }
+  h2{ font-family:Georgia,serif; font-weight:600; font-size:clamp(28px,4.6vw,46px); line-height:1.12; margin:0 0 22px; text-wrap:balance; max-width:22ch; }
+  .sub{ font-size:clamp(16px,2vw,21px); color:var(--muted); max-width:52ch; line-height:1.55; margin-top:18px; }
+  .sub b, li b{ color:var(--ink); }
+
+  ul.big{ list-style:none; padding:0; margin:8px 0 0; max-width:64ch; }
+  ul.big li{ font-size:clamp(16px,1.9vw,20px); line-height:1.5; padding:10px 10px 10px 34px; position:relative; color:var(--muted);
+             border-radius:10px; }
+  ul.big li::before{ content:""; position:absolute; left:6px; top:1.35em; width:10px; height:10px; border-radius:50%;
+    background:var(--amber); transform:translateY(-50%); }
+  ul.big li[data-d]{ cursor:pointer; }
+  ul.big li[data-d]:hover{ background:var(--soft); }
+  ul.big li[data-d] b{ border-bottom:2px dotted var(--amber); }
+  ul.big li[data-d]::after{ content:"＋"; position:absolute; right:12px; top:10px; color:var(--faint); font-weight:800; }
+  ul.big li[data-d]:focus-visible{ outline:2px solid var(--amber); outline-offset:2px; }
+
+  .pipeline{ display:flex; flex-wrap:wrap; gap:10px; align-items:center; margin:26px 0 6px; }
+  .pipeline .arr{ color:var(--faint); font-weight:800; font-size:20px; }
+  button.step{ background:var(--sand); border:1px solid var(--line2); color:var(--ink);
+    border-radius:12px; padding:12px 18px; font-weight:700; font-size:clamp(13px,1.6vw,17px); cursor:pointer; font-family:inherit; }
+  button.step:hover{ background:var(--soft); transform:translateY(-1px); }
+  button.step::after{ content:" ＋"; font-size:11px; opacity:.55; }
+  button.step:focus-visible{ outline:2px solid var(--amber); outline-offset:2px; }
+
+  .quote{ font-family:Georgia,serif; font-size:clamp(22px,3.4vw,34px); line-height:1.35; color:var(--ink);
+    border-left:5px solid var(--amber); padding-left:26px; max-width:26ch; margin:10px 0; cursor:pointer; border-radius:6px; }
+  .quote:hover{ background:var(--soft); }
+  .quote .q2{ color:var(--clay); }
+
+  .cards{ display:grid; grid-template-columns:repeat(auto-fit,minmax(230px,1fr)); gap:14px; margin-top:26px; max-width:900px; }
+  .card{ background:var(--paper); border:1px solid var(--line2); border-radius:14px; padding:16px 18px; cursor:pointer; }
+  section.slide:nth-child(odd) .card{ background:var(--cream); }
+  .card:hover{ border-color:var(--amber); }
+  .card .h{ font-weight:800; font-size:15px; margin-bottom:6px; }
+  .card .h::after{ content:" ＋"; color:var(--faint); font-size:11px; }
+  .card p{ font-size:14px; color:var(--muted); margin:0; line-height:1.5; }
+
+  .counter{ position:fixed; right:18px; bottom:14px; font-size:12px; color:var(--faint); font-variant-numeric:tabular-nums; z-index:9; }
+  .hintkey{ position:fixed; left:18px; bottom:14px; font-size:12px; color:var(--faint); z-index:9; }
+  .hintkey b{ color:var(--amber); }
+  .logoline{ display:flex; align-items:center; gap:10px; margin-bottom:26px; }
+  .mark{ width:30px; height:30px; border-radius:7px; background:var(--brown); position:relative; }
+  .mark::after{ content:""; position:absolute; left:6px; right:6px; top:13px; height:9px;
+    border-bottom:3px solid var(--paper); border-radius:0 0 14px 14px; }
+  .brand{ font-weight:800; letter-spacing:.08em; color:var(--brown); font-size:17px; }
+  .foot{ margin-top:34px; font-size:13.5px; color:var(--faint); }
+
+  /* detail modal */
+  .scrim{ position:fixed; inset:0; background:rgba(30,20,10,.5); display:none; align-items:flex-end; justify-content:center; z-index:20; }
+  .scrim.open{ display:flex; }
+  .detail{ width:min(720px, 94vw); max-height:78vh; overflow:auto; background:var(--cream); color:var(--ink);
+    border:1px solid var(--line2); border-radius:18px 18px 0 0; padding:22px 26px 26px; position:relative;
+    animation:up .22s ease-out; }
+  @media (prefers-reduced-motion: reduce){ .detail{ animation:none; } }
+  @keyframes up{ from{ transform:translateY(24px); opacity:0;} to{ transform:none; opacity:1;} }
+  .detail .x{ position:absolute; top:12px; right:14px; background:none; border:0; font-size:20px; color:var(--muted); cursor:pointer; }
+  .detail .dt{ font-family:Georgia,serif; font-size:21px; font-weight:600; margin:0 40px 8px 0; }
+  .detail .db{ font-size:14.5px; color:var(--muted); line-height:1.6; }
+  .detail .db b{ color:var(--ink); }
+
+  /* mini visual primitives (shared with the guide) */
+  .viz{ margin-top:16px; background:var(--paper); border:1px dashed var(--line2); border-radius:12px;
+        padding:16px; display:flex; flex-wrap:wrap; gap:16px; align-items:center; justify-content:center; }
+  .vcol{ display:flex; flex-direction:column; align-items:center; gap:6px; }
+  .vlbl{ font-size:11.5px; color:var(--muted); text-align:center; }
+  .vchip{ font-size:11px; font-weight:700; border-radius:6px; padding:2px 8px; background:var(--sand);
+          color:var(--brown); border:1px solid var(--line2); }
+  .vchip.mono{ font-family:ui-monospace,Consolas,monospace; font-weight:600; }
+  .vchip.ok{ background:transparent; color:var(--ok); border-color:var(--ok); }
+  .vchip.warn{ color:var(--clay); border-color:var(--clay); background:transparent; }
+  .varrow{ font-size:22px; color:var(--amber); font-weight:800; }
+  .vnote{ flex-basis:100%; text-align:center; font-size:12.5px; color:var(--muted); }
+  .vnote b{ color:var(--ink); }
+  .vdoc{ width:58px; height:74px; background:var(--cream); border:1.5px solid var(--line2); border-radius:6px; position:relative; }
+  .vdoc::before{ content:""; position:absolute; left:9px; right:9px; top:12px; height:5px; border-radius:2px; background:var(--amber); opacity:.8; }
+  .vdoc::after{ content:""; position:absolute; left:9px; right:9px; top:24px; height:32px;
+    background:repeating-linear-gradient(to bottom, var(--line2) 0 3px, transparent 3px 9px); }
+  .vx{ position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-size:34px; color:var(--clay); font-weight:800; }
+  .stamp{ position:absolute; top:26px; left:-8px; right:-8px; text-align:center; transform:rotate(-9deg);
+          font-size:9.5px; font-weight:800; letter-spacing:.06em; padding:2px 0; border-radius:4px; }
+  .stamp.cur{ background:var(--soft); color:var(--brown); border:1px solid var(--brown); }
+  .stamp.sup{ background:transparent; color:var(--clay); border:1px solid var(--clay); }
+  .vblock{ border-radius:6px; padding:4px 12px; font-size:11.5px; font-weight:700; }
+  .vblock.h{ background:var(--amber); color:var(--paper); }
+  .vblock.p{ background:var(--sand); color:var(--muted); }
+  .vblock.t{ background:var(--soft); color:var(--brown); border:1px dashed var(--brown); }
+  .chunkbar{ display:flex; align-items:center; position:relative; }
+  .chunkbox{ border:1.5px solid var(--brown); background:var(--soft); border-radius:8px; padding:14px 26px;
+             font-size:12px; font-weight:700; color:var(--brown); }
+  .chunkbox + .chunkbox{ margin-left:-30px; background:var(--sand); border-style:dashed; padding-left:44px; }
+  .overlap{ position:absolute; left:calc(50% - 15px); top:0; bottom:0; width:30px; background:var(--amber); opacity:.28; border-radius:4px; }
+  .vecstrip{ display:flex; gap:2px; align-items:center; }
+  .vecstrip i{ width:9px; height:18px; border-radius:2px; display:block; }
+  .minicard{ background:var(--cream); border:1px solid var(--line2); border-radius:10px; padding:10px 12px;
+             font-size:11.5px; color:var(--muted); min-width:150px; }
+  .minicard .t{ font-weight:800; color:var(--ink); font-size:12px; margin-bottom:4px; }
+  .minicard .row{ display:flex; gap:6px; flex-wrap:wrap; margin:3px 0; }
+  .tilegrid{ display:grid; grid-template-columns:repeat(4,44px); gap:6px; }
+  .tile{ width:44px; height:34px; background:var(--sand); border:1px solid var(--line2); border-radius:6px; position:relative; }
+  .tile.lock{ background:var(--soft); }
+  .tile.lock::after{ content:"🔒"; position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-size:13px; }
+  .ranklist{ display:flex; flex-direction:column; gap:4px; }
+  .ranklist .t{ font-size:11px; font-weight:800; color:var(--faint); text-transform:uppercase; letter-spacing:.06em; text-align:center; }
+  .rk{ font-size:11.5px; font-weight:700; border-radius:6px; padding:3px 10px; text-align:center; min-width:74px; }
+  .rk.a{ background:var(--soft); color:var(--brown); }
+  .rk.b{ background:var(--sand); color:var(--muted); }
+  .rk.top{ border:1.5px solid var(--brown); }
+  svg text{ font-family:ui-sans-serif,system-ui,sans-serif; }
+</style>
+
+<div class="counter"><span id="cur">1</span> / <span id="total">12</span></div>
+<div class="hintkey">↑ ↓ arrows · <b>click anything with ＋ for the deeper story</b></div>
+
+<section class="slide">
+  <div class="logoline"><span class="mark"></span><span class="brand">HYBRIDGE</span></div>
+  <h1>Enterprise Search</h1>
+  <p class="sub"><b>Ask the company anything. Get answers with receipts.</b><br/>
+  An internal assistant that answers from Hybridge documents, cites every claim, and respects who is allowed to see what.</p>
+  <ul class="big" style="margin-top:20px;">
+    <li data-d="what"><b>What it is</b> in one breath</li>
+    <li data-d="where"><b>Where it runs</b> and who can use it</li>
+  </ul>
+  <p class="foot">Live demo · hybridge-search.web.app</p>
+</section>
+
+<section class="slide">
+  <div class="eyebrow">The product</div>
+  <h2>Two tabs, one loop</h2>
+  <ul class="big">
+    <li data-d="ask"><b>Ask Hybridge:</b> a chat that streams answers grounded in company documents. Click a citation and the source opens at the exact highlighted passage.</li>
+    <li data-d="dropoff"><b>Dropoff:</b> authorized people feed the knowledge base by dropping documents into a vortex, scoping who can find them, and watching ingestion status.</li>
+    <li data-d="loop"><b>The loop:</b> knowledge in through one governed door, answers out with sources, always.</li>
+  </ul>
+</section>
+
+<section class="slide">
+  <div class="eyebrow">The write path</div>
+  <h2>How knowledge gets in</h2>
+  <div class="pipeline">
+    <button class="step" data-d="dedup">Dedup</button><span class="arr">→</span>
+    <button class="step" data-d="version">Version</button><span class="arr">→</span>
+    <button class="step" data-d="parse">Parse</button><span class="arr">→</span>
+    <button class="step" data-d="chunk">Chunk</button><span class="arr">→</span>
+    <button class="step" data-d="card">Document card</button><span class="arr">→</span>
+    <button class="step" data-d="embed">Embed</button><span class="arr">→</span>
+    <button class="step" data-d="index">Index</button>
+  </div>
+  <ul class="big">
+    <li data-d="store"><b>The original file is kept safe</b> and always downloadable, permission checked.</li>
+    <li data-d="fail"><b>Failures are honest:</b> unparseable documents land in a Failed state with the reason shown.</li>
+  </ul>
+</section>
+
+<section class="slide">
+  <div class="eyebrow">Metadata</div>
+  <h2>Every document gets a small card</h2>
+  <p class="sub">Gemini proposes a title, summary, entities, and tags. The uploader confirms the governance fields. The card stays small no matter how big the document is.</p>
+  <div class="cards">
+    <div class="card" data-d="who"><div class="h">Who can find it</div><p>Everyone, or specific groups. Empty means open to all of Hybridge.</p></div>
+    <div class="card" data-d="authority"><div class="h">How much to trust it</div><p>Document class drives an authority score, computed on the server.</p></div>
+    <div class="card" data-d="effective"><div class="h">When it applies</div><p>An effective date powers recency tiebreaks when sources disagree.</p></div>
+  </div>
+</section>
+
+<section class="slide">
+  <div class="eyebrow">The read path</div>
+  <h2>Finding the answer</h2>
+  <div class="pipeline">
+    <button class="step" data-d="acl">Permission filter</button><span class="arr">→</span>
+    <button class="step" data-d="dense">Meaning search</button><span class="arr">＋</span>
+    <button class="step" data-d="bm25">Keyword search</button><span class="arr">→</span>
+    <button class="step" data-d="rrf">Fuse</button><span class="arr">→</span>
+    <button class="step" data-d="rerank">Rerank</button><span class="arr">→</span>
+    <button class="step" data-d="conflict">Resolve conflicts</button><span class="arr">→</span>
+    <button class="step" data-d="gen">Answer</button>
+  </div>
+  <ul class="big">
+    <li data-d="dense"><b>Meaning search</b> catches paraphrase: "time off rules" finds the PTO document.</li>
+    <li data-d="bm25"><b>Keyword search</b> catches exactness: part numbers, "35 Ncm", names.</li>
+  </ul>
+</section>
+
+<section class="slide">
+  <div class="eyebrow">Access control</div>
+  <h2>Not everyone sees everything</h2>
+  <ul class="big">
+    <li data-d="groups"><b>Users belong to groups;</b> documents are scoped to groups at drop time.</li>
+    <li data-d="deny"><b>Deny by default,</b> enforced inside the database query itself.</li>
+    <li data-d="identity"><b>Access comes only from your verified identity,</b> never from the request.</li>
+  </ul>
+</section>
+
+<section class="slide">
+  <div class="eyebrow">Trust</div>
+  <h2>When sources disagree, we never flip a coin</h2>
+  <ul class="big">
+    <li data-d="version"><b>Superseded versions are dropped first.</b> Retrieval only sees current documents.</li>
+    <li data-d="conflict"><b>Higher authority wins;</b> ties break to the newer effective date.</li>
+    <li data-d="disagree"><b>Real disagreements are said out loud,</b> with both sources cited.</li>
+  </ul>
+</section>
+
+<section class="slide">
+  <div class="eyebrow">Trust</div>
+  <h2>Grounded, or silent</h2>
+  <div class="quote" data-d="guardrail">"Answer only from the retrieved documents. Cite every claim.<br/><span class="q2">If it is not in the knowledge base, say so."</span></div>
+  <ul class="big">
+    <li data-d="guardrail"><b>No retrieval means the model is never called.</b> No general knowledge answers, ever.</li>
+    <li data-d="cite"><b>Every claim carries a citation</b> that opens the exact passage of the exact version.</li>
+  </ul>
+</section>
+
+<section class="slide">
+  <div class="eyebrow">Growth</div>
+  <h2>Built to grow, not preloaded</h2>
+  <ul class="big">
+    <li data-d="minutes"><b>A new document is searchable minutes after drop.</b> Nothing gets rebuilt.</li>
+    <li data-d="reupload"><b>Re uploads are safe:</b> duplicates skipped, revisions become new versions.</li>
+    <li data-d="honest"><b>Honest empty states</b> tell us exactly what to ingest next.</li>
+  </ul>
+</section>
+
+<section class="slide">
+  <div class="eyebrow">Under the hood</div>
+  <h2>How it is built</h2>
+  <div class="cards">
+    <div class="card" data-d="gcp"><div class="h">All Google Cloud</div><p>Cloud Run, Postgres with pgvector, Cloud Storage, Identity Platform, Vertex AI. No third party SaaS.</p></div>
+    <div class="card" data-d="onedb"><div class="h">One database</div><p>Vectors, keywords, permissions, versions, and chat history in one Postgres.</p></div>
+    <div class="card" data-d="discipline"><div class="h">Engineering discipline</div><p>Terraform everything, versioned deploys, 122 automated tests, adversarial review.</p></div>
+    <div class="card" data-d="rejected"><div class="h">Considered and rejected</div><p>Vectorless LLM navigation and graph extraction. Hybrid won on latency, cost, and fit.</p></div>
+  </div>
+</section>
+
+<section class="slide">
+  <div class="eyebrow">Roadmap</div>
+  <h2>What is next</h2>
+  <ul class="big">
+    <li data-d="switch"><b>Live answers switched on in production.</b></li>
+    <li data-d="near"><b>Near term:</b> chat attachments, web search toggle, Google Drive sync, multi turn memory, batch uploads, a document library.</li>
+    <li data-d="later"><b>Later:</b> voice, dark mode, usage analytics, continuous evaluation, scale hardening.</li>
+  </ul>
+</section>
+
+<section class="slide">
+  <div class="eyebrow">Live demo</div>
+  <h2>Watch it work</h2>
+  <ul class="big">
+    <li data-d="d1"><b>Drop a policy</b> into the vortex and scope it to a group.</li>
+    <li data-d="d2"><b>Ask the question</b> it answers; watch the answer stream with citations.</li>
+    <li data-d="d3"><b>Click citation 1:</b> the source opens on the exact highlighted passage.</li>
+    <li data-d="d4"><b>See two documents disagree,</b> and the answer explain which one it trusted.</li>
+    <li data-d="d5"><b>Ask from outside the group:</b> the document simply does not exist for them.</li>
+  </ul>
+  <p class="foot">hybridge-search.web.app · questions and feedback welcome</p>
+</section>
+
+<div class="scrim" id="scrim">
+  <div class="detail" role="dialog" aria-modal="true" aria-labelledby="dTitle">
+    <button class="x" aria-label="Close">✕</button>
+    <div class="dt" id="dTitle"></div>
+    <div class="db" id="dBody"></div>
+  </div>
+</div>
+
+<script>
+(function(){
+  /* ---------- detail registry ---------- */
+  var VDOC = '<span class="vdoc"></span>';
+  var D = {
+    what: ["What Enterprise Search is", "An internal retrieval augmented assistant: employees ask in plain language, the system finds the relevant passages in company documents (respecting permissions), and Gemini writes a streamed answer citing every claim. It can only speak from what has been ingested, so answers are receipts first, prose second."],
+    where: ["Where it runs", "Live at hybridge-search.web.app, restricted to hybridgeimplants.com Google accounts with verified email. The backend runs on Cloud Run, data in Cloud SQL Postgres and Cloud Storage, models on Vertex AI. Everything is inside Hybridge's Google Cloud, under the organization's BAAs."],
+    ask: ["Ask Hybridge, the read side", "A chat home greets you and streams answers token by token. Inline numbered citations map to a sources list showing each document's tags, class, effective date, and authority. Click any citation and the right pane opens the document scrolled to the exact highlighted passage. A chip toggles Gemini Flash (fast) and Pro (deeper). Conversations persist with pin, rename, and delete."],
+    dropoff: ["Dropoff, the write side", "The single governed door into the corpus. Uploaders drop a file (or paste a link) onto a reactive particle vortex; a scope popup captures who can find it, tags, document class, and effective date; a status list tracks Processing to Ready or Failed. Non uploaders see a lock, and the tab is hidden for them entirely."],
+    loop: ["Why one governed door matters", "Because everything enters through Dropoff, every document in the corpus has an owner, a scope, a class, a version, and an audit trail. Nothing anonymous can contaminate answers, and future chat attachments will stay conversation scoped so casual uploads never leak into shared knowledge."],
+    dedup: ["Dedup: never ingest the same thing twice", "The raw bytes are reduced to a fingerprint (a content hash) before anything else. A known fingerprint is skipped and the uploader gets a pointer to the existing document.",
+      '<div class="viz"><div class="vcol">'+VDOC+'<div class="vlbl">policy.pdf · Monday</div><span class="vchip mono">hash a3f9c2</span></div><div class="varrow">＝</div><div class="vcol"><span class="vdoc" style="position:relative;opacity:.55;"><span class="vx">✕</span></span><div class="vlbl">policy.pdf · Friday</div><span class="vchip mono">hash a3f9c2</span></div><div class="vnote"><b>Same fingerprint, skipped.</b></div></div>'],
+    version: ["Versioning: new content, same document", "Documents keep a stable source key. New content under the same key becomes version n+1: the old version is stamped superseded and linked to its successor. Search only sees current versions; history is never destroyed.",
+      '<div class="viz"><span class="vchip">source key · surgical-manual.pdf</span><div class="vcol"><span class="vdoc" style="position:relative;"><span class="stamp sup">SUPERSEDED</span></span><div class="vlbl">version 1 · Nov 2025</div></div><div class="varrow">→</div><div class="vcol"><span class="vdoc" style="position:relative;"><span class="stamp cur">CURRENT</span></span><div class="vlbl">version 2 · Feb 2026</div></div></div>'],
+    parse: ["Parse: from file to structure", "Parsers produce layout blocks (headings, paragraphs, tables), not one long string. Text and HTML parse locally; PDFs and office formats go through Document AI. Structure is kept so the chunker can cut in sensible places.",
+      '<div class="viz"><div class="vcol"><span class="vdoc" style="width:74px;height:96px;"></span><div class="vlbl">page</div></div><div class="varrow">→</div><div class="vcol" style="align-items:stretch;gap:5px;"><span class="vblock h">Heading · §4.2</span><span class="vblock p">Paragraph</span><span class="vblock p">Paragraph</span><span class="vblock t">Table</span></div></div>'],
+    chunk: ["Chunking: sized for search, cut with care", "Blocks are packed into token sized chunks that respect paragraphs and keep headings with their sections. Neighbors overlap slightly so no idea is severed. Every chunk records its exact character range, which is what makes citations land on the exact passage.",
+      '<div class="viz"><div class="chunkbar"><div class="chunkbox">chunk 1</div><div class="chunkbox">chunk 2</div><div class="overlap"></div></div><div class="vcol"><span class="vchip mono">chunk 1 · chars 0 to 1180</span><span class="vchip mono">chunk 2 · chars 990 to 2210</span></div></div>'],
+    card: ["The document card", "Gemini reads the document once and proposes title, summary, entities, tags, and an effective date; the uploader confirms the governance fields. The card stays tiny for any document length, keeping document level filtering fast forever.",
+      '<div class="viz"><div class="vcol"><span class="vdoc" style="width:74px;height:96px;"></span><div class="vlbl">400 pages</div></div><div class="varrow">→</div><div class="minicard"><div class="t">X1 Surgical Manual v3</div><div class="row"><span class="vchip">engineering</span><span class="vchip">clinical</span></div><div class="row"><span class="vchip">Official Policy → authority 8</span></div><div class="row"><span class="vchip mono">effective 2026·02·10</span></div></div></div>'],
+    embed: ["Embeddings: meaning as numbers", "Each chunk becomes 768 numbers from Vertex AI's gemini embedding model. Similar meanings land near each other even with no shared words, and questions are embedded into the same space at ask time.",
+      '<div class="viz"><div class="vcol"><span class="vchip">"Target insertion torque is 35 Ncm…"</span></div><div class="varrow">→</div><div class="vcol"><div class="vecstrip"><i style="background:#C2772E"></i><i style="background:#9A5B23"></i><i style="background:#E0A055"></i><i style="background:#B0472E"></i><i style="background:#8A7558"></i><i style="background:#C2772E"></i><i style="background:#F5B44B"></i><i style="background:#9A5B23"></i><i style="background:#E07F2C"></i><i style="background:#B39E7F"></i><i style="background:#C2662A"></i><i style="background:#8F3D1C"></i><span class="vlbl">… 768 numbers</span></div></div><div class="vcol"><svg width="200" height="110" viewBox="0 0 200 110"><rect x="1" y="1" width="198" height="108" rx="10" fill="none" stroke="var(--line2)"/><circle cx="48" cy="36" r="5" fill="var(--amber)"/><circle cx="62" cy="50" r="5" fill="var(--amber)"/><circle cx="42" cy="56" r="5" fill="var(--amber)"/><circle cx="54" cy="44" r="7" fill="var(--brown)" stroke="var(--paper)" stroke-width="2"/><circle cx="150" cy="78" r="5" fill="var(--line2)"/><circle cx="166" cy="64" r="5" fill="var(--line2)"/><circle cx="158" cy="90" r="5" fill="var(--line2)"/></svg><div class="vlbl">similar meaning clusters</div></div></div>'],
+    index: ["Indexing: three ways to find it fast", "Three indexes take every new chunk incrementally, with nothing rebuilt: an HNSW graph index for nearest neighbor vector search, a full text index for exact words, and an index over the permission lists. A dropped document is searchable minutes later.",
+      '<div class="viz"><div class="vcol"><svg width="140" height="90" viewBox="0 0 140 90"><line x1="28" y1="26" x2="70" y2="18" stroke="var(--line2)"/><line x1="28" y1="26" x2="52" y2="64" stroke="var(--line2)"/><line x1="70" y1="18" x2="108" y2="40" stroke="var(--line2)"/><line x1="52" y1="64" x2="108" y2="40" stroke="var(--line2)"/><line x1="108" y1="40" x2="118" y2="74" stroke="var(--line2)"/><circle cx="28" cy="26" r="6" fill="var(--amber)"/><circle cx="70" cy="18" r="6" fill="var(--amber)"/><circle cx="52" cy="64" r="6" fill="var(--amber)"/><circle cx="108" cy="40" r="6" fill="var(--brown)"/><circle cx="118" cy="74" r="6" fill="var(--amber)"/></svg><div class="vlbl"><b>HNSW</b> vector graph</div></div><div class="minicard"><div class="t">Full text index</div><div class="row"><span class="vchip mono">torque → 12, 87, 214</span></div><div class="row"><span class="vchip mono">implant → 12, 33</span></div></div><div class="minicard"><div class="t">Permission index</div><div class="row"><span class="vchip mono">group_acl → indexed</span></div></div></div>'],
+    store: ["The original is kept safe", "The untouched file goes to Cloud Storage before any processing. Retrieval works on chunks, but people can always pull the true original: the API checks their permissions, then issues a signed link that expires in minutes.",
+      '<div class="viz"><div class="vcol">'+VDOC+'<div class="vlbl">original</div></div><div class="varrow">→</div><div class="minicard" style="text-align:center;"><div class="t">Cloud Storage</div>private bucket</div><div class="varrow">→</div><div class="vcol"><span class="vchip ok">permission check ✓</span><span class="vchip">signed link · short lived</span></div></div>'],
+    fail: ["Failures are first class", "A document that cannot be parsed lands in a Failed state with the reason stored and shown in the Dropoff status list. Nothing silently disappears, and nothing broken pollutes the index."],
+    who: ["Who can find it", "Everyone at Hybridge (an empty scope) or specific groups chosen at drop time, with new groups creatable on the fly. Scope lives on the document and every chunk, and it is enforced by the database on every query."],
+    authority: ["Authority, computed not claimed", "The uploader picks a document class: Official Policy scores 8, Approved SOP 6, Draft 3, Note 1. The server adds 2 if an admin uploaded (1 for an uploader), subtracts 1 for link sources, and clamps the result between 1 and 10. Clients never send authority; it cannot be gamed."],
+    effective: ["Effective dates", "Every document can carry the date it takes effect, proposed from the content and confirmed by the uploader. When two comparable sources disagree, the newer effective date breaks the tie, and the dates are shown in the sources list."],
+    acl: ["Permissions filter before the search", "The caller's groups come from the server's own records keyed on their verified sign in. Both retrievers see only chunks the caller may see, and only current versions. Forbidden material never enters the candidate pool, so it cannot leak into answers, citations, or source views.",
+      '<div class="viz"><div class="vcol"><span class="vchip">you · groups: clinical</span></div><div class="varrow">→</div><div class="vcol"><div class="tilegrid"><div class="tile"></div><div class="tile lock"></div><div class="tile"></div><div class="tile"></div><div class="tile lock"></div><div class="tile"></div><div class="tile"></div><div class="tile lock"></div><div class="tile"></div><div class="tile"></div><div class="tile lock"></div><div class="tile"></div></div><div class="vlbl">locked chunks never enter the search</div></div></div>'],
+    dense: ["Meaning search", "The question becomes 768 numbers in the same space as every chunk, and the vector index returns the fifty nearest by meaning. This side handles paraphrase and synonyms.",
+      '<div class="viz"><svg width="240" height="130" viewBox="0 0 240 130"><rect x="1" y="1" width="238" height="128" rx="10" fill="none" stroke="var(--line2)"/><circle cx="95" cy="64" r="30" fill="none" stroke="var(--amber)" stroke-dasharray="4 4"/><circle cx="95" cy="64" r="8" fill="var(--clay)"/><text x="108" y="58" font-size="11" fill="var(--ink)" font-weight="700">your question</text><circle cx="80" cy="49" r="5" fill="var(--amber)"/><circle cx="112" cy="78" r="5" fill="var(--amber)"/><circle cx="75" cy="80" r="5" fill="var(--amber)"/><circle cx="110" cy="46" r="5" fill="var(--amber)"/><circle cx="196" cy="28" r="5" fill="var(--line2)"/><circle cx="210" cy="100" r="5" fill="var(--line2)"/><circle cx="30" cy="112" r="5" fill="var(--line2)"/></svg></div>'],
+    bm25: ["Keyword search", "In parallel, classic full text search ranks chunks by the exact words of the question, scored by frequency and rarity (the BM25 idea), straight from Postgres. It nails part numbers, names, and precise phrases that embeddings can blur.",
+      '<div class="viz"><div class="minicard" style="max-width:340px;"><div class="t">chunk 12</div>"…do not exceed 45 Ncm. Target insertion <b style="background:var(--soft);padding:0 3px;border-radius:3px;">torque</b> for the <b style="background:var(--soft);padding:0 3px;border-radius:3px;">X1</b> is 35 Ncm…"</div></div>'],
+    rrf: ["Fusing two opinions", "The meaning list and the keyword list merge by rank position, not raw score, so their scales never need reconciling. A chunk high on both lists floats to the top; a chunk only one side found still survives.",
+      '<div class="viz"><div class="ranklist"><div class="t">meaning</div><span class="rk a">chunk 12</span><span class="rk a">chunk 33</span><span class="rk a">chunk 87</span></div><div class="ranklist"><div class="t">keywords</div><span class="rk b">chunk 87</span><span class="rk b">chunk 12</span><span class="rk b">chunk 214</span></div><div class="varrow">→</div><div class="ranklist"><div class="t">fused</div><span class="rk a top">chunk 12</span><span class="rk b top">chunk 87</span><span class="rk a">chunk 33</span></div></div>'],
+    rerank: ["Reranking: a second, smarter read", "A stronger model reads the question together with each surviving candidate and reorders by how well it actually answers, keeping the best eight as evidence. Cheap search casts a wide net; the reranker picks what matters.",
+      '<div class="viz"><div class="ranklist"><div class="t">before</div><span class="rk b">chunk 12</span><span class="rk b">chunk 87</span><span class="rk b">chunk 33</span></div><div class="vcol"><span class="vchip">reads question ＋ passage</span></div><div class="ranklist"><div class="t">after</div><span class="rk a top">chunk 87</span><span class="rk a top">chunk 12</span><span class="rk a">chunk 33</span></div></div>'],
+    conflict: ["Conflicts resolved by governance", "Superseded documents are already gone. Among the rest: higher authority wins, newer effective date breaks ties, and if the top two remain comparable the answer states the disagreement, names the source it followed, and cites both.",
+      '<div class="viz"><div class="minicard"><div class="t">Surgical Manual v3</div><div class="row"><span class="vchip mono">authority 9 · Feb 2026</span></div></div><div class="vcol" style="font-size:18px;color:var(--amber);font-weight:800;">vs</div><div class="minicard"><div class="t">Older clinical SOP</div><div class="row"><span class="vchip mono">authority 6 · Nov 2025</span></div></div><div class="vcol"><span class="vchip ok">manual wins</span><span class="vchip warn">disagreement noted anyway</span></div></div>'],
+    gen: ["Generation: grounded, cited, streamed", "Gemini writes only from the selected passages, streaming token by token, citing every claim. Clicking a citation opens the exact passage. With no usable evidence the model is never invoked; the assistant abstains and the question costs nothing.",
+      '<div class="viz"><div class="vcol"><span class="vchip">evidence · 8 passages</span></div><div class="varrow">→</div><div class="minicard" style="max-width:300px;"><div class="t">Answer</div>"Recommended insertion torque is <b>35 Ncm</b><span style="color:var(--brown);font-weight:800;">¹</span>, up to <b>45 Ncm</b> in dense bone<span style="color:var(--brown);font-weight:800;">¹</span>…"</div></div>'],
+    groups: ["Groups", "Uploaders create groups on the fly (clinical, regulatory, leadership) and add members by email. A document scoped to groups is findable only by their members; an empty scope means everyone at Hybridge. Admins manage roles, with a guard so the last admin can never be removed."],
+    deny: ["Deny by default, in the database", "Permission checks are not a filter applied to results afterward. They are part of the retrieval query itself, so a restricted chunk never even becomes a candidate. The same rule guards the source viewer and original file downloads."],
+    identity: ["Identity only", "Group membership is resolved server side from the verified sign in token. Nothing a client sends in a request body can widen access; request filters can only narrow results further."],
+    disagree: ["Saying it out loud", "When two sources of comparable authority and different dates disagree, the answer includes a visible callout: sources disagree, here is the one this answer follows and why, and here are both citations. Nothing is silently discarded."],
+    guardrail: ["The guardrail that keeps it honest", "If retrieval returns nothing the caller may see, the system responds with a fixed message: I don't have that in the knowledge base. The generation model is never invoked on that path, so a hallucinated answer is structurally impossible and off topic questions cost nothing."],
+    cite: ["Citations with exact coordinates", "Each citation stores the document id, the chunk id, and the character offsets recorded at chunking time. That is why clicking a citation can open the document scrolled precisely to the highlighted passage, on the exact version that was cited."],
+    minutes: ["Searchable in minutes", "All three indexes (vector, keyword, permissions) accept inserts incrementally. Ingesting a document touches nothing else in the corpus, so there is no rebuild, no reindex window, and no maintenance downtime as the knowledge base grows."],
+    reupload: ["Safe re uploads", "Identical bytes are recognized and skipped. Changed content under the same name becomes the next version and supersedes the old one automatically. People can drop the latest revision without checking what already exists."],
+    honest: ["The abstention log is a roadmap", "Every time the assistant says the knowledge base does not cover something, that is a signal about what to ingest next. Honest empty states build user trust and tell the team exactly where the corpus has gaps."],
+    gcp: ["All Google Cloud", "Cloud Run for the API, Cloud SQL Postgres with pgvector for data and vectors, Cloud Storage for originals, Identity Platform for domain locked sign in, Vertex AI for embeddings, reranking, and Gemini, Firebase Hosting for the app, Secret Manager for credentials. Everything under the organization's BAAs; no third party SaaS."],
+    onedb: ["One database, one query", "Because vectors, keywords, permissions, versions, and chat history share one Postgres, a single SQL query can combine semantically similar with allowed for this user with current version only. That is what makes the security model airtight and fast."],
+    discipline: ["How it was built", "Terraform defines every piece of infrastructure. Every deploy is an immutable image tagged with the git commit. 122 automated tests cover permissions both ways, streaming, versioning, and the UI. Every change was reviewed adversarially before merge, and those reviews caught real permission and correctness bugs."],
+    rejected: ["Paths considered and rejected", "Vectorless navigation (an LLM walking a table of contents tree) reads long documents well but costs several model calls and seconds per query. Graph extraction answers multi hop questions but demands heavy upkeep as the corpus shifts. Keyword only search misses paraphrase. Hybrid vectors plus keywords with a reranker won on latency, incremental growth, cost, and permission filtering."],
+    switch: ["Live answers are on", "Vertex AI is enabled in production: query embedding, reranking, grounded Gemini generation, and the full ingestion pipeline (parsing, document cards, chunk embeddings) run live. The guardrails stay in force: grounded answers or honest abstention."],
+    near: ["Near term roadmap", "Chat attachments as conversation scoped context, a web search toggle for questions that should blend public information, Google Drive sync into the corpus, multi turn retrieval memory, batch uploads with one scope, and a persistent document library with supersede and retire actions."],
+    later: ["Later", "Voice input, dark mode, automatic conversation titles, analytics on what people ask and where the corpus has gaps, continuous evaluation, AlloyDB migration when scale demands, customer managed encryption keys, and DLP scanning at ingestion."],
+    d1: ["Demo beat 1: feed it", "Drop a project document into the vortex, walk the scope popup (who can find it, class, date), and watch the status pill go Processing then Ready. Point out that authority is computed, not chosen."],
+    d2: ["Demo beat 2: ask it", "Ask the question the document answers. The answer streams in with numbered citations and a sources list showing class, date, and authority per source."],
+    d3: ["Demo beat 3: the receipt", "Click citation 1. The source pane opens scrolled to the highlighted passage. This is the moment that sells the system; pause on it."],
+    d4: ["Demo beat 4: disagreement", "Ask when AI office hours are. Two scheduling notices conflict; the answer follows the newer one and says so openly, citing both."],
+    d5: ["Demo beat 5: permissions", "Ask about leadership strategic priorities. As a leadership group member you get a cited answer. From an account outside the group, the assistant abstains, because the document never even entered the search."]
+  };
+
+  /* ---------- modal ---------- */
+  var scrim = document.getElementById("scrim");
+  var dTitle = document.getElementById("dTitle");
+  var dBody = document.getElementById("dBody");
+  function openD(key){
+    var d = D[key];
+    if (!d) return;
+    dTitle.textContent = d[0];
+    dBody.innerHTML = "<p style='margin:0'>" + d[1] + "</p>" + (d[2] || "");
+    scrim.classList.add("open");
+  }
+  function closeD(){ scrim.classList.remove("open"); }
+  scrim.addEventListener("click", function(e){ if (e.target === scrim) closeD(); });
+  scrim.querySelector(".x").addEventListener("click", closeD);
+
+  document.querySelectorAll("[data-d]").forEach(function(el){
+    el.setAttribute("tabindex", "0");
+    el.setAttribute("role", "button");
+    el.addEventListener("click", function(){ openD(el.getAttribute("data-d")); });
+    el.addEventListener("keydown", function(e){ if (e.key === "Enter" || e.key === " "){ e.preventDefault(); openD(el.getAttribute("data-d")); } });
+  });
+
+  /* ---------- slide navigation ---------- */
+  var slides = Array.prototype.slice.call(document.querySelectorAll("section.slide"));
+  document.getElementById("total").textContent = String(slides.length);
+  var cur = document.getElementById("cur");
+  function currentIndex(){
+    var y = window.scrollY + window.innerHeight/2;
+    for (var i=0;i<slides.length;i++){
+      if (y >= slides[i].offsetTop && y < slides[i].offsetTop + slides[i].offsetHeight) return i;
+    }
+    return 0;
+  }
+  function update(){ cur.textContent = String(currentIndex()+1); }
+  window.addEventListener("scroll", update, {passive:true});
+  window.addEventListener("keydown", function(e){
+    if (e.key === "Escape"){ closeD(); return; }
+    if (scrim.classList.contains("open")) return; // don't navigate under the modal
+    if (e.key==="ArrowDown" || e.key==="PageDown"){ e.preventDefault();
+      slides[Math.min(slides.length-1, currentIndex()+1)].scrollIntoView(); }
+    if (e.key==="ArrowUp" || e.key==="PageUp"){ e.preventDefault();
+      slides[Math.max(0, currentIndex()-1)].scrollIntoView(); }
+    if (e.key==="Home"){ e.preventDefault(); slides[0].scrollIntoView(); }
+    if (e.key==="End"){ e.preventDefault(); slides[slides.length-1].scrollIntoView(); }
+  });
+  update();
+})();
+</script>
+
+</body></html>
