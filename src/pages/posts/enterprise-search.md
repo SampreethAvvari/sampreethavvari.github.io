@@ -14,14 +14,18 @@ stats:
   - value: "cite or abstain"
     label: "the model answers from retrieved evidence, or it says it doesn't know"
     tone: "blue"
-  - value: "stage by stage"
-    label: "foundation, ingestion, serving, and both front ends shipped; evaluation is the referee still being built"
+  - value: "live in production"
+    label: "the full loop is on at work, with 122 automated tests and the first retrieval numbers enforced in CI"
     tone: "amber"
 ---
 
 Every company my size has the same quiet problem. The answer to your question exists. It is in a slide deck from eight months ago, or a policy doc nobody re-shares, or in one person's head, and that person is on vacation. So you ask around, you guess, and sometimes you act on a version of the truth that got replaced in March.
 
 I am building the fix for Hybridge: an internal search where anyone signs in with their company account, types a question in plain language, and gets a real answer with the sources attached. We call it **Ask Hybridge**. People who are allowed to add documents drop them into a portal, and those documents flow through a careful pipeline before they ever become searchable.
+
+<div class="aside">
+<strong>Two companion pieces go deeper than this post.</strong> The <a href="/enterprise-search/demo-guide.html">interactive demo guide</a> walks every stage of the pipeline with clickable diagrams, from dedup to the abstain guardrail. The <a href="/enterprise-search/slides.html">slide deck</a> is the version I present from. Both are living documents that grow as the platform does.
+</div>
 
 The easy version of this is a weekend project now. You chunk some documents, embed them, stuff the top matches into a prompt, and call it RAG. I did not want the easy version. We work in healthcare, which means patient data, HR records, and trade secrets all live in the same building. In that setting a confident wrong answer is not a cute demo bug. It is a liability. So the whole design is organized around one idea: the system should be trustworthy first, and clever second.
 
@@ -115,6 +119,8 @@ So I am building an evaluation harness alongside the system, not after it. It me
   </div>
 </div>
 
+The first slice of that referee now runs inside the test suite. A seeded corpus of question and answer cases is scored on every build, and the build fails if recall at 8 drops below 0.8 or mean reciprocal rank drops below 0.35. Today it scores 1.0 recall at 8 and 0.42 MRR, and dedicated cases prove the abstain path and the conflict ladder actually fire. Small corpus, honest floors, checked automatically. The broader continuous harness, with faithfulness scoring and the managed baseline comparison, is still ahead.
+
 The harness is the referee. It is what decides when a fancier idea actually goes into production and when it stays a nice diagram. That rule is how I keep an ambitious system from turning into an over-engineered one.
 
 ## The stack, in one box
@@ -133,12 +139,14 @@ I am building this the way you would teach it, one stage at a time, because each
 |---|---|---|
 | Foundation and auth | GCP setup, domain-locked sign-in, roles and groups, secrets, CI/CD, infrastructure as code | Shipped |
 | Ingestion | upload, dedup, parse, chunk, metadata, embed, index | Shipped |
-| Query serving | filter, hybrid retrieval, rerank, grounded streaming answer, abstain guardrail | Shipped, first version |
-| Evaluation | retrieval and faithfulness metrics, conflict tests, managed baseline | In build; the numbers are not published until it says so |
+| Query serving | filter, hybrid retrieval, rerank, grounded streaming answer, abstain guardrail | Shipped, live in production |
+| Evaluation | retrieval and faithfulness metrics, conflict tests, managed baseline | First version runs in CI with enforced floors; the continuous harness is in build |
 | Search and Dropoff front ends | the chat experience and the upload portal | Shipped |
 
-What is real today, as of July 2026: the whole loop works end to end. You sign in with your company account, ask a question, and watch a cited answer stream back from documents you are allowed to see, with conversation history kept. The abstain rule is not a prompt suggestion anymore, it is enforced in code: if retrieval comes back empty, the system short-circuits and says it does not have the answer, and the model is never even called. Authorized people add documents through the Dropoff portal, scoping each one at upload time with its visibility, tags, document class, and effective date, exactly the metadata the conflict ladder needs later, and then watch it move through the pipeline. Tabs and uploads are gated by role, and the API degrades gracefully instead of hallucinating when the AI backend is unavailable.
+What is real today, as of July 2026: the whole loop is live in production. You sign in with your company account, ask a question, and watch a cited answer stream back from documents you are allowed to see, with conversation history kept. Clicking a citation opens the source document in a side pane, scrolled to the exact highlighted passage it came from. The abstain rule is not a prompt suggestion anymore, it is enforced in code: if retrieval comes back empty, the system short-circuits and says it does not have the answer, and the model is never even called. Authorized people add documents through the Dropoff portal, scoping each one at upload time with its visibility, tags, document class, and effective date, exactly the metadata the conflict ladder needs later, and then watch it move through the pipeline. Tabs and uploads are gated by role, and the API degrades gracefully instead of hallucinating when the AI backend is unavailable.
 
-The evaluation harness is the part still being built, and it is the reason I am not quoting recall or faithfulness numbers here. The referee gets built before the victory lap.
+Behind it sits the discipline column: 122 automated tests across backend and frontend, 96 and 26, covering permissions in both directions, streaming, version chains, citation math, and the UI flows. Every subproject was built with tests first and then reviewed twice, once per task and once across the whole branch by a stronger model prompted to attack it. Those reviews caught a permission sentinel bug, an authority scoring bug, and a race that would have wiped the first streamed answer. The retrieval numbers above come from the seeded evaluation that runs in CI; the fuller harness with faithfulness scoring is the part still being built, and the numbers it owns stay unpublished until it says so. The referee gets built before the victory lap.
+
+If you want the stage by stage tour with the clickable pipeline, the <a href="/enterprise-search/demo-guide.html">demo guide</a> covers everything this post compresses, and the <a href="/enterprise-search/slides.html">slides</a> are the ten minute version.
 
 One war story from shipping it, because it repeats a pattern I keep seeing: the bug that blocked every single login for a day was not the retrieval stack or the model. It was an auth SDK that needed initializing before its first token check. The AI is rarely the thing that breaks. The plumbing is.

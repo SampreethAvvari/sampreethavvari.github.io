@@ -1,0 +1,699 @@
+<!doctype html><html><head><title>Hybridge Enterprise Search: Demo Guide</title><meta name="description" content="A guided tour of Hybridge Enterprise Search: the ingestion pipeline, hybrid retrieval, access control, and the trust guarantees behind every cited answer."><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1"><style>:root{color-scheme:light}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}</style></head><body>
+
+<style>
+  :root{
+    --paper:#F3EBDC; --cream:#FBF6EC; --sand:#ECE0C8; --line:#E2D5BC; --line2:#D5C4A3;
+    --ink:#33261A; --muted:#8A7558; --faint:#B0A084;
+    --brown:#9A5B23; --amber:#C2772E; --soft:#F0E2CC; --clay:#B0472E;
+    --code:#5C4326; --codebg:#EFE4CE; --ok:#3f7d4e;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{ --paper:#191410; --cream:#211a14; --sand:#2b2219; --line:#332920; --line2:#453728;
+      --ink:#EDE4D5; --muted:#B39E7F; --faint:#7d6c54; --brown:#D89A55; --amber:#E0A055;
+      --soft:#332818; --clay:#E08A6E; --code:#E3C89A; --codebg:#2a2118; --ok:#7fb08a; }
+  }
+  :root[data-theme="dark"]{ --paper:#191410; --cream:#211a14; --sand:#2b2219; --line:#332920; --line2:#453728;
+    --ink:#EDE4D5; --muted:#B39E7F; --faint:#7d6c54; --brown:#D89A55; --amber:#E0A055;
+    --soft:#332818; --clay:#E08A6E; --code:#E3C89A; --codebg:#2a2118; --ok:#7fb08a; }
+  :root[data-theme="light"]{ --paper:#F3EBDC; --cream:#FBF6EC; --sand:#ECE0C8; --line:#E2D5BC; --line2:#D5C4A3;
+    --ink:#33261A; --muted:#8A7558; --faint:#B0A084; --brown:#9A5B23; --amber:#C2772E; --soft:#F0E2CC;
+    --clay:#B0472E; --code:#5C4326; --codebg:#EFE4CE; --ok:#3f7d4e; }
+
+  *{box-sizing:border-box;}
+  body{ margin:0; background:var(--paper); color:var(--ink);
+    font-family:ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif; line-height:1.6; }
+  .wrap{ max-width:880px; margin:0 auto; padding:48px 24px 96px; }
+
+  .eyebrow{ text-transform:uppercase; letter-spacing:.14em; font-size:11.5px; color:var(--amber); font-weight:700; }
+  h1{ font-family:Georgia,"Times New Roman",serif; font-weight:600; font-size:clamp(30px,5vw,42px);
+      line-height:1.15; margin:10px 0 14px; text-wrap:balance; }
+  .lede{ font-size:17px; color:var(--muted); max-width:62ch; margin:0 0 10px; }
+  .lede b{ color:var(--ink); }
+  .badges{ display:flex; flex-wrap:wrap; gap:8px; margin:18px 0 0; }
+  .badge{ font-size:12px; padding:4px 12px; border-radius:20px; background:var(--sand); color:var(--brown); font-weight:600; border:1px solid var(--line2); }
+
+  nav.toc{ margin:34px 0 8px; padding:18px 20px; background:var(--cream); border:1px solid var(--line); border-radius:14px; }
+  nav.toc .t{ font-size:11px; text-transform:uppercase; letter-spacing:.12em; color:var(--faint); font-weight:700; margin-bottom:10px; }
+  nav.toc ol{ margin:0; padding-left:20px; columns:2; column-gap:36px; font-size:13.5px; }
+  nav.toc li{ margin:3px 0; break-inside:avoid; }
+  nav.toc a{ color:var(--brown); text-decoration:none; }
+  nav.toc a:hover{ text-decoration:underline; }
+  @media (max-width:640px){ nav.toc ol{ columns:1; } }
+
+  h2{ font-family:Georgia,serif; font-weight:600; font-size:26px; margin:56px 0 6px; text-wrap:balance;
+      padding-top:14px; border-top:1px solid var(--line); }
+  h2 .n{ color:var(--amber); font-size:15px; vertical-align:middle; margin-right:10px; letter-spacing:.05em; }
+  h3{ font-size:16.5px; margin:26px 0 6px; color:var(--ink); }
+  p{ margin:10px 0; max-width:70ch; }
+  p.note{ font-size:13.5px; color:var(--muted); }
+  ul,ol{ max-width:70ch; padding-left:22px; }
+  li{ margin:5px 0; }
+  b{ color:var(--ink); }
+  code{ font-family:ui-monospace,Consolas,monospace; font-size:.88em; background:var(--codebg); color:var(--code);
+        padding:1.5px 6px; border-radius:5px; }
+  a{ color:var(--brown); }
+
+  table{ border-collapse:collapse; width:100%; font-size:13.5px; margin:14px 0; }
+  .tblwrap{ overflow-x:auto; border:1px solid var(--line); border-radius:12px; }
+  .tblwrap table{ margin:0; min-width:640px; }
+  th{ text-align:left; background:var(--sand); color:var(--ink); padding:9px 12px; font-size:12px;
+      text-transform:uppercase; letter-spacing:.06em; }
+  td{ padding:9px 12px; border-top:1px solid var(--line); vertical-align:top; }
+  td:first-child{ white-space:nowrap; font-weight:600; }
+  tr:nth-child(even) td{ background:var(--cream); }
+
+  .callout{ background:var(--cream); border:1px solid var(--line2); border-left:4px solid var(--amber);
+            border-radius:10px; padding:14px 18px; margin:18px 0; max-width:72ch; }
+  .callout.trust{ border-left-color:var(--clay); }
+  .callout .h{ font-weight:700; font-size:13px; text-transform:uppercase; letter-spacing:.08em; color:var(--amber); margin-bottom:4px;}
+  .callout.trust .h{ color:var(--clay); }
+
+  .grid2{ display:grid; grid-template-columns:1fr 1fr; gap:14px; margin:16px 0; }
+  @media (max-width:640px){ .grid2{ grid-template-columns:1fr; } }
+  .card{ background:var(--cream); border:1px solid var(--line); border-radius:12px; padding:14px 16px; }
+  .card .h{ font-weight:700; font-size:14px; margin-bottom:4px; color:var(--ink); }
+  .card p{ font-size:13.5px; color:var(--muted); margin:4px 0 0; }
+
+  pre.mermaid{ background:var(--cream); border:1px solid var(--line); border-radius:12px; padding:16px;
+               overflow-x:auto; margin:16px 0; }
+
+  /* ------- interactive pipelines ------- */
+  .pipehint{ font-size:13px; color:var(--amber); font-weight:600; margin:14px 0 2px; }
+  .pipeline{ display:flex; flex-wrap:wrap; gap:6px; align-items:center; margin:10px 0 4px; font-size:13px; }
+  .pipeline .arr{ color:var(--faint); font-weight:700; }
+  button.step{ background:var(--sand); border:1px solid var(--line2); color:var(--ink);
+    border-radius:8px; padding:7px 12px; font-weight:600; font-size:13px; cursor:pointer;
+    font-family:inherit; transition:transform .12s ease, background .12s ease; }
+  button.step:hover{ transform:translateY(-1px); background:var(--soft); }
+  button.step:focus-visible{ outline:2px solid var(--amber); outline-offset:2px; }
+  button.step.active{ background:var(--brown); border-color:var(--brown); color:var(--paper); }
+  button.step::after{ content:" ▾"; font-size:10px; color:inherit; opacity:.65; }
+  button.step.active::after{ content:" ▴"; }
+
+  .panel{ background:var(--cream); border:1px solid var(--line2); border-radius:14px;
+          padding:18px 20px 20px; margin:12px 0 18px; }
+  .panel .ph{ font-family:Georgia,serif; font-size:18px; font-weight:600; margin-bottom:6px; }
+  .panel p{ font-size:14px; color:var(--muted); max-width:72ch; }
+  .panel p b{ color:var(--ink); }
+
+  .viz{ margin-top:14px; background:var(--paper); border:1px dashed var(--line2); border-radius:12px;
+        padding:18px 16px; display:flex; flex-wrap:wrap; gap:18px; align-items:center; justify-content:center; }
+  .vcol{ display:flex; flex-direction:column; align-items:center; gap:6px; }
+  .vlbl{ font-size:11.5px; color:var(--muted); text-align:center; }
+  .vchip{ font-size:11px; font-weight:700; border-radius:6px; padding:2px 8px; background:var(--sand);
+          color:var(--brown); border:1px solid var(--line2); }
+  .vchip.mono{ font-family:ui-monospace,Consolas,monospace; font-weight:600; }
+  .vchip.ok{ background:transparent; color:var(--ok); border-color:var(--ok); }
+  .vchip.warn{ color:var(--clay); border-color:var(--clay); background:transparent; }
+  .varrow{ font-size:22px; color:var(--amber); font-weight:800; }
+  .vnote{ flex-basis:100%; text-align:center; font-size:12.5px; color:var(--muted); margin-top:2px; }
+  .vnote b{ color:var(--ink); }
+
+  .vdoc{ width:58px; height:74px; background:var(--cream); border:1.5px solid var(--line2); border-radius:6px;
+         position:relative; box-shadow:0 2px 6px rgba(0,0,0,.06); }
+  .vdoc::before{ content:""; position:absolute; left:9px; right:9px; top:12px; height:5px; border-radius:2px;
+                 background:var(--amber); opacity:.8; }
+  .vdoc::after{ content:""; position:absolute; left:9px; right:9px; top:24px; height:32px;
+    background:repeating-linear-gradient(to bottom, var(--line2) 0 3px, transparent 3px 9px); }
+  .vdoc.dim{ opacity:.55; }
+  .stamp{ position:absolute; top:26px; left:-8px; right:-8px; text-align:center; transform:rotate(-9deg);
+          font-size:9.5px; font-weight:800; letter-spacing:.06em; padding:2px 0; border-radius:4px; }
+  .stamp.cur{ background:var(--soft); color:var(--brown); border:1px solid var(--brown); }
+  .stamp.sup{ background:transparent; color:var(--clay); border:1px solid var(--clay); }
+  .vx{ position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
+       font-size:34px; color:var(--clay); font-weight:800; }
+
+  .vblock{ border-radius:6px; padding:4px 12px; font-size:11.5px; font-weight:700; }
+  .vblock.h{ background:var(--amber); color:var(--paper); }
+  .vblock.p{ background:var(--sand); color:var(--muted); }
+  .vblock.t{ background:var(--soft); color:var(--brown); border:1px dashed var(--brown); }
+
+  .chunkbar{ display:flex; align-items:center; position:relative; }
+  .chunkbox{ border:1.5px solid var(--brown); background:var(--soft); border-radius:8px; padding:14px 26px;
+             font-size:12px; font-weight:700; color:var(--brown); }
+  .chunkbox + .chunkbox{ margin-left:-30px; background:var(--sand); border-style:dashed; padding-left:44px; }
+  .overlap{ position:absolute; left:calc(50% - 15px); top:0; bottom:0; width:30px; background:var(--amber);
+            opacity:.28; border-radius:4px; }
+
+  .vecstrip{ display:flex; gap:2px; align-items:center; }
+  .vecstrip i{ width:9px; height:18px; border-radius:2px; display:block; }
+  .minicard{ background:var(--cream); border:1px solid var(--line2); border-radius:10px; padding:10px 12px;
+             font-size:11.5px; color:var(--muted); min-width:150px; }
+  .minicard .t{ font-weight:800; color:var(--ink); font-size:12px; margin-bottom:4px; }
+  .minicard .row{ display:flex; gap:6px; flex-wrap:wrap; margin:3px 0; }
+
+  .tilegrid{ display:grid; grid-template-columns:repeat(4,44px); gap:6px; }
+  .tile{ width:44px; height:34px; background:var(--sand); border:1px solid var(--line2); border-radius:6px;
+         position:relative; }
+  .tile.lock{ background:var(--codebg); }
+  .tile.lock::after{ content:"🔒"; position:absolute; inset:0; display:flex; align-items:center;
+                     justify-content:center; font-size:13px; }
+  .ranklist{ display:flex; flex-direction:column; gap:4px; }
+  .ranklist .t{ font-size:11px; font-weight:800; color:var(--faint); text-transform:uppercase; letter-spacing:.06em; text-align:center; }
+  .rk{ font-size:11.5px; font-weight:700; border-radius:6px; padding:3px 10px; text-align:center; min-width:74px; }
+  .rk.a{ background:var(--soft); color:var(--brown); }
+  .rk.b{ background:var(--sand); color:var(--muted); }
+  .rk.top{ border:1.5px solid var(--brown); }
+  svg text{ font-family:ui-sans-serif,system-ui,sans-serif; }
+
+  /* entrance animation, replayed on open */
+  .panel .a1,.panel .a2,.panel .a3,.panel .a4,.panel .a5{ opacity:0; }
+  .panel.play .a1{ animation:rise .45s ease forwards .05s; }
+  .panel.play .a2{ animation:rise .45s ease forwards .45s; }
+  .panel.play .a3{ animation:rise .45s ease forwards .85s; }
+  .panel.play .a4{ animation:rise .45s ease forwards 1.25s; }
+  .panel.play .a5{ animation:rise .45s ease forwards 1.65s; }
+  @keyframes rise{ from{ opacity:0; transform:translateY(8px);} to{ opacity:1; transform:none;} }
+  @media (prefers-reduced-motion: reduce){
+    .panel.play .a1,.panel.play .a2,.panel.play .a3,.panel.play .a4,.panel.play .a5{ animation-duration:0s; animation-delay:0s; }
+    button.step{ transition:none; }
+  }
+
+  .kv{ display:grid; grid-template-columns:190px 1fr; gap:4px 16px; font-size:14px; margin:12px 0; max-width:72ch; }
+  .kv dt{ font-weight:700; color:var(--ink); }
+  .kv dd{ margin:0; color:var(--muted); }
+  @media (max-width:560px){ .kv{ grid-template-columns:1fr; } .kv dd{ margin-bottom:8px; } }
+
+  .roadmap li{ margin:8px 0; }
+  .tag{ display:inline-block; font-size:11px; font-weight:700; border-radius:6px; padding:1px 8px; margin-right:8px; }
+  .tag.now{ background:var(--soft); color:var(--brown); }
+  .tag.next{ background:var(--sand); color:var(--muted); }
+  footer{ margin-top:64px; padding-top:18px; border-top:1px solid var(--line); font-size:12.5px; color:var(--faint); }
+</style>
+
+<div class="wrap">
+  <div class="eyebrow">Hybridge · internal platform demo</div>
+  <h1>Hybridge Enterprise Search</h1>
+  <p class="lede">An internal, permission aware search assistant. Employees sign in with their Hybridge Google account, ask questions in plain language, and get <b>streamed answers grounded in company documents, with citations that open the exact source passage</b>. Authorized users grow the knowledge base by dropping documents into a governed ingestion pipeline. Built entirely on Google Cloud with open source components. No third party SaaS.</p>
+  <div class="badges">
+    <span class="badge">Live at hybridge-search.web.app</span>
+    <span class="badge">GCP native</span>
+    <span class="badge">122 automated tests</span>
+    <span class="badge">RAG with hard guardrails</span>
+  </div>
+
+  <nav class="toc">
+    <div class="t">Contents</div>
+    <ol>
+      <li><a href="#tour">What a user sees</a></li>
+      <li><a href="#arch">Architecture at a glance</a></li>
+      <li><a href="#backends">Why this retrieval design</a></li>
+      <li><a href="#ingest">The write path: ingestion</a></li>
+      <li><a href="#metadata">Metadata: the document card</a></li>
+      <li><a href="#chunk">Chunking and embeddings</a></li>
+      <li><a href="#index">Storage and indexing</a></li>
+      <li><a href="#retrieve">The read path: retrieval</a></li>
+      <li><a href="#access">Groups and access control</a></li>
+      <li><a href="#trust">Trust: versions, conflicts, citations</a></li>
+      <li><a href="#chat">Chat, history, and memory</a></li>
+      <li><a href="#security">Security and compliance</a></li>
+      <li><a href="#frontend">The frontend</a></li>
+      <li><a href="#evolve">Built to grow, not preloaded</a></li>
+      <li><a href="#quality">Quality and evaluation</a></li>
+      <li><a href="#roadmap">What is next</a></li>
+      <li><a href="#demo">Suggested demo script</a></li>
+    </ol>
+  </nav>
+
+  <h2 id="tour"><span class="n">01</span>What a user sees</h2>
+  <p>Two tabs, mirroring the quality bar of modern AI chat apps:</p>
+  <div class="grid2">
+    <div class="card"><div class="h">Ask Hybridge</div>
+      <p>A chat home with a serif greeting and a rounded composer. Answers stream in live. Every factual claim carries a small numbered citation. Clicking a citation opens the source document in a right pane, scrolled to the exact cited passage with a highlight. A model chip switches between Flash (fast) and Pro (deeper reasoning). Conversations persist in a left rail with pin, rename, and delete.</p></div>
+    <div class="card"><div class="h">Dropoff</div>
+      <p>The governed way in for new knowledge. Uploaders see a reactive particle vortex as the drop target. Dropping a file or pasting a link opens a scope popup: who can find it (everyone or specific groups), tags, document class, and effective date. A status list tracks each document from Processing to Ready. Everyone else sees a lock. The tab itself is hidden for people without upload rights.</p></div>
+  </div>
+
+  <h2 id="arch"><span class="n">02</span>Architecture at a glance</h2>
+  <p>A single page app on Firebase Hosting talks to a FastAPI service on Cloud Run. Postgres (Cloud SQL) holds everything relational plus the vectors. Google Cloud Storage keeps the original files. Vertex AI provides embeddings, reranking, and Gemini generation. All infrastructure is defined in Terraform, and every deploy is versioned and tagged.</p>
+  <pre class="mermaid">
+flowchart LR
+  subgraph Browser
+    SPA["React SPA<br/>Firebase Hosting"]
+  end
+  subgraph GCP["Google Cloud · project hybridge-search"]
+    IDP["Identity Platform<br/>Google SSO, domain locked"]
+    API["FastAPI on Cloud Run<br/>token verify · ACL · RAG"]
+    DB[("Cloud SQL Postgres<br/>pgvector · FTS · chat")]
+    GCS[("Cloud Storage<br/>original files")]
+    VAI["Vertex AI<br/>embeddings · rerank · Gemini"]
+    JOB["Ingestion job<br/>Cloud Run + Pub/Sub"]
+  end
+  SPA -->|Google sign in| IDP
+  SPA -->|Bearer token, HTTPS| API
+  API --> DB
+  API --> VAI
+  API -->|signed URLs| GCS
+  JOB --> DB
+  JOB --> VAI
+  GCS --> JOB
+  </pre>
+  <dl class="kv">
+    <dt>Stack</dt><dd>Python 3.12, FastAPI, SQLAlchemy async, Alembic migrations · React 19, TypeScript, Vite, Tailwind</dd>
+    <dt>GCP services</dt><dd>Cloud Run, Cloud SQL, Identity Platform, Firebase Hosting, Cloud Storage, Pub/Sub, Vertex AI, Artifact Registry, Secret Manager, Cloud Build</dd>
+    <dt>Infra as code</dt><dd>Terraform modules for every service, so the whole environment is reproducible</dd>
+    <dt>Deploy versioning</dt><dd>every release is an immutable image tagged with the git commit, and the running version is visible on the health endpoint</dd>
+  </dl>
+
+  <h2 id="backends"><span class="n">03</span>Why this retrieval design</h2>
+  <p>Before writing code we researched four ways to back a retrieval system. The decision was driven by our real workload: a corpus that starts near zero and grows document by document, strict permission filtering on every query, and chat grade latency.</p>
+  <div class="tblwrap"><table>
+    <tr><th>Approach</th><th>How it works</th><th>Strengths</th><th>Why not (for us)</th></tr>
+    <tr><td>Vector DB (chosen)</td><td>Embed chunks, nearest neighbor search, plus keyword search, fused and reranked</td><td>Fast (tens of ms), scales incrementally, filters combine naturally with SQL, mature</td><td>Chosen. Weakness (exact terms, part numbers) is covered by the BM25 side of the hybrid</td></tr>
+    <tr><td>Vectorless / PageIndex</td><td>LLM navigates a table of contents tree, reasoning its way to the right section</td><td>Excellent on long structured docs, no index to rebuild</td><td>Each query costs multiple LLM calls and seconds of latency; per query cost grows with corpus</td></tr>
+    <tr><td>Graph DB / GraphRAG</td><td>Extract entities and relations, answer by walking the graph</td><td>Multi hop questions across documents</td><td>Expensive extraction on every ingest, brittle as the corpus shifts, heavy maintenance</td></tr>
+    <tr><td>Keyword only (BM25)</td><td>Classic full text search</td><td>Cheap, exact match, explainable</td><td>Misses paraphrase and synonyms; no semantic recall</td></tr>
+  </table></div>
+  <p>We landed on <b>hybrid retrieval with reranking</b> on Postgres pgvector: dense vectors for meaning, BM25 for exact words, reciprocal rank fusion to merge, and a cross encoder reranker for final precision. Postgres also gives us one database for chunks, metadata, permissions, chat history, and users, which keeps ACL filtering inside the same query planner. When scale demands it, the same schema moves to AlloyDB with minimal change.</p>
+
+  <h2 id="ingest"><span class="n">04</span>The write path: ingestion</h2>
+  <p>Every document enters through one governed pipeline, whether it arrives as a file drop or a pasted link.</p>
+  <div class="pipehint">👆 Click any stage to see how it works:</div>
+  <div class="pipeline" data-group="w">
+    <button class="step" data-panel="w-dedup">Dedup</button><span class="arr">→</span>
+    <button class="step" data-panel="w-version">Version resolve</button><span class="arr">→</span>
+    <button class="step" data-panel="w-store">Store original</button><span class="arr">→</span>
+    <button class="step" data-panel="w-parse">Parse</button><span class="arr">→</span>
+    <button class="step" data-panel="w-chunk">Chunk</button><span class="arr">→</span>
+    <button class="step" data-panel="w-card">Document card</button><span class="arr">→</span>
+    <button class="step" data-panel="w-embed">Embed</button><span class="arr">→</span>
+    <button class="step" data-panel="w-index">Index</button>
+  </div>
+
+  <div class="panel" id="w-dedup" hidden>
+    <div class="ph">Dedup: never ingest the same thing twice</div>
+    <p>Before anything else, the raw bytes are reduced to a fingerprint (a content hash). If that fingerprint already exists in the database, the upload is <b>skipped</b> and the uploader simply gets a pointer to the existing document. People can drop files freely without wondering whether someone already added them.</p>
+    <div class="viz">
+      <div class="vcol a1"><div class="vdoc"></div><div class="vlbl">policy.pdf · uploaded Monday</div><span class="vchip mono">hash a3f9c2</span></div>
+      <div class="varrow a2">＝</div>
+      <div class="vcol a3" style="position:relative;"><div class="vdoc dim" style="position:relative;"><div class="vx a4">✕</div></div><div class="vlbl">policy.pdf · dropped again Friday</div><span class="vchip mono">hash a3f9c2</span></div>
+      <div class="vnote a5"><b>Same fingerprint, so it is skipped.</b> The second upload returns the existing document id.</div>
+    </div>
+  </div>
+
+  <div class="panel" id="w-version" hidden>
+    <div class="ph">Version resolve: new content, same document</div>
+    <p>Every document keeps a stable <b>source key</b> (its normalized name or URL). When new content arrives under the same key, it becomes <b>version n+1</b>: the old version is stamped superseded and linked to its successor, the new one becomes current. Search only ever sees current versions, but nothing is deleted, so the full history stays auditable.</p>
+    <div class="viz">
+      <span class="vchip a1">source key · surgical-manual.pdf</span>
+      <div class="vcol a2"><div class="vdoc" style="position:relative;"><span class="stamp sup">SUPERSEDED</span></div><div class="vlbl">version 1 · Nov 2025</div></div>
+      <div class="varrow a3">→</div>
+      <div class="vcol a4"><div class="vdoc" style="position:relative;"><span class="stamp cur">CURRENT</span></div><div class="vlbl">version 2 · Feb 2026</div></div>
+      <div class="vnote a5">Only <b>current</b> versions are searchable. The chain v1 → v2 is stored both ways.</div>
+    </div>
+  </div>
+
+  <div class="panel" id="w-store" hidden>
+    <div class="ph">Store original: the real file, kept safe</div>
+    <p>The untouched original goes to Cloud Storage before any processing. When someone later wants the actual document (not chunks, not a reconstruction), the API checks their permissions first and then issues a <b>short lived signed link</b>. The file itself is never publicly reachable.</p>
+    <div class="viz">
+      <div class="vcol a1"><div class="vdoc"></div><div class="vlbl">original file</div></div>
+      <div class="varrow a2">→</div>
+      <div class="vcol a3"><div class="minicard" style="text-align:center;"><div class="t">Cloud Storage</div>private bucket</div></div>
+      <div class="varrow a4">→</div>
+      <div class="vcol a5"><span class="vchip ok">permission check ✓</span><span class="vchip">signed link · expires in minutes</span><div class="vlbl">download of the true original</div></div>
+    </div>
+  </div>
+
+  <div class="panel" id="w-parse" hidden>
+    <div class="ph">Parse: from file to structure</div>
+    <p>Parsers turn the file into <b>layout blocks</b> instead of one long string: headings, paragraphs, tables. Text and HTML parse locally; PDFs and office formats go through Document AI. Keeping the structure matters, because the next step uses it to cut in sensible places.</p>
+    <div class="viz">
+      <div class="vcol a1"><div class="vdoc" style="width:74px;height:96px;"></div><div class="vlbl">page as pixels and glyphs</div></div>
+      <div class="varrow a2">→</div>
+      <div class="vcol a3" style="align-items:stretch; gap:5px;">
+        <span class="vblock h">Heading · §4.2 Insertion Protocol</span>
+        <span class="vblock p">Paragraph</span>
+        <span class="vblock p">Paragraph</span>
+        <span class="vblock t">Table · torque limits</span>
+        <div class="vlbl" style="text-align:center;">typed blocks with reading order</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel" id="w-chunk" hidden>
+    <div class="ph">Chunk: pieces sized for search, cut with care</div>
+    <p>Blocks are packed into token sized chunks that respect paragraph boundaries and keep headings attached to their sections. Neighboring chunks <b>overlap slightly</b> so no idea is severed at a boundary. Every chunk records its exact character range in the source, and that is precisely what lets a citation open the document on the right passage.</p>
+    <div class="viz">
+      <div class="chunkbar a1">
+        <div class="chunkbox">chunk 1</div>
+        <div class="chunkbox">chunk 2</div>
+        <div class="overlap a2"></div>
+      </div>
+      <div class="vcol a3"><span class="vchip mono">chunk 1 · chars 0 to 1180</span><span class="vchip mono">chunk 2 · chars 990 to 2210</span></div>
+      <div class="vnote a4">The shaded strip is the <b>overlap</b>. The character offsets travel with each chunk forever.</div>
+    </div>
+  </div>
+
+  <div class="panel" id="w-card" hidden>
+    <div class="ph">Document card: small metadata, any size document</div>
+    <p>Gemini reads the document once and proposes a card: title, a short summary, key entities, tags, and an effective date. The uploader confirms the governance fields (who can see it, what class it is). The card stays tiny whether the document is one page or four hundred, so document level filtering stays fast forever.</p>
+    <div class="viz">
+      <div class="vcol a1"><div class="vdoc" style="width:74px;height:96px;"></div><div class="vlbl">400 pages</div></div>
+      <div class="varrow a2">→</div>
+      <div class="minicard a3">
+        <div class="t">X1 Surgical Manual v3</div>
+        <div class="row"><span class="vchip">engineering</span><span class="vchip">clinical</span></div>
+        <div class="row"><span class="vchip">Official Policy → authority 8</span></div>
+        <div class="row"><span class="vchip mono">effective 2026·02·10</span></div>
+      </div>
+      <div class="vnote a4">Authority is <b>computed on the server</b> from class and uploader role. It is never client supplied.</div>
+    </div>
+  </div>
+
+  <div class="panel" id="w-embed" hidden>
+    <div class="ph">Embed: meaning as numbers</div>
+    <p>Each chunk is converted into <b>768 numbers</b> by Vertex AI's gemini embedding model. Texts that mean similar things land near each other in that space, even when they share no words. Questions are embedded with the same model at ask time, so "how long do implants last" can find a paragraph about longevity outcomes.</p>
+    <div class="viz">
+      <div class="vcol a1"><span class="vchip">"Target insertion torque is 35 Ncm…"</span><div class="vlbl">chunk text</div></div>
+      <div class="varrow a2">→</div>
+      <div class="vcol a3">
+        <div class="vecstrip">
+          <i style="background:#C2772E"></i><i style="background:#9A5B23"></i><i style="background:#E0A055"></i><i style="background:#B0472E"></i><i style="background:#8A7558"></i><i style="background:#C2772E"></i><i style="background:#F5B44B"></i><i style="background:#9A5B23"></i><i style="background:#E07F2C"></i><i style="background:#B39E7F"></i><i style="background:#C2662A"></i><i style="background:#8F3D1C"></i><i style="background:#E0A055"></i><i style="background:#9A5B23"></i><i style="background:#C2772E"></i><i style="background:#B0472E"></i>
+          <span class="vlbl">… 768 numbers</span>
+        </div>
+        <div class="vlbl">one vector per chunk</div>
+      </div>
+      <div class="vcol a4">
+        <svg width="220" height="120" viewBox="0 0 220 120" role="img" aria-label="chunks plotted as points, similar meanings cluster">
+          <rect x="1" y="1" width="218" height="118" rx="10" fill="none" stroke="var(--line2)"/>
+          <circle cx="52" cy="38" r="5" fill="var(--amber)"/><circle cx="66" cy="52" r="5" fill="var(--amber)"/><circle cx="45" cy="60" r="5" fill="var(--amber)"/>
+          <circle cx="58" cy="47" r="7" fill="var(--brown)" stroke="var(--paper)" stroke-width="2"/>
+          <circle cx="160" cy="84" r="5" fill="var(--line2)"/><circle cx="178" cy="70" r="5" fill="var(--line2)"/><circle cx="170" cy="95" r="5" fill="var(--line2)"/>
+          <text x="38" y="22" font-size="10" fill="var(--muted)">torque and surgery</text>
+          <text x="140" y="60" font-size="10" fill="var(--muted)">vacation policy</text>
+        </svg>
+        <div class="vlbl">similar meaning clusters together</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel" id="w-index" hidden>
+    <div class="ph">Index: three ways to find it fast, updated live</div>
+    <p>Three indexes take each new chunk <b>incrementally</b>, with nothing rebuilt: a graph based vector index (HNSW) for nearest neighbor search, a full text index for exact words, and an index over the permission lists. This is why a dropped document is searchable minutes later, no matter how large the corpus already is.</p>
+    <div class="viz">
+      <div class="vcol a1">
+        <svg width="150" height="100" viewBox="0 0 150 100" role="img" aria-label="graph of linked points">
+          <line x1="30" y1="30" x2="75" y2="20" stroke="var(--line2)"/><line x1="30" y1="30" x2="55" y2="70" stroke="var(--line2)"/>
+          <line x1="75" y1="20" x2="115" y2="45" stroke="var(--line2)"/><line x1="55" y1="70" x2="115" y2="45" stroke="var(--line2)"/>
+          <line x1="115" y1="45" x2="125" y2="82" stroke="var(--line2)"/><line x1="55" y1="70" x2="125" y2="82" stroke="var(--line2)"/>
+          <circle cx="30" cy="30" r="6" fill="var(--amber)"/><circle cx="75" cy="20" r="6" fill="var(--amber)"/>
+          <circle cx="55" cy="70" r="6" fill="var(--amber)"/><circle cx="115" cy="45" r="6" fill="var(--brown)"/>
+          <circle cx="125" cy="82" r="6" fill="var(--amber)"/>
+        </svg>
+        <div class="vlbl"><b>HNSW</b> · hop the graph to the nearest vectors</div>
+      </div>
+      <div class="minicard a2">
+        <div class="t">Full text index</div>
+        <div class="row"><span class="vchip mono">torque → chunks 12, 87, 214</span></div>
+        <div class="row"><span class="vchip mono">implant → chunks 12, 33</span></div>
+        <div class="vlbl">exact words, instantly</div>
+      </div>
+      <div class="minicard a3">
+        <div class="t">Permission index</div>
+        <div class="row"><span class="vchip mono">group_acl → indexed</span></div>
+        <div class="vlbl">who may see it, as an index lookup</div>
+      </div>
+    </div>
+  </div>
+
+  <p class="note">Failures are first class: a document that cannot be parsed lands in a Failed state with the reason stored, visible in the Dropoff status list.</p>
+
+  <h2 id="metadata"><span class="n">05</span>Metadata: the document card</h2>
+  <p>Better answers come from better metadata, so at ingestion we build a small <b>document card</b> for every document, and it stays small no matter how long the document is. Gemini reads the document and proposes a title, a summary capped at 200 characters, key entities, tags from a fixed taxonomy, and an effective date. The uploader confirms or edits the governance fields in the scope popup. (Click <b>Document card</b> in the pipeline above for the visual.)</p>
+  <div class="tblwrap"><table>
+    <tr><th>Field</th><th>Set by</th><th>Used for</th></tr>
+    <tr><td>title, summary, entities</td><td>Gemini proposes</td><td>fast document level filtering and display</td></tr>
+    <tr><td>tags</td><td>Gemini proposes, uploader confirms</td><td>department style filtering, source pills in answers</td></tr>
+    <tr><td>group_acl</td><td>uploader</td><td>who can ever see this content (empty means everyone)</td></tr>
+    <tr><td>document class</td><td>uploader</td><td>authority: Official Policy 8 · Approved SOP 6 · Draft 3 · Note 1</td></tr>
+    <tr><td>authority score</td><td><b>computed server side</b></td><td>class base, plus 2 if an admin uploaded, plus 1 for uploader role, minus 1 for link sources, clamped 1 to 10. Never client supplied.</td></tr>
+    <tr><td>effective date</td><td>uploader confirms</td><td>recency tiebreaks and conflict handling</td></tr>
+    <tr><td>version, supersedes, status</td><td>pipeline</td><td>version chain and current flag</td></tr>
+  </table></div>
+  <p>Every chunk inherits the tenant id, document id, permissions, version, and character offsets, so a citation can always be traced to an exact byte range of an exact version of an exact document.</p>
+
+  <h2 id="chunk"><span class="n">06</span>Chunking and embeddings</h2>
+  <p><b>Chunking</b> is layout aware, not a blind character count: the chunker walks the parsed blocks, keeps headings attached to their sections, respects paragraph boundaries, and packs blocks into token bounded chunks with a controlled overlap between neighbors. Each chunk records its exact character start and end. <b>Encoding</b> uses Vertex AI <code>gemini-embedding-001</code> at <b>768 dimensions</b>, batched for throughput, with queries embedded by the same model into the same space. 768 is the deliberate middle ground: strong recall at a quarter of the storage and index cost of 3072. (Click <b>Chunk</b> and <b>Embed</b> in the pipeline above for the visuals.)</p>
+
+  <h2 id="index"><span class="n">07</span>Storage and indexing</h2>
+  <p>Everything lands in one Postgres instance (Cloud SQL) with the pgvector extension. Three indexes make retrieval fast, and all three accept inserts incrementally, which matters for a corpus that grows daily. (Click <b>Index</b> in the pipeline above for the visual.)</p>
+  <ul>
+    <li><b>HNSW index</b> on the embedding column with cosine distance, for approximate nearest neighbor search that stays fast as the corpus grows.</li>
+    <li><b>GIN full text index</b> on a generated <code>tsvector</code> column, powering the BM25 style keyword side.</li>
+    <li><b>GIN index on group_acl</b>, so permission filtering is an index operation, not a scan.</li>
+  </ul>
+  <p>Original files live in Cloud Storage; Postgres stores the pointer. Chat history, users, groups, and audit logs share the same database, which is why one SQL query can combine "semantically similar" with "this user is allowed to see it" with "only current versions".</p>
+
+  <h2 id="retrieve"><span class="n">08</span>The read path: retrieval</h2>
+  <pre class="mermaid">
+flowchart LR
+  Q["Question"] --> ACL["Permission prefilter<br/>from identity, in SQL"]
+  ACL --> D["Dense search<br/>pgvector cosine, top 50"]
+  ACL --> S["Keyword search<br/>BM25 full text, top 50"]
+  D --> F["Reciprocal rank fusion"]
+  S --> F
+  F --> R["Rerank to top 8<br/>Vertex AI ranker"]
+  R --> C["Conflict resolution<br/>authority, recency"]
+  C --> G["Gemini generates<br/>grounded, cited, streamed"]
+  </pre>
+  <div class="pipehint">👆 Click any stage to see how it works:</div>
+  <div class="pipeline" data-group="r">
+    <button class="step" data-panel="r-acl">Permission filter</button><span class="arr">→</span>
+    <button class="step" data-panel="r-dense">Meaning search</button><span class="arr">＋</span>
+    <button class="step" data-panel="r-bm25">Keyword search</button><span class="arr">→</span>
+    <button class="step" data-panel="r-rrf">Fuse</button><span class="arr">→</span>
+    <button class="step" data-panel="r-rerank">Rerank</button><span class="arr">→</span>
+    <button class="step" data-panel="r-conflict">Resolve conflicts</button><span class="arr">→</span>
+    <button class="step" data-panel="r-gen">Generate</button>
+  </div>
+
+  <div class="panel" id="r-acl" hidden>
+    <div class="ph">Permission filter: before the search even starts</div>
+    <p>The caller's groups are resolved <b>server side from their verified identity</b> and applied as a database filter. Chunks outside their groups, and chunks of superseded versions, never enter the candidate pool. Permissions are not trimmed off the results afterward; the forbidden material is simply never searched. Request filters can narrow this further but can never widen it.</p>
+    <div class="viz">
+      <div class="vcol a1"><span class="vchip">you · groups: clinical</span><div class="vlbl">from your verified sign in</div></div>
+      <div class="varrow a2">→</div>
+      <div class="vcol a3">
+        <div class="tilegrid">
+          <div class="tile"></div><div class="tile lock"></div><div class="tile"></div><div class="tile"></div>
+          <div class="tile lock"></div><div class="tile"></div><div class="tile"></div><div class="tile lock"></div>
+          <div class="tile"></div><div class="tile"></div><div class="tile lock"></div><div class="tile"></div>
+        </div>
+        <div class="vlbl">locked chunks are excluded by the database itself</div>
+      </div>
+      <div class="vnote a4"><b>Deny by default.</b> What you cannot see cannot appear in an answer, a citation, or a source view.</div>
+    </div>
+  </div>
+
+  <div class="panel" id="r-dense" hidden>
+    <div class="ph">Meaning search: find it even with different words</div>
+    <p>The question is embedded into the same 768 number space as every chunk, and the vector index returns the fifty nearest by meaning. This is the side that handles paraphrase: "time off rules" finds the PTO policy even if the words never match.</p>
+    <div class="viz">
+      <div class="vcol a1">
+        <svg width="260" height="150" viewBox="0 0 260 150" role="img" aria-label="query point with nearest neighbors highlighted">
+          <rect x="1" y="1" width="258" height="148" rx="10" fill="none" stroke="var(--line2)"/>
+          <circle cx="105" cy="72" r="34" fill="none" stroke="var(--amber)" stroke-dasharray="4 4"/>
+          <circle cx="105" cy="72" r="8" fill="var(--clay)"/>
+          <text x="118" y="66" font-size="11" fill="var(--ink)" font-weight="700">your question</text>
+          <circle cx="88" cy="55" r="5" fill="var(--amber)"/><circle cx="126" cy="88" r="5" fill="var(--amber)"/>
+          <circle cx="83" cy="90" r="5" fill="var(--amber)"/><circle cx="122" cy="52" r="5" fill="var(--amber)"/>
+          <circle cx="210" cy="30" r="5" fill="var(--line2)"/><circle cx="228" cy="112" r="5" fill="var(--line2)"/>
+          <circle cx="30" cy="126" r="5" fill="var(--line2)"/><circle cx="40" cy="24" r="5" fill="var(--line2)"/>
+        </svg>
+        <div class="vlbl">nearest chunks by meaning make the candidate list</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel" id="r-bm25" hidden>
+    <div class="ph">Keyword search: exactness the vectors can blur</div>
+    <p>In parallel, classic full text search ranks chunks by the exact words of the question. This side nails part numbers, model names, and precise phrases. Each side contributes its top fifty, so nothing depends on one method being perfect.</p>
+    <div class="viz">
+      <div class="vcol a1" style="align-items:flex-start; gap:8px;">
+        <span class="vchip mono">question: minimum torque for the X1</span>
+        <div class="minicard"><div class="t">chunk 12</div>"…do not exceed 45 Ncm. Target insertion <b style="background:var(--soft); padding:0 3px; border-radius:3px;">torque</b> for the <b style="background:var(--soft); padding:0 3px; border-radius:3px;">X1</b> is 35 Ncm…"</div>
+        <div class="minicard"><div class="t">chunk 87</div>"…<b style="background:var(--soft); padding:0 3px; border-radius:3px;">torque</b> wrench calibration schedule…"</div>
+      </div>
+      <div class="vnote a2">Exact matches score by frequency and rarity, the classic BM25 idea, straight from Postgres full text search.</div>
+    </div>
+  </div>
+
+  <div class="panel" id="r-rrf" hidden>
+    <div class="ph">Fuse: two opinions, merged by rank</div>
+    <p>The two lists are merged by <b>rank position</b>, not by raw score, so the two scoring scales never need to be reconciled. A chunk that both searches rank highly rises to the top; a chunk only one side found still survives into the merged list.</p>
+    <div class="viz">
+      <div class="ranklist a1"><div class="t">meaning</div><span class="rk a">chunk 12</span><span class="rk a">chunk 33</span><span class="rk a">chunk 87</span><span class="rk a">chunk 5</span></div>
+      <div class="ranklist a2"><div class="t">keywords</div><span class="rk b">chunk 87</span><span class="rk b">chunk 12</span><span class="rk b">chunk 214</span><span class="rk b">chunk 9</span></div>
+      <div class="varrow a3">→</div>
+      <div class="ranklist a4"><div class="t">fused</div><span class="rk a top">chunk 12</span><span class="rk b top">chunk 87</span><span class="rk a">chunk 33</span><span class="rk b">chunk 214</span></div>
+      <div class="vnote a5">Chunks 12 and 87 appear high on <b>both</b> lists, so they float to the top of the merge.</div>
+    </div>
+  </div>
+
+  <div class="panel" id="r-rerank" hidden>
+    <div class="ph">Rerank: a second, smarter read</div>
+    <p>Wide nets are cheap but imprecise. A stronger model now reads the question <b>together with</b> each surviving candidate and reorders them by how well they actually answer it, keeping the best eight as evidence. Recall first, precision second.</p>
+    <div class="viz">
+      <div class="ranklist a1"><div class="t">before</div><span class="rk b">chunk 12</span><span class="rk b">chunk 87</span><span class="rk b">chunk 33</span><span class="rk b">chunk 214</span></div>
+      <div class="vcol a2"><span class="vchip">reads question ＋ passage together</span><div class="varrow" style="transform:rotate(90deg);">⇄</div></div>
+      <div class="ranklist a3"><div class="t">after</div><span class="rk a top">chunk 87</span><span class="rk a top">chunk 12</span><span class="rk a">chunk 214</span><span class="rk a">chunk 33</span></div>
+      <div class="vnote a4">Chunk 87 actually answers the question, so it overtakes chunk 12. The top eight become the evidence.</div>
+    </div>
+  </div>
+
+  <div class="panel" id="r-conflict" hidden>
+    <div class="ph">Resolve conflicts: governance, never a coin flip</div>
+    <p>If the evidence disagrees, the metadata decides. Superseded documents were already excluded; among the rest, higher <b>authority</b> wins and newer <b>effective dates</b> break ties. When two comparable sources still conflict, the answer <b>states the disagreement openly</b>, names the source it relied on, and cites both.</p>
+    <div class="viz">
+      <div class="minicard a1"><div class="t">Surgical Manual v3</div><div class="row"><span class="vchip">Official Policy</span></div><div class="row"><span class="vchip mono">authority 9 · Feb 2026</span></div></div>
+      <div class="vcol a2" style="font-size:20px; color:var(--amber); font-weight:800;">vs</div>
+      <div class="minicard a3"><div class="t">Older clinical SOP</div><div class="row"><span class="vchip">Approved SOP</span></div><div class="row"><span class="vchip mono">authority 6 · Nov 2025</span></div></div>
+      <div class="vcol a4"><span class="vchip ok">manual wins: higher authority, newer</span><span class="vchip warn">answer notes the disagreement anyway</span></div>
+    </div>
+  </div>
+
+  <div class="panel" id="r-gen" hidden>
+    <div class="ph">Generate: grounded, cited, streamed. Or honestly silent.</div>
+    <p>Gemini writes the answer from the selected passages <b>only</b>, streaming token by token, with a citation on every claim. Clicking a citation opens the source at the exact highlighted passage. And if retrieval produced nothing the caller may see, the model is <b>never invoked at all</b>: the assistant answers "I don't have that in the knowledge base" and the question costs nothing.</p>
+    <div class="viz">
+      <div class="vcol a1"><span class="vchip">evidence · 8 passages</span></div>
+      <div class="varrow a2">→</div>
+      <div class="minicard a3" style="max-width:300px;">
+        <div class="t">Answer</div>
+        "Recommended insertion torque is <b>35 Ncm</b><span style="color:var(--brown); font-weight:800;">¹</span>, up to <b>45 Ncm</b> in dense bone<span style="color:var(--brown); font-weight:800;">¹</span>. Immediate loading requires 35 Ncm<span style="color:var(--brown); font-weight:800;">²</span>."
+      </div>
+      <div class="vnote a4">No evidence? <b>No model call.</b> The assistant abstains instead of guessing, and the failed lookup is free.</div>
+    </div>
+  </div>
+
+  <h2 id="access"><span class="n">09</span>Groups and access control</h2>
+  <p>Access is organized around <b>groups</b>, created by uploaders on the fly (clinical, regulatory, leadership, and so on). Users belong to groups; documents are scoped to groups at Dropoff time. An empty scope means everyone at Hybridge. (Click <b>Permission filter</b> in the pipeline above for the visual.)</p>
+  <ul>
+    <li><b>Deny by default.</b> A restricted document is visible only if the caller shares at least one group with it.</li>
+    <li><b>Enforced before retrieval, in SQL.</b> Permissions are not a post filter on results; forbidden chunks never enter the candidate set, so they can never leak into an answer, a citation, or a source pane.</li>
+    <li><b>Identity only.</b> Group membership comes from the server's own database keyed on the verified token. Nothing in the request body can grant access. The same check guards the source viewer and original file download.</li>
+    <li><b>Roles.</b> Everyone can search. Uploaders can add documents and create groups. Admins manage users and roles, with a lockout guard so the last admin can never be removed.</li>
+  </ul>
+
+  <h2 id="trust"><span class="n">10</span>Trust: versions, conflicts, citations</h2>
+  <h3>Document versioning</h3>
+  <p>Re uploading a changed document creates a new version and supersedes the old one. Retrieval only sees current versions, so stale guidance cannot resurface, while the full chain remains stored for audit. (Click <b>Version resolve</b> in the write path for the visual.)</p>
+  <h3>Conflict resolution, never a coin flip</h3>
+  <p>When two retrieved documents disagree, the system resolves by governance instead of chance: drop superseded documents, prefer higher authority, tiebreak by effective date, and if the top two remain comparable, <b>say so explicitly</b> in the answer. (Click <b>Resolve conflicts</b> in the read path for the visual.)</p>
+  <div class="callout trust">
+    <div class="h">Example from the demo corpus</div>
+    Two documents give different torque minimums. The answer uses the current Official Policy, and a visible callout says sources disagree, naming the newer higher authority document it followed and the older SOP it set aside.
+  </div>
+  <h3>Citations, always</h3>
+  <p>Every claim carries a numbered citation. Each citation stores the document id, chunk id, and character offsets, so clicking it opens the document scrolled to the highlighted passage. Sources under an answer show title, tags, document class, effective date, and authority. If the knowledge base cannot support an answer, the assistant abstains rather than guesses.</p>
+
+  <h2 id="chat"><span class="n">11</span>Chat, history, and memory</h2>
+  <ul>
+    <li><b>Streaming.</b> Answers stream token by token over server sent events; citations and any conflict note arrive with a final metadata event. Streaming is pulled on a worker thread so long answers never block other users.</li>
+    <li><b>Retention.</b> Conversations and messages persist in Postgres, owned by the author's identity. Anyone else asking for your conversation gets a 404, which does not even reveal it exists. History survives reloads; the rail supports pin, rename, and delete (cascade).</li>
+    <li><b>Memory today.</b> Each question is answered against the corpus, and the transcript is retained and reloaded, so the interface remembers everything you asked. Feeding earlier turns into retrieval (true multi turn memory) is deliberately staged for a later phase; the answer function was built stateless so sessions could be layered on without rework, and that is exactly how the chat shipped.</li>
+    <li><b>Attachments</b> (planned) will be ephemeral context for one conversation only. Dropoff stays the single governed way into the shared corpus, so casual chat uploads can never contaminate company knowledge.</li>
+  </ul>
+
+  <h2 id="security"><span class="n">12</span>Security and compliance</h2>
+  <div class="grid2">
+    <div class="card"><div class="h">Identity</div><p>Google sign in via Identity Platform, restricted to the hybridgeimplants.com domain with verified email required. Users are provisioned on first login. Every API call verifies the Firebase token server side.</p></div>
+    <div class="card"><div class="h">Authorization</div><p>Deny by default group permissions enforced in SQL before retrieval, on the source viewer, and on file downloads. Roles gate upload and admin surfaces in both API and UI.</p></div>
+    <div class="card"><div class="h">Data protection</div><p>Originals in Cloud Storage behind short lived signed URLs, issued only after a permission check. Secrets live in Secret Manager. Nothing sensitive is committed to the repository.</p></div>
+    <div class="card"><div class="h">Safe failure</div><p>Stream errors are logged in full on the server but the client only ever sees a generic message, so internal details cannot leak. Ingestion of links has a guard against requests to internal or metadata addresses.</p></div>
+    <div class="card"><div class="h">Audit</div><p>Logins, group changes, and membership changes write an audit log with actor, action, target, and time.</p></div>
+    <div class="card"><div class="h">Compliance posture</div><p>Google Cloud BAA is in place for the organization. Access is scoped, audited, and revocable per group; encryption at rest and in transit is on by default across the stack, with customer managed keys staged as a hardening step.</p></div>
+  </div>
+  <p class="note">Also in the discipline column: 122 automated tests across backend and frontend, adversarial code review on every pull request (which caught real permission and correctness bugs before merge), and an automated security review pass that hardened the error path.</p>
+
+  <h2 id="frontend"><span class="n">13</span>The frontend</h2>
+  <p>React 19 with TypeScript and Tailwind, built with Vite, served from Firebase Hosting. The visual identity is a warm beige and brown system designed for this product, in both tabs and this document.</p>
+  <ul>
+    <li><b>Ask Hybridge</b> renders streamed markdown safely (no raw HTML injection), maps inline citation markers to numbered superscripts, and opens the source pane with highlight and scroll. The design was iterated as interactive mockups and approved before a line of product code.</li>
+    <li><b>Dropoff's vortex</b> is a hand built canvas animation: a four arm spiral of about 600 particles flowing into a breathing core of light. It reacts to the cursor (particles bulge away from the pointer), intensifies on drag, and collapses into a flash before the scope popup opens. It honors reduced motion preferences and degrades gracefully where canvas is unavailable.</li>
+    <li><b>Details that matter:</b> optimistic deletes in the chat rail, a friendly guard on empty or oversized files, upload status that admits when something is taking long, and error states written in plain language.</li>
+  </ul>
+
+  <h2 id="evolve"><span class="n">14</span>Built to grow, not preloaded</h2>
+  <p>This system assumes the corpus is <b>always growing</b> rather than imported once:</p>
+  <ul>
+    <li>A new document is searchable minutes after drop, with no reindexing of anything else. HNSW and GIN indexes take inserts incrementally.</li>
+    <li>Dedup and version resolution make re uploads safe. People can drop the latest revision without asking whether it already exists.</li>
+    <li>Metadata governance (class, authority, effective date) is captured at the moment of ingestion, when the uploader actually knows the answers, instead of being backfilled onto a giant pile later.</li>
+    <li>The work done per document is small and the work done per query does not grow with corpus size, so growth does not change the economics.</li>
+    <li>The empty state is honest: with nothing relevant ingested, the assistant says so, which builds exactly the right trust for a system people will feed over time.</li>
+  </ul>
+
+  <h2 id="quality"><span class="n">15</span>Quality and evaluation</h2>
+  <ul>
+    <li>A seeded evaluation corpus with question and answer cases runs in the test suite: <b>recall at 8 scored 1.0</b> against a floor of 0.8, and mean reciprocal rank 0.42 against a floor of 0.35, plus dedicated cases proving the abstention path and the conflict path.</li>
+    <li>96 backend tests and 26 frontend tests cover permissions in both directions (member sees, outsider blocked), streaming framing, version chains, chunk ordering, citation math, and the UI flows.</li>
+    <li>Every subproject was built task by task with tests written first, then reviewed twice: once per task, once across the whole branch, by a stronger model prompted to attack it. Those reviews caught, among others, a permission sentinel bug, an authority scoring bug, and a race that would have wiped the first streamed answer.</li>
+  </ul>
+
+  <h2 id="roadmap"><span class="n">16</span>What is next</h2>
+  <ul class="roadmap">
+    <li><span class="tag now">next up</span><b>Turn on Vertex AI in production.</b> Everything is wired and guarded; enabling the API and one role brings live answers and completes ingestion end to end. Minutes of work, gated only on the go decision.</li>
+    <li><span class="tag now">near term</span><b>Chat attachments</b> as ephemeral, single conversation context · <b>web search toggle</b> for questions that should blend public info · <b>multi turn retrieval memory</b> so follow ups use conversation context.</li>
+    <li><span class="tag now">near term</span><b>Google Drive connector</b> so shared drives sync into the corpus automatically · batch uploads with one scope · a persistent document library view with supersede and retire actions.</li>
+    <li><span class="tag next">later</span>Voice input · dark mode · automatic conversation titles · richer analytics on what people ask and where the corpus has gaps (the abstention log is the roadmap for what to ingest next).</li>
+    <li><span class="tag next">later</span>Scale and hardening: AlloyDB migration when query volume demands it, customer managed encryption keys, DLP scanning at ingestion, and a broader continuous evaluation harness.</li>
+  </ul>
+
+  <h2 id="demo"><span class="n">17</span>Suggested demo script</h2>
+  <ol>
+    <li><b>Sign in</b> with a Hybridge account; note the domain lock and that a personal Gmail cannot enter.</li>
+    <li><b>Dropoff first.</b> Show the vortex, drop a policy PDF, walk the scope popup (pick a group, a class, a date), and watch Processing turn to Ready.</li>
+    <li><b>Ask the question</b> that document answers. Watch it stream, then click citation 1 and let the source pane land on the highlighted passage. This moment sells the whole system.</li>
+    <li><b>Show the conflict callout</b> with two disagreeing documents, and how the answer names which source won and why.</li>
+    <li><b>Show access control:</b> the same question from an account outside the group returns the abstention, because the restricted document never even entered retrieval.</li>
+    <li><b>Ask something the corpus cannot answer</b> to show honest abstention instead of a confident guess.</li>
+    <li><b>Close on the rail:</b> history persisted, pin and delete, Flash versus Pro, and the roadmap above.</li>
+  </ol>
+
+  <footer>Hybridge Enterprise Search · demo and architecture guide · prepared July 2026 · living document, updated as the platform evolves</footer>
+</div>
+
+<script>
+(function(){
+  var pipelines = document.querySelectorAll(".pipeline[data-group]");
+  pipelines.forEach(function(pipe){
+    var steps = pipe.querySelectorAll("button.step");
+    steps.forEach(function(btn){
+      btn.setAttribute("aria-expanded", "false");
+      btn.addEventListener("click", function(){
+        var panel = document.getElementById(btn.getAttribute("data-panel"));
+        if (!panel) return;
+        var wasOpen = !panel.hidden;
+        // close all panels in this group
+        steps.forEach(function(b){
+          var p = document.getElementById(b.getAttribute("data-panel"));
+          if (p){ p.hidden = true; p.classList.remove("play"); }
+          b.classList.remove("active");
+          b.setAttribute("aria-expanded", "false");
+        });
+        if (wasOpen) return; // clicking the open one closes it
+        panel.hidden = false;
+        btn.classList.add("active");
+        btn.setAttribute("aria-expanded", "true");
+        // restart the entrance animation
+        panel.classList.remove("play");
+        void panel.offsetWidth;
+        panel.classList.add("play");
+        panel.scrollIntoView({ block: "nearest", behavior: "smooth" });
+      });
+    });
+  });
+})();
+</script>
+
+
+
+
+<script type="module">
+  import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
+  const dark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+  mermaid.initialize({ startOnLoad: true, theme: dark ? "dark" : "neutral" });
+</script>
+</body></html>
