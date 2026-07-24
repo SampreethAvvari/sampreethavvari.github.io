@@ -1,35 +1,45 @@
 ---
-title: "Reconciling a dental day without opening the spreadsheets"
-date: "2026-06-20"
+title: "How I gave a three person insurance team 70 hours back every week"
+date: "2026-07-24"
 layout: ../../layouts/PostLayout.astro
-description: "Two front-desk staff spent about three hours each every day cross-checking three exports by hand to confirm every patient seen got documented and billed. I built a deterministic engine that does the cross-check and shows them only the flagged patients. Shipped, live, and HIPAA-safe by construction."
+description: "A three person insurance team at a multi office dental group spent about 70 hours a week cross checking three exports by hand to confirm every patient seen got documented and billed correctly. I built a deterministic engine that does the reading for them and hands back only the flagged patients. Shipped, live, and HIPAA safe by construction."
 img_path: "/reconciliation.png"
 img_alt: "Reconciliation engine: schedule, ledger, and clinical notes flowing into one exception list"
 tag: "Backend"
 tone: "blue"
 stats:
-  - value: "6 hrs → minutes"
-    label: "daily manual cross-checking across three spreadsheets, now an exception review"
+  - value: "70 hrs/week"
+    label: "of manual cross checking returned to a three person insurance team, over 3,600 hours a year"
     tone: "blue"
   - value: "2 systems, 1 engine"
     label: "Eaglesoft and Denticon exports run through the same reconciliation core"
     tone: "amber"
-  - value: "150+ tests"
+  - value: "200+ tests"
     label: "all on synthetic fixtures, no patient data in the repo ever"
     tone: "emerald"
 ---
 
-Every day, each location in the group sees roughly 40 patients. For the books to be right and the chart to be defensible, every one of those encounters has to line up across three separate documents: the schedule (who was supposed to be seen), the production ledger (what got charged), and the clinical notes (what got documented). When the three agree, there is nothing to do. The whole job is the disagreements.
+Every evening in a dental office, after the last patient leaves, someone sits down with three reports and starts cross checking. Did every patient who came in today get billed? Does every charge have a clinical note behind it? Did the doctor who billed the exam actually do the exam? Was that suture removal written up, even though it was free?
 
-Two front-office staff were finding those disagreements by hand, eyeballing three spreadsheets side by side. It took each of them about three hours a day, every day, forever. And because it was manual, it failed exactly where mistakes are most expensive: a patient treated and documented but never billed (lost revenue), or billed with no clinical note behind it (a compliance liability).
+At the dental group I work with, a multi office practice in upstate New York, this job took a three person insurance team most of their day, every day. Across the team it added up to about 70 hours a week. That is nearly two full time jobs spent reading the same three reports against each other, line by line, patient by patient.
 
-I built Reconciliation to do the cross-check automatically and hand the staff only the handful of flagged patients instead of the whole schedule. It is shipped and live (v1.6.0) on Cloud Run, it reads two completely different practice-management systems through one engine, and no patient data has ever touched the repository.
+I built a small web app that does the reading for them. Now they upload the day's files, wait a few seconds, and get back a short list: here are the eight patients out of 120 where something does not line up. Everyone else is fine, go home.
+
+Seventy hours a week. Over 3,600 hours a year. For a tool that, at its heart, plays a very careful game of spot the difference.
+
+## The problem, in plain words
+
+A dental visit leaves three paper trails. The schedule says who was supposed to come in. The production ledger says what was billed. The clinical notes say what actually happened in the chair.
+
+In theory these three always agree. In practice they drift. A hygienist forgets to write a note. A front desk posts a charge under the wrong doctor. A crown delivery gets documented but never billed, which is money quietly walking out the door. An insurance auditor asking about a charge with no note behind it is a much worse conversation.
+
+None of these mistakes are dramatic on their own. The problem is finding them, because the only way is to compare everything against everything, and 99 percent of patients are perfectly fine. Humans are terrible at jobs like that. Software is great at them.
 
 ## Two systems, same underlying reality
 
-The first complication is that the two practices run different software, and the exports look nothing alike on disk.
+The team exports three files from their practice management system each day, the same exports they were already printing and reading by hand: the schedule, the production ledger, and the clinical notes. There is an optional fourth, the perio charting report, which I will get to.
 
-The general practice runs Eaglesoft: legacy exports, binary `.xls` then CSV, Windows `cp1252` encoding, and duplicate column headers (three different `start_time` columns in one file). The implant centers run Denticon: `.xlsx` with title and footer junk rows, merged cells, a header that is not on the first row, and a column name literally spelled `OIffice Name`. Same problem, two hostile file shapes.
+The complication is that the group runs two different practice systems across its offices, and the exports look nothing alike on disk. The general practice runs Eaglesoft: legacy exports, binary `.xls` then CSV, Windows `cp1252` encoding, and duplicate column headers (three different `start_time` columns in one file). The implant centers run Denticon: `.xlsx` with title and footer junk rows, merged cells, a header that is not on the first row, and a column name literally spelled `OIffice Name`. Same problem, two hostile file shapes. The app reads both: same screen, one tab per system, and every check adapts to whichever one you pick.
 
 The second complication is HIPAA. Every one of those files is full of protected health information, so anything I built had to treat patient data as radioactive: never logged carelessly, never committed, never sent anywhere it should not go.
 
@@ -42,57 +52,83 @@ engine/   pure Python. No network, no database, no clock, no UI.
           Three files in, one structured auditable result out.
 
 app/      FastAPI. Auth, upload, dashboard, history, email, and the
-          in-progress AI clinical matcher. All of it wraps engine.reconcile(...).
+          waiting AI clinical matcher. All of it wraps engine.reconcile(...).
 ```
 
-The engine is the part that has to be correct, so I kept it free of side effects. No I/O, no randomness, no reading the wall clock. It even takes the "generated at" timestamp as a parameter instead of calling `now()`, so identical inputs produce byte-identical output. That is what makes the result auditable: same three files, same answer, every count traceable back to specific source rows. The messy real-world concerns (sessions, OAuth, uploads, email) all live in the shell, where they can be messy without threatening correctness.
+The engine is the part that has to be correct, so I kept it free of side effects. No I/O, no randomness, no reading the wall clock. It even takes the "generated at" timestamp as a parameter instead of calling `now()`, so identical inputs produce byte identical output. That is what makes the result auditable: same three files, same answer, every count traceable back to specific source rows. The messy real world concerns (sessions, OAuth, uploads, email) all live in the shell, where they can be messy without threatening correctness.
 
-## Parsing: map columns by name, and fail loud
+The parsers follow two rules. Map columns by name rather than position, because positions drift between exports and names are more stable. And give each system its own adapter that validates the columns it needs and emits clean typed records, so once parsed, Eaglesoft and Denticon rows are indistinguishable to the rest of the system. A missing required column is a loud, specific error, never a silently wrong answer. In a tool people use to sign off on money and compliance, "wrong but confident" is the worst possible failure.
 
-The parsers follow two rules. Map columns by name rather than position, because positions drift between exports and names are more stable, and when a name is duplicated, pick the right occurrence deterministically. And give each system its own adapter that validates the columns it needs and emits clean typed records. A missing required column is a loud, specific error, never a silently wrong answer. In a tool people use to sign off on money and compliance, "wrong but confident" is the worst possible failure.
+Everything joins on the patient ID number, never the name, so two patients named Michael Smith can never get mixed up. The Eaglesoft notes file has no ID column at all, but its `sort_name` field carries the ID as trailing digits on the name string, so the matcher recovers the key from there. When an ID cannot be lined up, the system attempts a normalized name match and tags the patient as low confidence, needs human review. It never silently guesses. "I am not sure, look at this one" is always a safe answer.
 
-Both adapters emit the same typed models, so once parsed, Eaglesoft and Denticon records are indistinguishable to the rest of the system. A small `SOURCES` registry dispatches to the right adapter based on a `source` argument, which means adding a third practice-management system later is one new adapter, not a rewrite of the matching logic.
+## What it checks
 
-## Matching: patient_id is the spine
-
-To compare three files you need a reliable join key. The schedule and ledger both carry a clean `patient_id`. The Eaglesoft notes file has no ID column at all. What it does have is a `sort_name` like `ROTHFUSS, JAMES E15612`, with the patient ID hiding as trailing digits on the name string, so the matcher recovers the key from there. I confirmed that was 100% extractable across a real notes export before relying on it.
-
-Keying on the ID rather than the name means two patients with the same name never collide. Names are only a fallback: when an ID cannot be lined up, the system attempts a normalized last-first match and tags the patient as low-confidence, needs human review. It never silently guesses. "I am not sure, look at this one" is always a safe answer.
-
-## Classification: a small set of honest buckets
-
-For each scheduled patient, the engine computes two facts: `has_money` (at least one real production charge, explicitly excluding credits, adjustments, and courtesy codes) and `has_note` (at least one non-deleted clinical note). Those two booleans produce the verdict.
+The core verdict starts with two facts per scheduled patient: `has_money` (at least one real production charge, excluding credits, adjustments, and courtesy codes) and `has_note` (at least one non deleted clinical note).
 
 | Bucket | Condition | What it means |
 |---|---|---|
 | verified | money and note | Done and documented, no review needed |
 | note_no_money | note, no production | Documented but nothing posted (lost revenue) |
 | money_no_note | production, no note | Posted but undocumented (compliance risk) |
-| neither | no money, no note | No-show or missed |
-| review_non_scheduled | production for someone not on the schedule | Walk-in or mis-post |
-| review_low_confidence | matched only by fuzzy name | Needs a human to confirm |
+| neither | no money, no note | No show or missed |
+| review_non_scheduled | production for someone not on the schedule | Walk in or mispost |
+| review_low_confidence | matched only by name | Needs a human to confirm |
 
-The green `verified` bucket is the whole point. On a representative day of about 41 scheduled patients, roughly 30 land there automatically and disappear from the staff's workload, leaving about a dozen exceptions to actually look at. Every record carries the evidence that placed it in its bucket (the specific ledger and note rows), a plain-English reason, and the input files' SHA-256 hashes and row counts for audit.
+The green `verified` bucket is the whole point: most of the schedule lands there automatically and disappears from the team's workload. But the check stack has grown well past those two booleans, one team request at a time:
+
+**The doctor who billed must be the doctor in the note.** The ledger says which provider billed each line. The app then looks for that doctor in the note text. If Dr. A billed the exam but the note says Dr. B did it, that is a flag, and it is one of the most valuable flags the tool produces, because billing under the wrong provider is the kind of error that is nearly invisible by hand.
+
+**"No exam" codes must tell a consistent story.** When the doctor does not come by during a hygiene visit, the office bills a special no exam code. The note should say so too. If the ledger says no exam but the note describes one, flag. If the note says no exam but the code was never billed, flag. The team also asked for one more twist: on those visits the code should be billed under the patient's assigned doctor, which the note lists as the preferred provider. The app checks that match, and if the note forgot to list a preferred provider at all, it says exactly that.
+
+**The codes a note claims must be in the ledger.** At the implant offices, notes often list the codes that were billed. The app reads those lists and checks every one against the ledger. This is how it catches things like a note listing three x ray codes when only two were billed, or an upper arch code billed when the treatment plan clearly says lower. It even knows which full arch codes are upper versus lower, so swapping the two gets called out by name.
+
+**Perio charting must have proof.** If the ledger bills perio charting, that patient has to appear in the perio charting export. Billed measurements with no chart behind them: flag.
+
+**Office policy is built in.** A few codes never need a note, like x rays taken at another office. A zero dollar suture removal still needs a note, because the patient was in the chair and that has to be documented. A patient walking in to buy a water flosser does not need a chart note at all. A generic "patient medical history updated" entry never counts as documentation of a visit, because it says nothing about what happened. Each of these rules came from a conversation with the team, and each one is written down in the code, in tests, where it cannot quietly drift.
+
+**Deliveries get their own card.** The team wanted visibility on every crown cement, bridge delivery, retainer and night guard handoff, so those codes show up as their own count on the dashboard. One click shows exactly those patients.
 
 <div class="stat-callout stat-amber">
   <div class="stat-value">fail loud, never guess</div>
   <div class="stat-label">A missing column errors out. An uncertain match gets flagged for a human. In a financial and clinical tool, a confident wrong answer is far worse than an honest "look at this one."</div>
 </div>
 
-## HIPAA-safe testing, with no compromise
+## The hard part: notes are written by humans
 
-This is the constraint that shaped the whole test strategy, and I am happy with where it landed. No real patient data lives in the repo: `.gitignore` blocks every `.xls`, `.xlsx`, `.csv`, and `.pdf`, and real exports stay on local machines only. The 150+ tests run against synthetic fixtures generated at runtime that reproduce every real-world quirk (duplicate headers, the trailing-ID `sort_name`, deleted notes, credits, multi-appointment patients, non-scheduled production, fuzzy-name-only patients) without a single byte of PHI, so CI runs entirely clean. A golden test does run against a real day's files, but it is opt-in, gated behind a `REAL_DATA_DIR` variable, and skipped automatically when that is absent. The acceptance numbers from that real day became the literal definition of done.
+Here is the thing that makes this more interesting than a spreadsheet comparison. Clinical notes are free text, typed fast, by different people, with their own habits.
 
-## The shell: auth, dashboard, history, email
+The same doctor shows up in notes as "Dr. Kenyon", "Dr Kyle", "drkyle" with no space, or by his initials. One dentist is "Dr. Missy" in every note but Melissa in the payroll system. Two doctors share a last name, so last names alone prove nothing. People typo: "Kenyan" for Kenyon, "Melisa" for Melissa. The app handles all of it. Nicknames are mapped, "Dr" stuck to a name still parses, and names match within a spelling mistake or two, with short names kept strict so the word "than" can never match a Dr. Khan.
 
-Around the engine sits a FastAPI app on Cloud Run, with Firestore holding users, recipients, saved reports, and config. Google sign-in is restricted to the practices' own domains plus an admin-managed allowlist, with two roles and self-serve user management so nobody files a ticket to add a colleague. The dashboard has a source tab, then upload three files, reconcile, and read color-coded summary cards; click any card and a popup shows every patient's schedule, ledger, and note rows down to tooth, surface, provider, dollar amount, full note text, and the original spreadsheet row numbers. Every run is saved and searchable, with a reversible mark-as-fixed so a staff member can tick off a flagged patient once they have resolved it. Email needs no IT involvement: an admin clicks Connect Gmail once, and the app sends reports as that user through a stored refresh token.
+It also learned what NOT to read as evidence. Every hygiene note has template lines like "Intra/Extra Oral Exam: WNL". That is a routine screening checkbox, not a doctor exam, and early versions of the tool got fooled by it. "Next visit: exam and cleaning" is a plan for the future, not proof of today. And "Preferred Doctor: Dr. Comfort" names the patient's assigned dentist, not whoever was in the room, a distinction that, once handled, immediately caught a real case of an exam billed under one doctor while the note said a different doctor performed it.
 
-## The next frontier, built but not switched on
+Every one of those lessons came from a real flagged patient the team sent back with a note saying "this one is wrong." I would trace it, fix the reading, add a test, and redeploy the same day. The false flag rate fell week by week, and the flags that remain are the kind a human reviewer would also stop on.
 
-The current verdict is structural: production exists and a note exists, so the patient is verified. The real prize is clinical matching, confirming that the specific procedures billed are the specific procedures documented, tooth by tooth. I have built that layer on Gemini through Vertex AI, matching ledger procedures against note text by tooth, surface, description, and procedure code with a curated clinical-terminology dictionary (a "Cement Crown" charge maps to a "Delivered Crown" note, surface-letter counts have to match the procedure code, X-ray and tray codes are normalized, billing and admin lines are ignored).
+## Protecting against bad inputs
 
-It is deliberately not wired into the live verdict yet. Clinical matching is high stakes, and the two practices document differently (per-procedure at the general practice, long consult narratives at the implant centers). Turning it on is gated on finalizing the terminology lists with each practice's billing lead, so the engine asks instead of guesses. The plan is a preview mode that shows the AI's read alongside the official structural verdict before it is ever allowed to change a count.
+The scariest failure of a tool like this is being confidently wrong because the input was wrong. Two protections came out of real incidents.
 
-## Where it landed
+One Monday the report claimed 85 patients had money but no notes. Nothing was wrong with the patients. The notes export had defaulted to the previous Friday. The engine was comparing Monday's charges against Friday's notes. Now the app checks the dates inside every file, and if the notes file covers a different day than the ledger, a large warning appears on the report and in the email subject telling the team exactly which file to re export.
 
-Shipped and live at v1.6.0, in daily use. About six person-hours of manual cross-checking became a few minutes of exception review. Lost-revenue and compliance gaps are caught structurally every day instead of depending on a tired human noticing a discrepancy across three windows. Two practice-management systems flow through one engine and one dashboard. The output is deterministic and auditable, the repository has never held a byte of PHI, and the AI clinical matcher is ready and waiting behind a conservative rollout rather than rushed into a place where it could quietly change the books.
+The second was sneakier. The practice system exports notes with line breaks that split one long note across several rows of the file. The tool used to lose the bottom half of long notes, which is exactly where doctors sign. The app now stitches split notes back together, which recovered signatures, cleared a batch of false flags, and made the full note readable in the app.
+
+## The shell: dashboard, history, email
+
+Around the engine sits a FastAPI app on Cloud Run, with Firestore holding users, recipients, saved reports, and config. The dashboard has a source tab, then upload the files, reconcile, and read color coded summary cards; click any card and a popup shows every patient's schedule, ledger, and note rows down to tooth, surface, provider, dollar amount, and full note text. Every run is saved and searchable, so last Tuesday is always one click away. Each flagged patient has a mark as fixed button, so the list works like a checklist: open the report, work the flags, mark them done.
+
+Any run can be emailed to the team, and the email is built from the same logic as the dashboard, so the two never disagree. Email needs no IT involvement: an admin clicks Connect Gmail once, and the app sends reports as that user through a stored refresh token.
+
+## Privacy, because this is health data
+
+Everything about patients is protected health information, so the boring parts got done first. The app lives on Google Cloud under a healthcare agreement. Sign in is Google only and restricted to the company's two email domains plus an admin managed allowlist, so a stray Gmail account cannot get in. Uploaded files are processed and immediately deleted. Matching runs on ID numbers, and no patient data ever touches the code repository: `.gitignore` blocks every `.xls`, `.xlsx`, `.csv`, and `.pdf`, and real exports stay on local machines only. The 200+ tests run against synthetic fixtures generated at runtime that reproduce every real world quirk (duplicate headers, the trailing ID `sort_name`, deleted notes, credits, split notes, fuzzy name patients) without a single byte of PHI, so CI runs entirely clean.
+
+## Where the AI is, honestly
+
+People assume a tool like this is a language model reading charts. It mostly is not, on purpose. The checks are deterministic rules: the same files produce the same answer every time, every rule traces back to a decision the insurance team made, and there are over 200 automated tests pinning the behavior down. When a flag shows up, the team can see exactly why. Auditability beats magic here.
+
+AI shows up in two places. It was my pair programmer throughout, which is a big part of why every fix the team requested could ship the same day. And there is a clinical matching layer built and waiting, using a language model on Vertex AI to match each billed procedure to the clinical language in the note, so it knows "cement crown" and "delivered crown" are the same event. It is deliberately not wired into the live verdict yet. Clinical matching is high stakes, and the two practices document differently (per procedure at the general practice, long consult narratives at the implant centers). Turning it on is gated on finalizing the terminology lists with each practice's billing lead, and it will sit on top of the deterministic checks, not replace them.
+
+## What it adds up to
+
+A three person team used to spend around 70 hours a week being human spreadsheet comparators. Now the daily review is uploading files and reading roughly a dozen flags, most of which are real. The hours went back into the work that actually needs people: calling insurers, chasing claims, talking to patients.
+
+The lesson I keep coming back to: the software is not clever. It is thorough. It reads every line, every day, without getting bored, and it learned the office's handwriting one correction at a time. Sometimes the best thing you can build is a very patient reader.
