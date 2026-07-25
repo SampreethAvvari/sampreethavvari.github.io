@@ -378,8 +378,8 @@ export const disciplines: Discipline[] = [
     slug: "sde",
     acronym: "SDE",
     name: "Software Engineering",
-    accent: "#5B8DEF",
-    rgb: "91, 141, 239",
+    accent: "#F43F5E",
+    rgb: "244, 63, 94",
     icon: "fa-solid fa-code",
     tagline:
       "The foundation under everything else: schemas with invariants, test pyramids, infrastructure as code, and systems that survive their author.",

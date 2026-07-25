@@ -12,6 +12,7 @@ const ICONS = {
   teaching: "M22 10 12 5 2 10l10 5 10-5Zm-16 3v4c0 1.7 2.7 3 6 3s6-1.3 6-3v-4",
   filmmaking: "M7 4v16M17 4v16M3 8h4m10 0h4M3 12h18M3 16h4m10 0h4M5 4h14a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2Z",
   contact: "m4 7 8 6 8-6M5 5h14a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1Z",
+  mind: "M12 5a1.6 1.6 0 1 0 .01 0M5 17a1.6 1.6 0 1 0 .01 0M19 17a1.6 1.6 0 1 0 .01 0M11 6.4 6.4 15M13 6.4 17.6 15M6.8 16.4h10.4",
 };
 
 function LinkIcon({ match }) {
@@ -52,6 +53,7 @@ export default function Nav({ searchItems }) {
     { name: "Teaching", href: "/teaching", match: "teaching" },
     { name: "Film", href: "/filmmaking", match: "filmmaking" },
     { name: "Contact", href: "/#contact", match: "contact" },
+    { name: "Mind", href: "/mind", match: "mind" },
   ];
 
   const sheetLinks = [

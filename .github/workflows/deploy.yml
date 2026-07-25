@@ -4,6 +4,9 @@ on:
   push:
     branches: [main]
   workflow_dispatch:
+  schedule:
+    # Nightly rebuild so the Git Mind constellation stays fresh as repos change.
+    - cron: "0 7 * * *"
 
 permissions:
   contents: read
@@ -35,6 +38,7 @@ jobs:
         env:
           PUBLIC_CHAT_ENDPOINT: ${{ vars.PUBLIC_CHAT_ENDPOINT }}
           PUBLIC_TEACHING_API: ${{ vars.PUBLIC_TEACHING_API }}
+          GH_GRAPH_TOKEN: ${{ secrets.GH_GRAPH_TOKEN }}
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
