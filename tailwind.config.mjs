@@ -26,7 +26,7 @@ export default {
 				'acc-amber':   '#F5A524',
 				// Filmmaking gets its own cinematic crimson, distinct from the four
 				// engineering-discipline accents. The 5th colour out of the prism.
-				'acc-film':    '#F43F5E',
+				'acc-film':    '#5B8DEF',
 			},
 			fontFamily: {
 				display: [

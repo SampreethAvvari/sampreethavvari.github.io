@@ -1,0 +1,1328 @@
+{
+  "nodes": [
+    {
+      "id": "repo:sampreethavvari-sampreethavvari",
+      "type": "repo",
+      "label": "SampreethAvvari",
+      "data": {
+        "owner": "SampreethAvvari",
+        "description": "Config files for my GitHub profile.",
+        "stars": 0,
+        "url": "https://github.com/SampreethAvvari/SampreethAvvari",
+        "languages": [
+          "Jupyter Notebook"
+        ],
+        "primary_language": "Jupyter Notebook",
+        "topics": [
+          "config",
+          "github-config"
+        ],
+        "private": false
+      }
+    },
+    {
+      "id": "language:jupyter-notebook",
+      "type": "language",
+      "label": "Jupyter Notebook",
+      "data": {}
+    },
+    {
+      "id": "topic:config",
+      "type": "topic",
+      "label": "config",
+      "data": {}
+    },
+    {
+      "id": "topic:github-config",
+      "type": "topic",
+      "label": "github-config",
+      "data": {}
+    },
+    {
+      "id": "repo:sampreethavvari-sampreethavvari-github-io",
+      "type": "repo",
+      "label": "sampreethavvari.github.io",
+      "data": {
+        "owner": "SampreethAvvari",
+        "description": "",
+        "stars": 0,
+        "url": "https://github.com/SampreethAvvari/sampreethavvari.github.io",
+        "languages": [
+          "Astro",
+          "TypeScript",
+          "CSS",
+          "HTML",
+          "JavaScript",
+          "PowerShell",
+          "PLpgSQL"
+        ],
+        "primary_language": "Astro",
+        "topics": [],
+        "private": false
+      }
+    },
+    {
+      "id": "language:astro",
+      "type": "language",
+      "label": "Astro",
+      "data": {}
+    },
+    {
+      "id": "language:typescript",
+      "type": "language",
+      "label": "TypeScript",
+      "data": {}
+    },
+    {
+      "id": "language:css",
+      "type": "language",
+      "label": "CSS",
+      "data": {}
+    },
+    {
+      "id": "language:html",
+      "type": "language",
+      "label": "HTML",
+      "data": {}
+    },
+    {
+      "id": "language:javascript",
+      "type": "language",
+      "label": "JavaScript",
+      "data": {}
+    },
+    {
+      "id": "language:powershell",
+      "type": "language",
+      "label": "PowerShell",
+      "data": {}
+    },
+    {
+      "id": "language:plpgsql",
+      "type": "language",
+      "label": "PLpgSQL",
+      "data": {}
+    },
+    {
+      "id": "repo:kingsing22-solstice-mvp",
+      "type": "repo",
+      "label": "Solstice-MVP",
+      "data": {
+        "owner": "KingSing22",
+        "description": "Solstice App",
+        "stars": 0,
+        "url": "https://github.com/KingSing22/Solstice-MVP",
+        "languages": [
+          "TypeScript",
+          "CSS",
+          "HTML",
+          "JavaScript"
+        ],
+        "primary_language": "TypeScript",
+        "topics": [],
+        "private": true
+      }
+    },
+    {
+      "id": "repo:hybridge-implants-cbct-scan-validator",
+      "type": "repo",
+      "label": "cbct-scan-validator",
+      "data": {
+        "owner": "hybridge-implants",
+        "description": "CBCT scan quality validator for dental imaging — 9-class artifact classifier with MLOps pipeline",
+        "stars": 0,
+        "url": "https://github.com/hybridge-implants/cbct-scan-validator",
+        "languages": [
+          "Python",
+          "HTML",
+          "JavaScript",
+          "Shell",
+          "Makefile",
+          "PowerShell"
+        ],
+        "primary_language": "Python",
+        "topics": [],
+        "private": true
+      }
+    },
+    {
+      "id": "language:python",
+      "type": "language",
+      "label": "Python",
+      "data": {}
+    },
+    {
+      "id": "language:shell",
+      "type": "language",
+      "label": "Shell",
+      "data": {}
+    },
+    {
+      "id": "language:makefile",
+      "type": "language",
+      "label": "Makefile",
+      "data": {}
+    },
+    {
+      "id": "org:hybridge-implants",
+      "type": "org",
+      "label": "hybridge-implants",
+      "data": {}
+    },
+    {
+      "id": "repo:hybridge-implants-treatment-estimator",
+      "type": "repo",
+      "label": "treatment-estimator",
+      "data": {
+        "owner": "hybridge-implants",
+        "description": "",
+        "stars": 0,
+        "url": "https://github.com/hybridge-implants/treatment-estimator",
+        "languages": [
+          "TypeScript",
+          "PLpgSQL",
+          "Dockerfile",
+          "JavaScript",
+          "CSS"
+        ],
+        "primary_language": "TypeScript",
+        "topics": [],
+        "private": true
+      }
+    },
+    {
+      "id": "language:dockerfile",
+      "type": "language",
+      "label": "Dockerfile",
+      "data": {}
+    },
+    {
+      "id": "repo:hybridge-implants-hybridge-consultation-qa",
+      "type": "repo",
+      "label": "hybridge-consultation-qa",
+      "data": {
+        "owner": "hybridge-implants",
+        "description": "Hybridge Consultation QA — Zoom transcript → Vertex AI Gemini scoring → color-coded reports → master Sheet ledger. HIPAA-aware, multi-tenant Zoom, web UI for manual triggers.",
+        "stars": 0,
+        "url": "https://github.com/hybridge-implants/hybridge-consultation-qa",
+        "languages": [
+          "Python",
+          "JavaScript",
+          "HTML",
+          "HCL",
+          "Dockerfile",
+          "Makefile",
+          "Shell"
+        ],
+        "primary_language": "Python",
+        "topics": [],
+        "private": true
+      }
+    },
+    {
+      "id": "language:hcl",
+      "type": "language",
+      "label": "HCL",
+      "data": {}
+    },
+    {
+      "id": "repo:hybridge-implants-hybridge-accounting-tools",
+      "type": "repo",
+      "label": "hybridge-accounting-tools",
+      "data": {
+        "owner": "hybridge-implants",
+        "description": "",
+        "stars": 0,
+        "url": "https://github.com/hybridge-implants/hybridge-accounting-tools",
+        "languages": [
+          "Python",
+          "HTML",
+          "Shell",
+          "CSS",
+          "Dockerfile"
+        ],
+        "primary_language": "Python",
+        "topics": [],
+        "private": true
+      }
+    },
+    {
+      "id": "repo:hybridge-implants-hybridge-npc-coaching",
+      "type": "repo",
+      "label": "hybridge-npc-coaching",
+      "data": {
+        "owner": "hybridge-implants",
+        "description": "Hybridge NPC Call Coaching System: post-call AI scoring of New Patient Coordinator calls against the Hybridge playbook (HIPAA-scoped, Google Cloud).",
+        "stars": 0,
+        "url": "https://github.com/hybridge-implants/hybridge-npc-coaching",
+        "languages": [
+          "Python",
+          "TypeScript",
+          "HCL",
+          "CSS",
+          "Jinja",
+          "Dockerfile",
+          "HTML"
+        ],
+        "primary_language": "Python",
+        "topics": [],
+        "private": true
+      }
+    },
+    {
+      "id": "language:jinja",
+      "type": "language",
+      "label": "Jinja",
+      "data": {}
+    },
+    {
+      "id": "repo:sampreethavvari-job-pilot",
+      "type": "repo",
+      "label": "job-pilot",
+      "data": {
+        "owner": "SampreethAvvari",
+        "description": "",
+        "stars": 2,
+        "url": "https://github.com/SampreethAvvari/job-pilot",
+        "languages": [
+          "Python",
+          "TypeScript",
+          "TeX",
+          "CSS",
+          "Dockerfile",
+          "JavaScript"
+        ],
+        "primary_language": "Python",
+        "topics": [],
+        "private": false
+      }
+    },
+    {
+      "id": "language:tex",
+      "type": "language",
+      "label": "TeX",
+      "data": {}
+    },
+    {
+      "id": "repo:hybridge-implants-ledger-notes-verifier",
+      "type": "repo",
+      "label": "ledger-notes-verifier",
+      "data": {
+        "owner": "hybridge-implants",
+        "description": "",
+        "stars": 0,
+        "url": "https://github.com/hybridge-implants/ledger-notes-verifier",
+        "languages": [
+          "Python",
+          "HTML",
+          "Dockerfile"
+        ],
+        "primary_language": "Python",
+        "topics": [],
+        "private": true
+      }
+    },
+    {
+      "id": "repo:hybridge-implants-hybridge-dashboard",
+      "type": "repo",
+      "label": "hybridge-dashboard",
+      "data": {
+        "owner": "hybridge-implants",
+        "description": "Internal engineering project status dashboard (Next.js + Cloud Run + IAP)",
+        "stars": 0,
+        "url": "https://github.com/hybridge-implants/hybridge-dashboard",
+        "languages": [
+          "TypeScript",
+          "HCL",
+          "JavaScript",
+          "CSS",
+          "Dockerfile"
+        ],
+        "primary_language": "TypeScript",
+        "topics": [],
+        "private": true
+      }
+    },
+    {
+      "id": "repo:hybridge-implants-hybridge-enterprise-search",
+      "type": "repo",
+      "label": "hybridge-enterprise-search",
+      "data": {
+        "owner": "hybridge-implants",
+        "description": "Advanced enterprise search RAG for Hybridge, built on GCP",
+        "stars": 0,
+        "url": "https://github.com/hybridge-implants/hybridge-enterprise-search",
+        "languages": [
+          "Python",
+          "TypeScript",
+          "HCL",
+          "CSS",
+          "JavaScript",
+          "Mako",
+          "HTML",
+          "Dockerfile"
+        ],
+        "primary_language": "Python",
+        "topics": [],
+        "private": true
+      }
+    },
+    {
+      "id": "language:mako",
+      "type": "language",
+      "label": "Mako",
+      "data": {}
+    },
+    {
+      "id": "repo:sampreethavvari-jobpilot-demo",
+      "type": "repo",
+      "label": "jobpilot-demo",
+      "data": {
+        "owner": "SampreethAvvari",
+        "description": "Public demo of JobPilot, the open-source job-hunt autopilot. Real console, fictional data. Live at jobpilot-demo.pages.dev",
+        "stars": 0,
+        "url": "https://github.com/SampreethAvvari/jobpilot-demo",
+        "languages": [
+          "TypeScript",
+          "Python",
+          "CSS",
+          "JavaScript",
+          "TeX"
+        ],
+        "primary_language": "TypeScript",
+        "topics": [],
+        "private": false
+      }
+    },
+    {
+      "id": "repo:tastemakerclub-tastemaker-app",
+      "type": "repo",
+      "label": "tastemaker-app",
+      "data": {
+        "owner": "tastemakerclub",
+        "description": "The App!",
+        "stars": 0,
+        "url": "https://github.com/tastemakerclub/tastemaker-app",
+        "languages": [
+          "TypeScript",
+          "JavaScript"
+        ],
+        "primary_language": "TypeScript",
+        "topics": [],
+        "private": true
+      }
+    },
+    {
+      "id": "org:tastemakerclub",
+      "type": "org",
+      "label": "tastemakerclub",
+      "data": {}
+    },
+    {
+      "id": "repo:tastemakerclub-tastemaker-api-py",
+      "type": "repo",
+      "label": "tastemaker-api-py",
+      "data": {
+        "owner": "tastemakerclub",
+        "description": "Tastemaker Backend (Python)",
+        "stars": 0,
+        "url": "https://github.com/tastemakerclub/tastemaker-api-py",
+        "languages": [
+          "Python",
+          "Shell",
+          "Batchfile",
+          "Dockerfile",
+          "Mako"
+        ],
+        "primary_language": "Python",
+        "topics": [],
+        "private": true
+      }
+    },
+    {
+      "id": "language:batchfile",
+      "type": "language",
+      "label": "Batchfile",
+      "data": {}
+    },
+    {
+      "id": "repo:marcomorucci-llm-persuasion",
+      "type": "repo",
+      "label": "LLM-Persuasion",
+      "data": {
+        "owner": "marcomorucci",
+        "description": "",
+        "stars": 0,
+        "url": "https://github.com/marcomorucci/LLM-Persuasion",
+        "languages": [
+          "Python"
+        ],
+        "primary_language": "Python",
+        "topics": [],
+        "private": true
+      }
+    },
+    {
+      "id": "repo:ds28-ops-loan-default-risk-assessment",
+      "type": "repo",
+      "label": "loan-default-risk-assessment",
+      "data": {
+        "owner": "ds28-ops",
+        "description": "Repository for ECE-GY 9183 course project on Loan Default Risk Assessment",
+        "stars": 1,
+        "url": "https://github.com/ds28-ops/loan-default-risk-assessment",
+        "languages": [
+          "Jupyter Notebook",
+          "Python",
+          "HCL",
+          "JavaScript",
+          "Shell",
+          "Dockerfile",
+          "HTML",
+          "CSS"
+        ],
+        "primary_language": "Jupyter Notebook",
+        "topics": [],
+        "private": false
+      }
+    },
+    {
+      "id": "repo:sampreethavvari-mlops",
+      "type": "repo",
+      "label": "MLOps",
+      "data": {
+        "owner": "SampreethAvvari",
+        "description": "",
+        "stars": 0,
+        "url": "https://github.com/SampreethAvvari/MLOps",
+        "languages": [],
+        "primary_language": "",
+        "topics": [],
+        "private": false
+      }
+    },
+    {
+      "id": "repo:sampreethavvari-nlp",
+      "type": "repo",
+      "label": "NLP",
+      "data": {
+        "owner": "SampreethAvvari",
+        "description": "",
+        "stars": 0,
+        "url": "https://github.com/SampreethAvvari/NLP",
+        "languages": [
+          "Python"
+        ],
+        "primary_language": "Python",
+        "topics": [],
+        "private": false
+      }
+    },
+    {
+      "id": "repo:sampreethavvari-bigdata",
+      "type": "repo",
+      "label": "BigData",
+      "data": {
+        "owner": "SampreethAvvari",
+        "description": "",
+        "stars": 1,
+        "url": "https://github.com/SampreethAvvari/BigData",
+        "languages": [
+          "Jupyter Notebook",
+          "Python",
+          "Shell"
+        ],
+        "primary_language": "Jupyter Notebook",
+        "topics": [],
+        "private": false
+      }
+    },
+    {
+      "id": "repo:sampreethavvari-us2020electionanalysis",
+      "type": "repo",
+      "label": "us2020electionanalysis",
+      "data": {
+        "owner": "SampreethAvvari",
+        "description": "Finetuned Llama 3 to detect fake news in #donaldtrump and #joebiden tweets on the benchmark LIAR dataset and used a pretrained RoBERTa model to perform sentiment analysis on the misinformation classification to perform analysis on the spread of negativity and misinformation during US 2020 elections and the impact it had on the results.",
+        "stars": 3,
+        "url": "https://github.com/SampreethAvvari/us2020electionanalysis",
+        "languages": [
+          "Jupyter Notebook"
+        ],
+        "primary_language": "Jupyter Notebook",
+        "topics": [],
+        "private": false
+      }
+    },
+    {
+      "id": "repo:ds28-ops-dl-resnet",
+      "type": "repo",
+      "label": "DL_Resnet",
+      "data": {
+        "owner": "ds28-ops",
+        "description": "Mini-Project repo for Deep Learning Course Spring 2024",
+        "stars": 0,
+        "url": "https://github.com/ds28-ops/DL_Resnet",
+        "languages": [
+          "Jupyter Notebook"
+        ],
+        "primary_language": "Jupyter Notebook",
+        "topics": [],
+        "private": false
+      }
+    },
+    {
+      "id": "repo:sampreethavvari-nlpprojects",
+      "type": "repo",
+      "label": "NLPprojects",
+      "data": {
+        "owner": "SampreethAvvari",
+        "description": "",
+        "stars": 0,
+        "url": "https://github.com/SampreethAvvari/NLPprojects",
+        "languages": [],
+        "primary_language": "",
+        "topics": [],
+        "private": false
+      }
+    },
+    {
+      "id": "repo:nyu-3idiots-resnetunder50",
+      "type": "repo",
+      "label": "ResNetUnder50",
+      "data": {
+        "owner": "NYU-3Idiots",
+        "description": "Building Resnet Architecture Model for Image Classification on CIFAR 10 Dataset with a contraint of having under 5 Million Parameters",
+        "stars": 0,
+        "url": "https://github.com/NYU-3Idiots/ResNetUnder50",
+        "languages": [],
+        "primary_language": "",
+        "topics": [],
+        "private": false
+      }
+    },
+    {
+      "id": "org:nyu-3idiots",
+      "type": "org",
+      "label": "NYU-3Idiots",
+      "data": {}
+    },
+    {
+      "id": "repo:sampreethavvari-testasdata",
+      "type": "repo",
+      "label": "TestasData",
+      "data": {
+        "owner": "SampreethAvvari",
+        "description": "",
+        "stars": 0,
+        "url": "https://github.com/SampreethAvvari/TestasData",
+        "languages": [
+          "Jupyter Notebook"
+        ],
+        "primary_language": "Jupyter Notebook",
+        "topics": [],
+        "private": false
+      }
+    },
+    {
+      "id": "repo:sampreethavvari-datasciencebootcamp",
+      "type": "repo",
+      "label": "datasciencebootcamp",
+      "data": {
+        "owner": "SampreethAvvari",
+        "description": "",
+        "stars": 0,
+        "url": "https://github.com/SampreethAvvari/datasciencebootcamp",
+        "languages": [
+          "Jupyter Notebook"
+        ],
+        "primary_language": "Jupyter Notebook",
+        "topics": [],
+        "private": false
+      }
+    },
+    {
+      "id": "repo:nyu-big-data-hw2",
+      "type": "repo",
+      "label": "HW2",
+      "data": {
+        "owner": "nyu-big-data",
+        "description": "This is the sqlite / rdbms homework",
+        "stars": 0,
+        "url": "https://github.com/nyu-big-data/HW2",
+        "languages": [
+          "Python"
+        ],
+        "primary_language": "Python",
+        "topics": [],
+        "private": true
+      }
+    },
+    {
+      "id": "org:nyu-big-data",
+      "type": "org",
+      "label": "nyu-big-data",
+      "data": {}
+    },
+    {
+      "id": "repo:nyu-big-data-homework-1-sampreethavvari",
+      "type": "repo",
+      "label": "homework-1-SampreethAvvari",
+      "data": {
+        "owner": "nyu-big-data",
+        "description": "homework-1-SampreethAvvari created by GitHub Classroom",
+        "stars": 0,
+        "url": "https://github.com/nyu-big-data/homework-1-SampreethAvvari",
+        "languages": [],
+        "primary_language": "",
+        "topics": [],
+        "private": true
+      }
+    },
+    {
+      "id": "repo:safdarahmedd-needforspeed",
+      "type": "repo",
+      "label": "needforspeed",
+      "data": {
+        "owner": "Safdarahmedd",
+        "description": "",
+        "stars": 0,
+        "url": "https://github.com/Safdarahmedd/needforspeed",
+        "languages": [
+          "C++",
+          "C"
+        ],
+        "primary_language": "C++",
+        "topics": [],
+        "private": true
+      }
+    },
+    {
+      "id": "language:c",
+      "type": "language",
+      "label": "C++",
+      "data": {}
+    },
+    {
+      "id": "repo:sampreethavvari-rtes",
+      "type": "repo",
+      "label": "RTES",
+      "data": {
+        "owner": "SampreethAvvari",
+        "description": "",
+        "stars": 0,
+        "url": "https://github.com/SampreethAvvari/RTES",
+        "languages": [
+          "C++",
+          "C"
+        ],
+        "primary_language": "C++",
+        "topics": [],
+        "private": false
+      }
+    },
+    {
+      "id": "repo:sampreethavvari-aia",
+      "type": "repo",
+      "label": "AIA",
+      "data": {
+        "owner": "SampreethAvvari",
+        "description": "",
+        "stars": 0,
+        "url": "https://github.com/SampreethAvvari/AIA",
+        "languages": [],
+        "primary_language": "",
+        "topics": [],
+        "private": true
+      }
+    },
+    {
+      "id": "repo:sampreethavvari-java-practice",
+      "type": "repo",
+      "label": "Java-Practice",
+      "data": {
+        "owner": "SampreethAvvari",
+        "description": "",
+        "stars": 0,
+        "url": "https://github.com/SampreethAvvari/Java-Practice",
+        "languages": [],
+        "primary_language": "",
+        "topics": [],
+        "private": true
+      }
+    },
+    {
+      "id": "repo:sampreethavvari-python-practice",
+      "type": "repo",
+      "label": "Python-Practice",
+      "data": {
+        "owner": "SampreethAvvari",
+        "description": "",
+        "stars": 0,
+        "url": "https://github.com/SampreethAvvari/Python-Practice",
+        "languages": [],
+        "primary_language": "",
+        "topics": [],
+        "private": true
+      }
+    }
+  ],
+  "edges": [
+    {
+      "source": "repo:sampreethavvari-sampreethavvari",
+      "target": "language:jupyter-notebook",
+      "rel": "uses-language"
+    },
+    {
+      "source": "repo:sampreethavvari-sampreethavvari",
+      "target": "topic:config",
+      "rel": "tagged"
+    },
+    {
+      "source": "repo:sampreethavvari-sampreethavvari",
+      "target": "topic:github-config",
+      "rel": "tagged"
+    },
+    {
+      "source": "repo:sampreethavvari-sampreethavvari-github-io",
+      "target": "language:astro",
+      "rel": "uses-language"
+    },
+    {
+      "source": "repo:sampreethavvari-sampreethavvari-github-io",
+      "target": "language:typescript",
+      "rel": "uses-language"
+    },
+    {
+      "source": "repo:sampreethavvari-sampreethavvari-github-io",
+      "target": "language:css",
+      "rel": "uses-language"
+    },
+    {
+      "source": "repo:sampreethavvari-sampreethavvari-github-io",
+      "target": "language:html",
+      "rel": "uses-language"
+    },
+    {
+      "source": "repo:sampreethavvari-sampreethavvari-github-io",
+      "target": "language:javascript",
+      "rel": "uses-language"
+    },
+    {
+      "source": "repo:sampreethavvari-sampreethavvari-github-io",
+      "target": "language:powershell",
+      "rel": "uses-language"
+    },
+    {
+      "source": "repo:sampreethavvari-sampreethavvari-github-io",
+      "target": "language:plpgsql",
+      "rel": "uses-language"
+    },
+    {
+      "source": "repo:kingsing22-solstice-mvp",
+      "target": "language:typescript",
+      "rel": "uses-language"
+    },
+    {
+      "source": "repo:kingsing22-solstice-mvp",
+      "target": "language:css",
+      "rel": "uses-language"
+    },
+    {
+      "source": "repo:kingsing22-solstice-mvp",
+      "target": "language:html",
+      "rel": "uses-language"
+    },
+    {
+      "source": "repo:kingsing22-solstice-mvp",
+      "target": "language:javascript",
+      "rel": "uses-language"
+    },
+    {
+      "source": "repo:hybridge-implants-cbct-scan-validator",
+      "target": "language:python",
+      "rel": "uses-language"
+    },
+    {
+      "source": "repo:hybridge-implants-cbct-scan-validator",
+      "target": "language:html",
+      "rel": "uses-language"
+    },
+    {
+      "source": "repo:hybridge-implants-cbct-scan-validator",
+      "target": "language:javascript",
+      "rel": "uses-language"
+    },
+    {
+      "source": "repo:hybridge-implants-cbct-scan-validator",
+      "target": "language:shell",
+      "rel": "uses-language"
+    },
+    {
+      "source": "repo:hybridge-implants-cbct-scan-validator",
+      "target": "language:makefile",
+      "rel": "uses-language"
+    },
+    {
+      "source": "repo:hybridge-implants-cbct-scan-validator",
+      "target": "language:powershell",
+      "rel": "uses-language"
+    },
+    {
+      "source": "repo:hybridge-implants-cbct-scan-validator",
+      "target": "org:hybridge-implants",
+      "rel": "owned-by-org"
+    },
+    {
+      "source": "repo:hybridge-implants-treatment-estimator",
+      "target": "language:typescript",
+      "rel": "uses-language"
+    },
+    {
+      "source": "repo:hybridge-implants-treatment-estimator",
+      "target": "language:plpgsql",
+      "rel": "uses-language"
+    },
+    {
+      "source": "repo:hybridge-implants-treatment-estimator",
+      "target": "language:dockerfile",
+      "rel": "uses-language"
+    },
+    {
+      "source": "repo:hybridge-implants-treatment-estimator",
+      "target": "language:javascript",
+      "rel": "uses-language"
+    },
+    {
+      "source": "repo:hybridge-implants-treatment-estimator",
+      "target": "language:css",
+      "rel": "uses-language"
+    },
+    {
+      "source": "repo:hybridge-implants-treatment-estimator",
+      "target": "org:hybridge-implants",
+      "rel": "owned-by-org"
+    },
+    {
+      "source": "repo:hybridge-implants-hybridge-consultation-qa",
+      "target": "language:python",
+      "rel": "uses-language"
+    },
+    {
+      "source": "repo:hybridge-implants-hybridge-consultation-qa",
+      "target": "language:javascript",
+      "rel": "uses-language"
+    },
+    {
+      "source": "repo:hybridge-implants-hybridge-consultation-qa",
+      "target": "language:html",
+      "rel": "uses-language"
+    },
+    {
+      "source": "repo:hybridge-implants-hybridge-consultation-qa",
+      "target": "language:hcl",
+      "rel": "uses-language"
+    },
+    {
+      "source": "repo:hybridge-implants-hybridge-consultation-qa",
+      "target": "language:dockerfile",
+      "rel": "uses-language"
+    },
+    {
+      "source": "repo:hybridge-implants-hybridge-consultation-qa",
+      "target": "language:makefile",
+      "rel": "uses-language"
+    },
+    {
+      "source": "repo:hybridge-implants-hybridge-consultation-qa",
+      "target": "language:shell",
+      "rel": "uses-language"
+    },
+    {
+      "source": "repo:hybridge-implants-hybridge-consultation-qa",
+      "target": "org:hybridge-implants",
+      "rel": "owned-by-org"
+    },
+    {
+      "source": "repo:hybridge-implants-hybridge-accounting-tools",
+      "target": "language:python",
+      "rel": "uses-language"
+    },
+    {
+      "source": "repo:hybridge-implants-hybridge-accounting-tools",
+      "target": "language:html",
+      "rel": "uses-language"
+    },
+    {
+      "source": "repo:hybridge-implants-hybridge-accounting-tools",
+      "target": "language:shell",
+      "rel": "uses-language"
+    },
+    {
+      "source": "repo:hybridge-implants-hybridge-accounting-tools",
+      "target": "language:css",
+      "rel": "uses-language"
+    },
+    {
+      "source": "repo:hybridge-implants-hybridge-accounting-tools",
+      "target": "language:dockerfile",
+      "rel": "uses-language"
+    },
+    {
+      "source": "repo:hybridge-implants-hybridge-accounting-tools",
+      "target": "org:hybridge-implants",
+      "rel": "owned-by-org"
+    },
+    {
+      "source": "repo:hybridge-implants-hybridge-npc-coaching",
+      "target": "language:python",
+      "rel": "uses-language"
+    },
+    {
+      "source": "repo:hybridge-implants-hybridge-npc-coaching",
+      "target": "language:typescript",
+      "rel": "uses-language"
+    },
+    {
+      "source": "repo:hybridge-implants-hybridge-npc-coaching",
+      "target": "language:hcl",
+      "rel": "uses-language"
+    },
+    {
+      "source": "repo:hybridge-implants-hybridge-npc-coaching",
+      "target": "language:css",
+      "rel": "uses-language"
+    },
+    {
+      "source": "repo:hybridge-implants-hybridge-npc-coaching",
+      "target": "language:jinja",
+      "rel": "uses-language"
+    },
+    {
+      "source": "repo:hybridge-implants-hybridge-npc-coaching",
+      "target": "language:dockerfile",
+      "rel": "uses-language"
+    },
+    {
+      "source": "repo:hybridge-implants-hybridge-npc-coaching",
+      "target": "language:html",
+      "rel": "uses-language"
+    },
+    {
+      "source": "repo:hybridge-implants-hybridge-npc-coaching",
+      "target": "org:hybridge-implants",
+      "rel": "owned-by-org"
+    },
+    {
+      "source": "repo:sampreethavvari-job-pilot",
+      "target": "language:python",
+      "rel": "uses-language"
+    },
+    {
+      "source": "repo:sampreethavvari-job-pilot",
+      "target": "language:typescript",
+      "rel": "uses-language"
+    },
+    {
+      "source": "repo:sampreethavvari-job-pilot",
+      "target": "language:tex",
+      "rel": "uses-language"
+    },
+    {
+      "source": "repo:sampreethavvari-job-pilot",
+      "target": "language:css",
+      "rel": "uses-language"
+    },
+    {
+      "source": "repo:sampreethavvari-job-pilot",
+      "target": "language:dockerfile",
+      "rel": "uses-language"
+    },
+    {
+      "source": "repo:sampreethavvari-job-pilot",
+      "target": "language:javascript",
+      "rel": "uses-language"
+    },
+    {
+      "source": "repo:hybridge-implants-ledger-notes-verifier",
+      "target": "language:python",
+      "rel": "uses-language"
+    },
+    {
+      "source": "repo:hybridge-implants-ledger-notes-verifier",
+      "target": "language:html",
+      "rel": "uses-language"
+    },
+    {
+      "source": "repo:hybridge-implants-ledger-notes-verifier",
+      "target": "language:dockerfile",
+      "rel": "uses-language"
+    },
+    {
+      "source": "repo:hybridge-implants-ledger-notes-verifier",
+      "target": "org:hybridge-implants",
+      "rel": "owned-by-org"
+    },
+    {
+      "source": "repo:hybridge-implants-hybridge-dashboard",
+      "target": "language:typescript",
+      "rel": "uses-language"
+    },
+    {
+      "source": "repo:hybridge-implants-hybridge-dashboard",
+      "target": "language:hcl",
+      "rel": "uses-language"
+    },
+    {
+      "source": "repo:hybridge-implants-hybridge-dashboard",
+      "target": "language:javascript",
+      "rel": "uses-language"
+    },
+    {
+      "source": "repo:hybridge-implants-hybridge-dashboard",
+      "target": "language:css",
+      "rel": "uses-language"
+    },
+    {
+      "source": "repo:hybridge-implants-hybridge-dashboard",
+      "target": "language:dockerfile",
+      "rel": "uses-language"
+    },
+    {
+      "source": "repo:hybridge-implants-hybridge-dashboard",
+      "target": "org:hybridge-implants",
+      "rel": "owned-by-org"
+    },
+    {
+      "source": "repo:hybridge-implants-hybridge-enterprise-search",
+      "target": "language:python",
+      "rel": "uses-language"
+    },
+    {
+      "source": "repo:hybridge-implants-hybridge-enterprise-search",
+      "target": "language:typescript",
+      "rel": "uses-language"
+    },
+    {
+      "source": "repo:hybridge-implants-hybridge-enterprise-search",
+      "target": "language:hcl",
+      "rel": "uses-language"
+    },
+    {
+      "source": "repo:hybridge-implants-hybridge-enterprise-search",
+      "target": "language:css",
+      "rel": "uses-language"
+    },
+    {
+      "source": "repo:hybridge-implants-hybridge-enterprise-search",
+      "target": "language:javascript",
+      "rel": "uses-language"
+    },
+    {
+      "source": "repo:hybridge-implants-hybridge-enterprise-search",
+      "target": "language:mako",
+      "rel": "uses-language"
+    },
+    {
+      "source": "repo:hybridge-implants-hybridge-enterprise-search",
+      "target": "language:html",
+      "rel": "uses-language"
+    },
+    {
+      "source": "repo:hybridge-implants-hybridge-enterprise-search",
+      "target": "language:dockerfile",
+      "rel": "uses-language"
+    },
+    {
+      "source": "repo:hybridge-implants-hybridge-enterprise-search",
+      "target": "org:hybridge-implants",
+      "rel": "owned-by-org"
+    },
+    {
+      "source": "repo:sampreethavvari-jobpilot-demo",
+      "target": "language:typescript",
+      "rel": "uses-language"
+    },
+    {
+      "source": "repo:sampreethavvari-jobpilot-demo",
+      "target": "language:python",
+      "rel": "uses-language"
+    },
+    {
+      "source": "repo:sampreethavvari-jobpilot-demo",
+      "target": "language:css",
+      "rel": "uses-language"
+    },
+    {
+      "source": "repo:sampreethavvari-jobpilot-demo",
+      "target": "language:javascript",
+      "rel": "uses-language"
+    },
+    {
+      "source": "repo:sampreethavvari-jobpilot-demo",
+      "target": "language:tex",
+      "rel": "uses-language"
+    },
+    {
+      "source": "repo:tastemakerclub-tastemaker-app",
+      "target": "language:typescript",
+      "rel": "uses-language"
+    },
+    {
+      "source": "repo:tastemakerclub-tastemaker-app",
+      "target": "language:javascript",
+      "rel": "uses-language"
+    },
+    {
+      "source": "repo:tastemakerclub-tastemaker-app",
+      "target": "org:tastemakerclub",
+      "rel": "owned-by-org"
+    },
+    {
+      "source": "repo:tastemakerclub-tastemaker-api-py",
+      "target": "language:python",
+      "rel": "uses-language"
+    },
+    {
+      "source": "repo:tastemakerclub-tastemaker-api-py",
+      "target": "language:shell",
+      "rel": "uses-language"
+    },
+    {
+      "source": "repo:tastemakerclub-tastemaker-api-py",
+      "target": "language:batchfile",
+      "rel": "uses-language"
+    },
+    {
+      "source": "repo:tastemakerclub-tastemaker-api-py",
+      "target": "language:dockerfile",
+      "rel": "uses-language"
+    },
+    {
+      "source": "repo:tastemakerclub-tastemaker-api-py",
+      "target": "language:mako",
+      "rel": "uses-language"
+    },
+    {
+      "source": "repo:tastemakerclub-tastemaker-api-py",
+      "target": "org:tastemakerclub",
+      "rel": "owned-by-org"
+    },
+    {
+      "source": "repo:marcomorucci-llm-persuasion",
+      "target": "language:python",
+      "rel": "uses-language"
+    },
+    {
+      "source": "repo:ds28-ops-loan-default-risk-assessment",
+      "target": "language:jupyter-notebook",
+      "rel": "uses-language"
+    },
+    {
+      "source": "repo:ds28-ops-loan-default-risk-assessment",
+      "target": "language:python",
+      "rel": "uses-language"
+    },
+    {
+      "source": "repo:ds28-ops-loan-default-risk-assessment",
+      "target": "language:hcl",
+      "rel": "uses-language"
+    },
+    {
+      "source": "repo:ds28-ops-loan-default-risk-assessment",
+      "target": "language:javascript",
+      "rel": "uses-language"
+    },
+    {
+      "source": "repo:ds28-ops-loan-default-risk-assessment",
+      "target": "language:shell",
+      "rel": "uses-language"
+    },
+    {
+      "source": "repo:ds28-ops-loan-default-risk-assessment",
+      "target": "language:dockerfile",
+      "rel": "uses-language"
+    },
+    {
+      "source": "repo:ds28-ops-loan-default-risk-assessment",
+      "target": "language:html",
+      "rel": "uses-language"
+    },
+    {
+      "source": "repo:ds28-ops-loan-default-risk-assessment",
+      "target": "language:css",
+      "rel": "uses-language"
+    },
+    {
+      "source": "repo:sampreethavvari-nlp",
+      "target": "language:python",
+      "rel": "uses-language"
+    },
+    {
+      "source": "repo:sampreethavvari-bigdata",
+      "target": "language:jupyter-notebook",
+      "rel": "uses-language"
+    },
+    {
+      "source": "repo:sampreethavvari-bigdata",
+      "target": "language:python",
+      "rel": "uses-language"
+    },
+    {
+      "source": "repo:sampreethavvari-bigdata",
+      "target": "language:shell",
+      "rel": "uses-language"
+    },
+    {
+      "source": "repo:sampreethavvari-us2020electionanalysis",
+      "target": "language:jupyter-notebook",
+      "rel": "uses-language"
+    },
+    {
+      "source": "repo:ds28-ops-dl-resnet",
+      "target": "language:jupyter-notebook",
+      "rel": "uses-language"
+    },
+    {
+      "source": "repo:nyu-3idiots-resnetunder50",
+      "target": "org:nyu-3idiots",
+      "rel": "owned-by-org"
+    },
+    {
+      "source": "repo:sampreethavvari-testasdata",
+      "target": "language:jupyter-notebook",
+      "rel": "uses-language"
+    },
+    {
+      "source": "repo:sampreethavvari-datasciencebootcamp",
+      "target": "language:jupyter-notebook",
+      "rel": "uses-language"
+    },
+    {
+      "source": "repo:nyu-big-data-hw2",
+      "target": "language:python",
+      "rel": "uses-language"
+    },
+    {
+      "source": "repo:nyu-big-data-hw2",
+      "target": "org:nyu-big-data",
+      "rel": "owned-by-org"
+    },
+    {
+      "source": "repo:nyu-big-data-homework-1-sampreethavvari",
+      "target": "org:nyu-big-data",
+      "rel": "owned-by-org"
+    },
+    {
+      "source": "repo:safdarahmedd-needforspeed",
+      "target": "language:c",
+      "rel": "uses-language"
+    },
+    {
+      "source": "repo:sampreethavvari-rtes",
+      "target": "language:c",
+      "rel": "uses-language"
+    }
+  ],
+  "generatedAt": "2026-07-25T06:19:33.384Z"
+}
