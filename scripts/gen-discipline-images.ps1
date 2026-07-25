@@ -21,7 +21,7 @@ $images = @(
   },
   @{
     slug = "sde"
-    prompt = "A precise architectural structure of interlocking translucent glass blocks and two short glass cylinders (databases), assembled like a minimal floating city block, glowing with thin neon blue edges. Every block aligned to a faint blue grid plane below. One block is mid-placement, hovering slightly above its slot, with a soft blue glow underneath. Subtle blue and steel tones. $style"
+    prompt = "A precise architectural structure of interlocking translucent glass blocks and two short glass cylinders (databases), assembled like a minimal floating city block, glowing with thin neon crimson-red edges. Every block aligned to a faint red grid plane below. One block is mid-placement, hovering slightly above its slot, with a soft red glow underneath. Subtle crimson and rose-red tones. $style"
   }
 )
 

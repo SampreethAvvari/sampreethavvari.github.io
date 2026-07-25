@@ -58,12 +58,13 @@ import "../styles/global.css";
 // their own per section, so they are skipped here; every other route gets a
 // page-spanning layer whose colours match that tab's theme.
 const pathname = Astro.url.pathname.replace(/\/+$/, "") || "/";
-const hasOwnComets = pathname === "/" || pathname === "/posts";
+// /mind draws its own constellation and wants a still sky — no page comets.
+const hasOwnComets = pathname === "/" || pathname === "/posts" || pathname === "/mind";
 const cometPalettes: Array<[string, string[]]> = [
-  ["/work", ["52,211,153", "167,139,250", "245,165,36", "91,141,239"]],
+  ["/work", ["52,211,153", "167,139,250", "245,165,36", "244,63,94"]],
   ["/projects", ["91,141,239", "34,211,238", "167,139,250"]],
   ["/gallery", ["167,139,250", "91,141,239"]],
-  ["/filmmaking", ["244,63,94", "167,139,250"]],
+  ["/filmmaking", ["91,141,239", "34,211,238"]],
   ["/teaching", ["34,211,238", "91,141,239"]],
   ["/resume", ["91,141,239", "52,211,153"]],
   ["/posts/", ["52,211,153", "91,141,239"]],
