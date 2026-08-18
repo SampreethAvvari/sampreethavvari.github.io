@@ -10,6 +10,112 @@ export const info = {
   about: {
     description:
       "I'm an AI engineer who likes building things right next to the people who'll actually use them. After my MS at NYU, I spent the last few years as the only engineer at a dental implant company, shipping real systems people use every day, not demos. I also make movies, which is where I learned to work with people who don't write code.",
+    // Everything on one axis for the About timeline. start/end are "YYYY-MM";
+    // "present" pins to today. short is the label inside the bar.
+    timeline: [
+      {
+        title: "Bachelor of Technology, Computer Science",
+        short: "BTech CSE \u00b7 JNTU",
+        org: "Jawaharlal Nehru Technological University",
+        location: "Hyderabad, India",
+        date: "July 2017 - June 2021",
+        start: "2017-07",
+        end: "2021-06",
+        logo: "/logos/griet.png",
+        accent: "#5B8DEF",
+        rgb: "91,141,239",
+        kind: "education",
+        blurb:
+          "Computer science degree at GRIET. Graduated with a 3.92 GPA and a habit of building things outside the syllabus.",
+      },
+      {
+        title: "Software Engineer",
+        short: "Software Engineer \u00b7 Shure",
+        org: "Shure Incorporated",
+        location: "India",
+        date: "Aug 2021 - Aug 2023",
+        start: "2021-08",
+        end: "2023-08",
+        logo: "/logos/shure.svg",
+        accent: "#34D399",
+        rgb: "52,211,153",
+        kind: "work",
+        blurb:
+          "APIs and data pipelines for Shure Cloud audio analytics on AWS, plus the test automation frameworks and the CI/CD around them.",
+      },
+      {
+        title: "Master of Science, Computer Engineering",
+        short: "MS CompE \u00b7 NYU",
+        org: "New York University",
+        location: "New York",
+        date: "Aug 2023 - May 2025",
+        start: "2023-08",
+        end: "2025-05",
+        logo: "/logos/nyu.svg",
+        accent: "#22D3EE",
+        rgb: "34,211,238",
+        kind: "education",
+        blurb:
+          "Machine learning and systems at NYU Tandon. Graduated May 2025 with a 3.84 GPA while holding two jobs on campus.",
+      },
+      {
+        title: "Video Producer",
+        short: "Video Producer \u00b7 NYU",
+        org: "New York University",
+        location: "New York",
+        date: "Jan 2024 - May 2025",
+        start: "2024-01",
+        end: "2025-05",
+        logo: "/logos/nyu.svg",
+        accent: "#F43F5E",
+        rgb: "244,63,94",
+        kind: "work",
+        blurb:
+          "Directed and edited educational video for NYU public health faculty. Over 100 videos across 20 plus courses, shot on a Sony Alpha 7III and cut in DaVinci Resolve and Premiere Pro, with motion graphics in After Effects.",
+      },
+      {
+        title: "Graduate Machine Learning Researcher",
+        short: "ML Researcher \u00b7 NYU",
+        org: "New York University",
+        location: "New York",
+        date: "May 2024 - Sep 2025",
+        start: "2024-05",
+        end: "2025-09",
+        logo: "/logos/nyu.svg",
+        accent: "#A78BFA",
+        rgb: "167,139,250",
+        kind: "work",
+        blurb:
+          "Language model optimization: built debate datasets and trained reward models for RLHF, then ran the SFT to GRPO and PPO lifecycle with Llama 3.1, TRL and QLoRA on NYU's HPC cluster.",
+        projects: [
+          { label: "How I trained Llama to argue", href: "/posts/llama-rlhf" },
+        ],
+      },
+      {
+        title: "AI Engineer",
+        short: "AI Engineer \u00b7 Hybridge",
+        org: "Hybridge Implants",
+        location: "New York",
+        date: "Sept 2025 - Present",
+        start: "2025-09",
+        end: "present",
+        logo: "/logos/hybridge.webp",
+        accent: "#F5A524",
+        rgb: "245,165,36",
+        kind: "work",
+        blurb:
+          "The AI engineer for a multi office dental implant company: RAG, agentic pipelines, evals, guardrails and MLOps, all in production on GCP and Vertex AI. Enterprise search that cites or abstains, Gemini consultation scoring, a CT scan validator that replaced a six figure vendor quote, call coaching, a pricing engine the database itself enforces, and a deterministic reconciliation engine.",
+        projects: [
+          { label: "Enterprise Search RAG", href: "/posts/enterprise-search" },
+          { label: "Doc Coach", href: "/posts/clinical-rag" },
+          { label: "CBCT Scan Validator", href: "/posts/cbct-scan-validator" },
+          { label: "NPC Coach", href: "/posts/npc-coach" },
+          { label: "Treatment Estimator", href: "/posts/treatment-estimator" },
+          { label: "Reconciliation", href: "/posts/reconciliation" },
+          { label: "CDF Diagnostic Filter", href: "/posts/cdf-diagnostic-filter" },
+        ],
+      },
+    ],
     education: [
       {
         title: "Master of Science, Computer Engineering",
@@ -99,6 +205,25 @@ export const info = {
           "[Reconciliation](/posts/reconciliation). A deterministic engine that cross checks the schedule, production ledger, and clinical notes across Eaglesoft and Denticon to confirm every patient seen got documented and billed correctly, surfacing only the exceptions. ~70 hours/week of manual cross checking by a three person insurance team down to an exception review; 200+ tests on synthetic fixtures, no PHI in git; live on Cloud Run.",
           "[Centralized Diagnostic Filter](/posts/cdf-diagnostic-filter). Turning the founder's diagnostic model into a standardized, HYBRIDGE-owned system where AI assists and doctors validate. The owned intake is live on Google Cloud for all three markets, and a Gemini engine now reads the panorex under the founder's own written ruleset (v2 after his review of the first outputs), generating doctor and consultation reports from an internal dashboard.",
           "Cross-cutting MLOps: one shared ETL module so train/serve skew is impossible. Hot-swap checkpoints via GCS, tag-based Cloud Build CI/CD, OpenTelemetry with strict no-PHI logs.",
+        ],
+      },
+      {
+        title: "Graduate Machine Learning Researcher",
+        date: "May 2024 - Sep 2025",
+        location: "New York University, New York",
+        logo: "/logos/nyu.svg",
+        highlights: [
+          "Language model optimization: engineered debate datasets into preference pairs, trained LLM reward models with Transformers, TRL and QLoRA, and ran the RLHF lifecycle from SFT through GRPO and PPO on NYU's HPC cluster.",
+        ],
+      },
+      {
+        title: "Video Producer",
+        date: "Jan 2024 - May 2025",
+        location: "New York University, New York",
+        logo: "/logos/nyu.svg",
+        highlights: [
+          "Directed and edited educational video content for NYU GPH faculty and their Brightspace curriculum, producing over 100 videos across 20 plus courses on public health topics.",
+          "Shot on a Sony Alpha 7III; edited in DaVinci Resolve and Adobe Premiere Pro with motion graphics and titles in After Effects.",
         ],
       },
       {

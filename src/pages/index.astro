@@ -6,6 +6,7 @@ import Contact from "../components/contact_section/Contact";
 import Picture from "../components/common/Picture.astro";
 import Icon from "../components/common/Icon.astro";
 import GlassHero from "../components/hero/GlassHero.astro";
+import CareerTimeline from "../components/about_section/CareerTimeline.astro";
 import { readingTime } from "../utils/readingTime";
 
 const allPosts = await Astro.glob("../pages/posts/*.md");
@@ -18,64 +19,100 @@ const latestPosts = allPosts
   .slice(0, 4);
 const [featuredPost, ...sidePosts] = latestPosts;
 
-// The six flagship Hybridge systems. Metrics that are plain numbers carry
-// count-up data attributes; textual metrics render as-is.
-const systems = [
+// The four places my work lives. Each card reads the same way: what it is in
+// plain words, a small live-looking panel of the thing itself, and links out.
+// Every row in a panel is a link to that project's write-up.
+const workCards = [
   {
-    n: "01",
-    name: "Enterprise Search",
-    tagline: "The whole company's knowledge, answered with citations or an honest no.",
-    metric: "cite or abstain",
-    metricLabel: "a RAG that refuses to bluff",
-    accent: "#34D399",
-    href: "/posts/enterprise-search",
-  },
-  {
-    n: "02",
-    name: "Consultation QA",
-    tagline: "Every patient consult scored from its Zoom call, turned into coaching.",
-    metric: "+130%",
-    count: { value: 130, prefix: "+", suffix: "%" },
-    metricLabel: "treatment acceptance",
-    accent: "#22D3EE",
-    href: "/posts/clinical-rag",
-  },
-  {
-    n: "03",
-    name: "CBCT Scan Validator",
-    tagline: "Bad dental CT scans caught before they reach the design queue.",
-    metric: "$50/mo",
-    count: { value: 50, prefix: "$", suffix: "/mo" },
-    metricLabel: "vs the $124K year-one quote",
-    accent: "#A78BFA",
-    href: "/posts/cbct-scan-validator",
-  },
-  {
-    n: "04",
-    name: "NPC Coach",
-    tagline: "Finds the new-patient calls among thousands, then coaches them.",
-    metric: "285 → 40",
-    metricLabel: "calls ingested, then scored, day one",
-    accent: "#5B8DEF",
-    href: "/posts/npc-coach",
-  },
-  {
-    n: "05",
-    name: "Treatment Estimator",
-    tagline: "Live quoting with a price promise the database itself enforces.",
-    metric: "1 month",
-    metricLabel: "vs the decade-long vendor attempt",
+    variant: "jobpilot",
     accent: "#F5A524",
-    href: "/posts/treatment-estimator",
+    rgb: "245,165,36",
+    eyebrow: "open source \u00b7 live demo",
+    title: ["Fly ", "JobPilot", " yourself."],
+    body:
+      "A robot that hunts for jobs while I sleep. Every hour it finds new postings, " +
+      "scores how well each one fits me, writes a one page resume for the good ones, " +
+      "drafts the email, and watches my inbox for replies. The demo is the real " +
+      "product running on a made up person, so you can click around without signing up.",
+    demo: "https://hi.switchy.io/zIhU",
+    rows: [
+      { score: "96", tone: "#5bd97a", left: "Forward Deployed Engineer", right: "Marrowstone AI" },
+      { score: "94", tone: "#5bd97a", left: "AI Engineer, Applied Models", right: "Osprey Compute" },
+      { score: "91", tone: "#5bd97a", left: "ML Engineer, Risk", right: "Bluewater Ledger" },
+      { score: "88", tone: "#ffb000", left: "AI Engineer, Insights", right: "Driftwood Metrics" },
+    ],
+    links: [
+      { label: "Explore JobPilot", href: "https://hi.switchy.io/zIhU", external: true, primary: true },
+      { label: "How I built it", href: "/posts/jobpilot-v2" },
+    ],
   },
   {
-    n: "06",
-    name: "Diagnostic Filter",
-    tagline: "AI assesses the patient first. The doctor still signs every finding.",
-    metric: "0 → 200",
-    metricLabel: "tooth-loss risk, scored pre-consult",
-    accent: "#F43F5E",
-    href: "/posts/cdf-diagnostic-filter",
+    variant: "hybridge",
+    accent: "#34D399",
+    rgb: "52,211,153",
+    eyebrow: "my day job \u00b7 Hybridge Implants",
+    title: ["The systems I build ", "at work", "."],
+    body:
+      "I am the AI engineer at a dental implant company in New York. I built the " +
+      "search that answers staff questions out of company documents, the tool that " +
+      "scores patient consultations and coaches the team, the model that catches bad " +
+      "CT scans before they reach the design queue, and the app the front desk quotes " +
+      "prices from. All of them are in daily use, so none of them can be handed out. " +
+      "Open any one below to read how it was built.",
+    rows: [
+      { left: "Ask Hybridge", right: "company wide search", tone: "#34D399", href: "/posts/enterprise-search" },
+      { left: "Doc Coach", right: "consultation scoring", tone: "#22D3EE", href: "/posts/clinical-rag" },
+      { left: "Scan Validator", right: "CT scan quality", tone: "#A78BFA", href: "/posts/cbct-scan-validator" },
+      { left: "Treatment Estimator", right: "front desk quoting", tone: "#F5A524", href: "/posts/treatment-estimator" },
+    ],
+    links: [
+      { label: "See the case studies", href: "/work", primary: true },
+      { label: "Start with Enterprise Search", href: "/posts/enterprise-search" },
+    ],
+  },
+  {
+    variant: "research",
+    accent: "#A78BFA",
+    rgb: "167,139,250",
+    eyebrow: "NYU \u00b7 machine learning research",
+    title: ["Teaching models what a ", "good answer", " looks like."],
+    body:
+      "At NYU I worked on reward models. That is the part of an AI system that learns " +
+      "which of two answers a person would rather read. I trained Llama and BERT sized " +
+      "models on the university GPUs and compared training methods against each other. " +
+      "The same stretch produced a small image model that won a class contest and a " +
+      "fake news detector built on election tweets.",
+    rows: [
+      { left: "Llama 3.1, RLHF", right: "reward models", tone: "#A78BFA", href: "/posts/llama-rlhf" },
+      { left: "ResNet under 5M", right: "small vision model", tone: "#5B8DEF", href: "/posts/resnet-under-5m" },
+      { left: "Fake news detector", right: "election tweets", tone: "#F43F5E", href: "/posts/fake-news-sentiment" },
+    ],
+    links: [
+      { label: "Read the research notes", href: "/posts/llama-rlhf", primary: true },
+      { label: "All ML work", href: "/work/mle" },
+    ],
+  },
+  {
+    variant: "projects",
+    accent: "#5B8DEF",
+    rgb: "91,141,239",
+    eyebrow: "on my own time",
+    title: ["Everything ", "else", " I have built."],
+    body:
+      "Things I made to learn something. An AI filmmaking studio four of us built in a " +
+      "single day at a hackathon, a recommender that handles 22 million records, a loan " +
+      "scoring service where I built all the boring parts on purpose, and the day I " +
+      "caught my own pipeline lying about work it never did.",
+    rows: [
+      { left: "Magic Hour", right: "AI filmmaking", tone: "#F43F5E", href: "/posts/magic-hour" },
+      { left: "Recommender", right: "22M records", tone: "#34D399", href: "/posts/recsys-spark-bigdata" },
+      { left: "Loan Radar", right: "the boring parts", tone: "#F5A524", href: "/posts/loan-radar-mlops" },
+      { left: "Pipeline confession", right: "silent failures", tone: "#5B8DEF", href: "/posts/pipeline-ghosting" },
+    ],
+    links: [
+      { label: "Browse all projects", href: "/projects", primary: true },
+      { label: "The hackathon build", href: "/posts/magic-hour" },
+    ],
   },
 ];
 
@@ -288,130 +325,189 @@ const sections = [
   </section>
 
   <!-- ── Work ─────────────────────────────────────────────────────────── -->
-  <section id="work" class="relative overflow-hidden py-24 lg:py-32">
-    <span class="glow" style="width:660px;height:660px;--gc:#F5A524;top:-110px;left:28%;" aria-hidden="true"></span>
-    <span class="glow glow-2" style="width:510px;height:510px;--gc:#F5A524;bottom:-90px;right:-70px;" aria-hidden="true"></span>
-    <span class="space-el" style="width:156px;height:39px;top:7%;right:5%;" aria-hidden="true"><span class="comet-glow" style="--sr-rgb:245,165,36;"></span><span class="space-comet" style="--sr-rgb:245,165,36;--rz:-14deg;"></span></span>
-    <span class="space-el" style="width:117px;height:33px;bottom:9%;left:4%;" aria-hidden="true"><span class="comet-glow" style="--sr-rgb:245,165,36;"></span><span class="space-comet" style="--sr-rgb:245,165,36;--rz:12deg;"></span></span>
-    <span class="space-el" style="width:128px;height:36px;top:38%;left:12%;" aria-hidden="true"><span class="comet-glow" style="--sr-rgb:245,165,36;"></span><span class="space-comet" style="--sr-rgb:245,165,36;--rz:-16deg;"></span></span>
-    <span class="space-el" style="width:106px;height:30px;bottom:36%;right:14%;" aria-hidden="true"><span class="comet-glow" style="--sr-rgb:245,165,36;"></span><span class="space-comet" style="--sr-rgb:245,165,36;--rz:8deg;"></span></span>
-    <span class="space-el" style="width:120px;height:33px;top:18%;left:42%;" aria-hidden="true"><span class="comet-glow" style="--sr-rgb:245,165,36;"></span><span class="space-comet" style="--sr-rgb:245,165,36;--rz:-8deg;"></span></span>
+  <section
+    id="work"
+    class="relative clip-x py-24 lg:py-32"
+    style="--work-rgb:245,165,36; --work-hex:#F5A524;"
+  >
+    <div class="work-decor" aria-hidden="true">
+    <span class="glow" style="width:660px;height:660px;--gc:var(--work-hex);top:-110px;left:28%;" aria-hidden="true"></span>
+    <span class="glow glow-2" style="width:510px;height:510px;--gc:var(--work-hex);bottom:-90px;right:-70px;" aria-hidden="true"></span>
+    <span class="space-el" style="width:156px;height:39px;top:7%;right:5%;" aria-hidden="true"><span class="comet-glow" style="--sr-rgb:var(--work-rgb);"></span><span class="space-comet" style="--sr-rgb:var(--work-rgb);--rz:-14deg;"></span></span>
+    <span class="space-el" style="width:117px;height:33px;bottom:9%;left:4%;" aria-hidden="true"><span class="comet-glow" style="--sr-rgb:var(--work-rgb);"></span><span class="space-comet" style="--sr-rgb:var(--work-rgb);--rz:12deg;"></span></span>
+    <span class="space-el" style="width:128px;height:36px;top:38%;left:12%;" aria-hidden="true"><span class="comet-glow" style="--sr-rgb:var(--work-rgb);"></span><span class="space-comet" style="--sr-rgb:var(--work-rgb);--rz:-16deg;"></span></span>
+    <span class="space-el" style="width:106px;height:30px;bottom:36%;right:14%;" aria-hidden="true"><span class="comet-glow" style="--sr-rgb:var(--work-rgb);"></span><span class="space-comet" style="--sr-rgb:var(--work-rgb);--rz:8deg;"></span></span>
+    <span class="space-el" style="width:120px;height:33px;top:18%;left:42%;" aria-hidden="true"><span class="comet-glow" style="--sr-rgb:var(--work-rgb);"></span><span class="space-comet" style="--sr-rgb:var(--work-rgb);--rz:-8deg;"></span></span>
+    </div>
+
     <div class="relative z-[1] mx-auto w-full max-w-screen-2xl px-6 lg:px-12">
       <div class="max-w-3xl" data-arrive>
         <p class="eyebrow text-acc-amber mb-3">02 · The work</p>
         <h2 class="display-sm text-text dark:text-dk-text mb-4">
-          Six systems, inside a <span class="text-acc-amber">dental practice</span>.
+          Where my work <span class="text-acc-amber">lives</span>.
         </h2>
         <p class="text-base lg:text-lg text-text/65 dark:text-dk-text/65 leading-relaxed max-w-2xl">
-          Real AI built next to the people who use it every day. The ones worth showing survived real people using them.
+          Four places. One you can try right now, the systems I build at my day job,
+          the research, and everything else I made to learn something.
         </p>
       </div>
 
-      <ul class="mt-10 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 list-none p-0 m-0" data-arrive>
-        {systems.map((s) => (
-          <li class="h-full">
-            <a
-              href={s.href}
-              class="no-lift pane pane-glare h-full p-6 flex flex-col gap-2 group"
-              data-tilt
-              data-tiltmax="4"
-            >
-              <span class="font-mono text-[0.68rem] font-bold tabular-nums text-text/35 dark:text-dk-text/35">
-                {s.n}
-              </span>
-              <span
-                class="metric text-2xl lg:text-[1.7rem] font-bold tabular-nums tracking-tight leading-none"
-                style={`color: ${s.accent};`}
-                {...(s.count
-                  ? {
-                      "data-count": s.count.value,
-                      "data-prefix": s.count.prefix,
-                      "data-suffix": s.count.suffix,
-                    }
-                  : {})}
-              >
-                {s.metric}
-              </span>
-              <h3 class="text-lg font-semibold tracking-tight text-text dark:text-dk-text group-hover:text-secondary dark:group-hover:text-dk-secondary transition">
-                {s.name}
-              </h3>
-              <p class="text-sm text-text/60 dark:text-dk-text/60 leading-snug">
-                {s.tagline}
-              </p>
-              <span class="mt-auto pt-3 text-[0.62rem] uppercase tracking-[0.16em] font-semibold text-text/40 dark:text-dk-text/40">
-                {s.metricLabel}
-              </span>
-            </a>
-          </li>
-        ))}
-      </ul>
-
-      <!-- JobPilot live demo: the one project you can fly yourself -->
-      <div class="mt-10" data-arrive>
-        <div class="pane pane-glare p-0 overflow-hidden" data-tilt data-tiltmax="2">
-          <div class="grid grid-cols-1 lg:grid-cols-12">
-            <div class="lg:col-span-7 p-7 lg:p-9 flex flex-col justify-center">
-              <p class="eyebrow text-acc-amber mb-3">open source · live demo</p>
-              <h3 class="text-2xl lg:text-3xl font-bold tracking-tight text-text dark:text-dk-text">
-                Fly <span class="text-acc-amber">JobPilot</span> yourself.
-              </h3>
-              <p class="mt-3 text-sm lg:text-base text-text/65 dark:text-dk-text/65 leading-relaxed max-w-xl">
-                My job-hunt autopilot: it finds jobs every hour, scores them against
-                me, tailors one-page resumes with receipts, drafts the cold outreach,
-                and watches the inbox for replies. The demo is the real console flying
-                a fictional pilot. Take the two-minute tour, tailor your own resume
-                bullets on a live model, then run the whole thing on your own cloud
-                for pennies.
-              </p>
-              <div class="mt-6 flex flex-wrap gap-3">
-                <a href="https://hi.switchy.io/zIhU" target="_blank" rel="noopener"
-                   class="no-lift gbtn" data-magnetic>
-                  Explore JobPilot <Icon name="arrow-right" size={15} />
-                </a>
-                <a href="/posts/jobpilot-v2" class="no-lift gbtn-ghost" data-magnetic>
-                  How I built it
-                </a>
-              </div>
-            </div>
-            <div class="lg:col-span-5 relative hidden sm:block" aria-hidden="true">
-              <div class="absolute inset-0"
-                   style="background: radial-gradient(500px 300px at 80% 20%, rgba(255,176,0,0.10), transparent 65%), #0a0d10;"></div>
-              <div class="relative h-full p-6 lg:p-8 flex items-center">
-                <div class="w-full rounded-xl border border-white/10 bg-[#0e1318] font-mono text-[11px] leading-relaxed shadow-2xl">
-                  <div class="flex items-center justify-between border-b border-white/10 px-4 py-2.5">
-                    <span class="font-bold tracking-tight text-[#e8e4da]">JOB<span style="color:#ffb000;">PILOT</span></span>
-                    <span class="rounded bg-[#ffb000] px-2 py-0.5 text-[9px] font-bold text-black">⟳ Refresh jobs</span>
+      <div class="deck-track mt-8" style={`--cards:${workCards.length};`}>
+       {/* No data-arrive here on purpose: initArrive blurs an element by how far
+           its centre is from the middle of the screen, and this track is taller
+           than three screens, so it would sit permanently blurred. The deck
+           animates itself. */}
+       <div class="deck-pin">
+        <ul class="deck list-none p-0 m-0">
+        {workCards.map((c, i) => (
+          <li
+            class="deck-item"
+            data-rgb={c.rgb}
+            style={`--i:${i}; z-index:${workCards.length - i};`}
+          >
+            <div class="deck-card">
+            <div class="pane pane-glare p-0 overflow-hidden" data-tilt data-tiltmax="2">
+              <div class="grid grid-cols-1 lg:grid-cols-12">
+                <div class="lg:col-span-7 p-7 lg:p-9 flex flex-col justify-center">
+                  <p class="eyebrow mb-3" style={`color: ${c.accent};`}>{c.eyebrow}</p>
+                  <h3 class="text-2xl lg:text-3xl font-bold tracking-tight text-text dark:text-dk-text">
+                    {c.title[0]}<span style={`color: ${c.accent};`}>{c.title[1]}</span>{c.title[2]}
+                  </h3>
+                  <p class="mt-3 text-sm lg:text-base text-text/65 dark:text-dk-text/65 leading-relaxed max-w-xl">
+                    {c.body}
+                  </p>
+                  <div class="mt-6 flex flex-wrap gap-3">
+                    {c.links.map((l) => (
+                      <a
+                        href={l.href}
+                        class={`no-lift ${l.primary ? "gbtn" : "gbtn-ghost"}`}
+                        data-magnetic
+                        {...(l.external ? { target: "_blank", rel: "noopener" } : {})}
+                      >
+                        {l.label}
+                        {l.primary && <Icon name="arrow-right" size={15} />}
+                      </a>
+                    ))}
                   </div>
-                  {[
-                    { fit: "96", c: "#5bd97a", role: "Forward Deployed Engineer", co: "Marrowstone AI" },
-                    { fit: "94", c: "#5bd97a", role: "AI Engineer, Applied Models", co: "Osprey Compute" },
-                    { fit: "91", c: "#5bd97a", role: "ML Engineer, Risk", co: "Bluewater Ledger" },
-                    { fit: "88", c: "#ffb000", role: "AI Engineer, Insights", co: "Driftwood Metrics" },
-                  ].map((r) => (
-                    <div class="flex items-center gap-3 border-b border-white/5 px-4 py-2 text-[#e8e4da]/80">
-                      <span class="font-bold" style={`color:${r.c};`}>{r.fit}</span>
-                      <span class="h-1 w-8 overflow-hidden rounded bg-white/10">
-                        <span class="block h-full rounded" style={`width:${r.fit}%;background:${r.c};`}></span>
-                      </span>
-                      <span class="truncate">{r.role}</span>
-                      <span class="ml-auto shrink-0 text-[#e8e4da]/40">{r.co}</span>
+                </div>
+
+                <div class="lg:col-span-5 relative">
+                  <div
+                    class="absolute inset-0"
+                    style={`background:
+                      radial-gradient(420px 260px at 78% 16%, rgba(${c.rgb},0.22), transparent 66%),
+                      radial-gradient(360px 240px at 18% 92%, rgba(${c.rgb},0.12), transparent 70%),
+                      #080b0e;`}
+                  ></div>
+
+                  <div class="relative h-full p-6 lg:p-7 flex items-center">
+                    <div class="ui-mock w-full rounded-xl border border-white/10 bg-[#0b1015]/95 font-mono text-[11px] leading-relaxed shadow-2xl backdrop-blur">
+                      {/* title bar, same on every panel */}
+                      <div class="flex items-center gap-2 border-b border-white/10 px-3.5 py-2.5">
+                        <span class="flex gap-1.5" aria-hidden="true">
+                          <span class="h-2 w-2 rounded-full bg-[#ff5f57]"></span>
+                          <span class="h-2 w-2 rounded-full bg-[#febc2e]"></span>
+                          <span class="h-2 w-2 rounded-full bg-[#28c840]"></span>
+                        </span>
+                        <span class="ml-1 truncate font-bold tracking-tight text-[#e8e4da]">
+                          {c.variant === "jobpilot" && <>JOB<span style="color:#ffb000;">PILOT</span></>}
+                          {c.variant === "hybridge" && <>HYBRIDGE <span style={`color:${c.accent};`}>OPS</span></>}
+                          {c.variant === "research" && <>TRAINING <span style={`color:${c.accent};`}>RUN</span></>}
+                          {c.variant === "projects" && <>SIDE <span style={`color:${c.accent};`}>BUILDS</span></>}
+                        </span>
+                        <span
+                          class="ml-auto shrink-0 rounded px-2 py-0.5 text-[9px] font-bold uppercase tracking-[0.14em]"
+                          style={`background:rgba(${c.rgb},0.16); color:${c.accent};`}
+                        >
+                          {c.variant === "jobpilot" && "live demo"}
+                          {c.variant === "hybridge" && "all live"}
+                          {c.variant === "research" && "epoch 12"}
+                          {c.variant === "projects" && "open source"}
+                        </span>
+                      </div>
+
+                      {/* research gets a loss curve above its list */}
+                      {c.variant === "research" && (
+                        <div class="border-b border-white/5 px-3.5 pt-3 pb-2">
+                          <svg viewBox="0 0 240 56" class="h-14 w-full" aria-hidden="true" preserveAspectRatio="none">
+                            <defs>
+                              <linearGradient id="lossfill" x1="0" y1="0" x2="0" y2="1">
+                                <stop offset="0%" stop-color="#A78BFA" stop-opacity="0.35" />
+                                <stop offset="100%" stop-color="#A78BFA" stop-opacity="0" />
+                              </linearGradient>
+                            </defs>
+                            <path
+                              d="M0,50 L24,44 L48,46 L72,34 L96,30 L120,32 L144,22 L168,18 L192,19 L216,13 L240,11 L240,56 L0,56 Z"
+                              fill="url(#lossfill)"
+                            />
+                            <path
+                              d="M0,50 L24,44 L48,46 L72,34 L96,30 L120,32 L144,22 L168,18 L192,19 L216,13 L240,11"
+                              fill="none" stroke="#A78BFA" stroke-width="1.6" stroke-linejoin="round"
+                            />
+                            <path
+                              d="M0,53 L24,49 L48,50 L72,42 L96,40 L120,41 L144,34 L168,31 L192,33 L216,28 L240,27"
+                              fill="none" stroke="#5B8DEF" stroke-width="1.2" stroke-dasharray="3 3" opacity="0.8"
+                            />
+                          </svg>
+                          <div class="flex items-center gap-4 pt-1 text-[9px] uppercase tracking-[0.14em] text-[#e8e4da]/40">
+                            <span class="inline-flex items-center gap-1.5">
+                              <span class="h-0.5 w-4 rounded" style="background:#A78BFA;"></span> reward
+                            </span>
+                            <span class="inline-flex items-center gap-1.5">
+                              <span class="h-0.5 w-4 rounded" style="background:#5B8DEF;"></span> baseline
+                            </span>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* the list: every row opens its write-up */}
+                      {c.rows.map((r) => (
+                        <a
+                          href={r.href || c.demo}
+                          class="mock-row flex items-center gap-3 border-b border-white/5 px-3.5 py-2 text-[#e8e4da]/80 no-underline last:border-b-0"
+                          {...(r.href ? {} : { target: "_blank", rel: "noopener" })}
+                        >
+                          {r.score ? (
+                            <>
+                              <span class="font-bold" style={`color:${r.tone};`}>{r.score}</span>
+                              <span class="h-1 w-8 overflow-hidden rounded bg-white/10">
+                                <span class="block h-full rounded" style={`width:${r.score}%;background:${r.tone};`}></span>
+                              </span>
+                            </>
+                          ) : (
+                            <span
+                              class="grid h-5 w-5 shrink-0 place-items-center rounded"
+                              style={`background:rgba(${c.rgb},0.10); box-shadow: inset 0 0 0 1px ${r.tone}55;`}
+                            >
+                              <span class="h-1.5 w-1.5 rounded-full" style={`background:${r.tone};`}></span>
+                            </span>
+                          )}
+                          <span class="truncate">{r.left}</span>
+                          <span class="ml-auto shrink-0 text-[#e8e4da]/40">{r.right}</span>
+                        </a>
+                      ))}
+
+                      <div class="flex items-center justify-between px-3.5 py-2.5 text-[9px] uppercase tracking-[0.16em] text-[#e8e4da]/35">
+                        <span>
+                          {c.variant === "jobpilot" && "fictional data \u00b7 real product"}
+                          {c.variant === "hybridge" && "patient data stays inside"}
+                          {c.variant === "research" && "NYU HPC \u00b7 A100s"}
+                          {c.variant === "projects" && "built for the fun of it"}
+                        </span>
+                        <span style={`color:${c.accent};`}>
+                          {c.variant === "jobpilot" ? "\u25b8 take the tour" : "\u25b8 click any row"}
+                        </span>
+                      </div>
                     </div>
-                  ))}
-                  <div class="flex items-center justify-between px-4 py-2.5 text-[9px] uppercase tracking-[0.18em] text-[#e8e4da]/35">
-                    <span>fictional data · real product</span>
-                    <span style="color:#ffb000;">▸ take the tour</span>
                   </div>
                 </div>
               </div>
             </div>
-          </div>
-        </div>
-      </div>
-
-      <div class="mt-9" data-arrive>
-        <a href="/projects" class="link-underline text-sm font-semibold text-acc-amber inline-flex items-center gap-1.5">
-          Browse all 15 projects <Icon name="arrow-right" size={14} />
-        </a>
+            </div>
+          </li>
+        ))}
+        </ul>
+       </div>
       </div>
     </div>
   </section>
@@ -443,61 +539,8 @@ const sections = [
           </div>
         </div>
 
-        <div class="lg:col-span-7 grid grid-cols-1 sm:grid-cols-2 gap-x-10 gap-y-9">
-          <div id="education">
-            <p class="eyebrow text-secondary/80 dark:text-dk-secondary/80 mb-5">Education</p>
-            <ul class="space-y-5 list-none p-0 m-0">
-              {info.about.education.map((ed) => {
-                const b = orgFor(ed.location);
-                return (
-                  <li class="timeline-row text-sm">
-                    {b.logo ? (
-                      <div class="org-badge">
-                        <img src={b.logo} alt={b.label} loading="lazy" />
-                      </div>
-                    ) : (
-                      <div class="org-badge org-badge-mono" aria-label={b.label}>
-                        <span>{b.acronym}</span>
-                      </div>
-                    )}
-                    <div class="min-w-0 flex-1">
-                      <p class="font-semibold text-text dark:text-dk-text leading-snug">{ed.title}</p>
-                      <p class="text-text/60 dark:text-dk-text/60 leading-snug">{ed.location}</p>
-                      <p class="text-text/40 dark:text-dk-text/40 text-xs mt-1">
-                        {ed.date}{ed.gpa ? ` · GPA ${ed.gpa}` : ""}
-                      </p>
-                    </div>
-                  </li>
-                );
-              })}
-            </ul>
-          </div>
-          <div id="experience">
-            <p class="eyebrow text-acc-amber/90 mb-5">Experience</p>
-            <ul class="space-y-5 list-none p-0 m-0">
-              {info.about.experience.map((ex) => {
-                const b = orgFor(ex.location);
-                return (
-                  <li class="timeline-row text-sm">
-                    {b.logo ? (
-                      <div class="org-badge">
-                        <img src={b.logo} alt={b.label} loading="lazy" />
-                      </div>
-                    ) : (
-                      <div class="org-badge org-badge-mono" aria-label={b.label}>
-                        <span>{b.acronym}</span>
-                      </div>
-                    )}
-                    <div class="min-w-0 flex-1">
-                      <p class="font-semibold text-text dark:text-dk-text leading-snug">{ex.title}</p>
-                      <p class="text-text/60 dark:text-dk-text/60 leading-snug">{ex.location}</p>
-                      <p class="text-text/40 dark:text-dk-text/40 text-xs mt-1">{ex.date}</p>
-                    </div>
-                  </li>
-                );
-              })}
-            </ul>
-          </div>
+        <div class="lg:col-span-7">
+          <CareerTimeline />
         </div>
       </div>
     </div>
@@ -729,6 +772,256 @@ const sections = [
     ["home", "disciplines", "work", "about", "writing", "filmmaking", "contact"],
   );
 
+  // The work deck, derived from one number per card: its depth in the stack.
+  //
+  // Wide screens with motion allowed: all cards share a single grid cell,
+  // stacked like a hand of cards. The deck pins to the screen while its tall
+  // track scrolls past, and scroll progress becomes a front index f that runs
+  // 0 to n minus 1. Each card's depth follows from f:
+  //
+  //   waiting (i >= f): d = i - f, sits BELOW the front card:
+  //                     translateY(+YSTEP * d) scale(1 - SCALE * d)
+  //   passed  (i < f):  a = min(f - i, 1), older = max(f - i - 1, 0),
+  //                     lifts up and parks ABOVE the front card, wallet style,
+  //                     with an extra arc of lift that peaks mid trip:
+  //                     translateY(-(UPY * a + UPGAP * older + ARC * sin(pi a)))
+  //                     scale(1 - UPSCALE * a - UPSCALEGAP * older)
+  //
+  // So the sharp front card sits in the middle, the cards still to come peek
+  // out as even strips below its bottom edge, and the cards already passed
+  // peek out as even strips above its top edge, the most recent one nearest.
+  // Every pose is a pure function of f, so scrolling up replays the whole
+  // thing in reverse and a passed card comes back down from the top strips
+  // into the front slot.
+  //
+  // Depth cueing is brightness only. Never opacity: the cards overlap, and a
+  // translucent card lets the text behind it bleed through.
+  (function () {
+    const section = document.getElementById("work");
+    const track = document.querySelector<HTMLElement>(".deck-track");
+    const pin = document.querySelector<HTMLElement>(".deck-pin");
+    const deckEl = document.querySelector<HTMLElement>(".deck");
+    const items = Array.from(
+      document.querySelectorAll<HTMLElement>(".deck-item"),
+    );
+    const cards = Array.from(
+      document.querySelectorAll<HTMLElement>(".deck-card"),
+    );
+    const n = cards.length;
+    if (!track || !pin || !deckEl || n < 2 || items.length !== n) return;
+
+    // Reduced motion: the CSS lays the cards out as a plain vertical list.
+    // Clear anything inline and stay out of the way.
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      track.style.height = "";
+      pin.style.top = "";
+      cards.forEach((c) => {
+        c.style.transform = "";
+        c.style.transformOrigin = "";
+        c.style.filter = "";
+        c.style.pointerEvents = "";
+      });
+      items.forEach((li) => {
+        li.style.zIndex = "";
+      });
+      return;
+    }
+
+    // The whole feel lives in these numbers.
+    const STEP = 0.85; // screens of scroll per handoff
+    const HOLD = 0.3; // fraction of a step where the front card holds still
+    const YSTEP = 24; // px of drop per unit of waiting depth
+    const SCALE = 0.045; // shrink per unit of waiting depth
+    const UPY = 20; // px the newest passed card peeks above the front card
+    const UPGAP = 12; // extra lift per earlier passed card
+    const ARC = 36; // extra mid trip lift: the card pulls out, then settles
+    const UPSCALE = 0.06; // shrink of a freshly passed card
+    const UPSCALEGAP = 0.02; // extra shrink per earlier passed card
+
+    const desktop = () => window.innerWidth >= 1024;
+
+    // Arm the desktop stacking CSS. Without JS the class never lands, the
+    // grid overlap never applies, and the page stays a readable list.
+    track.classList.add("deck-on");
+
+    // The section decor reads its colour from the front card, crossfading
+    // between the two cards involved in the current handoff.
+    const rgbs = items.map((li) =>
+      (li.dataset.rgb || "245,165,36").split(",").map((v) => parseFloat(v)),
+    );
+    const tint = (a: number, b: number, f: number) => {
+      if (!section || !rgbs[a] || !rgbs[b]) return;
+      const mix = [0, 1, 2].map((j) =>
+        Math.round(rgbs[a][j] + (rgbs[b][j] - rgbs[a][j]) * f),
+      );
+      section.style.setProperty("--work-rgb", mix.join(","));
+      section.style.setProperty("--work-hex", `rgb(${mix.join(",")})`);
+    };
+
+    // The track must be exactly deck height plus one step of scroll per
+    // handoff, and it must be HEIGHT, not padding: a sticky child can only
+    // roam its parent's content box. CSS holds an estimate; this writes the
+    // real number.
+    const measure = () => {
+      if (!desktop()) {
+        track.style.height = "";
+        pin.style.top = "";
+        return;
+      }
+      const deck = pin.offsetHeight;
+      if (!deck) return;
+      // Ceiling for the pin line: where the deck rests in normal flow,
+      // measured from the top of the section. Pin any lower than this and
+      // sticky yanks the deck DOWN to meet the pin line as the section
+      // arrives, which reads as the card dropping before its run starts.
+      const rest = section
+        ? Math.round(
+            track.getBoundingClientRect().top -
+              section.getBoundingClientRect().top,
+          )
+        : Infinity;
+      // Pin near the top, not centred: the deck rides in right behind the
+      // section heading and sticks just under the nav, so the first hand off
+      // starts on the very next scroll with no dead travel and no drop.
+      // 136px = 76px of nav clearance plus headroom for the passed cards,
+      // whose strips and mid trip arc reach about 47px above the front card.
+      pin.style.top = `${Math.max(76, Math.min(136, rest))}px`;
+      track.style.height = `${Math.round(deck + (n - 1) * window.innerHeight * STEP)}px`;
+    };
+
+    const paintDesktop = () => {
+      const r = track.getBoundingClientRect();
+      const span = Math.max(r.height - pin.offsetHeight, 1);
+      const pinTop = parseFloat(getComputedStyle(pin).top) || 0;
+      const scrolled = Math.min(Math.max(pinTop - r.top, 0), span);
+      const p = (scrolled / span) * (n - 1);
+
+      // Progress inside the current step, with a dwell: the front card does
+      // not move at all for the first HOLD of its step, then eases away on a
+      // smootherstep, reluctant to leave and settling softly.
+      const step = Math.max(0, Math.min(Math.floor(p), n - 2));
+      const u = p - step;
+      const t = u <= HOLD ? 0 : Math.min((u - HOLD) / (1 - HOLD), 1);
+      const e = t * t * t * (t * (t * 6 - 15) + 10);
+      const f = step + e;
+
+      tint(step, Math.min(step + 1, n - 1), e);
+
+      for (let i = 0; i < n; i++) {
+        const card = cards[i];
+        const s = f - i; // how far past this card the front line has moved
+        let y: number;
+        let k: number;
+        let bright: number;
+        let z: number;
+        let pass = 0; // mid trip amount, nonzero only for the moving card
+
+        if (s <= 0) {
+          // Waiting: stacked behind and BELOW the front card. The CSS origin
+          // is the bottom edge, so each strip below stays even as it shrinks.
+          const d = -s;
+          y = YSTEP * d;
+          k = 1 - SCALE * d;
+          bright = Math.max(1 - 0.15 * d, 0.5);
+          z = 1000 - Math.round(d * 100);
+          card.style.transformOrigin = "";
+        } else {
+          // Passed: lifted behind and ABOVE the front card, wallet style, so
+          // its top edge peeks out over the front card as an even strip. The
+          // origin moves to the top edge so the strip keeps its height while
+          // the card shrinks; the switch happens at s = 0, where the pose is
+          // the identity transform, so nothing jumps.
+          const a = Math.min(s, 1); // its own trip up, 0 to 1
+          const older = Math.min(Math.max(s - 1, 0), n); // handoffs since
+          pass = s < 1 ? Math.sin(Math.PI * a) : 0;
+          // The trip is an arc: besides the ride to its parked strip, ARC of
+          // extra lift that peaks mid trip and settles back to zero, so the
+          // card visibly pulls up out of the stack, travels over the deck,
+          // and slots into the top strips.
+          y = -(UPY * a + UPGAP * older + ARC * pass);
+          k = 1 - UPSCALE * a - UPSCALEGAP * older;
+          bright = Math.max(1 - 0.4 * a - 0.05 * older, 0.5);
+          // Below the front card, above older passed cards. This z falls by
+          // 150 over the trip while the arriving card's climbs by 100, so
+          // they cross at a = 0.4, under the blur that masks the swap.
+          z = 1000 - Math.round(a * 150) - Math.round(older * 50);
+          card.style.transformOrigin = "50% 0%";
+        }
+
+        card.style.transform = `translate3d(0, ${y.toFixed(1)}px, 0) scale(${k.toFixed(4)})`;
+        // Depth cueing is brightness, never opacity. The card on the move
+        // dips a touch darker with up to 2px of blur at the middle of its
+        // trip, which masks the moment it slips behind the arriving card.
+        bright *= 1 - 0.12 * pass;
+        card.style.filter =
+          pass > 0.02
+            ? `brightness(${bright.toFixed(3)}) blur(${(2 * pass).toFixed(2)}px)`
+            : bright < 0.999
+              ? `brightness(${bright.toFixed(3)})`
+              : "";
+        // Depth decides what covers what. The z-index has to go on the <li>:
+        // each grid item is its own stacking context, so a z-index on the
+        // inner div would do nothing.
+        items[i].style.zIndex = `${z}`;
+        // Only the front card takes clicks.
+        card.style.pointerEvents = Math.abs(s) < 0.5 ? "auto" : "none";
+      }
+    };
+
+    // Phones: the CSS swipe deck does the layout. The centred card is full
+    // size, neighbours shrink and dim by brightness, never opacity.
+    const paintMobile = () => {
+      const mid = window.innerWidth / 2;
+      let nearest = 0;
+      let best = Infinity;
+      for (let i = 0; i < n; i++) {
+        const card = cards[i];
+        const r = card.getBoundingClientRect();
+        const off = Math.min(
+          Math.abs(r.left + r.width / 2 - mid) / (r.width || 1),
+          1,
+        );
+        if (off < best) {
+          best = off;
+          nearest = i;
+        }
+        card.style.transform = `scale(${(1 - 0.14 * off).toFixed(4)})`;
+        card.style.transformOrigin = "";
+        card.style.filter =
+          off > 0.02 ? `brightness(${(1 - 0.4 * off).toFixed(3)})` : "";
+        card.style.pointerEvents = "";
+        items[i].style.zIndex = "";
+      }
+      tint(nearest, nearest, 0);
+    };
+
+    let queued = false;
+    const paint = () => {
+      queued = false;
+      if (desktop()) paintDesktop();
+      else paintMobile();
+    };
+    const onScroll = () => {
+      if (queued) return;
+      queued = true;
+      requestAnimationFrame(paint);
+    };
+    const remeasure = () => {
+      measure();
+      onScroll();
+    };
+
+    window.addEventListener("scroll", onScroll, { passive: true });
+    deckEl.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("resize", remeasure);
+    window.addEventListener("load", remeasure);
+    if ("ResizeObserver" in window) {
+      new ResizeObserver(remeasure).observe(pin);
+    }
+    measure();
+    paint();
+  })();
+
   // Progress rail: highlight the dot for the section in view.
   (function () {
     const links = new Map<string, HTMLElement>();
@@ -744,7 +1037,7 @@ const sections = [
           links.get(en.target.id)?.classList.add("on");
         }
       },
-      { threshold: 0.35 },
+      { rootMargin: "-45% 0px -45% 0px", threshold: 0 },
     );
     links.forEach((_, id) => {
       const s = document.getElementById(id);
