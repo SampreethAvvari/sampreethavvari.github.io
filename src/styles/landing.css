@@ -668,3 +668,178 @@ html.dark .scroll-cue { color: rgb(245 245 247 / 0.4); }
 @media (prefers-reduced-motion: reduce) {
   .scroll-cue { animation: none; }
 }
+
+/* Work-card UI mocks: rows are links, so they need a hover state. */
+.ui-mock a.mock-row {
+  transition: background-color 0.18s ease, color 0.18s ease;
+}
+.ui-mock a.mock-row:hover {
+  background: rgba(255, 255, 255, 0.06);
+  color: #f2efe6;
+}
+.ui-mock a.mock-row:focus-visible {
+  outline: 2px solid rgba(255, 255, 255, 0.5);
+  outline-offset: -2px;
+}
+
+/* ── The work deck ─────────────────────────────────────────────
+   One set of cards, three layouts.
+   Base: a plain vertical list. This is what no JS and reduced motion get.
+   Phones with motion: a horizontal swipe deck with scroll snap.
+   Wide screens with motion, once the script adds .deck-on to the track: all
+   cards in one grid cell, pinned sticky, posed entirely by the script. */
+.clip-x {
+  overflow-x: clip;
+}
+
+.deck {
+  display: block;
+}
+
+.deck-item {
+  margin-bottom: 1.25rem;
+}
+
+.deck-item:last-child {
+  margin-bottom: 0;
+}
+
+/* Every card is the height of the tallest one. Without this a short card
+   hiding behind a tall one disappears completely, and the strip each card
+   shows from inside the stack changes size from card to card. */
+.deck-item {
+  display: flex;
+}
+
+.deck-card {
+  display: flex;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.deck-card > .pane {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.deck-card > .pane > * {
+  flex: 1 1 auto;
+}
+
+/* Wide screens, motion allowed, script running (.deck-on). */
+@media (min-width: 1024px) and (prefers-reduced-motion: no-preference) {
+  /* The scroll runway. This must be HEIGHT, not padding: a sticky child can
+     only roam its parent's content box. The calc is a pre script estimate of
+     deck height plus 70vh per handoff; the script measures the real deck and
+     writes exact pixels back. */
+  .deck-track.deck-on {
+    height: calc(62vh + (var(--cards, 4) - 1) * 70vh);
+  }
+
+  .deck-on .deck-pin {
+    position: sticky;
+    /* Fallback pin line, near the top so the deck sticks just under the nav.
+       The script replaces it with max(76, min(136, rest)), where rest is the
+       deck's natural offset inside the section: never lower than rest (or
+       the deck would visibly drop as the section arrives), and never lower
+       than 136px, which is 76px of nav clearance plus headroom for the
+       strips and arc of the passed cards above the front card. */
+    top: 136px;
+  }
+
+  /* All cards in the same grid cell, so they overlap and the deck is as tall
+     as the tallest card. */
+  .deck-on .deck {
+    display: grid;
+    width: 100%;
+  }
+
+  .deck-on .deck-item {
+    grid-area: 1 / 1;
+    margin-bottom: 0;
+  }
+
+  .deck-on .deck-card {
+    /* Scale from the bottom edge: a waiting card behind then peeks out below
+       as an even strip that keeps its size as the card shrinks. The script
+       flips the origin to the top edge for passed cards, which peek out
+       above the front card instead. */
+    transform-origin: 50% 100%;
+    will-change: transform, filter;
+  }
+
+  /* Stacked cards overlap, so the glass must be fully opaque, and backdrop
+     blur is wasted work once nothing shows through. Cards never get opacity:
+     depth is drawn with scale, drop, and brightness only. */
+  .deck-on .deck-item .pane {
+    background-color: #080b0e;
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+}
+
+/* Phones and narrow windows, motion allowed: a swipe deck. Works with no JS
+   at all; the script only adds the scale and brightness cue on top. */
+@media (max-width: 1023px) and (prefers-reduced-motion: no-preference) {
+  .deck {
+    display: flex;
+    gap: 0.75rem;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    /* Bleed to the screen edges so a card can sit dead centre. */
+    margin-inline: -1.5rem;
+    padding-inline: 1.5rem;
+    padding-bottom: 0.5rem;
+  }
+
+  .deck::-webkit-scrollbar {
+    display: none;
+  }
+
+  .deck-item {
+    /* 80% wide with a small gap leaves a clear strip of the neighbouring card
+       on BOTH sides of the centred one, so mid-deck cards invite the swipe. */
+    flex: 0 0 80%;
+    max-width: 80%;
+    margin-bottom: 0;
+    scroll-snap-align: center;
+    scroll-snap-stop: always;
+  }
+
+  .deck-card {
+    transition:
+      transform 0.2s ease,
+      filter 0.2s ease;
+  }
+
+  .deck-item .pane {
+    background-color: #080b0e;
+  }
+}
+
+/* The work section is three screens tall, so its glows and comets would drift
+   up the page the whole way. Absolute by default (exactly where they were),
+   and pinned to the viewport while the deck runs, so the only thing that
+   moves is their colour. */
+.work-decor {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+}
+
+@media (min-width: 1024px) and (prefers-reduced-motion: no-preference) {
+  .work-decor {
+    /* inset first: it is a shorthand and would wipe the top anchor below. */
+    inset: auto;
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    margin-bottom: -100vh;
+  }
+}

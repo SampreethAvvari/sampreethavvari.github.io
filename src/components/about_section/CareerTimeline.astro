@@ -1,0 +1,898 @@
+---
+// The career timeline: every role and degree as a comet trail on one axis,
+// 2017 to now. Each span is a glowing trajectory with the comet head at its
+// most recent point; the current role's head is still flying at "now" and
+// pulses. Education trails are dashed with a ring head, work trails are solid
+// with a lit head. Hover a year for a tooltip of what was running; click a
+// year, or a trail, for the floating panel with the story.
+import { info } from "../../data/info";
+
+type Span = {
+  title: string;
+  short: string;
+  org: string;
+  location: string;
+  date: string;
+  start: string; // "YYYY-MM"
+  end: string; // "YYYY-MM" or "present"
+  logo: string;
+  accent: string;
+  rgb: string;
+  kind: "education" | "work";
+  blurb: string;
+  projects?: { label: string; href: string }[];
+};
+
+const spans = info.about.timeline as Span[];
+
+// The axis runs Jan 2017 through the end of the current year, in months.
+const now = new Date();
+const FIRST_YEAR = 2017;
+const LAST_YEAR = now.getFullYear();
+const START = FIRST_YEAR * 12;
+const END = LAST_YEAR * 12 + 11;
+const TOTAL = END - START + 1;
+const NOW_M = now.getFullYear() * 12 + now.getMonth();
+
+const toMonths = (s: string) => {
+  if (s === "present") return NOW_M;
+  const [y, m] = s.split("-").map(Number);
+  return y * 12 + (m - 1);
+};
+
+// The axis is deliberately non-linear: everything before Aug 2023 (NYU) is
+// prologue and gets 40% of the room per month, so BTech does not eat a
+// quarter of the chart just for being four years long.
+const PIVOT = 2023 * 12 + 7; // Aug 2023
+const EARLY = 0.4;
+const warp = (m: number) =>
+  m < PIVOT ? (m - START) * EARLY : (PIVOT - START) * EARLY + (m - PIVOT);
+const SPAN_W = warp(END + 1);
+const pct = (m: number) => (warp(m) / SPAN_W) * 100;
+
+const rows = spans
+  .map((it, i) => {
+    const a = toMonths(it.start);
+    const b = toMonths(it.end);
+    const left = pct(a);
+    const width = Math.max(pct(b + 1) - pct(a), 3);
+    return {
+      ...it,
+      i,
+      startM: a,
+      endM: b,
+      left,
+      width,
+      ongoing: it.end === "present",
+      // Late, narrow spans hang their label to the left of the trail so the
+      // text never runs off the right edge of the chart.
+      flip: left + width > 80,
+    };
+  })
+  .sort((a, b) => a.startM - b.startM);
+
+const years = Array.from({ length: LAST_YEAR - FIRST_YEAR + 1 }, (_, k) => FIRST_YEAR + k);
+
+// Which spans are alive in each year, for the tooltip and the panel.
+const actives = years.map((y) => {
+  const ys = y * 12;
+  const ye = y * 12 + 11;
+  return rows.filter((r) => r.startM <= ye && r.endM >= ys).map((r) => r.i);
+});
+
+const nowPct = pct(NOW_M) + 100 / TOTAL / 2;
+
+const payload = {
+  years,
+  actives,
+  items: spans.map((s) => ({
+    title: s.title,
+    org: s.org,
+    location: s.location,
+    date: s.date,
+    blurb: s.blurb,
+    logo: s.logo,
+    accent: s.accent,
+    rgb: s.rgb,
+    kind: s.kind,
+    projects: s.projects || [],
+  })),
+};
+
+const ROW_H = 46;
+const trackH = rows.length * ROW_H;
+---
+
+<div class="career-tl relative" id="career-tl">
+  <div class="flex items-baseline justify-between gap-4 mb-3">
+    <p class="eyebrow text-acc-amber/90 m-0">Education and experience</p>
+    <p class="tl-hint m-0">hover a year · click for the story</p>
+  </div>
+
+  <div class="tl-legend" aria-hidden="true">
+    <span class="tl-leg">
+      <span class="tl-swatch"><i class="tl-sw-line"></i><i class="tl-sw-head"></i></span>
+      Experience
+    </span>
+    <span class="tl-leg">
+      <span class="tl-swatch"><i class="tl-sw-line tl-sw-dashed"></i><i class="tl-sw-ring"></i></span>
+      Education
+    </span>
+  </div>
+
+  <div class="tl-scroll">
+    <div class="tl-inner">
+      {/* comet lanes */}
+      <div class="tl-track" style={`height:${trackH}px;`}>
+        {/* Rows are inverted: the past sits at the bottom and each new role
+            climbs a lane, so the trajectory rises toward the present. */}
+        {rows.map((r, rowIdx) => (
+          <button
+            type="button"
+            class={`tl-lane ${r.kind === "education" ? "tl-lane-edu" : ""} ${r.ongoing ? "tl-lane-now" : ""} ${r.flip ? "tl-lane-flip" : ""}`}
+            style={`top:${(rows.length - 1 - rowIdx) * ROW_H}px; height:${ROW_H}px; left:${r.left}%; width:${r.width}%; --brgb:${r.rgb}; --bacc:${r.accent};`}
+            data-item={r.i}
+            aria-haspopup="dialog"
+            title={`${r.title} · ${r.org}`}
+          >
+            <span class="tl-lane-label">{r.short}</span>
+            <span class="tl-chip"><img src={r.logo} alt="" loading="lazy" /></span>
+            <span class="tl-trail" aria-hidden="true"></span>
+            <span class="tl-head-glow" aria-hidden="true"></span>
+            <span class="tl-head" aria-hidden="true"></span>
+          </button>
+        ))}
+        {/* today marker */}
+        <span class="tl-now" style={`left:${nowPct}%;`} aria-hidden="true"></span>
+      </div>
+
+      {/* year axis */}
+      <div class="tl-axis" role="group" aria-label="Timeline years">
+        {years.map((y, k) => (
+          <button
+            type="button"
+            class="tl-year"
+            style={`left:${pct(y * 12 + 6)}%; width:${pct(y * 12 + 12) - pct(y * 12)}%;`}
+            data-year={k}
+            aria-haspopup="dialog"
+            aria-label={`What I was doing in ${y}`}
+          >
+            <span class="tl-dot" aria-hidden="true"></span>
+            <span class="tl-year-label">{y}</span>
+          </button>
+        ))}
+      </div>
+    </div>
+  </div>
+
+  {/* hover tooltip: sits on the component root, above the scroll clip */}
+  <div class="tl-tip" id="tl-tip" role="status" aria-hidden="true"></div>
+
+  {/* floating detail panel */}
+  <div class="tl-dialog" id="tl-dialog" role="dialog" aria-modal="false" aria-hidden="true">
+    <div class="tl-dialog-head">
+      <p class="tl-dialog-title" id="tl-dialog-title"></p>
+      <button type="button" class="tl-close" id="tl-close" aria-label="Close">✕</button>
+    </div>
+    <div class="tl-dialog-body" id="tl-dialog-body"></div>
+  </div>
+
+  <script type="application/json" id="tl-data" set:html={JSON.stringify(payload)} />
+</div>
+
+<style is:global>
+  .career-tl .tl-hint {
+    font-size: 0.68rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: rgba(245, 245, 247, 0.32);
+    white-space: nowrap;
+  }
+
+  .career-tl .tl-legend {
+    display: flex;
+    gap: 20px;
+    margin-bottom: 12px;
+  }
+
+  .career-tl .tl-leg {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.68rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: rgba(245, 245, 247, 0.45);
+  }
+
+  .career-tl .tl-swatch {
+    position: relative;
+    width: 30px;
+    height: 10px;
+    flex: none;
+  }
+
+  .career-tl .tl-sw-line {
+    position: absolute;
+    left: 0;
+    right: 6px;
+    top: 50%;
+    height: 2px;
+    margin-top: -1px;
+    border-radius: 2px;
+    background: linear-gradient(90deg, rgba(245, 245, 247, 0.06), rgba(245, 245, 247, 0.75));
+  }
+
+  .career-tl .tl-sw-dashed {
+    background: repeating-linear-gradient(
+      90deg,
+      rgba(245, 245, 247, 0.65) 0 4px,
+      transparent 4px 8px
+    );
+  }
+
+  .career-tl .tl-sw-head {
+    position: absolute;
+    right: 0;
+    top: 50%;
+    width: 7px;
+    height: 7px;
+    margin-top: -3.5px;
+    border-radius: 9999px;
+    background: radial-gradient(circle at 38% 38%, #fff, rgba(245, 245, 247, 0.75) 55%, transparent 80%);
+  }
+
+  .career-tl .tl-sw-ring {
+    position: absolute;
+    right: 0;
+    top: 50%;
+    width: 7px;
+    height: 7px;
+    margin-top: -3.5px;
+    border-radius: 9999px;
+    border: 1.5px solid rgba(245, 245, 247, 0.75);
+  }
+
+  .career-tl .tl-scroll {
+    /* The chart always fits its container. No sideways scrolling. */
+    overflow: visible;
+  }
+
+  .career-tl .tl-inner {
+    position: relative;
+  }
+
+  /* Narrow screens: smaller type and every other year label, so the chart
+     still fits without scrolling. The dots all stay. */
+  @media (max-width: 640px) {
+    .career-tl .tl-lane-label {
+      font-size: 0.6rem;
+    }
+
+    .career-tl .tl-year:nth-child(even) .tl-year-label {
+      display: none;
+    }
+
+    .career-tl .tl-year-label {
+      font-size: 0.58rem;
+    }
+  }
+
+  .career-tl .tl-track {
+    position: relative;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.10);
+  }
+
+  /* ── a lane: one role as a comet trajectory ───────────────────────────── */
+  .career-tl .tl-lane {
+    position: absolute;
+    background: none;
+    border: none;
+    padding: 0;
+    cursor: pointer;
+    overflow: visible;
+  }
+
+  /* label floats above the trail, anchored at its start */
+  .career-tl .tl-lane-label {
+    position: absolute;
+    top: 4px;
+    left: 26px;
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 0.01em;
+    color: rgba(245, 245, 247, 0.72);
+    white-space: nowrap;
+    transition: color 0.18s ease;
+  }
+
+  .career-tl .tl-lane-flip .tl-lane-label {
+    left: auto;
+    right: 14px;
+    text-align: right;
+  }
+
+  .career-tl .tl-lane:hover .tl-lane-label,
+  .career-tl .tl-lane:focus-visible .tl-lane-label {
+    color: rgba(245, 245, 247, 0.98);
+  }
+
+  /* the org chip sits at the launch point of the trail */
+  .career-tl .tl-chip {
+    position: absolute;
+    left: 0;
+    top: 50%;
+    width: 21px;
+    height: 21px;
+    margin-top: -4px;
+    border-radius: 6px;
+    background: #fff;
+    display: grid;
+    place-items: center;
+    overflow: hidden;
+    box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.14), 0 4px 12px -4px rgba(0, 0, 0, 0.8);
+    transition: transform 0.18s ease;
+  }
+
+  .career-tl .tl-lane:hover .tl-chip {
+    transform: translateY(-1px);
+  }
+
+  .career-tl .tl-chip img {
+    max-width: 78%;
+    max-height: 78%;
+    object-fit: contain;
+  }
+
+  /* the trail: fades in from launch, bright at the head end */
+  .career-tl .tl-trail {
+    position: absolute;
+    left: 26px;
+    right: 9px;
+    top: 50%;
+    height: 2.5px;
+    margin-top: 2.75px;
+    border-radius: 3px;
+    background: linear-gradient(90deg, rgba(var(--brgb), 0.05), rgba(var(--brgb), 0.9));
+    filter: drop-shadow(0 0 5px rgba(var(--brgb), 0.45));
+    transition: filter 0.18s ease;
+  }
+
+  .career-tl .tl-lane-edu .tl-trail {
+    height: 2px;
+    background: repeating-linear-gradient(
+      90deg,
+      rgba(var(--brgb), 0.85) 0 5px,
+      transparent 5px 11px
+    );
+    -webkit-mask-image: linear-gradient(90deg, rgba(0, 0, 0, 0.15), #000 45%);
+    mask-image: linear-gradient(90deg, rgba(0, 0, 0, 0.15), #000 45%);
+  }
+
+  .career-tl .tl-lane:hover .tl-trail,
+  .career-tl .tl-lane:focus-visible .tl-trail {
+    filter: drop-shadow(0 0 9px rgba(var(--brgb), 0.85));
+  }
+
+  /* the comet head at the most recent point of the role. Finished roles get a
+     quiet ember; only the current one burns. */
+  .career-tl .tl-head {
+    position: absolute;
+    right: 3px;
+    top: 50%;
+    width: 10px;
+    height: 10px;
+    margin-top: -1px;
+    border-radius: 9999px;
+    background: radial-gradient(circle at 36% 36%, #fff, var(--bacc) 52%, transparent 78%);
+    box-shadow: 0 0 6px rgba(var(--brgb), 0.45);
+    transition: box-shadow 0.18s ease;
+  }
+
+  .career-tl .tl-lane-now .tl-head {
+    box-shadow: 0 0 10px rgba(var(--brgb), 0.9), 0 0 22px rgba(var(--brgb), 0.45);
+  }
+
+  .career-tl .tl-lane-edu .tl-head {
+    background: transparent;
+    border: 2px solid var(--bacc);
+    box-shadow: 0 0 8px rgba(var(--brgb), 0.55);
+  }
+
+  .career-tl .tl-lane:hover .tl-head,
+  .career-tl .tl-lane:focus-visible .tl-head {
+    box-shadow: 0 0 14px rgba(var(--brgb), 1), 0 0 30px rgba(var(--brgb), 0.65);
+  }
+
+  /* the halo exists only on the current role, where it breathes */
+  .career-tl .tl-head-glow {
+    display: none;
+    position: absolute;
+    right: -9px;
+    top: 50%;
+    width: 34px;
+    height: 34px;
+    margin-top: -13px;
+    border-radius: 9999px;
+    background: radial-gradient(circle, rgba(var(--brgb), 0.35), transparent 70%);
+    filter: blur(4px);
+    pointer-events: none;
+  }
+
+  .career-tl .tl-lane-now .tl-head-glow {
+    display: block;
+    animation: tl-breathe 3.2s ease-in-out infinite;
+  }
+
+  .career-tl .tl-lane-now .tl-head {
+    animation: tl-pulse 3.2s ease-in-out infinite;
+  }
+
+  /* two four-point glints that flare and fade, offset in time, so the current
+     comet visibly sparkles while every finished one holds still */
+  .career-tl .tl-lane-now .tl-head::before,
+  .career-tl .tl-lane-now .tl-head::after {
+    content: "";
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: 20px;
+    height: 20px;
+    margin: -10px 0 0 -10px;
+    background:
+      linear-gradient(rgba(255, 255, 255, 0.95), rgba(255, 255, 255, 0.95)) center / 1.5px 100% no-repeat,
+      linear-gradient(rgba(255, 255, 255, 0.95), rgba(255, 255, 255, 0.95)) center / 100% 1.5px no-repeat;
+    opacity: 0;
+    pointer-events: none;
+    animation: tl-glint 3.2s ease-in-out infinite;
+  }
+
+  .career-tl .tl-lane-now .tl-head::after {
+    width: 12px;
+    height: 12px;
+    margin: -6px 0 0 -6px;
+    animation: tl-glint-b 3.2s ease-in-out infinite;
+    animation-delay: 1.1s;
+  }
+
+  @keyframes tl-glint {
+    0%, 62%, 100% { opacity: 0; transform: scale(0.3) rotate(0deg); }
+    76% { opacity: 0.9; transform: scale(1) rotate(45deg); }
+    90% { opacity: 0; transform: scale(0.5) rotate(90deg); }
+  }
+
+  @keyframes tl-glint-b {
+    0%, 55%, 100% { opacity: 0; transform: scale(0.3) rotate(45deg); }
+    70% { opacity: 0.8; transform: scale(1) rotate(90deg); }
+    85% { opacity: 0; transform: scale(0.4) rotate(135deg); }
+  }
+
+  @keyframes tl-breathe {
+    0%, 100% { opacity: 0.55; transform: scale(1); }
+    50% { opacity: 1; transform: scale(1.35); }
+  }
+
+  @keyframes tl-pulse {
+    0%, 100% { box-shadow: 0 0 10px rgba(var(--brgb), 0.9), 0 0 22px rgba(var(--brgb), 0.45); }
+    50% { box-shadow: 0 0 16px rgba(var(--brgb), 1), 0 0 36px rgba(var(--brgb), 0.75); }
+  }
+
+  .career-tl .tl-now {
+    position: absolute;
+    top: 0;
+    bottom: -5px;
+    width: 0;
+    border-left: 1px dashed rgba(245, 165, 36, 0.45);
+  }
+
+  .career-tl .tl-axis {
+    position: relative;
+    height: 50px;
+  }
+
+  .career-tl .tl-year {
+    position: absolute;
+    top: 0;
+    height: 100%;
+    transform: translateX(-50%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 5px;
+    padding-top: 0;
+    cursor: pointer;
+    background: none;
+    border: none;
+  }
+
+  .career-tl .tl-dot {
+    width: 7px;
+    height: 7px;
+    margin-top: -4px;
+    border-radius: 9999px;
+    background: rgba(245, 245, 247, 0.35);
+    box-shadow: 0 0 0 3px rgba(245, 245, 247, 0.06);
+    transition: background-color 0.18s ease, box-shadow 0.18s ease;
+  }
+
+  .career-tl .tl-year:hover .tl-dot,
+  .career-tl .tl-year:focus-visible .tl-dot,
+  .career-tl .tl-year.on .tl-dot {
+    background: #f5a524;
+    box-shadow: 0 0 0 4px rgba(245, 165, 36, 0.18), 0 0 14px rgba(245, 165, 36, 0.55);
+  }
+
+  .career-tl .tl-year-label {
+    font-family: theme(fontFamily.mono, monospace);
+    font-size: 0.66rem;
+    letter-spacing: 0.08em;
+    color: rgba(245, 245, 247, 0.42);
+    transition: color 0.18s ease;
+  }
+
+  .career-tl .tl-year:hover .tl-year-label,
+  .career-tl .tl-year.on .tl-year-label {
+    color: rgba(245, 245, 247, 0.85);
+  }
+
+  .career-tl .tl-tip {
+    position: absolute;
+    bottom: 60px;
+    transform: translateX(-50%);
+    width: max-content;
+    max-width: 320px;
+    padding: 10px 12px;
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    background: rgba(10, 13, 16, 0.96);
+    box-shadow: 0 18px 40px -18px rgba(0, 0, 0, 0.9);
+    font-size: 0.74rem;
+    line-height: 1.4;
+    color: rgba(245, 245, 247, 0.85);
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.15s ease;
+    z-index: 40;
+  }
+
+  .career-tl .tl-tip.show {
+    opacity: 1;
+  }
+
+  .career-tl .tl-tip .tt-year {
+    font-weight: 700;
+    color: #f5a524;
+    margin-bottom: 3px;
+  }
+
+  .career-tl .tl-tip .tt-row {
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+    white-space: normal;
+    line-height: 1.35;
+  }
+
+  .career-tl .tl-tip .tt-dot {
+    position: relative;
+    top: -1px;
+  }
+
+  .career-tl .tl-tip .tt-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 9999px;
+    flex: none;
+  }
+
+  .career-tl .tl-dialog {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 40px;
+    margin: 0 auto;
+    max-width: 500px;
+    border-radius: 18px;
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    background: rgba(9, 12, 15, 0.98);
+    box-shadow: 0 30px 80px -20px rgba(0, 0, 0, 0.95), 0 1px 0 rgba(255, 255, 255, 0.06) inset;
+    padding: 18px 20px;
+    z-index: 30;
+    opacity: 0;
+    transform: translateY(8px) scale(0.98);
+    pointer-events: none;
+    transition: opacity 0.2s ease, transform 0.2s ease;
+  }
+
+  .career-tl .tl-dialog.open {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    pointer-events: auto;
+  }
+
+  .career-tl .tl-dialog-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    margin-bottom: 12px;
+  }
+
+  .career-tl .tl-dialog-title {
+    font-weight: 700;
+    font-size: 1.05rem;
+    color: rgba(245, 245, 247, 0.95);
+    margin: 0;
+  }
+
+  .career-tl .tl-close {
+    flex: none;
+    width: 28px;
+    height: 28px;
+    border-radius: 9999px;
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    background: rgba(255, 255, 255, 0.05);
+    color: rgba(245, 245, 247, 0.7);
+    font-size: 0.72rem;
+    cursor: pointer;
+    transition: background-color 0.15s ease, color 0.15s ease;
+  }
+
+  .career-tl .tl-close:hover {
+    background: rgba(255, 255, 255, 0.12);
+    color: #fff;
+  }
+
+  .career-tl .tl-dialog-body {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    max-height: 340px;
+    overflow-y: auto;
+    scrollbar-width: thin;
+  }
+
+  .career-tl .tl-role {
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+  }
+
+  .career-tl .tl-role-badge {
+    flex: none;
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    background: #fff;
+    display: grid;
+    place-items: center;
+    overflow: hidden;
+  }
+
+  .career-tl .tl-role-badge img {
+    max-width: 80%;
+    max-height: 80%;
+    object-fit: contain;
+  }
+
+  .career-tl .tl-role-title {
+    font-weight: 650;
+    font-size: 0.86rem;
+    color: rgba(245, 245, 247, 0.94);
+    margin: 0;
+    line-height: 1.3;
+  }
+
+  .career-tl .tl-role-kind {
+    display: inline-block;
+    margin-left: 8px;
+    padding: 1px 8px;
+    border-radius: 9999px;
+    font-size: 0.58rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    vertical-align: 2px;
+  }
+
+  .career-tl .tl-role-kind.is-work {
+    color: #f5a524;
+    background: rgba(245, 165, 36, 0.14);
+    border: 1px solid rgba(245, 165, 36, 0.35);
+  }
+
+  .career-tl .tl-role-kind.is-edu {
+    color: #22d3ee;
+    background: rgba(34, 211, 238, 0.12);
+    border: 1px dashed rgba(34, 211, 238, 0.4);
+  }
+
+  .career-tl .tl-role-meta {
+    font-size: 0.72rem;
+    color: rgba(245, 245, 247, 0.5);
+    margin: 2px 0 4px;
+  }
+
+  .career-tl .tl-role-blurb {
+    font-size: 0.78rem;
+    line-height: 1.5;
+    color: rgba(245, 245, 247, 0.68);
+    margin: 0;
+  }
+
+  .career-tl .tl-proj {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 8px;
+  }
+
+  .career-tl .tl-proj a {
+    display: inline-block;
+    padding: 2px 10px;
+    border-radius: 9999px;
+    font-size: 0.64rem;
+    font-weight: 650;
+    letter-spacing: 0.04em;
+    color: rgba(245, 245, 247, 0.8);
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    background: rgba(255, 255, 255, 0.05);
+    text-decoration: none;
+    transition: border-color 0.15s ease, color 0.15s ease, background-color 0.15s ease;
+  }
+
+  .career-tl .tl-proj a:hover {
+    color: #fff;
+    border-color: rgba(245, 165, 36, 0.6);
+    background: rgba(245, 165, 36, 0.12);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .career-tl .tl-lane .tl-trail,
+    .career-tl .tl-dialog,
+    .career-tl .tl-tip {
+      transition: none;
+    }
+    .career-tl .tl-lane-now .tl-head,
+    .career-tl .tl-lane-now .tl-head-glow,
+    .career-tl .tl-lane-now .tl-head::before,
+    .career-tl .tl-lane-now .tl-head::after {
+      animation: none;
+    }
+  }
+</style>
+
+<script>
+  (function () {
+    const root = document.getElementById("career-tl");
+    const dataEl = document.getElementById("tl-data");
+    if (!root || !dataEl) return;
+    const data = JSON.parse(dataEl.textContent || "{}");
+    const items = data.items || [];
+    const years = data.years || [];
+    const actives = data.actives || [];
+
+    const scroller = root.querySelector<HTMLElement>(".tl-scroll");
+    const tip = document.getElementById("tl-tip") as HTMLElement;
+    const dialog = document.getElementById("tl-dialog") as HTMLElement;
+    const dialogTitle = document.getElementById("tl-dialog-title") as HTMLElement;
+    const dialogBody = document.getElementById("tl-dialog-body") as HTMLElement;
+    const closeBtn = document.getElementById("tl-close") as HTMLElement;
+    const inner = root.querySelector<HTMLElement>(".tl-inner");
+    if (!tip || !dialog || !dialogTitle || !dialogBody || !closeBtn || !inner) return;
+
+    const esc = (s: string) =>
+      s.replace(/[&<>"]/g, (ch) =>
+        ch === "&" ? "&amp;" : ch === "<" ? "&lt;" : ch === ">" ? "&gt;" : "&quot;",
+      );
+
+    // ---- tooltip on year hover
+    const showTip = (k: number, x: number) => {
+      const y = years[k];
+      const list = (actives[k] || [])
+        .map((i: number) => {
+          const it = items[i];
+          return `<span class="tt-row"><span class="tt-dot" style="background:${esc(it.accent)};"></span>${esc(it.title)} · ${esc(it.org)}</span>`;
+        })
+        .join("");
+      tip.innerHTML = `<div class="tt-year">${y}</div>${list || "<span class='tt-row'>Before all this started.</span>"}`;
+      place(x);
+      tip.setAttribute("aria-hidden", "false");
+    };
+    // x arrives in track coordinates; the tip lives on the root, outside the
+    // scroll clip, so shift by the scroll offset and clamp by real width.
+    const place = (x: number) => {
+      const rootW = root.clientWidth;
+      const sx = scroller ? scroller.scrollLeft : 0;
+      const half = Math.min(tip.offsetWidth / 2 || 140, rootW / 2 - 8);
+      tip.style.left = `${Math.max(half + 8, Math.min(x - sx, rootW - half - 8))}px`;
+      tip.classList.add("show");
+    };
+
+    const hideTip = () => {
+      tip.classList.remove("show");
+      tip.setAttribute("aria-hidden", "true");
+    };
+
+    // ---- floating panel
+    let open = false;
+    const openDialog = (title: string, idxs: number[]) => {
+      dialogTitle.textContent = title;
+      dialogBody.innerHTML = idxs
+        .map((i) => {
+          const it = items[i];
+          const chips = (it.projects || [])
+            .map(
+              (p: { label: string; href: string }) =>
+                `<a href="${esc(p.href)}">${esc(p.label)}</a>`,
+            )
+            .join("");
+          return (
+            `<div class="tl-role">` +
+            `<span class="tl-role-badge"><img src="${esc(it.logo)}" alt="${esc(it.org)}" loading="lazy"></span>` +
+            `<div class="min-w-0">` +
+            `<p class="tl-role-title">${esc(it.title)}` +
+            `<span class="tl-role-kind ${it.kind === "education" ? "is-edu" : "is-work"}">${it.kind === "education" ? "Education" : "Experience"}</span></p>` +
+            `<p class="tl-role-meta">${esc(it.org)} · ${esc(it.location)} · ${esc(it.date)}</p>` +
+            `<p class="tl-role-blurb">${esc(it.blurb)}</p>` +
+            (chips ? `<div class="tl-proj">${chips}</div>` : "") +
+            `</div></div>`
+          );
+        })
+        .join("");
+      dialog.classList.add("open");
+      dialog.setAttribute("aria-hidden", "false");
+      open = true;
+      (closeBtn as HTMLButtonElement).focus({ preventScroll: true });
+    };
+    const closeDialog = () => {
+      if (!open) return;
+      dialog.classList.remove("open");
+      dialog.setAttribute("aria-hidden", "true");
+      root.querySelectorAll(".tl-year.on").forEach((b) => b.classList.remove("on"));
+      open = false;
+    };
+
+    // ---- wire the years
+    root.querySelectorAll<HTMLElement>(".tl-year").forEach((btn) => {
+      const k = parseInt(btn.dataset.year || "0", 10);
+      const x = () => btn.offsetLeft;
+      btn.addEventListener("mouseenter", () => showTip(k, x()));
+      btn.addEventListener("focus", () => showTip(k, x()));
+      btn.addEventListener("mouseleave", hideTip);
+      btn.addEventListener("blur", hideTip);
+      btn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        hideTip();
+        root.querySelectorAll(".tl-year.on").forEach((b) => b.classList.remove("on"));
+        btn.classList.add("on");
+        openDialog(`${years[k]}`, actives[k] || []);
+      });
+    });
+
+    // ---- wire the lanes
+    root.querySelectorAll<HTMLElement>(".tl-lane").forEach((lane) => {
+      const i = parseInt(lane.dataset.item || "0", 10);
+      lane.addEventListener("mouseenter", () => {
+        const it = items[i];
+        tip.innerHTML = `<div class="tt-year">${esc(it.date)}</div><span class="tt-row"><span class="tt-dot" style="background:${esc(it.accent)};"></span>${esc(it.title)} · ${esc(it.org)}</span>`;
+        place(lane.offsetLeft + lane.offsetWidth / 2);
+      });
+      lane.addEventListener("mouseleave", hideTip);
+      lane.addEventListener("click", (e) => {
+        e.stopPropagation();
+        hideTip();
+        openDialog(items[i].title, [i]);
+      });
+    });
+
+    // ---- close paths
+    closeBtn.addEventListener("click", closeDialog);
+    document.addEventListener("click", (e) => {
+      if (open && !dialog.contains(e.target as Node)) closeDialog();
+    });
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape") closeDialog();
+    });
+  })();
+</script>

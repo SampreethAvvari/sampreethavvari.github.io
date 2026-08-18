@@ -138,7 +138,11 @@ html.dark p {
 
 html,
 body {
+  /* clip, not hidden: hidden turns these into scroll containers and that
+     silently kills every position: sticky on the page. hidden stays first as
+     the fallback for browsers without clip. */
   overflow-x: hidden;
+  overflow-x: clip;
 }
 
 * {
