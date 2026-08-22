@@ -409,6 +409,7 @@ export const info = {
   projects: [
     {
       title: "Enterprise Search",
+      demo: "https://sampreethavvari.github.io/ai-systems-tours/tours/enterprise-search/",
       tier: "industry",
       flagshipRank: 1,
       date: "Jun 2026 - Present",
@@ -450,6 +451,7 @@ export const info = {
     },
     {
       title: "CBCT Scan Validator",
+      demo: "https://sampreethavvari.github.io/ai-systems-tours/tours/scan-validator/",
       tier: "industry",
       flagshipRank: 3,
       date: "Mar 2026 - Present",
@@ -491,6 +493,7 @@ export const info = {
     },
     {
       title: "Treatment Estimator",
+      demo: "https://sampreethavvari.github.io/ai-systems-tours/tours/treatment-estimator/",
       tier: "industry",
       date: "May 2026 - Present",
       description:
@@ -530,6 +533,7 @@ export const info = {
     },
     {
       title: "Cowork Dashboard",
+      demo: "https://sampreethavvari.github.io/ai-systems-tours/tours/cowork-dashboard/",
       tier: "industry",
       date: "Apr 2026 - May 2026",
       description:
@@ -611,6 +615,7 @@ export const info = {
     },
     {
       title: "Doc Coach, Consultation QA Pipeline",
+      demo: "https://sampreethavvari.github.io/ai-systems-tours/tours/doc-coach/",
       tier: "industry",
       flagshipRank: 2,
       date: "Aug 2025 - Present",
@@ -653,6 +658,7 @@ export const info = {
     },
     {
       title: "NPC Coach",
+      demo: "https://sampreethavvari.github.io/ai-systems-tours/tours/npc-coach/",
       tier: "industry",
       flagshipRank: 5,
       date: "Aug 2025 - Present",
@@ -696,6 +702,7 @@ export const info = {
     },
     {
       title: "Reconciliation",
+      demo: "https://sampreethavvari.github.io/ai-systems-tours/tours/reconciliation/",
       tier: "industry",
       date: "Jun 2026 - Present",
       description:
@@ -737,6 +744,7 @@ export const info = {
     },
     {
       title: "Centralized Diagnostic Filter",
+      demo: "https://sampreethavvari.github.io/ai-systems-tours/tours/patient-assessment/",
       tier: "industry",
       flagshipRank: 4,
       date: "Jun 2026 - Present",
@@ -936,6 +944,7 @@ export const info = {
     },
     {
       title: "JobPilot",
+      demo: "https://jobpilot-demo.pages.dev",
       tier: "personal",
       date: "2026 - Present",
       description:

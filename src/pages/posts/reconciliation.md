@@ -1,4 +1,5 @@
 ---
+demo: https://sampreethavvari.github.io/ai-systems-tours/tours/reconciliation/
 title: "How I gave a three person insurance team 70 hours back every week"
 date: "2026-07-24"
 layout: ../../layouts/PostLayout.astro

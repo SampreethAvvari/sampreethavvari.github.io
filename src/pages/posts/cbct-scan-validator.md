@@ -1,4 +1,5 @@
 ---
+demo: https://sampreethavvari.github.io/ai-systems-tours/tours/scan-validator/
 title: "How I replaced a $98K quote with a $50-a-month tool"
 date: "2026-05-02"
 layout: ../../layouts/PostLayout.astro

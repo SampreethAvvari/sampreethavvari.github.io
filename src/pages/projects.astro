@@ -275,6 +275,16 @@ const galleryFor = (title: string) => {
               </div>
             )}
             <div class="flex flex-wrap items-center gap-4">
+              {project.demo && (
+                <a
+                  href={project.demo}
+                  target="_blank"
+                  rel="noreferrer"
+                  class="link-underline text-sm font-bold text-secondary dark:text-dk-accent inline-flex"
+                >
+                  Live demo <span aria-hidden="true">↗</span>
+                </a>
+              )}
               {blog && (
                 <a
                   href={blog}

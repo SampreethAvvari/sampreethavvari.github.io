@@ -139,6 +139,17 @@ const statusTone = (s: string) =>
                   Read the full story <span aria-hidden="true">→</span>
                 </a>
               )}
+              {p.demo && (
+                <a
+                  href={p.demo}
+                  target="_blank"
+                  rel="noreferrer"
+                  class="link-underline text-sm font-bold ml-4"
+                  style={`color: ${d.accent};`}
+                >
+                  Live demo <span aria-hidden="true">↗</span>
+                </a>
+              )}
             </div>
           </article>
         ))}

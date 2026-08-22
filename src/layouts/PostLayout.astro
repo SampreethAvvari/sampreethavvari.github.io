@@ -19,6 +19,7 @@ const {
   tag,
   tone,
   stats,
+  demo,
 } = frontmatter;
 
 const TAG_TONE: Record<string, string> = {
@@ -57,6 +58,14 @@ const coverPreload = img_path?.replace(/\.(png|jpe?g)$/i, ".avif");
         <h1 class="post-title">{title}</h1>
 
         {description && <p class="post-lede">{description}</p>}
+
+        {
+          demo && (
+            <a href={demo} target="_blank" rel="noreferrer" class="gbtn mt-5 inline-flex">
+              Try the live demo ↗
+            </a>
+          )
+        }
       </div>
     </header>
 
