@@ -19,6 +19,7 @@ export interface DxProject {
   oneLiner: string;
   img?: string;
   href?: string;
+  demo?: string;
   highlights?: string[];
 }
 
@@ -82,6 +83,7 @@ export const disciplines: Discipline[] = [
     projects: [
       {
         name: "Enterprise Search (RAG)",
+      demo: "https://sampreethavvari.github.io/ai-systems-tours/tours/enterprise-search/",
         status: "In build",
         oneLiner:
           "An internal AI search over all of Hybridge's knowledge. Hybrid retrieval, reranking, deterministic conflict resolution, and citations, with an honest 'I don't know' when the evidence is thin. Built trustworthy-first and shipped stage by stage.",
@@ -96,6 +98,7 @@ export const disciplines: Discipline[] = [
       },
       {
         name: "Doc Coach: Consultation QA",
+      demo: "https://sampreethavvari.github.io/ai-systems-tours/tours/doc-coach/",
         status: "In production",
         oneLiner:
           "Every Zoom consult scored against a 7-criterion clinical rubric by Gemini with structured output, delivered as color-coded coaching reports to doctors and the CEO within minutes of the call.",
@@ -110,6 +113,7 @@ export const disciplines: Discipline[] = [
       },
       {
         name: "NPC Coach: Call Coaching",
+      demo: "https://sampreethavvari.github.io/ai-systems-tours/tours/npc-coach/",
         status: "In production",
         oneLiner:
           "A pipeline that coaches new-patient phone calls: it finds the relevant calls among thousands, scores each against the practice playbook with a verbatim quote behind every criterion, and writes per-coordinator trend reports. A full rebuild of an n8n prototype.",
@@ -124,6 +128,7 @@ export const disciplines: Discipline[] = [
       },
       {
         name: "CDF: AI-assisted diagnosis",
+      demo: "https://sampreethavvari.github.io/ai-systems-tours/tours/patient-assessment/",
         status: "In build",
         oneLiner:
           "The diagnostic layer where AI reads the patient before the doctor does: it analyses CBCT, radiographs, intraoral scans, and clinical photos to surface decay, missing teeth, restorations, and bone-support patterns, then routes every finding to a doctor validation queue. AI assists, the doctor signs.",
@@ -207,6 +212,7 @@ export const disciplines: Discipline[] = [
     projects: [
       {
         name: "Centralized Diagnostic Filter",
+      demo: "https://sampreethavvari.github.io/ai-systems-tours/tours/patient-assessment/",
         status: "In build",
         oneLiner:
           "The current frontier: a standardized diagnostic operating system built with the practice founder, unifying every imaging modality (CBCT, intraoral scans, photos, a risk survey) into one AI-assisted, doctor-validated report. The hardest forward-deployed job there is, turning a clinician's thirty-year mental model into a buildable, phased system.",
@@ -221,6 +227,7 @@ export const disciplines: Discipline[] = [
       },
       {
         name: "Cowork Dashboard",
+      demo: "https://sampreethavvari.github.io/ai-systems-tours/tours/cowork-dashboard/",
         status: "In production",
         oneLiner:
           "The operations dashboard Hybridge leadership runs the business on: weekly Monday.com exports parsed into a full funnel view, iterated live with the CSO, every metric independently verifiable.",
@@ -314,6 +321,7 @@ export const disciplines: Discipline[] = [
     projects: [
       {
         name: "CBCT Scan Validator",
+      demo: "https://sampreethavvari.github.io/ai-systems-tours/tours/scan-validator/",
         status: "In production",
         oneLiner:
           "An in-house medical-imaging quality gate that catches bad dental CT scans at upload time across 13 artifact classes, routing corrective actions to the front desk before a designer wastes hours.",
@@ -411,6 +419,7 @@ export const disciplines: Discipline[] = [
     projects: [
       {
         name: "Treatment Estimator",
+      demo: "https://sampreethavvari.github.io/ai-systems-tours/tours/treatment-estimator/",
         status: "In production",
         oneLiner:
           "The pricing tool Hybridge coordinators use chairside during live consults. Shipped in about a month after a vendor failed at it for ten years, now being rebuilt as a Next.js 16 + Postgres app with a five-model pricing engine.",
@@ -438,6 +447,7 @@ export const disciplines: Discipline[] = [
       },
       {
         name: "NPC pipeline engineering",
+      demo: "https://sampreethavvari.github.io/ai-systems-tours/tours/npc-coach/",
         status: "In production",
         oneLiner:
           "The software story under the AI: 19K lines of Python across 19 modules, 1,156 tests, strict typing, ports-and-adapters with dual-source dedup and an interim single-process pipeline ahead of the event-driven mesh.",
@@ -450,6 +460,7 @@ export const disciplines: Discipline[] = [
       },
       {
         name: "JobPilot",
+      demo: "https://jobpilot-demo.pages.dev",
         status: "Live",
         oneLiner:
           "My open-source job-hunt autopilot: 160+ company boards watched directly, schema-locked LLM scoring, a calibrated resume judge with a truth-locked rewrite loop, and a Next.js console behind IAP. The one project that spans all four disciplines.",

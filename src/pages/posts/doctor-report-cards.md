@@ -1,4 +1,5 @@
 ---
+demo: https://sampreethavvari.github.io/ai-systems-tours/tours/doc-coach/
 title: "How I taught the consult grader to write report cards"
 date: "2026-06-10"
 layout: ../../layouts/PostLayout.astro

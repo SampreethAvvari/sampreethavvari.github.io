@@ -1,4 +1,5 @@
 ---
+demo: https://sampreethavvari.github.io/ai-systems-tours/tours/patient-assessment/
 title: "Teaching an AI to read the whole patient and lean toward a treatment, before the doctor does"
 date: "2026-07-10"
 layout: ../../layouts/PostLayout.astro

@@ -1,4 +1,5 @@
 ---
+demo: https://sampreethavvari.github.io/ai-systems-tours/tours/doc-coach/
 title: "How I built an AI that grades every patient consult"
 date: "2026-05-19"
 layout: ../../layouts/PostLayout.astro

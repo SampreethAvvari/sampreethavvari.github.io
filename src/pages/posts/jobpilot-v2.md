@@ -1,4 +1,5 @@
 ---
+demo: https://jobpilot-demo.pages.dev
 title: "I built an open-source app to run my job hunt"
 date: "2026-06-13"
 layout: ../../layouts/PostLayout.astro
