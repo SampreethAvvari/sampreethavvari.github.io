@@ -128,9 +128,10 @@ const pageComets = hasOwnComets
         />
       )
     }
-    <!-- The S comet: the site's mark, also the tab icon. -->
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <!-- The S glass mark is the tab icon; the SA mark sits in the nav. -->
+    <link rel="icon" href="/favicon.ico" sizes="48x48" />
     <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
+    <link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <link
       rel="alternate"
@@ -266,7 +267,7 @@ const pageComets = hasOwnComets
       import { initAmbient, initComets } from "../scripts/spatial";
       import { initLiquidGlass } from "../scripts/liquid-glass";
       // Real refracting glass on the navigation layer (Chromium only).
-      initLiquidGlass(".nav-glass, .btn-glass, .social, .to-top, .proj-arrow, .chat-launcher, .nav-mono");
+      initLiquidGlass(".nav-glass, .btn-glass, .social, .to-top, .proj-arrow, .chat-launcher");
       // Every page's sky takes its tab's colour. The landing page blends its
       // own, section by section, so it is left alone here.
       if (!document.body.dataset.ownSky) {

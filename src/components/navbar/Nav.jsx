@@ -35,37 +35,6 @@ function TabIcon({ name }) {
   );
 }
 
-// The S comet, the site's mark: a bright head at the top and a trail that
-// cools from blue to violet. Same drawing as public/logo.svg.
-function LogoMark() {
-  return (
-    <svg viewBox="0 0 32 32" width="24" height="24">
-      <defs>
-        <linearGradient id="nav-sa-trail" x1="22" y1="8" x2="10" y2="24" gradientUnits="userSpaceOnUse">
-          <stop offset="0" stopColor="#ffffff" />
-          <stop offset="0.35" stopColor="#8fb3ff" />
-          <stop offset="0.75" stopColor="#5b8def" stopOpacity="0.8" />
-          <stop offset="1" stopColor="#a78bfa" stopOpacity="0.2" />
-        </linearGradient>
-        <radialGradient id="nav-sa-glow">
-          <stop offset="0" stopColor="#ffffff" />
-          <stop offset="0.45" stopColor="#cfe0ff" stopOpacity="0.9" />
-          <stop offset="1" stopColor="#5b8def" stopOpacity="0" />
-        </radialGradient>
-      </defs>
-      <path
-        d="M21.6 9.6C19.9 7.4 16.9 6.9 14.6 7.6 12.2 8.3 10.9 10.4 11.6 12.6 12.4 15 16 15.4 18.6 16.4 21.3 17.4 22.4 19.6 21.4 22 20.3 24.5 16.9 25.6 13.8 24.6 12.4 24.1 11.3 23.3 10.6 22.3"
-        fill="none"
-        stroke="url(#nav-sa-trail)"
-        strokeWidth="2.6"
-        strokeLinecap="round"
-      />
-      <circle cx="21.6" cy="9.6" r="3.4" fill="url(#nav-sa-glow)" />
-      <circle cx="21.6" cy="9.6" r="1.5" fill="#ffffff" />
-    </svg>
-  );
-}
-
 // Pages that belong to a tab without being its index.
 const ALIAS = { gallery: "filmmaking", demos: "projects" };
 
@@ -103,9 +72,15 @@ export default function Nav({ searchItems }) {
             <div className="nav-glass lg" aria-hidden="true" suppressHydrationWarning />
 
             <a className="nav-brand" href="/" aria-label="Sampreeth Avvari, home">
-              <span className="nav-mono" aria-hidden="true" suppressHydrationWarning>
-                <LogoMark />
-              </span>
+              <img
+                className="nav-mark"
+                src="/logo-sa.webp"
+                alt=""
+                width="168"
+                height="132"
+                decoding="async"
+                fetchpriority="high"
+              />
               <span className="nav-name">Sampreeth Avvari</span>
             </a>
 

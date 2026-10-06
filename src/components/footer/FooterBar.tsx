@@ -39,7 +39,7 @@ export default function FooterBar({ variant = "default" }: FooterBarProps) {
       <div className="wrap">
         <div className="foot-top">
           <div className="foot-id">
-            <img src="/logo.svg" alt="" width="36" height="36" className="foot-mark" />
+            <img src="/logo-sa.webp" alt="" width="168" height="132" className="foot-mark" loading="lazy" decoding="async" />
             <div>
               <p className="t-h4">Sampreeth Avvari</p>
               <p className="t-small mt-1">
