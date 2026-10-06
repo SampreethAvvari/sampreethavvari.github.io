@@ -44,6 +44,21 @@ const TYPE_LABELS: Record<string, string> = {
   language: "Language",
   category: "Tech stack",
 };
+// Stars are coloured by what they are, never by discipline. Where a kind of
+// star is a place on the site it wears that tab's colour: disciplines open
+// the Work tab (amber), projects are Projects (blue), case studies are
+// Writing (emerald). Git Mind's stack anchors take this page's own violet.
+// Everything else is neutral starlight. This overrides the tint in the data.
+const TYPE_TINT: Record<string, string> = {
+  discipline: "#F5A524",
+  project: "#5B8DEF",
+  post: "#34D399",
+  category: "#A78BFA",
+  repo: "#DCE1EA",
+  org: "#F5F5F7",
+  tech: "#8E96A6",
+  language: "#8E96A6",
+};
 const LEGEND: Record<string, string[]> = {
   portfolio: ["discipline", "project", "tech", "post"],
   repo: ["category", "repo", "language"],
@@ -102,6 +117,7 @@ export function mountMind() {
 
   const graphs: RawGraph[] = JSON.parse(dataEl.textContent || "[]");
   if (!graphs.length) return;
+  for (const g of graphs) for (const n of g.nodes) n.color = TYPE_TINT[n.type] ?? n.color;
   const byKey = new Map(graphs.map((g) => [g.key, g]));
 
   const subEl = panel.querySelector("[data-mind-sub]") as HTMLElement;
@@ -265,13 +281,13 @@ export function mountMind() {
     if (showLabels) {
       ctx!.textAlign = "center";
       ctx!.textBaseline = "middle";
-      ctx!.font = '600 10.5px "SF Mono", ui-monospace, Menlo, Consolas, monospace';
+      ctx!.font = '500 12px Inter, ui-sans-serif, system-ui, sans-serif';
       for (const ax of AXES) {
         const e = projXYZ(ax.at[0] * ext, ax.at[1] * ext, ax.at[2] * ext);
         ctx!.fillStyle = `rgba(245,245,247,${0.36 * fade})`;
         ctx!.shadowColor = "rgba(0,0,0,0.8)";
         ctx!.shadowBlur = 6;
-        ctx!.fillText(ax.label.toUpperCase(), e.px, e.py);
+        ctx!.fillText(ax.label, e.px, e.py);
         ctx!.shadowBlur = 0;
       }
     }
@@ -352,7 +368,7 @@ export function mountMind() {
       const lop = focus ? 1 : bright ? 0.92 : labelOn * 0.7;
       if (lop > 0.05 && !(dim && !focus) && R > 1.2) {
         const size = clamp(11 + R * 0.16, 10.5, 16);
-        ctx!.font = `${focus || bright ? 600 : 500} ${size}px -apple-system, "SF Pro Display", Inter, sans-serif`;
+        ctx!.font = `${focus || bright ? 600 : 500} ${size}px Inter, -apple-system, "SF Pro Display", sans-serif`;
         ctx!.fillStyle = hexA("#f5f5f7", lop * op * 1.1);
         ctx!.shadowColor = "rgba(0,0,0,0.9)";
         ctx!.shadowBlur = 9;

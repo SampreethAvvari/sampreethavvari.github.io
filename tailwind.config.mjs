@@ -26,14 +26,13 @@ export default {
 				'acc-amber':   '#F5A524',
 				// Filmmaking gets its own cinematic crimson, distinct from the four
 				// engineering-discipline accents. The 5th colour out of the prism.
-				'acc-film':    '#5B8DEF',
+				'acc-film':    '#F43F5E',
 			},
+			// Inter everywhere, the Hybridge rule. Mono and display point at it
+			// too; code blocks keep their own monospace in post-article.css.
 			fontFamily: {
-				display: [
-					'-apple-system', 'BlinkMacSystemFont', '"SF Pro Display"',
-					'"SF Pro Text"', 'Inter', '"Segoe UI"', 'Roboto',
-					'"Helvetica Neue"', 'Helvetica', 'Arial', 'sans-serif',
-				],
+				sans: ['Inter', 'ui-sans-serif', 'system-ui', '-apple-system', '"Segoe UI"', 'sans-serif'],
+				display: ['Inter', 'ui-sans-serif', 'system-ui', '-apple-system', '"Segoe UI"', 'sans-serif'],
 			},
 		},
 	},

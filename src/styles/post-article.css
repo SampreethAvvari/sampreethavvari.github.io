@@ -1,816 +1,553 @@
-/* Blog article layout, moved out of global.css so only post pages ship it.
-   Imported by src/layouts/PostLayout.astro. */
+/* ===========================================================================
+   The article: every blog post. Imported by src/layouts/PostLayout.astro so
+   only post pages download it. Built on the tokens in system.css.
 
-/* ───────────────────────────────────────────────────────────────────
-   BLOG POST — Apple-spec article layout
-   ─────────────────────────────────────────────────────────────────── */
+   Reading comes first: Inter at 17 to 18px, line height 1.7, a measure of
+   about 68 characters, quiet ink for the body and full ink for headings.
+   The writing colour (emerald, var(--tone)) shows up only as a thin accent:
+   the progress bar, the back link, the active contents entry, a short rule
+   on a number, the edge of a quote.
+   =========================================================================== */
 
-.post-article { color: theme(colors.text); }
-html.dark .post-article { color: theme(colors.dk-text); }
+.post {
+  --read: rgba(245, 245, 247, 0.84);
+  --mono: ui-monospace, "SF Mono", "JetBrains Mono", "Cascadia Code", Menlo, Consolas, monospace;
+  position: relative;
+  /* Above the comets BaseLayout scatters behind the page, so a passing
+     comet never crosses the text. */
+  z-index: 1;
+  color: var(--ink);
+}
 
-/* Reading progress bar */
+/* Reading progress, a hairline of the writing colour along the very top. */
 .post-progress {
   position: fixed;
   top: 0;
   left: 0;
-  height: 3px;
-  width: 0;
-  background: linear-gradient(90deg, #5B8DEF, #22D3EE, #A78BFA);
-  z-index: 60;
-  transition: width 0.1s linear;
+  right: 0;
+  height: 2px;
+  z-index: 70;
+  background: var(--tone);
+  box-shadow: 0 0 10px rgba(var(--tone-rgb), 0.55);
+  transform: scaleX(0);
+  transform-origin: 0 50%;
   pointer-events: none;
 }
 
-/* Hero — atmospheric, cinematic */
-.post-hero {
-  position: relative;
-  padding-top: 7rem;
-  padding-bottom: 2.5rem;
-  overflow: hidden;
-}
-.post-hero-atmos {
-  position: absolute;
-  inset: -5%;
-  background:
-    radial-gradient(circle at 20% 30%, rgba(91,141,239,0.22) 0%, rgba(91,141,239,0.11) 38%, rgba(91,141,239,0) 74%),
-    radial-gradient(circle at 80% 70%, rgba(167,139,250,0.18) 0%, rgba(167,139,250,0.09) 40%, rgba(167,139,250,0) 75%),
-    radial-gradient(circle at 50% 100%, rgba(34,211,238,0.14) 0%, rgba(34,211,238,0.07) 42%, rgba(34,211,238,0) 76%);
-  z-index: 0;
-  pointer-events: none;
-  animation: atmosDrift 22s ease-in-out infinite;
-  will-change: transform;
-  transform: translateZ(0);
-}
-@media (prefers-reduced-motion: reduce) {
-  .post-hero-atmos { animation: none; will-change: auto; }
-}
-
-.post-backlink {
-  font-size: 0.85rem;
-  font-weight: 600;
-  color: theme(colors.secondary);
-  letter-spacing: 0.01em;
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-  margin-bottom: 2.5rem;
-  transition: transform 0.25s ease, color 0.25s ease;
-}
-html.dark .post-backlink { color: theme(colors.dk-secondary); }
-.post-backlink:hover { transform: translateX(-3px); }
-
+/* ---------------------------------------------------------------------------
+   Header
+   --------------------------------------------------------------------------- */
+.post-head { position: relative; padding-bottom: clamp(36px, 4.5vw, 56px); }
+.post-head-inner { max-width: 54rem; }
+.post-head .post-back { font-size: 0.875rem; gap: 7px; }
+.post-head .post-back:hover { transform: none; }
+.post-head .post-back svg { transition: transform 250ms var(--ease-glass); }
+.post-head .post-back:hover svg { transform: translateX(-3px); }
 .post-meta {
   display: flex;
-  align-items: center;
-  gap: 0.85rem;
   flex-wrap: wrap;
-  margin-bottom: 1.75rem;
-}
-.post-date {
-  font-size: 0.8rem;
-  font-variant-numeric: tabular-nums;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
-  color: theme(colors.text);
-  opacity: 0.55;
-  font-weight: 600;
-}
-html.dark .post-date { color: theme(colors.dk-text); }
-
-.post-tag {
-  font-size: 0.7rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.18em;
-  padding: 0.35rem 0.9rem;
-  border-radius: 9999px;
-  border: 1px solid currentColor;
-}
-.post-tag-blue    { color: #5B8DEF; background: rgba(91,141,239,0.10); }
-.post-tag-cyan    { color: #22D3EE; background: rgba(34,211,238,0.10); }
-.post-tag-violet  { color: #A78BFA; background: rgba(167,139,250,0.10); }
-.post-tag-emerald { color: #34D399; background: rgba(52,211,153,0.10); }
-.post-tag-amber   { color: #F5A524; background: rgba(245,165,36,0.10); }
-.post-tag-rose    { color: #FB7185; background: rgba(251,113,133,0.10); }
-.post-tag-slate   { color: #94A3B8; background: rgba(148,163,184,0.10); }
-.post-tag-film    { color: #F43F5E; background: rgba(244,63,94,0.12); }
-
-.post-title {
-  font-size: clamp(2.25rem, 5.4vw, 4.5rem);
-  line-height: 1.04;
-  letter-spacing: -0.028em;
-  font-weight: 700;
-  margin-bottom: 1.5rem;
-  color: theme(colors.text);
-}
-html.dark .post-title { color: theme(colors.dk-text); }
-
-.post-lede {
-  font-size: clamp(1.1rem, 1.6vw, 1.4rem);
-  line-height: 1.5;
-  color: theme(colors.text);
-  opacity: 0.7;
-  max-width: 56ch;
-  font-weight: 400;
-}
-html.dark .post-lede { color: theme(colors.dk-text); opacity: 0.75; }
-
-/* Cover image — rounded, soft shadow halo */
-.post-cover {
-  width: 100%;
-  aspect-ratio: 16 / 8;
-  object-fit: cover;
-  border-radius: 1.5rem;
-  box-shadow:
-    0 30px 60px -30px rgba(91,141,239,0.45),
-    0 0 0 1px rgba(91,141,239,0.12);
-}
-
-.post-stats-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 0.85rem;
-}
-
-/* Gradient stat callouts */
-.stat-callout {
-  border-radius: 1rem;
-  padding: 1.4rem 1.5rem;
-  border: 1px solid;
-  position: relative;
-  overflow: hidden;
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
-}
-.stat-callout:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 14px 30px -14px currentColor;
-}
-.stat-callout .stat-value {
-  font-size: clamp(1.5rem, 3vw, 2.25rem);
-  font-weight: 700;
-  letter-spacing: -0.025em;
-  line-height: 1.05;
-  font-variant-numeric: tabular-nums;
-}
-.stat-callout .stat-label {
-  margin-top: 0.45rem;
-  font-size: 0.78rem;
-  opacity: 0.85;
-  line-height: 1.35;
-  color: theme(colors.text);
-  font-weight: 500;
-}
-html.dark .stat-callout .stat-label { color: theme(colors.dk-text); opacity: 0.85; }
-.stat-blue    { background: linear-gradient(135deg, rgba(91,141,239,0.20), rgba(34,211,238,0.10));  border-color: rgba(91,141,239,0.38);  color: #5B8DEF; }
-.stat-cyan    { background: linear-gradient(135deg, rgba(34,211,238,0.20), rgba(91,141,239,0.10));  border-color: rgba(34,211,238,0.38);  color: #22D3EE; }
-.stat-violet  { background: linear-gradient(135deg, rgba(167,139,250,0.20), rgba(91,141,239,0.10)); border-color: rgba(167,139,250,0.38); color: #A78BFA; }
-.stat-emerald { background: linear-gradient(135deg, rgba(52,211,153,0.20), rgba(34,211,238,0.10));  border-color: rgba(52,211,153,0.38);  color: #34D399; }
-.stat-amber   { background: linear-gradient(135deg, rgba(245,165,36,0.20), rgba(220,38,38,0.08));   border-color: rgba(245,165,36,0.38);  color: #F5A524; }
-.stat-film    { background: linear-gradient(135deg, rgba(244,63,94,0.20), rgba(167,139,250,0.08));  border-color: rgba(244,63,94,0.38);  color: #F43F5E; }
-
-/* Inline stat callout inside prose — bigger, but the inline stats grid
-   reins the value font in so 3 callouts in a row don't wrap into 3 lines. */
-.post-prose .stat-callout {
-  margin: 2.75rem 0;
-  padding: 1.85rem 2rem;
-}
-.post-prose .stat-callout .stat-value {
-  font-size: clamp(2rem, 4vw, 3.25rem);
-  margin-bottom: 0.25rem;
-  line-height: 1.05;
-  word-break: keep-all;
-  overflow-wrap: anywhere;
-}
-.post-prose .stat-callout .stat-label {
-  font-size: 0.95rem;
-  margin-top: 0.4rem;
-  opacity: 0.85;
-}
-.post-prose .post-stats-grid {
-  grid-template-columns: repeat(auto-fit, minmax(17rem, 1fr));
-  gap: 0.85rem;
-  margin: 2.5rem 0;
-}
-.post-prose .post-stats-grid .stat-callout {
-  margin: 0;
-  padding: 1rem 1.2rem;
-  min-height: 5.5rem;
-}
-.post-prose .post-stats-grid .stat-callout .stat-value {
-  font-size: 1.25rem;
-  line-height: 1.18;
-  letter-spacing: -0.025em;
-  white-space: nowrap;
-  overflow: visible;
-  text-overflow: clip;
-}
-.post-prose .post-stats-grid .stat-callout .stat-label {
-  font-size: 0.74rem;
-  margin-top: 0.3rem;
-  line-height: 1.35;
-}
-
-/* Hero stats grid (top of the post) — slightly bigger than inline. */
-.post-stats-grid {
-  grid-template-columns: repeat(auto-fit, minmax(17rem, 1fr));
-}
-.post-stats-grid .stat-callout {
-  padding: 1.15rem 1.3rem;
-  min-height: 5.75rem;
-}
-.post-stats-grid .stat-callout .stat-value {
-  font-size: 1.4rem;
-  line-height: 1.15;
-  letter-spacing: -0.025em;
-  white-space: nowrap;
-  overflow: visible;
-}
-.post-stats-grid .stat-callout .stat-label {
-  font-size: 0.78rem;
-  margin-top: 0.35rem;
-  line-height: 1.4;
-}
-
-/* Prose — Apple-article spec: 17-ish px on a calm ~70-char measure, with
-   varied rhythm so the read doesn't feel mechanical. */
-.post-prose {
-  font-size: 1.075rem;
-  line-height: 1.72;
-  color: theme(colors.text);
-  letter-spacing: -0.003em;
-  font-feature-settings: "ss01", "cv11", "kern", "liga", "onum";
-  hyphens: none;
-}
-html.dark .post-prose { color: theme(colors.dk-text); }
-
-.post-prose > * { color: inherit; }
-.post-prose p {
-  color: theme(colors.text);
-  opacity: 0.85;
-  margin: 1.4rem 0;
-}
-html.dark .post-prose p { color: theme(colors.dk-text); opacity: 0.9; }
-
-/* Lede — the very first paragraph reads bigger and looser, like a lede. */
-.post-prose > p:first-of-type {
-  font-size: 1.22rem;
-  line-height: 1.55;
-  opacity: 1;
-  margin-top: 0;
-  font-weight: 450;
-  color: theme(colors.text);
-}
-html.dark .post-prose > p:first-of-type { color: theme(colors.dk-text); }
-
-/* Drop cap on the lede — typeset, not generated. */
-.post-prose > p:first-of-type::first-letter {
-  float: left;
-  font-size: 4.2rem;
-  line-height: 0.92;
-  font-weight: 700;
-  padding: 0.3rem 0.6rem 0 0;
-  margin: 0.2rem 0.15rem 0 -0.05rem;
-  color: theme(colors.secondary);
-  letter-spacing: -0.04em;
-}
-html.dark .post-prose > p:first-of-type::first-letter { color: theme(colors.dk-secondary); }
-
-/* Inline highlight (<mark>) — soft yellow marker, like a real article. */
-.post-prose mark {
-  background: linear-gradient(180deg, transparent 55%, rgba(245, 165, 36, 0.32) 55%);
-  color: inherit;
-  padding: 0 0.1em;
-  font-weight: 500;
-  border-radius: 1px;
-}
-html.dark .post-prose mark {
-  background: linear-gradient(180deg, transparent 55%, rgba(245, 165, 36, 0.40) 55%);
-  color: inherit;
-}
-
-/* Pull-quote — break out of the column on lg+ so the read has rhythm. */
-.post-prose .pull-quote {
-  font-size: clamp(1.4rem, 2.6vw, 1.85rem);
-  line-height: 1.35;
-  font-weight: 600;
-  font-style: normal;
-  letter-spacing: -0.022em;
-  color: theme(colors.text);
-  margin: 3rem 0;
-  padding: 0;
-  border: 0;
-  background: none;
-  text-align: left;
-  position: relative;
-}
-.post-prose .pull-quote::before {
-  display: none;
-}
-.post-prose .pull-quote::after {
-  content: "";
-  display: block;
-  width: 3rem;
-  height: 2px;
-  margin-top: 1rem;
-  background: linear-gradient(90deg, #5B8DEF, #22D3EE);
-  border-radius: 2px;
-}
-html.dark .post-prose .pull-quote { color: theme(colors.dk-text); }
-@media (min-width: 1100px) {
-  .post-prose .pull-quote {
-    margin-left: -3rem;
-    margin-right: -3rem;
-    padding: 0 1rem;
-  }
-}
-
-/* Aside — small coloured card for a side note, footnote, or human aside. */
-.post-prose .aside {
-  margin: 2.5rem 0;
-  padding: 1.1rem 1.25rem;
-  border-radius: 0.85rem;
-  background: rgba(91, 141, 239, 0.06);
-  border-left: 3px solid rgba(91, 141, 239, 0.55);
-  font-size: 0.96rem;
-  line-height: 1.6;
-  color: theme(colors.text);
-  opacity: 0.85;
-}
-html.dark .post-prose .aside {
-  background: rgba(91, 141, 239, 0.10);
-  border-left-color: rgba(91, 141, 239, 0.65);
-  color: theme(colors.dk-text);
-  opacity: 0.9;
-}
-.post-prose .aside > *:first-child { margin-top: 0; }
-.post-prose .aside > *:last-child { margin-bottom: 0; }
-.post-prose .aside-amber {
-  background: rgba(245, 165, 36, 0.08);
-  border-left-color: rgba(245, 165, 36, 0.60);
-}
-html.dark .post-prose .aside-amber {
-  background: rgba(245, 165, 36, 0.12);
-  border-left-color: rgba(245, 165, 36, 0.70);
-}
-.post-prose .aside-emerald {
-  background: rgba(52, 211, 153, 0.08);
-  border-left-color: rgba(52, 211, 153, 0.60);
-}
-html.dark .post-prose .aside-emerald {
-  background: rgba(52, 211, 153, 0.12);
-  border-left-color: rgba(52, 211, 153, 0.70);
-}
-
-.post-prose strong {
-  color: theme(colors.text);
-  font-weight: 600;
-  opacity: 1;
-}
-html.dark .post-prose strong { color: theme(colors.dk-text); }
-
-.post-prose em {
-  font-style: italic;
-  color: theme(colors.secondary);
-}
-html.dark .post-prose em { color: theme(colors.dk-secondary); }
-
-.post-prose h2 {
-  font-size: clamp(1.85rem, 3.2vw, 2.5rem);
-  letter-spacing: -0.024em;
-  line-height: 1.18;
-  font-weight: 700;
-  margin-top: 4.5rem;
-  margin-bottom: 1.25rem;
-  position: relative;
-  color: theme(colors.text);
-}
-/* Subtler than a hard vertical bar — a typeset chapter number under the
-   heading instead, drawn with a counter so it self-numbers. */
-.post-prose {
-  counter-reset: h2-counter;
-}
-.post-prose h2 {
-  counter-increment: h2-counter;
-}
-.post-prose h2::before {
-  content: counter(h2-counter, decimal-leading-zero);
-  display: block;
-  font-size: 0.7rem;
-  letter-spacing: 0.22em;
-  font-weight: 700;
-  color: theme(colors.secondary);
-  margin-bottom: 0.5rem;
-  text-transform: uppercase;
-  opacity: 0.85;
-}
-html.dark .post-prose h2 { color: theme(colors.dk-text); }
-html.dark .post-prose h2::before { color: theme(colors.dk-secondary); }
-
-/* h3 is a "side heading" — tracked uppercase label in the section accent,
-   distinct from the chapter-style h2 above it. Reads as a beat, not a slab. */
-.post-prose h3 {
-  font-size: 0.78rem;
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
-  font-weight: 700;
-  color: theme(colors.secondary);
-  margin-top: 2.6rem;
-  margin-bottom: 0.85rem;
-  display: inline-flex;
   align-items: center;
-  gap: 0.55rem;
+  gap: 8px 10px;
+  margin-top: 28px;
 }
-.post-prose h3::before {
-  content: "";
-  width: 1.2rem;
-  height: 1px;
-  background: theme(colors.secondary);
-  display: inline-block;
-  opacity: 0.55;
+.post-meta .post-badge { margin-left: 4px; }
+.post-title {
+  margin-top: 18px;
+  font-size: clamp(2.125rem, 4.6vw, 3.625rem);
+  line-height: 1.05;
+  letter-spacing: -0.036em;
+  font-weight: 600;
+  text-wrap: balance;
+  color: var(--ink);
 }
-html.dark .post-prose h3 { color: theme(colors.dk-secondary); }
-html.dark .post-prose h3::before { background: theme(colors.dk-secondary); }
+.post-title-long {
+  font-size: clamp(1.875rem, 3.7vw, 2.875rem);
+  line-height: 1.08;
+  letter-spacing: -0.032em;
+}
+.post-lede { margin-top: 22px; max-width: 44rem; }
+.post-actions { margin-top: 28px; display: flex; flex-wrap: wrap; gap: 12px; }
 
-/* ───── Post body grid + side TOC ─────────────────────────────── */
-.post-body-grid {
+/* Cover, in a rounded frame. */
+.post-cover-frame {
+  margin: 0;
+  overflow: hidden;
+  aspect-ratio: 2 / 1;
+  border-radius: 20px;
+  background: #07080b;
+  border: 1px solid var(--line);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.06),
+    0 40px 80px -50px rgba(0, 0, 0, 1);
+}
+.post-cover-frame img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+@media (max-width: 639px) {
+  .post-cover-frame { aspect-ratio: 16 / 9; border-radius: 16px; }
+}
+
+/* The post's numbers, one solid tile each. */
+.post-stats {
+  list-style: none;
+  margin: 16px 0 0;
+  padding: 0;
   display: grid;
+  gap: 10px;
   grid-template-columns: 1fr;
-  gap: 2rem;
 }
-.post-body { min-width: 0; }
-.post-body .post-prose { max-width: 44rem; margin: 0 auto; }
+.post-stat { padding: 16px 18px 18px; }
+.post-stat::before,
+.post-prose .stat-callout::before {
+  content: "";
+  display: block;
+  width: 20px;
+  height: 2px;
+  margin-bottom: 18px;
+  border-radius: 2px;
+  background: var(--tone);
+  opacity: 0.85;
+}
+.post-stat::before { margin-bottom: 12px; }
+.post-stat .stat-num {
+  font-size: 1.375rem;
+  line-height: 1.1;
+  text-wrap: balance;
+}
+.post-stat .stat-cap { margin-top: 6px; max-width: 34ch; }
+@media (min-width: 720px) {
+  .post-stats { grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr)); gap: 20px; margin-top: 20px; }
+  .post-stat { padding: 22px 24px 24px; }
+  .post-stat::before { margin-bottom: 18px; }
+  .post-stat .stat-num { font-size: clamp(1.5rem, 2.3vw, 1.875rem); }
+  .post-stat .stat-cap { margin-top: 8px; }
+}
+
+/* ---------------------------------------------------------------------------
+   Body: the article on the left edge of the page, its contents on the right.
+   --------------------------------------------------------------------------- */
+.post-main { margin-top: clamp(48px, 6vw, 80px); }
+.post-grid { display: grid; grid-template-columns: minmax(0, 1fr); }
 .post-toc-wrap { display: none; }
-
-@media (min-width: 1024px) {
-  .post-body-grid {
-    grid-template-columns: 14rem minmax(0, 1fr);
-    gap: 3rem;
-  }
-  .post-toc-wrap {
-    display: block;
-    position: sticky;
-    top: 7rem;
-    align-self: start;
-    max-height: calc(100vh - 9rem);
-    overflow-y: auto;
-    scrollbar-width: thin;
-  }
-  .post-body .post-prose {
-    max-width: 44rem;
-    margin: 0;
-  }
+@media (min-width: 1100px) {
+  .post-grid.has-toc { grid-template-columns: minmax(0, 1fr) 15rem; gap: clamp(48px, 5vw, 80px); }
+  .post-toc-wrap { display: block; }
 }
-@media (min-width: 1280px) {
-  .post-body-grid {
-    grid-template-columns: 15rem minmax(0, 1fr) 6rem;
-  }
+.post-toc {
+  position: sticky;
+  top: 104px;
+  max-height: calc(100vh - 140px);
+  overflow-y: auto;
+  scrollbar-width: none;
 }
-
-.post-toc-label {
-  font-size: 0.66rem;
-  letter-spacing: 0.22em;
-  text-transform: uppercase;
-  font-weight: 700;
-  color: theme(colors.text);
-  opacity: 0.5;
-  margin: 0 0 1rem;
-}
-html.dark .post-toc-label { color: theme(colors.dk-text); opacity: 0.55; }
-
+.post-toc-label { margin: 0 0 12px; }
 .post-toc ol {
   list-style: none;
-  padding: 0;
   margin: 0;
-  counter-reset: toc;
-}
-.post-toc li {
-  position: relative;
-  counter-increment: toc;
-  padding: 0.45rem 0 0.45rem 1.85rem;
-  border-left: 2px solid transparent;
-  color: theme(colors.text);
-  opacity: 0.55;
-  font-size: 0.86rem;
-  line-height: 1.4;
-  transition: opacity 0.25s ease, color 0.25s ease, border-color 0.25s ease;
-}
-.post-toc li::before {
-  content: counter(toc, decimal-leading-zero);
-  position: absolute;
-  left: 0.6rem;
-  top: 0.45rem;
-  font-size: 0.6rem;
-  letter-spacing: 0.12em;
-  font-weight: 700;
-  opacity: 0.55;
-  font-variant-numeric: tabular-nums;
+  padding: 0;
+  border-left: 1px solid var(--line);
 }
 .post-toc a {
-  color: inherit;
+  display: block;
+  margin-left: -1px;
+  padding: 6px 0 6px 14px;
+  border-left: 1px solid transparent;
+  font-size: 0.8125rem;
+  line-height: 1.45;
+  color: var(--ink-faint);
   text-decoration: none;
-  background: none !important;
-  font-weight: 500;
+  transition: color 150ms var(--ease-glass), border-color 150ms var(--ease-glass);
 }
-html.dark .post-toc li { color: theme(colors.dk-text); }
-.post-toc li:hover {
-  opacity: 1;
-  color: theme(colors.secondary);
+.post-toc a:hover { color: var(--ink-soft); transform: none; }
+.post-toc a.is-active { color: var(--ink); border-left-color: var(--tone); }
+
+/* ---------------------------------------------------------------------------
+   Prose
+   --------------------------------------------------------------------------- */
+.post-prose {
+  min-width: 0;
+  max-width: 68ch;
+  font-size: 1.0625rem;
+  line-height: 1.7;
+  letter-spacing: -0.006em;
+  color: var(--read);
+  text-wrap: pretty;
 }
-html.dark .post-toc li:hover { color: theme(colors.dk-secondary); }
-.post-toc li.toc-active {
-  opacity: 1;
-  color: theme(colors.secondary);
-  border-left-color: theme(colors.secondary);
+@media (min-width: 768px) { .post-prose { font-size: 1.125rem; } }
+.post-prose > :first-child { margin-top: 0; }
+.post-prose > :last-child { margin-bottom: 0; }
+
+.post-prose p {
+  margin: 0 0 1.3em;
+  font-size: inherit;
+  line-height: inherit;
+  color: inherit;
+}
+
+.post-prose h2,
+.post-prose h3,
+.post-prose h4 {
+  color: var(--ink);
   font-weight: 600;
+  text-wrap: balance;
+  scroll-margin-top: 104px;
 }
-html.dark .post-toc li.toc-active {
-  color: theme(colors.dk-secondary);
-  border-left-color: theme(colors.dk-secondary);
+.post-prose h2 {
+  margin: 2.5em 0 0.65em;
+  font-size: clamp(1.5rem, 2.3vw, 1.875rem);
+  line-height: 1.18;
+  letter-spacing: -0.028em;
+}
+.post-prose h3 {
+  margin: 2em 0 0.5em;
+  font-size: clamp(1.1875rem, 1.6vw, 1.3125rem);
+  line-height: 1.3;
+  letter-spacing: -0.02em;
+}
+.post-prose h4 {
+  margin: 1.8em 0 0.4em;
+  font-size: 1.0625rem;
+  line-height: 1.4;
+  letter-spacing: -0.012em;
+}
+.post-prose h2 + h3 { margin-top: 1.1em; }
+
+.post-prose strong { color: var(--ink); font-weight: 600; }
+.post-prose em { font-style: italic; color: inherit; }
+.post-prose mark {
+  color: var(--ink);
+  background: rgba(var(--tone-rgb), 0.2);
+  padding: 0 0.15em;
+  border-radius: 3px;
 }
 
-/* Blockquote — typeset, not boxed. A real article uses a clean indent + rule. */
-.post-prose blockquote {
-  position: relative;
-  margin: 2.5rem 0 2.5rem 1rem;
-  padding: 0.4rem 0 0.4rem 1.5rem;
-  font-size: 1.18rem;
-  font-style: italic;
-  font-weight: 450;
-  line-height: 1.55;
-  color: theme(colors.text);
-  border-left: 3px solid theme(colors.secondary);
-  background: none;
-  border-radius: 0;
-  opacity: 0.92;
-}
-html.dark .post-prose blockquote {
-  color: theme(colors.dk-text);
-  border-left-color: theme(colors.dk-secondary);
-}
-.post-prose blockquote::before { content: none; }
-.post-prose blockquote p {
-  margin: 0.3rem 0;
-  opacity: 1;
-  color: inherit;
-}
-
-/* Inline code — quiet, not a pill. */
-.post-prose :not(pre) > code {
-  background: rgba(91,141,239,0.08);
-  color: theme(colors.secondary);
-  padding: 0.08em 0.32em;
-  border-radius: 0.25rem;
-  font-size: 0.88em;
-  font-weight: 500;
-  font-family: "SF Mono", "JetBrains Mono", Menlo, Monaco, Consolas, monospace;
-}
-html.dark .post-prose :not(pre) > code {
-  background: rgba(91,141,239,0.14);
-  color: theme(colors.dk-secondary);
-}
-.post-prose :not(pre) > code::before,
-.post-prose :not(pre) > code::after { content: ""; }
-
-/* Code blocks — quieter, no gradient bar, scroll inside a capped height
-   so prose breathes around them. */
-.post-prose pre {
-  margin: 2rem 0;
-  padding: 1rem 1.2rem;
-  border-radius: 0.75rem;
-  background: #0E1422 !important;
-  border: 1px solid rgba(91,141,239,0.16);
-  overflow: auto;
-  max-height: 18rem;
-  font-size: 0.8rem;
-  line-height: 1.55;
-  position: relative;
-  scrollbar-width: thin;
-  scrollbar-color: rgba(91,141,239,0.4) transparent;
-}
-.post-prose pre code {
-  color: rgba(229,231,235,0.92);
-  background: transparent;
-  border: 0;
-  padding: 0;
-  font-family: "SF Mono", "JetBrains Mono", Menlo, Monaco, Consolas, monospace;
-}
-
-/* Tables — zebra stripes, accent header */
-.post-prose table {
-  width: 100%;
-  margin: 2.25rem 0;
-  border-collapse: separate;
-  border-spacing: 0;
-  border-radius: 0.9rem;
-  overflow: hidden;
-  border: 1px solid rgba(91,141,239,0.22);
-  font-size: 0.95rem;
-}
-.post-prose thead { background: rgba(91,141,239,0.12); }
-.post-prose thead th {
-  text-align: left;
-  font-weight: 700;
-  color: theme(colors.secondary);
-  padding: 0.85rem 1.1rem;
-  letter-spacing: 0.01em;
-  font-size: 0.88rem;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-}
-html.dark .post-prose thead { background: rgba(91,141,239,0.18); }
-html.dark .post-prose thead th { color: theme(colors.dk-secondary); }
-.post-prose tbody td {
-  padding: 0.8rem 1.1rem;
-  border-top: 1px solid rgba(91,141,239,0.10);
-  color: theme(colors.text);
-  opacity: 0.9;
-  vertical-align: top;
-}
-html.dark .post-prose tbody td { color: theme(colors.dk-text); }
-.post-prose tbody tr:nth-child(odd) td { background: rgba(91,141,239,0.04); }
-html.dark .post-prose tbody tr:nth-child(odd) td { background: rgba(91,141,239,0.08); }
-
-/* Horizontal rule — gradient sweep */
-.post-prose hr {
-  height: 1px;
-  border: 0;
-  margin: 4.5rem 0;
-  background: linear-gradient(90deg, transparent, theme(colors.secondary), transparent);
-  opacity: 0.55;
-}
-html.dark .post-prose hr {
-  background: linear-gradient(90deg, transparent, theme(colors.dk-secondary), transparent);
-  opacity: 0.6;
-}
-
-/* Links — animated underline */
+/* Links: ink with an underline, never a colour of their own. */
 .post-prose a {
-  color: theme(colors.secondary);
-  text-decoration: none;
-  background-image: linear-gradient(theme(colors.secondary), theme(colors.secondary));
-  background-position: 0 100%;
-  background-size: 100% 1px;
-  background-repeat: no-repeat;
-  transition: background-size 0.3s ease, color 0.3s ease;
+  color: var(--ink);
   font-weight: 500;
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.2em;
+  text-decoration-color: rgba(245, 245, 247, 0.32);
+  transition: text-decoration-color 150ms var(--ease-glass);
 }
-.post-prose a:hover { background-size: 100% 2px; }
-html.dark .post-prose a {
-  color: theme(colors.dk-secondary);
-  background-image: linear-gradient(theme(colors.dk-secondary), theme(colors.dk-secondary));
-}
+.post-prose a:hover { text-decoration-color: var(--ink); }
 
 /* Lists */
 .post-prose ul,
-.post-prose ol {
-  padding-left: 1.6rem;
-  margin: 1.4rem 0;
-}
-.post-prose ul li,
-.post-prose ol li {
-  margin: 0.55rem 0;
-  color: theme(colors.text);
-  opacity: 0.88;
-}
-html.dark .post-prose ul li,
-html.dark .post-prose ol li { color: theme(colors.dk-text); }
-.post-prose ul li::marker {
-  color: theme(colors.secondary);
-}
-.post-prose ol li::marker {
-  color: theme(colors.secondary);
-  font-weight: 700;
-}
-html.dark .post-prose ul li::marker,
-html.dark .post-prose ol li::marker { color: theme(colors.dk-secondary); }
+.post-prose ol { margin: 0 0 1.3em; padding-left: 1.4em; }
+.post-prose ul { list-style: disc; }
+.post-prose ol { list-style: decimal; }
+.post-prose li { margin: 0.45em 0; padding-left: 0.3em; }
+.post-prose li::marker { color: var(--ink-faint); }
+.post-prose ol > li::marker { font-variant-numeric: tabular-nums; font-weight: 500; }
+.post-prose li > p { margin: 0.45em 0; }
+.post-prose li > ul,
+.post-prose li > ol { margin: 0.45em 0; }
 
-/* Images inside prose */
+/* Quotes: an indent and a thin rule in the writing colour. */
+.post-prose blockquote {
+  margin: 1.9em 0;
+  padding: 0.15em 0 0.15em 1.2em;
+  border-left: 2px solid rgba(var(--tone-rgb), 0.6);
+  color: var(--ink);
+  font-style: normal;
+}
+.post-prose blockquote p { margin: 0.5em 0; }
+.post-prose blockquote > :first-child { margin-top: 0; }
+.post-prose blockquote > :last-child { margin-bottom: 0; }
+.post-prose blockquote.pull-quote {
+  margin: 2.2em 0;
+  padding: 0;
+  border: 0;
+  font-size: clamp(1.375rem, 2.4vw, 1.75rem);
+  line-height: 1.3;
+  letter-spacing: -0.026em;
+  font-weight: 600;
+  text-wrap: balance;
+}
+.post-prose blockquote.pull-quote::after {
+  content: "";
+  display: block;
+  width: 32px;
+  height: 2px;
+  margin-top: 0.75em;
+  border-radius: 2px;
+  background: var(--tone);
+}
+
+.post-prose hr {
+  height: 1px;
+  margin: 3em 0;
+  border: 0;
+  background: var(--line-strong);
+}
+
 .post-prose img {
-  border-radius: 1rem;
-  margin: 2rem 0;
-  box-shadow: 0 20px 40px -20px rgba(0,0,0,0.4);
+  display: block;
+  max-width: 100%;
+  height: auto;
+  margin: 1.8em 0;
+  border-radius: 14px;
+  border: 1px solid var(--line);
+}
+.post-prose figure { margin: 1.8em 0; }
+.post-prose figure img { margin: 0; }
+.post-prose figcaption {
+  margin-top: 10px;
+  font-size: 0.8125rem;
+  line-height: 1.45;
+  color: var(--ink-faint);
 }
 
-/* Author card */
-.post-author {
-  display: flex;
-  gap: 1.25rem;
-  padding: 1.85rem;
-  border-radius: 1.25rem;
-  background: linear-gradient(135deg, rgba(91,141,239,0.06), rgba(34,211,238,0.03));
-  border: 1px solid rgba(91,141,239,0.18);
-  align-items: flex-start;
+/* Code. Inline: a quiet chip. Blocks: a dark inset with a hairline that
+   scrolls sideways inside itself, never the page. */
+.post-prose code {
+  font-family: var(--mono);
+  /* Code reads as typed: no ligatures, none of Inter's stylistic sets. */
+  font-feature-settings: "liga" 0, "calt" 0;
+  font-variant-ligatures: none;
 }
-html.dark .post-author {
-  background: linear-gradient(135deg, rgba(91,141,239,0.10), rgba(34,211,238,0.04));
-  border-color: rgba(91,141,239,0.22);
+.post-prose :not(pre) > code {
+  font-size: 0.86em;
+  font-weight: 450;
+  padding: 0.1em 0.38em;
+  border-radius: 6px;
+  color: var(--ink);
+  background: var(--wash-strong);
+  border: 1px solid var(--line);
+  overflow-wrap: anywhere;
 }
-.post-author-pic {
-  width: 4rem;
-  height: 4rem;
+.post-prose :not(pre) > code::before,
+.post-prose :not(pre) > code::after { content: none; }
+.post-prose pre {
+  margin: 1.8em 0;
+  padding: 18px 20px;
+  max-width: 100%;
+  overflow-x: auto;
+  border-radius: 14px;
+  background: #07080b !important;
+  border: 1px solid var(--line);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  font-size: 0.84375rem;
+  line-height: 1.7;
+  letter-spacing: 0;
+  tab-size: 2;
+  text-wrap: nowrap;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.16) transparent;
+}
+@media (min-width: 768px) { .post-prose pre { font-size: 0.875rem; padding: 20px 24px; } }
+.post-prose pre code {
+  display: block;
+  width: max-content;
+  min-width: 100%;
+  font-size: inherit;
+  font-weight: 400;
+  line-height: inherit;
+  white-space: pre;
+  color: rgba(229, 231, 235, 0.92);
+  background: none;
+  border: 0;
+  padding: 0;
+}
+.post-prose pre:focus-visible { outline: none; box-shadow: 0 0 0 3px rgba(var(--tone-rgb), 0.35); }
+
+/* Tables: hairlines, a faint header wash and tabular numbers, inside a frame
+   that scrolls on its own when the table is wider than the column. The
+   frame is added by PostLayout's script; the first rule covers no script. */
+.post-prose > table { display: block; max-width: 100%; overflow-x: auto; }
+.post-table {
+  margin: 1.8em 0;
+  max-width: 100%;
+  overflow-x: auto;
+  border-radius: 14px;
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.012);
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.16) transparent;
+}
+.post-table:focus-visible { outline: none; box-shadow: 0 0 0 3px rgba(var(--tone-rgb), 0.35); }
+.post-prose table {
+  width: 100%;
+  margin: 0;
+  border-collapse: collapse;
+  font-size: 0.9375rem;
+  line-height: 1.5;
+  font-variant-numeric: tabular-nums;
+}
+.post-prose > table { margin: 1.8em 0; }
+.post-prose th,
+.post-prose td {
+  padding: 11px 16px;
+  text-align: left;
+  vertical-align: top;
+}
+.post-prose thead th {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--ink);
+  background: var(--wash);
+  border-bottom: 1px solid var(--line-strong);
+}
+.post-prose td { color: var(--read); border-top: 1px solid var(--line); }
+.post-prose tbody tr:first-child td { border-top: 0; }
+.post-prose td code { white-space: nowrap; }
+/* On a phone each column keeps a readable width, and columns that hold
+   sentences (marked .is-wide by PostLayout's script) get more room. Wider
+   than the screen means the table scrolls inside its frame. */
+@media (max-width: 639px) {
+  .post-prose th,
+  .post-prose td { min-width: 7.5rem; padding: 10px 14px; }
+  .post-prose th.is-wide,
+  .post-prose td.is-wide { min-width: 14rem; }
+}
+
+/* The boxes posts write in their own HTML. An aside is a quiet inset; every
+   stat callout reads as one calm number card, whatever tone it names. */
+.post-prose .aside {
+  margin: 1.9em 0;
+  padding: 20px 22px;
+  border-radius: 16px;
+  background: var(--wash);
+  border: 1px solid var(--line);
+  font-size: 0.9375em;
+  line-height: 1.65;
+  color: rgba(245, 245, 247, 0.78);
+}
+@media (min-width: 640px) { .post-prose .aside { padding: 22px 26px; } }
+.post-prose .aside > :first-child { margin-top: 0; }
+.post-prose .aside > :last-child { margin-bottom: 0; }
+.post-prose .aside p,
+.post-prose .aside ul,
+.post-prose .aside ol { margin-bottom: 0.85em; }
+
+.post-prose .stat-callout {
+  margin: 2em 0;
+  padding: 22px 24px 24px;
+  border-radius: 20px;
+  color: var(--ink);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0.012) 40%),
+    var(--surface-solid);
+  border: 1px solid var(--line);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.06),
+    0 1px 2px rgba(0, 0, 0, 0.5);
+}
+.post-prose .stat-callout .stat-value {
+  font-size: clamp(1.75rem, 3vw, 2.375rem);
+  line-height: 1.08;
+  letter-spacing: -0.035em;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink);
+  text-wrap: balance;
+}
+.post-prose .stat-callout .stat-label {
+  margin-top: 10px;
+  font-size: 0.9375rem;
+  line-height: 1.55;
+  color: var(--ink-soft);
+}
+.post-prose .post-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(11.5rem, 1fr));
+  gap: 12px;
+  margin: 2em 0;
+}
+.post-prose .post-stats-grid .stat-callout { margin: 0; padding: 18px 20px 20px; }
+.post-prose .post-stats-grid .stat-callout::before { margin-bottom: 14px; }
+.post-prose .post-stats-grid .stat-value { font-size: 1.375rem; line-height: 1.15; }
+.post-prose .post-stats-grid .stat-label { margin-top: 8px; font-size: 0.875rem; line-height: 1.5; }
+
+/* ---------------------------------------------------------------------------
+   End of the post: who wrote it and how to reach him, then more writing.
+   --------------------------------------------------------------------------- */
+.post-sign {
+  display: grid;
+  grid-template-columns: 56px minmax(0, 1fr);
+  gap: 18px;
+  align-items: start;
+  max-width: 68ch;
+  margin-top: clamp(56px, 7vw, 88px);
+  padding-top: 32px;
+  border-top: 1px solid var(--line);
+}
+.post-sign .post-sign-pic {
+  display: block;
+  width: 56px;
+  height: 56px;
   border-radius: 9999px;
   object-fit: cover;
-  flex-shrink: 0;
-  border: 2px solid rgba(91,141,239,0.30);
+  border: 1px solid var(--line-strong);
 }
-.post-author-name {
-  font-size: 1.05rem;
-  font-weight: 700;
-  color: theme(colors.text);
-  margin: 0;
-}
-html.dark .post-author-name { color: theme(colors.dk-text); }
-.post-author-role {
-  font-size: 0.85rem;
-  color: theme(colors.secondary);
-  margin: 0.1rem 0 0;
-  font-weight: 600;
-}
-html.dark .post-author-role { color: theme(colors.dk-secondary); }
-.post-author-bio {
-  font-size: 0.92rem;
-  color: theme(colors.text);
-  opacity: 0.72;
-  margin: 0.6rem 0 0.85rem;
-  line-height: 1.55;
-}
-html.dark .post-author-bio { color: theme(colors.dk-text); opacity: 0.78; }
+.post-sign-role { margin-top: 3px; }
+.post-sign-line { margin-top: 12px; max-width: 34rem; }
 
-/* "Next up" footer card */
-.post-next-card {
-  margin-top: 2.5rem;
-  padding: 1.5rem 1.75rem;
-  border-radius: 1.1rem;
-  border: 1px solid rgba(91,141,239,0.20);
-  background: rgba(91,141,239,0.04);
+.post-more { position: relative; z-index: 1; }
+.post-more-head {
   display: flex;
-  align-items: center;
+  flex-wrap: wrap;
+  align-items: baseline;
   justify-content: space-between;
-  gap: 1rem;
-  transition: transform 0.3s ease, border-color 0.3s ease, background 0.3s ease;
+  gap: 12px 24px;
+  margin-bottom: 24px;
 }
-.post-next-card:hover {
-  transform: translateY(-2px);
-  border-color: rgba(91,141,239,0.45);
-  background: rgba(91,141,239,0.08);
+.post-more-title {
+  font-size: clamp(1.5rem, 2.4vw, 2rem);
+  line-height: 1.1;
+  letter-spacing: -0.03em;
+  font-weight: 600;
+  color: var(--ink);
 }
-html.dark .post-next-card {
-  background: rgba(91,141,239,0.08);
-  border-color: rgba(91,141,239,0.25);
+.post-more-grid { display: grid; gap: 16px; grid-template-columns: 1fr; }
+@media (min-width: 720px) { .post-more-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+@media (min-width: 1024px) { .post-more-grid { gap: 20px; } }
+/* .post-more scopes these past a.surface's display: block. */
+.post-more .post-more-card { display: flex; flex-direction: column; }
+.post-more-media { aspect-ratio: 16 / 9; }
+/* On a phone the cards become rows: a small cover beside the title. */
+@media (max-width: 719px) {
+  .post-more .post-more-card {
+    display: grid;
+    grid-template-columns: 104px minmax(0, 1fr);
+    align-items: center;
+    gap: 14px;
+    padding: 12px;
+  }
+  .post-more-card .post-more-media {
+    aspect-ratio: 4 / 3;
+    border-radius: 12px;
+    border: 1px solid var(--line);
+  }
+  .post-more-card .post-more-body { padding: 0 6px 0 0; }
+  .post-more-card .post-more-card-title { font-size: 0.9375rem; margin-top: 4px; }
 }
-html.dark .post-next-card:hover {
-  background: rgba(91,141,239,0.14);
-  border-color: rgba(91,141,239,0.50);
+.post-media-fallback {
+  width: 100%;
+  height: 100%;
+  background:
+    radial-gradient(70% 90% at 20% 10%, rgba(var(--tone-rgb), 0.2), transparent 70%),
+    radial-gradient(60% 80% at 90% 100%, rgba(var(--tone-rgb), 0.09), transparent 70%),
+    #07080b;
+}
+.post-more-body { padding: 18px 20px 22px; }
+.post-more-card-title {
+  margin-top: 8px;
+  font-size: 1.0625rem;
+  line-height: 1.32;
+  letter-spacing: -0.016em;
+  font-weight: 600;
+  color: var(--ink);
+  text-wrap: balance;
 }
 
-
-/* ───────────────────────────────────────────────────────────────────
-   MOBILE-ONLY BLOG READING REFINEMENTS (≤ 640 px)
-   Desktop rules above are intentionally untouched.
-   ─────────────────────────────────────────────────────────────────── */
-@media (max-width: 640px) {
-  /* 1. Wide tables: scroll horizontally instead of being clipped by
-        `overflow-x: hidden` on html/body. */
-  .post-prose table {
-    display: block;
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-    white-space: nowrap;
-  }
-
-  /* 2. Drop cap: 4.2rem is oversized on a ~375 px screen; scale it down
-        and tighten the surrounding spacing so text wraps cleanly. */
-  .post-prose > p:first-of-type::first-letter {
-    font-size: 3.1rem;
-    padding: 0.2rem 0.45rem 0 0;
-    margin: 0.15rem 0.1rem 0 -0.03rem;
-  }
-
-  /* 3. Vertical rhythm: halve the generous desktop gaps for h2 and hr so
-        the post doesn't feel sparsely padded on a phone. */
-  .post-prose h2 {
-    margin-top: 2.75rem;
-  }
-  .post-prose hr {
-    margin: 3rem 0;
-  }
-
-  /* 4. Post detail header: trim the desktop hero padding, scale the title
-        down with a balanced wrap, and tighten the meta gaps so the lede
-        arrives sooner on a phone. */
-  .post-hero {
-    padding-top: 5.25rem;
-    padding-bottom: 1.75rem;
-  }
-  .post-backlink { margin-bottom: 1.5rem; }
-  .post-meta { margin-bottom: 1.15rem; }
-  .post-title {
-    font-size: clamp(1.95rem, 8vw, 2.6rem);
-    line-height: 1.1;
-    margin-bottom: 1.1rem;
-    text-wrap: balance;
-  }
-
-  /* 5. Posts index hero: same calmer top band as the rest of the phone UI. */
-  .posts-index-hero { padding: 4.75rem 0 2.25rem; }
+@media (prefers-reduced-motion: reduce) {
+  .post-toc a, .post-prose a, .post-head .post-back svg { transition: none; }
 }

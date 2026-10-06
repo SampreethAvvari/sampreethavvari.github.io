@@ -27,7 +27,7 @@ export const streamMeta: Record<
   aie: { acronym: "AIE", label: "AI Engineering", accent: "#34D399" },
   mle: { acronym: "MLE", label: "ML Engineering", accent: "#A78BFA" },
   sde: { acronym: "SDE", label: "Software Engineering", accent: "#5B8DEF" },
-  fde: { acronym: "FDE", label: "Forward-Deployed Eng", accent: "#F5A524" },
+  fde: { acronym: "FDE", label: "Forward deployed engineering", accent: "#F5A524" },
 };
 
 export const STREAM_ORDER: Stream[] = ["aie", "mle", "sde", "fde"];

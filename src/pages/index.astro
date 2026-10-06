@@ -1,13 +1,24 @@
 ---
+import fs from "node:fs";
+import path from "node:path";
 import BaseLayout from "../layouts/BaseLayout.astro";
 import { info } from "../data/info";
 import { disciplines } from "../data/disciplines";
-import Contact from "../components/contact_section/Contact";
+import { teaching } from "../data/teaching";
 import Picture from "../components/common/Picture.astro";
 import Icon from "../components/common/Icon.astro";
 import GlassHero from "../components/hero/GlassHero.astro";
 import CareerTimeline from "../components/about_section/CareerTimeline.astro";
 import { readingTime } from "../utils/readingTime";
+
+// A cover only renders when its file exists, so a project whose art is still
+// being made shows a calm panel instead of a broken image.
+// The repo keeps the optimised .avif/.webp siblings, not always the .png.
+const hasPublic = (p?: string) =>
+  !!p &&
+  [p, p.replace(/\.(png|jpe?g)$/i, ".avif"), p.replace(/\.(png|jpe?g)$/i, ".webp")].some((f) =>
+    fs.existsSync(path.join(process.cwd(), "public", f)),
+  );
 
 const allPosts = await Astro.glob("../pages/posts/*.md");
 const latestPosts = allPosts
@@ -19,1029 +30,720 @@ const latestPosts = allPosts
   .slice(0, 4);
 const [featuredPost, ...sidePosts] = latestPosts;
 
-// The four places my work lives. Each card reads the same way: what it is in
-// plain words, a small live-looking panel of the thing itself, and links out.
-// Every row in a panel is a link to that project's write-up.
-const workCards = [
+// The tabs, in nav order. The hero shows them as the colour legend.
+const tabs = [
+  { name: "Projects", href: "#projects", tone: "projects" },
+  { name: "Work", href: "#work", tone: "work" },
+  { name: "Writing", href: "#writing", tone: "writing" },
+  { name: "Film", href: "#film", tone: "film" },
+  { name: "Teaching", href: "#teaching", tone: "teaching" },
+  { name: "Mind", href: "/mind", tone: "mind" },
+];
+
+// Numbers that are already told in full in a post.
+const proof = [
+  { value: "70 hrs", label: "a week handed back to a three person insurance team", href: "/posts/reconciliation" },
+  { value: "$98K", label: "vendor quote replaced by a tool that costs under $50 a month", href: "/posts/cbct-scan-validator" },
+  { value: "400 hrs", label: "a year handed back to our accountant", href: "/posts/accounting-automation" },
+  { value: "1 engineer", label: "from the first interview with the team to the deploy, on every system here", href: "/projects" },
+];
+
+// The projects shown on the landing page, newest flagship first.
+const lead = {
+  title: "Patient Dashboard",
+  line:
+    "Every system at the practice named a patient differently. Now there is one row per patient, every record one click away, read live from the practice's own scheduling system and never written back.",
+  href: "/posts/patient-dashboard",
+  img: "/patient-dashboard.png",
+  meta: "Hybridge Implants · 2026",
+};
+const side = [
   {
-    variant: "jobpilot",
-    accent: "#F5A524",
-    rgb: "245,165,36",
-    eyebrow: "open source \u00b7 live demo",
-    title: ["Fly ", "JobPilot", " yourself."],
-    body:
-      "A robot that hunts for jobs while I sleep. Every hour it finds new postings, " +
-      "scores how well each one fits me, writes a one page resume for the good ones, " +
-      "drafts the email, and watches my inbox for replies. The demo is the real " +
-      "product running on a made up person, so you can click around without signing up.",
-    demo: "https://hi.switchy.io/zIhU",
-    rows: [
-      { score: "96", tone: "#5bd97a", left: "Forward Deployed Engineer", right: "Marrowstone AI" },
-      { score: "94", tone: "#5bd97a", left: "AI Engineer, Applied Models", right: "Osprey Compute" },
-      { score: "91", tone: "#5bd97a", left: "ML Engineer, Risk", right: "Bluewater Ledger" },
-      { score: "88", tone: "#ffb000", left: "AI Engineer, Insights", right: "Driftwood Metrics" },
-    ],
-    links: [
-      { label: "Explore JobPilot", href: "https://hi.switchy.io/zIhU", external: true, primary: true },
-      { label: "How I built it", href: "/posts/jobpilot-v2" },
-    ],
+    title: "Enterprise Search",
+    line: "Company search that cites its sources, or says it does not know.",
+    href: "/posts/enterprise-search",
+    img: "/enterprise-search.png",
   },
   {
-    variant: "hybridge",
-    accent: "#34D399",
-    rgb: "52,211,153",
-    eyebrow: "my day job \u00b7 Hybridge Implants",
-    title: ["The systems I build ", "at work", "."],
-    body:
-      "I am the AI engineer at a dental implant company in New York. I built the " +
-      "search that answers staff questions out of company documents, the tool that " +
-      "scores patient consultations and coaches the team, the model that catches bad " +
-      "CT scans before they reach the design queue, and the app the front desk quotes " +
-      "prices from. All of them are in daily use, so none of them can be handed out. " +
-      "Open any one below to read how it was built.",
-    rows: [
-      { left: "Ask Hybridge", right: "company wide search", tone: "#34D399", href: "/posts/enterprise-search" },
-      { left: "Doc Coach", right: "consultation scoring", tone: "#22D3EE", href: "/posts/clinical-rag" },
-      { left: "Scan Validator", right: "CT scan quality", tone: "#A78BFA", href: "/posts/cbct-scan-validator" },
-      { left: "Treatment Estimator", right: "front desk quoting", tone: "#F5A524", href: "/posts/treatment-estimator" },
-    ],
-    links: [
-      { label: "See the case studies", href: "/work", primary: true },
-      { label: "Start with Enterprise Search", href: "/posts/enterprise-search" },
-    ],
+    title: "Doc Coach",
+    line: "Grades every patient consult against the founder's checklist and coaches the doctor.",
+    href: "/posts/clinical-rag",
+    img: "/doc-coach.png",
+  },
+];
+const row = [
+  {
+    title: "Capacity Planner",
+    line: "Places doctors and assistants across three offices without burning anyone out.",
+    href: "/posts/capacity-planner",
+    img: "/capacity-planner.png",
   },
   {
-    variant: "research",
-    accent: "#A78BFA",
-    rgb: "167,139,250",
-    eyebrow: "NYU \u00b7 machine learning research",
-    title: ["Teaching models what a ", "good answer", " looks like."],
-    body:
-      "At NYU I worked on reward models. That is the part of an AI system that learns " +
-      "which of two answers a person would rather read. I trained Llama and BERT sized " +
-      "models on the university GPUs and compared training methods against each other. " +
-      "The same stretch produced a small image model that won a class contest and a " +
-      "fake news detector built on election tweets.",
-    rows: [
-      { left: "Llama 3.1, RLHF", right: "reward models", tone: "#A78BFA", href: "/posts/llama-rlhf" },
-      { left: "ResNet under 5M", right: "small vision model", tone: "#5B8DEF", href: "/posts/resnet-under-5m" },
-      { left: "Fake news detector", right: "election tweets", tone: "#F43F5E", href: "/posts/fake-news-sentiment" },
-    ],
-    links: [
-      { label: "Read the research notes", href: "/posts/llama-rlhf", primary: true },
-      { label: "All ML work", href: "/work/mle" },
-    ],
+    title: "Scan Validator",
+    line: "Catches bad CT scans before they reach the design team.",
+    href: "/posts/cbct-scan-validator",
+    img: "/cbct-validator.png",
   },
   {
-    variant: "projects",
-    accent: "#5B8DEF",
-    rgb: "91,141,239",
-    eyebrow: "on my own time",
-    title: ["Everything ", "else", " I have built."],
-    body:
-      "Things I made to learn something. An AI filmmaking studio four of us built in a " +
-      "single day at a hackathon, a recommender that handles 22 million records, a loan " +
-      "scoring service where I built all the boring parts on purpose, and the day I " +
-      "caught my own pipeline lying about work it never did.",
-    rows: [
-      { left: "Magic Hour", right: "AI filmmaking", tone: "#F43F5E", href: "/posts/magic-hour" },
-      { left: "Recommender", right: "22M records", tone: "#34D399", href: "/posts/recsys-spark-bigdata" },
-      { left: "Loan Radar", right: "the boring parts", tone: "#F5A524", href: "/posts/loan-radar-mlops" },
-      { left: "Pipeline confession", right: "silent failures", tone: "#5B8DEF", href: "/posts/pipeline-ghosting" },
-    ],
-    links: [
-      { label: "Browse all projects", href: "/projects", primary: true },
-      { label: "The hackathon build", href: "/posts/magic-hour" },
-    ],
+    title: "Reconciliation",
+    line: "Reads three daily exports so the insurance team only reads the exceptions.",
+    href: "/posts/reconciliation",
+    img: "/reconciliation.png",
   },
 ];
 
-// One-line versions of the four disciplines for the tiles.
+const jobRows = [
+  { score: "96", left: "Forward Deployed Engineer", right: "Marrowstone AI" },
+  { score: "94", left: "AI Engineer, Applied Models", right: "Osprey Compute" },
+  { score: "91", left: "ML Engineer, Risk", right: "Bluewater Ledger" },
+  { score: "88", left: "AI Engineer, Insights", right: "Driftwood Metrics" },
+];
+
 const disciplineLines: Record<string, string> = {
-  aie: "RAG, agents, evals, guardrails. Systems that answer honestly or not at all.",
-  mle: "PyTorch, vision, RLHF. Models trained, shrunk, and shipped to real hardware.",
-  fde: "Discovery and enablement, the last mile where software meets people.",
-  sde: "Python, TypeScript, Go. APIs, pipelines, and infra that stay up.",
+  aie: "RAG, agents, evals and guardrails. Systems that answer honestly or not at all.",
+  fde: "Sitting with the people who have the problem, then shipping what they needed.",
+  mle: "PyTorch, vision, RLHF and forecasting. Models trained, shrunk and shipped.",
+  sde: "Python and TypeScript. APIs, pipelines and infrastructure that stay up.",
 };
 
 const filmCredits = [
   { title: "Among Monsters", year: "2026", role: "Director · Writer · Editor · Music" },
-  { title: "Extraordinary Lives", year: "soon", role: "Director · Writer" },
+  { title: "Extraordinary Lives", year: "Soon", role: "Director · Writer" },
   { title: "Tiger Man", year: "2022", role: "Director · Writer · Editor" },
   { title: "Strangers", year: "2019", role: "Cinematographer · Music" },
 ];
 
-// Institution logos for the Education/Experience rows. Falls back to a
-// gradient monogram for anywhere without a logo file.
-const orgFor = (loc: string) => {
-  if (/Hybridge/i.test(loc)) return { logo: "/logos/hybridge.webp", label: "Hybridge Implants" };
-  if (/Shure/i.test(loc)) return { logo: "/logos/shure.svg", label: "Shure" };
-  if (/JNTU|Jawaharlal Nehru|Gokaraju/i.test(loc)) return { logo: "/logos/griet.png", label: "Gokaraju Rangaraju Institute of Engineering and Technology" };
-  if (/New York University|NYU/i.test(loc)) return { logo: "/logos/nyu.svg", label: "New York University" };
-  return { logo: null, acronym: loc.slice(0, 2).toUpperCase(), label: loc };
+const guides = [...teaching]
+  .sort((a, b) => b.addedAt.localeCompare(a.addedAt))
+  .slice(0, 2);
+
+// Comets per section, in that section's colour.
+const comets = (rgb: string, n: number, seed: number) =>
+  Array.from({ length: n }, (_, i) => ({
+    rgb,
+    top: [10, 46, 78, 24, 62][(i + seed) % 5],
+    side: (i + seed) % 2 === 0 ? "right" : "left",
+    inset: 4 + (((i + seed) * 11) % 22),
+    w: 108 + (((i + seed) * 17) % 44),
+    rz: [-16, 12, -8, 18, -12][(i + seed) % 5],
+  }));
+const RGB = {
+  projects: "91,141,239",
+  work: "245,165,36",
+  writing: "52,211,153",
+  film: "244,63,94",
+  teaching: "34,211,238",
+  home: "91,141,239",
 };
-
-// Toolkit marquee, replacing the four skill tile walls.
-const marqueeItems = [
-  { name: "Python", accent: "#5B8DEF" },
-  { name: "PyTorch", accent: "#A78BFA" },
-  { name: "RAG", accent: "#34D399" },
-  { name: "Vertex Gemini", accent: "#34D399" },
-  { name: "FastAPI", accent: "#5B8DEF" },
-  { name: "BigQuery", accent: "#F5A524" },
-  { name: "TypeScript", accent: "#5B8DEF" },
-  { name: "Hugging Face", accent: "#A78BFA" },
-  { name: "pgvector", accent: "#34D399" },
-  { name: "Terraform", accent: "#5B8DEF" },
-  { name: "Evals", accent: "#34D399" },
-  { name: "React", accent: "#5B8DEF" },
-  { name: "RLHF", accent: "#A78BFA" },
-  { name: "Docker", accent: "#5B8DEF" },
-  { name: "Looker", accent: "#F5A524" },
-  { name: "Guardrails", accent: "#34D399" },
-  { name: "PostgreSQL", accent: "#5B8DEF" },
-  { name: "OpenCV", accent: "#A78BFA" },
-];
-
-const sections = [
-  { id: "home", label: "Top" },
-  { id: "disciplines", label: "Disciplines" },
-  { id: "work", label: "Work" },
-  { id: "about", label: "About" },
-  { id: "writing", label: "Writing" },
-  { id: "filmmaking", label: "Film" },
-  { id: "contact", label: "Contact" },
-];
 ---
 
 <BaseLayout title="Sampreeth Avvari" preloadImage="/pic.avif">
-  <nav class="rail" aria-label="Page sections">
-    {sections.map((s) => (
-      <a href={`#${s.id}`} data-rail={s.id} aria-label={s.label}></a>
-    ))}
-  </nav>
-
   <!-- ── Hero ─────────────────────────────────────────────────────────── -->
-  <section id="home" class="relative min-h-[100svh] flex items-center overflow-hidden pt-24 pb-16">
+  <section id="home" class="hero relative overflow-hidden" data-tone="home">
     <GlassHero />
-    <span class="glow" style="width:630px;height:630px;--gc:#5B8DEF;top:-90px;left:-120px;" aria-hidden="true"></span>
-    <span class="glow glow-2" style="width:540px;height:540px;--gc:#22D3EE;bottom:-80px;right:-70px;" aria-hidden="true"></span>
-    <span class="space-el" style="width:143px;height:39px;top:14%;left:5%;" aria-hidden="true"><span class="comet-glow" style="--sr-rgb:91,141,239;"></span><span class="space-comet" style="--sr-rgb:91,141,239;--rz:-16deg;"></span></span>
-    <span class="space-el" style="width:117px;height:33px;bottom:18%;right:7%;" aria-hidden="true"><span class="comet-glow" style="--sr-rgb:34,211,238;"></span><span class="space-comet" style="--sr-rgb:34,211,238;--rz:12deg;"></span></span>
-    <span class="space-el" style="width:130px;height:36px;top:34%;right:16%;" aria-hidden="true"><span class="comet-glow" style="--sr-rgb:91,141,239;"></span><span class="space-comet" style="--sr-rgb:91,141,239;--rz:18deg;"></span></span>
-    <span class="space-el" style="width:110px;height:30px;bottom:34%;left:14%;" aria-hidden="true"><span class="comet-glow" style="--sr-rgb:34,211,238;"></span><span class="space-comet" style="--sr-rgb:34,211,238;--rz:-10deg;"></span></span>
-    <span class="space-el" style="width:122px;height:34px;top:56%;right:28%;" aria-hidden="true"><span class="comet-glow" style="--sr-rgb:91,141,239;"></span><span class="space-comet" style="--sr-rgb:91,141,239;--rz:8deg;"></span></span>
-    <span class="space-el" style="width:104px;height:29px;top:22%;left:30%;" aria-hidden="true"><span class="comet-glow" style="--sr-rgb:34,211,238;"></span><span class="space-comet" style="--sr-rgb:34,211,238;--rz:-20deg;"></span></span>
+    <span class="glow" style="width:620px;height:620px;--gc:#5B8DEF;top:-120px;left:-140px;" aria-hidden="true"></span>
+    <span class="glow glow-2" style="width:520px;height:520px;--gc:#22D3EE;bottom:-120px;right:-80px;" aria-hidden="true"></span>
+    {comets(RGB.home, 4, 0).map((c) => (
+      <span class="space-el" style={`width:${c.w}px;height:${Math.round(c.w * 0.28)}px;top:${c.top}%;${c.side}:${c.inset}%;`} aria-hidden="true"><span class="comet-glow" style={`--sr-rgb:${c.rgb};`}></span><span class="space-comet" style={`--sr-rgb:${c.rgb};--rz:${c.rz}deg;`}></span></span>
+    ))}
 
-    <div class="relative z-10 mx-auto w-full max-w-screen-2xl px-6 lg:px-12">
-      <div class="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-14 items-center">
-        <div class="lg:col-span-7" data-arrive>
-          <p class="eyebrow text-text/60 dark:text-dk-text/60 mb-5">
-            AI Engineer · New York
-          </p>
-          <h1 class="text-[2.6rem] leading-[1.04] sm:text-6xl lg:text-7xl font-bold tracking-[-0.04em] text-text dark:text-dk-text [text-wrap:balance]">
-            I'm <span class="name-shimmer">Sampreeth</span>.<br />
-            I ship AI and direct films.
-          </h1>
-          <p class="mt-6 text-lg lg:text-xl text-text/70 dark:text-dk-text/70 leading-relaxed max-w-xl">
-            Whether it's a model or a movie, the job is making the messy thing make sense to someone else.
-          </p>
-          <div class="mt-7 flex flex-wrap gap-2" aria-label="Disciplines">
-            {disciplines.map((d) => (
-              <a
-                href={`/work/${d.slug}`}
-                class="no-lift dpill"
-                data-magnetic
-                style={`--dx: ${d.accent}; --dx-rgb: ${d.rgb};`}
-                aria-label={d.name}
-              >
-                <i aria-hidden="true"></i>
-                <span>{d.acronym}</span>
-              </a>
+    <div class="wrap on-top hero-grid">
+      <div class="hero-copy">
+        <span class="chip chip-live">AI engineer at Hybridge Implants · New York</span>
+        <h1 class="t-display hero-title">
+          I'm Sampreeth.
+          <span class="t-tail">I ship AI and direct films.</span>
+        </h1>
+        <p class="t-lede hero-lede">
+          Whether it's a model or a movie, the job is making the messy thing
+          make sense to someone else. Right now that means the systems a dental
+          implant practice runs on, every day.
+        </p>
+        <div class="hero-actions">
+          <a href="#projects" class="btn btn-primary">
+            See the projects <Icon name="arrow-down" size={15} />
+          </a>
+          <a href="https://hi.switchy.io/zIhU" target="_blank" rel="noopener" class="btn btn-glass">
+            Try JobPilot <Icon name="arrow-up-right" size={15} class="arrow-ur" />
+          </a>
+          <a href="/posts" class="btn btn-ghost">Read the writing</a>
+        </div>
+        <nav class="hero-legend" aria-label="Sections">
+          <span class="t-meta">Every colour is a place on the site</span>
+          <div class="hero-legend-chips">
+            {tabs.map((t) => (
+              <a href={t.href} class="chip chip-dot" data-tone={t.tone}>{t.name}</a>
             ))}
           </div>
-          <div class="mt-8 flex flex-wrap gap-3">
-            <a href="#work" class="no-lift gbtn" data-magnetic>
-              See the work <Icon name="arrow-down" size={15} />
-            </a>
-            <a
-              href="https://hi.switchy.io/zIhU"
-              target="_blank"
-              rel="noopener"
-              class="no-lift gbtn-amber"
-              data-magnetic
-            >
-              JobPilot demo <Icon name="arrow-up-right" size={15} />
-            </a>
-            <a href="/posts" class="no-lift gbtn-ghost" data-magnetic>
-              Read the writing
-            </a>
-          </div>
-        </div>
-
-        <div class="lg:col-span-5 flex justify-center lg:justify-end" data-arrive>
-          <figure class="pane pane-glare p-3 w-[min(320px,78vw)]" data-tilt data-tiltmax="5">
-            <Picture
-              src={info.picture}
-              alt={info.picture_alt}
-              width={520}
-              height={640}
-              class="block w-full h-auto aspect-[520/640] object-cover rounded-2xl"
-              loading="eager"
-              fetchpriority="high"
-            />
-            <figcaption class="sr-only">{info.name}</figcaption>
-          </figure>
-        </div>
+        </nav>
       </div>
-    </div>
 
-    <a class="scroll-cue no-lift" href="#disciplines" aria-label="Scroll to disciplines">
-      <Icon name="arrow-down" size={20} />
-    </a>
+      <figure class="hero-portrait">
+        <Picture
+          src={info.picture}
+          alt={info.picture_alt}
+          width={520}
+          height={640}
+          class="hero-portrait-img"
+          loading="eager"
+          fetchpriority="high"
+        />
+        <figcaption class="sr-only">{info.name}</figcaption>
+      </figure>
+    </div>
   </section>
 
-  <!-- ── Toolkit marquee ──────────────────────────────────────────────── -->
-  <div class="mq" aria-hidden="true">
-    <div class="mq-track">
-      {[0, 1].map(() =>
-        marqueeItems.map((it) => (
-          <span style={`--mc: ${it.accent}`}>
-            <b>{it.name}</b> ·
-          </span>
-        )),
-      )}
+  <!-- ── Proof ────────────────────────────────────────────────────────── -->
+  <section class="proof" data-tone="home" aria-label="In numbers">
+    <div class="wrap">
+      <ul class="proof-grid">
+        {proof.map((p) => (
+          <li>
+            <a href={p.href} class="proof-item">
+              <span class="stat-num">{p.value}</span>
+              <span class="stat-cap">{p.label}</span>
+            </a>
+          </li>
+        ))}
+      </ul>
     </div>
-  </div>
+  </section>
 
-  <!-- ── Disciplines ──────────────────────────────────────────────────── -->
-  <section id="disciplines" class="relative overflow-hidden py-24 lg:py-32">
-    <span class="glow" style="width:600px;height:600px;--gc:#A78BFA;top:6%;right:-120px;" aria-hidden="true"></span>
-    <span class="glow glow-3" style="width:510px;height:510px;--gc:#F5A524;bottom:-70px;left:-90px;" aria-hidden="true"></span>
-    <span class="space-el" style="width:150px;height:39px;top:8%;right:5%;" aria-hidden="true"><span class="comet-glow" style="--sr-rgb:167,139,250;"></span><span class="space-comet" style="--sr-rgb:167,139,250;--rz:-18deg;"></span></span>
-    <span class="space-el" style="width:117px;height:33px;bottom:12%;left:4%;" aria-hidden="true"><span class="comet-glow" style="--sr-rgb:167,139,250;"></span><span class="space-comet" style="--sr-rgb:167,139,250;--rz:10deg;"></span></span>
-    <span class="space-el" style="width:126px;height:35px;top:42%;left:18%;" aria-hidden="true"><span class="comet-glow" style="--sr-rgb:167,139,250;"></span><span class="space-comet" style="--sr-rgb:167,139,250;--rz:-14deg;"></span></span>
-    <span class="space-el" style="width:108px;height:30px;bottom:30%;right:15%;" aria-hidden="true"><span class="comet-glow" style="--sr-rgb:245,165,36;"></span><span class="space-comet" style="--sr-rgb:245,165,36;--rz:16deg;"></span></span>
-    <span class="space-el" style="width:118px;height:33px;top:20%;left:38%;" aria-hidden="true"><span class="comet-glow" style="--sr-rgb:167,139,250;"></span><span class="space-comet" style="--sr-rgb:167,139,250;--rz:6deg;"></span></span>
-    <div class="relative z-[1] mx-auto w-full max-w-screen-2xl px-6 lg:px-12">
-      <div class="max-w-3xl" data-arrive>
-        <p class="eyebrow text-acc-violet mb-3">01 · What I do</p>
-        <h2 class="display-sm text-text dark:text-dk-text mb-4">
-          One engineer, <span class="text-acc-violet">four disciplines</span>.
-        </h2>
-        <p class="text-base lg:text-lg text-text/65 dark:text-dk-text/65 leading-relaxed max-w-2xl">
-          The same instinct runs through all four: sit next to the person with the problem, then build the thing they actually needed.
-        </p>
+  <!-- ── Projects ─────────────────────────────────────────────────────── -->
+  <section id="projects" class="section overflow-hidden" data-tone="projects">
+    <div class="tone-atmos" aria-hidden="true"></div>
+    {comets(RGB.projects, 3, 1).map((c) => (
+      <span class="space-el" style={`width:${c.w}px;height:${Math.round(c.w * 0.28)}px;top:${c.top}%;${c.side}:${c.inset}%;`} aria-hidden="true"><span class="comet-glow" style={`--sr-rgb:${c.rgb};`}></span><span class="space-comet" style={`--sr-rgb:${c.rgb};--rz:${c.rz}deg;`}></span></span>
+    ))}
+    <div class="wrap on-top">
+      <div class="sec-head" data-reveal>
+        <div class="sec-head-main">
+          <p class="kicker">Projects</p>
+          <h2 class="t-h2">
+            Things I've built.
+            <span class="t-tail">Most of them run a dental practice every day.</span>
+          </h2>
+        </div>
+        <a href="/projects" class="tlink">All projects <Icon name="arrow-right" size={14} /></a>
       </div>
-      <div class="mt-10 grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4" data-arrive>
-        {disciplines.map((d) => (
-          <a
-            href={`/work/${d.slug}`}
-            class="no-lift pane pane-glare orbit-glow overflow-hidden p-6 flex flex-col gap-2 group"
-            data-tilt
-            data-tiltmax="4"
-            style={`--oc: ${d.accent};`}
-          >
-            <span
-              class="font-mono text-[0.7rem] font-extrabold tracking-[0.2em]"
-              style={`color: ${d.accent};`}
-            >
-              {d.acronym}
-            </span>
-            <h3 class="text-lg font-semibold tracking-tight text-text dark:text-dk-text">
-              {d.name}
-            </h3>
-            <p class="relative z-[1] text-sm text-text/60 dark:text-dk-text/60 leading-snug">
-              {disciplineLines[d.slug]}
-            </p>
-            <span class="mt-auto pt-3 text-[0.78rem] font-bold inline-flex items-center gap-1.5" style={`color: ${d.accent};`}>
-              {d.projects.length} project{d.projects.length === 1 ? "" : "s"}
-              <Icon name="arrow-right" size={13} />
-            </span>
+
+      <div class="bento">
+        <a href={lead.href} class="surface bento-lead" data-reveal>
+          <div class="surface-media bento-lead-media">
+            {hasPublic(lead.img) ? (
+              <Picture src={lead.img} alt={lead.title} width={900} height={560} />
+            ) : (
+              <div class="media-fallback" aria-hidden="true"><span>{lead.title}</span></div>
+            )}
+          </div>
+          <div class="surface-pad">
+            <div class="card-badges">
+              <span class="badge badge-live">Live</span>
+              <span class="badge badge-tone">New</span>
+            </div>
+            <h3 class="t-h3 bento-lead-title">{lead.title}</h3>
+            <p class="t-body mt-2">{lead.line}</p>
+            <p class="t-meta mt-4">{lead.meta}</p>
+          </div>
+        </a>
+
+        <div class="bento-side">
+          {side.map((p) => (
+            <a href={p.href} class="surface card-h" data-reveal>
+              <div class="card-h-media">
+                {hasPublic(p.img) ? (
+                  <Picture src={p.img} alt={p.title} width={400} height={300} />
+                ) : (
+                  <div class="media-fallback" aria-hidden="true"></div>
+                )}
+              </div>
+              <div class="card-h-body">
+                <h3 class="t-h4">{p.title}</h3>
+                <p class="t-small mt-1.5">{p.line}</p>
+              </div>
+            </a>
+          ))}
+        </div>
+
+        {row.map((p) => (
+          <a href={p.href} class="surface bento-cell" data-reveal>
+            <div class="surface-media bento-cell-media">
+              {hasPublic(p.img) ? (
+                <Picture src={p.img} alt={p.title} width={600} height={340} />
+              ) : (
+                <div class="media-fallback" aria-hidden="true"><span>{p.title}</span></div>
+              )}
+            </div>
+            <div class="surface-pad">
+              <h3 class="t-h4">{p.title}</h3>
+              <p class="t-small mt-1.5">{p.line}</p>
+            </div>
           </a>
         ))}
+
+        <div class="surface bento-wide" data-reveal>
+          <div class="jp-copy">
+            <span class="badge">Open source · live demo</span>
+            <h3 class="t-h3 mt-4">Fly JobPilot yourself.</h3>
+            <p class="t-body mt-2">
+              A robot that hunts for jobs while I sleep. Every hour it finds new
+              postings, scores how well each one fits, writes a one page resume
+              for the good ones and watches the inbox for replies. The demo runs
+              the real product on a made up person, so you can click around
+              without signing up.
+            </p>
+            <div class="mt-6 flex flex-wrap gap-3">
+              <a href="https://hi.switchy.io/zIhU" target="_blank" rel="noopener" class="btn btn-glass btn-sm">
+                Open the demo <Icon name="arrow-up-right" size={14} class="arrow-ur" />
+              </a>
+              <a href="/posts/jobpilot-v2" class="btn btn-ghost btn-sm">How I built it</a>
+            </div>
+          </div>
+          <a href="https://hi.switchy.io/zIhU" target="_blank" rel="noopener" class="jp-mock" aria-label="JobPilot demo">
+            <div class="jp-mock-bar">
+              <span class="jp-dots" aria-hidden="true"><i></i><i></i><i></i></span>
+              <span>Today's matches</span>
+              <span class="t-meta ml-auto">Fictional data</span>
+            </div>
+            {jobRows.map((r) => (
+              <div class="jp-row">
+                <span class="jp-score tabular">{r.score}</span>
+                <span class="jp-bar"><span style={`width:${r.score}%`}></span></span>
+                <span class="truncate">{r.left}</span>
+                <span class="jp-co">{r.right}</span>
+              </div>
+            ))}
+          </a>
+        </div>
       </div>
     </div>
   </section>
 
   <!-- ── Work ─────────────────────────────────────────────────────────── -->
-  <section
-    id="work"
-    class="relative clip-x py-24 lg:py-32"
-    style="--work-rgb:245,165,36; --work-hex:#F5A524;"
-  >
-    <div class="work-decor" aria-hidden="true">
-    <span class="glow" style="width:660px;height:660px;--gc:var(--work-hex);top:-110px;left:28%;" aria-hidden="true"></span>
-    <span class="glow glow-2" style="width:510px;height:510px;--gc:var(--work-hex);bottom:-90px;right:-70px;" aria-hidden="true"></span>
-    <span class="space-el" style="width:156px;height:39px;top:7%;right:5%;" aria-hidden="true"><span class="comet-glow" style="--sr-rgb:var(--work-rgb);"></span><span class="space-comet" style="--sr-rgb:var(--work-rgb);--rz:-14deg;"></span></span>
-    <span class="space-el" style="width:117px;height:33px;bottom:9%;left:4%;" aria-hidden="true"><span class="comet-glow" style="--sr-rgb:var(--work-rgb);"></span><span class="space-comet" style="--sr-rgb:var(--work-rgb);--rz:12deg;"></span></span>
-    <span class="space-el" style="width:128px;height:36px;top:38%;left:12%;" aria-hidden="true"><span class="comet-glow" style="--sr-rgb:var(--work-rgb);"></span><span class="space-comet" style="--sr-rgb:var(--work-rgb);--rz:-16deg;"></span></span>
-    <span class="space-el" style="width:106px;height:30px;bottom:36%;right:14%;" aria-hidden="true"><span class="comet-glow" style="--sr-rgb:var(--work-rgb);"></span><span class="space-comet" style="--sr-rgb:var(--work-rgb);--rz:8deg;"></span></span>
-    <span class="space-el" style="width:120px;height:33px;top:18%;left:42%;" aria-hidden="true"><span class="comet-glow" style="--sr-rgb:var(--work-rgb);"></span><span class="space-comet" style="--sr-rgb:var(--work-rgb);--rz:-8deg;"></span></span>
-    </div>
-
-    <div class="relative z-[1] mx-auto w-full max-w-screen-2xl px-6 lg:px-12">
-      <div class="max-w-3xl" data-arrive>
-        <p class="eyebrow text-acc-amber mb-3">02 · The work</p>
-        <h2 class="display-sm text-text dark:text-dk-text mb-4">
-          Where my work <span class="text-acc-amber">lives</span>.
-        </h2>
-        <p class="text-base lg:text-lg text-text/65 dark:text-dk-text/65 leading-relaxed max-w-2xl">
-          Four places. One you can try right now, the systems I build at my day job,
-          the research, and everything else I made to learn something.
-        </p>
-      </div>
-
-      <div class="deck-track mt-8" style={`--cards:${workCards.length};`}>
-       {/* No data-arrive here on purpose: initArrive blurs an element by how far
-           its centre is from the middle of the screen, and this track is taller
-           than three screens, so it would sit permanently blurred. The deck
-           animates itself. */}
-       <div class="deck-pin">
-        <ul class="deck list-none p-0 m-0">
-        {workCards.map((c, i) => (
-          <li
-            class="deck-item"
-            data-rgb={c.rgb}
-            style={`--i:${i}; z-index:${workCards.length - i};`}
-          >
-            <div class="deck-card">
-            <div class="pane pane-glare p-0 overflow-hidden" data-tilt data-tiltmax="2">
-              <div class="grid grid-cols-1 lg:grid-cols-12">
-                <div class="lg:col-span-7 p-7 lg:p-9 flex flex-col justify-center">
-                  <p class="eyebrow mb-3" style={`color: ${c.accent};`}>{c.eyebrow}</p>
-                  <h3 class="text-2xl lg:text-3xl font-bold tracking-tight text-text dark:text-dk-text">
-                    {c.title[0]}<span style={`color: ${c.accent};`}>{c.title[1]}</span>{c.title[2]}
-                  </h3>
-                  <p class="mt-3 text-sm lg:text-base text-text/65 dark:text-dk-text/65 leading-relaxed max-w-xl">
-                    {c.body}
-                  </p>
-                  <div class="mt-6 flex flex-wrap gap-3">
-                    {c.links.map((l) => (
-                      <a
-                        href={l.href}
-                        class={`no-lift ${l.primary ? "gbtn" : "gbtn-ghost"}`}
-                        data-magnetic
-                        {...(l.external ? { target: "_blank", rel: "noopener" } : {})}
-                      >
-                        {l.label}
-                        {l.primary && <Icon name="arrow-right" size={15} />}
-                      </a>
-                    ))}
-                  </div>
-                </div>
-
-                <div class="lg:col-span-5 relative">
-                  <div
-                    class="absolute inset-0"
-                    style={`background:
-                      radial-gradient(420px 260px at 78% 16%, rgba(${c.rgb},0.22), transparent 66%),
-                      radial-gradient(360px 240px at 18% 92%, rgba(${c.rgb},0.12), transparent 70%),
-                      #080b0e;`}
-                  ></div>
-
-                  <div class="relative h-full p-6 lg:p-7 flex items-center">
-                    <div class="ui-mock w-full rounded-xl border border-white/10 bg-[#0b1015]/95 font-mono text-[11px] leading-relaxed shadow-2xl backdrop-blur">
-                      {/* title bar, same on every panel */}
-                      <div class="flex items-center gap-2 border-b border-white/10 px-3.5 py-2.5">
-                        <span class="flex gap-1.5" aria-hidden="true">
-                          <span class="h-2 w-2 rounded-full bg-[#ff5f57]"></span>
-                          <span class="h-2 w-2 rounded-full bg-[#febc2e]"></span>
-                          <span class="h-2 w-2 rounded-full bg-[#28c840]"></span>
-                        </span>
-                        <span class="ml-1 truncate font-bold tracking-tight text-[#e8e4da]">
-                          {c.variant === "jobpilot" && <>JOB<span style="color:#ffb000;">PILOT</span></>}
-                          {c.variant === "hybridge" && <>HYBRIDGE <span style={`color:${c.accent};`}>OPS</span></>}
-                          {c.variant === "research" && <>TRAINING <span style={`color:${c.accent};`}>RUN</span></>}
-                          {c.variant === "projects" && <>SIDE <span style={`color:${c.accent};`}>BUILDS</span></>}
-                        </span>
-                        <span
-                          class="ml-auto shrink-0 rounded px-2 py-0.5 text-[9px] font-bold uppercase tracking-[0.14em]"
-                          style={`background:rgba(${c.rgb},0.16); color:${c.accent};`}
-                        >
-                          {c.variant === "jobpilot" && "live demo"}
-                          {c.variant === "hybridge" && "all live"}
-                          {c.variant === "research" && "epoch 12"}
-                          {c.variant === "projects" && "open source"}
-                        </span>
-                      </div>
-
-                      {/* research gets a loss curve above its list */}
-                      {c.variant === "research" && (
-                        <div class="border-b border-white/5 px-3.5 pt-3 pb-2">
-                          <svg viewBox="0 0 240 56" class="h-14 w-full" aria-hidden="true" preserveAspectRatio="none">
-                            <defs>
-                              <linearGradient id="lossfill" x1="0" y1="0" x2="0" y2="1">
-                                <stop offset="0%" stop-color="#A78BFA" stop-opacity="0.35" />
-                                <stop offset="100%" stop-color="#A78BFA" stop-opacity="0" />
-                              </linearGradient>
-                            </defs>
-                            <path
-                              d="M0,50 L24,44 L48,46 L72,34 L96,30 L120,32 L144,22 L168,18 L192,19 L216,13 L240,11 L240,56 L0,56 Z"
-                              fill="url(#lossfill)"
-                            />
-                            <path
-                              d="M0,50 L24,44 L48,46 L72,34 L96,30 L120,32 L144,22 L168,18 L192,19 L216,13 L240,11"
-                              fill="none" stroke="#A78BFA" stroke-width="1.6" stroke-linejoin="round"
-                            />
-                            <path
-                              d="M0,53 L24,49 L48,50 L72,42 L96,40 L120,41 L144,34 L168,31 L192,33 L216,28 L240,27"
-                              fill="none" stroke="#5B8DEF" stroke-width="1.2" stroke-dasharray="3 3" opacity="0.8"
-                            />
-                          </svg>
-                          <div class="flex items-center gap-4 pt-1 text-[9px] uppercase tracking-[0.14em] text-[#e8e4da]/40">
-                            <span class="inline-flex items-center gap-1.5">
-                              <span class="h-0.5 w-4 rounded" style="background:#A78BFA;"></span> reward
-                            </span>
-                            <span class="inline-flex items-center gap-1.5">
-                              <span class="h-0.5 w-4 rounded" style="background:#5B8DEF;"></span> baseline
-                            </span>
-                          </div>
-                        </div>
-                      )}
-
-                      {/* the list: every row opens its write-up */}
-                      {c.rows.map((r) => (
-                        <a
-                          href={r.href || c.demo}
-                          class="mock-row flex items-center gap-3 border-b border-white/5 px-3.5 py-2 text-[#e8e4da]/80 no-underline last:border-b-0"
-                          {...(r.href ? {} : { target: "_blank", rel: "noopener" })}
-                        >
-                          {r.score ? (
-                            <>
-                              <span class="font-bold" style={`color:${r.tone};`}>{r.score}</span>
-                              <span class="h-1 w-8 overflow-hidden rounded bg-white/10">
-                                <span class="block h-full rounded" style={`width:${r.score}%;background:${r.tone};`}></span>
-                              </span>
-                            </>
-                          ) : (
-                            <span
-                              class="grid h-5 w-5 shrink-0 place-items-center rounded"
-                              style={`background:rgba(${c.rgb},0.10); box-shadow: inset 0 0 0 1px ${r.tone}55;`}
-                            >
-                              <span class="h-1.5 w-1.5 rounded-full" style={`background:${r.tone};`}></span>
-                            </span>
-                          )}
-                          <span class="truncate">{r.left}</span>
-                          <span class="ml-auto shrink-0 text-[#e8e4da]/40">{r.right}</span>
-                        </a>
-                      ))}
-
-                      <div class="flex items-center justify-between px-3.5 py-2.5 text-[9px] uppercase tracking-[0.16em] text-[#e8e4da]/35">
-                        <span>
-                          {c.variant === "jobpilot" && "fictional data \u00b7 real product"}
-                          {c.variant === "hybridge" && "patient data stays inside"}
-                          {c.variant === "research" && "NYU HPC \u00b7 A100s"}
-                          {c.variant === "projects" && "built for the fun of it"}
-                        </span>
-                        <span style={`color:${c.accent};`}>
-                          {c.variant === "jobpilot" ? "\u25b8 take the tour" : "\u25b8 click any row"}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-            </div>
-          </li>
-        ))}
-        </ul>
-       </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- ── About ────────────────────────────────────────────────────────── -->
-  <section id="about" class="relative overflow-hidden py-24 lg:py-32">
-    <span class="glow" style="width:570px;height:570px;--gc:#5B8DEF;top:8%;left:-110px;" aria-hidden="true"></span>
-    <span class="glow glow-3" style="width:450px;height:450px;--gc:#5B8DEF;bottom:-80px;right:-60px;" aria-hidden="true"></span>
-    <span class="space-el" style="width:137px;height:36px;top:8%;right:7%;" aria-hidden="true"><span class="comet-glow" style="--sr-rgb:91,141,239;"></span><span class="space-comet" style="--sr-rgb:91,141,239;--rz:-12deg;"></span></span>
-    <span class="space-el" style="width:112px;height:31px;bottom:16%;left:8%;" aria-hidden="true"><span class="comet-glow" style="--sr-rgb:91,141,239;"></span><span class="space-comet" style="--sr-rgb:91,141,239;--rz:14deg;"></span></span>
-    <span class="space-el" style="width:118px;height:33px;top:44%;left:40%;" aria-hidden="true"><span class="comet-glow" style="--sr-rgb:91,141,239;"></span><span class="space-comet" style="--sr-rgb:91,141,239;--rz:-8deg;"></span></span>
-    <div class="relative z-[1] mx-auto w-full max-w-screen-2xl px-6 lg:px-12">
-      <div class="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-16 items-start" data-arrive>
-        <div class="lg:col-span-5">
-          <p class="eyebrow text-secondary dark:text-dk-secondary mb-4">03 · About</p>
-          <h2 class="display-sm text-text dark:text-dk-text mb-5">
-            An engineer who happens to <span class="text-secondary dark:text-dk-secondary">make movies</span>.
+  <section id="work" class="section overflow-hidden" data-tone="work">
+    <div class="tone-atmos" aria-hidden="true"></div>
+    {comets(RGB.work, 3, 2).map((c) => (
+      <span class="space-el" style={`width:${c.w}px;height:${Math.round(c.w * 0.28)}px;top:${c.top}%;${c.side}:${c.inset}%;`} aria-hidden="true"><span class="comet-glow" style={`--sr-rgb:${c.rgb};`}></span><span class="space-comet" style={`--sr-rgb:${c.rgb};--rz:${c.rz}deg;`}></span></span>
+    ))}
+    <div class="wrap on-top">
+      <div class="sec-head" data-reveal>
+        <div class="sec-head-main">
+          <p class="kicker">Work</p>
+          <h2 class="t-h2">
+            One engineer, four kinds of work.
+            <span class="t-tail">Same habit in all four: sit next to the person with the problem first.</span>
           </h2>
-          <p class="text-base lg:text-lg text-text/70 dark:text-dk-text/70 leading-relaxed">
-            {info.about.description}
-          </p>
-          <div class="mt-7 flex flex-wrap gap-x-6 gap-y-2">
-            <a href="/projects" class="link-underline text-sm font-semibold text-secondary dark:text-dk-secondary inline-flex items-center gap-1.5">
-              See all the projects <Icon name="arrow-right" size={14} />
-            </a>
-            <a href="/resume" class="link-underline text-sm font-semibold text-secondary dark:text-dk-secondary inline-flex items-center gap-1.5">
-              Full toolkit on the resume <Icon name="arrow-right" size={14} />
-            </a>
-          </div>
         </div>
-
-        <div class="lg:col-span-7">
-          <CareerTimeline />
-        </div>
+        <a href="/work" class="tlink">How I work <Icon name="arrow-right" size={14} /></a>
+      </div>
+      <div class="grid4">
+        {disciplines.map((d) => (
+          <a href={`/work/${d.slug}`} class="surface surface-pad disc-card" data-reveal>
+            <div class="flex items-center justify-between gap-3">
+              <span class="badge">{d.acronym}</span>
+              <span class="t-meta">{d.projects.length} projects</span>
+            </div>
+            <h3 class="t-h4 mt-5">{d.name}</h3>
+            <p class="t-small mt-2">{disciplineLines[d.slug]}</p>
+            <span class="tlink mt-auto pt-5">Open <Icon name="arrow-right" size={14} /></span>
+          </a>
+        ))}
       </div>
     </div>
   </section>
 
   <!-- ── Writing ──────────────────────────────────────────────────────── -->
-  <section id="writing" class="relative overflow-hidden py-24 lg:py-32">
-    <span class="glow" style="width:570px;height:570px;--gc:#34D399;top:14%;left:-100px;" aria-hidden="true"></span>
-    <span class="glow glow-3" style="width:480px;height:480px;--gc:#34D399;bottom:-70px;right:8%;" aria-hidden="true"></span>
-    <span class="space-el" style="width:143px;height:38px;top:10%;right:6%;" aria-hidden="true"><span class="comet-glow" style="--sr-rgb:52,211,153;"></span><span class="space-comet" style="--sr-rgb:52,211,153;--rz:-16deg;"></span></span>
-    <span class="space-el" style="width:115px;height:32px;bottom:14%;left:7%;" aria-hidden="true"><span class="comet-glow" style="--sr-rgb:52,211,153;"></span><span class="space-comet" style="--sr-rgb:52,211,153;--rz:12deg;"></span></span>
-    <span class="space-el" style="width:120px;height:33px;top:46%;right:26%;" aria-hidden="true"><span class="comet-glow" style="--sr-rgb:52,211,153;"></span><span class="space-comet" style="--sr-rgb:52,211,153;--rz:-6deg;"></span></span>
-    <div class="relative z-[1] mx-auto w-full max-w-screen-2xl px-6 lg:px-12">
-      <div class="flex items-end justify-between gap-6 mb-10" data-arrive>
-        <div>
-          <p class="eyebrow text-acc-emerald mb-3">04 · Writing</p>
-          <h2 class="display-sm text-text dark:text-dk-text mb-3">
-            Notes from <span class="text-acc-emerald">the work</span>.
+  <section id="writing" class="section overflow-hidden" data-tone="writing">
+    <div class="tone-atmos" aria-hidden="true"></div>
+    {comets(RGB.writing, 3, 3).map((c) => (
+      <span class="space-el" style={`width:${c.w}px;height:${Math.round(c.w * 0.28)}px;top:${c.top}%;${c.side}:${c.inset}%;`} aria-hidden="true"><span class="comet-glow" style={`--sr-rgb:${c.rgb};`}></span><span class="space-comet" style={`--sr-rgb:${c.rgb};--rz:${c.rz}deg;`}></span></span>
+    ))}
+    <div class="wrap on-top">
+      <div class="sec-head" data-reveal>
+        <div class="sec-head-main">
+          <p class="kicker">Writing</p>
+          <h2 class="t-h2">
+            Notes from the work.
+            <span class="t-tail">Real numbers, real screwups, real fixes.</span>
           </h2>
-          <p class="text-base lg:text-lg text-text/65 dark:text-dk-text/65 leading-relaxed max-w-2xl">
-            Real numbers, real screwups, real fixes.
-          </p>
         </div>
-        <a href="/posts" class="link-underline text-sm font-semibold text-acc-emerald hidden lg:inline-flex items-center gap-1.5 shrink-0">
-          All posts <Icon name="arrow-right" size={14} />
-        </a>
+        <a href="/posts" class="tlink">All posts <Icon name="arrow-right" size={14} /></a>
       </div>
 
-      <div class="grid grid-cols-1 lg:grid-cols-5 gap-4" data-arrive>
+      <div class="write-grid">
         {featuredPost && (
-          <a
-            href={featuredPost.url}
-            class="no-lift pane pane-glare pane-rim overflow-hidden lg:col-span-3 flex flex-col group"
-            data-tilt
-            data-tiltmax="2"
-          >
-            {featuredPost.frontmatter.img_path && (
-              <div class="relative overflow-hidden rounded-t-[24px]">
+          <a href={featuredPost.url} class="surface write-lead" data-reveal>
+            <div class="surface-media write-lead-media">
+              {hasPublic(featuredPost.frontmatter.img_path) ? (
                 <Picture
                   src={featuredPost.frontmatter.img_path}
                   alt={featuredPost.frontmatter.img_alt || featuredPost.frontmatter.title}
                   width={900}
                   height={480}
-                  class="w-full h-56 lg:h-72 object-cover transition duration-500 group-hover:scale-[1.03]"
                 />
-                <span class="absolute top-3 right-3 featured-badge text-[0.62rem]">Latest</span>
-              </div>
-            )}
-            <div class="p-6 lg:p-7 flex flex-col gap-3 flex-1">
-              <p class="text-[0.66rem] uppercase tracking-[0.18em] font-semibold text-text/40 dark:text-dk-text/40 tabular-nums inline-flex items-center gap-2">
-                {featuredPost.frontmatter.date}
-                <span aria-hidden="true">·</span>
-                <span class="inline-flex items-center gap-1"><Icon name="clock" size={12} /> {readingTime(featuredPost.rawContent())} min</span>
+              ) : (
+                <div class="media-fallback" aria-hidden="true"><span>Latest</span></div>
+              )}
+            </div>
+            <div class="surface-pad">
+              <p class="t-meta">
+                <span class="badge badge-tone mr-2">Latest</span>
+                {featuredPost.frontmatter.date} · {readingTime(featuredPost.rawContent())} min read
               </p>
-              <h3 class="text-xl lg:text-3xl font-bold tracking-tight text-text dark:text-dk-text leading-[1.12] group-hover:text-secondary dark:group-hover:text-dk-secondary transition">
-                {featuredPost.frontmatter.title}
-              </h3>
-              <p class="text-sm lg:text-base text-text/60 dark:text-dk-text/60 leading-relaxed line-clamp-2">
-                {featuredPost.frontmatter.description}
-              </p>
+              <h3 class="t-h3 write-lead-title">{featuredPost.frontmatter.title}</h3>
+              <p class="t-body mt-2 line-clamp-3">{featuredPost.frontmatter.description}</p>
             </div>
           </a>
         )}
-        <div class="lg:col-span-2 grid grid-cols-1 gap-4">
+        <ul class="write-list">
           {sidePosts.map((post) => (
-            <a
-              href={post.url}
-              class="no-lift pane pane-glare overflow-hidden flex items-stretch group"
-              data-tilt
-              data-tiltmax="3"
-            >
-              {post.frontmatter.img_path && (
-                <div class="w-32 shrink-0 overflow-hidden">
-                  <Picture
-                    src={post.frontmatter.img_path}
-                    alt={post.frontmatter.img_alt || post.frontmatter.title}
-                    width={300}
-                    height={220}
-                    class="w-full h-full object-cover transition duration-500 group-hover:scale-[1.05]"
-                  />
+            <li data-reveal>
+              <a href={post.url} class="surface write-item">
+                <div class="write-thumb">
+                  {hasPublic(post.frontmatter.img_path) ? (
+                    <Picture src={post.frontmatter.img_path} alt="" width={240} height={180} />
+                  ) : (
+                    <div class="media-fallback" aria-hidden="true"></div>
+                  )}
                 </div>
-              )}
-              <div class="p-4 lg:p-5 flex flex-col justify-center gap-2 min-w-0">
-                <p class="text-[0.64rem] uppercase tracking-[0.18em] font-semibold text-text/40 dark:text-dk-text/40 tabular-nums inline-flex items-center gap-2">
-                  {post.frontmatter.date}
-                  <span aria-hidden="true">·</span>
-                  <span class="inline-flex items-center gap-1"><Icon name="clock" size={11} /> {readingTime(post.rawContent())} min</span>
-                </p>
-                <h3 class="text-base lg:text-lg font-bold tracking-tight text-text dark:text-dk-text leading-snug line-clamp-2 group-hover:text-secondary dark:group-hover:text-dk-secondary transition">
-                  {post.frontmatter.title}
-                </h3>
-              </div>
-            </a>
-          ))}
-        </div>
-      </div>
-
-      <a href="/posts" class="link-underline text-sm font-semibold text-acc-emerald mt-8 inline-flex lg:hidden items-center gap-1.5">
-        All posts <Icon name="arrow-right" size={14} />
-      </a>
-    </div>
-  </section>
-
-  <!-- ── Filmmaking ───────────────────────────────────────────────────── -->
-  <section id="filmmaking" class="relative overflow-hidden py-24 lg:py-32">
-    <span class="glow" style="width:630px;height:630px;--gc:#F43F5E;top:-90px;right:-130px;" aria-hidden="true"></span>
-    <span class="glow glow-2" style="width:480px;height:480px;--gc:#F43F5E;bottom:-70px;left:-60px;" aria-hidden="true"></span>
-    <span class="space-el" style="width:163px;height:40px;top:10%;left:4%;" aria-hidden="true"><span class="comet-glow" style="--sr-rgb:244,63,94;"></span><span class="space-comet" style="--sr-rgb:244,63,94;--rz:14deg;"></span></span>
-    <span class="space-el" style="width:118px;height:32px;bottom:12%;right:8%;" aria-hidden="true"><span class="comet-glow" style="--sr-rgb:244,63,94;"></span><span class="space-comet" style="--sr-rgb:244,63,94;--rz:-10deg;"></span></span>
-    <span class="space-el" style="width:110px;height:31px;top:48%;left:34%;" aria-hidden="true"><span class="comet-glow" style="--sr-rgb:244,63,94;"></span><span class="space-comet" style="--sr-rgb:244,63,94;--rz:6deg;"></span></span>
-    <div class="relative z-[1] mx-auto w-full max-w-screen-2xl px-6 lg:px-12 grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
-      <div class="lg:col-span-6" data-arrive>
-        <p class="eyebrow text-acc-film mb-4">05 · Filmmaking</p>
-        <h2 class="display-sm text-text dark:text-dk-text mb-6">
-          "Gray characters, <span class="text-acc-film">tight spaces</span>, and the chaos hiding inside ordinary lives."
-        </h2>
-        <p class="text-base lg:text-lg text-text/70 dark:text-dk-text/70 leading-relaxed mb-8 max-w-xl">
-          I write, direct, edit, and score. <em class="not-italic font-semibold text-text dark:text-dk-text">Among Monsters</em> is the independent feature I'm cutting between work weeks.
-        </p>
-        <div class="flex flex-wrap items-center gap-3">
-          <a
-            href="https://www.imdb.com/title/tt39700295/"
-            target="_blank"
-            rel="noreferrer"
-            class="no-lift gbtn-ghost"
-            data-magnetic
-          >
-            <span class="imdb-wordmark">IMDb</span> Among Monsters <Icon name="arrow-up-right" size={14} />
-          </a>
-          <a href="/filmmaking" class="no-lift gbtn-ghost" data-magnetic>
-            The full slate
-          </a>
-        </div>
-      </div>
-
-      <div class="lg:col-span-6" data-arrive>
-        <ul class="list-none p-0 m-0">
-          {filmCredits.map((c, i) => (
-            <li class="group flex items-center justify-between gap-4 py-4 border-b border-text/10 dark:border-dk-text/10 hover:border-acc-film/60 transition-colors">
-              <div class="min-w-0 flex items-center gap-4">
-                <span class="font-mono text-[0.7rem] text-text/35 dark:text-dk-text/40 tabular-nums w-7 shrink-0">
-                  {String(i + 1).padStart(2, "0")}
-                </span>
                 <div class="min-w-0">
-                  <p class="text-lg lg:text-xl font-semibold text-text dark:text-dk-text group-hover:text-acc-film transition truncate">
-                    {c.title}
-                  </p>
-                  <p class="mt-0.5 text-[0.7rem] uppercase tracking-[0.16em] text-text/50 dark:text-dk-text/55 font-medium">
-                    {c.role}
-                  </p>
+                  <p class="t-meta">{post.frontmatter.date} · {readingTime(post.rawContent())} min</p>
+                  <h3 class="t-h4 mt-1.5 line-clamp-2">{post.frontmatter.title}</h3>
                 </div>
-              </div>
-              <span class="font-mono text-lg font-semibold text-text/40 dark:text-dk-text/45 group-hover:text-acc-film tabular-nums shrink-0 transition">
-                {c.year}
-              </span>
+              </a>
             </li>
           ))}
         </ul>
-        <a href="/filmmaking" class="link-underline text-sm font-semibold text-acc-film mt-6 inline-flex items-center gap-1.5">
-          All credits, stills, and crew <Icon name="arrow-right" size={14} />
-        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Film ─────────────────────────────────────────────────────────── -->
+  <section id="film" class="section overflow-hidden" data-tone="film">
+    <div class="tone-atmos" aria-hidden="true"></div>
+    {comets(RGB.film, 3, 4).map((c) => (
+      <span class="space-el" style={`width:${c.w}px;height:${Math.round(c.w * 0.28)}px;top:${c.top}%;${c.side}:${c.inset}%;`} aria-hidden="true"><span class="comet-glow" style={`--sr-rgb:${c.rgb};`}></span><span class="space-comet" style={`--sr-rgb:${c.rgb};--rz:${c.rz}deg;`}></span></span>
+    ))}
+    <div class="wrap on-top film-grid">
+      <div data-reveal>
+        <p class="kicker">Film</p>
+        <h2 class="t-h2 mt-5">
+          Gray characters and tight spaces.
+          <span class="t-tail">The chaos hiding inside ordinary lives.</span>
+        </h2>
+        <p class="t-lede mt-5">
+          I write, direct, edit and score. <span class="text-dk-text font-medium">Among Monsters</span> is
+          the independent feature I'm cutting between work weeks.
+        </p>
+        <div class="mt-8 flex flex-wrap items-center gap-3">
+          <a href="https://www.imdb.com/title/tt39700295/" target="_blank" rel="noreferrer" class="btn btn-glass">
+            <span class="imdb-wordmark">IMDb</span> Among Monsters <Icon name="arrow-up-right" size={14} class="arrow-ur" />
+          </a>
+          <a href="/filmmaking" class="tlink ml-2">The full slate <Icon name="arrow-right" size={14} /></a>
+        </div>
+      </div>
+      <ul class="rows" data-reveal>
+        {filmCredits.map((c) => (
+          <li>
+            <a href="/filmmaking" class="row-link">
+              <span class="min-w-0">
+                <span class="block t-h4">{c.title}</span>
+                <span class="block t-meta mt-1">{c.role}</span>
+              </span>
+              <span class="ml-auto t-meta text-base tabular">{c.year}</span>
+            </a>
+          </li>
+        ))}
+      </ul>
+    </div>
+  </section>
+
+  <!-- ── Teaching ─────────────────────────────────────────────────────── -->
+  <section id="teaching" class="section overflow-hidden" data-tone="teaching">
+    <div class="tone-atmos" aria-hidden="true"></div>
+    <div class="wrap on-top">
+      <div class="sec-head" data-reveal>
+        <div class="sec-head-main">
+          <p class="kicker">Teaching</p>
+          <h2 class="t-h2">
+            What I've learned, written down.
+            <span class="t-tail">Free guides for engineers who ship AI.</span>
+          </h2>
+        </div>
+        <a href="/teaching" class="tlink">All materials <Icon name="arrow-right" size={14} /></a>
+      </div>
+      <div class="teach-grid">
+        {guides.map((g) => (
+          <a href={`/teaching/${g.slug}`} class="surface teach-card" data-reveal>
+            <div class="teach-cover">
+              {hasPublic(g.cover) ? (
+                <Picture src={g.cover} alt={g.title} width={360} height={460} />
+              ) : (
+                <div class="media-fallback" aria-hidden="true"></div>
+              )}
+            </div>
+            <div class="teach-body">
+              <span class="badge">{g.pages ? `PDF · ${g.pages} pages` : "PDF"}</span>
+              <h3 class="t-h3 mt-4">{g.title}</h3>
+              <p class="t-small mt-2">{g.description}</p>
+              <span class="tlink mt-auto pt-5">Read it <Icon name="arrow-right" size={14} /></span>
+            </div>
+          </a>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <!-- ── About ────────────────────────────────────────────────────────── -->
+  <section id="about" class="section overflow-hidden" data-tone="home">
+    <div class="wrap on-top about-grid">
+      <div data-reveal>
+        <p class="kicker">About</p>
+        <h2 class="t-h2 mt-5">
+          An engineer
+          <span class="t-tail">who happens to make movies.</span>
+        </h2>
+        <p class="t-body about-text mt-5">{info.about.description}</p>
+        <div class="mt-7 flex flex-wrap gap-3">
+          <a href="/resume" class="btn btn-glass btn-sm">Resume and toolkit</a>
+          <a href="/projects" class="btn btn-ghost btn-sm">Every project</a>
+        </div>
+      </div>
+      <div class="surface surface-pad about-timeline" data-reveal>
+        <CareerTimeline />
       </div>
     </div>
   </section>
 
   <!-- ── Contact ──────────────────────────────────────────────────────── -->
-  <section id="contact" class="relative overflow-hidden py-28 lg:py-36 text-center">
-    <span class="glow" style="width:690px;height:690px;--gc:#0066CC;top:-110px;left:50%;margin-left:-230px;" aria-hidden="true"></span>
-    <span class="glow glow-2" style="width:450px;height:450px;--gc:#22D3EE;bottom:-80px;right:12%;" aria-hidden="true"></span>
-    <span class="space-el" style="width:143px;height:38px;top:14%;left:8%;" aria-hidden="true"><span class="comet-glow" style="--sr-rgb:91,141,239;"></span><span class="space-comet" style="--sr-rgb:91,141,239;--rz:-12deg;"></span></span>
-    <span class="space-el" style="width:117px;height:33px;bottom:12%;right:9%;" aria-hidden="true"><span class="comet-glow" style="--sr-rgb:34,211,238;"></span><span class="space-comet" style="--sr-rgb:34,211,238;--rz:10deg;"></span></span>
-    <span class="space-el" style="width:130px;height:36px;top:40%;right:20%;" aria-hidden="true"><span class="comet-glow" style="--sr-rgb:0,102,204;"></span><span class="space-comet" style="--sr-rgb:0,102,204;--rz:-14deg;"></span></span>
-    <span class="space-el" style="width:108px;height:30px;bottom:32%;left:16%;" aria-hidden="true"><span class="comet-glow" style="--sr-rgb:34,211,238;"></span><span class="space-comet" style="--sr-rgb:34,211,238;--rz:16deg;"></span></span>
-    <span class="space-el" style="width:122px;height:34px;top:24%;right:34%;" aria-hidden="true"><span class="comet-glow" style="--sr-rgb:0,102,204;"></span><span class="space-comet" style="--sr-rgb:0,102,204;--rz:-18deg;"></span></span>
-    <div class="relative z-[1] mx-auto w-full max-w-screen-2xl px-6 lg:px-12" data-arrive>
-      <p class="eyebrow text-secondary dark:text-dk-secondary mb-4">06 · Connect</p>
-      <h2 class="display text-text dark:text-dk-text mb-5">
-        Let's build <span class="text-secondary dark:text-dk-secondary">something</span>.
+  <section id="contact" class="section overflow-hidden text-center" data-tone="home">
+    <span class="glow" style="width:640px;height:640px;--gc:#5B8DEF;top:-140px;left:50%;margin-left:-320px;" aria-hidden="true"></span>
+    <div class="wrap on-top" data-reveal>
+      <p class="kicker">Contact</p>
+      <h2 class="t-title mt-6">
+        Let's build something.
+        <span class="t-tail">Tell me what you're working on.</span>
       </h2>
-      <p class="text-lg lg:text-xl text-text/70 dark:text-dk-text/70 max-w-2xl mx-auto leading-relaxed mb-10">
-        Hiring for forward-deployed, applied AI, or anything in between? I'd love to hear what you're working on.
+      <p class="t-lede mx-auto mt-6">
+        Hiring for applied AI, or the last mile where software meets the people
+        who use it? I'd love to hear about it.
       </p>
-      <a
-        href={`mailto:${info.contact.email}`}
-        class="no-lift pane pane-glare inline-flex items-center gap-3 px-8 py-5 text-lg lg:text-xl font-bold tracking-tight text-text dark:text-dk-text"
-        data-magnetic
-        style="border-radius: 9999px;"
-      >
-        <Icon name="mail" size={20} class="text-secondary dark:text-dk-secondary" />
-        {info.contact.email}
-      </a>
-      <div class="mt-12 flex justify-center relative z-10">
-        <Contact contact={info.contact} size="md" client:visible />
+      <div class="mt-9 flex flex-wrap justify-center gap-3">
+        <a href={`mailto:${info.contact.email}`} class="btn btn-primary">
+          <Icon name="mail" size={16} /> {info.contact.email}
+        </a>
+        <a href={info.contact.linkedin} target="_blank" rel="noreferrer" class="btn btn-glass" aria-label="LinkedIn">
+          <Icon name="linkedin" size={15} /> LinkedIn
+        </a>
+        <a href={info.contact.github} target="_blank" rel="noreferrer" class="btn btn-glass" aria-label="GitHub">
+          <Icon name="github" size={15} /> GitHub
+        </a>
       </div>
     </div>
   </section>
 </BaseLayout>
 
-<script>
-  import {
-    initGlare,
-    initTilt,
-    initMagnetic,
-    initArrive,
-    initCountUps,
-    initAmbient,
-    initComets,
-  } from "../scripts/spatial";
+<style>
+  /* Hero */
+  .hero { min-height: 100svh; display: flex; align-items: center; padding-block: 120px 72px; }
+  .hero-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 48px;
+    align-items: center;
+  }
+  @media (min-width: 1024px) {
+    .hero-grid { grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); gap: 64px; }
+  }
+  .hero-title { margin-top: 28px; }
+  .hero-lede { margin-top: 24px; }
+  .hero-actions { margin-top: 32px; display: flex; flex-wrap: wrap; gap: 12px; }
+  .hero-legend { margin-top: 44px; display: grid; gap: 12px; }
+  .hero-legend-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+  .hero-portrait {
+    justify-self: center;
+    width: min(340px, 78vw);
+    margin: 0;
+    padding: 10px;
+    border-radius: 28px;
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.09), rgba(255, 255, 255, 0.02));
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.2),
+      0 40px 80px -40px rgba(0, 0, 0, 1);
+  }
+  @media (min-width: 1024px) { .hero-portrait { justify-self: end; } }
+  .hero-portrait :global(.hero-portrait-img) {
+    display: block;
+    width: 100%;
+    height: auto;
+    aspect-ratio: 520 / 640;
+    object-fit: cover;
+    border-radius: 20px;
+  }
 
-  initGlare(".pane-glare");
-  initTilt("[data-tilt]");
-  initMagnetic("[data-magnetic]");
-  initArrive("[data-arrive]");
-  initCountUps("[data-count]");
+  /* Proof strip */
+  .proof { position: relative; z-index: 1; border-block: 1px solid var(--line); background: rgba(0, 0, 0, 0.35); }
+  .proof-grid {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  @media (min-width: 1024px) { .proof-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+  .proof-grid > li { border-left: 1px solid var(--line); }
+  .proof-grid > li:nth-child(odd) { border-left: 0; }
+  @media (min-width: 1024px) {
+    .proof-grid > li:nth-child(odd) { border-left: 1px solid var(--line); }
+    .proof-grid > li:first-child { border-left: 0; }
+  }
+  @media (max-width: 1023px) {
+    .proof-grid > li:nth-child(n + 3) { border-top: 1px solid var(--line); }
+  }
+  .proof-item {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    padding: 28px 20px;
+    text-decoration: none;
+    transition: background-color 150ms var(--ease-glass);
+  }
+  @media (min-width: 1024px) { .proof-item { padding: 36px 28px; } }
+  .proof-item:hover { background: var(--wash); }
+
+  /* Projects bento */
+  .bento { display: grid; grid-template-columns: 1fr; gap: 16px; }
+  @media (min-width: 768px) { .bento { grid-template-columns: repeat(6, minmax(0, 1fr)); } }
+  @media (min-width: 1024px) { .bento { grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 20px; } }
+  .bento-lead { display: flex; flex-direction: column; }
+  @media (min-width: 768px) { .bento-lead { grid-column: span 6; } }
+  @media (min-width: 1024px) { .bento-lead { grid-column: span 7; } }
+  .bento-lead-media { aspect-ratio: 16 / 9; }
+  .bento-lead-title { font-size: clamp(1.375rem, 2.2vw, 1.75rem); margin-top: 14px; }
+  .card-badges { display: flex; gap: 6px; }
+  .bento-side { display: grid; gap: 16px; }
+  @media (min-width: 768px) { .bento-side { grid-column: span 6; grid-template-columns: 1fr 1fr; } }
+  @media (min-width: 1024px) { .bento-side { grid-column: span 5; grid-template-columns: 1fr; gap: 20px; } }
+  .card-h { display: grid; grid-template-columns: 132px minmax(0, 1fr); overflow: hidden; }
+  @media (min-width: 768px) and (max-width: 1023px) { .card-h { grid-template-columns: 1fr; } }
+  .card-h-media { overflow: hidden; background: #07080b; border-right: 1px solid var(--line); border-radius: 19px 0 0 19px; min-height: 120px; }
+  @media (min-width: 768px) and (max-width: 1023px) { .card-h-media { border-radius: 19px 19px 0 0; border-right: 0; border-bottom: 1px solid var(--line); aspect-ratio: 16 / 9; } }
+  .card-h-media :global(img) { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform 600ms var(--ease-glass); }
+  .card-h:hover .card-h-media :global(img) { transform: scale(1.04); }
+  .card-h-body { padding: 20px 22px; align-self: center; }
+  .bento-cell { display: flex; flex-direction: column; }
+  @media (min-width: 768px) { .bento-cell { grid-column: span 2; } }
+  @media (min-width: 1024px) { .bento-cell { grid-column: span 4; } }
+  .bento-cell-media { aspect-ratio: 16 / 9; }
+  .bento-wide {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 24px;
+    padding: 24px;
+    align-items: center;
+  }
+  @media (min-width: 768px) { .bento-wide { grid-column: span 6; } }
+  @media (min-width: 1024px) { .bento-wide { grid-column: span 12; grid-template-columns: minmax(0, 6fr) minmax(0, 5fr); gap: 40px; padding: 36px; } }
+  .media-fallback {
+    width: 100%;
+    height: 100%;
+    min-height: 100%;
+    display: grid;
+    place-items: center;
+    background:
+      radial-gradient(70% 90% at 20% 10%, rgba(var(--tone-rgb), 0.22), transparent 70%),
+      radial-gradient(60% 80% at 90% 100%, rgba(var(--tone-rgb), 0.1), transparent 70%),
+      #07080b;
+  }
+  .media-fallback span { font-size: 0.9375rem; font-weight: 500; color: var(--ink-faint); }
+
+  /* JobPilot mock: a quiet window, the scores in their own green. */
+  .jp-mock {
+    display: block;
+    border-radius: 16px;
+    border: 1px solid var(--line);
+    background: #07080b;
+    text-decoration: none;
+    font-size: 0.8125rem;
+    overflow: hidden;
+    transition: border-color 200ms var(--ease-glass);
+  }
+  .jp-mock:hover { border-color: var(--line-strong); }
+  .jp-mock-bar { display: flex; align-items: center; gap: 10px; padding: 12px 14px; border-bottom: 1px solid var(--line); color: var(--ink); font-weight: 500; }
+  .jp-dots { display: inline-flex; gap: 5px; }
+  .jp-dots i { width: 8px; height: 8px; border-radius: 9999px; background: rgba(255, 255, 255, 0.16); }
+  .jp-row {
+    display: grid;
+    grid-template-columns: 24px 36px minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 12px;
+    padding: 11px 14px;
+    color: var(--ink-soft);
+    border-bottom: 1px solid var(--line);
+  }
+  .jp-row:last-child { border-bottom: 0; }
+  .jp-score { color: #4ade80; font-weight: 600; }
+  .jp-bar { height: 4px; border-radius: 9999px; background: rgba(255, 255, 255, 0.08); overflow: hidden; }
+  .jp-bar span { display: block; height: 100%; background: #4ade80; border-radius: inherit; }
+  .jp-co { color: var(--ink-faint); white-space: nowrap; }
+  @media (max-width: 480px) { .jp-co { display: none; } .jp-row { grid-template-columns: 24px 36px minmax(0, 1fr); } }
+
+  /* Work */
+  .grid4 { display: grid; gap: 16px; grid-template-columns: 1fr; }
+  @media (min-width: 640px) { .grid4 { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  @media (min-width: 1024px) { .grid4 { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 20px; } }
+  .disc-card { display: flex; flex-direction: column; min-height: 230px; }
+
+  /* Writing */
+  .write-grid { display: grid; gap: 16px; grid-template-columns: 1fr; }
+  @media (min-width: 1024px) { .write-grid { grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); gap: 20px; } }
+  .write-lead { display: flex; flex-direction: column; }
+  .write-lead-media { aspect-ratio: 2 / 1; }
+  .write-lead-title { margin-top: 12px; font-size: clamp(1.25rem, 2vw, 1.5rem); line-height: 1.22; }
+  .write-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 16px; }
+  @media (min-width: 1024px) { .write-list { gap: 20px; grid-template-rows: repeat(3, 1fr); } }
+  .write-item { display: grid; grid-template-columns: 96px minmax(0, 1fr); gap: 16px; align-items: center; padding: 12px; height: 100%; }
+  .write-thumb { width: 96px; height: 76px; border-radius: 12px; overflow: hidden; background: #07080b; border: 1px solid var(--line); }
+  .write-thumb :global(img) { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+  /* Film */
+  .film-grid { display: grid; gap: 48px; grid-template-columns: 1fr; align-items: center; }
+  @media (min-width: 1024px) { .film-grid { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 72px; } }
+
+  /* Teaching */
+  .teach-grid { display: grid; gap: 16px; grid-template-columns: 1fr; }
+  @media (min-width: 900px) { .teach-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; } }
+  .teach-card { display: grid; grid-template-columns: 120px minmax(0, 1fr); gap: 20px; padding: 16px; }
+  @media (min-width: 640px) { .teach-card { grid-template-columns: 150px minmax(0, 1fr); gap: 24px; padding: 20px; } }
+  .teach-cover { border-radius: 12px; overflow: hidden; aspect-ratio: 3 / 4; background: #07080b; border: 1px solid var(--line); }
+  .teach-cover :global(img) { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .teach-body { display: flex; flex-direction: column; align-items: flex-start; padding-block: 4px; }
+
+  /* About */
+  .about-grid { display: grid; gap: 40px; grid-template-columns: 1fr; align-items: start; }
+  @media (min-width: 1024px) { .about-grid { grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: 56px; } }
+  .about-text { max-width: 36rem; font-size: 1rem; }
+  .about-timeline { overflow: hidden; }
+</style>
+
+<script>
+  import { initAmbient, initComets } from "../scripts/spatial";
+
   initComets(".space-el");
-  // Ambient colour flow anchored to the real section positions, so each
-  // section shows its own hue: hero blue/cyan, disciplines violet/amber,
-  // work amber, about blue, writing emerald, film red, contact brand blue.
+  // The background wash follows the section in view, so the sky takes each
+  // tab's colour as you scroll past its preview.
   initAmbient(
     [
       ["91,141,239", "34,211,238"],
-      ["167,139,250", "245,165,36"],
-      ["245,165,36", "245,165,36"],
       ["91,141,239", "91,141,239"],
-      ["52,211,153", "91,141,239"],
+      ["245,165,36", "245,165,36"],
+      ["52,211,153", "52,211,153"],
       ["244,63,94", "244,63,94"],
-      ["0,102,204", "34,211,238"],
+      ["34,211,238", "34,211,238"],
+      ["91,141,239", "167,139,250"],
+      ["91,141,239", "34,211,238"],
     ],
-    ["home", "disciplines", "work", "about", "writing", "filmmaking", "contact"],
+    ["home", "projects", "work", "writing", "film", "teaching", "about", "contact"],
   );
-
-  // The work deck, derived from one number per card: its depth in the stack.
-  //
-  // Wide screens with motion allowed: all cards share a single grid cell,
-  // stacked like a hand of cards. The deck pins to the screen while its tall
-  // track scrolls past, and scroll progress becomes a front index f that runs
-  // 0 to n minus 1. Each card's depth follows from f:
-  //
-  //   waiting (i >= f): d = i - f, sits BELOW the front card:
-  //                     translateY(+YSTEP * d) scale(1 - SCALE * d)
-  //   passed  (i < f):  a = min(f - i, 1), older = max(f - i - 1, 0),
-  //                     lifts up and parks ABOVE the front card, wallet style,
-  //                     with an extra arc of lift that peaks mid trip:
-  //                     translateY(-(UPY * a + UPGAP * older + ARC * sin(pi a)))
-  //                     scale(1 - UPSCALE * a - UPSCALEGAP * older)
-  //
-  // So the sharp front card sits in the middle, the cards still to come peek
-  // out as even strips below its bottom edge, and the cards already passed
-  // peek out as even strips above its top edge, the most recent one nearest.
-  // Every pose is a pure function of f, so scrolling up replays the whole
-  // thing in reverse and a passed card comes back down from the top strips
-  // into the front slot.
-  //
-  // Depth cueing is brightness only. Never opacity: the cards overlap, and a
-  // translucent card lets the text behind it bleed through.
-  (function () {
-    const section = document.getElementById("work");
-    const track = document.querySelector<HTMLElement>(".deck-track");
-    const pin = document.querySelector<HTMLElement>(".deck-pin");
-    const deckEl = document.querySelector<HTMLElement>(".deck");
-    const items = Array.from(
-      document.querySelectorAll<HTMLElement>(".deck-item"),
-    );
-    const cards = Array.from(
-      document.querySelectorAll<HTMLElement>(".deck-card"),
-    );
-    const n = cards.length;
-    if (!track || !pin || !deckEl || n < 2 || items.length !== n) return;
-
-    // Reduced motion: the CSS lays the cards out as a plain vertical list.
-    // Clear anything inline and stay out of the way.
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-      track.style.height = "";
-      pin.style.top = "";
-      cards.forEach((c) => {
-        c.style.transform = "";
-        c.style.transformOrigin = "";
-        c.style.filter = "";
-        c.style.pointerEvents = "";
-      });
-      items.forEach((li) => {
-        li.style.zIndex = "";
-      });
-      return;
-    }
-
-    // The whole feel lives in these numbers.
-    const STEP = 0.85; // screens of scroll per handoff
-    const HOLD = 0.3; // fraction of a step where the front card holds still
-    const YSTEP = 24; // px of drop per unit of waiting depth
-    const SCALE = 0.045; // shrink per unit of waiting depth
-    const UPY = 20; // px the newest passed card peeks above the front card
-    const UPGAP = 12; // extra lift per earlier passed card
-    const ARC = 36; // extra mid trip lift: the card pulls out, then settles
-    const UPSCALE = 0.06; // shrink of a freshly passed card
-    const UPSCALEGAP = 0.02; // extra shrink per earlier passed card
-
-    const desktop = () => window.innerWidth >= 1024;
-
-    // Arm the desktop stacking CSS. Without JS the class never lands, the
-    // grid overlap never applies, and the page stays a readable list.
-    track.classList.add("deck-on");
-
-    // The section decor reads its colour from the front card, crossfading
-    // between the two cards involved in the current handoff.
-    const rgbs = items.map((li) =>
-      (li.dataset.rgb || "245,165,36").split(",").map((v) => parseFloat(v)),
-    );
-    const tint = (a: number, b: number, f: number) => {
-      if (!section || !rgbs[a] || !rgbs[b]) return;
-      const mix = [0, 1, 2].map((j) =>
-        Math.round(rgbs[a][j] + (rgbs[b][j] - rgbs[a][j]) * f),
-      );
-      section.style.setProperty("--work-rgb", mix.join(","));
-      section.style.setProperty("--work-hex", `rgb(${mix.join(",")})`);
-    };
-
-    // The track must be exactly deck height plus one step of scroll per
-    // handoff, and it must be HEIGHT, not padding: a sticky child can only
-    // roam its parent's content box. CSS holds an estimate; this writes the
-    // real number.
-    const measure = () => {
-      if (!desktop()) {
-        track.style.height = "";
-        pin.style.top = "";
-        return;
-      }
-      const deck = pin.offsetHeight;
-      if (!deck) return;
-      // Ceiling for the pin line: where the deck rests in normal flow,
-      // measured from the top of the section. Pin any lower than this and
-      // sticky yanks the deck DOWN to meet the pin line as the section
-      // arrives, which reads as the card dropping before its run starts.
-      const rest = section
-        ? Math.round(
-            track.getBoundingClientRect().top -
-              section.getBoundingClientRect().top,
-          )
-        : Infinity;
-      // Pin near the top, not centred: the deck rides in right behind the
-      // section heading and sticks just under the nav, so the first hand off
-      // starts on the very next scroll with no dead travel and no drop.
-      // 136px = 76px of nav clearance plus headroom for the passed cards,
-      // whose strips and mid trip arc reach about 47px above the front card.
-      pin.style.top = `${Math.max(76, Math.min(136, rest))}px`;
-      track.style.height = `${Math.round(deck + (n - 1) * window.innerHeight * STEP)}px`;
-    };
-
-    const paintDesktop = () => {
-      const r = track.getBoundingClientRect();
-      const span = Math.max(r.height - pin.offsetHeight, 1);
-      const pinTop = parseFloat(getComputedStyle(pin).top) || 0;
-      const scrolled = Math.min(Math.max(pinTop - r.top, 0), span);
-      const p = (scrolled / span) * (n - 1);
-
-      // Progress inside the current step, with a dwell: the front card does
-      // not move at all for the first HOLD of its step, then eases away on a
-      // smootherstep, reluctant to leave and settling softly.
-      const step = Math.max(0, Math.min(Math.floor(p), n - 2));
-      const u = p - step;
-      const t = u <= HOLD ? 0 : Math.min((u - HOLD) / (1 - HOLD), 1);
-      const e = t * t * t * (t * (t * 6 - 15) + 10);
-      const f = step + e;
-
-      tint(step, Math.min(step + 1, n - 1), e);
-
-      for (let i = 0; i < n; i++) {
-        const card = cards[i];
-        const s = f - i; // how far past this card the front line has moved
-        let y: number;
-        let k: number;
-        let bright: number;
-        let z: number;
-        let pass = 0; // mid trip amount, nonzero only for the moving card
-
-        if (s <= 0) {
-          // Waiting: stacked behind and BELOW the front card. The CSS origin
-          // is the bottom edge, so each strip below stays even as it shrinks.
-          const d = -s;
-          y = YSTEP * d;
-          k = 1 - SCALE * d;
-          bright = Math.max(1 - 0.15 * d, 0.5);
-          z = 1000 - Math.round(d * 100);
-          card.style.transformOrigin = "";
-        } else {
-          // Passed: lifted behind and ABOVE the front card, wallet style, so
-          // its top edge peeks out over the front card as an even strip. The
-          // origin moves to the top edge so the strip keeps its height while
-          // the card shrinks; the switch happens at s = 0, where the pose is
-          // the identity transform, so nothing jumps.
-          const a = Math.min(s, 1); // its own trip up, 0 to 1
-          const older = Math.min(Math.max(s - 1, 0), n); // handoffs since
-          pass = s < 1 ? Math.sin(Math.PI * a) : 0;
-          // The trip is an arc: besides the ride to its parked strip, ARC of
-          // extra lift that peaks mid trip and settles back to zero, so the
-          // card visibly pulls up out of the stack, travels over the deck,
-          // and slots into the top strips.
-          y = -(UPY * a + UPGAP * older + ARC * pass);
-          k = 1 - UPSCALE * a - UPSCALEGAP * older;
-          bright = Math.max(1 - 0.4 * a - 0.05 * older, 0.5);
-          // Below the front card, above older passed cards. This z falls by
-          // 150 over the trip while the arriving card's climbs by 100, so
-          // they cross at a = 0.4, under the blur that masks the swap.
-          z = 1000 - Math.round(a * 150) - Math.round(older * 50);
-          card.style.transformOrigin = "50% 0%";
-        }
-
-        card.style.transform = `translate3d(0, ${y.toFixed(1)}px, 0) scale(${k.toFixed(4)})`;
-        // Depth cueing is brightness, never opacity. The card on the move
-        // dips a touch darker with up to 2px of blur at the middle of its
-        // trip, which masks the moment it slips behind the arriving card.
-        bright *= 1 - 0.12 * pass;
-        card.style.filter =
-          pass > 0.02
-            ? `brightness(${bright.toFixed(3)}) blur(${(2 * pass).toFixed(2)}px)`
-            : bright < 0.999
-              ? `brightness(${bright.toFixed(3)})`
-              : "";
-        // Depth decides what covers what. The z-index has to go on the <li>:
-        // each grid item is its own stacking context, so a z-index on the
-        // inner div would do nothing.
-        items[i].style.zIndex = `${z}`;
-        // Only the front card takes clicks.
-        card.style.pointerEvents = Math.abs(s) < 0.5 ? "auto" : "none";
-      }
-    };
-
-    // Phones: the CSS swipe deck does the layout. The centred card is full
-    // size, neighbours shrink and dim by brightness, never opacity.
-    const paintMobile = () => {
-      const mid = window.innerWidth / 2;
-      let nearest = 0;
-      let best = Infinity;
-      for (let i = 0; i < n; i++) {
-        const card = cards[i];
-        const r = card.getBoundingClientRect();
-        const off = Math.min(
-          Math.abs(r.left + r.width / 2 - mid) / (r.width || 1),
-          1,
-        );
-        if (off < best) {
-          best = off;
-          nearest = i;
-        }
-        card.style.transform = `scale(${(1 - 0.14 * off).toFixed(4)})`;
-        card.style.transformOrigin = "";
-        card.style.filter =
-          off > 0.02 ? `brightness(${(1 - 0.4 * off).toFixed(3)})` : "";
-        card.style.pointerEvents = "";
-        items[i].style.zIndex = "";
-      }
-      tint(nearest, nearest, 0);
-    };
-
-    let queued = false;
-    const paint = () => {
-      queued = false;
-      if (desktop()) paintDesktop();
-      else paintMobile();
-    };
-    const onScroll = () => {
-      if (queued) return;
-      queued = true;
-      requestAnimationFrame(paint);
-    };
-    const remeasure = () => {
-      measure();
-      onScroll();
-    };
-
-    window.addEventListener("scroll", onScroll, { passive: true });
-    deckEl.addEventListener("scroll", onScroll, { passive: true });
-    window.addEventListener("resize", remeasure);
-    window.addEventListener("load", remeasure);
-    if ("ResizeObserver" in window) {
-      new ResizeObserver(remeasure).observe(pin);
-    }
-    measure();
-    paint();
-  })();
-
-  // Progress rail: highlight the dot for the section in view.
-  (function () {
-    const links = new Map<string, HTMLElement>();
-    document
-      .querySelectorAll<HTMLElement>(".rail a[data-rail]")
-      .forEach((a) => links.set(a.dataset.rail || "", a));
-    if (!links.size || !("IntersectionObserver" in window)) return;
-    const io = new IntersectionObserver(
-      (entries) => {
-        for (const en of entries) {
-          if (!en.isIntersecting) continue;
-          links.forEach((a) => a.classList.remove("on"));
-          links.get(en.target.id)?.classList.add("on");
-        }
-      },
-      { rootMargin: "-45% 0px -45% 0px", threshold: 0 },
-    );
-    links.forEach((_, id) => {
-      const s = document.getElementById(id);
-      if (s) io.observe(s);
-    });
-  })();
 </script>

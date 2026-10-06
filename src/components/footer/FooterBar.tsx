@@ -1,96 +1,94 @@
 import { info } from "../../data/info";
 
-type FooterVariant = "default" | "filmmaking";
+type FooterVariant = "default" | "filmmaking" | "minimal";
 
 interface FooterBarProps {
   variant?: FooterVariant;
 }
 
+const TABS = [
+  { name: "Projects", href: "/projects", tone: "projects" },
+  { name: "Work", href: "/work", tone: "work" },
+  { name: "Writing", href: "/posts", tone: "writing" },
+  { name: "Film", href: "/filmmaking", tone: "film" },
+  { name: "Teaching", href: "/teaching", tone: "teaching" },
+  { name: "Mind", href: "/mind", tone: "mind" },
+];
+
 export default function FooterBar({ variant = "default" }: FooterBarProps) {
-  const defaultLinks = [
-    {
-      icon: "fas fa-envelope",
-      href: `mailto:${info.contact.email}`,
-      label: "Email",
-    },
-    {
-      icon: "fab fa-github",
-      href: info.contact.github,
-      label: "GitHub",
-    },
-    {
-      icon: "fab fa-linkedin",
-      href: info.contact.linkedin,
-      label: "LinkedIn",
-    },
-    {
-      icon: "fab fa-instagram",
-      href: info.contact.instagram,
-      label: "Instagram",
-    },
-    {
-      icon: "fas fa-file-lines",
-      href: info.cv,
-      label: "Resume",
-    },
-  ];
+  // Full screen pages (the /mind map) keep the screen to themselves.
+  if (variant === "minimal") return null;
 
-  const filmmakingLinks = [
-    {
-      icon: "fas fa-envelope",
-      href: `mailto:${info.contact.email}`,
-      label: "Email",
-    },
-    {
-      icon: "fab fa-instagram",
-      href: info.contact.instagram,
-      label: "Instagram",
-    },
-    {
-      icon: "fab fa-youtube",
-      href: "https://hi.switchy.io/q3Ng",
-      label: "Among Monsters Playlist",
-    },
-    {
-      icon: "fab fa-imdb",
-      href: "https://hi.switchy.io/q94P",
-      label: "IMDb",
-    },
-  ];
-
-  const socialLinks = variant === "filmmaking" ? filmmakingLinks : defaultLinks;
+  const elsewhere =
+    variant === "filmmaking"
+      ? [
+          { label: "Instagram", href: info.contact.instagram },
+          { label: "Among Monsters playlist", href: "https://hi.switchy.io/q3Ng" },
+          { label: "IMDb", href: "https://hi.switchy.io/q94P" },
+          { label: "Email", href: `mailto:${info.contact.email}` },
+        ]
+      : [
+          { label: "LinkedIn", href: info.contact.linkedin },
+          { label: "GitHub", href: info.contact.github },
+          { label: "Instagram", href: info.contact.instagram },
+          { label: "Resume", href: info.cv },
+        ];
 
   return (
-    <footer className="mt-12 border-t border-secondary/20 dark:border-dk-secondary/20">
-      <div className="container mx-auto px-4 py-6 flex flex-wrap justify-center gap-6 text-2xl text-secondary dark:text-dk-secondary">
-        {socialLinks.map((link) =>
-          link.disabled ? (
-            <span
-              key={link.label}
-              aria-label={link.label}
-              className="opacity-50 cursor-default"
-            >
-              <i className={link.icon}></i>
-            </span>
-          ) : (
+    <footer className="site-foot">
+      <div className="wrap">
+        <div className="site-foot-grid">
+          <div>
+            <p className="t-h3">Sampreeth Avvari</p>
+            <p className="t-small mt-2 max-w-sm">
+              AI engineer in New York. I build the systems a dental implant
+              practice runs on, and I make films.
+            </p>
             <a
-              key={link.label}
-              href={link.href}
-              target={link.download ? undefined : "_blank"}
-              rel={link.download ? undefined : "noreferrer"}
-              aria-label={link.label}
-              download={link.download}
-              className="hover:text-accent dark:hover:text-dk-accent transition"
+              href={`mailto:${info.contact.email}`}
+              className="btn btn-glass btn-sm mt-5"
             >
-              <i className={link.icon}></i>
+              {info.contact.email}
             </a>
-          )
-        )}
+          </div>
+          <div>
+            <h2>On this site</h2>
+            <ul>
+              {TABS.map((t) => (
+                <li key={t.href}>
+                  <a href={t.href} className="foot-link" data-tone={t.tone}>
+                    <i className="nav-dot" aria-hidden="true" />
+                    {t.name}
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </div>
+          <div>
+            <h2>Elsewhere</h2>
+            <ul>
+              {elsewhere.map((l) => (
+                <li key={l.label}>
+                  <a
+                    href={l.href}
+                    className="foot-link"
+                    target={l.href.startsWith("mailto:") ? undefined : "_blank"}
+                    rel="noreferrer"
+                  >
+                    {l.label}
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
+        <div className="site-foot-base">
+          <p className="t-meta">© {new Date().getFullYear()} Sampreeth Avvari</p>
+          <p className="t-meta">
+            Visits are counted with Cloudflare Web Analytics. No cookies, no ads, no tracking across sites.
+          </p>
+        </div>
       </div>
-      <p className="pb-6 px-4 text-center text-xs text-text/40 dark:text-dk-text/40 tracking-wide">
-        Visits are counted with Cloudflare Web Analytics. Basic traffic stats
-        only, no cookies, no ads, no cross-site tracking.
-      </p>
     </footer>
   );
 }

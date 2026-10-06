@@ -8,26 +8,30 @@ const dataJson = JSON.stringify(mindGraphs).replace(/</g, "\\u003c");
 ---
 
 <BaseLayout
-  title="Mind — Sampreeth Avvari"
+  title="Mind · Sampreeth Avvari"
   description="A living star map of my work: projects, disciplines, the tools they share, and every repository I have contributed to."
   footerVariant="minimal"
 >
-  <main class="mind-root" aria-label="Mind, an interactive map of my work">
+  <div class="mind-root" role="region" aria-label="Mind, an interactive map of my work">
     <canvas id="mind-canvas" class="mind-canvas" aria-hidden="true"></canvas>
 
-    <aside class="mind-panel pane pane-rim" data-mind-panel>
+    <!-- The panel floats over the map, so it is navigation layer glass. -->
+    <aside class="mind-panel lg lg-thick" data-mind-panel>
       <header class="mind-head">
-        <p class="mind-eyebrow">Constellation</p>
-        <h1 class="mind-title">Mind</h1>
+        <p class="kicker">Mind</p>
+        <h1 class="mind-title">
+          A star map of my work.
+          <span class="t-tail">Everything I've built, and what ties it together.</span>
+        </h1>
         <p class="mind-sub" data-mind-sub>Loading the sky…</p>
       </header>
 
       <div class="mind-modes" role="tablist" aria-label="Which map">
         <button class="mind-mode is-active" data-mode="portfolio" role="tab" aria-selected="true">
-          <span class="mind-mode-dot" style="--d:#34D399"></span>Portfolio Graph
+          Portfolio graph
         </button>
         <button class="mind-mode" data-mode="repo" role="tab" aria-selected="false">
-          <span class="mind-mode-dot" style="--d:#22D3EE"></span>Git Mind
+          Git mind
         </button>
       </div>
 
@@ -38,17 +42,17 @@ const dataJson = JSON.stringify(mindGraphs).replace(/</g, "\\u003c");
       <ul class="mind-legend" data-mind-legend aria-hidden="true"></ul>
 
       <p class="mind-hint">
-        <span>Scroll to zoom</span><span class="mind-dot">·</span><span>drag to pan</span
+        <span>Scroll to zoom</span><span class="mind-dot">·</span><span>drag to turn</span
         ><span class="mind-dot">·</span><span>tap a star</span>
       </p>
     </aside>
 
-    <button class="mind-reset pane" data-mind-reset title="Reset view" aria-label="Reset view">
+    <button class="mind-reset lg" data-mind-reset title="Reset view" aria-label="Reset view">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/></svg>
     </button>
 
     <script type="application/json" id="mind-data" set:html={dataJson}></script>
-  </main>
+  </div>
 
   <script>
     import { mountMind } from "../scripts/mind-stage";
@@ -62,24 +66,10 @@ const dataJson = JSON.stringify(mindGraphs).replace(/</g, "\\u003c");
     height: 100vh;
     height: 100dvh;
     overflow: hidden;
-    /* faint aurora in the four discipline colours, one per quadrant:
-       FDE amber (top-left), SDE red (top-right),
-       AIE emerald (bottom-left), MLE purple (bottom-right). */
+    /* A soft wash of the Mind tab's violet, nothing else. */
     background:
-      radial-gradient(58% 52% at 6% 6%, rgba(245, 165, 36, 0.1), transparent 62%),
-      radial-gradient(58% 52% at 94% 6%, rgba(244, 63, 94, 0.11), transparent 62%),
-      radial-gradient(58% 52% at 6% 94%, rgba(52, 211, 153, 0.11), transparent 62%),
-      radial-gradient(58% 52% at 94% 94%, rgba(167, 139, 250, 0.11), transparent 62%);
-  }
-
-  /* Git Mind: tech-stack corners. AI/ML emerald (TL), Frontend cyan (TR),
-     Backend amber (BL), Data blue (BR). */
-  .mind-root[data-graph="repo"] {
-    background:
-      radial-gradient(58% 52% at 6% 6%, rgba(52, 211, 153, 0.11), transparent 62%),
-      radial-gradient(58% 52% at 94% 6%, rgba(34, 211, 238, 0.11), transparent 62%),
-      radial-gradient(58% 52% at 6% 94%, rgba(245, 165, 36, 0.1), transparent 62%),
-      radial-gradient(58% 52% at 94% 94%, rgba(91, 141, 239, 0.11), transparent 62%);
+      radial-gradient(56% 50% at 4% 0%, rgba(var(--tone-rgb), 0.12), transparent 64%),
+      radial-gradient(52% 48% at 100% 100%, rgba(var(--tone-rgb), 0.08), transparent 64%);
   }
 
   .mind-canvas {
@@ -94,190 +84,192 @@ const dataJson = JSON.stringify(mindGraphs).replace(/</g, "\\u003c");
   .mind-canvas.is-panning { cursor: grabbing; }
   .mind-canvas.is-over { cursor: pointer; }
 
-  /* Liquid-glass control panel, echoing the site's .pane cards. */
+  /* The control panel. */
   .mind-panel {
     position: absolute;
-    top: calc(env(safe-area-inset-top, 0px) + 84px);
-    left: 24px;
-    width: min(340px, calc(100vw - 48px));
-    padding: 22px 22px 18px;
+    top: calc(env(safe-area-inset-top, 0px) + 88px);
+    left: var(--gutter);
+    width: min(344px, calc(100vw - 48px));
+    padding: 22px 20px 18px;
+    border-radius: 24px;
     z-index: 6;
     display: flex;
     flex-direction: column;
     gap: 16px;
-    animation: mind-rise 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
+    animation: mind-rise 500ms var(--ease-glass) both;
   }
 
-  .mind-head { display: flex; flex-direction: column; gap: 2px; }
-  .mind-eyebrow {
-    font-family: "SF Mono", ui-monospace, Menlo, Consolas, monospace;
-    font-size: 0.66rem;
-    letter-spacing: 0.28em;
-    text-transform: uppercase;
-    color: rgba(245, 245, 247, 0.5);
-    margin: 0;
-  }
+  .mind-head { display: flex; flex-direction: column; }
   .mind-title {
-    font-size: 2.1rem;
-    line-height: 1;
+    margin: 16px 0 0;
+    font-size: 1.5rem;
+    line-height: 1.16;
+    letter-spacing: -0.03em;
     font-weight: 600;
-    letter-spacing: -0.02em;
-    margin: 0;
-    background: linear-gradient(120deg, #f5f5f7 20%, #34d399 60%, #22d3ee 90%);
-    -webkit-background-clip: text;
-    background-clip: text;
-    color: transparent;
+    color: var(--ink);
+    text-wrap: balance;
   }
   .mind-sub {
-    font-size: 0.82rem;
-    line-height: 1.4;
-    color: rgba(245, 245, 247, 0.62);
-    margin: 4px 0 0;
-    min-height: 1.1em;
+    margin: 12px 0 0;
+    font-size: 0.875rem;
+    line-height: 1.5;
+    color: var(--ink-soft);
+    min-height: 1.3em;
   }
 
+  /* Segmented control: a quiet track, the lens marks where you are. */
   .mind-modes {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 8px;
+    gap: 4px;
     padding: 4px;
-    border-radius: 14px;
-    background: rgba(255, 255, 255, 0.04);
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 9999px;
+    background: var(--wash);
+    border: 1px solid var(--line);
   }
   .mind-mode {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    gap: 7px;
-    padding: 9px 8px;
-    border-radius: 10px;
-    font-size: 0.78rem;
-    font-weight: 550;
-    color: rgba(245, 245, 247, 0.66);
+    height: 34px;
+    padding: 0 12px;
+    border-radius: 9999px;
+    font: inherit;
+    font-size: 0.8125rem;
+    font-weight: 500;
+    letter-spacing: -0.006em;
+    color: var(--ink-soft);
     background: transparent;
-    border: 1px solid transparent;
+    border: 0;
     cursor: pointer;
-    transition: background 0.3s ease, color 0.3s ease, border-color 0.3s ease;
     white-space: nowrap;
+    transition: color 150ms var(--ease-glass), background-color 150ms var(--ease-glass), box-shadow 250ms var(--ease-glass);
   }
-  .mind-mode:hover { color: #f5f5f7; }
+  .mind-mode:hover { color: var(--ink); transform: none; }
+  .mind-mode:focus-visible { outline: none; box-shadow: 0 0 0 3px rgba(var(--tone-rgb), 0.45); }
   .mind-mode.is-active {
-    color: #f5f5f7;
-    background: rgba(255, 255, 255, 0.08);
-    border-color: rgba(255, 255, 255, 0.14);
-    box-shadow: 0 6px 18px -12px rgba(0, 0, 0, 0.7);
-  }
-  .mind-mode-dot {
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-    background: var(--d);
-    box-shadow: 0 0 10px 1px var(--d);
-    flex: none;
+    color: var(--ink);
+    background: rgba(255, 255, 255, 0.11);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.22),
+      inset 0 -1px 0 rgba(0, 0, 0, 0.2),
+      0 2px 8px -2px rgba(0, 0, 0, 0.6);
   }
 
+  /* The detail card. Its contents are written by the script, so they are
+     styled with :global(). */
   .mind-detail {
     border-radius: 16px;
-    border: 1px solid rgba(255, 255, 255, 0.09);
-    background: linear-gradient(165deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.015));
-    padding: 14px 15px;
-    min-height: 96px;
+    background: var(--wash);
+    border: 1px solid var(--line);
+    padding: 14px 16px;
+    min-height: 92px;
     display: flex;
     flex-direction: column;
     gap: 8px;
   }
-  .mind-detail-hint {
-    font-size: 0.8rem;
-    color: rgba(245, 245, 247, 0.45);
+  .mind-detail :global(.mind-detail-hint) {
     margin: 0;
+    font-size: 0.875rem;
     line-height: 1.5;
+    color: var(--ink-faint);
+    text-wrap: pretty;
   }
-  .mind-detail-kind {
-    font-family: "SF Mono", ui-monospace, Menlo, Consolas, monospace;
-    font-size: 0.62rem;
-    letter-spacing: 0.22em;
-    text-transform: uppercase;
-    color: var(--nc, #34d399);
+  .mind-detail :global(.mind-detail-kind) {
     margin: 0;
     display: inline-flex;
     align-items: center;
-    gap: 7px;
+    gap: 8px;
+    font-size: 0.8125rem;
+    line-height: 1.4;
+    color: var(--ink-faint);
+    font-variant-numeric: tabular-nums;
   }
-  .mind-detail-kind::before {
+  .mind-detail :global(.mind-detail-kind::before) {
     content: "";
     width: 7px;
     height: 7px;
-    border-radius: 50%;
-    background: var(--nc, #34d399);
-    box-shadow: 0 0 9px 1px var(--nc, #34d399);
+    border-radius: 9999px;
+    background: var(--nc, var(--ink-faint));
+    flex: none;
   }
-  .mind-detail-title {
-    font-size: 1.02rem;
+  .mind-detail :global(.mind-detail-title) {
+    margin: 0;
+    font-size: 1rem;
+    line-height: 1.35;
+    letter-spacing: -0.012em;
     font-weight: 600;
-    color: #f5f5f7;
-    margin: 0;
-    line-height: 1.25;
-    letter-spacing: -0.01em;
+    color: var(--ink);
   }
-  .mind-detail-blurb {
-    font-size: 0.82rem;
-    line-height: 1.5;
-    color: rgba(245, 245, 247, 0.66);
+  .mind-detail :global(.mind-detail-blurb) {
     margin: 0;
+    font-size: 0.875rem;
+    line-height: 1.55;
+    color: var(--ink-soft);
   }
-  .mind-detail-link {
+  .mind-detail :global(.mind-chips) { display: flex; flex-wrap: wrap; gap: 6px; }
+  .mind-detail :global(.mind-chip) {
+    display: inline-flex;
+    align-items: center;
+    height: 22px;
+    padding: 0 9px;
+    border-radius: 9999px;
+    font-size: 0.71875rem;
+    font-weight: 500;
+    line-height: 1;
+    white-space: nowrap;
+    color: var(--ink-soft);
+    background: var(--wash-strong);
+  }
+  .mind-detail :global(.mind-detail-link) {
     align-self: flex-start;
-    margin-top: 2px;
+    margin-top: 4px;
     display: inline-flex;
     align-items: center;
     gap: 6px;
-    font-size: 0.78rem;
-    font-weight: 550;
-    color: var(--nc, #34d399);
+    height: 32px;
+    padding: 0 13px;
+    border-radius: 9999px;
+    font-size: 0.8125rem;
+    font-weight: 500;
+    color: var(--ink);
     text-decoration: none;
-    padding: 5px 11px;
-    border-radius: 999px;
-    border: 1px solid color-mix(in srgb, var(--nc, #34d399) 42%, transparent);
-    background: color-mix(in srgb, var(--nc, #34d399) 12%, transparent);
-    transition: background 0.25s ease, transform 0.25s ease;
+    background:
+      linear-gradient(180deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.03)),
+      rgba(10, 11, 15, 0.35);
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2);
+    transition: border-color 150ms var(--ease-glass), background-color 150ms var(--ease-glass), transform 250ms var(--ease-glass);
   }
-  .mind-detail-link:hover { background: color-mix(in srgb, var(--nc, #34d399) 22%, transparent); transform: translateY(-1px); }
+  .mind-detail :global(.mind-detail-link:hover) { border-color: rgba(255, 255, 255, 0.26); transform: translateY(-1px); }
+  .mind-detail :global(.mind-detail-link svg) { transition: transform 250ms var(--ease-glass); }
+  .mind-detail :global(.mind-detail-link:hover svg) { transform: translate(1px, -1px); }
 
-  .mind-chips { display: flex; flex-wrap: wrap; gap: 5px; }
-  .mind-chip {
-    font-family: "SF Mono", ui-monospace, Menlo, Consolas, monospace;
-    font-size: 0.62rem;
-    letter-spacing: 0.02em;
-    color: rgba(245, 245, 247, 0.72);
-    padding: 3px 8px;
-    border-radius: 999px;
-    background: color-mix(in srgb, var(--nc, #34d399) 12%, rgba(255, 255, 255, 0.04));
-    border: 1px solid color-mix(in srgb, var(--nc, #34d399) 26%, rgba(255, 255, 255, 0.06));
-  }
-
+  /* Legend: what each colour of star is. Written by the script too. */
   .mind-legend {
     list-style: none;
     margin: 0;
     padding: 0;
     display: flex;
     flex-wrap: wrap;
-    gap: 6px 12px;
+    gap: 6px 14px;
   }
-  .mind-legend li {
+  .mind-legend :global(li) {
     display: inline-flex;
     align-items: center;
-    gap: 6px;
-    font-size: 0.7rem;
-    color: rgba(245, 245, 247, 0.5);
+    gap: 7px;
+    font-size: 0.8125rem;
+    line-height: 1.4;
+    color: var(--ink-soft);
   }
-  .mind-legend li::before {
+  .mind-legend :global(li::before) {
     content: "";
     width: 7px;
     height: 7px;
-    border-radius: 50%;
+    border-radius: 9999px;
     background: var(--lc);
     box-shadow: 0 0 8px 0 var(--lc);
+    flex: none;
   }
 
   .mind-hint {
@@ -285,49 +277,60 @@ const dataJson = JSON.stringify(mindGraphs).replace(/</g, "\\u003c");
     align-items: center;
     gap: 7px;
     flex-wrap: wrap;
-    font-size: 0.68rem;
-    color: rgba(245, 245, 247, 0.4);
     margin: 0;
+    padding-top: 14px;
+    border-top: 1px solid var(--line);
+    font-size: 0.8125rem;
+    line-height: 1.4;
+    color: var(--ink-faint);
   }
-  .mind-dot { opacity: 0.5; }
+  .mind-dot { opacity: 0.6; }
 
   .mind-reset {
     position: absolute;
-    right: 24px;
+    right: var(--gutter);
     bottom: calc(env(safe-area-inset-bottom, 0px) + 24px);
     z-index: 6;
-    width: 42px;
-    height: 42px;
-    border-radius: 50%;
+    width: 44px;
+    height: 44px;
+    border-radius: 9999px;
+    border: 0;
     display: grid;
     place-items: center;
-    color: rgba(245, 245, 247, 0.7);
+    color: var(--ink-soft);
     cursor: pointer;
     padding: 0;
-    transition: color 0.25s ease, transform 0.25s ease;
+    transition: color 150ms var(--ease-glass), transform 250ms var(--ease-glass);
   }
-  .mind-reset:hover { color: #f5f5f7; transform: rotate(-40deg); }
+  .mind-reset:hover { color: var(--ink); transform: rotate(-40deg); }
+  .mind-reset:focus-visible { outline: none; box-shadow: 0 0 0 3px rgba(var(--tone-rgb), 0.45); }
 
   @keyframes mind-rise {
-    from { opacity: 0; transform: translateY(14px); }
-    to { opacity: 1; transform: translateY(0); }
+    from { opacity: 0; transform: translateY(12px); }
+    to { opacity: 1; transform: none; }
   }
 
+  /* Phones: the panel becomes a sheet at the bottom and keeps only what you
+     need to use the map. */
   @media (max-width: 640px) {
     .mind-panel {
       top: auto;
-      bottom: calc(env(safe-area-inset-bottom, 0px) + 16px);
-      left: 16px;
-      right: 16px;
+      bottom: calc(env(safe-area-inset-bottom, 0px) + 12px);
+      left: 12px;
+      right: 12px;
       width: auto;
       padding: 16px 16px 14px;
       gap: 12px;
+      border-radius: 22px;
     }
-    .mind-title { font-size: 1.7rem; }
-    .mind-reset { right: 16px; bottom: auto; top: calc(env(safe-area-inset-top, 0px) + 84px); }
+    .mind-title { margin-top: 12px; font-size: 1.25rem; }
+    .mind-title .t-tail, .mind-sub, .mind-hint { display: none; }
+    .mind-detail { min-height: 0; padding: 12px 14px; }
+    .mind-reset { right: 16px; bottom: auto; top: calc(env(safe-area-inset-top, 0px) + 88px); }
   }
 
   @media (prefers-reduced-motion: reduce) {
     .mind-panel { animation: none; }
+    .mind-reset:hover { transform: none; }
   }
 </style>

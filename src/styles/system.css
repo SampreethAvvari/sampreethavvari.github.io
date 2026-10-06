@@ -1,0 +1,817 @@
+/* ===========================================================================
+   The site's design system, October 2026.
+
+   Type, spacing, controls and surfaces follow the Hybridge design system
+   (Inter with optical sizing, the two tone headline, sentence case, calm
+   buttons, solid content and glass only for the navigation layer). The
+   colours stay the site's own: the dark space canvas, and one accent per
+   tab so a colour always means a place on the site.
+
+   Load order: global.css, then landing.css, then this file. It wins ties.
+   =========================================================================== */
+
+:root {
+  /* Ink on the dark canvas. */
+  --ink: #f5f5f7;
+  --ink-soft: rgba(245, 245, 247, 0.7);
+  --ink-faint: rgba(245, 245, 247, 0.44);
+  --ink-ghost: rgba(245, 245, 247, 0.26);
+  --line: rgba(255, 255, 255, 0.08);
+  --line-strong: rgba(255, 255, 255, 0.16);
+  --wash: rgba(255, 255, 255, 0.04);
+  --wash-strong: rgba(255, 255, 255, 0.075);
+  --surface-solid: #0b0c10;
+  --live: #22c55e;
+
+  /* One colour per tab. The nav, each page's kicker, links and background
+     wash all read from the same token, so the colour teaches the map. */
+  --c-projects: #5b8def;  --c-projects-rgb: 91, 141, 239;
+  --c-work: #f5a524;      --c-work-rgb: 245, 165, 36;
+  --c-writing: #34d399;   --c-writing-rgb: 52, 211, 153;
+  --c-teaching: #22d3ee;  --c-teaching-rgb: 34, 211, 238;
+  --c-film: #f43f5e;      --c-film-rgb: 244, 63, 94;
+  --c-mind: #a78bfa;      --c-mind-rgb: 167, 139, 250;
+  --c-home: #f5f5f7;      --c-home-rgb: 245, 245, 247;
+
+  --tone: var(--c-home);
+  --tone-rgb: var(--c-home-rgb);
+
+  --font: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --ease-glass: cubic-bezier(0.32, 0.72, 0, 1);
+  --max: 1200px;
+  --gutter: clamp(16px, 4vw, 40px);
+}
+
+[data-tone="projects"] { --tone: var(--c-projects); --tone-rgb: var(--c-projects-rgb); }
+[data-tone="work"]     { --tone: var(--c-work);     --tone-rgb: var(--c-work-rgb); }
+[data-tone="writing"]  { --tone: var(--c-writing);  --tone-rgb: var(--c-writing-rgb); }
+[data-tone="teaching"] { --tone: var(--c-teaching); --tone-rgb: var(--c-teaching-rgb); }
+[data-tone="film"]     { --tone: var(--c-film);     --tone-rgb: var(--c-film-rgb); }
+[data-tone="mind"]     { --tone: var(--c-mind);     --tone-rgb: var(--c-mind-rgb); }
+[data-tone="home"]     { --tone: var(--c-home);     --tone-rgb: var(--c-home-rgb); }
+
+/* ---------------------------------------------------------------------------
+   Base. Inter's optical size axis follows the font size on its own, so never
+   set font-variation-settings anywhere.
+   --------------------------------------------------------------------------- */
+html { font-optical-sizing: auto; }
+body {
+  font-family: var(--font);
+  font-feature-settings: "cv11", "ss01", "ss03";
+  color: var(--ink);
+  background: #000;
+}
+/* Zero specificity, so every type class below wins over these defaults. */
+:where(h1, h2, h3, h4) { color: var(--ink); }
+:where(p) { color: inherit; }
+::selection { background: rgba(var(--tone-rgb), 0.32); color: #fff; }
+.tabular { font-variant-numeric: tabular-nums; }
+
+/* ---------------------------------------------------------------------------
+   Layout
+   --------------------------------------------------------------------------- */
+.wrap {
+  width: 100%;
+  max-width: calc(var(--max) + 2 * var(--gutter));
+  margin-inline: auto;
+  padding-inline: var(--gutter);
+}
+.wrap-narrow { max-width: calc(760px + 2 * var(--gutter)); }
+.section { position: relative; padding-block: clamp(72px, 9vw, 120px); }
+.section-tight { padding-block: clamp(48px, 6vw, 80px); }
+/* The first block on a page clears the floating bar. */
+.page-top { padding-top: clamp(124px, 13vw, 168px); }
+
+/* ---------------------------------------------------------------------------
+   Type. Sentence case everywhere. The two tone headline is the signature:
+   the first line in ink, the tail in faint ink, continuing the thought.
+   --------------------------------------------------------------------------- */
+.t-display {
+  font-size: clamp(2.6rem, 6.4vw, 5.25rem);
+  line-height: 1.02;
+  letter-spacing: -0.042em;
+  font-weight: 600;
+  text-wrap: balance;
+  color: var(--ink);
+}
+.t-title {
+  font-size: clamp(2.4rem, 5.2vw, 4.25rem);
+  line-height: 1.04;
+  letter-spacing: -0.038em;
+  font-weight: 600;
+  text-wrap: balance;
+  color: var(--ink);
+}
+.t-h2 {
+  font-size: clamp(2rem, 3.8vw, 3rem);
+  line-height: 1.06;
+  letter-spacing: -0.032em;
+  font-weight: 600;
+  text-wrap: balance;
+  color: var(--ink);
+}
+.t-h3 {
+  font-size: 1.25rem;
+  line-height: 1.25;
+  letter-spacing: -0.02em;
+  font-weight: 600;
+  color: var(--ink);
+}
+.t-h4 {
+  font-size: 1rem;
+  line-height: 1.35;
+  letter-spacing: -0.012em;
+  font-weight: 600;
+  color: var(--ink);
+}
+.t-tail { display: block; color: var(--ink-faint); }
+.t-tone { color: var(--tone); }
+.t-lede {
+  font-size: clamp(1.0625rem, 1.25vw, 1.1875rem);
+  line-height: 1.6;
+  color: var(--ink-soft);
+  max-width: 40rem;
+  text-wrap: pretty;
+}
+.t-body {
+  font-size: 0.9375rem;
+  line-height: 1.65;
+  color: var(--ink-soft);
+}
+.t-small { font-size: 0.875rem; line-height: 1.55; color: var(--ink-soft); }
+.t-meta {
+  font-size: 0.8125rem;
+  line-height: 1.4;
+  color: var(--ink-faint);
+  font-variant-numeric: tabular-nums;
+}
+
+/* The kicker sits above a title and names the place in its colour. */
+.kicker {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  letter-spacing: -0.005em;
+  line-height: 1;
+  color: var(--tone);
+}
+.kicker::before {
+  content: "";
+  width: 7px;
+  height: 7px;
+  border-radius: 9999px;
+  background: var(--tone);
+  box-shadow: 0 0 12px rgba(var(--tone-rgb), 0.7);
+  flex: none;
+}
+.kicker-quiet { color: var(--ink-faint); }
+
+/* Older markup used a tracked capitals .eyebrow. It now reads as a kicker:
+   sentence case, no tracking, the dot in the text's own colour. */
+.eyebrow {
+  font-size: 0.875rem;
+  font-weight: 500;
+  letter-spacing: -0.005em;
+  text-transform: none;
+  gap: 9px;
+  line-height: 1;
+}
+.eyebrow::before { width: 7px; height: 7px; }
+/* The same for the old display utilities: Hybridge weight and tracking. */
+.display { font-weight: 600; letter-spacing: -0.04em; }
+.display-sm { font-weight: 600; letter-spacing: -0.032em; }
+html { scroll-padding-top: 88px; }
+
+/* A section's header: kicker, two tone title, lede, and a link on the right. */
+.sec-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 20px 40px;
+  margin-bottom: clamp(32px, 4vw, 48px);
+}
+.sec-head-main { max-width: 52rem; }
+.sec-head-main > .kicker { margin-bottom: 18px; }
+.sec-head-main > .t-lede { margin-top: 18px; }
+
+/* ---------------------------------------------------------------------------
+   Buttons. Fully round. One primary per view: ink inverted, white on the
+   dark canvas. Everything else is clear glass or a quiet ghost.
+   --------------------------------------------------------------------------- */
+.btn {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 44px;
+  padding: 0 20px;
+  border-radius: 9999px;
+  font-size: 0.9375rem;
+  font-weight: 500;
+  letter-spacing: -0.006em;
+  line-height: 1;
+  white-space: nowrap;
+  text-decoration: none;
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition:
+    background-color 150ms var(--ease-glass),
+    color 150ms var(--ease-glass),
+    border-color 150ms var(--ease-glass),
+    box-shadow 250ms var(--ease-glass),
+    transform 250ms var(--ease-glass);
+}
+.btn:focus-visible { outline: none; box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.2); }
+.btn svg { width: 15px; height: 15px; flex: none; transition: transform 250ms var(--ease-glass); }
+.btn:hover svg.arrow-r, .btn:hover .arrow-r { transform: translateX(2px); }
+.btn:hover svg.arrow-ur, .btn:hover .arrow-ur { transform: translate(1px, -1px); }
+.btn-sm { height: 36px; padding: 0 15px; font-size: 0.875rem; }
+.btn-xs { height: 32px; padding: 0 13px; font-size: 0.8125rem; }
+
+.btn-primary { background: var(--ink); color: #000; }
+.btn-primary:hover { background: #fff; transform: translateY(-1px); box-shadow: 0 10px 28px -12px rgba(255, 255, 255, 0.45); }
+
+.btn-glass {
+  color: var(--ink);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.03)),
+    rgba(10, 11, 15, 0.35);
+  -webkit-backdrop-filter: blur(6px) saturate(1.6);
+  backdrop-filter: blur(6px) saturate(1.6);
+  border-color: rgba(255, 255, 255, 0.14);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2), 0 8px 24px -14px rgba(0, 0, 0, 0.8);
+}
+.btn-glass:hover {
+  border-color: rgba(255, 255, 255, 0.26);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.15), rgba(255, 255, 255, 0.05)),
+    rgba(10, 11, 15, 0.35);
+  transform: translateY(-1px);
+}
+
+.btn-ghost { color: var(--ink-soft); padding: 0 14px; }
+.btn-ghost:hover { color: var(--ink); background: var(--wash-strong); }
+
+/* A tone button: clear glass with the place's colour on its rim and text.
+   Used for "go to this tab" actions, never as the page's main action. */
+.btn-tone {
+  color: var(--tone);
+  background: rgba(var(--tone-rgb), 0.08);
+  border-color: rgba(var(--tone-rgb), 0.3);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+.btn-tone:hover { background: rgba(var(--tone-rgb), 0.14); border-color: rgba(var(--tone-rgb), 0.5); transform: translateY(-1px); }
+
+/* Inline link in the place's colour, with a small arrow that moves. */
+.tlink {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.9375rem;
+  font-weight: 500;
+  color: var(--tone);
+  text-decoration: none;
+  white-space: nowrap;
+}
+.tlink svg { width: 14px; height: 14px; transition: transform 250ms var(--ease-glass); }
+.tlink:hover { text-decoration: underline; text-underline-offset: 4px; text-decoration-thickness: 1px; }
+.tlink:hover svg { transform: translateX(3px); }
+/* Body copy links stay ink with an underline. */
+.ilink { color: var(--ink); text-decoration: underline; text-underline-offset: 3px; text-decoration-color: var(--ink-ghost); }
+.ilink:hover { text-decoration-color: var(--ink); }
+
+/* ---------------------------------------------------------------------------
+   Surfaces. Content is solid: a dark card with a hairline and a faint glass
+   rim on its top edge, never a backdrop blur.
+   --------------------------------------------------------------------------- */
+.surface {
+  position: relative;
+  border-radius: 20px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0.012) 40%),
+    var(--surface-solid);
+  border: 1px solid var(--line);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.06),
+    0 1px 2px rgba(0, 0, 0, 0.5),
+    0 30px 60px -42px rgba(0, 0, 0, 0.95);
+  color: var(--ink);
+}
+a.surface, .surface-link {
+  display: block;
+  text-decoration: none;
+  transition:
+    transform 300ms var(--ease-glass),
+    border-color 200ms var(--ease-glass),
+    box-shadow 300ms var(--ease-glass);
+}
+a.surface:hover, .surface-link:hover {
+  transform: translateY(-3px);
+  border-color: var(--line-strong);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.09),
+    0 1px 2px rgba(0, 0, 0, 0.5),
+    0 40px 70px -40px rgba(0, 0, 0, 1),
+    0 0 0 1px rgba(var(--tone-rgb), 0.12);
+}
+a.surface:focus-visible { outline: none; box-shadow: 0 0 0 4px rgba(var(--tone-rgb), 0.35); }
+.surface-pad { padding: 24px; }
+@media (min-width: 640px) { .surface-pad { padding: 28px; } }
+.surface-media {
+  display: block;
+  overflow: hidden;
+  border-radius: 19px 19px 0 0;
+  border-bottom: 1px solid var(--line);
+  background: #07080b;
+}
+.surface-media img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 600ms var(--ease-glass);
+}
+a.surface:hover .surface-media img { transform: scale(1.03); }
+/* Where a cover is still being made: a calm panel in the place's colour. */
+.media-fallback {
+  width: 100%;
+  height: 100%;
+  min-height: 100%;
+  display: grid;
+  place-items: center;
+  background:
+    radial-gradient(70% 90% at 20% 10%, rgba(var(--tone-rgb), 0.22), transparent 70%),
+    radial-gradient(60% 80% at 90% 100%, rgba(var(--tone-rgb), 0.1), transparent 70%),
+    #07080b;
+}
+/* A quieter group inside a surface. */
+.inset {
+  border-radius: 16px;
+  background: var(--wash);
+  border: 1px solid var(--line);
+}
+/* A thin tone edge on the left of a card, the way an office shows in the
+   Hybridge apps. Only where the colour means the card's place. */
+.edge-tone { box-shadow: inset 3px 0 0 rgba(var(--tone-rgb), 0.85); }
+
+/* Rows people compare: hairlines between them, a soft hover. */
+.rows { list-style: none; margin: 0; padding: 0; }
+.rows > li { border-top: 1px solid var(--line); }
+.rows > li:last-child { border-bottom: 1px solid var(--line); }
+.row-link {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 18px 4px;
+  text-decoration: none;
+  color: var(--ink);
+  transition: background-color 150ms var(--ease-glass), padding 250ms var(--ease-glass);
+}
+.row-link:hover { background: var(--wash); padding-inline: 12px; }
+
+/* ---------------------------------------------------------------------------
+   Liquid glass, clear. No frost: a light blur under a dark tint, a bright
+   specular rim, and an inner top edge. Navigation layer only (the bar, its
+   menu, search, the chat button, segmented tabs, small controls).
+   --------------------------------------------------------------------------- */
+.lg {
+  position: relative;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.085) 0%, rgba(255, 255, 255, 0.02) 100%),
+    rgba(9, 10, 14, 0.5);
+  -webkit-backdrop-filter: blur(10px) saturate(1.7) brightness(1.04);
+  backdrop-filter: blur(10px) saturate(1.7) brightness(1.04);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.18),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.04),
+    0 18px 40px -20px rgba(0, 0, 0, 0.85),
+    0 0 0 0.5px rgba(0, 0, 0, 0.6);
+}
+.lg::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  pointer-events: none;
+  background: linear-gradient(
+    150deg,
+    rgba(255, 255, 255, 0.4) 0%,
+    rgba(255, 255, 255, 0.1) 28%,
+    rgba(255, 255, 255, 0.04) 55%,
+    rgba(255, 255, 255, 0.18) 100%
+  );
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+}
+.lg-thick {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0.02) 100%),
+    rgba(9, 10, 14, 0.82);
+  -webkit-backdrop-filter: blur(18px) saturate(1.6);
+  backdrop-filter: blur(18px) saturate(1.6);
+}
+/* The lens that marks where you are. */
+.lg-pill {
+  background: rgba(255, 255, 255, 0.11);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.22),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.2),
+    0 2px 8px -2px rgba(0, 0, 0, 0.6);
+}
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .lg, .btn-glass { background: rgba(14, 15, 20, 0.94); }
+}
+@media (prefers-reduced-transparency: reduce) {
+  .lg, .lg-thick, .btn-glass { background: #0e0f14; -webkit-backdrop-filter: none; backdrop-filter: none; }
+}
+
+/* ---------------------------------------------------------------------------
+   Chips and badges. Small soft pills that size to their words.
+   --------------------------------------------------------------------------- */
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  height: 28px;
+  padding: 0 12px;
+  border-radius: 9999px;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  line-height: 1;
+  white-space: nowrap;
+  color: var(--ink-soft);
+  background: var(--wash);
+  border: 1px solid var(--line);
+  text-decoration: none;
+  transition: color 150ms var(--ease-glass), border-color 150ms var(--ease-glass), background-color 150ms var(--ease-glass);
+}
+a.chip:hover, button.chip:hover { color: var(--ink); border-color: var(--line-strong); background: var(--wash-strong); }
+.chip-dot::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 9999px;
+  background: var(--tone);
+  flex: none;
+}
+.chip-live::before {
+  content: "";
+  width: 7px;
+  height: 7px;
+  border-radius: 9999px;
+  background: var(--live);
+  flex: none;
+  animation: live-pulse 2.4s ease-in-out infinite;
+}
+@keyframes live-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.5); }
+  50% { box-shadow: 0 0 0 5px rgba(34, 197, 94, 0); }
+}
+.chip.is-on { color: #000; background: var(--ink); border-color: var(--ink); }
+.chip.is-on.chip-dot::before { background: #000; }
+.badge {
+  display: inline-flex;
+  align-items: center;
+  height: 22px;
+  padding: 0 9px;
+  border-radius: 9999px;
+  font-size: 0.71875rem;
+  font-weight: 500;
+  line-height: 1;
+  white-space: nowrap;
+  color: var(--ink-soft);
+  background: var(--wash-strong);
+}
+.badge-live { color: #4ade80; background: rgba(34, 197, 94, 0.12); }
+.badge-build { color: #fbbf24; background: rgba(245, 165, 36, 0.12); }
+.badge-tone { color: var(--tone); background: rgba(var(--tone-rgb), 0.12); }
+
+/* Numbers that matter. */
+.stat-num {
+  font-size: clamp(1.75rem, 3vw, 2.25rem);
+  line-height: 1;
+  letter-spacing: -0.035em;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink);
+}
+.stat-cap { margin-top: 8px; font-size: 0.875rem; line-height: 1.45; color: var(--ink-soft); }
+
+/* A soft wash of the place's colour behind a page top or a section. */
+.tone-atmos {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  background:
+    radial-gradient(48rem 26rem at 12% 0%, rgba(var(--tone-rgb), 0.13), transparent 70%),
+    radial-gradient(40rem 24rem at 92% 12%, rgba(var(--tone-rgb), 0.06), transparent 70%);
+}
+.on-top { position: relative; z-index: 1; }
+
+/* ---------------------------------------------------------------------------
+   The floating bar. It sits 12px from the top in a fixed slot, condenses
+   on scroll (the slot never changes, so the page never jumps), and never
+   moves sideways. Each tab carries its colour as a dot: the legend for the
+   whole site, readable in a glance.
+   --------------------------------------------------------------------------- */
+.nav {
+  position: fixed;
+  top: 12px;
+  left: 0;
+  right: 0;
+  z-index: 60;
+  pointer-events: none;
+}
+.nav-bar {
+  pointer-events: auto;
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  height: 60px;
+  padding: 0 10px 0 12px;
+  border-radius: 22px;
+  transition: height 250ms var(--ease-glass), border-radius 250ms var(--ease-glass), padding 250ms var(--ease-glass);
+}
+.nav-condensed .nav-bar { height: 52px; border-radius: 20px; }
+.nav-glass { position: absolute; inset: 0; border-radius: inherit; z-index: -1; }
+.nav-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  flex: none;
+  text-decoration: none;
+  color: var(--ink);
+  padding-right: 6px;
+}
+.nav-mono {
+  display: inline-grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 9999px;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  color: #000;
+  background: var(--ink);
+  transition: transform 250ms var(--ease-glass);
+}
+.nav-condensed .nav-mono { transform: scale(0.9); }
+.nav-name { font-size: 0.9375rem; font-weight: 600; letter-spacing: -0.015em; white-space: nowrap; }
+.nav-sep { width: 1px; height: 22px; background: var(--line-strong); flex: none; }
+.nav-tabs { display: flex; align-items: center; gap: 2px; margin: 0 auto; }
+.nav-tab {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 36px;
+  padding: 0 13px;
+  border-radius: 14px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  letter-spacing: -0.006em;
+  color: var(--ink-soft);
+  text-decoration: none;
+  white-space: nowrap;
+  transition: color 150ms var(--ease-glass), background-color 150ms var(--ease-glass);
+}
+.nav-tab:hover { color: var(--ink); background: var(--wash-strong); }
+.nav-tab.is-active { color: var(--ink); }
+.nav-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 9999px;
+  background: var(--tone);
+  opacity: 0.75;
+  flex: none;
+  transition: opacity 150ms var(--ease-glass), box-shadow 250ms var(--ease-glass);
+}
+.nav-tab:hover .nav-dot, .nav-tab.is-active .nav-dot { opacity: 1; box-shadow: 0 0 10px rgba(var(--tone-rgb), 0.9); }
+.nav-actions { display: flex; align-items: center; gap: 6px; flex: none; margin-left: auto; }
+.nav-icon {
+  display: inline-grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 9999px;
+  color: var(--ink-soft);
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+  transition: color 150ms var(--ease-glass), background-color 150ms var(--ease-glass);
+}
+.nav-icon:hover, .nav-icon:focus-visible { color: var(--ink); background: var(--wash-strong); outline: none; }
+.nav-here { display: none; }
+.nav-menu-btn { display: none; }
+@media (max-width: 1099px) {
+  .nav-name { display: none; }
+}
+@media (max-width: 959px) {
+  .nav-tabs, .nav-sep { display: none; }
+  .nav-here {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--ink);
+    white-space: nowrap;
+  }
+  .nav-menu-btn { display: inline-grid; }
+}
+@media (max-width: 380px) {
+  .nav-resume { display: none; }
+}
+
+/* The phone menu: a thick glass sheet under the bar. */
+.nav-sheet {
+  pointer-events: auto;
+  margin-top: 8px;
+  border-radius: 24px;
+  padding: 8px;
+  animation: glass-in 260ms var(--ease-glass);
+}
+.nav-sheet a {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 13px 14px;
+  border-radius: 16px;
+  text-decoration: none;
+  color: var(--ink);
+  font-size: 1rem;
+  font-weight: 500;
+}
+.nav-sheet a:hover, .nav-sheet a.is-active { background: var(--wash-strong); }
+.nav-sheet a span.t-meta { margin-left: auto; }
+.nav-sheet hr { border: 0; height: 1px; background: var(--line); margin: 6px 10px; }
+.nav-scrim { position: fixed; inset: 0; z-index: 59; background: rgba(0, 0, 0, 0.45); }
+@keyframes glass-in {
+  from { opacity: 0; transform: translateY(4px) scale(0.98); }
+  to { opacity: 1; transform: none; }
+}
+
+/* Search lives in the navigation layer, so it is glass too. */
+.search-modal {
+  position: relative;
+  margin: 12vh auto 0;
+  width: min(620px, calc(100vw - 32px));
+  max-height: 62vh;
+  display: flex;
+  flex-direction: column;
+  padding: 12px;
+  border-radius: 24px;
+  outline: none;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.07), rgba(255, 255, 255, 0.02)),
+    rgba(10, 11, 15, 0.88);
+  -webkit-backdrop-filter: blur(18px) saturate(1.6);
+  backdrop-filter: blur(18px) saturate(1.6);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.14), 0 40px 90px -40px rgba(0, 0, 0, 0.95);
+  animation: glass-in 260ms var(--ease-glass);
+}
+html.dark .search-modal { background: linear-gradient(180deg, rgba(255, 255, 255, 0.07), rgba(255, 255, 255, 0.02)), rgba(10, 11, 15, 0.88); border-color: rgba(255, 255, 255, 0.12); }
+.search-input, html.dark .search-input {
+  height: 48px;
+  padding: 0 14px 0 42px;
+  border-radius: 14px;
+  font-size: 1rem;
+  color: var(--ink);
+  background: var(--wash);
+  border: 1px solid var(--line);
+}
+.search-input:focus, html.dark .search-input:focus { outline: none; border-color: rgba(255, 255, 255, 0.3); box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.06); }
+.search-row { border-radius: 14px; }
+.search-row-active, html.dark .search-row-active { background: var(--wash-strong); }
+
+/* ---------------------------------------------------------------------------
+   Footer
+   --------------------------------------------------------------------------- */
+.site-foot { position: relative; z-index: 1; border-top: 1px solid var(--line); margin-top: 40px; }
+.site-foot-grid {
+  display: grid;
+  gap: 32px;
+  padding-block: 48px 28px;
+  grid-template-columns: 1fr;
+}
+@media (min-width: 768px) {
+  .site-foot-grid { grid-template-columns: 1.4fr 1fr 1fr; }
+}
+.site-foot h2 { font-size: 0.8125rem; font-weight: 500; color: var(--ink-faint); margin: 0 0 14px; letter-spacing: 0; }
+.site-foot ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+.site-foot a.foot-link { display: inline-flex; align-items: center; gap: 9px; font-size: 0.9375rem; color: var(--ink-soft); text-decoration: none; }
+.site-foot a.foot-link:hover { color: var(--ink); }
+.site-foot .nav-dot { opacity: 1; }
+.site-foot-base {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 12px;
+  padding-block: 20px 32px;
+  border-top: 1px solid var(--line);
+}
+
+/* Back to top: a small glass button. */
+.to-top {
+  position: fixed;
+  right: 16px;
+  bottom: 20px;
+  z-index: 50;
+  display: inline-grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 9999px;
+  color: var(--ink);
+  border: 0;
+  cursor: pointer;
+  transition: opacity 250ms var(--ease-glass), transform 250ms var(--ease-glass);
+}
+@media (min-width: 1024px) { .to-top { right: 28px; bottom: 28px; } }
+.to-top[data-hidden="true"] { opacity: 0; transform: translateY(8px); pointer-events: none; }
+
+/* ---------------------------------------------------------------------------
+   The chat assistant. Its launcher and panel float over the page, so they are
+   the navigation layer: clear glass, ink actions, neutral bubbles.
+   --------------------------------------------------------------------------- */
+html.dark .chat-launcher, .chat-launcher {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.03)), rgba(9, 10, 14, 0.5);
+  -webkit-backdrop-filter: blur(10px) saturate(1.7);
+  backdrop-filter: blur(10px) saturate(1.7);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.22), 0 16px 36px -16px rgba(0, 0, 0, 0.9);
+}
+html.dark .chat-nudge, .chat-nudge {
+  font-family: var(--font);
+  font-size: 0.8125rem;
+  font-weight: 500;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--ink);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.09), rgba(255, 255, 255, 0.02)), rgba(9, 10, 14, 0.82);
+  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}
+html.dark .chat-panel, .chat-panel {
+  border-radius: 24px;
+  overflow: hidden;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.07), rgba(255, 255, 255, 0.015)), rgba(9, 10, 14, 0.88);
+  -webkit-backdrop-filter: blur(18px) saturate(1.6);
+  backdrop-filter: blur(18px) saturate(1.6);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.14), 0 40px 90px -40px rgba(0, 0, 0, 1);
+  animation: glass-in 260ms var(--ease-glass);
+}
+html.dark .chat-bubble-user, .chat-bubble-user { background: var(--ink); color: #000; border: 0; }
+html.dark .chat-bubble-bot, .chat-bubble-bot { background: var(--wash-strong); color: var(--ink); border: 1px solid var(--line); }
+html.dark .chat-msg-rich strong, .chat-msg-rich strong { color: var(--ink); }
+html.dark .chat-msg-rich a, .chat-msg-rich a { color: var(--ink); text-decoration: underline; text-underline-offset: 3px; text-decoration-color: var(--ink-ghost); }
+html.dark .chat-msg-rich a:hover, .chat-msg-rich a:hover { color: #fff; text-decoration-color: #fff; }
+html.dark .chat-composer, .chat-composer { background: var(--wash); border: 1px solid var(--line); border-radius: 16px; }
+html.dark .chat-input, .chat-input { font-family: var(--font); color: var(--ink); }
+html.dark .chat-send, .chat-send { background: var(--ink); color: #000; border-radius: 9999px; }
+html.dark .chat-send:disabled, .chat-send:disabled { opacity: 0.4; }
+
+/* ---------------------------------------------------------------------------
+   Motion. Every transition answers a click or a scroll, and goes quiet for
+   people who asked for less motion.
+   --------------------------------------------------------------------------- */
+/* Content rises 12px into place as it scrolls in. BaseLayout's observer adds
+   .reveal-visible. */
+[data-reveal] {
+  opacity: 0;
+  transform: translateY(12px);
+  transition:
+    opacity 600ms var(--ease-glass),
+    transform 600ms var(--ease-glass),
+    border-color 200ms var(--ease-glass),
+    box-shadow 300ms var(--ease-glass);
+}
+[data-reveal].reveal-visible { opacity: 1; transform: none; }
+a.surface[data-reveal].reveal-visible:hover { transform: translateY(-3px); }
+
+@media (prefers-reduced-motion: reduce) {
+  [data-reveal] { opacity: 1; transform: none; transition: none; }
+  .btn, .surface, a.surface, .surface-link, .nav-bar, .nav-tab, .chip, .tlink svg, .row-link, .surface-media img, .to-top {
+    transition: none !important;
+  }
+  .chip-live::before, .nav-sheet, .search-modal { animation: none !important; }
+  a.surface:hover, .surface-link:hover, .btn:hover { transform: none; }
+}
+
+/* The map on /mind fills the screen and has its own panel at the bottom on
+   phones, so the chat bubble steps aside there. */
+@media (max-width: 1023px) {
+  body[data-tone="mind"] .chat-launcher { display: none !important; }
+}

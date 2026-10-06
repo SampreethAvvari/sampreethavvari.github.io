@@ -1,118 +1,253 @@
 ---
-// /work — the overview page. Four full-width alternating discipline panels,
-// each previewing its top projects and linking into the deep-dive page.
+// /work, the overview. The page top, the four kinds of work as cards, then a
+// closer look at each one: what it means here and three of its projects.
+// Every /work page wears the Work tab's colour; the disciplines are told
+// apart by name and a neutral acronym badge, never by colour.
+import fs from "node:fs";
+import path from "node:path";
 import BaseLayout from "../../layouts/BaseLayout.astro";
 import WorkTabs from "../../components/work_section/WorkTabs.astro";
-import { disciplines } from "../../data/disciplines";
 import Picture from "../../components/common/Picture.astro";
+import Icon from "../../components/common/Icon.astro";
+import { disciplines } from "../../data/disciplines";
 
-const statusTone = (s: string) =>
+// A cover only renders when its file (or its .avif/.webp sibling) exists, so
+// a project whose art is still being made shows a calm panel instead.
+const hasPublic = (p?: string) =>
+  !!p &&
+  [p, p.replace(/\.(png|jpe?g)$/i, ".avif"), p.replace(/\.(png|jpe?g)$/i, ".webp")].some((f) =>
+    fs.existsSync(path.join(process.cwd(), "public", f)),
+  );
+
+const statusClass = (s: string) =>
   s === "In production" || s === "Live" || s === "Running program"
-    ? "dx-chip-live"
-    : s === "Pilot-ready" || s === "In build"
-      ? "dx-chip-soon"
-      : "dx-chip-design";
+    ? "badge badge-live"
+    : s === "In build" || s === "Pilot-ready"
+      ? "badge badge-build"
+      : "badge";
 ---
 
 <BaseLayout title="Work · Sampreeth Avvari">
-  <div class="mx-auto w-full max-w-screen-2xl px-6 lg:px-12 pt-24 lg:pt-32 pb-20">
-    <!-- Hero -->
-    <header class="max-w-3xl reveal" data-reveal>
-      <p class="eyebrow text-secondary dark:text-dk-secondary mb-4">Work</p>
-      <h1 class="display text-text dark:text-dk-text mb-5 glow-wave">
-        Four disciplines, <span class="text-secondary dark:text-dk-secondary">one operating mode</span>.
+  <!-- Page top -->
+  <section class="page-top wk-top relative overflow-hidden">
+    <div class="tone-atmos" aria-hidden="true"></div>
+    <div class="wrap on-top">
+      <p class="kicker">Work</p>
+      <h1 class="t-title wk-title">
+        One engineer, four kinds of work.
+        <span class="t-tail">Here it is, told four ways.</span>
       </h1>
-      <p class="text-lg lg:text-xl text-text/70 dark:text-dk-text/70 leading-relaxed">
+      <p class="t-lede wk-lede">
         Most of this work comes from Hybridge, a dental implant company where
         I've been the only engineer in the building. Every project there runs
         the full arc: find the real problem, design the system, train the model
         or wire the LLM, ship it into someone's workflow, and teach people to
-        run it. Different projects lean on different disciplines. Here's the
-        work, told four ways.
+        run it. Different projects lean on different disciplines.
       </p>
-      <div class="mt-7">
-        <a
-          href="/gallery"
-          class="no-lift inline-flex items-center gap-2 rounded-full px-6 py-3 border border-text/20 dark:border-dk-text/20 text-sm font-semibold text-text dark:text-dk-text hover:bg-text/5 dark:hover:bg-dk-text/10 transition"
-        >
-          <i class="fas fa-images text-xs" aria-hidden="true"></i>
-          Screenshots
+      <div class="wk-actions">
+        <a href="/gallery" class="btn btn-glass">
+          Screenshots <Icon name="arrow-right" size={15} class="arrow-r" />
         </a>
       </div>
-    </header>
-
-    <div class="mt-10">
-      <WorkTabs active="all" />
+      <div class="wk-tabs">
+        <WorkTabs active="all" />
+      </div>
     </div>
+  </section>
 
-    <!-- Discipline panels -->
-    <div class="mt-6 flex flex-col gap-12 lg:gap-16">
-      {disciplines.map((d, i) => (
-        <section
-          class="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-start reveal"
-          data-reveal
-          style={`--dx: ${d.accent}; --dx-rgb: ${d.rgb};`}
-        >
-          <div class={`lg:col-span-5 ${i % 2 === 1 ? "lg:order-2" : ""}`}>
-            <div class="work-hero-img">
-              <Picture
-                src={d.heroImg}
-                alt={`${d.name} abstract artwork`}
-                width={960}
-                height={540}
-                class="w-full aspect-video object-cover"
-              />
-            </div>
-            <div class="mt-5 flex items-center gap-3">
-              <span class="dx-acronym" style={`--dx: ${d.accent}; --dx-rgb: ${d.rgb};`}>{d.acronym}</span>
-              <span class="text-xs text-text/45 dark:text-dk-text/45">
-                {d.projects.length} projects · {d.articles.length} articles
+  <!-- The four kinds of work -->
+  <section class="wk-cards" aria-label="The four kinds of work">
+    <div class="wrap">
+      <ul class="wk-grid4">
+        {disciplines.map((d) => (
+          <li data-reveal>
+            <a href={`/work/${d.slug}`} class="surface surface-pad wk-disc">
+              <span class="wk-disc-top">
+                <span class="badge">{d.acronym}</span>
+                <span class="t-meta">{d.projects.length} projects</span>
               </span>
-            </div>
-          </div>
-
-          <div class={`lg:col-span-7 ${i % 2 === 1 ? "lg:order-1" : ""}`}>
-            <h2 class="display-sm text-text dark:text-dk-text mb-4">
-              <span style={`color: ${d.accent};`}>{d.name}</span>
-            </h2>
-            <p class="text-base lg:text-lg text-text/70 dark:text-dk-text/70 leading-relaxed mb-7 max-w-2xl">
-              {d.summary}
-            </p>
-
-            <ul class="space-y-2.5 mb-7">
-              {d.projects.slice(0, 3).map((p) => (
-                <li>
-                  <a
-                    href={p.href ?? `/work/${d.slug}`}
-                    class="no-lift group flex items-center gap-4 rounded-xl px-3.5 py-2.5 border border-text/10 dark:border-dk-text/10 hover:border-[rgba(var(--dx-rgb),0.45)] transition"
-                  >
-                    {p.img && (
-                      <Picture src={p.img} alt="" width={120} height={80} class="w-14 h-9 object-cover rounded-md shrink-0" />
-                    )}
-                    <span class="flex-1 min-w-0">
-                      <span class="block text-sm font-semibold text-text dark:text-dk-text truncate group-hover:text-[var(--dx)] transition">
-                        {p.name}
-                      </span>
-                      <span class="block text-xs text-text/55 dark:text-dk-text/55 truncate">
-                        {p.oneLiner}
-                      </span>
-                    </span>
-                    <span class={`dx-chip ${statusTone(p.status)} shrink-0 hidden sm:inline-block`}>{p.status}</span>
-                  </a>
-                </li>
-              ))}
-            </ul>
-
-            <a
-              href={`/work/${d.slug}`}
-              class="no-lift inline-flex items-center gap-2 rounded-full px-6 py-3 text-sm font-semibold transition border"
-              style={`color: ${d.accent}; border-color: rgba(${d.rgb}, 0.4); background: rgba(${d.rgb}, 0.08);`}
-            >
-              Go deep on {d.acronym} <span aria-hidden="true">→</span>
+              <span class="t-h3 wk-disc-name">{d.name}</span>
+              <span class="t-small wk-disc-line">{d.tagline}</span>
+              <span class="tlink wk-disc-open">
+                Open <Icon name="arrow-right" size={14} />
+              </span>
             </a>
-          </div>
-        </section>
-      ))}
+          </li>
+        ))}
+      </ul>
     </div>
-  </div>
+  </section>
+
+  <!-- A closer look at each -->
+  <section class="section wk-closer" aria-labelledby="wk-closer-title">
+    <div class="wrap">
+      <div class="sec-head" data-reveal>
+        <div class="sec-head-main">
+          <h2 id="wk-closer-title" class="t-h2">
+            Three projects from each.
+            <span class="t-tail">Every discipline's page has the full list.</span>
+          </h2>
+        </div>
+      </div>
+
+      <div class="wk-panels">
+        {disciplines.map((d) => (
+          <article id={d.slug} class="wk-panel" data-reveal>
+            <a href={`/work/${d.slug}`} class="wk-art" tabindex="-1" aria-hidden="true">
+              <Picture src={d.heroImg} alt="" width={960} height={540} />
+            </a>
+
+            <div class="wk-panel-main">
+              <div class="wk-panel-meta">
+                <span class="badge">{d.acronym}</span>
+                <span class="t-meta">
+                  {d.projects.length} projects · {d.articles.length} articles
+                </span>
+              </div>
+              <h3 class="t-h3 wk-panel-title">{d.name}</h3>
+              <p class="t-body wk-panel-summary">{d.summary}</p>
+
+              <ul class="rows wk-rows">
+                {d.projects.slice(0, 3).map((p) => (
+                  <li>
+                    <a href={p.href ?? `/work/${d.slug}`} class="row-link wk-row">
+                      <span class="wk-thumb" aria-hidden="true">
+                        {hasPublic(p.img) ? (
+                          <Picture src={p.img ?? ""} alt="" width={160} height={108} />
+                        ) : (
+                          <span class="wk-fallback"></span>
+                        )}
+                      </span>
+                      <span class="wk-row-text">
+                        <span class="t-h4 wk-row-name">{p.name}</span>
+                        <span class="t-small wk-row-line">{p.oneLiner}</span>
+                        <span class={`${statusClass(p.status)} wk-row-badge-sm`}>{p.status}</span>
+                      </span>
+                      <span class={`${statusClass(p.status)} wk-row-badge`}>{p.status}</span>
+                    </a>
+                  </li>
+                ))}
+              </ul>
+
+              <a href={`/work/${d.slug}`} class="btn btn-glass btn-sm wk-deep">
+                Go deep on {d.acronym} <Icon name="arrow-right" size={14} class="arrow-r" />
+              </a>
+            </div>
+          </article>
+        ))}
+      </div>
+    </div>
+  </section>
 </BaseLayout>
+
+<style>
+  /* Page top */
+  .wk-top { padding-bottom: clamp(40px, 5vw, 64px); }
+  .wk-title { margin-top: 24px; }
+  .wk-lede { margin-top: 24px; }
+  .wk-actions { margin-top: 32px; display: flex; flex-wrap: wrap; gap: 12px; }
+  .wk-tabs { margin-top: clamp(40px, 5vw, 56px); }
+
+  /* The four cards */
+  .wk-cards { position: relative; z-index: 1; }
+  .wk-grid4 {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    gap: 16px;
+    grid-template-columns: 1fr;
+  }
+  @media (min-width: 640px) { .wk-grid4 { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  @media (min-width: 1024px) { .wk-grid4 { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 20px; } }
+  .wk-grid4 > li { display: flex; }
+  .wk-disc { display: flex; flex-direction: column; width: 100%; }
+  @media (min-width: 640px) { .wk-disc { min-height: 250px; } }
+  .wk-disc-top { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+  .wk-disc-name { display: block; margin-top: 20px; }
+  .wk-disc-line { display: block; margin-top: 8px; }
+  .wk-disc-open { margin-top: auto; padding-top: 20px; }
+
+  /* The closer look */
+  .wk-panels { display: grid; }
+  .wk-panel {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 24px;
+    padding-block: clamp(32px, 4vw, 48px);
+    border-top: 1px solid var(--line);
+  }
+  .wk-panel:last-child { padding-bottom: 0; }
+  @media (min-width: 1024px) {
+    .wk-panel { grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: 56px; align-items: start; }
+  }
+
+  /* The discipline's artwork, in grey so colour keeps meaning the tab. */
+  .wk-art {
+    display: block;
+    overflow: hidden;
+    border-radius: 20px;
+    border: 1px solid var(--line);
+    background: #07080b;
+    aspect-ratio: 16 / 9;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06), 0 30px 60px -42px rgba(0, 0, 0, 0.95);
+  }
+  .wk-art:hover { transform: none; }
+  .wk-art :global(img) {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    filter: grayscale(1) contrast(1.06) brightness(1.04);
+    transition: transform 600ms var(--ease-glass);
+  }
+  .wk-art:hover :global(img) { transform: scale(1.03); }
+  /* Only beside the text. Stacked above it, the artwork would only push the
+     projects down. */
+  @media (max-width: 1023px) { .wk-art { display: none; } }
+
+  .wk-panel-meta { display: flex; align-items: center; gap: 12px; }
+  .wk-panel-title { margin-top: 16px; font-size: clamp(1.5rem, 2.4vw, 1.875rem); line-height: 1.15; letter-spacing: -0.026em; }
+  .wk-panel-summary { margin-top: 12px; max-width: 68ch; }
+
+  .wk-rows { margin-top: 24px; }
+  .wk-row { align-items: center; gap: 16px; }
+  .wk-row:hover { transform: none; }
+  .wk-thumb {
+    flex: none;
+    width: 80px;
+    height: 54px;
+    border-radius: 12px;
+    overflow: hidden;
+    background: #07080b;
+    border: 1px solid var(--line);
+  }
+  .wk-thumb :global(img) { display: block; width: 100%; height: 100%; object-fit: cover; }
+  .wk-fallback {
+    display: block;
+    width: 100%;
+    height: 100%;
+    background:
+      radial-gradient(80% 100% at 20% 0%, rgba(var(--tone-rgb), 0.24), transparent 70%),
+      radial-gradient(70% 90% at 100% 100%, rgba(var(--tone-rgb), 0.1), transparent 70%),
+      #07080b;
+  }
+  .wk-row-text { flex: 1; min-width: 0; display: block; }
+  .wk-row-name { display: block; }
+  .wk-row-line {
+    display: -webkit-box;
+    margin-top: 4px;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  .wk-row-badge { flex: none; }
+  .wk-row-badge-sm { display: none; }
+  @media (max-width: 639px) {
+    .wk-row { align-items: flex-start; }
+    .wk-thumb { width: 64px; height: 44px; margin-top: 2px; }
+    .wk-row-badge { display: none; }
+    .wk-row-badge-sm { display: inline-flex; margin-top: 10px; }
+  }
+  .wk-deep { margin-top: 28px; }
+</style>

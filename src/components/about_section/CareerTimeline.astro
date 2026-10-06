@@ -105,8 +105,8 @@ const trackH = rows.length * ROW_H;
 
 <div class="career-tl relative" id="career-tl">
   <div class="flex items-baseline justify-between gap-4 mb-3">
-    <p class="eyebrow text-acc-amber/90 m-0">Education and experience</p>
-    <p class="tl-hint m-0">hover a year · click for the story</p>
+    <p class="t-h4 m-0">Education and experience</p>
+    <p class="tl-hint m-0">Hover a year, click for the story</p>
   </div>
 
   <div class="tl-legend" aria-hidden="true">
@@ -182,10 +182,8 @@ const trackH = rows.length * ROW_H;
 
 <style is:global>
   .career-tl .tl-hint {
-    font-size: 0.68rem;
-    letter-spacing: 0.14em;
-    text-transform: uppercase;
-    color: rgba(245, 245, 247, 0.32);
+    font-size: 0.8125rem;
+    color: rgba(245, 245, 247, 0.44);
     white-space: nowrap;
   }
 
@@ -199,10 +197,8 @@ const trackH = rows.length * ROW_H;
     display: inline-flex;
     align-items: center;
     gap: 8px;
-    font-size: 0.68rem;
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
-    color: rgba(245, 245, 247, 0.45);
+    font-size: 0.8125rem;
+    color: rgba(245, 245, 247, 0.5);
   }
 
   .career-tl .tl-swatch {
@@ -298,10 +294,9 @@ const trackH = rows.length * ROW_H;
     position: absolute;
     top: 4px;
     left: 26px;
-    font-size: 0.7rem;
-    font-weight: 600;
-    letter-spacing: 0.01em;
-    color: rgba(245, 245, 247, 0.72);
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: rgba(245, 245, 247, 0.78);
     white-space: nowrap;
     transition: color 0.18s ease;
   }
@@ -523,9 +518,8 @@ const trackH = rows.length * ROW_H;
   }
 
   .career-tl .tl-year-label {
-    font-family: theme(fontFamily.mono, monospace);
-    font-size: 0.66rem;
-    letter-spacing: 0.08em;
+    font-size: 0.75rem;
+    font-variant-numeric: tabular-nums;
     color: rgba(245, 245, 247, 0.42);
     transition: color 0.18s ease;
   }
@@ -688,11 +682,9 @@ const trackH = rows.length * ROW_H;
     margin-left: 8px;
     padding: 1px 8px;
     border-radius: 9999px;
-    font-size: 0.58rem;
-    font-weight: 700;
-    letter-spacing: 0.12em;
-    text-transform: uppercase;
-    vertical-align: 2px;
+    font-size: 0.72rem;
+    font-weight: 500;
+    vertical-align: 1px;
   }
 
   .career-tl .tl-role-kind.is-work {

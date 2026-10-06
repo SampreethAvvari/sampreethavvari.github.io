@@ -1,34 +1,117 @@
 ---
-// Sub-tab navigation for the /work area. Sticky under the navbar; the
-// active tab is tinted with its discipline accent. `active` is "all" on
-// the /work index or a discipline slug on detail pages.
+// The switcher for the /work area: the overview and the four discipline
+// pages as one segmented control in clear glass. The page you are on sits on
+// the lifted pill. Every label is the full name; when the row is wider than
+// the screen it scrolls sideways inside the track, never the page.
+// `active` is "all" on /work or a discipline slug on /work/<slug>.
 import { disciplines } from "../../data/disciplines";
 
 interface Props {
   active: "all" | "aie" | "fde" | "mle" | "sde";
 }
 const { active } = Astro.props;
+
+const items = [
+  { key: "all", href: "/work", label: "Overview" },
+  ...disciplines.map((d) => ({ key: d.slug, href: `/work/${d.slug}`, label: d.name })),
+];
 ---
 
-<nav class="work-tabs" aria-label="Work disciplines">
-  <a
-    href="/work"
-    class={`no-lift work-tab ${active === "all" ? "active" : ""}`}
-    style="--dx: #8A8A8E; --dx-rgb: 138, 138, 142;"
-  >
-    <i class="fa-solid fa-grip text-xs" aria-hidden="true"></i>
-    <span class="hidden lg:inline">Overview</span>
-    <span class="lg:hidden font-mono tracking-widest">All</span>
-  </a>
-  {disciplines.map((d) => (
-    <a
-      href={`/work/${d.slug}`}
-      class={`no-lift work-tab ${active === d.slug ? "active" : ""}`}
-      style={`--dx: ${d.accent}; --dx-rgb: ${d.rgb};`}
-    >
-      <i class={`${d.icon} text-xs`} aria-hidden="true"></i>
-      <span class="hidden lg:inline">{d.name}</span>
-      <span class="lg:hidden font-mono tracking-widest">{d.acronym}</span>
-    </a>
-  ))}
+<nav class="wt lg" aria-label="Work disciplines">
+  <div class="wt-scroll" data-wt-scroll>
+    {items.map((it) => (
+      <a
+        href={it.href}
+        class:list={["wt-seg", { "lg-pill is-on": active === it.key }]}
+        aria-current={active === it.key ? "page" : undefined}
+      >
+        {it.label}
+      </a>
+    ))}
+  </div>
 </nav>
+
+<style>
+  .wt {
+    display: block;
+    width: max-content;
+    max-width: 100%;
+    padding: 4px;
+    border-radius: 9999px;
+    overflow: hidden;
+  }
+  .wt-scroll {
+    display: flex;
+    gap: 2px;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scrollbar-width: none;
+    scroll-snap-type: x proximity;
+    border-radius: 9999px;
+  }
+  .wt-scroll::-webkit-scrollbar { display: none; }
+  /* A soft fade on whichever edge still has segments past it. */
+  .wt-scroll[data-more="end"] {
+    -webkit-mask-image: linear-gradient(90deg, #000 calc(100% - 36px), transparent);
+    mask-image: linear-gradient(90deg, #000 calc(100% - 36px), transparent);
+  }
+  .wt-scroll[data-more="start"] {
+    -webkit-mask-image: linear-gradient(90deg, transparent, #000 36px);
+    mask-image: linear-gradient(90deg, transparent, #000 36px);
+  }
+  .wt-scroll[data-more="both"] {
+    -webkit-mask-image: linear-gradient(90deg, transparent, #000 36px, #000 calc(100% - 36px), transparent);
+    mask-image: linear-gradient(90deg, transparent, #000 36px, #000 calc(100% - 36px), transparent);
+  }
+
+  .wt-seg {
+    flex: none;
+    display: inline-flex;
+    align-items: center;
+    height: 40px;
+    padding: 0 17px;
+    border-radius: 9999px;
+    font-size: 0.875rem;
+    font-weight: 500;
+    letter-spacing: -0.006em;
+    line-height: 1;
+    white-space: nowrap;
+    color: var(--ink-soft);
+    text-decoration: none;
+    scroll-snap-align: center;
+    transition:
+      color 150ms var(--ease-glass),
+      background-color 150ms var(--ease-glass);
+  }
+  .wt-seg:hover { color: var(--ink); background: var(--wash-strong); transform: none; }
+  .wt-seg:focus-visible { outline: none; box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.35); }
+  .wt-seg.is-on { color: var(--ink); }
+  .wt-seg.is-on:hover { background: rgba(255, 255, 255, 0.13); }
+
+  @media (prefers-reduced-motion: reduce) {
+    .wt-seg { transition: none; }
+  }
+</style>
+
+<script>
+  // Keep the current page's segment in view and fade whichever edge has more.
+  const tracks = document.querySelectorAll<HTMLElement>("[data-wt-scroll]");
+  tracks.forEach((track) => {
+    const mark = () => {
+      const max = track.scrollWidth - track.clientWidth;
+      if (max <= 1) return track.removeAttribute("data-more");
+      const atStart = track.scrollLeft <= 1;
+      const atEnd = track.scrollLeft >= max - 1;
+      track.setAttribute("data-more", atStart ? "end" : atEnd ? "start" : "both");
+    };
+    const on = track.querySelector<HTMLElement>(".is-on");
+    if (on && track.scrollWidth > track.clientWidth) {
+      // Set scrollLeft on the track itself so the page never scrolls.
+      const left = on.getBoundingClientRect().left - track.getBoundingClientRect().left + track.scrollLeft;
+      track.scrollLeft = left - (track.clientWidth - on.offsetWidth) / 2;
+    }
+    mark();
+    track.addEventListener("scroll", mark, { passive: true });
+    window.addEventListener("resize", mark, { passive: true });
+  });
+</script>

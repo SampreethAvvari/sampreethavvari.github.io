@@ -1,66 +1,59 @@
-﻿---
+---
 import BaseLayout from "../layouts/BaseLayout.astro";
 import { optimizedSources, canonicalImageList } from "../utils/optimizedImage";
 import fs from "node:fs";
 import path from "node:path";
 
 const title = "SA: Gallery";
+const description =
+  "Screenshots and documents from the production systems Sampreeth Avvari builds and runs, organized by project.";
 
 /*
-  Filesystem-driven gallery.
+  Filesystem driven gallery.
 
   Drop screenshots (png / jpg / jpeg / webp / gif / avif) and documents (pdf)
-  into  public/gallery/<project-slug>/  and they appear here on the next build.
-  - File order: alphabetical with numeric awareness â€” prefix "01-", "02-" to control order.
-  - Captions: derived from the filename ("03-analyze-tab dark.png" â†’ "analyze tab dark").
-  - New project: create a new folder under public/gallery/. It shows up automatically
-    with a title derived from the folder name. Add it to PROJECTS below whenever
-    you want a custom title, blurb, or accent.
+  into public/gallery/<project-slug>/ and they appear here on the next build.
+  - File order: alphabetical with numeric awareness. Prefix "01 ", "02 " to control order.
+  - Captions: derived from the filename. "01 analytics - doctor performance.png"
+    reads "Analytics · doctor performance".
+  - New project: create a new folder under public/gallery/. It shows up on its
+    own with a title derived from the folder name. Add it to PROJECTS below
+    whenever you want a custom title or blurb.
 */
-
-const ACCENTS = ["#22D3EE", "#34D399", "#5B8DEF", "#A78BFA", "#F5A524", "#FB7185"];
 
 const PROJECTS = [
   {
     slug: "doc-coach",
     title: "Doc Coach",
     blurb:
-      "Every implant consultation, graded on the CEO's seven-criterion rubric and delivered as a color-coded coaching report.",
-    accent: "#22D3EE",
+      "Every implant consultation, graded on the CEO's seven criterion rubric and delivered as a color coded coaching report.",
   },
   {
     slug: "treatment-estimator",
     title: "Treatment Estimator",
     blurb:
-      "The quoting platform treatment coordinators use mid-consult, with price locks the database itself enforces.",
-    accent: "#34D399",
+      "The quoting platform treatment coordinators use during the consult, with price locks the database itself enforces.",
   },
   {
     slug: "cowork-dashboard",
     title: "Cowork Dashboard",
     blurb: "Two clinics, six tabs, one set of numbers everyone finally trusts.",
-    accent: "#5B8DEF",
   },
   {
     slug: "npc-coach",
     title: "NPC Coach",
     blurb:
-      "Every new-patient call, found among thousands and graded against the practice playbook with a quoted line behind each score.",
-    accent: "#34D399",
+      "Every new patient call, found among thousands and graded against the practice playbook with a quoted line behind each score.",
   },
   {
     slug: "ai-hour",
     title: "AI Hour",
-    blurb:
-      "The weekly hands-on lab where the whole corporate team learns what AI can actually do.",
-    accent: "#F5A524",
+    blurb: "The weekly hands on lab where the whole corporate team learns what AI can actually do.",
   },
   {
     slug: "cbct-scan-validator",
     title: "CBCT Scan Validator",
-    blurb:
-      "The quality gate that catches bad dental CT scans before they ever reach the design queue.",
-    accent: "#FB7185",
+    blurb: "The quality gate that catches bad dental CT scans before they ever reach the design queue.",
   },
 ];
 
@@ -82,12 +75,20 @@ const humanSize = (bytes: number): string => {
   return `${bytes} B`;
 };
 
-const captionFor = (file: string): string =>
-  file
+// "01 analytics - doctor performance.png" -> "Analytics · doctor performance".
+// Sentence case, and a spaced hyphen in a filename becomes a middot.
+const captionFor = (file: string): string => {
+  const text = file
     .replace(/\.[^/.]+$/, "")
     .replace(/^\d+[-_. ]+/, "")
+    .replace(/\s+-\s+/g, " · ")
     .replace(/[-_]+/g, " ")
+    .replace(/\s{2,}/g, " ")
     .trim();
+  return text.charAt(0).toUpperCase() + text.slice(1);
+};
+
+const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`;
 
 const titleFromSlug = (slug: string): string =>
   slug.replace(/[-_]+/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
@@ -106,12 +107,7 @@ const known = new Set(PROJECTS.map((p) => p.slug));
 const extras = discovered
   .filter((slug) => !known.has(slug))
   .sort()
-  .map((slug, i) => ({
-    slug,
-    title: titleFromSlug(slug),
-    blurb: "",
-    accent: ACCENTS[(PROJECTS.length + i) % ACCENTS.length],
-  }));
+  .map((slug) => ({ slug, title: titleFromSlug(slug), blurb: "" }));
 
 const sections = [...PROJECTS, ...extras].map((cfg, idx) => {
   const files = listDir(cfg.slug).sort((a, b) =>
@@ -138,9 +134,18 @@ const sections = [...PROJECTS, ...extras].map((cfg, idx) => {
         size,
       };
     });
+  const number = String(idx + 1).padStart(2, "0");
+  const meta = [
+    number,
+    images.length ? plural(images.length, "screenshot", "screenshots") : "",
+    docs.length ? plural(docs.length, "document", "documents") : "",
+  ]
+    .filter(Boolean)
+    .join(" · ");
   return {
     ...cfg,
-    number: String(idx + 1).padStart(2, "0"),
+    number,
+    meta,
     images,
     docs,
     count: images.length + docs.length,
@@ -152,195 +157,162 @@ const totalDocs = sections.reduce((n, s) => n + s.docs.length, 0);
 const liveSections = sections.filter((s) => s.count > 0).length;
 ---
 
-<BaseLayout title={title}>
-  <div class="work-gallery-page">
-    <!-- â”€â”€ Hero â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ -->
-    <header class="mx-auto w-full max-w-screen-2xl px-6 lg:px-12 pt-32 lg:pt-40 reveal" data-reveal>
-      <p class="eyebrow text-secondary dark:text-dk-secondary mb-4">
-        The work Â· up close
-      </p>
-      <h1 class="display text-text dark:text-dk-text">Proof of work.</h1>
-      <p class="mt-5 max-w-2xl text-base lg:text-lg text-text/65 dark:text-dk-text/65 leading-relaxed">
+<BaseLayout title={title} description={description}>
+  <!-- Page top -->
+  <section class="page-top gal-top">
+    <div class="tone-atmos" aria-hidden="true"></div>
+    <div class="wrap on-top">
+      <p class="kicker">Gallery</p>
+      <h1 class="t-title gal-title">
+        Proof of work.
+        <span class="t-tail">Live software, up close.</span>
+      </h1>
+      <p class="t-lede gal-lede">
         Screenshots and documents straight from the systems I build and run in
         production, organized by project. Everything here is live software that
         real people at a real company use every week.
       </p>
-      <p class="mt-4 font-mono text-xs tracking-wide text-text/45 dark:text-dk-text/45 tabular-nums">
-        {totalImages} screenshots Â· {totalDocs} documents Â· {liveSections}/{sections.length} projects live
+      <p class="t-meta gal-count">
+        {plural(totalImages, "screenshot", "screenshots")} · {plural(totalDocs, "document", "documents")} · {liveSections} of {sections.length} projects live
       </p>
-    </header>
+    </div>
+  </section>
 
-    <!-- â”€â”€ Sticky project rail â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ -->
-    <nav
-      class="work-rail sticky top-14 lg:top-16 z-40 mt-10 bg-primary/80 dark:bg-dk-primary/75 backdrop-blur-xl backdrop-saturate-150 border-y border-text/5 dark:border-dk-text/10"
-      aria-label="Projects on this page"
-    >
-      <div class="mx-auto w-full max-w-screen-2xl px-6 lg:px-12">
-        <div class="work-rail-track flex items-center gap-2 overflow-x-auto py-3">
+  <!-- Project bar: jumps to a project and marks the one in view. -->
+  <nav class="gal-rail" aria-label="Projects on this page">
+    <div class="wrap">
+      <div class="gal-bar lg">
+        <div class="gal-track">
           {sections.map((s) => (
-            <a
-              href={`#p-${s.slug}`}
-              class="work-chip no-lift"
-              data-chip={s.slug}
-              style={`--pa: ${s.accent};`}
-            >
-              <span class="work-chip-dot" aria-hidden="true"></span>
+            <a href={`#p-${s.slug}`} class="chip gal-chip" data-chip={s.slug}>
               <span>{s.title}</span>
-              {s.count > 0 && (
-                <span class="work-chip-count tabular-nums">{s.count}</span>
-              )}
+              {s.count > 0 && <span class="gal-chip-count">{s.count}</span>}
             </a>
           ))}
         </div>
       </div>
-    </nav>
+    </div>
+  </nav>
 
-    <!-- â”€â”€ Project sections â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ -->
+  <!-- Projects -->
+  <div class="wrap gal-body">
     {sections.map((s) => (
-      <section
-        id={`p-${s.slug}`}
-        data-spy={s.slug}
-        class="mx-auto w-full max-w-screen-2xl px-6 lg:px-12 mt-20 lg:mt-28 scroll-mt-36 lg:scroll-mt-40"
-        style={`--pa: ${s.accent};`}
-      >
-        <div class="max-w-3xl reveal" data-reveal>
-          <p class="eyebrow mb-3" style={`color: ${s.accent};`}>
-            {s.number} / {s.title}
-          </p>
-          <h2 class="display-sm text-text dark:text-dk-text">{s.title}.</h2>
-          {s.blurb && (
-            <p class="mt-3 text-base lg:text-lg text-text/65 dark:text-dk-text/65 leading-relaxed">
-              {s.blurb}
-            </p>
-          )}
-          {s.count > 0 && (
-            <p class="mt-3 font-mono text-[0.7rem] tracking-wide text-text/40 dark:text-dk-text/40 tabular-nums">
-              {s.images.length} screenshots{s.docs.length ? ` Â· ${s.docs.length} documents` : ""}
-            </p>
-          )}
+      <section id={`p-${s.slug}`} data-spy={s.slug} class="gal-section" aria-labelledby={`t-${s.slug}`}>
+        <div class="gal-head" data-reveal>
+          <p class="t-meta">{s.meta}</p>
+          <h2 id={`t-${s.slug}`} class="gal-name">{s.title}</h2>
+          {s.blurb && <p class="t-body gal-blurb">{s.blurb}</p>}
         </div>
 
         {s.count === 0 ? (
-          <div class="work-empty mt-8">
-            <span class="work-empty-dot" aria-hidden="true"></span>
-            <p class="text-sm font-medium text-text/55 dark:text-dk-text/55">
-              Curating screenshots for this one â€” soon.
-            </p>
-          </div>
+          <p class="inset t-small gal-empty" data-reveal>
+            Curating screenshots for this one. Soon.
+          </p>
         ) : (
           <>
             {s.images.length > 0 && (
-              <div class="work-masonry mt-10">
+              <ul class="shots" data-reveal>
                 {s.images.map((img, i) => (
-                  <figure class="shot">
-                    <button
-                      type="button"
-                      class="shot-frame no-lift"
-                      data-shot
-                      data-group={s.slug}
-                      data-index={i}
-                      data-full={img.opt?.avif ?? img.src}
-                      data-caption={img.caption}
-                      aria-label={`View screenshot: ${img.caption}`}
-                    >
-                      <span class="shot-bar" aria-hidden="true">
-                        <span class="shot-dots">
-                          <span></span><span></span><span></span>
-                        </span>
-                        <span class="shot-title">{img.caption}</span>
-                        <span class="shot-expand">
-                          <i class="fas fa-up-right-and-down-left-from-center"></i>
-                        </span>
-                      </span>
-                      {img.opt ? (
-                        <picture>
-                          <source srcset={img.opt.avif} type="image/avif" />
-                          <source srcset={img.opt.webp} type="image/webp" />
+                  <li>
+                    <figure class="surface surface-link shot">
+                      <button
+                        type="button"
+                        class="shot-btn"
+                        data-shot
+                        data-group={s.slug}
+                        data-index={i}
+                        data-full={img.opt?.avif ?? img.src}
+                        data-caption={img.caption}
+                        aria-label={`View screenshot: ${img.caption}`}
+                      >
+                        {img.opt ? (
+                          <picture>
+                            <source srcset={img.opt.avif} type="image/avif" />
+                            <source srcset={img.opt.webp} type="image/webp" />
+                            <img
+                              src={img.opt.webp}
+                              alt={img.caption || `${s.title} screenshot`}
+                              loading="lazy"
+                              decoding="async"
+                              class="shot-img"
+                            />
+                          </picture>
+                        ) : (
                           <img
-                            src={img.opt.webp}
+                            src={img.src}
                             alt={img.caption || `${s.title} screenshot`}
                             loading="lazy"
                             decoding="async"
                             class="shot-img"
                           />
-                        </picture>
-                      ) : (
-                        <img
-                          src={img.src}
-                          alt={img.caption || `${s.title} screenshot`}
-                          loading="lazy"
-                          decoding="async"
-                          class="shot-img"
-                        />
-                      )}
-                    </button>
-                  </figure>
+                        )}
+                      </button>
+                      <figcaption class="t-small shot-cap">{img.caption}</figcaption>
+                    </figure>
+                  </li>
                 ))}
-              </div>
+              </ul>
             )}
 
             {s.docs.length > 0 && (
-              <div class="mt-10 reveal" data-reveal>
-                <p class="text-[0.7rem] uppercase tracking-[0.22em] text-text/40 dark:text-dk-text/40 font-semibold mb-4">
-                  Documents
-                </p>
-                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div class="docs-block" data-reveal>
+                {s.images.length > 0 && <h3 class="t-h4 docs-label">Documents</h3>}
+                <ul class="docs">
                   {s.docs.map((doc) => (
-                    <a
-                      href={doc.href}
-                      target="_blank"
-                      rel="noreferrer"
-                      class="work-doc no-lift group"
-                    >
-                      <span class="work-doc-icon" aria-hidden="true">
-                        <i class="fas fa-file-pdf"></i>
-                      </span>
-                      <span class="min-w-0 flex-1">
-                        <span class="block text-sm font-semibold text-text dark:text-dk-text leading-snug truncate capitalize">
-                          {doc.name}
+                    <li>
+                      <a href={doc.href} target="_blank" rel="noreferrer" class="surface doc">
+                        <span class="doc-icon" aria-hidden="true">
+                          <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z" />
+                            <path d="M14 2v4a2 2 0 0 0 2 2h4M16 13H8M16 17H8M10 9H8" />
+                          </svg>
                         </span>
-                        <span class="block mt-0.5 font-mono text-[0.68rem] text-text/45 dark:text-dk-text/45 tabular-nums">
-                          PDF{doc.size ? ` Â· ${doc.size}` : ""}
+                        <span class="min-w-0">
+                          <span class="block t-h4 doc-name">{doc.name}</span>
+                          <span class="block t-meta mt-1">PDF{doc.size ? ` · ${doc.size}` : ""}</span>
                         </span>
-                      </span>
-                      <span class="work-doc-open" aria-hidden="true">↗</span>
-                    </a>
+                        <span class="doc-arrow" aria-hidden="true">
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17 17 7m0 0H8m9 0v9" /></svg>
+                        </span>
+                      </a>
+                    </li>
                   ))}
-                </div>
+                </ul>
               </div>
             )}
           </>
         )}
       </section>
     ))}
+  </div>
 
-    <div class="h-24 lg:h-32"></div>
-
-    <!-- â”€â”€ Lightbox â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ -->
-    <div id="wlb" class="wlb" hidden role="dialog" aria-modal="true" aria-label="Screenshot viewer">
-      <div class="wlb-backdrop" data-wlb-close></div>
-      <button type="button" class="wlb-btn wlb-close no-lift" data-wlb-close aria-label="Close viewer">
-        <i class="fas fa-xmark"></i>
+  <!-- Screenshot viewer -->
+  <div id="wlb" class="lb" hidden role="dialog" aria-modal="true" aria-label="Screenshot viewer">
+    <div class="lb-backdrop" data-wlb-close></div>
+    <button type="button" class="lb-btn lb-close lg" data-wlb-close aria-label="Close viewer">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12" /></svg>
+    </button>
+    <figure class="lb-stage">
+      <img id="wlb-img" class="lb-img" alt="" />
+      <figcaption class="lb-cap">
+        <span id="wlb-cap" class="t-small"></span>
+      </figcaption>
+    </figure>
+    <div class="lb-bar lg">
+      <button type="button" class="lb-btn" data-wlb-prev aria-label="Previous screenshot">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6" /></svg>
       </button>
-      <button type="button" class="wlb-btn wlb-prev no-lift" data-wlb-prev aria-label="Previous screenshot">
-        <i class="fas fa-chevron-left"></i>
-      </button>
-      <figure class="wlb-stage">
-        <img id="wlb-img" alt="" />
-        <figcaption class="wlb-caption">
-          <span id="wlb-cap" class="capitalize"></span>
-          <span id="wlb-count" class="font-mono tabular-nums"></span>
-        </figcaption>
-      </figure>
-      <button type="button" class="wlb-btn wlb-next no-lift" data-wlb-next aria-label="Next screenshot">
-        <i class="fas fa-chevron-right"></i>
+      <span id="wlb-count" class="t-meta lb-count"></span>
+      <button type="button" class="lb-btn" data-wlb-next aria-label="Next screenshot">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 18 6-6-6-6" /></svg>
       </button>
     </div>
   </div>
 </BaseLayout>
 
 <script>
-  // â”€â”€ Lightbox â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // Viewer: click a screenshot to open it, arrows or swipe to move within
+  // its project, Escape or the backdrop to close.
   const wlb = document.getElementById("wlb");
   const wlbImg = document.getElementById("wlb-img") as HTMLImageElement | null;
   const wlbCap = document.getElementById("wlb-cap");
@@ -349,11 +321,10 @@ const liveSections = sections.filter((s) => s.count > 0).length;
   type Item = { src: string; caption: string };
   let items: Item[] = [];
   let cursor = 0;
+  let opener: HTMLElement | null = null;
 
   const collect = (group: string): Item[] =>
-    Array.from(
-      document.querySelectorAll<HTMLElement>(`[data-shot][data-group="${group}"]`)
-    ).map((el) => ({
+    Array.from(document.querySelectorAll<HTMLElement>(`[data-shot][data-group="${group}"]`)).map((el) => ({
       src: el.dataset.full || "",
       caption: el.dataset.caption || "",
     }));
@@ -367,8 +338,8 @@ const liveSections = sections.filter((s) => s.count > 0).length;
     if (!wlbImg || !wlbCap || !wlbCount) return;
     const it = items[cursor];
     if (!it) return;
-    wlbImg.classList.remove("wlb-img-in");
-    wlbImg.onload = () => wlbImg.classList.add("wlb-img-in");
+    wlbImg.classList.remove("is-in");
+    wlbImg.onload = () => wlbImg.classList.add("is-in");
     wlbImg.src = it.src;
     wlbImg.alt = it.caption;
     wlbCap.textContent = it.caption;
@@ -377,23 +348,26 @@ const liveSections = sections.filter((s) => s.count > 0).length;
     preload(cursor - 1);
   };
 
-  const open = (group: string, index: number) => {
+  const open = (el: HTMLElement) => {
     if (!wlb) return;
-    items = collect(group);
-    cursor = Math.min(Math.max(index, 0), items.length - 1);
+    opener = el;
+    items = collect(el.dataset.group || "");
+    cursor = Math.min(Math.max(Number(el.dataset.index || 0), 0), items.length - 1);
     wlb.hidden = false;
-    requestAnimationFrame(() => wlb.classList.add("wlb-open"));
-    document.documentElement.classList.add("wlb-lock");
+    requestAnimationFrame(() => wlb.classList.add("is-open"));
+    document.documentElement.classList.add("lb-lock");
     render();
+    wlb.querySelector<HTMLElement>(".lb-close")?.focus();
   };
 
   const close = () => {
-    if (!wlb) return;
-    wlb.classList.remove("wlb-open");
-    document.documentElement.classList.remove("wlb-lock");
+    if (!wlb || wlb.hidden) return;
+    wlb.classList.remove("is-open");
+    document.documentElement.classList.remove("lb-lock");
     window.setTimeout(() => {
       wlb.hidden = true;
     }, 220);
+    opener?.focus();
   };
 
   const step = (delta: number) => {
@@ -406,7 +380,7 @@ const liveSections = sections.filter((s) => s.count > 0).length;
     const target = e.target as HTMLElement;
     const shot = target.closest<HTMLElement>("[data-shot]");
     if (shot) {
-      open(shot.dataset.group || "", Number(shot.dataset.index || 0));
+      open(shot);
       return;
     }
     if (target.closest("[data-wlb-close]")) close();
@@ -421,15 +395,9 @@ const liveSections = sections.filter((s) => s.count > 0).length;
     if (e.key === "ArrowRight") step(1);
   });
 
-  // Swipe navigation on touch devices.
+  // Swipe on touch screens.
   let touchX: number | null = null;
-  wlb?.addEventListener(
-    "touchstart",
-    (e) => {
-      touchX = e.touches[0]?.clientX ?? null;
-    },
-    { passive: true }
-  );
+  wlb?.addEventListener("touchstart", (e) => (touchX = e.touches[0]?.clientX ?? null), { passive: true });
   wlb?.addEventListener(
     "touchend",
     (e) => {
@@ -441,25 +409,25 @@ const liveSections = sections.filter((s) => s.count > 0).length;
     { passive: true }
   );
 
-  // â”€â”€ Scrollspy for the project rail â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // The project bar follows the section in view.
   const chips = new Map<string, HTMLElement>();
-  document
-    .querySelectorAll<HTMLElement>("[data-chip]")
-    .forEach((chip) => chips.set(chip.dataset.chip || "", chip));
+  document.querySelectorAll<HTMLElement>("[data-chip]").forEach((chip) => chips.set(chip.dataset.chip || "", chip));
 
   const setActive = (slug: string) => {
     chips.forEach((chip, key) => {
       const on = key === slug;
-      chip.classList.toggle("work-chip-active", on);
+      chip.classList.toggle("is-on", on);
       if (on) {
-        // Scroll only the horizontal rail, never the page: scrollIntoView
-        // walks every scrollable ancestor and yanks the document's vertical
-        // scroll back toward the sticky rail while the user is scrolling.
-        const track = chip.closest<HTMLElement>(".work-rail-track");
+        chip.setAttribute("aria-current", "true");
+        // Scroll only the bar, never the page: scrollIntoView walks every
+        // scrollable ancestor and would tug the page while someone scrolls.
+        const track = chip.closest<HTMLElement>(".gal-track");
         if (track) {
           const left = chip.offsetLeft - (track.clientWidth - chip.offsetWidth) / 2;
           track.scrollTo({ left: Math.max(0, left), behavior: "smooth" });
         }
+      } else {
+        chip.removeAttribute("aria-current");
       }
     });
   };
@@ -468,9 +436,7 @@ const liveSections = sections.filter((s) => s.count > 0).length;
     const spy = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            setActive((entry.target as HTMLElement).dataset.spy || "");
-          }
+          if (entry.isIntersecting) setActive((entry.target as HTMLElement).dataset.spy || "");
         });
       },
       { rootMargin: "-25% 0px -65% 0px" }
@@ -479,389 +445,227 @@ const liveSections = sections.filter((s) => s.count > 0).length;
   }
 </script>
 
-<style is:global>
-  /* â”€â”€ Work gallery page â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+<style>
+  /* Page top */
+  .gal-title { margin-top: 22px; }
+  .gal-lede { margin-top: 22px; }
+  .gal-count { margin-top: 18px; }
 
-  /* Project rail */
-  .work-rail-track {
-    scrollbar-width: none;
+  /* The project bar: clear glass, sticky under the floating nav. */
+  .gal-rail {
+    position: sticky;
+    top: 80px;
+    z-index: 40;
+    margin-top: 40px;
+    pointer-events: none;
   }
-  .work-rail-track::-webkit-scrollbar {
-    display: none;
-  }
-  .work-chip {
-    --pa: #5b8def;
-    display: inline-flex;
-    align-items: center;
-    gap: 0.55rem;
-    flex: 0 0 auto;
-    padding: 0.42rem 0.95rem;
+  .gal-bar {
+    display: flex;
+    width: fit-content;
+    max-width: 100%;
     border-radius: 9999px;
-    font-size: 0.82rem;
-    font-weight: 600;
-    color: rgb(29 29 31 / 0.62);
-    border: 1px solid rgb(29 29 31 / 0.1);
-    background: transparent;
-    transition: color 0.25s ease, border-color 0.25s ease, background 0.25s ease,
-      box-shadow 0.25s ease;
-    white-space: nowrap;
-  }
-  html.dark .work-chip {
-    color: rgb(245 245 247 / 0.6);
-    border-color: rgb(245 245 247 / 0.14);
-  }
-  .work-chip-dot {
-    width: 0.42rem;
-    height: 0.42rem;
-    border-radius: 9999px;
-    background: var(--pa);
-    box-shadow: 0 0 8px color-mix(in srgb, var(--pa) 65%, transparent);
-    flex: 0 0 auto;
-  }
-  .work-chip-count {
-    font-family: "SF Mono", "JetBrains Mono", Menlo, Monaco, Consolas, monospace;
-    font-size: 0.66rem;
-    padding: 0.1rem 0.42rem;
-    border-radius: 9999px;
-    background: color-mix(in srgb, var(--pa) 14%, transparent);
-    color: color-mix(in srgb, var(--pa) 80%, #1d1d1f);
-  }
-  html.dark .work-chip-count {
-    color: color-mix(in srgb, var(--pa) 85%, #f5f5f7);
-  }
-  .work-chip:hover {
-    color: #1d1d1f;
-    border-color: color-mix(in srgb, var(--pa) 45%, rgb(29 29 31 / 0.1));
-  }
-  html.dark .work-chip:hover {
-    color: #f5f5f7;
-    border-color: color-mix(in srgb, var(--pa) 50%, rgb(245 245 247 / 0.14));
-  }
-  .work-chip-active {
-    color: #1d1d1f;
-    border-color: color-mix(in srgb, var(--pa) 60%, transparent);
-    background: color-mix(in srgb, var(--pa) 10%, transparent);
-    box-shadow: 0 0 18px -6px color-mix(in srgb, var(--pa) 55%, transparent);
-  }
-  html.dark .work-chip-active {
-    color: #f5f5f7;
-    background: color-mix(in srgb, var(--pa) 16%, transparent);
-  }
-
-  /* Masonry flow */
-  .work-masonry {
-    columns: 1;
-    column-gap: 1.1rem;
-  }
-  @media (min-width: 640px) {
-    .work-masonry {
-      columns: 2;
-    }
-  }
-  @media (min-width: 1024px) {
-    .work-masonry {
-      columns: 3;
-    }
-  }
-  .shot {
-    break-inside: avoid;
-    margin: 0 0 1.1rem;
-  }
-
-  /* Screenshot framed as a tiny app window */
-  .shot-frame {
-    --pa: #5b8def;
-    display: block;
-    width: 100%;
-    text-align: left;
-    border-radius: 0.85rem;
     overflow: hidden;
-    background: #fff;
-    border: 1px solid rgb(29 29 31 / 0.1);
-    box-shadow: 0 10px 28px -18px rgb(0 0 0 / 0.35);
-    cursor: zoom-in;
-    transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.4s ease,
-      border-color 0.4s ease;
+    pointer-events: auto;
   }
-  html.dark .shot-frame {
-    background: #0f1014;
-    border-color: rgb(245 245 247 / 0.12);
-    box-shadow: 0 10px 28px -16px rgb(0 0 0 / 0.6);
-  }
-  .shot-frame:hover {
-    transform: translateY(-4px);
-    border-color: color-mix(in srgb, var(--pa) 55%, transparent);
-    box-shadow:
-      0 22px 44px -20px rgb(0 0 0 / 0.45),
-      0 0 30px -8px color-mix(in srgb, var(--pa) 38%, transparent);
-  }
-  .shot-bar {
+  .gal-track {
     display: flex;
     align-items: center;
-    gap: 0.6rem;
-    padding: 0.5rem 0.75rem;
-    border-bottom: 1px solid rgb(29 29 31 / 0.07);
-    background: rgb(29 29 31 / 0.025);
+    gap: 6px;
+    padding: 6px;
+    overflow-x: auto;
+    scrollbar-width: none;
+    overscroll-behavior-x: contain;
   }
-  html.dark .shot-bar {
-    border-bottom-color: rgb(245 245 247 / 0.08);
-    background: rgb(245 245 247 / 0.04);
+  .gal-track::-webkit-scrollbar { display: none; }
+  /* On narrow screens the bar scrolls sideways; soft edges say so. */
+  @media (max-width: 1099px) {
+    .gal-track {
+      -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 14px, #000 calc(100% - 14px), transparent 100%);
+      mask-image: linear-gradient(90deg, transparent 0, #000 14px, #000 calc(100% - 14px), transparent 100%);
+    }
   }
-  .shot-dots {
-    display: inline-flex;
-    gap: 0.32rem;
-    flex: 0 0 auto;
+  .gal-chip { flex: none; height: 32px; padding: 0 14px; background: transparent; border-color: transparent; }
+  .gal-chip:hover { background: var(--wash-strong); }
+  .gal-chip.is-on, .gal-chip.is-on:hover { color: #000; background: var(--ink); border-color: var(--ink); }
+  .gal-chip-count {
+    font-size: 0.75rem;
+    font-variant-numeric: tabular-nums;
+    color: var(--ink-faint);
   }
-  .shot-dots span {
-    width: 0.5rem;
-    height: 0.5rem;
-    border-radius: 9999px;
-    background: rgb(29 29 31 / 0.14);
-    transition: background 0.3s ease;
+  .gal-chip.is-on .gal-chip-count { color: rgba(0, 0, 0, 0.55); }
+
+  /* Projects: a hairline between each, the head, then the frames. */
+  .gal-body { padding-top: clamp(32px, 4vw, 48px); padding-bottom: clamp(72px, 9vw, 120px); }
+  .gal-section {
+    padding-top: clamp(48px, 6vw, 72px);
+    margin-top: clamp(48px, 6vw, 72px);
+    border-top: 1px solid var(--line);
+    /* The page already pads 88px for the nav; this clears the project bar too. */
+    scroll-margin-top: 56px;
   }
-  html.dark .shot-dots span {
-    background: rgb(245 245 247 / 0.18);
-  }
-  .shot-frame:hover .shot-dots span {
-    background: color-mix(in srgb, var(--pa) 75%, transparent);
-  }
-  .shot-frame:hover .shot-dots span:nth-child(2) {
-    background: color-mix(in srgb, var(--pa) 50%, transparent);
-  }
-  .shot-frame:hover .shot-dots span:nth-child(3) {
-    background: color-mix(in srgb, var(--pa) 30%, transparent);
-  }
-  .shot-title {
-    flex: 1 1 auto;
-    min-width: 0;
-    font-size: 0.68rem;
+  .gal-section:first-child { margin-top: 0; border-top: 0; padding-top: 0; }
+  .gal-head { max-width: 46rem; margin-bottom: 28px; }
+  .gal-name {
+    margin-top: 10px;
+    font-size: clamp(1.625rem, 2.6vw, 2.125rem);
+    line-height: 1.12;
+    letter-spacing: -0.028em;
     font-weight: 600;
-    letter-spacing: 0.02em;
-    color: rgb(29 29 31 / 0.5);
-    text-transform: capitalize;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    text-align: center;
+    color: var(--ink);
   }
-  html.dark .shot-title {
-    color: rgb(245 245 247 / 0.5);
+  .gal-blurb { margin-top: 10px; font-size: 1rem; }
+  .gal-empty { padding: 20px 24px; }
+
+  /* Screenshots: one frame shape, the whole shot visible inside it. */
+  .shots {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    gap: 16px;
+    grid-template-columns: 1fr;
   }
-  .shot-expand {
-    flex: 0 0 auto;
-    font-size: 0.6rem;
-    color: rgb(29 29 31 / 0.3);
-    opacity: 0;
-    transform: translateX(-2px);
-    transition: opacity 0.3s ease, transform 0.3s ease, color 0.3s ease;
+  @media (min-width: 720px) { .shots { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; } }
+  .shots > li { display: flex; }
+  .shot { display: flex; flex-direction: column; width: 100%; margin: 0; overflow: hidden; }
+  .shot-btn {
+    display: grid;
+    grid-template: minmax(0, 1fr) / minmax(0, 1fr);
+    place-items: center;
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    padding: 14px;
+    background:
+      radial-gradient(70% 80% at 50% 0%, rgba(255, 255, 255, 0.035), transparent 70%),
+      #07080b;
+    border: 0;
+    border-bottom: 1px solid var(--line);
+    border-radius: 19px 19px 0 0;
+    cursor: zoom-in;
   }
-  html.dark .shot-expand {
-    color: rgb(245 245 247 / 0.35);
-  }
-  .shot-frame:hover .shot-expand {
-    opacity: 1;
-    transform: translateX(0);
-    color: color-mix(in srgb, var(--pa) 80%, transparent);
-  }
+  .shot-btn:focus-visible { outline: none; box-shadow: inset 0 0 0 3px rgba(var(--tone-rgb), 0.5); }
   .shot-img {
     display: block;
-    width: 100%;
+    max-width: 100%;
+    max-height: 100%;
+    width: auto;
     height: auto;
+    object-fit: contain;
+    border-radius: 6px;
+    box-shadow: 0 12px 30px -16px rgba(0, 0, 0, 0.9);
+    transition: transform 600ms var(--ease-glass);
   }
+  .shot:hover .shot-img { transform: scale(1.015); }
+  .shot-cap { padding: 14px 18px 16px; }
 
-  /* Empty state */
-  .work-empty {
-    display: flex;
+  /* Documents */
+  .docs-block { margin-top: 28px; }
+  .docs-label { margin-bottom: 14px; }
+  .docs {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    gap: 16px;
+    grid-template-columns: 1fr;
+  }
+  @media (min-width: 640px) { .docs { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  @media (min-width: 1024px) { .docs { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px; } }
+  .docs > li { display: flex; }
+  .doc {
+    display: grid;
+    grid-template-columns: 44px minmax(0, 1fr) auto;
     align-items: center;
-    gap: 0.8rem;
-    padding: 1.6rem 1.5rem;
-    border-radius: 1rem;
-    border: 1.5px dashed color-mix(in srgb, var(--pa) 35%, rgb(29 29 31 / 0.15));
-    background: color-mix(in srgb, var(--pa) 3%, transparent);
+    gap: 14px;
+    width: 100%;
+    padding: 16px 18px;
   }
-  html.dark .work-empty {
-    border-color: color-mix(in srgb, var(--pa) 35%, rgb(245 245 247 / 0.15));
+  .doc-icon {
+    display: grid;
+    place-items: center;
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+    background: var(--wash);
+    border: 1px solid var(--line);
+    color: var(--ink);
   }
-  .work-empty-dot {
-    width: 0.55rem;
-    height: 0.55rem;
-    border-radius: 9999px;
-    background: var(--pa);
-    box-shadow: 0 0 10px color-mix(in srgb, var(--pa) 60%, transparent);
-    animation: workEmptyPulse 2.4s ease-in-out infinite;
-    flex: 0 0 auto;
-  }
-  @keyframes workEmptyPulse {
-    0%, 100% { opacity: 0.45; transform: scale(0.9); }
-    50% { opacity: 1; transform: scale(1.1); }
-  }
-  @media (prefers-reduced-motion: reduce) {
-    .work-empty-dot { animation: none; }
-  }
+  .doc-name { overflow-wrap: anywhere; }
+  .doc-arrow { color: var(--ink-faint); transition: color 150ms var(--ease-glass), transform 250ms var(--ease-glass); }
+  .doc:hover .doc-arrow { color: var(--tone); transform: translate(1px, -1px); }
 
-  /* Document cards */
-  .work-doc {
-    display: flex;
-    align-items: center;
-    gap: 0.9rem;
-    padding: 0.95rem 1.05rem;
-    border-radius: 0.9rem;
-    border: 1px solid rgb(29 29 31 / 0.1);
-    transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1), border-color 0.35s ease,
-      box-shadow 0.35s ease;
-  }
-  html.dark .work-doc {
-    border-color: rgb(245 245 247 / 0.12);
-  }
-  .work-doc:hover {
-    transform: translateY(-3px);
-    border-color: color-mix(in srgb, var(--pa) 50%, transparent);
-    box-shadow: 0 16px 32px -20px rgb(0 0 0 / 0.4),
-      0 0 24px -10px color-mix(in srgb, var(--pa) 35%, transparent);
-  }
-  .work-doc-icon {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 2.5rem;
-    height: 2.5rem;
-    border-radius: 0.65rem;
-    font-size: 1rem;
-    flex: 0 0 auto;
-    color: color-mix(in srgb, var(--pa) 85%, #1d1d1f);
-    background: color-mix(in srgb, var(--pa) 12%, transparent);
-  }
-  html.dark .work-doc-icon {
-    color: color-mix(in srgb, var(--pa) 88%, #f5f5f7);
-    background: color-mix(in srgb, var(--pa) 16%, transparent);
-  }
-  .work-doc-open {
-    flex: 0 0 auto;
-    font-size: 0.85rem;
-    color: rgb(29 29 31 / 0.3);
-    transition: color 0.3s ease, transform 0.3s ease;
-  }
-  html.dark .work-doc-open {
-    color: rgb(245 245 247 / 0.35);
-  }
-  .work-doc:hover .work-doc-open {
-    color: color-mix(in srgb, var(--pa) 80%, transparent);
-    transform: translate(2px, -2px);
-  }
-
-  /* â”€â”€ Lightbox â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
-  html.wlb-lock,
-  html.wlb-lock body {
-    overflow: hidden;
-  }
-  .wlb {
+  /* Viewer: a dark room, the screenshot, and quiet glass controls. */
+  :global(html.lb-lock), :global(html.lb-lock body) { overflow: hidden; }
+  .lb {
     position: fixed;
     inset: 0;
     z-index: 90;
     display: flex;
     align-items: center;
     justify-content: center;
+    padding: 72px 16px 104px;
     opacity: 0;
-    transition: opacity 0.22s ease;
+    transition: opacity 220ms var(--ease-glass);
   }
-  /* display: flex above overrides the hidden attribute's UA display: none,
-     leaving an invisible full-screen overlay that eats every click (nav
-     included). Restore it explicitly. */
-  .wlb[hidden] {
-    display: none;
-  }
-  .wlb.wlb-open {
-    opacity: 1;
-  }
-  .wlb-backdrop {
-    position: absolute;
-    inset: 0;
-    background: rgb(5 6 8 / 0.92);
-    backdrop-filter: blur(14px) saturate(120%);
-    -webkit-backdrop-filter: blur(14px) saturate(120%);
-  }
-  .wlb-stage {
+  .lb[hidden] { display: none; }
+  .lb.is-open { opacity: 1; }
+  .lb-backdrop { position: absolute; inset: 0; background: rgba(0, 0, 0, 0.9); }
+  .lb-stage {
     position: relative;
     z-index: 1;
     margin: 0;
-    max-width: min(92vw, 1400px);
+    max-width: min(1400px, 100%);
+    max-height: 100%;
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 0.9rem;
+    gap: 12px;
     pointer-events: none;
   }
-  #wlb-img {
+  .lb-img {
     max-width: 100%;
-    max-height: 82vh;
+    max-height: calc(100svh - 220px);
     object-fit: contain;
-    border-radius: 0.6rem;
-    box-shadow: 0 40px 90px -30px rgb(0 0 0 / 0.9);
+    border-radius: 12px;
+    border: 1px solid var(--line);
     opacity: 0;
     transform: scale(0.985);
-    transition: opacity 0.28s ease, transform 0.28s ease;
+    transition: opacity 280ms var(--ease-glass), transform 280ms var(--ease-glass);
     pointer-events: auto;
   }
-  #wlb-img.wlb-img-in {
-    opacity: 1;
-    transform: scale(1);
-  }
-  .wlb-caption {
-    display: flex;
-    align-items: baseline;
-    gap: 1rem;
-    font-size: 0.82rem;
-    color: rgb(255 255 255 / 0.7);
-    pointer-events: auto;
-  }
-  #wlb-count {
-    font-size: 0.7rem;
-    color: rgb(255 255 255 / 0.4);
-  }
-  .wlb-btn {
-    position: absolute;
-    z-index: 2;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 2.75rem;
-    height: 2.75rem;
+  .lb-img.is-in { opacity: 1; transform: none; }
+  .lb-cap { pointer-events: auto; text-align: center; }
+  .lb-btn {
+    display: inline-grid;
+    place-items: center;
+    width: 40px;
+    height: 40px;
     border-radius: 9999px;
-    color: rgb(255 255 255 / 0.85);
-    background: rgb(255 255 255 / 0.08);
-    border: 1px solid rgb(255 255 255 / 0.12);
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
-    font-size: 0.95rem;
-    transition: background 0.25s ease, transform 0.25s ease;
+    color: var(--ink);
+    background: transparent;
+    border: 0;
+    cursor: pointer;
+    transition: background-color 150ms var(--ease-glass);
   }
-  .wlb-btn:hover {
-    background: rgb(255 255 255 / 0.18);
-    transform: scale(1.06);
+  .lb-btn:hover { background: var(--wash-strong); }
+  .lb-btn:focus-visible { outline: none; box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.25); }
+  .lb-close { position: absolute; top: 16px; right: 16px; z-index: 2; width: 44px; height: 44px; }
+  .lb-bar {
+    position: absolute;
+    left: 50%;
+    bottom: 28px;
+    z-index: 2;
+    transform: translateX(-50%);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px;
+    border-radius: 9999px;
   }
-  .wlb-close {
-    top: 1.25rem;
-    right: 1.25rem;
-  }
-  .wlb-prev {
-    left: 1rem;
-    top: 50%;
-    transform: translateY(-50%);
-  }
-  .wlb-prev:hover {
-    transform: translateY(-50%) scale(1.06);
-  }
-  .wlb-next {
-    right: 1rem;
-    top: 50%;
-    transform: translateY(-50%);
-  }
-  .wlb-next:hover {
-    transform: translateY(-50%) scale(1.06);
-  }
-  @media (max-width: 640px) {
-    .wlb-prev { left: 0.5rem; }
-    .wlb-next { right: 0.5rem; }
-    #wlb-img { max-height: 74vh; }
+  .lb-count { min-width: 64px; text-align: center; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .shot-img, .lb, .lb-img, .doc-arrow, .gal-chip { transition: none; }
+    .shot:hover .shot-img { transform: none; }
   }
 </style>

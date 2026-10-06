@@ -3,6 +3,13 @@ import BaseLayout from "../layouts/BaseLayout.astro";
 import Picture from "../components/common/Picture.astro";
 import Icon from "../components/common/Icon.astro";
 import { readingTime } from "../utils/readingTime";
+import {
+  disciplinesFor,
+  impactRank,
+  slugOf,
+  formatPostDate,
+  hasPublic,
+} from "../utils/postTopics";
 
 const allPosts = await Astro.glob("../pages/posts/*.md");
 allPosts.sort(
@@ -12,333 +19,390 @@ allPosts.sort(
 );
 
 const [featured] = allPosts;
-// Preload the featured cover (the LCP element) as AVIF.
-const featuredPreload = featured?.frontmatter.img_path?.replace(/\.(png|jpe?g)$/i, ".avif");
-
-// Discipline tags per post, for the filter pills. A post can carry more
-// than one discipline.
-const dxFor: Record<string, string[]> = {
-  "enterprise-search": ["aie"],
-  "clinical-rag": ["aie", "fde"],
-  "doctor-report-cards": ["aie", "fde"],
-  "pipeline-ghosting": ["sde"],
-  "npc-coach": ["aie"],
-  "cbct-scan-validator": ["mle"],
-  "jobpilot-v2": ["sde", "aie"],
-  "jobpilot": ["sde", "aie"],
-  "llama-rlhf": ["mle"],
-  "resnet-under-5m": ["mle"],
-  "recsys-spark-bigdata": ["mle", "sde"],
-  "fake-news-sentiment": ["mle"],
-  "loan-radar-mlops": ["mle"],
-  "treatment-estimator": ["sde", "fde"],
-  "cowork-dashboard": ["fde"],
-  "cdf-diagnostic-filter": ["aie"],
-  "reconciliation": ["fde", "sde"],
-  "accounting-automation": ["fde"],
-  "magic-hour": ["aie", "sde"],
-  "film-and-engineering": [],
-};
-
-// Impact order: the projects that changed the most for the people using
-// them, in the order they shipped. Enterprise RAG work first, then Doc
-// Coach and its pipeline hardening, NPC Coach, the CBCT validator,
-// JobPilot, the research work, the estimator, the dashboard, CDF, and the
-// rest ranked by content.
-const impactOrder = [
-  "enterprise-search",
-  "clinical-rag",
-  "doctor-report-cards",
-  "pipeline-ghosting",
-  "npc-coach",
-  "cbct-scan-validator",
-  "jobpilot-v2",
-  "jobpilot",
-  "magic-hour",
-  "llama-rlhf",
-  "resnet-under-5m",
-  "recsys-spark-bigdata",
-  "fake-news-sentiment",
-  "loan-radar-mlops",
-  "treatment-estimator",
-  "cowork-dashboard",
-  "cdf-diagnostic-filter",
-  "reconciliation",
-  "accounting-automation",
-  "film-and-engineering",
-];
-
-const slugOf = (url: string | undefined) => (url || "").split("/").filter(Boolean).pop() || "";
-const impactRank = (slug: string) => {
-  const i = impactOrder.indexOf(slug);
-  return i === -1 ? 500 : i;
-};
-
-const accents = [
-  { hex: "#5B8DEF", rgb: "91, 141, 239" },
-  { hex: "#34D399", rgb: "52, 211, 153" },
-  { hex: "#A78BFA", rgb: "167, 139, 250" },
-  { hex: "#F5A524", rgb: "245, 165, 36" },
-];
-
-const dxPills = [
-  { key: "all", label: "All", accent: "#5B8DEF", rgb: "91, 141, 239" },
-  { key: "aie", label: "AIE", accent: "#34D399", rgb: "52, 211, 153" },
-  { key: "mle", label: "MLE", accent: "#A78BFA", rgb: "167, 139, 250" },
-  { key: "fde", label: "FDE", accent: "#F5A524", rgb: "245, 165, 36" },
-  { key: "sde", label: "SDE", accent: "#5B8DEF", rgb: "91, 141, 239" },
-];
-
 const featuredSlug = slugOf(featured?.url);
+const featuredHasCover = hasPublic(featured?.frontmatter.img_path);
+// Preload the featured cover (the LCP element) as AVIF, only when it exists.
+const featuredPreload = featuredHasCover
+  ? featured.frontmatter.img_path.replace(/\.(png|jpe?g)$/i, ".avif")
+  : undefined;
+
+// The filters. Plain words on neutral chips: the selected one turns white.
+const filters = [
+  { key: "all", label: "All", title: "Every post" },
+  { key: "aie", label: "AIE", title: "AI engineering" },
+  { key: "mle", label: "MLE", title: "Machine learning engineering" },
+  { key: "fde", label: "FDE", title: "Working on site with the people who use it" },
+  { key: "sde", label: "SDE", title: "Software engineering" },
+];
+
+// While a post's cover is still being made, its panel shows the post's
+// headline number, or its tag when it has none.
+const fallbackText = (fm: Record<string, any>) =>
+  (Array.isArray(fm.stats) && fm.stats[0]?.value) || fm.tag || "";
+
+// Comets in the writing colour, placed for this page.
+const comets = [
+  { w: 143, top: "26%", pos: "right:5%", rz: -14 },
+  { w: 115, top: "78%", pos: "left:8%", rz: 10 },
+];
+const gridComets = [
+  { w: 130, top: "4%", pos: "left:2%", rz: 12 },
+  { w: 112, top: "50%", pos: "right:3%", rz: -12 },
+  { w: 118, top: "22%", pos: "left:36%", rz: 8 },
+  { w: 106, top: "76%", pos: "right:30%", rz: -16 },
+];
+const WRITING_RGB = "52,211,153";
 ---
 
-<BaseLayout title="SA: Writing" preloadImage={featuredPreload}>
-  <main class="relative overflow-hidden">
+<BaseLayout
+  title="SA: Writing"
+  description="Notes from the systems Sampreeth Avvari builds: real numbers, real screwups, real fixes."
+  preloadImage={featuredPreload}
+>
+  <div class="wr-page relative overflow-hidden">
     <span class="glow" style="width:630px;height:630px;--gc:#34D399;top:-100px;left:-120px;" aria-hidden="true"></span>
-    <span class="glow glow-2" style="width:570px;height:570px;--gc:#5B8DEF;top:34%;right:-110px;" aria-hidden="true"></span>
-    <span class="glow glow-3" style="width:510px;height:510px;--gc:#A78BFA;bottom:-80px;left:22%;" aria-hidden="true"></span>
+    <span class="glow glow-2" style="width:570px;height:570px;--gc:#34D399;top:34%;right:-110px;" aria-hidden="true"></span>
+    <span class="glow glow-3" style="width:510px;height:510px;--gc:#34D399;bottom:-80px;left:22%;" aria-hidden="true"></span>
 
-    {/* Header */}
-    <section class="relative z-[1] pt-32 lg:pt-40 pb-8">
-      <span class="space-el" style="width:143px;height:38px;top:26%;right:5%;" aria-hidden="true"><span class="comet-glow" style="--sr-rgb:52,211,153;"></span><span class="space-comet" style="--sr-rgb:52,211,153;--rz:-14deg;"></span></span>
-      <span class="space-el" style="width:115px;height:32px;bottom:12%;left:10%;" aria-hidden="true"><span class="comet-glow" style="--sr-rgb:52,211,153;"></span><span class="space-comet" style="--sr-rgb:52,211,153;--rz:10deg;"></span></span>
-      <div class="mx-auto w-full max-w-screen-2xl px-6 lg:px-12" data-arrive>
-        <p class="eyebrow text-acc-emerald mb-4">Notes from the work</p>
-        <h1 class="display text-text dark:text-dk-text mb-4">Writing.</h1>
-        <p class="text-base lg:text-lg text-text/65 dark:text-dk-text/70 leading-relaxed max-w-2xl">
-          Stories from the systems I've built. Real numbers, real screwups, real fixes.
+    <!-- Page top -->
+    <section class="page-top wr-top relative">
+      <div class="tone-atmos" aria-hidden="true"></div>
+      {comets.map((c) => (
+        <span class="space-el" style={`width:${c.w}px;height:${Math.round(c.w * 0.27)}px;top:${c.top};${c.pos};`} aria-hidden="true"><span class="comet-glow" style={`--sr-rgb:${WRITING_RGB};`}></span><span class="space-comet" style={`--sr-rgb:${WRITING_RGB};--rz:${c.rz}deg;`}></span></span>
+      ))}
+      <div class="wrap on-top">
+        <p class="kicker">Writing</p>
+        <h1 class="t-title wr-title">
+          Notes from the work.
+          <span class="t-tail">Real numbers, real screwups, real fixes.</span>
+        </h1>
+        <p class="t-lede wr-lede">
+          How the systems I build actually got built: who needed them, what
+          broke on the way, and the numbers that say whether it worked.
         </p>
       </div>
     </section>
 
-    {/* Featured latest post (shown in the default view) */}
+    <!-- Featured: the latest post. Shown in the default view only. -->
     {
       featured && (
-        <section id="featured-panel" class="relative z-[1] mx-auto w-full max-w-screen-2xl px-6 lg:px-12" data-arrive>
-          <a
-            href={featured.url}
-            class="no-lift pane pane-glare pane-rim overflow-hidden grid grid-cols-1 lg:grid-cols-2 group"
-            data-tilt
-            data-tiltmax="1.5"
-          >
-            <div class="relative overflow-hidden max-lg:order-first">
-              <Picture
-                src={featured.frontmatter.img_path}
-                alt={featured.frontmatter.img_alt || featured.frontmatter.title}
-                width={900}
-                height={500}
-                class="w-full h-full min-h-[240px] lg:min-h-[360px] object-cover transition duration-500 group-hover:scale-[1.03]"
-                loading="eager"
-                fetchpriority="high"
-              />
-              <span class="absolute top-4 left-4 featured-badge text-[0.62rem]">Latest</span>
+        <div id="featured-panel" class="wrap on-top">
+          <a href={featured.url} class="surface wr-feat" data-reveal>
+            <div class="wr-feat-media">
+              {featuredHasCover ? (
+                <Picture
+                  src={featured.frontmatter.img_path}
+                  alt={featured.frontmatter.img_alt || featured.frontmatter.title}
+                  width={900}
+                  height={506}
+                  loading="eager"
+                  fetchpriority="high"
+                />
+              ) : (
+                <div class="media-fallback" aria-hidden="true">
+                  <span class="fb-num">{fallbackText(featured.frontmatter)}</span>
+                </div>
+              )}
             </div>
-            <div class="p-7 lg:p-10 flex flex-col justify-center gap-4">
-              <p class="text-[0.68rem] uppercase tracking-[0.18em] font-semibold text-text/45 dark:text-dk-text/45 tabular-nums inline-flex items-center gap-2">
-                {featured.frontmatter.date}
-                <span aria-hidden="true">·</span>
-                <span class="inline-flex items-center gap-1">
-                  <Icon name="clock" size={12} /> {readingTime(featured.rawContent())} min read
+            <div class="wr-feat-body">
+              <p class="t-meta wr-meta">
+                <span class="badge badge-tone">Latest</span>
+                <span>
+                  {formatPostDate(featured.frontmatter.date)} · {readingTime(featured.rawContent())} min read
                 </span>
               </p>
-              <h2 class="text-2xl lg:text-4xl font-bold tracking-tight leading-[1.1] text-text dark:text-dk-text group-hover:text-secondary dark:group-hover:text-dk-secondary transition [text-wrap:balance]">
-                {featured.frontmatter.title}
-              </h2>
-              <p class="text-base lg:text-lg text-text/60 dark:text-dk-text/65 leading-relaxed line-clamp-3">
-                {featured.frontmatter.description}
-              </p>
-              <p class="text-sm font-bold text-secondary dark:text-dk-secondary inline-flex items-center gap-1.5 mt-1">
+              <h2 class="wr-feat-title">{featured.frontmatter.title}</h2>
+              <p class="t-body wr-feat-desc">{featured.frontmatter.description}</p>
+              <span class="tlink wr-feat-link">
                 Read the post <Icon name="arrow-right" size={14} />
-              </p>
+              </span>
             </div>
           </a>
-        </section>
+        </div>
       )
     }
 
-    {/* Filter + sort controls */}
-    <section class="relative z-[1] mx-auto w-full max-w-screen-2xl px-6 lg:px-12 mt-10 lg:mt-14">
-      <div class="flex flex-wrap items-center justify-between gap-4" data-arrive>
-        <div class="flex flex-wrap items-center gap-2" role="group" aria-label="Filter posts by discipline">
-          {dxPills.map((p) => (
+    <!-- Filters and sort -->
+    <div class="wrap on-top wr-controls-wrap">
+      <div class="wr-controls">
+        <div class="lg wr-bar" role="group" aria-label="Filter posts by kind of work">
+          {filters.map((f) => (
             <button
               type="button"
-              class={`dpill wr-filter ${p.key === "all" ? "wr-filter-active" : ""}`}
-              data-filter={p.key}
-              style={`--dx: ${p.accent}; --dx-rgb: ${p.rgb};`}
+              class={`chip wr-filter ${f.key === "all" ? "is-on" : ""}`}
+              data-filter={f.key}
+              aria-pressed={f.key === "all" ? "true" : "false"}
+              title={f.title}
             >
-              <i aria-hidden="true"></i>
-              <span>{p.label}</span>
+              {f.label}
             </button>
           ))}
         </div>
-        <div class="wr-sort" role="group" aria-label="Sort posts">
-          <button type="button" class="wr-sort-btn wr-sort-active" data-sort="date">Newest</button>
-          <button type="button" class="wr-sort-btn" data-sort="impact">Impact</button>
+        <div class="lg wr-bar" role="group" aria-label="Sort posts">
+          <button type="button" class="chip wr-sort is-on" data-sort="date" aria-pressed="true">Newest</button>
+          <button type="button" class="chip wr-sort" data-sort="impact" aria-pressed="false">Impact</button>
         </div>
+        <p class="t-meta wr-count" id="wr-count" aria-live="polite">{allPosts.length} posts</p>
       </div>
-      <p id="impact-note" class="hidden mt-4 text-sm text-text/55 dark:text-dk-text/55 leading-relaxed max-w-3xl">
+      <p id="impact-note" class="t-small wr-note" hidden>
         Posts ranked by how much the project behind each one moved the company.
       </p>
-    </section>
+    </div>
 
-    {/* All posts */}
-    <section class="relative z-[1] mx-auto w-full max-w-screen-2xl px-6 lg:px-12 mt-8 mb-28">
-      <span class="space-el" style="width:130px;height:35px;top:4%;left:2%;" aria-hidden="true"><span class="comet-glow" style="--sr-rgb:167,139,250;"></span><span class="space-comet" style="--sr-rgb:167,139,250;--rz:12deg;"></span></span>
-      <span class="space-el" style="width:112px;height:31px;top:50%;right:3%;" aria-hidden="true"><span class="comet-glow" style="--sr-rgb:91,141,239;"></span><span class="space-comet" style="--sr-rgb:91,141,239;--rz:-12deg;"></span></span>
-      <span class="space-el" style="width:118px;height:33px;top:20%;left:36%;" aria-hidden="true"><span class="comet-glow" style="--sr-rgb:52,211,153;"></span><span class="space-comet" style="--sr-rgb:52,211,153;--rz:8deg;"></span></span>
-      <span class="space-el" style="width:106px;height:30px;bottom:24%;right:30%;" aria-hidden="true"><span class="comet-glow" style="--sr-rgb:167,139,250;"></span><span class="space-comet" style="--sr-rgb:167,139,250;--rz:-16deg;"></span></span>
-      <div id="wr-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {allPosts.map((post, i) => {
-          const accent = accents[i % accents.length];
+    <!-- Every post -->
+    <section class="wrap on-top wr-list relative" aria-label="All posts">
+      {gridComets.map((c) => (
+        <span class="space-el" style={`width:${c.w}px;height:${Math.round(c.w * 0.27)}px;top:${c.top};${c.pos};`} aria-hidden="true"><span class="comet-glow" style={`--sr-rgb:${WRITING_RGB};`}></span><span class="space-comet" style={`--sr-rgb:${WRITING_RGB};--rz:${c.rz}deg;`}></span></span>
+      ))}
+      <div id="wr-grid" class="wr-grid">
+        {allPosts.map((post) => {
           const slug = slugOf(post.url);
-          const dx = dxFor[slug] || [];
+          const fm = post.frontmatter;
+          const dx = disciplinesFor[slug] || [];
           return (
             <a
               href={post.url}
-              class="no-lift pane pane-glare overflow-hidden flex flex-col group h-full"
-              data-tilt
-              data-tiltmax="3"
+              class="surface wr-card"
+              data-reveal
               data-slug={slug}
-              data-date={new Date(post.frontmatter.date).getTime()}
+              data-date={new Date(fm.date).getTime()}
               data-impact={impactRank(slug)}
               data-dx={dx.join(" ")}
               data-latest={slug === featuredSlug ? "1" : undefined}
             >
-              {post.frontmatter.img_path && (
-                <div class="relative overflow-hidden">
+              <div class="surface-media wr-card-media">
+                {hasPublic(fm.img_path) ? (
                   <Picture
-                    src={post.frontmatter.img_path}
-                    alt={post.frontmatter.img_alt || post.frontmatter.title}
+                    src={fm.img_path}
+                    alt={fm.img_alt || fm.title}
                     width={600}
-                    height={320}
-                    class="w-full h-44 object-cover transition duration-500 group-hover:scale-[1.04]"
+                    height={338}
                   />
-                  <span
-                    class="absolute inset-x-0 bottom-0 h-[2.5px]"
-                    style={`background: linear-gradient(90deg, ${accent.hex}, transparent);`}
-                    aria-hidden="true"
-                  ></span>
-                  {dx.length > 0 && (
-                    <span class="absolute top-3 right-3 flex gap-1.5">
-                      {dx.map((d) => (
-                        <span class="wr-dx-chip">{d.toUpperCase()}</span>
-                      ))}
-                    </span>
-                  )}
-                </div>
-              )}
-              <div class="p-5 flex flex-col gap-2.5 flex-1">
-                <p class="text-[0.64rem] uppercase tracking-[0.18em] font-semibold text-text/40 dark:text-dk-text/40 tabular-nums inline-flex items-center gap-2">
-                  {post.frontmatter.date}
-                  <span aria-hidden="true">·</span>
-                  <span class="inline-flex items-center gap-1">
-                    <Icon name="clock" size={11} /> {readingTime(post.rawContent())} min
-                  </span>
+                ) : (
+                  <div class="media-fallback" aria-hidden="true">
+                    <span class="fb-num fb-num-sm">{fallbackText(fm)}</span>
+                  </div>
+                )}
+              </div>
+              <div class="wr-card-body">
+                <p class="t-meta">
+                  {formatPostDate(fm.date)} · {readingTime(post.rawContent())} min read
                 </p>
-                <h3 class="text-lg font-bold tracking-tight text-text dark:text-dk-text leading-[1.2] line-clamp-2 group-hover:text-secondary dark:group-hover:text-dk-secondary transition">
-                  {post.frontmatter.title}
-                </h3>
-                <p class="text-[0.82rem] text-text/55 dark:text-dk-text/55 leading-relaxed line-clamp-2 mt-auto">
-                  {post.frontmatter.description}
-                </p>
+                <h3 class="wr-card-title">{fm.title}</h3>
+                <p class="t-small wr-card-desc">{fm.description}</p>
               </div>
             </a>
           );
         })}
       </div>
-      <p id="wr-empty" class="hidden mt-10 text-center text-text/50 dark:text-dk-text/50">
-        No posts in this discipline yet.
+      <p id="wr-empty" class="t-body wr-empty" hidden>
+        No posts in this one yet.
       </p>
     </section>
-  </main>
+  </div>
 </BaseLayout>
 
 <style>
-  .wr-filter { cursor: pointer; }
-  .wr-filter-active {
-    color: var(--dx);
-    border-color: rgba(var(--dx-rgb), 0.65);
-    background: rgba(var(--dx-rgb), 0.14);
-    box-shadow: 0 8px 22px -10px rgba(var(--dx-rgb), 0.7);
+  /* Page top */
+  .wr-top { padding-bottom: clamp(40px, 5vw, 64px); }
+  .wr-title { margin-top: 24px; }
+  .wr-lede { margin-top: 24px; }
+
+  /* Featured latest post */
+  .wr-feat {
+    display: grid;
+    grid-template-columns: 1fr;
+    overflow: hidden;
   }
-  .wr-sort {
+  @media (min-width: 1024px) {
+    .wr-feat { grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); }
+  }
+  .wr-feat-media {
+    position: relative;
+    overflow: hidden;
+    aspect-ratio: 16 / 9;
+    background: #07080b;
+    border-bottom: 1px solid var(--line);
+    border-radius: 19px 19px 0 0;
+  }
+  @media (min-width: 1024px) {
+    .wr-feat-media {
+      aspect-ratio: auto;
+      min-height: 400px;
+      border-bottom: 0;
+      border-right: 1px solid var(--line);
+      border-radius: 19px 0 0 19px;
+    }
+  }
+  .wr-feat-media :global(img) {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+    transition: transform 600ms var(--ease-glass);
+  }
+  .wr-feat:hover .wr-feat-media :global(img) { transform: scale(1.03); }
+  .wr-feat-media .media-fallback { position: absolute; inset: 0; }
+  .wr-feat-body {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: flex-start;
+    padding: 24px;
+  }
+  @media (min-width: 640px) { .wr-feat-body { padding: 32px; } }
+  @media (min-width: 1024px) { .wr-feat-body { padding: 40px; } }
+  .wr-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+  .wr-feat-title {
+    margin-top: 16px;
+    font-size: clamp(1.5rem, 2.4vw, 2rem);
+    line-height: 1.14;
+    letter-spacing: -0.03em;
+    font-weight: 600;
+    color: var(--ink);
+    text-wrap: balance;
+  }
+  .wr-feat-desc {
+    margin-top: 12px;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 4;
+    overflow: hidden;
+  }
+  .wr-feat-link { margin-top: 24px; }
+  .wr-feat:hover .wr-feat-link :global(svg) { transform: translateX(3px); }
+
+  /* The calm panel that stands in for a cover still being made. */
+  .media-fallback {
+    width: 100%;
+    height: 100%;
+    display: grid;
+    place-items: center;
+    padding: 24px;
+    background:
+      radial-gradient(70% 90% at 20% 10%, rgba(var(--tone-rgb), 0.2), transparent 70%),
+      radial-gradient(60% 80% at 90% 100%, rgba(var(--tone-rgb), 0.09), transparent 70%),
+      #07080b;
+  }
+  .fb-num {
+    font-size: clamp(1.75rem, 3.4vw, 2.75rem);
+    line-height: 1.05;
+    letter-spacing: -0.035em;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    text-align: center;
+    text-wrap: balance;
+    color: var(--ink-ghost);
+  }
+  .fb-num-sm { font-size: clamp(1.375rem, 2vw, 1.625rem); }
+
+  /* Filters and sort: glass bars in the navigation layer. */
+  .wr-controls-wrap { margin-top: clamp(40px, 5vw, 56px); }
+  .wr-controls {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px 12px;
+  }
+  .wr-bar {
     display: inline-flex;
-    padding: 4px;
+    align-items: center;
+    gap: 4px;
+    padding: 5px;
     border-radius: 9999px;
-    background: var(--glass);
-    border: 1px solid var(--glass-brd);
-    -webkit-backdrop-filter: blur(14px);
-    backdrop-filter: blur(14px);
   }
-  .wr-sort-btn {
-    padding: 7px 16px;
-    border-radius: 9999px;
-    font-size: 0.78rem;
-    font-weight: 700;
-    color: rgb(29 29 31 / 0.55);
-    cursor: pointer;
-    transition: color 0.2s ease, background 0.2s ease;
+  .wr-bar .chip { cursor: pointer; background: transparent; border-color: transparent; }
+  .wr-bar .chip:hover { transform: none; }
+  .wr-bar .chip:not(.is-on):hover { background: var(--wash-strong); border-color: transparent; }
+  .wr-bar .chip.is-on { color: #000; background: var(--ink); border-color: var(--ink); }
+  .wr-bar .chip:focus-visible { outline: none; box-shadow: 0 0 0 3px rgba(var(--tone-rgb), 0.45); }
+  .wr-count { margin-left: 4px; }
+  .wr-note { margin-top: 14px; max-width: 40rem; }
+
+  /* The list */
+  .wr-list { margin-top: 24px; padding-bottom: clamp(72px, 9vw, 120px); }
+  .wr-grid {
+    position: relative;
+    z-index: 1;
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 16px;
   }
-  :global(html.dark) .wr-sort-btn { color: rgb(245 245 247 / 0.55); }
-  .wr-sort-active {
-    color: #fff !important;
-    background: linear-gradient(135deg, #0066cc, #1e86e0);
+  @media (min-width: 720px) { .wr-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  @media (min-width: 1024px) { .wr-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px; } }
+  .wr-card { display: flex; flex-direction: column; height: 100%; }
+  .wr-card-media { aspect-ratio: 16 / 9; }
+  .wr-card-body {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    padding: 20px 22px 24px;
   }
-  :global(html.dark) .wr-sort-active {
-    background: linear-gradient(135deg, #5b8def, #3f6fdd);
+  .wr-card-title {
+    margin-top: 10px;
+    font-size: 1.125rem;
+    line-height: 1.3;
+    letter-spacing: -0.018em;
+    font-weight: 600;
+    color: var(--ink);
+    text-wrap: balance;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 3;
+    overflow: hidden;
   }
-  .wr-dx-chip {
-    font-family: "SF Mono", ui-monospace, Menlo, Consolas, monospace;
-    font-size: 0.56rem;
-    font-weight: 800;
-    letter-spacing: 0.12em;
-    color: #fff;
-    background: rgba(0, 0, 0, 0.45);
-    -webkit-backdrop-filter: blur(8px);
-    backdrop-filter: blur(8px);
-    padding: 4px 8px;
-    border-radius: 9999px;
+  .wr-card-desc {
+    margin-top: 10px;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    overflow: hidden;
+  }
+  .wr-empty { margin-top: 32px; color: var(--ink-faint); }
+
+  /* Toggled by the filter script. Beats the display of a.surface. */
+  [hidden] { display: none !important; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .wr-feat-media :global(img) { transition: none; }
+    .wr-feat:hover .wr-feat-media :global(img) { transform: none; }
   }
 </style>
 
 <script>
-  import {
-    initGlare,
-    initTilt,
-    initArrive,
-    initAmbient,
-    initComets,
-  } from "../scripts/spatial";
-  initGlare(".pane-glare");
-  initTilt("[data-tilt]");
-  initArrive("[data-arrive]");
-  initComets(".space-el");
-  initAmbient([
-    ["52,211,153", "91,141,239"],
-    ["91,141,239", "167,139,250"],
-    ["167,139,250", "52,211,153"],
-  ]);
+  // The background (stars, glows, comets) takes the writing colour from
+  // BaseLayout, which starts the comets and the ambient wash for this tab.
 
   // Filtering and sorting. Default view: newest first with the featured
-  // panel pinned on top and its card hidden from the grid to avoid the
-  // duplicate. Any other view hides the featured panel and shows every
-  // post in the grid.
+  // card pinned on top and its card hidden from the grid to avoid the
+  // duplicate. Any other view hides the featured card and shows every
+  // matching post in the grid.
   (function () {
     const grid = document.getElementById("wr-grid");
     const featuredPanel = document.getElementById("featured-panel");
     const impactNote = document.getElementById("impact-note");
     const empty = document.getElementById("wr-empty");
+    const count = document.getElementById("wr-count");
     if (!grid) return;
     const cards = Array.from(grid.children) as HTMLElement[];
+    const filterBtns = Array.from(document.querySelectorAll<HTMLElement>(".wr-filter"));
+    const sortBtns = Array.from(document.querySelectorAll<HTMLElement>(".wr-sort"));
 
     let filter = "all";
     let sort = "date";
 
+    const press = (btns: HTMLElement[], on: HTMLElement) =>
+      btns.forEach((b) => {
+        b.classList.toggle("is-on", b === on);
+        b.setAttribute("aria-pressed", b === on ? "true" : "false");
+      });
+
     const apply = () => {
       const isDefault = filter === "all" && sort === "date";
-      if (featuredPanel) featuredPanel.classList.toggle("hidden", !isDefault);
-      if (impactNote) impactNote.classList.toggle("hidden", sort !== "impact");
+      if (featuredPanel) featuredPanel.hidden = !isDefault;
+      if (impactNote) impactNote.hidden = sort !== "impact";
 
       const sorted = [...cards].sort((a, b) =>
         sort === "impact"
@@ -346,32 +410,34 @@ const featuredSlug = slugOf(featured?.url);
           : parseInt(b.dataset.date || "0") - parseInt(a.dataset.date || "0"),
       );
       let shown = 0;
+      let matching = 0;
       for (const card of sorted) {
         const dx = (card.dataset.dx || "").split(" ").filter(Boolean);
-        const hideAsDup = isDefault && card.dataset.latest === "1";
         const hideByFilter = filter !== "all" && !dx.includes(filter);
-        const hidden = hideAsDup || hideByFilter;
-        card.classList.toggle("hidden", hidden);
-        if (!hidden) shown++;
+        const hideAsDup = isDefault && card.dataset.latest === "1";
+        card.hidden = hideByFilter || hideAsDup;
+        if (!hideByFilter) matching++;
+        if (!card.hidden) shown++;
         grid.appendChild(card);
       }
-      if (empty) empty.classList.toggle("hidden", shown > 0);
+      if (empty) empty.hidden = shown > 0;
+      if (count) count.textContent = matching === 1 ? "1 post" : `${matching} posts`;
     };
 
-    document.querySelectorAll<HTMLElement>(".wr-filter").forEach((btn) => {
+    filterBtns.forEach((btn) =>
       btn.addEventListener("click", () => {
         filter = btn.dataset.filter || "all";
-        document.querySelectorAll(".wr-filter").forEach((b) => b.classList.toggle("wr-filter-active", b === btn));
+        press(filterBtns, btn);
         apply();
-      });
-    });
-    document.querySelectorAll<HTMLElement>(".wr-sort-btn").forEach((btn) => {
+      }),
+    );
+    sortBtns.forEach((btn) =>
       btn.addEventListener("click", () => {
         sort = btn.dataset.sort || "date";
-        document.querySelectorAll(".wr-sort-btn").forEach((b) => b.classList.toggle("wr-sort-active", b === btn));
+        press(sortBtns, btn);
         apply();
-      });
-    });
+      }),
+    );
     apply();
   })();
 </script>

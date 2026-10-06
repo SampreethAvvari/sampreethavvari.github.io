@@ -8,8 +8,8 @@ img_alt: "CDF patient dashboard: the day's appointment list beside a patient pro
 tag: "Architecture"
 tone: "emerald"
 stats:
-  - value: "6.0 days → 2.6 min"
-    label: "how far the Denticon mirror trailed the practice, before and after the sync went on a timer"
+  - value: "1 chart"
+    label: "intakes, estimates and consult recordings now land on the patient's Denticon chart, instead of in four separate lists"
     tone: "emerald"
   - value: "453 of 453"
     label: "blind test against bookings: every time the record matcher picked a chart, it was the right one"

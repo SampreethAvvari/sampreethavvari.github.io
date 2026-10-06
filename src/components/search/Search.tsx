@@ -70,11 +70,11 @@ export default function Search({ items }: any) {
   return (
     <div className="self-center">
       <button
-        className="gdock-iconbtn"
+        className="nav-icon"
         onClick={() => setSearch(true)}
         aria-label="Search"
       >
-        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" aria-hidden="true">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" aria-hidden="true">
           <circle cx="11" cy="11" r="7" />
           <path d="m21 21-4.3-4.3" />
         </svg>
@@ -85,7 +85,7 @@ export default function Search({ items }: any) {
         onRequestClose={() => setSearch(false)}
         contentLabel="Search"
         className="search-modal"
-        overlayClassName="fixed top-0 left-0 right-0 bottom-0 bg-black/30 backdrop-filter backdrop-blur-sm z-[90]"
+        overlayClassName="fixed top-0 left-0 right-0 bottom-0 bg-black/50 backdrop-filter backdrop-blur-[6px] z-[90]"
       >
         <div className="relative">
           <div className="absolute inset-y-0 start-0 flex items-center ps-4 pointer-events-none text-text/40 dark:text-dk-text/40">
@@ -117,17 +117,17 @@ export default function Search({ items }: any) {
                   className="block px-3 py-2.5"
                   onClick={() => setSearch(false)}
                 >
-                  <span className="flex items-baseline justify-between gap-3">
-                    <span className="font-semibold text-text dark:text-dk-text">
+                  <span className="flex items-center justify-between gap-3">
+                    <span className="font-medium text-[0.9375rem] text-dk-text">
                       {result.item.title}
                     </span>
                     {result.item.type && (
-                      <span className="text-[0.6rem] uppercase tracking-[0.16em] text-secondary/70 dark:text-dk-secondary/70 shrink-0">
-                        {result.item.type}
+                      <span className="badge shrink-0" data-tone={result.item.type === "post" ? "writing" : "home"}>
+                        {result.item.type === "post" ? "Post" : "Page"}
                       </span>
                     )}
                   </span>
-                  <span className="block text-sm text-text/55 dark:text-dk-text/55 line-clamp-1">
+                  <span className="mt-0.5 block text-sm text-dk-text/55 line-clamp-1">
                     {result.item.description}
                   </span>
                 </a>

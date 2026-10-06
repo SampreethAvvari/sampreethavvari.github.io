@@ -31,8 +31,8 @@ Hybridge projects (each has a dedicated blog post on his portfolio):
 3. Treatment Estimator (slug: treatment-estimator). Next.js 16 + Drizzle +
    Postgres rebuild of a decade-old quoting tool. Five pricing model kinds
    (flat, tiered, tiered-zoned, price-range, per-surface) in a strongly-typed
-   resolver. Write-once *_at_capture columns enforced by a Postgres trigger
-   make the 6-month price guarantee a real database invariant. A previous
+   resolver. Every saved line stores its captured price and price book
+   version (*_at_capture columns), so the 6-month price guarantee holds. A previous
    outside vendor attempt around ten years ago never shipped; Sampreeth's
    rebuild went spec-to-production in about one month — one month of work
    against ten years of attempts that didn't land. By October 2026 it had

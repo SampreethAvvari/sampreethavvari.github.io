@@ -5,6 +5,7 @@
 type IconName =
   | "arrow-down"
   | "arrow-right"
+  | "arrow-left"
   | "arrow-up-right"
   | "search"
   | "clock"
@@ -27,6 +28,7 @@ const { name, size = 18, class: className = "" } = Astro.props;
 const strokes: Partial<Record<IconName, string>> = {
   "arrow-down": "M12 5v14m0 0 6-6m-6 6-6-6",
   "arrow-right": "M5 12h14m0 0-6-6m6 6-6 6",
+  "arrow-left": "M19 12H5m0 0 6 6m-6-6 6-6",
   "arrow-up-right": "M7 17 17 7m0 0H8m9 0v9",
   search: "M21 21l-4.3-4.3M18 11a7 7 0 1 1-14 0 7 7 0 0 1 14 0Z",
   clock: "M12 6v6l4 2m6-2a10 10 0 1 1-20 0 10 10 0 0 1 20 0Z",
