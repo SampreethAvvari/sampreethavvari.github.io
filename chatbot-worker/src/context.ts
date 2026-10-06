@@ -188,7 +188,7 @@ Filmmaking credits:
   feature in post. IMDb: https://www.imdb.com/title/tt39700295/
 - Extraordinary Lives (upcoming) — Director, Writer.
 - Pupa (upcoming) — Writer.
-- Solistice (2025) — Editor. Swecha (2024) — Editor.
+- Solstice (2025) — Editor. Swechcha (2024) — Editor.
 - Tiger Man (2022) — Director, Writer, Editor.
 - Strangers (2019) — Cinematographer, Music.
 

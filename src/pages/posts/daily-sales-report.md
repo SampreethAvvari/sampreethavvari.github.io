@@ -81,7 +81,7 @@ CURRENT = V2026_07
 
 ## Gemini writes the paragraph, code checks every number
 
-The daily run has seven stages, and only one of them, narrate, uses a language model. Gemini on Vertex AI, which our Google Cloud business associate agreement covers, writes a few sentences of commentary.
+The daily run has seven stages, and only one of them, narrate, uses a language model. Gemini on Vertex AI writes a few sentences of commentary.
 
 It never sees a row of data. One function builds its only payload of finished projections, bands and check results, and a test scans it for every row level field name. The prompt says not to invent numbers, but I do not trust a prompt with that, so code checks that every number in the commentary appears in the payload, in any rounding a sentence might reasonably use:
 
