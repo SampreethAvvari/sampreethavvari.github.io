@@ -32,8 +32,8 @@ Here's the credit list, so we're talking about specifics:
 | 2026 | **Among Monsters** ([IMDb](https://www.imdb.com/title/tt39700295/)) | Director / Writer / Editor / Color / Music |
 | upcoming | Extraordinary Lives | Director / Writer |
 | upcoming | Pupa | Writer |
-| 2025 | Solistice | Editor |
-| 2024 | Swecha | Editor |
+| 2025 | Solstice | Editor |
+| 2024 | Swechcha | Editor |
 | 2022 | Tiger Man | Director / Writer / Editor |
 | 2019 | Strangers | Cinematographer / Music |
 
