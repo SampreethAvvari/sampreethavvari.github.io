@@ -1004,3 +1004,26 @@ html.lg-live .nav-condensed .nav-glass,
     rgba(5, 6, 9, 0.74);
 }
 .nav-condensed .nav-tab.is-active { background: rgba(255, 255, 255, 0.14); }
+
+/* The SA glass mark. No disc: the glass glows on the bar by itself. */
+.nav-mark {
+  display: block;
+  height: 40px;
+  width: auto;
+  flex: none;
+  filter: drop-shadow(0 2px 10px rgba(91, 141, 239, 0.35));
+  transition: height 300ms var(--ease-glass), filter 250ms var(--ease-glass), transform 250ms var(--ease-glass);
+}
+.nav-brand:hover .nav-mark { filter: drop-shadow(0 2px 14px rgba(167, 139, 250, 0.6)); transform: translateY(-1px); }
+.nav-condensed .nav-mark { height: 32px; }
+@media (max-width: 959px) { .nav-mark { height: 34px; } }
+.foot-mark {
+  flex: none;
+  width: auto;
+  height: 56px;
+  padding: 0;
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
+  filter: drop-shadow(0 4px 18px rgba(91, 141, 239, 0.35));
+}
