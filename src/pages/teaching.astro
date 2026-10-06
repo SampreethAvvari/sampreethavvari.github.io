@@ -4,188 +4,148 @@ import TeachingBrowser from "../components/teaching/TeachingBrowser.tsx";
 import { teaching } from "../data/teaching";
 ---
 
-<BaseLayout title="SA: Teaching">
-  <div class="teach-page">
-    <header class="mx-auto w-full max-w-screen-2xl px-6 lg:px-12 pt-32 lg:pt-40">
-      <p class="eyebrow text-secondary dark:text-dk-secondary mb-4">
-        Learn with me
-      </p>
-      <h1 class="display text-text dark:text-dk-text">Teaching.</h1>
-      <p class="mt-5 max-w-2xl text-base lg:text-lg text-text/65 dark:text-dk-text/65 leading-relaxed">
-        Handbooks, notes, and videos on building real engineering systems,
+<BaseLayout
+  title="SA: Teaching"
+  description="Free handbooks, notes and videos on building real engineering systems, by Sampreeth Avvari."
+>
+  <section class="page-top teach-top relative overflow-hidden">
+    <div class="tone-atmos" aria-hidden="true"></div>
+    <div class="wrap on-top">
+      <p class="kicker">Teaching</p>
+      <h1 class="t-title teach-title">
+        What I've learned, written down.
+        <span class="t-tail">Free guides for engineers who ship AI.</span>
+      </h1>
+      <p class="t-lede teach-lede">
+        Handbooks, notes and videos on building real engineering systems,
         grouped by discipline. Read them right here, and grab the PDF if it
         earns a spot on your shelf.
       </p>
-    </header>
+    </div>
+  </section>
 
-    <section class="mx-auto w-full max-w-screen-2xl px-6 lg:px-12 mt-12 lg:mt-16 mb-24">
+  <section class="teach-browse">
+    <div class="wrap">
       <TeachingBrowser client:load entries={teaching} />
-    </section>
-  </div>
+    </div>
+  </section>
 </BaseLayout>
 
-<style is:global>
-  /* ── Filter chips (mirrors the gallery work-chip language) ──────────── */
-  .teach-chip {
-    --pa: #5b8def;
+<style>
+  .teach-title { margin-top: 22px; }
+  .teach-lede { margin-top: 22px; }
+  .teach-browse { position: relative; z-index: 1; padding-top: clamp(40px, 5vw, 56px); padding-bottom: clamp(72px, 9vw, 120px); }
+
+  /* The browser is a React island, so its markup is styled from here. */
+
+  /* Toolbar: the stream filter is a glass bar, the sort a glass pill. */
+  .teach-browse :global(.tb-bar) {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px 16px;
+    margin-bottom: clamp(24px, 3vw, 32px);
+  }
+  .teach-browse :global(.tb-filter) {
+    display: inline-flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 4px;
+    padding: 5px;
+    border-radius: 9999px;
+    max-width: 100%;
+  }
+  .teach-browse :global(.tb-filter .chip) {
+    height: 32px;
+    padding: 0 14px;
+    border-color: transparent;
+    background: transparent;
+    cursor: pointer;
+    font-family: inherit;
+  }
+  .teach-browse :global(.tb-filter .chip:not(.is-on):hover) { background: var(--wash-strong); }
+  .teach-browse :global(.tb-filter .chip.is-on) { color: #000; background: var(--ink); border-color: var(--ink); }
+  .teach-browse :global(.tb-filter .chip.is-quiet:not(.is-on)) { color: var(--ink-faint); }
+  .teach-browse :global(.chip:focus-visible) { outline: none; box-shadow: 0 0 0 3px rgba(var(--tone-rgb), 0.45); }
+
+  .teach-browse :global(.tb-sort) {
+    position: relative;
     display: inline-flex;
     align-items: center;
-    gap: 0.45rem;
-    padding: 0.42rem 0.95rem;
+    gap: 10px;
+  }
+  .teach-browse :global(.tb-sort-select) {
+    appearance: none;
+    -webkit-appearance: none;
+    height: 42px;
+    padding: 0 38px 0 16px;
     border-radius: 9999px;
-    font-size: 0.82rem;
-    font-weight: 600;
-    color: rgb(29 29 31 / 0.62);
-    border: 1px solid rgb(29 29 31 / 0.12);
-    background: transparent;
-    transition: color 0.25s ease, border-color 0.25s ease, background 0.25s ease,
-      box-shadow 0.25s ease;
+    border: 0;
+    font: inherit;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--ink);
     cursor: pointer;
   }
-  html.dark .teach-chip {
-    color: rgb(245 245 247 / 0.6);
-    border-color: rgb(245 245 247 / 0.14);
-  }
-  .teach-chip:hover {
-    color: #1d1d1f;
-    border-color: color-mix(in srgb, var(--pa) 45%, rgb(29 29 31 / 0.12));
-  }
-  html.dark .teach-chip:hover { color: #f5f5f7; }
-  .teach-chip-active {
-    color: #1d1d1f;
-    border-color: color-mix(in srgb, var(--pa) 60%, transparent);
-    background: color-mix(in srgb, var(--pa) 12%, transparent);
-    box-shadow: 0 0 18px -6px color-mix(in srgb, var(--pa) 55%, transparent);
-  }
-  html.dark .teach-chip-active {
-    color: #f5f5f7;
-    background: color-mix(in srgb, var(--pa) 18%, transparent);
-  }
-  .teach-chip-dim { opacity: 0.5; }
-
-  /* ── Material card ──────────────────────────────────────────────────── */
-  .teach-card {
-    --pa: #5b8def;
-    display: flex;
-    flex-direction: column;
-    border-radius: 1.1rem;
-    overflow: hidden;
-    background: rgb(255 255 255 / 0.5);
-    border: 1px solid rgb(29 29 31 / 0.1);
-    box-shadow: 0 10px 30px -22px rgb(0 0 0 / 0.4);
-    transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.4s ease,
-      border-color 0.4s ease;
-  }
-  html.dark .teach-card {
-    background: #0f1014;
-    border-color: rgb(245 245 247 / 0.1);
-  }
-  .teach-card:hover {
-    transform: translateY(-4px);
-    border-color: color-mix(in srgb, var(--pa) 55%, transparent);
-    box-shadow: 0 24px 46px -24px rgb(0 0 0 / 0.5),
-      0 0 34px -10px color-mix(in srgb, var(--pa) 40%, transparent);
-  }
-  .teach-card-cover {
-    position: relative;
-    aspect-ratio: 16 / 10;
-    overflow: hidden;
-    background: #0b0c10;
-  }
-  .teach-card-img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    display: block;
-    transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
-  }
-  .teach-card:hover .teach-card-img { transform: scale(1.04); }
-  .teach-badge {
+  .teach-browse :global(.tb-sort-select:focus-visible) { outline: none; box-shadow: 0 0 0 3px rgba(var(--tone-rgb), 0.45); }
+  .teach-browse :global(.tb-sort-select option) { background: #0e0f14; color: var(--ink); }
+  .teach-browse :global(.tb-sort-chev) {
     position: absolute;
-    top: 0.7rem;
-    left: 0.7rem;
-    display: inline-flex;
-    align-items: center;
-    gap: 0.35rem;
-    padding: 0.28rem 0.6rem;
-    border-radius: 9999px;
-    font-size: 0.66rem;
-    font-weight: 700;
-    letter-spacing: 0.04em;
-    color: #f5f5f7;
-    background: rgb(5 6 8 / 0.66);
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
-    border: 1px solid rgb(255 255 255 / 0.14);
+    right: 15px;
+    top: 50%;
+    width: 12px;
+    height: 12px;
+    margin-top: -6px;
+    pointer-events: none;
+    color: var(--ink-soft);
+    z-index: 1;
   }
-  .teach-card-body { padding: 1rem 1.05rem 1.1rem; display: flex; flex-direction: column; gap: 0.45rem; flex: 1; }
-  .teach-card-stream {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.4rem;
-    font-size: 0.64rem;
-    font-weight: 700;
-    letter-spacing: 0.16em;
-    text-transform: uppercase;
-    color: color-mix(in srgb, var(--pa) 70%, #1d1d1f);
+
+  /* The cards */
+  .teach-browse :global(.tb-grid) {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 16px;
   }
-  html.dark .teach-card-stream { color: color-mix(in srgb, var(--pa) 80%, #f5f5f7); }
-  .teach-dot {
-    width: 0.42rem;
-    height: 0.42rem;
-    border-radius: 9999px;
-    background: var(--pa);
-    box-shadow: 0 0 8px color-mix(in srgb, var(--pa) 65%, transparent);
-  }
-  .teach-card-title {
-    font-size: 1.05rem;
-    font-weight: 700;
-    line-height: 1.25;
-    letter-spacing: -0.01em;
-    color: #1d1d1f;
-  }
-  html.dark .teach-card-title { color: #f5f5f7; }
-  .teach-card:hover .teach-card-title { color: color-mix(in srgb, var(--pa) 55%, #1d1d1f); }
-  html.dark .teach-card:hover .teach-card-title { color: color-mix(in srgb, var(--pa) 75%, #f5f5f7); }
-  .teach-card-desc {
-    font-size: 0.82rem;
-    line-height: 1.5;
-    color: rgb(29 29 31 / 0.6);
+  @media (min-width: 640px) { .teach-browse :global(.tb-grid) { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  @media (min-width: 1024px) { .teach-browse :global(.tb-grid) { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px; } }
+  .teach-browse :global(.tb-card) { display: flex; flex-direction: column; }
+  .teach-browse :global(.tb-cover) { aspect-ratio: 16 / 10; }
+  .teach-browse :global(.tb-body) { display: flex; flex-direction: column; flex: 1; }
+  .teach-browse :global(.tb-badges) { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; }
+  .teach-browse :global(.tb-badges .t-meta) { margin-left: 2px; }
+  .teach-browse :global(.tb-title) { margin-top: 14px; }
+  .teach-browse :global(.tb-desc) {
+    margin-top: 8px;
     display: -webkit-box;
-    -webkit-line-clamp: 2;
+    -webkit-line-clamp: 3;
     -webkit-box-orient: vertical;
     overflow: hidden;
   }
-  html.dark .teach-card-desc { color: rgb(245 245 247 / 0.6); }
-  .teach-card-stats {
+  .teach-browse :global(.tb-foot) {
     margin-top: auto;
-    padding-top: 0.7rem;
+    padding-top: 20px;
     display: flex;
-    gap: 1rem;
-    font-size: 0.72rem;
-    font-weight: 600;
-    color: rgb(29 29 31 / 0.5);
-    font-variant-numeric: tabular-nums;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px 16px;
   }
-  html.dark .teach-card-stats { color: rgb(245 245 247 / 0.5); }
-  .teach-card-stats i { opacity: 0.7; margin-right: 0.15rem; }
 
-  /* ── Empty state ────────────────────────────────────────────────────── */
-  .teach-empty {
+  /* Nothing in this stream yet */
+  .teach-browse :global(.tb-empty) {
     display: flex;
     align-items: center;
-    gap: 0.8rem;
-    padding: 1.6rem 1.5rem;
-    border-radius: 1rem;
-    border: 1.5px dashed rgb(29 29 31 / 0.15);
+    gap: 12px;
+    padding: 22px 24px;
   }
-  html.dark .teach-empty { border-color: rgb(245 245 247 / 0.15); }
-  .teach-empty-dot {
-    width: 0.55rem;
-    height: 0.55rem;
+  .teach-browse :global(.tb-empty-dot) {
+    width: 7px;
+    height: 7px;
     border-radius: 9999px;
-    background: #34d399;
-    box-shadow: 0 0 10px rgba(52, 211, 153, 0.6);
-    flex: 0 0 auto;
+    background: var(--tone);
+    box-shadow: 0 0 12px rgba(var(--tone-rgb), 0.7);
+    flex: none;
   }
 </style>

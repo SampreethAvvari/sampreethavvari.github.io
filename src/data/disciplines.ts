@@ -236,7 +236,7 @@ export const disciplines: Discipline[] = [
           "Patients, intake surveys, manual intake, patient experience, estimates and consultations in one place",
           "Records now join on the Denticon id, and a person's link decision always beats the matcher",
           "An honest unknown: a journey step with no linked chart is never reported as a no",
-          "Data freshness went from six days behind to 2.6 minutes behind",
+          "Data freshness went from six days behind to 2.6 minutes behind once the sync ran on a timer (measured on staging)",
         ],
       },
       {
@@ -277,10 +277,10 @@ export const disciplines: Discipline[] = [
         img: "/cowork-dashboard.png",
         href: "/posts/cowork-dashboard",
         highlights: [
-          "Patient-to-lead linkage fixed from 49% to 99% by replacing name-matching with real foreign keys",
+          "One definition per metric since the September rebuild, so a card and its drilldown cannot disagree",
           "Surfaced ~$460K of orphan patient value the old reports dropped",
-          "A Python port of the entire metric logic re-computes every number as an audit",
-          "Three-minute weekly workflow: drop three exports, hit refresh",
+          "Ambiguous patient to lead links cut from 31% to 5.8% with first name checks, recorded per row",
+          "Weekly routine unchanged: drop four exports in a Drive folder, the dashboard rebuilds itself",
         ],
       },
       {
@@ -454,14 +454,14 @@ export const disciplines: Discipline[] = [
     summary:
       "Every AI system I ship is wrapped in software built to last: databases that enforce their own rules, codebases held to strict typing and more than a thousand tests, Terraform for everything, and runbooks so the next engineer can pick it up without me.",
     narrative: [
-      "My favorite class of bug is the one the database makes impossible. The treatment estimator rewrite freezes every price at the moment it's captured, with write-once columns enforced by triggers and full revision snapshots on every status change, because a patient quoted $38,000 in March deserves the same number in September, and a policy memo is weaker than a constraint.",
+      "My favorite class of bug is the one the database makes impossible. The treatment estimator rewrite freezes every price at the moment it's captured, with the price, tier and price book version stored on every saved line and read back as saved, because a patient quoted $38,000 in March deserves the same number in September, and a policy memo is weaker than a constraint.",
       "I hold solo projects to team standards, because when you're the only engineer there is no one else to catch it: strict typing across the board, four-tier test pyramids with golden-file fixtures, idempotency at every boundary so replays never duplicate, CI/CD with keyless auth, and infrastructure that rebuilds from a clean checkout with one command.",
       "The discipline pays off in unglamorous ways. The dashboard ships with a second, independent implementation of every metric purely as an audit oracle. The accounting platform's tests verify outputs byte for byte. The NPC pipeline's 1,156 tests run against in-memory fakes, so no test ever touches real patient data. Boring on purpose, and durable because of it.",
     ],
     strengths: [
       {
         title: "Invariants in the database",
-        body: "Write-once columns via triggers, append-only ledgers, revision snapshots. The schema enforces the business promise.",
+        body: "Captured prices stored with the quote, append-only ledgers, revision snapshots. The data carries the business promise.",
       },
       {
         title: "Test discipline at solo scale",
@@ -510,11 +510,11 @@ export const disciplines: Discipline[] = [
       demo: "https://sampreethavvari.github.io/ai-systems-tours/tours/treatment-estimator/",
         status: "In production",
         oneLiner:
-          "The pricing tool Hybridge coordinators use chairside during live consults. Shipped in about a month after a vendor failed at it for ten years, now being rebuilt as a Next.js 16 + Postgres app with a five-model pricing engine.",
+          "The pricing tool Hybridge coordinators use chairside during live consults. Shipped in about a month after a vendor failed at it for ten years, and grown since into a full workspace with visit sequences and the day's consult schedule.",
         img: "/treatment-estimator.png",
         href: "/posts/treatment-estimator",
         highlights: [
-          "Frozen-price invariant: write-once columns enforced by database triggers",
+          "Frozen prices: every saved line keeps its captured price and price book version",
           "Per-location price books with propose/approve workflows, so pricing changes need no developer",
           "Six-year estimate reproducibility for HIPAA record-keeping",
           "~$35/month total cloud footprint",

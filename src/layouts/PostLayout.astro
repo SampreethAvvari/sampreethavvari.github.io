@@ -1,204 +1,284 @@
 ---
-import Picture from "../components/common/Picture.astro";
-
 import BaseLayout from "./BaseLayout.astro";
-
-import { info } from "../data/info";
+import Picture from "../components/common/Picture.astro";
+import Icon from "../components/common/Icon.astro";
 import Contact from "../components/contact_section/Contact";
+import { info } from "../data/info";
+import { readingTime } from "../utils/readingTime";
+import {
+  disciplinesFor,
+  slugOf,
+  formatPostDate,
+  hasPublic,
+} from "../utils/postTopics";
 // Article styles live in their own sheet so only post pages download them.
 import "../styles/post-article.css";
 
-const { frontmatter } = Astro.props;
+const { frontmatter, headings = [] } = Astro.props;
+const { title, date, description, img_path, img_alt, tag, stats, demo } = frontmatter;
 
-const {
-  title,
-  date,
-  description,
-  img_path,
-  img_alt,
-  tag,
-  tone,
-  stats,
-  demo,
-} = frontmatter;
+const allPosts = await Astro.glob("../pages/posts/*.md");
+const slug = slugOf(Astro.url.pathname);
+const self = allPosts.find((p) => slugOf(p.url) === slug);
+const minutes = self ? readingTime(self.rawContent()) : null;
 
-const TAG_TONE: Record<string, string> = {
-  MLOps: "emerald",
-  Architecture: "blue",
-  Engineering: "blue",
-  Process: "amber",
-  Research: "violet",
-  Personal: "cyan",
-  Filmmaking: "amber",
-};
-
-const chipTone = tone || (tag ? TAG_TONE[tag] : null) || "blue";
+const hasCover = hasPublic(img_path);
 // Preload the cover (the LCP element on a post page) as AVIF.
-const coverPreload = img_path?.replace(/\.(png|jpe?g)$/i, ".avif");
+const coverPreload = hasCover ? img_path.replace(/\.(png|jpe?g)$/i, ".avif") : undefined;
+
+// Long titles step down a size so they settle in three lines or fewer.
+const titleClass = title && title.length > 64 ? "post-title post-title-long" : "post-title";
+
+// The side contents, from the post's own h2s. Astro has already given each
+// one its id, so this needs no script and never shifts the page.
+const toc = (headings as Array<{ depth: number; slug: string; text: string }>).filter(
+  (h) => h.depth === 2,
+);
+
+// More writing: posts about the same kind of work first, then the newest.
+const newestFirst = (a: any, b: any) =>
+  new Date(b.frontmatter.date).getTime() - new Date(a.frontmatter.date).getTime();
+const mine = disciplinesFor[slug] || [];
+const others = allPosts.filter((p) => slugOf(p.url) !== slug).sort(newestFirst);
+const related = others.filter((p) =>
+  (disciplinesFor[slugOf(p.url)] || []).some((d) => mine.includes(d)),
+);
+const more = [...related, ...others.filter((p) => !related.includes(p))].slice(0, 3);
 ---
 
-<BaseLayout title={title} preloadImage={coverPreload}>
-  <div class="post-progress" id="post-progress"></div>
+<BaseLayout title={title} description={description} preloadImage={coverPreload}>
+  <div class="post-progress" id="post-progress" aria-hidden="true"></div>
 
-  <article class="post-article">
-    <header class="post-hero">
-      <div class="post-hero-atmos"></div>
-      <div class="relative z-10 mx-auto max-w-4xl px-6 lg:px-0">
-        <a href="/posts" class="post-backlink">← All posts</a>
+  <article class="post">
+    <header class="post-head page-top">
+      <div class="tone-atmos" aria-hidden="true"></div>
+      <div class="wrap on-top">
+        <div class="post-head-inner">
+          <a href="/posts" class="tlink post-back">
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5m0 0 6 6m-6-6 6-6"></path></svg>
+            All posts
+          </a>
 
-        <div class="post-meta">
-          {date && <span class="post-date">{date}</span>}
+          <p class="t-meta post-meta">
+            {date && <time datetime={date}>{formatPostDate(date)}</time>}
+            {minutes && (
+              <>
+                <span aria-hidden="true">·</span>
+                <span>{minutes} min read</span>
+              </>
+            )}
+            {tag && <span class="badge post-badge">{tag}</span>}
+          </p>
+
+          <h1 class={titleClass}>{title}</h1>
+
+          {description && <p class="t-lede post-lede">{description}</p>}
+
           {
-            tag && (
-              <span class={`post-tag post-tag-${chipTone}`}>{tag}</span>
+            demo && (
+              <div class="post-actions">
+                <a href={demo} target="_blank" rel="noreferrer" class="btn btn-glass">
+                  Try the live demo <Icon name="arrow-up-right" size={15} class="arrow-ur" />
+                </a>
+              </div>
             )
           }
         </div>
-
-        <h1 class="post-title">{title}</h1>
-
-        {description && <p class="post-lede">{description}</p>}
-
-        {
-          demo && (
-            <a href={demo} target="_blank" rel="noreferrer" class="gbtn mt-5 inline-flex">
-              Try the live demo ↗
-            </a>
-          )
-        }
       </div>
     </header>
 
     {
-      img_path && (
-        <div class="mx-auto max-w-5xl px-6 lg:px-0">
-          <Picture
-            src={img_path}
-            alt={img_alt || title}
-            class="post-cover"
-            width={1200}
-            height={600}
-            loading="eager"
-            fetchpriority="high"
-          />
+      hasCover && (
+        <div class="wrap">
+          <figure class="post-cover-frame">
+            <Picture
+              src={img_path}
+              alt={img_alt || title}
+              width={1200}
+              height={600}
+              loading="eager"
+              fetchpriority="high"
+            />
+          </figure>
         </div>
       )
     }
 
     {
       Array.isArray(stats) && stats.length > 0 && (
-        <div class="mx-auto max-w-4xl px-6 lg:px-0 mt-10">
-          <div class="post-stats-grid">
-            {stats.map((s: { value: string; label: string; tone?: string }) => (
-              <div class={`stat-callout stat-${s.tone || "blue"}`}>
-                <div class="stat-value">{s.value}</div>
-                <div class="stat-label">{s.label}</div>
-              </div>
+        <div class="wrap">
+          <ul class="post-stats" aria-label="In numbers">
+            {stats.map((s: { value: string; label: string }) => (
+              <li class="surface post-stat">
+                <p class="stat-num">{s.value}</p>
+                <p class="stat-cap">{s.label}</p>
+              </li>
             ))}
-          </div>
+          </ul>
         </div>
       )
     }
 
-    <div class="mx-auto max-w-7xl px-6 lg:px-10 xl:px-14 mt-16 post-body-grid">
-      <aside class="post-toc-wrap" aria-hidden="true">
-        <nav class="post-toc" id="post-toc">
-          <p class="post-toc-label">In this post</p>
-          <ol id="post-toc-list"></ol>
-        </nav>
-      </aside>
-      <div class="post-body">
-        <div class="prose prose-lg dark:prose-invert max-w-none post-prose" id="post-prose-body">
+    <div class="wrap post-main">
+      <div class={toc.length >= 2 ? "post-grid has-toc" : "post-grid"}>
+        <div class="post-prose" id="post-prose-body">
           <slot />
         </div>
+        {
+          toc.length >= 2 && (
+            <aside class="post-toc-wrap">
+              <nav class="post-toc" id="post-toc" aria-label="On this page">
+                <p class="t-meta post-toc-label">On this page</p>
+                <ol>
+                  {toc.map((h) => (
+                    <li>
+                      <a href={`#${h.slug}`} data-target={h.slug}>{h.text}</a>
+                    </li>
+                  ))}
+                </ol>
+              </nav>
+            </aside>
+          )
+        }
       </div>
-    </div>
 
-    <div class="mx-auto max-w-3xl px-6 lg:px-0 mt-20 mb-24">
-      <div class="post-author">
+      <footer class="post-sign">
         <Picture
           src={info.picture}
           alt={info.picture_alt}
-          class="post-author-pic"
-          width={64}
-          height={64}
+          class="post-sign-pic"
+          width={56}
+          height={56}
         />
-        <div class="flex-1">
-          <p class="post-author-name">{info.name}</p>
-          <p class="post-author-role">{info.role}, {info.location}</p>
-          <p class="post-author-bio">{info.brief_description}</p>
-          <Contact contact={info.contact} size="md" client:visible />
+        <div class="min-w-0">
+          <p class="t-h4">{info.name}</p>
+          <p class="t-meta post-sign-role">{info.role} · {info.location}</p>
+          <Contact contact={info.contact} className="t-body post-sign-line" />
         </div>
-      </div>
+      </footer>
     </div>
   </article>
 
+  {
+    more.length > 0 && (
+      <section class="section-tight post-more" aria-labelledby="more-writing">
+        <div class="wrap">
+          <div class="post-more-head">
+            <h2 id="more-writing" class="post-more-title">More writing</h2>
+            <a href="/posts" class="tlink">
+              All posts <Icon name="arrow-right" size={14} />
+            </a>
+          </div>
+          <div class="post-more-grid">
+            {more.map((p) => (
+              <a href={p.url} class="surface post-more-card">
+                <div class="surface-media post-more-media">
+                  {hasPublic(p.frontmatter.img_path) ? (
+                    <Picture
+                      src={p.frontmatter.img_path}
+                      alt={p.frontmatter.img_alt || p.frontmatter.title}
+                      width={600}
+                      height={338}
+                    />
+                  ) : (
+                    <div class="post-media-fallback" aria-hidden="true" />
+                  )}
+                </div>
+                <div class="post-more-body">
+                  <p class="t-meta">
+                    {formatPostDate(p.frontmatter.date)} · {readingTime(p.rawContent())} min read
+                  </p>
+                  <h3 class="post-more-card-title">{p.frontmatter.title}</h3>
+                </div>
+              </a>
+            ))}
+          </div>
+        </div>
+      </section>
+    )
+  }
+
   <script is:inline>
     (function () {
-      const bar = document.getElementById("post-progress");
+      // Reading progress, in the writing colour.
+      var bar = document.getElementById("post-progress");
       if (bar) {
-        const updateBar = () => {
-          const doc = document.documentElement;
-          const scrollTop = doc.scrollTop || document.body.scrollTop;
-          const height = doc.scrollHeight - doc.clientHeight;
-          const pct = height > 0 ? (scrollTop / height) * 100 : 0;
-          bar.style.width = pct + "%";
+        var raf = 0;
+        var update = function () {
+          raf = 0;
+          var doc = document.documentElement;
+          var height = doc.scrollHeight - doc.clientHeight;
+          var pct = height > 0 ? Math.min(1, Math.max(0, doc.scrollTop / height)) : 0;
+          bar.style.transform = "scaleX(" + pct + ")";
         };
-        window.addEventListener("scroll", updateBar, { passive: true });
-        window.addEventListener("resize", updateBar);
-        updateBar();
+        var queue = function () { if (!raf) raf = requestAnimationFrame(update); };
+        window.addEventListener("scroll", queue, { passive: true });
+        window.addEventListener("resize", queue);
+        update();
       }
 
-      // Build the side TOC from h2 elements inside the prose body.
-      const body = document.getElementById("post-prose-body");
-      const list = document.getElementById("post-toc-list");
-      const tocWrap = document.querySelector(".post-toc-wrap");
-      if (body && list && tocWrap) {
-        const slugify = (s) =>
-          s.toLowerCase().trim()
-            .replace(/[^a-z0-9\s-]/g, "")
-            .replace(/\s+/g, "-")
-            .replace(/-+/g, "-")
-            .slice(0, 80);
+      var body = document.getElementById("post-prose-body");
+      if (!body) return;
 
-        const headings = Array.from(body.querySelectorAll("h2"));
-        if (headings.length < 2) {
-          // Not worth a TOC for one section.
-          tocWrap.style.display = "none";
-        } else {
-          tocWrap.removeAttribute("aria-hidden");
-          headings.forEach((h, i) => {
-            if (!h.id) h.id = "section-" + (slugify(h.textContent || "") || i);
-            const li = document.createElement("li");
-            const a = document.createElement("a");
-            a.href = "#" + h.id;
-            a.textContent = h.textContent || "";
-            a.dataset.target = h.id;
-            li.appendChild(a);
-            list.appendChild(li);
+      // Wide tables scroll inside their own frame, never the page.
+      body.querySelectorAll("table").forEach(function (t) {
+        if (t.parentElement && t.parentElement.classList.contains("post-table")) return;
+        var wrap = document.createElement("div");
+        wrap.className = "post-table";
+        wrap.setAttribute("tabindex", "0");
+        wrap.setAttribute("role", "region");
+        wrap.setAttribute("aria-label", "Table");
+        t.parentNode.insertBefore(wrap, t);
+        wrap.appendChild(t);
+        // Columns that hold sentences get more room on a phone.
+        var longest = [];
+        Array.prototype.forEach.call(t.rows, function (row) {
+          Array.prototype.forEach.call(row.cells, function (cell, i) {
+            longest[i] = Math.max(longest[i] || 0, (cell.textContent || "").trim().length);
           });
+        });
+        Array.prototype.forEach.call(t.rows, function (row) {
+          Array.prototype.forEach.call(row.cells, function (cell, i) {
+            if (longest[i] > 32) cell.classList.add("is-wide");
+          });
+        });
+      });
 
-          // Scroll-spy the active section.
-          const linksById = {};
-          list.querySelectorAll("a").forEach((a) => {
-            linksById[a.dataset.target] = a.parentElement;
-          });
-          const obs = new IntersectionObserver(
-            (entries) => {
-              entries.forEach((entry) => {
-                const li = linksById[entry.target.id];
-                if (!li) return;
-                if (entry.isIntersecting) {
-                  Object.values(linksById).forEach((l) => l.classList.remove("toc-active"));
-                  li.classList.add("toc-active");
-                }
-              });
-            },
-            { rootMargin: "-15% 0px -70% 0px", threshold: 0 },
-          );
-          headings.forEach((h) => obs.observe(h));
+      // Mark the section being read in the side contents: the last heading
+      // that has passed a line 30% down the window.
+      var toc = document.getElementById("post-toc");
+      if (!toc) return;
+      var links = {};
+      var heads = [];
+      toc.querySelectorAll("a[data-target]").forEach(function (a) {
+        var id = a.getAttribute("data-target");
+        var h = document.getElementById(id);
+        if (!h) return;
+        links[id] = a;
+        heads.push(h);
+      });
+      var active = null;
+      var spyRaf = 0;
+      var spy = function () {
+        spyRaf = 0;
+        var line = window.innerHeight * 0.3;
+        var current = null;
+        for (var i = 0; i < heads.length; i++) {
+          if (heads[i].getBoundingClientRect().top <= line) current = heads[i].id;
+          else break;
         }
-      }
+        if (current === active) return;
+        active = current;
+        Object.keys(links).forEach(function (k) {
+          links[k].classList.toggle("is-active", k === current);
+          if (k === current) links[k].setAttribute("aria-current", "true");
+          else links[k].removeAttribute("aria-current");
+        });
+      };
+      var queueSpy = function () { if (!spyRaf) spyRaf = requestAnimationFrame(spy); };
+      window.addEventListener("scroll", queueSpy, { passive: true });
+      window.addEventListener("resize", queueSpy);
+      spy();
     })();
   </script>
 </BaseLayout>

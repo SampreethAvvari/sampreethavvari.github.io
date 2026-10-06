@@ -3,7 +3,7 @@ demo: https://sampreethavvari.github.io/ai-systems-tours/tours/treatment-estimat
 title: "How I rebuilt a 10-year-old pricing tool in a month"
 date: "2026-05-18"
 layout: ../../layouts/PostLayout.astro
-description: "A 10-year-old pricing tool, rebuilt in about a month around one database rule that makes the 6-month price promise impossible to break."
+description: "A 10-year-old pricing tool, rebuilt in about a month around one rule: a saved price never changes, so the 6-month price promise holds."
 img_path: "/treatment-estimator.png"
 img_alt: "Treatment Estimator wizard, decision tree, and frozen-price snapshot"
 tag: "Architecture"
@@ -15,8 +15,8 @@ stats:
   - value: "5"
     label: "pricing model kinds, one resolver"
     tone: "blue"
-  - value: "Postgres trigger"
-    label: "enforcing the 6-month price guarantee"
+  - value: "Frozen at save"
+    label: "every line keeps its captured price and price book version, so the 6-month guarantee holds"
     tone: "cyan"
 ---
 
@@ -52,19 +52,13 @@ per_surface     Surface count picks the tier. Fillings.
 
 Exactly one function in the codebase decides what tier any line item is. Add a new pricing model and forget to update the resolver: the TypeScript compiler refuses to build. Compile-time guarantees on money.
 
-## The 6-month guarantee, as a database constraint
+## The 6-month guarantee, frozen at save
 
 Every line item snapshots four things at write time: the price, the tier number, the procedure label, and the *price book version ID* active at that moment.
 
-A Postgres trigger refuses any change to those columns:
+When a saved estimate is opened again, the pricing engine reads those captured values. It never looks the price up again. Raise prices next month and every estimate saved before the change still shows the number the patient was quoted, because that number is stored on the line itself, next to the version of the price book it came from. The 6-month guarantee is no longer a sticker on the PDF. It is what the data says.
 
-```sql
-CREATE TRIGGER trg_freeze_capture
-BEFORE UPDATE ON estimate_line_item
-FOR EACH ROW EXECUTE FUNCTION freeze_capture();
-```
-
-If application code tries to recompute a price into an existing line, Postgres throws. The 6-month guarantee is no longer a sticker on the PDF. It's a database invariant.
+*Correction, October 2026: an earlier version of this post said a Postgres trigger refuses any change to those columns. The design called for one, but what shipped freezes the price in the stored line and in the pricing engine, not in a trigger. I would rather say that plainly than leave the stronger claim up.*
 
 <div class="stat-callout stat-violet">
   <div class="stat-value">1 month</div>
@@ -108,12 +102,12 @@ The redesign stacks three things that tell the TC where they are:
 |---|---|---|
 | Pricing models supported | 1 (flat) | 5 |
 | Per-clinic pricing | Hardcoded everywhere | First-class object with a lifecycle |
-| 6-month price guarantee | PDF sticker | Postgres trigger |
+| 6-month price guarantee | PDF sticker | Frozen at save, read back as saved |
 | Wizard orientation | "Which step am I on?" | Three stacked affordances |
 | Cost target | n/a | $35/month at S1 volume on Cloud Run |
 | Time to working end-to-end | The vendor 10 years ago: never shipped | About one month |
 
-Drizzle and Postgres and Next.js are everywhere these days. The tools were not the hard part. The hard part was sitting with Chelsea until her mental pricing model was precise enough to write a schema for, writing nine ADR decisions before touching code, and knowing that a service-level check on price changes would always be one missed call away from a broken promise. A Postgres trigger cannot be skipped. A business guarantee probably can.
+Drizzle and Postgres and Next.js are everywhere these days. The tools were not the hard part. The hard part was sitting with Chelsea until her mental pricing model was precise enough to write a schema for, writing nine ADR decisions before touching code, and knowing that a price looked up again is one missed call away from a broken promise. A price stored with the quote cannot drift. The trigger the design called for would go one step further and make it impossible to overwrite, and it is still worth adding.
 
 That gap, between what an org says it does and what the system actually enforces, is where this kind of work lives. Draw the line in schema and code, and the next engineer extending it cannot blur it by accident.
 

@@ -104,7 +104,7 @@ export const info = {
         rgb: "245,165,36",
         kind: "work",
         blurb:
-          "The AI engineer for a multi office dental implant company: RAG, agentic pipelines, evals, guardrails and MLOps, all in production on GCP and Vertex AI. Enterprise search that cites or abstains, Gemini consultation scoring, a CT scan validator that replaced a six figure vendor quote, call coaching, a pricing engine the database itself enforces, and a deterministic reconciliation engine.",
+          "The AI engineer for a multi office dental implant company: RAG, agentic pipelines, evals, guardrails and MLOps, all in production on GCP and Vertex AI. Enterprise search that cites or abstains, Gemini consultation scoring, a CT scan validator that replaced a six figure vendor quote, call coaching, a pricing engine that freezes every quoted price, and a deterministic reconciliation engine.",
         projects: [
           { label: "Enterprise Search RAG", href: "/posts/enterprise-search" },
           { label: "Doc Coach", href: "/posts/clinical-rag" },
@@ -199,9 +199,9 @@ export const info = {
           "[Pipeline observability hardening](/posts/pipeline-ghosting). Hardened that same QA pipeline after it kept showing ✅ complete while emails never sent and Sheet rows never appeared. Killed 9 silent-failure modes (bare-except graveyard, connection-level retry gaps, status-color drift), added durable webhook rows, a rerun-replaces-old flow, a consistency reconciler, and a plain-English Logs UI. 51/0/0 in the audit, +50 targeted tests.",
           "[NPC Coach](/posts/npc-coach). Rebuilt a brittle n8n call grader into a coaching platform for the front desk: it finds every new-patient call, grades it against the practice playbook with a verbatim transcript quote behind each of six criteria, and tracks each coordinator's trend in BigQuery behind a 26-endpoint React dashboard. 40/40/20 weighted score plus 3 hard gates as flags, not caps; ports-and-adapters gated by one NPC_BAA_ACCEPTED switch so 1,156 tests run with no cloud and no PHI. Day one on live calls: ~285 ingested, 40 scored, 3 voicemails auto-filtered, 28 flagged.",
           "[CBCT Scan Validator](/posts/cbct-scan-validator). In-house dental CT classifier. Replaced a $98K + $26K/yr vendor quote with a Cloud Run service under $50/mo. Frozen DentalSegmentator + multi-scale head, OpenVINO on CPU, ~5.5s end-to-end. 20-scan CICT gate on every push.",
-          "[Treatment Estimator](/posts/treatment-estimator). Next.js + Postgres rebuild of a decade-old quoting tool. Write-once `_at_capture` columns + Postgres triggers turn the 6-month price guarantee into a real DB invariant. Shipped end-to-end in ~1 month; a prior vendor never shipped in a decade.",
-          "[Cowork Dashboard](/posts/cowork-dashboard). Apps Script on weekly Monday.com exports. Patient-to-lead linkage went from 49% to 99% via the Monday connect column. Surfaced ~$460k of orphan patient value. Weekly recon: half a day → 3 minutes.",
-          "[Accounting Automation Suite](/posts/accounting-automation). A dozen Python scripts that replaced the controller's manual weekly imports across Denticon, MagicTouch, Paychex, and two banks. ~6-8 hrs/week → 30-45 min. ~400 hrs/yr recovered.",
+          "[Treatment Estimator](/posts/treatment-estimator). Next.js + Postgres rebuild of a decade-old quoting tool. Every saved line stores its captured price and price book version, so the 6-month price guarantee holds. Shipped end-to-end in ~1 month; a prior vendor never shipped in a decade.",
+          "[Cowork Dashboard](/posts/cowork-dashboard). Weekly Monday.com exports turned into an always in sync dashboard, moved from Apps Script to Cloud Run in September with one definition per metric. Surfaced ~$460k of orphan patient value. Weekly recon: half a day to 3 minutes.",
+          "[Accounting Automation Suite](/posts/accounting-automation). A dozen Python scripts that replaced the controller's manual weekly imports across Denticon, MagicTouch, Paychex, and two banks. About 6 to 8 hours a week down to 30 to 45 minutes, roughly 400 hours a year back.",
           "[Reconciliation](/posts/reconciliation). A deterministic engine that cross checks the schedule, production ledger, and clinical notes across Eaglesoft and Denticon to confirm every patient seen got documented and billed correctly, surfacing only the exceptions. ~70 hours/week of manual cross checking by a three person insurance team down to an exception review; 200+ tests on synthetic fixtures, no PHI in git; live on Cloud Run.",
           "[Centralized Diagnostic Filter](/posts/cdf-diagnostic-filter). Turning the founder's diagnostic model into a standardized, HYBRIDGE-owned system where AI assists and doctors validate. The owned intake is live on Google Cloud for all three markets, and a Gemini engine now reads the panorex under the founder's own written ruleset (v2 after his review of the first outputs), generating doctor and consultation reports from an internal dashboard.",
           "Cross-cutting MLOps: one shared ETL module so train/serve skew is impossible. Hot-swap checkpoints via GCS, tag-based Cloud Build CI/CD, OpenTelemetry with strict no-PHI logs.",
@@ -420,7 +420,7 @@ export const info = {
         summary_short:
           "The staff dashboard behind the CDF platform. One row per patient for treatment coordinators, every document one click away, and the only app that talks to the Denticon API; the estimator and capacity planner read through it.",
         stats: [
-          { value: "6 days → 2.6 min", label: "How far the mirror runs behind the vendor's data" },
+          { value: "1 chart", label: "intakes, estimates and consult recordings land on the patient's Denticon chart" },
           { value: "100%", label: "Right chart chosen in a blind test of the record matcher" },
           { value: "~4 in 5", label: "Intake surveys that link to their chart on their own" },
           { value: "38", label: "Findings from an eight lens adversarial review, run before the matcher could write" },
@@ -433,7 +433,7 @@ export const info = {
           process:
             "The vendor API has no patient search, so the mirror is the only patient index there is. It also drops unknown query parameters silently and returns the whole table with a 200, so a parameter is allowed only once it is proven to change totalCount. The record matcher went through an adversarial review, ran in shadow mode, and refuses when unsure. A person's decision always wins: each link write is a transaction that decides again on fresh documents, and every link is versioned, audited and undoable. A journey step with no linked chart reads unknown, never no.",
           result:
-            "Started in June 2026 and rebuilt around the Denticon API in September; production reads were proven on 29 September and v0.24.0 shipped on 5 October. The mirror went from six days behind to 2.6 minutes behind, the matcher picked the right chart every time in a blind test, about four in five intakes link to their chart on their own, and the capacity planner reads the registry every minute.",
+            "Started in June 2026 and rebuilt around the Denticon API in September; production reads were proven on 29 September and v0.24.0 shipped on 5 October. Once the sync ran on a timer the mirror went from six days behind to 2.6 minutes behind on the staging copy, the matcher picked the right chart every time in a blind test, about four in five intakes link to their chart on their own, and the capacity planner reads the registry every minute.",
         },
         summary:
           "The staff side of the Centralized Diagnostic Filter platform for treatment coordinators: patients, intake surveys, manual intake, patient experience, estimates and consultations in one place. Behind it sit a read only Denticon mirror kept fresh by webhooks and scheduled sweeps, a record matcher that refuses when unsure, and a registry API that other internal apps read through.",
@@ -585,7 +585,7 @@ export const info = {
       tier: "industry",
       date: "May 2026 - Present",
       description:
-        "I rebuilt a ten year old pricing tool, and the six month price promise is now something the database itself enforces. Since May it has shipped 72 releases, including visit sequences and the day's consult schedule as its front page.",
+        "I rebuilt a ten year old pricing tool, and every quoted price is now frozen with the estimate, so the six month price promise holds. Since May it has shipped 72 releases, including visit sequences and the day's consult schedule as its front page.",
       link: "",
       details: {
         summary_short:
@@ -600,7 +600,7 @@ export const info = {
           problem:
             "A 10-year-old single-price tool couldn't handle three clinics with different price books. The 6-month price-lock was a promise on the PDF, not a system property. An earlier vendor attempt never shipped.",
           solution:
-            "Next.js 16 + Postgres + Drizzle rebuild. Five pricing models (flat, tiered, tiered-zoned, price-range, per-surface). Write-once `*_at_capture` columns enforced by Postgres triggers + per-location price-book versions. The price lock is a real DB invariant.",
+            "Next.js 16 + Postgres + Drizzle rebuild. Five pricing models (flat, tiered, tiered-zoned, price-range, per-surface). Captured `*_at_capture` columns freeze every saved price, with per-location price book versions.",
           process:
             "9-decision ADR with tradeoff tables and library citations before any code. 100% branch coverage on the pricing engine. Golden snapshots lock every documented wizard path. A `questions-for-Chelsea` doc with worked numbers lets the clinical SME review without reading code.",
           result:
@@ -610,7 +610,7 @@ export const info = {
           "Next.js 16 + Postgres + Drizzle for treatment coordinators across three clinics. Five pricing models with write-once price snapshots. Price-book lifecycle: proposed → approved → published. Since May it has added visit sequences, the day's consult schedule as its landing page, and the Hybridge design.",
         highlights: [
           "9-decision ADR with tradeoff tables before any code.",
-          "Write-once *_at_capture columns + Postgres triggers turn the 6-month guarantee into a DB invariant.",
+          "Captured *_at_capture columns freeze every saved price, so the 6-month guarantee holds.",
           "Three-affordance wizard so the TC never loses context mid-consult.",
           "100% branch coverage on the pricing engine; golden snapshots per wizard path.",
           "72 tagged releases from May to October 2026, with about 800 test cases in the repo.",
@@ -1200,7 +1200,7 @@ export const info = {
       },
       tech: ["Next.js", "TypeScript", "Cloud Run", "Cloud Scheduler", "Cloud IAP"],
       img_alt: "Case Intake, Hybridge Implants LLC",
-      img_path: "/discipline-fde.png",
+      img_path: "/case-intake.png",
     },
     {
       title: "Hybridge Forms",
@@ -1239,7 +1239,7 @@ export const info = {
       },
       tech: ["TypeScript", "Firestore", "Cloud Storage", "Cloud IAP", "Vitest"],
       img_alt: "Hybridge Forms, Hybridge Implants LLC",
-      img_path: "/discipline-sde.png",
+      img_path: "/hybridge-forms.png",
     },
     {
       title: "JobPilot",

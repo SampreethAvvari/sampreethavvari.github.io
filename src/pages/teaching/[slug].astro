@@ -4,6 +4,7 @@ import MaterialActions from "../../components/teaching/MaterialActions.tsx";
 import TeachingBranding from "../../components/teaching/TeachingBranding.astro";
 import { teaching, streamMeta, typeMeta } from "../../data/teaching";
 import Picture from "../../components/common/Picture.astro";
+import Icon from "../../components/common/Icon.astro";
 import { info } from "../../data/info";
 
 export function getStaticPaths() {
@@ -13,6 +14,26 @@ export function getStaticPaths() {
 const { m } = Astro.props;
 const stream = streamMeta[m.stream];
 const tm = typeMeta[m.type];
+
+// Small facts under the title: the discipline in words, the size, the date.
+const size =
+  m.type === "pdf" && m.pages
+    ? `${m.pages} pages`
+    : m.type === "video" && m.durationMin
+      ? `${m.durationMin} min`
+      : "";
+const added = new Date(`${m.addedAt}T00:00:00Z`).toLocaleDateString("en-US", {
+  month: "long",
+  year: "numeric",
+  timeZone: "UTC",
+});
+const facts = [stream.label, size, `Added ${added}`].filter(Boolean).join(" · ");
+
+// "What to expect" reads as paragraphs when the copy has blank lines.
+const expect = m.whatToExpect
+  .split(/\n\s*\n/)
+  .map((p) => p.trim())
+  .filter(Boolean);
 
 // Normalize a video URL to an embeddable form for the inline player.
 function embedUrl(url: string): string {
@@ -24,247 +45,319 @@ function embedUrl(url: string): string {
 }
 ---
 
-<BaseLayout title={`SA: ${m.title}`}>
-  <article class="teach-article">
-    <header class="mx-auto w-full max-w-5xl px-6 lg:px-8 pt-32 lg:pt-36">
-      <a href="/teaching" class="teach-back">← All teaching</a>
-      <div class="teach-head">
-        <div class="teach-head-main" style={`--pa: ${stream.accent};`}>
-          <div class="teach-meta-row">
-            <span class="teach-meta-stream"><span class="teach-dot" aria-hidden="true"></span>{stream.acronym} · {stream.label}</span>
-            <span class="teach-meta-type"><i class={tm.icon} aria-hidden="true"></i> {tm.label}</span>
+<BaseLayout title={`SA: ${m.title}`} description={m.description}>
+  <article class="tm-page">
+    <section class="page-top tm-top relative overflow-hidden">
+      <div class="tone-atmos" aria-hidden="true"></div>
+      <div class="wrap on-top">
+        <div class="tm-head">
+          <div class="tm-main">
+            <a href="/teaching" class="tm-back">
+              <Icon name="arrow-right" size={14} class="tm-back-arrow" /> All teaching
+            </a>
+            <p class="kicker tm-kicker">Teaching</p>
+            <h1 class="t-title tm-title">{m.title}</h1>
+            <p class="t-lede tm-lede">{m.description}</p>
+            <div class="tm-facts">
+              <span class="badge">{tm.label}</span>
+              <span class="badge" title={stream.label}>{stream.acronym}</span>
+              <span class="t-meta">{facts}</span>
+            </div>
+            <MaterialActions client:load slug={m.slug} file={m.file} title={m.title} />
           </div>
-          <h1 class="teach-h1">{m.title}</h1>
 
-          <div class="teach-expect">
-            <p class="teach-expect-label">What to expect</p>
-            <p class="teach-expect-body">{m.whatToExpect}</p>
-          </div>
-
-          <MaterialActions client:load slug={m.slug} file={m.file} title={m.title} />
+          <figure class="tm-cover">
+            <Picture
+              src={m.cover}
+              alt={m.title}
+              width={1344}
+              height={768}
+              class="tm-cover-img"
+              loading="eager"
+              fetchpriority="high"
+            />
+          </figure>
         </div>
-
-        <aside class="teach-connect">
-          <div class="teach-connect-id">
-            <div class="teach-connect-ava">
-              <Picture src={info.picture} alt={info.picture_alt} width={96} height={96} loading="lazy" />
-            </div>
-            <div class="min-w-0">
-              <p class="teach-connect-name">{info.name}</p>
-              <p class="teach-connect-role">{info.role} · {info.location}</p>
-            </div>
-          </div>
-          <p class="teach-connect-note">Questions, or ideas for what I should cover next? Reach out.</p>
-          <a class="teach-connect-btn teach-connect-primary no-lift" href={info.contact.linkedin} target="_blank" rel="noreferrer"><i class="fab fa-linkedin"></i> Connect on LinkedIn</a>
-          <a class="teach-connect-btn no-lift" href={`mailto:${info.contact.email}`}><i class="fas fa-envelope"></i> Email me</a>
-          <a class="teach-connect-btn no-lift" href={info.contact.github} target="_blank" rel="noreferrer"><i class="fab fa-github"></i> GitHub</a>
-        </aside>
       </div>
-    </header>
+    </section>
 
-    <section class="mx-auto w-full max-w-5xl px-6 lg:px-8 mt-10">
-      {m.type === "pdf" && m.file && (
-        <iframe
-          src={`${m.file}#toolbar=0&navpanes=0&view=FitH`}
-          title={m.title}
-          class="teach-viewer-pdf"
-          loading="lazy"
-        />
-      )}
-      {m.type === "video" && m.videoUrl && (
-        <div class="teach-viewer-video">
-          <iframe
-            src={embedUrl(m.videoUrl)}
-            title={m.title}
-            loading="lazy"
-            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-            allowfullscreen
-          />
+    <section class="tm-detail">
+      <div class="wrap">
+        <div class="tm-grid">
+          <div class="tm-expect">
+            <h2 class="t-h3">What to expect</h2>
+            {expect.map((p) => <p class="t-body tm-expect-p">{p}</p>)}
+          </div>
+
+          <aside class="surface surface-pad tm-connect" aria-label="About the author">
+            <div class="tm-connect-id">
+              <div class="tm-connect-ava">
+                <Picture src={info.picture} alt={info.picture_alt} width={96} height={96} loading="lazy" />
+              </div>
+              <div class="min-w-0">
+                <p class="t-h4">{info.name}</p>
+                <p class="t-meta">{info.role} · {info.location}</p>
+              </div>
+            </div>
+            <p class="t-small tm-connect-note">Questions, or ideas for what I should cover next? Reach out.</p>
+            <div class="tm-connect-links">
+              <a class="btn btn-glass btn-sm" href={info.contact.linkedin} target="_blank" rel="noreferrer">
+                <Icon name="linkedin" size={14} /> Connect on LinkedIn
+              </a>
+              <a class="btn btn-glass btn-sm" href={`mailto:${info.contact.email}`}>
+                <Icon name="mail" size={15} /> Email me
+              </a>
+              <a class="btn btn-glass btn-sm" href={info.contact.github} target="_blank" rel="noreferrer">
+                <Icon name="github" size={14} /> GitHub
+              </a>
+            </div>
+          </aside>
         </div>
-      )}
-      {m.type === "blog" && m.body && (
-        <div class="teach-viewer-blog" set:html={m.body} />
-      )}
+
+        {m.type === "pdf" && m.file && (
+          <div class="tm-viewer">
+            <div class="tm-viewer-head">
+              <h2 class="t-h3">Read it here</h2>
+              <a href={m.file} target="_blank" rel="noopener" class="tlink">
+                Open in a new tab <Icon name="arrow-up-right" size={14} />
+              </a>
+            </div>
+            <div class="tm-frame">
+              <iframe
+                src={`${m.file}#toolbar=0&navpanes=0&view=FitH`}
+                title={m.title}
+                class="tm-viewer-pdf"
+                loading="lazy"
+              />
+            </div>
+          </div>
+        )}
+        {m.type === "video" && m.videoUrl && (
+          <div class="tm-viewer">
+            <div class="tm-viewer-head">
+              <h2 class="t-h3">Watch it here</h2>
+            </div>
+            <div class="tm-frame tm-viewer-video">
+              <iframe
+                src={embedUrl(m.videoUrl)}
+                title={m.title}
+                loading="lazy"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowfullscreen
+              />
+            </div>
+          </div>
+        )}
+        {m.type === "blog" && m.body && (
+          <div class="tm-viewer tm-viewer-blog" set:html={m.body} />
+        )}
+      </div>
     </section>
 
     <TeachingBranding />
   </article>
 </BaseLayout>
 
-<style is:global>
-  .teach-back {
-    display: inline-block;
-    font-size: 0.8rem;
-    font-weight: 600;
-    color: rgb(29 29 31 / 0.5);
-    margin-bottom: 1.2rem;
-    transition: color 0.2s ease;
+<style>
+  /* Page top: copy on the left, the cover in a frame on the right. */
+  .tm-head {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 40px;
+    align-items: center;
   }
-  html.dark .teach-back { color: rgb(245 245 247 / 0.5); }
-  .teach-back:hover { color: var(--secondary, #5b8def); }
-
-  .teach-meta-row { display: flex; flex-wrap: wrap; align-items: center; gap: 0.9rem; margin-bottom: 0.9rem; }
-  .teach-meta-stream {
-    display: inline-flex; align-items: center; gap: 0.45rem;
-    font-size: 0.68rem; font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase;
-    color: color-mix(in srgb, var(--pa) 72%, #1d1d1f);
-  }
-  html.dark .teach-meta-stream { color: color-mix(in srgb, var(--pa) 82%, #f5f5f7); }
-  .teach-meta-type {
-    display: inline-flex; align-items: center; gap: 0.35rem;
-    font-size: 0.66rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase;
-    padding: 0.2rem 0.55rem; border-radius: 9999px;
-    color: rgb(29 29 31 / 0.6); border: 1px solid rgb(29 29 31 / 0.14);
-  }
-  html.dark .teach-meta-type { color: rgb(245 245 247 / 0.6); border-color: rgb(245 245 247 / 0.16); }
-  .teach-dot { width: 0.45rem; height: 0.45rem; border-radius: 9999px; background: var(--pa); box-shadow: 0 0 8px color-mix(in srgb, var(--pa) 65%, transparent); }
-
-  .teach-h1 {
-    font-size: clamp(1.9rem, 4.5vw, 3rem);
-    font-weight: 800;
-    letter-spacing: -0.02em;
-    line-height: 1.06;
-    color: #1d1d1f;
-  }
-  html.dark .teach-h1 { color: #f5f5f7; }
-
-  .teach-expect {
-    margin-top: 1.5rem;
-    padding: 1.1rem 1.25rem;
-    border-radius: 1rem;
-    border-left: 3px solid var(--pa, #34d399);
-    background: rgb(29 29 31 / 0.025);
-  }
-  html.dark .teach-expect { background: rgb(245 245 247 / 0.04); }
-  .teach-expect-label {
-    font-size: 0.64rem; font-weight: 700; letter-spacing: 0.2em; text-transform: uppercase;
-    color: rgb(29 29 31 / 0.45); margin-bottom: 0.4rem;
-  }
-  html.dark .teach-expect-label { color: rgb(245 245 247 / 0.45); }
-  .teach-expect-body { font-size: 1rem; line-height: 1.6; color: rgb(29 29 31 / 0.78); }
-  html.dark .teach-expect-body { color: rgb(245 245 247 / 0.78); }
-
-  /* ── Actions bar (React island) ─────────────────────────────────────── */
-  .teach-actions {
-    margin-top: 1.6rem;
-    display: flex; flex-wrap: wrap; align-items: center; gap: 1.2rem;
-  }
-  .teach-actions-stats {
-    display: flex; flex-wrap: wrap; gap: 1.1rem;
-    font-size: 0.8rem; font-weight: 600; color: rgb(29 29 31 / 0.55);
-    font-variant-numeric: tabular-nums;
-  }
-  html.dark .teach-actions-stats { color: rgb(245 245 247 / 0.55); }
-  .teach-actions-stats i { opacity: 0.65; margin-right: 0.2rem; }
-  .teach-dl-btn {
-    display: inline-flex; align-items: center; gap: 0.55rem;
-    padding: 0.8rem 1.6rem; border-radius: 9999px;
-    font-size: 0.95rem; font-weight: 800; letter-spacing: 0.01em;
-    color: #04150f; background: #34d399;
-    border: none; cursor: pointer;
-    box-shadow: 0 0 0 1px rgba(52, 211, 153, 0.55), 0 14px 30px -12px rgba(16, 185, 129, 0.95);
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
-  }
-  .teach-dl-btn:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 0 0 1px rgba(52, 211, 153, 0.85), 0 18px 38px -12px rgba(16, 185, 129, 1);
-  }
-
-  /* ── Header layout with right-side connect card ─────────────────────── */
-  .teach-head { display: block; }
   @media (min-width: 1024px) {
-    .teach-head { display: grid; grid-template-columns: minmax(0, 1fr) 16.5rem; gap: 2.75rem; align-items: start; }
+    .tm-head { grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); gap: 64px; }
   }
-  .teach-connect {
-    margin-top: 1.75rem;
-    border-radius: 1.1rem;
-    padding: 1.15rem 1.15rem 1.25rem;
-    background:
-      radial-gradient(130% 130% at 100% 0%, rgba(52, 211, 153, 0.1), transparent 55%),
-      rgb(29 29 31 / 0.02);
-    border: 1px solid rgb(29 29 31 / 0.1);
+  .tm-back {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    margin-bottom: 28px;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--ink-soft);
+    text-decoration: none;
+    transition: color 150ms var(--ease-glass);
   }
-  html.dark .teach-connect {
-    background:
-      radial-gradient(130% 130% at 100% 0%, rgba(52, 211, 153, 0.16), transparent 55%),
-      rgb(245 245 247 / 0.03);
-    border-color: rgb(245 245 247 / 0.12);
+  .tm-back:hover { color: var(--ink); transform: none; }
+  .tm-back :global(.tm-back-arrow) { transform: rotate(180deg); transition: transform 250ms var(--ease-glass); }
+  .tm-back:hover :global(.tm-back-arrow) { transform: rotate(180deg) translateX(3px); }
+  .tm-kicker { display: flex; }
+  .tm-title { margin-top: 22px; }
+  .tm-lede { margin-top: 22px; }
+  .tm-facts {
+    margin-top: 22px;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
   }
-  @media (min-width: 1024px) { .teach-connect { position: sticky; top: 6.5rem; margin-top: 0; } }
-  .teach-connect-id { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.85rem; }
-  .teach-connect-ava {
-    width: 2.8rem; height: 2.8rem; border-radius: 9999px; overflow: hidden; flex: 0 0 auto;
-    box-shadow: 0 0 0 1px rgb(255 255 255 / 0.12), 0 0 18px -8px rgba(52, 211, 153, 0.7);
-  }
-  .teach-connect-ava :global(img) { width: 100%; height: 100%; object-fit: cover; display: block; }
-  .teach-connect-name { font-weight: 700; font-size: 0.95rem; color: #1d1d1f; line-height: 1.15; }
-  html.dark .teach-connect-name { color: #f5f5f7; }
-  .teach-connect-role { font-size: 0.72rem; color: rgb(29 29 31 / 0.55); }
-  html.dark .teach-connect-role { color: rgb(245 245 247 / 0.55); }
-  .teach-connect-note { font-size: 0.82rem; line-height: 1.5; color: rgb(29 29 31 / 0.62); margin-bottom: 0.9rem; }
-  html.dark .teach-connect-note { color: rgb(245 245 247 / 0.62); }
-  .teach-connect-btn {
-    display: flex; align-items: center; gap: 0.55rem;
-    padding: 0.55rem 0.85rem; border-radius: 0.7rem;
-    font-size: 0.8rem; font-weight: 600; margin-bottom: 0.45rem;
-    border: 1px solid rgb(29 29 31 / 0.12); color: rgb(29 29 31 / 0.78);
-    transition: transform 0.2s ease, border-color 0.2s ease, color 0.2s ease;
-  }
-  html.dark .teach-connect-btn { color: rgb(245 245 247 / 0.8); border-color: rgb(245 245 247 / 0.14); }
-  .teach-connect-btn:hover { transform: translateY(-1px); border-color: rgba(52, 211, 153, 0.5); }
-  .teach-connect-btn i { width: 1rem; text-align: center; opacity: 0.85; }
-  .teach-connect-primary { background: linear-gradient(135deg, #34d399, #10b981); color: #04150f; border-color: transparent; }
-  .teach-connect-primary:hover { color: #04150f; opacity: 0.95; }
+  .tm-facts .t-meta { margin-left: 4px; }
 
-  /* ── PDF / video / blog viewers ─────────────────────────────────────── */
-  .teach-viewer-pdf {
-    width: 100%; height: 82vh; min-height: 30rem;
-    border: 1px solid rgb(29 29 31 / 0.12); border-radius: 1rem;
-    background: #fff;
+  .tm-cover {
+    margin: 0;
+    padding: 10px;
+    border-radius: 28px;
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.09), rgba(255, 255, 255, 0.02));
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.2),
+      0 40px 80px -40px rgba(0, 0, 0, 1),
+      0 0 80px -30px rgba(var(--tone-rgb), 0.35);
   }
-  html.dark .teach-viewer-pdf { border-color: rgb(245 245 247 / 0.12); }
-  .teach-viewer-video { position: relative; width: 100%; aspect-ratio: 16 / 9; border-radius: 1rem; overflow: hidden; }
-  .teach-viewer-video iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
-  .teach-viewer-blog { font-size: 1.02rem; line-height: 1.7; color: rgb(29 29 31 / 0.82); }
-  html.dark .teach-viewer-blog { color: rgb(245 245 247 / 0.82); }
+  .tm-cover :global(.tm-cover-img) {
+    display: block;
+    width: 100%;
+    height: auto;
+    aspect-ratio: 16 / 10;
+    object-fit: cover;
+    border-radius: 20px;
+    background: #07080b;
+  }
 
-  /* ── Review-gate modal ──────────────────────────────────────────────── */
-  .teach-modal { position: fixed; inset: 0; z-index: 95; display: flex; align-items: center; justify-content: center; padding: 1.2rem; }
-  .teach-modal-backdrop { position: absolute; inset: 0; background: rgb(5 6 8 / 0.78); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); }
-  .teach-modal-card {
-    position: relative; z-index: 1; width: 100%; max-width: 30rem;
-    background: #14161c; color: #f5f5f7;
-    border: 1px solid rgb(245 245 247 / 0.12); border-radius: 1.25rem;
-    padding: 1.6rem 1.5rem; box-shadow: 0 40px 90px -30px rgb(0 0 0 / 0.9);
+  /* Actions (React island) */
+  .tm-main :global(.tm-actions) { margin-top: 32px; display: grid; gap: 14px; justify-items: start; }
+  .tm-main :global(.tm-actions-btns) { display: flex; flex-wrap: wrap; gap: 12px; }
+  .tm-main :global(.tm-stats) { margin: 0; }
+
+  /* What to expect, with the author beside it. */
+  .tm-detail { position: relative; z-index: 1; padding-top: clamp(56px, 7vw, 88px); }
+  .tm-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 32px;
+    align-items: start;
   }
-  .teach-modal-x {
-    position: absolute; top: 0.9rem; right: 0.9rem;
-    width: 2rem; height: 2rem; border-radius: 9999px;
-    color: rgb(245 245 247 / 0.7); background: rgb(255 255 255 / 0.08);
-    border: 1px solid rgb(255 255 255 / 0.12); cursor: pointer;
+  @media (min-width: 1024px) {
+    .tm-grid { grid-template-columns: minmax(0, 7fr) minmax(0, 4fr); gap: 64px; }
   }
-  .teach-modal-x:hover { background: rgb(255 255 255 / 0.16); }
-  .teach-modal-eyebrow { font-size: 0.62rem; font-weight: 700; letter-spacing: 0.22em; text-transform: uppercase; color: #34d399; }
-  .teach-modal-title { font-size: 1.25rem; font-weight: 700; margin: 0.3rem 0 0.5rem; line-height: 1.2; }
-  .teach-modal-sub { font-size: 0.85rem; line-height: 1.5; color: rgb(245 245 247 / 0.6); margin-bottom: 1.1rem; }
-  .teach-stars { display: flex; gap: 0.35rem; margin-bottom: 1rem; }
-  .teach-star { background: none; border: none; cursor: pointer; font-size: 1.5rem; color: rgb(245 245 247 / 0.25); padding: 0.15rem; transition: transform 0.15s ease; }
-  .teach-star:hover { transform: scale(1.15); }
-  .teach-textarea {
-    width: 100%; resize: vertical; min-height: 5.5rem;
-    background: rgb(255 255 255 / 0.05); color: #f5f5f7;
-    border: 1px solid rgb(255 255 255 / 0.14); border-radius: 0.75rem;
-    padding: 0.7rem 0.85rem; font-size: 0.9rem; line-height: 1.5;
-    margin-bottom: 1rem;
+  .tm-expect { max-width: 42rem; }
+  .tm-expect-p { margin-top: 14px; font-size: 1.0625rem; line-height: 1.7; }
+  .tm-connect-id { display: flex; align-items: center; gap: 14px; }
+  .tm-connect-ava {
+    width: 48px;
+    height: 48px;
+    border-radius: 9999px;
+    overflow: hidden;
+    flex: none;
+    border: 1px solid var(--line-strong);
   }
-  .teach-textarea::placeholder { color: rgb(245 245 247 / 0.4); }
-  .teach-textarea:focus { outline: none; border-color: rgba(52, 211, 153, 0.6); }
-  .teach-submit {
-    width: 100%; padding: 0.8rem 1rem; border-radius: 0.75rem; border: none; cursor: pointer;
-    font-size: 0.9rem; font-weight: 700; color: #04150f;
-    background: linear-gradient(135deg, #34d399, #10b981);
-    transition: opacity 0.2s ease;
+  /* The portrait is a wide street shot: frame the face. */
+  .tm-connect-ava :global(img) { width: 100%; height: 100%; object-fit: cover; object-position: 64% 50%; transform: translate(-28.6%, 35.7%) scale(2.1); display: block; }
+  .tm-connect-note { margin-top: 16px; }
+  .tm-connect-links { margin-top: 18px; display: flex; flex-wrap: wrap; gap: 8px; }
+
+  /* The reader */
+  .tm-viewer { margin-top: clamp(56px, 7vw, 88px); }
+  .tm-viewer-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 8px 24px;
+    margin-bottom: 20px;
   }
-  .teach-submit:disabled { opacity: 0.4; cursor: not-allowed; }
-  .teach-submit:not(:disabled):hover { opacity: 0.94; }
+  .tm-frame {
+    border-radius: 20px;
+    overflow: hidden;
+    border: 1px solid var(--line);
+    background: var(--surface-solid);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06), 0 30px 60px -42px rgba(0, 0, 0, 0.95);
+  }
+  .tm-viewer-pdf { display: block; width: 100%; height: 82vh; min-height: 30rem; border: 0; background: #0b0c10; }
+  .tm-viewer-video { position: relative; aspect-ratio: 16 / 9; }
+  .tm-viewer-video iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
+  .tm-viewer-blog { max-width: 42rem; font-size: 1.0625rem; line-height: 1.7; color: var(--ink-soft); }
+  .tm-viewer-blog :global(h2), .tm-viewer-blog :global(h3) { color: var(--ink); font-weight: 600; letter-spacing: -0.02em; margin: 1.8em 0 0.6em; }
+  .tm-viewer-blog :global(p) { margin: 0 0 1em; color: var(--ink-soft); }
+  .tm-viewer-blog :global(a) { color: var(--ink); text-decoration: underline; text-underline-offset: 3px; text-decoration-color: var(--ink-ghost); }
+
+  /* The review gate, portalled to <body>. Glass, because it is a modal. */
+  :global(.tm-modal) {
+    position: fixed;
+    inset: 0;
+    z-index: 95;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+  }
+  :global(.tm-modal-backdrop) {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.6);
+    -webkit-backdrop-filter: blur(6px);
+    backdrop-filter: blur(6px);
+  }
+  :global(.tm-modal-card) {
+    position: relative;
+    z-index: 1;
+    width: 100%;
+    max-width: 30rem;
+    padding: 28px 24px 24px;
+    border-radius: 24px;
+    color: var(--ink);
+    animation: glass-in 260ms var(--ease-glass);
+  }
+  :global(.tm-modal-x) {
+    position: absolute;
+    top: 14px;
+    right: 14px;
+    z-index: 2;
+    display: grid;
+    place-items: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 9999px;
+    border: 0;
+    color: var(--ink-soft);
+    background: var(--wash-strong);
+    cursor: pointer;
+    transition: color 150ms var(--ease-glass), background-color 150ms var(--ease-glass);
+  }
+  :global(.tm-modal-x svg) { width: 15px; height: 15px; }
+  :global(.tm-modal-x:hover) { color: var(--ink); background: rgba(255, 255, 255, 0.14); }
+  :global(.tm-modal-title) { margin-top: 8px; padding-right: 32px; }
+  :global(.tm-modal-sub) { margin-top: 8px; }
+  :global(.tm-stars) { display: flex; gap: 4px; margin: 20px 0 16px; }
+  :global(.tm-star) {
+    display: grid;
+    place-items: center;
+    width: 40px;
+    height: 40px;
+    padding: 0;
+    border: 0;
+    border-radius: 12px;
+    background: transparent;
+    color: var(--ink-ghost);
+    cursor: pointer;
+    transition: color 150ms var(--ease-glass), background-color 150ms var(--ease-glass);
+  }
+  :global(.tm-star svg) { width: 24px; height: 24px; fill: currentColor; }
+  :global(.tm-star:hover) { background: var(--wash); }
+  :global(.tm-star.is-on) { color: var(--ink); }
+  :global(.tm-star:focus-visible) { outline: none; box-shadow: 0 0 0 3px rgba(var(--tone-rgb), 0.45); }
+  :global(.tm-textarea) {
+    display: block;
+    width: 100%;
+    min-height: 6rem;
+    resize: vertical;
+    margin-bottom: 16px;
+    padding: 12px 14px;
+    border-radius: 14px;
+    font: inherit;
+    font-size: 0.9375rem;
+    line-height: 1.5;
+    color: var(--ink);
+    background: var(--wash);
+    border: 1px solid var(--line-strong);
+  }
+  :global(.tm-textarea::placeholder) { color: var(--ink-faint); }
+  :global(.tm-textarea:focus) { outline: none; border-color: rgba(255, 255, 255, 0.3); box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.06); }
+  :global(.tm-submit) { width: 100%; }
+  :global(.tm-submit:disabled) { opacity: 0.4; cursor: not-allowed; transform: none; box-shadow: none; }
+  @media (prefers-reduced-motion: reduce) {
+    :global(.tm-modal-card) { animation: none; }
+  }
 </style>

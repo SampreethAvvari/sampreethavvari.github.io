@@ -86,7 +86,6 @@ h1 {
   line-height: 1.05;
   font-weight: 700;
   letter-spacing: -0.025em;
-  color: theme(colors.secondary);
 }
 
 h2 {
@@ -94,7 +93,6 @@ h2 {
   line-height: 1.15;
   font-weight: 600;
   letter-spacing: -0.018em;
-  color: theme(colors.secondary);
 }
 
 h3 {
@@ -102,14 +100,12 @@ h3 {
   line-height: 1.3;
   font-weight: 600;
   letter-spacing: -0.012em;
-  color: theme(colors.secondary);
 }
 
 h4 {
   font-size: 1rem;
   line-height: 1.4;
   font-weight: 500;
-  color: theme(colors.secondary);
 }
 
 p {
@@ -118,23 +114,9 @@ p {
   font-weight: 400;
 }
 
-h2,
-p {
-  color: theme(colors.text);
-}
-html.dark h1 {
-  color: theme(colors.dk-secondary);
-}
 
-html.dark h2,
-html.dark h3,
-html.dark h4 {
-  color: theme(colors.dk-secondary);
-}
 
-html.dark p {
-  color: theme(colors.dk-text);
-}
+
 
 html,
 body {
@@ -148,21 +130,11 @@ body {
 * {
   overflow-wrap: break-word !important;
   word-wrap: break-word !important;
-  transition: color 0.25s linear;
-  -webkit-transition: color 0.25s linear;
-  -moz-transition: color 0.25s linear;
-  -ms-transition: color 0.25s linear;
-  -o-transition: color 0.25s linear;
 }
 
 *::selection {
-  background-color: theme(colors.text) !important;
-  color: theme(colors.primary) !important;
-}
-
-html.dark *::selection {
-  background-color: theme(colors.dk-text) !important;
-  color: theme(colors.dk-primary) !important;
+  background-color: rgba(var(--tone-rgb, 91, 141, 239), 0.35) !important;
+  color: #fff !important;
 }
 
 .line-clamp-2 {
@@ -177,20 +149,8 @@ html.dark *::selection {
   min-height: 200px;
 }
 
-a,
-button,
-[role="button"] {
-  transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), color 0.25s ease,
-    opacity 0.25s ease;
-  transform-origin: center;
-}
-
-/* Apple-flavoured subtle hover: tiny lift, not a jump. */
-a:hover,
-button:hover,
-[role="button"]:hover {
-  transform: translateY(-1px);
-}
+/* Links and buttons no longer lift on hover site wide. Components that should
+   move (cards, primary buttons) say so in system.css. */
 
 /* But don't lift things that are inside cards already lifting themselves. */
 .no-lift a:hover,
@@ -287,13 +247,9 @@ button.no-lift:hover {
   animation: fadeInOut 3s ease-in-out forwards;
 }
 
-/* Staggered reveal for grid children: each card slides in a touch after the previous one. */
-[data-reveal] > .grid > *,
-[data-reveal] > div > .grid > * {
-  opacity: 0;
-  transform: translateY(20px);
-  transition: opacity 0.7s ease, transform 0.7s ease;
-}
+/* The old staggered reveal for grid children is retired: [data-reveal]
+   itself now rises into place (system.css), and hiding children made grids
+   render empty in some states. */
 
 .reveal-visible > .grid > *,
 .reveal-visible > div > .grid > * {

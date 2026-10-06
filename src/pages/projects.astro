@@ -1,13 +1,14 @@
 ---
+import fs from "node:fs";
+import path from "node:path";
 import BaseLayout from "../layouts/BaseLayout.astro";
 import { info } from "../data/info";
 import Picture from "../components/common/Picture.astro";
-import fs from "node:fs";
-import path from "node:path";
+import Icon from "../components/common/Icon.astro";
 
 const title = "SA: Projects";
 
-const projects = info.projects;
+const projects: any[] = info.projects;
 
 const slug = (t: string) =>
   t
@@ -25,44 +26,24 @@ const cleanTitle = (t: string) =>
     .replace(/\s*-\s*Research\s*$/i, "")
     .trim();
 
-// Industry deep dives lead with the flagships (lower flagshipRank first); the
-// rest keep their array order behind them (Array.sort is stable).
-const industry = projects
-  .filter((p: any) => p.tier === "industry")
-  .sort((a: any, b: any) => (a.flagshipRank ?? 99) - (b.flagshipRank ?? 99));
-const research = projects.filter((p: any) => p.tier === "research");
-const academic = projects.filter((p: any) => p.tier === "academic");
-const personal = projects.filter((p: any) => p.tier === "personal");
+// A cover only renders when its file exists, so a project whose art is still
+// being made shows a calm tone panel instead of a broken image. The repo
+// keeps the optimised .avif/.webp siblings, not always the .png.
+const hasPublic = (p?: string) =>
+  !!p &&
+  [p, p.replace(/\.(png|jpe?g)$/i, ".avif"), p.replace(/\.(png|jpe?g)$/i, ".webp")].some((f) =>
+    fs.existsSync(path.join(process.cwd(), "public", f)),
+  );
 
-// Industry chips stay neutral slate so the page reads as black + matte gray;
-// the colour comes only from the atmos glow behind each deep dive.
-const INDUSTRY_CHIP_TONES = ["slate", "slate", "slate", "slate", "slate", "slate", "slate"];
-
-// Each project's atmos glow takes the ambient colour of its hero image —
-// keeps the screen black/matte gray, lets the floating glow do the colour
-// signaling. Mapped per filename so adding a new project is one line.
-// Tones follow the discipline colours: AIE emerald, FDE amber, MLE violet, SDE blue.
-const ATMOS_BY_IMG: Record<string, string> = {
-  "/enterprise-search.png": "emerald",
-  "/jobpilot-flagship.png": "blue",
-  "/cbct-validator.png": "violet",
-  "/treatment-estimator.png": "blue",
-  "/cowork-dashboard.png": "amber",
-  "/loan-radar.png": "violet",
-  "/llm-persuasion.png": "violet",
-  "/doc-coach.png": "emerald",
-  "/npc-coach.png": "emerald",
-  "/accounting-automation.png": "amber",
-  "/enterprise-data.png": "blue",
-  "/fake-news.png": "violet",
-  "/resnet-compact.png": "violet",
-  "/customer-segmentation.png": "violet",
-};
-const atmosToneFor = (p: any) => ATMOS_BY_IMG[p.img_path] || "slate";
-
-// Map project title fragments to their long-form blog post URL. Used for
-// inline "Read the write-up" links per deep dive and the closing band.
+// Posts. An entry's own `post` field wins; the title map below covers the
+// entries that predate that field. A link only renders when the post file
+// is really there, so a renamed post never leaves a dead link behind.
 const POST_FOR: Record<string, string> = {
+  "Patient Dashboard": "/posts/patient-dashboard",
+  "Capacity Planner": "/posts/capacity-planner",
+  "Treatment Sequence": "/posts/treatment-sequence",
+  "Daily Sales Report": "/posts/daily-sales-report",
+  "Marketing Data Warehouse": "/posts/marketing-warehouse",
   "Enterprise Search": "/posts/enterprise-search",
   "JobPilot": "/posts/jobpilot-v2",
   "CBCT Scan Validator": "/posts/cbct-scan-validator",
@@ -79,28 +60,29 @@ const POST_FOR: Record<string, string> = {
   "ResNet": "/posts/resnet-under-5m",
   "Customer Segmentation": "/posts/recsys-spark-bigdata",
 };
-const postFor = (title: string) => {
-  for (const k of Object.keys(POST_FOR)) {
-    if (title.includes(k)) return POST_FOR[k];
-  }
-  return null;
+const postsDir = path.join(process.cwd(), "src", "pages", "posts");
+const postExists = (href: string) => {
+  const name = href.replace(/^\/posts\//, "").replace(/\/$/, "");
+  return [".md", ".mdx", ".astro"].some((ext) => fs.existsSync(path.join(postsDir, name + ext)));
 };
-const projectsWithBlog = projects
-  .map((p: any) => ({ p, post: postFor(p.title) }))
-  .filter((x: any) => x.post);
+const postFor = (p: any): string | null => {
+  let href: string | null = p.post || null;
+  if (!href) {
+    const key = Object.keys(POST_FOR).find((k) => p.title.includes(k));
+    href = key ? POST_FOR[key] : null;
+  }
+  return href && postExists(href) ? href : null;
+};
 
-// Per-project gallery deep links. Mirrors the gallery page's filesystem-driven
-// model: a project gets a "Screenshots" link only when public/gallery/<slug>/
-// actually holds images or docs. Most projects map to their title-slug; the
-// few whose gallery folder name differs are listed explicitly below.
+// Per-project gallery deep links. A project gets a "Screenshots" link only
+// when public/gallery/<slug>/ actually holds images or docs. Most projects
+// map to their title slug; the few whose folder name differs are listed.
 const GALLERY_SLUG_FOR: Record<string, string> = {
   "Doc Coach": "doc-coach",
 };
-const gallerySlugFor = (title: string) => {
-  for (const k of Object.keys(GALLERY_SLUG_FOR)) {
-    if (title.includes(k)) return GALLERY_SLUG_FOR[k];
-  }
-  return slug(title);
+const gallerySlugFor = (t: string) => {
+  const key = Object.keys(GALLERY_SLUG_FOR).find((k) => t.includes(k));
+  return key ? GALLERY_SLUG_FOR[key] : slug(t);
 };
 const galleryRoot = path.join(process.cwd(), "public", "gallery");
 const MEDIA_RE = /\.(png|jpe?g|webp|gif|avif|pdf)$/i;
@@ -108,871 +90,638 @@ const liveGallerySlugs = new Set<string>();
 try {
   for (const d of fs.readdirSync(galleryRoot, { withFileTypes: true })) {
     if (!d.isDirectory()) continue;
-    const hasMedia = fs
-      .readdirSync(path.join(galleryRoot, d.name))
-      .some((f) => MEDIA_RE.test(f));
+    const hasMedia = fs.readdirSync(path.join(galleryRoot, d.name)).some((f) => MEDIA_RE.test(f));
     if (hasMedia) liveGallerySlugs.add(d.name);
   }
 } catch {
-  // No gallery folder yet — links simply won't render.
+  // No gallery folder yet, so no Screenshots links.
 }
-const galleryFor = (title: string) => {
-  const s = gallerySlugFor(title);
+const galleryFor = (t: string) => {
+  const s = gallerySlugFor(t);
   return liveGallerySlugs.has(s) ? s : null;
 };
+
+// Status, read from what each entry says about itself. Industry work that
+// is still running is live unless its own write up says it is not deployed
+// yet (in build) or runs on sample data (a prototype).
+type Status = { label: string; cls: string; live: boolean };
+const statusOf = (p: any): Status => {
+  if (p.tier === "personal") return { label: "Open source", cls: "", live: false };
+  if (p.tier === "research") return { label: "Research", cls: "", live: false };
+  if (p.tier === "academic") return { label: "Academic", cls: "", live: false };
+  const d = p.details || {};
+  const said = [d.summary_short, d.star?.result, p.description].filter(Boolean).join(" ");
+  if (/\bnot deployed\b/i.test(said) || /^in build\b/i.test(d.star?.result || "")) {
+    return { label: "In build", cls: "badge-build", live: false };
+  }
+  if (/\bon sample data\b/i.test(said)) return { label: "Prototype", cls: "", live: false };
+  if (/present/i.test(p.date || "")) return { label: "Live", cls: "badge-live", live: true };
+  return { label: "Shipped", cls: "", live: false };
+};
+
+// "Jun 2026 - Present" reads as "Since Jun 2026"; other ranges use "to".
+const fmtDate = (d?: string) => {
+  if (!d) return "";
+  const open = d.match(/^(.*?)\s*[-–—]\s*present$/i);
+  if (open) return `Since ${open[1]}`;
+  return d.replace(/\s*[-–—]\s*/g, " to ");
+};
+
+const altOf = (p: any) => (p.img_alt || p.title).replace(/\s+[-–—]\s+/g, ", ");
+
+const card = (p: any) => {
+  const d = p.details || {};
+  return {
+    id: slug(p.title),
+    title: cleanTitle(p.title),
+    line: p.description || d.summary_short || d.summary || "",
+    date: fmtDate(p.date),
+    status: statusOf(p),
+    cover: hasPublic(p.img_path) ? (p.img_path as string) : null,
+    alt: altOf(p),
+    imageStyle: p.imageStyle as string | undefined,
+    post: postFor(p),
+    demo: (p.demo as string) || null,
+    gallery: galleryFor(p.title),
+    link: (p.link as string) || null,
+    linkLabel: p.tier === "personal" ? "View on GitHub" : "Open the project",
+    tech: (p.tech as string[]) || [],
+    stats: (d.stats as { value: string; label: string }[]) || [],
+    star: d.star as { problem: string; solution: string; process: string; result: string } | undefined,
+    summary: (d.summary || d.summary_short || "") as string,
+    highlights: (d.highlights as string[]) || [],
+  };
+};
+type Card = ReturnType<typeof card>;
+
+// Industry: the flagships first, by flagshipRank, then the rest in array
+// order with the live ones ahead (Array.sort is stable).
+const industry = projects.filter((p) => p.tier === "industry");
+const flagships = industry
+  .filter((p) => p.flagshipRank != null)
+  .sort((a, b) => a.flagshipRank - b.flagshipRank)
+  .map(card);
+const rest = industry
+  .filter((p) => p.flagshipRank == null)
+  .map(card)
+  .sort((a, b) => Number(b.status.live) - Number(a.status.live));
+const research = projects.filter((p) => p.tier === "research");
+const academic = projects.filter((p) => p.tier === "academic");
+const personal = projects.filter((p) => p.tier === "personal");
+const liveCount = [...flagships, ...rest].filter((c) => c.status.live).length;
+
+const WORDS = ["zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten", "eleven", "twelve"];
+const numWord = (n: number) => WORDS[n] ?? String(n);
+
+type Section = {
+  id: string;
+  variant: "flag" | "tile";
+  title: string;
+  tail?: string;
+  lede?: string;
+  items: Card[];
+};
+const sections: Section[] = [
+  {
+    id: "industry",
+    variant: "flag",
+    title: "At Hybridge Implants.",
+    tail: `The ${numWord(flagships.length)} I'd walk you through first.`,
+    items: flagships,
+  },
+  {
+    id: "more",
+    variant: "tile",
+    title: "More from Hybridge.",
+    tail: "From tools the team opens every day to ones still in build.",
+    items: rest,
+  },
+  {
+    id: "academic",
+    variant: "tile",
+    title: "From the NYU days.",
+    tail: "Research and coursework that taught me how.",
+    lede:
+      "A research collaboration on persuasion and RLHF, and graduate projects that earned their grade and taught me something I still use.",
+    items: [...research, ...academic].map(card),
+  },
+  {
+    id: "open-source",
+    variant: "flag",
+    title: "Built in the open.",
+    tail: "The one I build for myself, on my own time.",
+    lede: "I ship it under MIT, and it is the one project that spans all four kinds of work I do.",
+    items: personal.map(card),
+  },
+].filter((s) => s.items.length > 0) as Section[];
+
+const counts = [
+  { n: industry.length, label: "industry", href: "#industry" },
+  { n: academic.length, label: "academic", href: "#academic" },
+  { n: research.length, label: "research", href: "#academic" },
+  { n: personal.length, label: "open source", href: "#open-source" },
+].filter((c) => c.n > 0);
+
+const STAR_PARTS = [
+  ["problem", "Problem"],
+  ["solution", "Solution"],
+  ["process", "Process"],
+  ["result", "Result"],
+] as const;
+const TILE_TECH = 3;
 ---
 
 <BaseLayout title={title}>
-  <script is:inline>
-    document.documentElement.classList.add("snap-home");
-  </script>
-
-  <!-- ── Hero: Selected work ────────────────────────────────────────── -->
-  <section
-    class="relative overflow-hidden projects-hero-atmos snap-chapter"
-    style="min-height: 72vh; min-height: 72svh; display: flex; flex-direction: column; justify-content: center; padding: 7rem 0 4rem;"
-    id="projects-top"
-  >
-    <div class="relative z-10 mx-auto w-full max-w-screen-2xl px-6 lg:px-12">
-      <div class="max-w-4xl">
-        <p class="eyebrow text-secondary dark:text-dk-secondary mb-5">
-          Selected work
-        </p>
-        <h1 class="display text-text dark:text-dk-text mb-8 glow-wave">
-          Projects.
-        </h1>
-        <p class="text-lg lg:text-2xl text-text/75 dark:text-dk-text/75 leading-relaxed max-w-3xl">
-          Real systems I built solo at Hybridge, plus the research and class
-          projects that taught me how. The Hybridge ones each get their own
-          page; the rest are below.
-        </p>
-        <div class="mt-10 flex flex-wrap items-center gap-6 text-sm text-text/55 dark:text-dk-text/55">
-          <span class="inline-flex items-center gap-2">
-            <span class="w-1.5 h-1.5 rounded-full bg-acc-blue"></span>
-            {industry.length} industry
-          </span>
-          <span class="inline-flex items-center gap-2">
-            <span class="w-1.5 h-1.5 rounded-full bg-acc-violet"></span>
-            {academic.length} academic
-          </span>
-        </div>
-      </div>
+  <!-- ── Page top ─────────────────────────────────────────────────────── -->
+  <section id="projects-top" class="page-top proj-top relative overflow-hidden">
+    <div class="tone-atmos" aria-hidden="true"></div>
+    <div class="wrap on-top">
+      <p class="kicker">Projects</p>
+      <h1 class="t-title proj-title">
+        Things I've built.
+        <span class="t-tail">Most of them run a dental practice every day.</span>
+      </h1>
+      <p class="t-lede proj-lede">
+        The Hybridge systems are real tools I built on my own, from the first
+        conversation with the people who use them to the deploy. Below them
+        are the research and class projects that taught me how, and the open
+        source one I build for myself.
+      </p>
+      <nav class="proj-counts" aria-label="Jump to a group">
+        {liveCount > 0 && <span class="chip chip-live">{liveCount} live in production</span>}
+        {counts.map((c) => (
+          <a href={c.href} class="chip">
+            <span class="chip-n">{c.n}</span> {c.label}
+          </a>
+        ))}
+      </nav>
     </div>
-
-    <a
-      href={`#${slug(industry[0]?.title || "")}`}
-      aria-label="Scroll to first project"
-      class="no-lift absolute bottom-8 left-1/2 -translate-x-1/2 text-text/40 dark:text-dk-text/40 hover:text-text dark:hover:text-dk-text transition animate-pulse"
-    >
-      <i class="fas fa-chevron-down text-xl"></i>
-    </a>
   </section>
 
-  <!-- ── Band A: Industry deep dives (one screen per project) ───────── -->
-  {industry.map((project: any, i: number) => {
-    const flip = i % 2 === 1;
-    const display = cleanTitle(project.title);
-    const shortDesc = project.details?.summary_short || project.description;
-    const stats = project.details?.stats || [];
-    const star = project.details?.star;
-    const tech = project.tech?.slice(0, 8) || [];
-    const chipTone = INDUSTRY_CHIP_TONES[i % INDUSTRY_CHIP_TONES.length];
-    const blog = postFor(project.title);
-    const gallerySlug = galleryFor(project.title);
-    return (
-      <section
-        class="project-screen snap-chapter relative overflow-hidden"
-        id={slug(project.title)}
-      >
-        <div class={`project-screen-atmos atmos-${atmosToneFor(project)}`} aria-hidden="true"></div>
-        <div class="relative z-10 mx-auto w-full max-w-screen-2xl px-6 lg:px-12 grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-16 items-center">
-          <div class={`lg:col-span-7 ${flip ? "lg:order-2" : ""}`}>
-            <div class="relative project-screen-imagewrap">
-              <button
-                type="button"
-                class="flip-card group"
-                aria-label={`Show case study for ${display}`}
-                data-flip-card
-              >
-                <div class="flip-card-inner">
-                  <div class="flip-card-front">
-                    <Picture
-                      src={project.img_path}
-                      alt={project.img_alt || project.title}
-                      width={1400}
-                      height={875}
-                      class="w-full aspect-[16/10] object-cover rounded-2xl shadow-2xl ring-1 ring-text/10 dark:ring-dk-text/15"
-                    />
-                    <div class="flip-card-hint">
-                      <span class="flip-card-hint-icon" aria-hidden="true">↻</span>
-                      <span>Click for the case study</span>
-                    </div>
-                  </div>
-                  <div class="flip-card-back">
-                    {star ? (
-                      <div class="flip-card-back-grid">
-                        <div>
-                          <p class="flip-section-label">Problem</p>
-                          <p class="flip-section-body">{star.problem}</p>
-                        </div>
-                        <div>
-                          <p class="flip-section-label">Solution</p>
-                          <p class="flip-section-body">{star.solution}</p>
-                        </div>
-                        <div>
-                          <p class="flip-section-label">Process</p>
-                          <p class="flip-section-body">{star.process}</p>
-                        </div>
-                        <div>
-                          <p class="flip-section-label">Result</p>
-                          <p class="flip-section-body">{star.result}</p>
-                        </div>
-                      </div>
+  <!-- ── Groups ───────────────────────────────────────────────────────── -->
+  {sections.map((sec) => (
+    <section id={sec.id} class="section-tight proj-sec">
+      <div class="wrap">
+        <div class="sec-head">
+          <div class="sec-head-main">
+            <h2 class="t-h2">
+              {sec.title}
+              {sec.tail && <span class="t-tail">{sec.tail}</span>}
+            </h2>
+            {sec.lede && <p class="t-lede">{sec.lede}</p>}
+          </div>
+          <p class="t-meta">
+            {sec.items.length} {sec.items.length === 1 ? "project" : "projects"}
+          </p>
+        </div>
+
+        <div class={sec.variant === "flag" ? "flags" : "tiles"}>
+          {sec.items.map((c) => {
+            const flag = sec.variant === "flag";
+            const faceTech = flag ? c.tech : c.tech.slice(0, TILE_TECH);
+            const moreTech = flag ? 0 : Math.max(0, c.tech.length - TILE_TECH);
+            const lead = c.stats[0];
+            const hasMore = !!(c.star || c.summary || c.highlights.length || (!flag && c.stats.length));
+            return (
+              <article id={c.id} class={`surface pcard ${flag ? "pflag" : "ptile"}`} data-reveal>
+                <div class={flag ? "pflag-main" : "ptile-main"}>
+                  <div class={flag ? "pflag-media" : "surface-media ptile-media"}>
+                    {c.cover ? (
+                      <Picture
+                        src={c.cover}
+                        alt={c.alt}
+                        width={flag ? 900 : 640}
+                        height={flag ? 560 : 360}
+                        style={c.imageStyle}
+                      />
                     ) : (
-                      <p class="flip-section-body">
-                        {project.details?.summary || project.description}
+                      <div class="media-fallback" aria-hidden="true">
+                        <span>{c.title}</span>
+                      </div>
+                    )}
+                  </div>
+
+                  <div class={flag ? "pflag-body" : "ptile-body"}>
+                    <div class="pc-meta">
+                      <span class={`badge ${c.status.cls}`}>{c.status.label}</span>
+                      {c.date && <span class="t-meta">{c.date}</span>}
+                    </div>
+                    <h3 class={flag ? "t-h3 pc-title pc-title-lg" : "t-h4 pc-title"}>
+                      {c.post ? <a href={c.post}>{c.title}</a> : c.title}
+                    </h3>
+                    <p class={flag ? "t-body pc-line" : "t-small pc-line"}>{c.line}</p>
+
+                    {flag && c.stats.length > 0 && (
+                      <ul class="pstats" aria-label="In numbers">
+                        {c.stats.map((s) => (
+                          <li>
+                            <span class="pstat-v">{s.value}</span>
+                            <span class="pstat-l">{s.label}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                    {!flag && lead && (
+                      <p class="pc-lead">
+                        <span class="pstat-v">{lead.value}</span>
+                        <span class="pstat-l">{lead.label}</span>
                       </p>
                     )}
-                    <div class="flip-card-hint flip-card-hint-back">
-                      <span class="flip-card-hint-icon" aria-hidden="true">↺</span>
-                      <span>Click to flip back</span>
+
+                    {faceTech.length > 0 && (
+                      <ul class="techs" aria-label="Built with">
+                        {faceTech.map((t) => <li class="badge">{t}</li>)}
+                        {moreTech > 0 && (
+                          <li class="badge techs-more" title={c.tech.slice(TILE_TECH).join(", ")}>
+                            +{moreTech} more
+                          </li>
+                        )}
+                      </ul>
+                    )}
+
+                    {(c.post || c.demo || c.gallery || c.link) && (
+                      flag ? (
+                        <div class="pc-actions">
+                          {c.post && (
+                            <a href={c.post} class="btn btn-glass btn-sm">
+                              Read the write up <Icon name="arrow-right" size={14} class="arrow-r" />
+                            </a>
+                          )}
+                          {c.demo && (
+                            <a href={c.demo} target="_blank" rel="noopener" class="xlink">
+                              Live demo <Icon name="arrow-up-right" size={13} />
+                            </a>
+                          )}
+                          {c.gallery && <a href={`/gallery#p-${c.gallery}`} class="xlink">Screenshots</a>}
+                          {c.link && (
+                            <a href={c.link} target="_blank" rel="noopener" class="xlink">
+                              {c.linkLabel} <Icon name="arrow-up-right" size={13} />
+                            </a>
+                          )}
+                        </div>
+                      ) : (
+                        <div class="pc-links">
+                          {c.post && (
+                            <a href={c.post} class="tlink">
+                              Read the write up <Icon name="arrow-right" size={14} />
+                            </a>
+                          )}
+                          {c.demo && (
+                            <a href={c.demo} target="_blank" rel="noopener" class="xlink">
+                              Live demo <Icon name="arrow-up-right" size={13} />
+                            </a>
+                          )}
+                          {c.gallery && <a href={`/gallery#p-${c.gallery}`} class="xlink">Screenshots</a>}
+                          {c.link && (
+                            <a href={c.link} target="_blank" rel="noopener" class="xlink">
+                              {c.linkLabel} <Icon name="arrow-up-right" size={13} />
+                            </a>
+                          )}
+                        </div>
+                      )
+                    )}
+                  </div>
+                </div>
+
+                {hasMore && (
+                  <details class="pmore">
+                    <summary>
+                      <span class="pmore-label">{c.star ? "Case study" : "Details"}</span>
+                      {flag && c.star && (
+                        <span class="t-meta pmore-hint">Problem, solution, process, result and highlights</span>
+                      )}
+                      <svg class="pmore-chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"></path></svg>
+                    </summary>
+                    <div class="pmore-body">
+                      {!flag && c.stats.length > 0 && (
+                        <ul class="pstats pstats-sm" aria-label="In numbers">
+                          {c.stats.map((s) => (
+                            <li>
+                              <span class="pstat-v">{s.value}</span>
+                              <span class="pstat-l">{s.label}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+                      {c.summary && <p class="t-body pmore-sum">{c.summary}</p>}
+                      {c.star && (
+                        <div class="star">
+                          {STAR_PARTS.map(([k, label]) =>
+                            c.star && c.star[k] ? (
+                              <div class="star-part">
+                                <h4 class="t-h4">{label}</h4>
+                                <p class="t-small">{c.star[k]}</p>
+                              </div>
+                            ) : null,
+                          )}
+                        </div>
+                      )}
+                      {c.highlights.length > 0 && (
+                        <div class="hl">
+                          <h4 class="t-h4">Highlights</h4>
+                          <ul class="hl-list">
+                            {c.highlights.map((h) => <li class="t-small">{h}</li>)}
+                          </ul>
+                        </div>
+                      )}
+                      {moreTech > 0 && (
+                        <p class="t-meta pmore-tech">Built with {c.tech.join(" · ")}</p>
+                      )}
                     </div>
-                  </div>
-                </div>
-              </button>
-            </div>
-          </div>
-          <div class="lg:col-span-5">
-            <div class="flex items-center gap-3 mb-4">
-              <span class={`post-tag post-tag-${chipTone}`}>
-                Industry · {String(i + 1).padStart(2, "0")}/{String(industry.length).padStart(2, "0")}
-              </span>
-              <span class="text-xs uppercase tracking-[0.18em] text-text/45 dark:text-dk-text/45 font-semibold">
-                {project.date}
-              </span>
-            </div>
-            <h2 class="display-sm text-text dark:text-dk-text mb-5 glow-wave">
-              {display}
-            </h2>
-            <p class="text-base lg:text-lg text-text/75 dark:text-dk-text/80 leading-relaxed mb-7">
-              {shortDesc}
-            </p>
-            {stats.length > 0 && (
-              <div class={`stat-grid stat-grid-${atmosToneFor(project)} mb-7`}>
-                {stats.map((s: any) => (
-                  <div class="stat-cell">
-                    <p class="stat-value">{s.value}</p>
-                    <p class="stat-label">{s.label}</p>
-                  </div>
-                ))}
-              </div>
-            )}
-            {tech.length > 0 && (
-              <div class="flex flex-wrap gap-2 mb-6">
-                {tech.map((t: string) => (
-                  <span class="skill-pill text-xs">{t}</span>
-                ))}
-              </div>
-            )}
-            <div class="flex flex-wrap items-center gap-4">
-              {project.demo && (
-                <a
-                  href={project.demo}
-                  target="_blank"
-                  rel="noreferrer"
-                  class="link-underline text-sm font-bold text-secondary dark:text-dk-accent inline-flex"
-                >
-                  Live demo <span aria-hidden="true">↗</span>
-                </a>
-              )}
-              {blog && (
-                <a
-                  href={blog}
-                  class="link-underline text-sm font-semibold text-secondary dark:text-dk-secondary inline-flex"
-                >
-                  Read the write-up <span aria-hidden="true">→</span>
-                </a>
-              )}
-              {gallerySlug && (
-                <a
-                  href={`/gallery#p-${gallerySlug}`}
-                  class="link-underline text-sm font-semibold text-text/60 dark:text-dk-text/60 inline-flex"
-                >
-                  Screenshots <span aria-hidden="true">→</span>
-                </a>
-              )}
-              {project.link && (
-                <a
-                  href={project.link}
-                  target="_blank"
-                  rel="noreferrer"
-                  class="link-underline text-sm font-semibold text-text/60 dark:text-dk-text/60 inline-flex"
-                >
-                  Visit project <span aria-hidden="true">↗</span>
-                </a>
-              )}
-            </div>
-          </div>
-        </div>
-      </section>
-    );
-  })}
-
-  <!-- ── Band: Open source / personal ───────────────────────────────── -->
-  {personal.length > 0 && (
-    <section class="snap-chapter relative py-16 lg:py-20">
-      <div class="mx-auto w-full max-w-screen-2xl px-6 lg:px-12">
-        <div class="max-w-3xl mb-12 lg:mb-16">
-          <p class="eyebrow text-secondary dark:text-dk-secondary mb-4">Open source</p>
-          <h2 class="display-sm text-text dark:text-dk-text glow-wave mb-4">
-            Built in the open.
-          </h2>
-          <p class="text-base lg:text-lg text-text/70 dark:text-dk-text/70 leading-relaxed">
-            The project I build for myself, on my own time, and ship under MIT.
-            It is the one that spans all four disciplines at once.
-          </p>
-        </div>
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-          {personal.map((p: any) => (
-            <article class="rounded-xl border border-text/10 dark:border-dk-text/15 bg-primary dark:bg-dk-primary/40 overflow-hidden flex flex-col hover:border-text/30 dark:hover:border-dk-text/25 transition">
-              <div class="relative overflow-hidden">
-                <Picture
-                  src={p.img_path}
-                  alt={p.img_alt || p.title}
-                  width={900}
-                  height={500}
-                  class="w-full aspect-[16/9] object-cover transition duration-500 hover:scale-[1.03]"
-                />
-              </div>
-              <div class="p-5 flex flex-col flex-1">
-                <div class="flex items-center gap-2 mb-3">
-                  <span class="text-[0.6rem] uppercase tracking-[0.18em] font-bold text-secondary dark:text-dk-secondary">
-                    Open source · {p.date}
-                  </span>
-                </div>
-                <h3 class="text-base lg:text-lg font-semibold text-text dark:text-dk-text leading-snug mb-2">
-                  {cleanTitle(p.title)}
-                </h3>
-                <p class="text-xs lg:text-sm text-text/60 dark:text-dk-text/65 leading-relaxed mb-4 line-clamp-3">
-                  {p.description}
-                </p>
-                <div class="flex flex-wrap gap-1 mt-auto mb-3">
-                  {(p.tech?.slice(0, 5) || []).map((t: string) => (
-                    <span class="text-[0.62rem] uppercase tracking-[0.1em] px-1.5 py-0.5 rounded-full bg-text/5 dark:bg-dk-text/[0.06] text-text/60 dark:text-dk-text/65">
-                      {t}
-                    </span>
-                  ))}
-                </div>
-                <div class="flex flex-wrap items-center gap-3 mt-1">
-                  {postFor(p.title) && (
-                    <a
-                      href={postFor(p.title)}
-                      class="link-underline text-xs font-semibold text-secondary dark:text-dk-secondary inline-flex"
-                    >
-                      Read the write-up <span aria-hidden="true">→</span>
-                    </a>
-                  )}
-                  {p.link && (
-                    <a
-                      href={p.link}
-                      target="_blank"
-                      rel="noreferrer"
-                      class="link-underline text-xs font-semibold text-text/55 dark:text-dk-text/55 inline-flex"
-                    >
-                      View on GitHub <span aria-hidden="true">↗</span>
-                    </a>
-                  )}
-                </div>
-              </div>
-            </article>
-          ))}
+                  </details>
+                )}
+              </article>
+            );
+          })}
         </div>
       </div>
     </section>
-  )}
+  ))}
 
-  <!-- ── Band B: Research ───────────────────────────────────────────── -->
-  {research.length > 0 && (
-    <section class="snap-chapter relative py-16 lg:py-20">
-      <div class="mx-auto w-full max-w-screen-2xl px-6 lg:px-12">
-        <div class="max-w-3xl mb-12 lg:mb-16">
-          <p class="eyebrow text-acc-violet mb-4">Research</p>
-          <h2 class="display-sm text-text dark:text-dk-text glow-wave mb-4">
-            Working with researchers.
+  <!-- ── Closer ───────────────────────────────────────────────────────── -->
+  <section class="section-tight proj-close">
+    <div class="wrap">
+      <div class="surface surface-pad close-card" data-reveal>
+        <div>
+          <h2 class="t-h2">
+            Let's build something.
+            <span class="t-tail">Tell me what you're working on.</span>
           </h2>
-          <p class="text-base lg:text-lg text-text/70 dark:text-dk-text/70 leading-relaxed">
-            Collaborations at NYU on persuasion, alignment, and the
-            edges of RLHF.
+          <p class="t-body close-text">
+            Hiring for applied AI, or for the last mile where software meets the
+            people who use it? I'd love to hear about it.
           </p>
         </div>
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-          {research.map((p: any) => (
-            <article class="rounded-xl border border-text/10 dark:border-dk-text/15 bg-primary dark:bg-dk-primary/40 overflow-hidden flex flex-col hover:border-text/30 dark:hover:border-dk-text/25 transition">
-              <div class="relative overflow-hidden">
-                <Picture
-                  src={p.img_path}
-                  alt={p.img_alt || p.title}
-                  width={900}
-                  height={500}
-                  class="w-full aspect-[16/9] object-cover transition duration-500 hover:scale-[1.03]"
-                />
-              </div>
-              <div class="p-5 flex flex-col flex-1">
-                <div class="flex items-center gap-2 mb-3">
-                  <span class="text-[0.6rem] uppercase tracking-[0.18em] font-bold text-acc-violet">
-                    Research · {p.date}
-                  </span>
-                </div>
-                <h3 class="text-base lg:text-lg font-semibold text-text dark:text-dk-text leading-snug mb-2">
-                  {cleanTitle(p.title)}
-                </h3>
-                <p class="text-xs lg:text-sm text-text/60 dark:text-dk-text/65 leading-relaxed mb-4 line-clamp-3">
-                  {p.description}
-                </p>
-                <div class="flex flex-wrap gap-1 mt-auto mb-3">
-                  {(p.tech?.slice(0, 5) || []).map((t: string) => (
-                    <span class="text-[0.62rem] uppercase tracking-[0.1em] px-1.5 py-0.5 rounded-full bg-text/5 dark:bg-dk-text/[0.06] text-text/60 dark:text-dk-text/65">
-                      {t}
-                    </span>
-                  ))}
-                </div>
-                <div class="flex flex-wrap items-center gap-3 mt-1">
-                  {postFor(p.title) && (
-                    <a
-                      href={postFor(p.title)}
-                      class="link-underline text-xs font-semibold text-acc-violet inline-flex"
-                    >
-                      Read the write-up <span aria-hidden="true">→</span>
-                    </a>
-                  )}
-                  {p.link && (
-                    <a
-                      href={p.link}
-                      target="_blank"
-                      rel="noreferrer"
-                      class="link-underline text-xs font-semibold text-text/55 dark:text-dk-text/55 inline-flex"
-                    >
-                      View project <span aria-hidden="true">↗</span>
-                    </a>
-                  )}
-                </div>
-              </div>
-            </article>
-          ))}
+        <div class="close-actions">
+          <a href="/#contact" class="btn btn-primary">Get in touch</a>
+          <a href="/posts" class="btn btn-glass">
+            Read the writing <Icon name="arrow-right" size={15} class="arrow-r" />
+          </a>
         </div>
-      </div>
-    </section>
-  )}
-
-  <!-- ── Band C: Academic ───────────────────────────────────────────── -->
-  {academic.length > 0 && (
-    <section class="snap-chapter relative py-16 lg:py-20">
-      <div class="mx-auto w-full max-w-screen-2xl px-6 lg:px-12">
-        <div class="max-w-3xl mb-12 lg:mb-16">
-          <p class="eyebrow text-text/60 dark:text-dk-text/60 mb-4">Academic</p>
-          <h2 class="display-sm text-text dark:text-dk-text glow-wave mb-4">
-            From the NYU days.
-          </h2>
-          <p class="text-base lg:text-lg text-text/70 dark:text-dk-text/70 leading-relaxed">
-            Grad-school projects that earned their grade and taught me
-            something I still use.
-          </p>
-        </div>
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-          {academic.map((p: any) => (
-            <article class="rounded-xl border border-text/10 dark:border-dk-text/15 bg-primary dark:bg-dk-primary/40 overflow-hidden flex flex-col hover:border-text/30 dark:hover:border-dk-text/25 transition">
-              <div class="relative overflow-hidden">
-                <Picture
-                  src={p.img_path}
-                  alt={p.img_alt || p.title}
-                  width={900}
-                  height={500}
-                  class="w-full aspect-[16/9] object-cover transition duration-500 hover:scale-[1.03]"
-                />
-              </div>
-              <div class="p-5 flex flex-col flex-1">
-                <div class="flex items-center gap-2 mb-3">
-                  <span class="text-[0.6rem] uppercase tracking-[0.18em] font-bold text-text/50 dark:text-dk-text/50">
-                    {p.date}
-                  </span>
-                </div>
-                <h3 class="text-base lg:text-lg font-semibold text-text dark:text-dk-text leading-snug mb-2">
-                  {cleanTitle(p.title)}
-                </h3>
-                <p class="text-xs lg:text-sm text-text/60 dark:text-dk-text/65 leading-relaxed mb-4 line-clamp-3">
-                  {p.description}
-                </p>
-                <div class="flex flex-wrap gap-1 mt-auto mb-3">
-                  {(p.tech?.slice(0, 5) || []).map((t: string) => (
-                    <span class="text-[0.62rem] uppercase tracking-[0.1em] px-1.5 py-0.5 rounded-full bg-text/5 dark:bg-dk-text/[0.06] text-text/60 dark:text-dk-text/65">
-                      {t}
-                    </span>
-                  ))}
-                </div>
-                <div class="flex flex-wrap items-center gap-3">
-                  {postFor(p.title) && (
-                    <a
-                      href={postFor(p.title)}
-                      class="link-underline text-xs font-semibold text-secondary dark:text-dk-secondary inline-flex w-fit"
-                    >
-                      Read the write-up <span aria-hidden="true">→</span>
-                    </a>
-                  )}
-                  {p.link && (
-                    <a
-                      href={p.link}
-                      target="_blank"
-                      rel="noreferrer"
-                      class="link-underline text-xs font-semibold text-text/55 dark:text-dk-text/55 inline-flex w-fit"
-                    >
-                      Open <span aria-hidden="true">↗</span>
-                    </a>
-                  )}
-                </div>
-              </div>
-            </article>
-          ))}
-        </div>
-      </div>
-    </section>
-  )}
-
-  <!-- ── Band D: Read the deep dives (related blog posts) ──────────── -->
-  {projectsWithBlog.length > 0 && (
-    <section class="snap-chapter relative py-16 lg:py-20 bg-text/[0.02] dark:bg-dk-text/[0.03]">
-      <div class="mx-auto w-full max-w-screen-2xl px-6 lg:px-12">
-        <div class="max-w-3xl mb-12 lg:mb-16">
-          <p class="eyebrow text-secondary dark:text-dk-secondary mb-4">
-            Long form
-          </p>
-          <h2 class="display-sm text-text dark:text-dk-text glow-wave mb-4">
-            Read the deep dives.
-          </h2>
-          <p class="text-base lg:text-lg text-text/70 dark:text-dk-text/70 leading-relaxed">
-            Full write-ups on the systems above. Failure modes, numbers, and
-            the decisions that didn't make the bullet list.
-          </p>
-        </div>
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-          {projectsWithBlog.map(({ p, post }: any) => (
-            <a
-              href={post}
-              class="no-lift group rounded-xl border border-text/10 dark:border-dk-text/15 bg-primary dark:bg-dk-primary/40 p-5 flex flex-col hover:border-secondary/45 dark:hover:border-dk-secondary/55 transition"
-            >
-              <span class="text-[0.6rem] uppercase tracking-[0.18em] font-bold text-secondary dark:text-dk-secondary mb-2">
-                Deep dive
-              </span>
-              <h3 class="text-base lg:text-lg font-semibold text-text dark:text-dk-text leading-snug mb-2 group-hover:text-secondary dark:group-hover:text-dk-secondary transition">
-                {cleanTitle(p.title)}
-              </h3>
-              <p class="text-xs lg:text-sm text-text/60 dark:text-dk-text/65 leading-relaxed mb-4 line-clamp-3">
-                {p.description}
-              </p>
-              <span class="mt-auto text-xs font-semibold text-secondary dark:text-dk-secondary inline-flex items-center gap-1.5">
-                Read post <span aria-hidden="true">→</span>
-              </span>
-            </a>
-          ))}
-        </div>
-      </div>
-    </section>
-  )}
-
-  <!-- ── Closer ─────────────────────────────────────────────────────── -->
-  <section class="snap-chapter relative py-16 lg:py-20">
-    <div class="mx-auto w-full max-w-screen-2xl px-6 lg:px-12 text-center">
-      <p class="eyebrow text-secondary dark:text-dk-secondary mb-4">
-        That's the work
-      </p>
-      <h2 class="text-3xl lg:text-4xl font-semibold tracking-tight text-text dark:text-dk-text mb-6">
-        Let's build something.
-      </h2>
-      <p class="text-base lg:text-lg text-text/65 dark:text-dk-text/70 max-w-2xl mx-auto leading-relaxed mb-8">
-        Hiring for applied AI, forward-deployed-style work, or anything in
-        between? I'd love to hear what you're working on.
-      </p>
-      <div class="flex flex-wrap items-center justify-center gap-3">
-        <a
-          href="/posts"
-          class="no-lift inline-flex items-center gap-2 rounded-full px-6 py-3 bg-text text-primary dark:bg-dk-text dark:text-dk-primary text-sm font-semibold hover:opacity-85 transition"
-        >
-          Read the writing <span aria-hidden="true">→</span>
-        </a>
-        <a
-          href="/#contact"
-          class="no-lift inline-flex items-center gap-2 rounded-full px-6 py-3 border border-text/20 dark:border-dk-text/20 text-sm font-semibold text-text dark:text-dk-text hover:bg-text/5 dark:hover:bg-dk-text/10 transition"
-        >
-          Get in touch
-        </a>
       </div>
     </div>
   </section>
 </BaseLayout>
 
-<style is:global>
-  /* Hero atmosphere. Same faint single-bloom pattern as the chapter and
-     project-screen atmos so the page reads as one continuous black/matte
-     gray surface; the eyebrow-blue colour stays in the glow only. */
-  .projects-hero-atmos {
+<style>
+  /* Page top */
+  .proj-top { padding-bottom: clamp(24px, 4vw, 48px); }
+  .proj-title { margin-top: 24px; }
+  .proj-lede { margin-top: 24px; }
+  .proj-counts { margin-top: 32px; display: flex; flex-wrap: wrap; gap: 8px; }
+  .chip-n { color: var(--ink); font-weight: 600; font-variant-numeric: tabular-nums; }
+
+  .proj-sec .sec-head { margin-bottom: clamp(24px, 3vw, 36px); }
+
+  /* Card shell, shared by both layouts. The disclosure sits flush at the
+     bottom, so the card clips it to its own corners. */
+  .pcard { overflow: hidden; display: flex; flex-direction: column; }
+
+  /* Flagships: a full width row, cover on the left. */
+  .flags { display: grid; gap: 16px; }
+  @media (min-width: 1024px) { .flags { gap: 20px; } }
+  .pflag { --pad: 16px; }
+  @media (min-width: 900px) { .pflag { --pad: 20px; } }
+  .pflag-main { display: grid; gap: 20px; padding: var(--pad); }
+  @media (min-width: 900px) {
+    .pflag-main {
+      grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+      gap: 36px;
+      padding-right: 32px;
+    }
+  }
+  .pflag-media {
     position: relative;
+    overflow: hidden;
+    border-radius: 14px;
+    border: 1px solid var(--line);
+    background: #07080b;
+    aspect-ratio: 16 / 9;
   }
-  .projects-hero-atmos::before {
-    content: "";
-    position: absolute;
-    inset: -5%;
-    background:
-      radial-gradient(ellipse 72% 59% at 22% 32%, rgba(91, 141, 239, 0.10) 0%, rgba(91, 141, 239, 0.05) 40%, rgba(91, 141, 239, 0) 74%),
-      radial-gradient(ellipse 72% 59% at 78% 72%, rgba(91, 141, 239, 0.07) 0%, rgba(91, 141, 239, 0.035) 40%, rgba(91, 141, 239, 0) 74%);
-    z-index: 0;
-    pointer-events: none;
-    will-change: transform;
-    transform: translateZ(0);
-    animation: atmosDrift 22s ease-in-out infinite;
-  }
-  @media (prefers-reduced-motion: reduce) {
-    .projects-hero-atmos::before { animation: none; will-change: auto; }
-  }
-
-  /* Each Hybridge deep dive: sized by its content with one consistent
-     padding band (Apple-style), so scrolling between projects never crosses
-     a dead screen. */
-  .project-screen {
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    padding-top: clamp(3.5rem, 7vh, 5.5rem);
-    padding-bottom: clamp(3.5rem, 7vh, 5.5rem);
-  }
-
-  /* No per-screen bg fills. Every project sits on the body bg so the only
-     colour cue is the per-project atmos glow. */
-
-  .project-screen-atmos {
-    position: absolute;
-    inset: -5%;
-    z-index: 0;
-    pointer-events: none;
-    opacity: 0.55;
-    will-change: transform;
-    transform: translateZ(0);
-    animation: atmosDrift 24s ease-in-out infinite;
-  }
-  /* Each variant matches the ambient colour of that project's hero image
-     so the glow reads as a faint echo of the screenshot, never a wash. */
-  .project-screen-atmos.atmos-cyan {
-    background:
-      radial-gradient(ellipse 72% 59% at 22% 32%, rgba(34, 211, 238, 0.10) 0%, rgba(34, 211, 238, 0.05) 40%, rgba(34, 211, 238, 0) 74%),
-      radial-gradient(ellipse 72% 59% at 78% 72%, rgba(34, 211, 238, 0.07) 0%, rgba(34, 211, 238, 0.035) 40%, rgba(34, 211, 238, 0) 74%);
-  }
-  .project-screen-atmos.atmos-violet {
-    background:
-      radial-gradient(ellipse 72% 59% at 22% 32%, rgba(167, 139, 250, 0.10) 0%, rgba(167, 139, 250, 0.05) 40%, rgba(167, 139, 250, 0) 74%),
-      radial-gradient(ellipse 72% 59% at 78% 72%, rgba(167, 139, 250, 0.07) 0%, rgba(167, 139, 250, 0.035) 40%, rgba(167, 139, 250, 0) 74%);
-  }
-  .project-screen-atmos.atmos-blue {
-    background:
-      radial-gradient(ellipse 72% 59% at 22% 32%, rgba(91, 141, 239, 0.10) 0%, rgba(91, 141, 239, 0.05) 40%, rgba(91, 141, 239, 0) 74%),
-      radial-gradient(ellipse 72% 59% at 78% 72%, rgba(91, 141, 239, 0.07) 0%, rgba(91, 141, 239, 0.035) 40%, rgba(91, 141, 239, 0) 74%);
-  }
-  .project-screen-atmos.atmos-emerald {
-    background:
-      radial-gradient(ellipse 72% 59% at 22% 32%, rgba(52, 211, 153, 0.10) 0%, rgba(52, 211, 153, 0.05) 40%, rgba(52, 211, 153, 0) 74%),
-      radial-gradient(ellipse 72% 59% at 78% 72%, rgba(52, 211, 153, 0.07) 0%, rgba(52, 211, 153, 0.035) 40%, rgba(52, 211, 153, 0) 74%);
-  }
-  .project-screen-atmos.atmos-amber {
-    background:
-      radial-gradient(ellipse 72% 59% at 22% 32%, rgba(245, 165, 36, 0.10) 0%, rgba(245, 165, 36, 0.05) 40%, rgba(245, 165, 36, 0) 74%),
-      radial-gradient(ellipse 72% 59% at 78% 72%, rgba(245, 165, 36, 0.07) 0%, rgba(245, 165, 36, 0.035) 40%, rgba(245, 165, 36, 0) 74%);
-  }
-  .project-screen-atmos.atmos-slate {
-    background:
-      radial-gradient(ellipse 72% 59% at 22% 32%, rgba(148, 163, 184, 0.10) 0%, rgba(148, 163, 184, 0.05) 40%, rgba(148, 163, 184, 0) 74%),
-      radial-gradient(ellipse 72% 59% at 78% 72%, rgba(148, 163, 184, 0.07) 0%, rgba(148, 163, 184, 0.035) 40%, rgba(148, 163, 184, 0) 74%);
-  }
-
-  /* Light-mode: lift the screen with a soft pastel wash + deeper stat
-     accents. Keep the same shape as dark mode, just calibrated for white. */
-  html:not(.dark) .project-screen-atmos { opacity: 0.85; }
-  html:not(.dark) .project-screen-atmos.atmos-cyan {
-    background:
-      radial-gradient(ellipse 72% 59% at 22% 32%, rgba(34, 211, 238, 0.22) 0%, rgba(34, 211, 238, 0.11) 38%, rgba(34, 211, 238, 0) 74%),
-      radial-gradient(ellipse 72% 59% at 78% 72%, rgba(34, 211, 238, 0.15) 0%, rgba(34, 211, 238, 0.075) 38%, rgba(34, 211, 238, 0) 74%);
-  }
-  html:not(.dark) .project-screen-atmos.atmos-violet {
-    background:
-      radial-gradient(ellipse 72% 59% at 22% 32%, rgba(167, 139, 250, 0.22) 0%, rgba(167, 139, 250, 0.11) 38%, rgba(167, 139, 250, 0) 74%),
-      radial-gradient(ellipse 72% 59% at 78% 72%, rgba(167, 139, 250, 0.15) 0%, rgba(167, 139, 250, 0.075) 38%, rgba(167, 139, 250, 0) 74%);
-  }
-  html:not(.dark) .project-screen-atmos.atmos-blue {
-    background:
-      radial-gradient(ellipse 72% 59% at 22% 32%, rgba(91, 141, 239, 0.22) 0%, rgba(91, 141, 239, 0.11) 38%, rgba(91, 141, 239, 0) 74%),
-      radial-gradient(ellipse 72% 59% at 78% 72%, rgba(91, 141, 239, 0.15) 0%, rgba(91, 141, 239, 0.075) 38%, rgba(91, 141, 239, 0) 74%);
-  }
-  html:not(.dark) .project-screen-atmos.atmos-emerald {
-    background:
-      radial-gradient(ellipse 72% 59% at 22% 32%, rgba(16, 185, 129, 0.20) 0%, rgba(16, 185, 129, 0.10) 38%, rgba(16, 185, 129, 0) 74%),
-      radial-gradient(ellipse 72% 59% at 78% 72%, rgba(16, 185, 129, 0.14) 0%, rgba(16, 185, 129, 0.07) 38%, rgba(16, 185, 129, 0) 74%);
-  }
-  html:not(.dark) .project-screen-atmos.atmos-amber {
-    background:
-      radial-gradient(ellipse 72% 59% at 22% 32%, rgba(245, 158, 11, 0.22) 0%, rgba(245, 158, 11, 0.11) 38%, rgba(245, 158, 11, 0) 74%),
-      radial-gradient(ellipse 72% 59% at 78% 72%, rgba(245, 158, 11, 0.15) 0%, rgba(245, 158, 11, 0.075) 38%, rgba(245, 158, 11, 0) 74%);
-  }
-
-  /* Stronger stat-value contrast in light mode so the numbers read. */
-  html:not(.dark) .stat-grid-cyan    .stat-value { color: #0E7490; }
-  html:not(.dark) .stat-grid-violet  .stat-value { color: #6D28D9; }
-  html:not(.dark) .stat-grid-blue    .stat-value { color: #1D4ED8; }
-  html:not(.dark) .stat-grid-emerald .stat-value { color: #047857; }
-  html:not(.dark) .stat-grid-amber   .stat-value { color: #B45309; }
-
-  /* Light-mode flip-card back: clean white with a soft tinted shadow. */
-  html:not(.dark) .flip-card-back {
-    background: #FFFFFF;
-    border-color: rgba(15, 23, 42, 0.10);
-    box-shadow:
-      0 30px 60px -28px rgba(15, 23, 42, 0.22),
-      0 6px 18px -10px rgba(91, 141, 239, 0.14);
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    .project-screen-atmos { animation: none; will-change: auto; }
-  }
-
-  /* Image wrap halo — neutral blue so the screenshot lifts off the page
-     without reading as a colour cue. */
-  .project-screen-imagewrap::before {
-    content: "";
-    position: absolute;
-    inset: 8% -4% -4% 8%;
-    background: linear-gradient(135deg, rgba(91, 141, 239, 0.20), rgba(34, 211, 238, 0.10));
-    filter: blur(60px);
-    z-index: -1;
-    border-radius: 2rem;
-    opacity: 0.45;
-  }
-
-  /* ── Flip card ──────────────────────────────────────────────────────
-     Click the screenshot to reveal the STAR case study on the back.
-     CSS-only flip via the .is-flipped class added by a small script. */
-  .flip-card {
-    position: relative;
-    width: 100%;
-    aspect-ratio: 16 / 10;
-    background: transparent;
-    border: 0;
-    padding: 0;
-    perspective: 1600px;
-    cursor: pointer;
-    appearance: none;
-    text-align: left;
-    font: inherit;
-    color: inherit;
-  }
-  .flip-card:focus-visible {
-    outline: 2px solid rgba(91, 141, 239, 0.6);
-    outline-offset: 6px;
-    border-radius: 1.25rem;
-  }
-  .flip-card-inner {
-    position: relative;
-    width: 100%;
-    height: 100%;
-    transition: transform 0.85s cubic-bezier(0.4, 0, 0.2, 1);
-    transform-style: preserve-3d;
-  }
-  .flip-card.is-flipped .flip-card-inner {
-    transform: rotateY(180deg);
-  }
-  .flip-card-front,
-  .flip-card-back {
+  @media (min-width: 900px) { .pflag-media { aspect-ratio: auto; min-height: 320px; } }
+  .pflag-media :global(img),
+  .pflag-media .media-fallback {
     position: absolute;
     inset: 0;
-    backface-visibility: hidden;
-    -webkit-backface-visibility: hidden;
-    border-radius: 1rem;
-    overflow: hidden;
-  }
-  .flip-card-front img {
     width: 100%;
     height: 100%;
-    object-fit: cover;
-    display: block;
   }
-  .flip-card-hint {
-    position: absolute;
-    left: 50%;
-    bottom: 0.9rem;
-    transform: translateX(-50%);
-    display: inline-flex;
-    align-items: center;
-    gap: 0.5rem;
-    padding: 0.45rem 0.9rem;
-    border-radius: 999px;
-    background: rgba(0, 0, 0, 0.55);
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
-    color: #FBFBFD;
-    font-size: 0.72rem;
-    font-weight: 600;
-    letter-spacing: 0.02em;
-    border: 1px solid rgba(255, 255, 255, 0.10);
-    pointer-events: none;
-    opacity: 0;
-    transition: opacity 0.25s ease, transform 0.25s ease;
-  }
-  .flip-card:hover .flip-card-hint,
-  .flip-card:focus-visible .flip-card-hint {
-    opacity: 1;
-    transform: translateX(-50%) translateY(-2px);
-  }
-  @media (hover: none) {
-    .flip-card-hint { opacity: 1; }
-  }
-  .flip-card-hint-icon {
-    display: inline-block;
-    line-height: 1;
-    transform: translateY(-1px);
-  }
-  /* Back face: structured STAR layout on a clean black/matte gray card. */
-  .flip-card-back {
-    transform: rotateY(180deg);
-    background: #FBFBFD;
-    color: #1D1D1F;
-    border: 1px solid rgba(0, 0, 0, 0.08);
-    padding: clamp(1rem, 2.5vw, 1.6rem);
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    box-shadow: 0 30px 60px -28px rgba(0, 0, 0, 0.45);
-  }
-  html.dark .flip-card-back {
-    background: #0B0B0D;
-    color: #F5F5F7;
-    border-color: rgba(255, 255, 255, 0.08);
-  }
-  .flip-card-back-grid {
+  .pflag-media :global(img) { display: block; object-fit: cover; }
+  .pflag-body { display: flex; flex-direction: column; align-items: flex-start; padding: 2px 4px 4px; }
+  @media (min-width: 900px) { .pflag-body { padding: 8px 0 4px; } }
+
+  /* The rest: a denser grid of tiles. An open tile becomes an expanded row
+     the full width of the grid, laid out like a flagship, and the tiles
+     after it close the gap (dense flow). */
+  .tiles {
     display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: clamp(0.6rem, 1.6vw, 1.1rem) clamp(0.9rem, 2vw, 1.4rem);
-    max-height: 100%;
+    gap: 16px;
+    grid-template-columns: minmax(0, 1fr);
+    grid-auto-flow: row dense;
   }
-  @media (max-width: 720px) {
-    .flip-card-back-grid { grid-template-columns: 1fr; gap: 0.55rem; }
-    /* The 16/10 card is short on a phone, so the four STAR sections would
-       clip. Start from the top, tighten the type, and let the case study
-       scroll inside the card — nothing gets cut off. */
-    .flip-card-back {
-      justify-content: flex-start;
-      overflow-y: auto;
-      -webkit-overflow-scrolling: touch;
-      padding: 0.85rem 0.95rem;
+  @media (min-width: 640px) { .tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  @media (min-width: 1024px) { .tiles { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px; } }
+  .ptile { --pad: 20px; }
+  @media (min-width: 640px) { .ptile { --pad: 22px; } }
+  .ptile-main { display: flex; flex-direction: column; flex: 1; }
+  .ptile-media { aspect-ratio: 16 / 9; }
+  .ptile-body { display: flex; flex-direction: column; align-items: flex-start; flex: 1; padding: var(--pad); }
+
+  .ptile:has(> .pmore[open]) { grid-column: 1 / -1; }
+  /* Open, every number shows just below, so the face drops its one. */
+  .ptile:has(> .pmore[open]) .pc-lead { display: none; }
+  @media (min-width: 900px) {
+    .ptile:has(> .pmore[open]) { --pad: 28px; }
+    .ptile:has(> .pmore[open]) > .ptile-main {
+      display: grid;
+      grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
     }
-    .flip-section-label { font-size: 0.58rem; margin-bottom: 0.2rem; }
-    .flip-section-body { font-size: 0.72rem; line-height: 1.38; }
-    .flip-card-hint-back { display: none; }
+    .ptile:has(> .pmore[open]) .ptile-media {
+      position: relative;
+      aspect-ratio: auto;
+      min-height: 280px;
+      border-bottom: 0;
+      border-right: 1px solid var(--line);
+      border-radius: 19px 0 0 0;
+    }
+    .ptile:has(> .pmore[open]) .ptile-media :global(img),
+    .ptile:has(> .pmore[open]) .ptile-media .media-fallback { position: absolute; inset: 0; }
+    .ptile:has(> .pmore[open]) .ptile-body { padding: 28px 32px 28px 36px; }
+    .ptile:has(> .pmore[open]) .pc-title { font-size: clamp(1.25rem, 1.8vw, 1.5rem); line-height: 1.2; letter-spacing: -0.022em; }
+    .ptile:has(> .pmore[open]) .pc-line { font-size: 0.9375rem; line-height: 1.65; }
   }
-  .flip-section-label {
-    font-size: 0.66rem;
-    font-weight: 800;
-    letter-spacing: 0.20em;
-    text-transform: uppercase;
-    color: #1D1D1F;
-    margin-bottom: 0.4rem;
+  @media (min-width: 768px) {
+    .ptile:has(> .pmore[open]) .star { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px 36px; }
+    .ptile:has(> .pmore[open]) .pstats-sm { grid-template-columns: repeat(4, minmax(0, 1fr)); }
   }
-  html.dark .flip-section-label {
-    color: #F5F5F7;
-  }
-  /* Tiny coloured dot before each section label so the four panels feel
-     anchored visually and the headings don't drown in the body text. */
-  .flip-section-label::before {
-    content: "";
-    display: inline-block;
-    width: 0.42rem;
-    height: 0.42rem;
-    border-radius: 999px;
-    margin-right: 0.5rem;
-    transform: translateY(-1px);
-    background: currentColor;
-    opacity: 0.55;
-  }
-  .flip-section-body {
-    font-size: clamp(0.78rem, 0.95vw, 0.92rem);
-    line-height: 1.5;
-    color: rgba(29, 29, 31, 0.72);
-  }
-  html.dark .flip-section-body {
-    color: rgba(245, 245, 247, 0.72);
-  }
-  .flip-card-hint-back {
-    position: absolute;
-    bottom: 0.7rem;
-    left: 50%;
-    transform: translateX(-50%);
-    background: rgba(0, 0, 0, 0.08);
-    color: rgba(29, 29, 31, 0.7);
-    border-color: rgba(0, 0, 0, 0.05);
-    opacity: 1;
-  }
-  html.dark .flip-card-hint-back {
-    background: rgba(255, 255, 255, 0.08);
-    color: rgba(245, 245, 247, 0.75);
-    border-color: rgba(255, 255, 255, 0.06);
+  @media (min-width: 1024px) {
+    .ptile:has(> .pmore[open]) .hl-list { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px 36px; }
   }
 
-  /* ── Stats grid on the right panel of each industry project. ─────── */
-  .stat-grid {
+  /* Shared card content */
+  .pc-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 10px; }
+  .pc-title { margin-top: 14px; text-wrap: balance; }
+  .pc-title-lg { font-size: clamp(1.375rem, 2.2vw, 1.75rem); line-height: 1.18; letter-spacing: -0.025em; }
+  .pc-title a { color: inherit; text-decoration: none; }
+  .pc-title a:hover {
+    transform: none;
+    text-decoration: underline;
+    text-underline-offset: 4px;
+    text-decoration-thickness: 1px;
+    text-decoration-color: var(--ink-ghost);
+  }
+  .pc-line { margin-top: 8px; max-width: 40rem; }
+  .ptile .pc-line { margin-top: 6px; }
+
+  .pstats {
+    list-style: none;
+    margin: 22px 0 0;
+    padding: 0;
+    width: 100%;
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 0.9rem 1rem;
+    gap: 18px 20px;
   }
-  .stat-cell {
-    border-left: 2px solid rgba(148, 163, 184, 0.35);
-    padding: 0.1rem 0 0.1rem 0.8rem;
+  .pstats > li { display: flex; flex-direction: column; gap: 5px; padding-left: 12px; border-left: 1px solid var(--line-strong); }
+  .pstat-v {
+    font-size: clamp(1.0625rem, 1.5vw, 1.3125rem);
+    line-height: 1.15;
+    letter-spacing: -0.022em;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    color: var(--ink);
   }
-  html.dark .stat-cell {
-    border-left-color: rgba(148, 163, 184, 0.40);
+  .pstat-l { font-size: 0.8125rem; line-height: 1.45; color: var(--ink-soft); }
+  .pstats-sm .pstat-v { font-size: 1.0625rem; }
+
+  /* One headline number on a tile; the rest are in its disclosure. */
+  .pc-lead {
+    margin-top: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding-left: 12px;
+    border-left: 1px solid var(--line-strong);
   }
-  .stat-grid-cyan    .stat-cell { border-left-color: rgba(34, 211, 238, 0.55); }
-  .stat-grid-violet  .stat-cell { border-left-color: rgba(167, 139, 250, 0.55); }
-  .stat-grid-blue    .stat-cell { border-left-color: rgba(91, 141, 239, 0.55); }
-  .stat-grid-emerald .stat-cell { border-left-color: rgba(52, 211, 153, 0.55); }
-  .stat-grid-amber   .stat-cell { border-left-color: rgba(245, 165, 36, 0.55); }
-  html.dark .stat-grid-cyan    .stat-cell { border-left-color: rgba(34, 211, 238, 0.6); }
-  html.dark .stat-grid-violet  .stat-cell { border-left-color: rgba(167, 139, 250, 0.6); }
-  html.dark .stat-grid-blue    .stat-cell { border-left-color: rgba(91, 141, 239, 0.6); }
-  html.dark .stat-grid-emerald .stat-cell { border-left-color: rgba(52, 211, 153, 0.6); }
-  html.dark .stat-grid-amber   .stat-cell { border-left-color: rgba(245, 165, 36, 0.6); }
-  .stat-value {
-    font-size: clamp(1.1rem, 1.6vw, 1.4rem);
-    font-weight: 700;
-    letter-spacing: -0.01em;
-    line-height: 1.1;
-    color: #1D1D1F;
-    margin-bottom: 0.2rem;
+  .pc-lead .pstat-v { font-size: 1.0625rem; }
+
+  .techs { list-style: none; margin: 20px 0 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px; }
+  .ptile .techs { margin-top: 16px; }
+  .techs-more { color: var(--ink-faint); background: transparent; border: 1px solid var(--line); }
+
+  .pc-actions { margin-top: 24px; display: flex; flex-wrap: wrap; align-items: center; gap: 12px 22px; }
+  .pc-actions .btn { margin-right: 2px; }
+  .pc-links { margin-top: auto; padding-top: 18px; display: flex; flex-wrap: wrap; align-items: center; gap: 10px 18px; }
+  .pc-links .tlink { font-size: 0.875rem; }
+  .xlink {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--ink-soft);
+    text-decoration: none;
+    white-space: nowrap;
+    transition: color 150ms var(--ease-glass);
   }
-  html.dark .stat-value { color: #F5F5F7; }
-  .stat-label {
-    font-size: 0.72rem;
-    line-height: 1.3;
-    color: rgba(29, 29, 31, 0.6);
+  .xlink:hover { color: var(--ink); transform: none; }
+  .xlink :global(svg) { width: 13px; height: 13px; }
+
+  /* The disclosure: the full case study, one click away. */
+  .pmore { border-top: 1px solid var(--line); }
+  .pmore > summary {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-height: 48px;
+    padding: 12px var(--pad);
+    list-style: none;
+    cursor: pointer;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--ink-soft);
+    transition: color 150ms var(--ease-glass), background-color 150ms var(--ease-glass);
   }
-  html.dark .stat-label {
-    color: rgba(245, 245, 247, 0.6);
+  .pmore > summary::-webkit-details-marker { display: none; }
+  .pmore > summary::marker { content: ""; }
+  .pmore > summary:hover { color: var(--ink); background: var(--wash); }
+  .pmore > summary:focus-visible { outline: none; box-shadow: inset 0 0 0 2px rgba(var(--tone-rgb), 0.45); }
+  .pmore-hint { display: none; }
+  @media (min-width: 640px) { .pmore-hint { display: inline; } }
+  .pmore-chev { margin-left: auto; flex: none; transition: transform 250ms var(--ease-glass); }
+  .pmore[open] > summary { color: var(--ink); }
+  .pmore[open] .pmore-chev { transform: rotate(180deg); }
+
+  .pmore-body { padding: 4px var(--pad) calc(var(--pad) + 8px); display: grid; gap: 24px; }
+  .pmore-sum { max-width: 48rem; color: var(--ink); }
+  .pmore-body .pstats { margin-top: 4px; }
+  .star { display: grid; gap: 20px; }
+  .star-part .t-small, .hl .hl-list { margin-top: 6px; }
+  .pflag .star { gap: 24px 36px; }
+  @media (min-width: 768px) { .pflag .star { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  .hl-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+  @media (min-width: 1024px) { .pflag .hl-list { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px 36px; } }
+  .hl-list > li { position: relative; padding-left: 16px; }
+  .hl-list > li::before {
+    content: "";
+    position: absolute;
+    left: 2px;
+    top: 0.62em;
+    width: 5px;
+    height: 5px;
+    border-radius: 9999px;
+    background: var(--ink-ghost);
+  }
+
+  /* A calm tone panel where a cover has not been made yet. */
+  .media-fallback {
+    width: 100%;
+    height: 100%;
+    display: grid;
+    place-items: center;
+    padding: 16px;
+    text-align: center;
+    background:
+      radial-gradient(70% 90% at 20% 10%, rgba(var(--tone-rgb), 0.22), transparent 70%),
+      radial-gradient(60% 80% at 90% 100%, rgba(var(--tone-rgb), 0.1), transparent 70%),
+      #07080b;
+  }
+  .media-fallback span { font-size: 0.9375rem; font-weight: 500; color: var(--ink-faint); }
+  .pflag .media-fallback span { font-size: 1.125rem; letter-spacing: -0.015em; }
+
+  /* Closer */
+  .proj-close { padding-top: 8px; padding-bottom: clamp(56px, 7vw, 96px); }
+  .close-card { display: grid; gap: 24px; align-items: end; }
+  @media (min-width: 900px) {
+    .close-card { grid-template-columns: minmax(0, 1fr) auto; gap: 40px; padding: 40px; }
+  }
+  .close-text { margin-top: 16px; max-width: 34rem; }
+  .close-actions { display: flex; flex-wrap: wrap; gap: 12px; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .pmore-chev, .pmore > summary, .xlink { transition: none; }
   }
 </style>
 
 <script>
-  // Toggle the .is-flipped class on each [data-flip-card] when clicked.
-  // Lightweight and progressive: no JS, no flip.
-  document.querySelectorAll<HTMLElement>("[data-flip-card]").forEach((card) => {
-    card.addEventListener("click", () => {
-      card.classList.toggle("is-flipped");
-      const flipped = card.classList.contains("is-flipped");
-      card.setAttribute(
-        "aria-label",
-        flipped ? "Hide case study" : "Show case study",
-      );
+  // An open tile moves into a row of its own (and moves back when closed).
+  // Keep the line that was clicked where it was on screen, so the reader
+  // never loses their place when the grid reflows.
+  document.querySelectorAll<HTMLDetailsElement>(".ptile > .pmore").forEach((d) => {
+    const summary = d.querySelector("summary");
+    if (!summary) return;
+    let before: number | null = null;
+    summary.addEventListener("click", () => {
+      before = summary.getBoundingClientRect().top;
+    });
+    d.addEventListener("toggle", () => {
+      if (before === null) return;
+      const was = before;
+      before = null;
+      requestAnimationFrame(() => {
+        const shift = summary.getBoundingClientRect().top - was;
+        if (Math.abs(shift) > 2) window.scrollBy({ top: shift, behavior: "instant" as ScrollBehavior });
+      });
     });
   });
 </script>

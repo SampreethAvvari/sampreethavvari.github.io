@@ -1,11 +1,15 @@
 ---
-// /work/<slug> — one in-depth page per discipline (aie, fde, mle, sde).
-// Hero with generated artwork + narrative, strengths grid, full project
-// cards with status chips and highlights, articles strip, prev/next nav.
+// /work/<slug>, one page per discipline (aie, fde, mle, sde): the page top,
+// the story, what I bring, every project, the writing, and the neighbours.
+// The page wears the Work tab's colour; the discipline is named, not coloured.
+import fs from "node:fs";
+import path from "node:path";
 import BaseLayout from "../../layouts/BaseLayout.astro";
 import WorkTabs from "../../components/work_section/WorkTabs.astro";
-import { disciplines } from "../../data/disciplines";
 import Picture from "../../components/common/Picture.astro";
+import Icon from "../../components/common/Icon.astro";
+import { disciplines } from "../../data/disciplines";
+import { readingTime } from "../../utils/readingTime";
 
 export function getStaticPaths() {
   return disciplines.map((d) => ({ params: { slug: d.slug }, props: { d } }));
@@ -16,201 +20,401 @@ const idx = disciplines.findIndex((x) => x.slug === d.slug);
 const prev = disciplines[(idx + disciplines.length - 1) % disciplines.length];
 const next = disciplines[(idx + 1) % disciplines.length];
 
-const statusTone = (s: string) =>
+// A cover only renders when its file (or its .avif/.webp sibling) exists, so
+// a project whose art is still being made shows a calm panel instead.
+const hasPublic = (p?: string) =>
+  !!p &&
+  [p, p.replace(/\.(png|jpe?g)$/i, ".avif"), p.replace(/\.(png|jpe?g)$/i, ".webp")].some((f) =>
+    fs.existsSync(path.join(process.cwd(), "public", f)),
+  );
+
+const statusClass = (s: string) =>
   s === "In production" || s === "Live" || s === "Running program"
-    ? "dx-chip-live"
-    : s === "Pilot-ready" || s === "In build"
-      ? "dx-chip-soon"
-      : "dx-chip-design";
+    ? "badge badge-live"
+    : s === "In build" || s === "Pilot-ready"
+      ? "badge badge-build"
+      : "badge";
+
+// The tagline's first sentence finishes the headline; the rest of it opens
+// "What I bring". A tagline that is one sentence splits at its colon.
+function splitTagline(t: string): [string, string] {
+  const dot = t.indexOf(". ");
+  if (dot > 0) return [t.slice(0, dot + 1), t.slice(dot + 2)];
+  const colon = t.indexOf(": ");
+  if (colon > 0) {
+    const rest = t.slice(colon + 2);
+    return [t.slice(0, colon) + ".", rest.charAt(0).toUpperCase() + rest.slice(1)];
+  }
+  return [t, ""];
+}
+const [tail, bringTail] = splitTagline(d.tagline);
+
+// Date and reading time for each article, read from the post itself.
+const posts = await Astro.glob("../posts/*.md");
+const postByUrl = new Map(posts.map((p) => [p.url, p]));
+const monthYear = (iso?: string) =>
+  iso
+    ? new Date(`${iso}T00:00:00Z`).toLocaleDateString("en-US", {
+        month: "short",
+        year: "numeric",
+        timeZone: "UTC",
+      })
+    : "";
+const articles = d.articles.map((a) => {
+  const post = postByUrl.get(a.href);
+  const meta = post
+    ? [monthYear(post.frontmatter.date), `${readingTime(post.rawContent())} min read`]
+        .filter(Boolean)
+        .join(" · ")
+    : "";
+  return { ...a, meta };
+});
 ---
 
-<BaseLayout title={`${d.name} · Sampreeth Avvari`}>
-  <div
-    class="mx-auto w-full max-w-screen-2xl px-6 lg:px-12 pt-24 lg:pt-32 pb-20"
-    style={`--dx: ${d.accent}; --dx-rgb: ${d.rgb};`}
-  >
-    <WorkTabs active={d.slug} />
+<BaseLayout title={`${d.name} · Sampreeth Avvari`} description={d.summary}>
+  <!-- Page top -->
+  <section class="page-top wk-top relative overflow-hidden">
+    <div class="tone-atmos" aria-hidden="true"></div>
+    <div class="wrap on-top">
+      <p class="kicker">Work</p>
+      <h1 class="t-title wk-title">
+        {d.name}.
+        <span class="t-tail">{tail}</span>
+      </h1>
+      <p class="t-lede wk-lede">{d.summary}</p>
+      <div class="wk-facts">
+        <span class="badge">{d.acronym}</span>
+        <span class="t-meta">
+          {d.projects.length} projects · {d.articles.length} articles
+        </span>
+      </div>
+      <div class="wk-tabs">
+        <WorkTabs active={d.slug} />
+      </div>
+    </div>
+  </section>
 
-    <!-- Hero -->
-    <header class="mt-8 grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-14 items-center reveal" data-reveal>
-      <div class="lg:col-span-7">
-        <div class="flex items-center gap-3 mb-5">
-          <span class="dx-acronym">{d.acronym}</span>
-          <span class="text-xs uppercase tracking-[0.18em] text-text/45 dark:text-dk-text/45 font-semibold">
-            Discipline {String(idx + 1).padStart(2, "0")} / 04
-          </span>
+  <!-- The story -->
+  <section class="section wk-story-sec" aria-labelledby="wk-story">
+    <div class="wrap wk-story" data-reveal>
+      <div class="wk-story-side">
+        <h2 id="wk-story" class="t-h2">The story.</h2>
+        <figure class="wk-art">
+          <Picture src={d.heroImg} alt={`${d.name} abstract artwork`} width={960} height={540} />
+        </figure>
+      </div>
+      <div class="wk-prose">
+        {d.narrative.map((para) => <p class="t-body">{para}</p>)}
+      </div>
+    </div>
+  </section>
+
+  <!-- What I bring -->
+  <section class="wk-sec" aria-labelledby="wk-bring">
+    <div class="wrap">
+      <div class="sec-head" data-reveal>
+        <div class="sec-head-main">
+          <h2 id="wk-bring" class="t-h2">
+            What I bring.
+            {bringTail && <span class="t-tail">{bringTail}</span>}
+          </h2>
         </div>
-        <h1 class="display text-text dark:text-dk-text mb-6 glow-wave">
-          <span style={`color: ${d.accent};`}>{d.name}</span>
-        </h1>
-        <p class="text-lg lg:text-xl text-text/75 dark:text-dk-text/75 leading-relaxed max-w-2xl">
-          {d.tagline}
-        </p>
       </div>
-      <div class="lg:col-span-5">
-        <div class="work-hero-img">
-          <Picture
-            src={d.heroImg}
-            alt={`${d.name} abstract artwork`}
-            width={960}
-            height={540}
-            class="w-full aspect-video object-cover"
-          />
-        </div>
-      </div>
-    </header>
-
-    <!-- Narrative -->
-    <section class="mt-14 lg:mt-20 max-w-3xl reveal" data-reveal>
-      <p class="eyebrow mb-5" style={`color: ${d.accent};`}>The story</p>
-      <div class="space-y-5">
-        {d.narrative.map((para) => (
-          <p class="text-base lg:text-lg text-text/75 dark:text-dk-text/75 leading-relaxed">
-            {para}
-          </p>
-        ))}
-      </div>
-    </section>
-
-    <!-- Strengths -->
-    <section class="mt-14 lg:mt-20 reveal" data-reveal>
-      <p class="eyebrow mb-6" style={`color: ${d.accent};`}>What I bring</p>
-      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+      <ul class="wk-grid4">
         {d.strengths.map((s) => (
-          <div class="skills-card" style={`--sk: ${d.accent}; --sk-rgb: ${d.rgb};`}>
-            <p class="text-sm font-bold text-text dark:text-dk-text mb-2 tracking-tight">
-              {s.title}
-            </p>
-            <p class="text-[0.82rem] text-text/65 dark:text-dk-text/65 leading-relaxed">
-              {s.body}
-            </p>
-          </div>
+          <li class="surface surface-pad wk-strength" data-reveal>
+            <h3 class="t-h4">{s.title}</h3>
+            <p class="t-small mt-2">{s.body}</p>
+          </li>
         ))}
-      </div>
-    </section>
+      </ul>
+    </div>
+  </section>
 
-    <!-- Projects -->
-    <section class="mt-14 lg:mt-20 reveal" data-reveal>
-      <p class="eyebrow mb-2" style={`color: ${d.accent};`}>The projects</p>
-      <h2 class="display-sm text-text dark:text-dk-text mb-8">
-        Built, shipped, and used.
-      </h2>
-      <div class="flex flex-col gap-5">
+  <!-- The projects -->
+  <section class="wk-sec" aria-labelledby="wk-projects">
+    <div class="wrap">
+      <div class="sec-head" data-reveal>
+        <div class="sec-head-main">
+          <h2 id="wk-projects" class="t-h2">
+            The projects.
+            <span class="t-tail">Built, shipped, and used.</span>
+          </h2>
+        </div>
+        <span class="t-meta">{d.projects.length} projects</span>
+      </div>
+
+      <div class="wk-projects">
         {d.projects.map((p) => (
-          <article class="work-project-card">
-            {p.img ? (
-              <Picture src={p.img} alt={`${p.name} preview`} width={480} height={320} class="work-project-img" />
+          <article class="surface wk-proj" data-reveal>
+            {p.href ? (
+              <a href={p.href} class="wk-proj-media" tabindex="-1" aria-hidden="true">
+                {hasPublic(p.img) ? (
+                  <Picture src={p.img ?? ""} alt="" width={640} height={400} />
+                ) : (
+                  <span class="wk-fallback"><span>{p.name}</span></span>
+                )}
+              </a>
             ) : (
-              <div
-                class="work-project-img grid place-items-center text-3xl"
-                style={`background: rgba(${d.rgb}, 0.07); color: ${d.accent};`}
-                aria-hidden="true"
-              >
-                <i class={d.icon}></i>
+              <div class="wk-proj-media" aria-hidden="true">
+                {hasPublic(p.img) ? (
+                  <Picture src={p.img ?? ""} alt="" width={640} height={400} />
+                ) : (
+                  <span class="wk-fallback"><span>{p.name}</span></span>
+                )}
               </div>
             )}
-            <div>
-              <div class="flex items-center flex-wrap gap-3 mb-2">
-                <h3 class="text-xl lg:text-2xl font-bold tracking-tight text-text dark:text-dk-text">
-                  {p.href ? (
-                    <a href={p.href} class="no-lift hover:text-[var(--dx)] transition">{p.name}</a>
-                  ) : (
-                    p.name
-                  )}
-                </h3>
-                <span class={`dx-chip ${statusTone(p.status)}`} style="margin-top: 0;">{p.status}</span>
-              </div>
-              <p class="text-sm lg:text-base text-text/70 dark:text-dk-text/70 leading-relaxed mb-4 max-w-3xl">
-                {p.oneLiner}
-              </p>
+
+            <div class="wk-proj-body">
+              <span class={statusClass(p.status)}>{p.status}</span>
+              <h3 class="t-h3 wk-proj-name">
+                {p.href ? <a href={p.href} class="wk-proj-link">{p.name}</a> : p.name}
+              </h3>
+              <p class="t-body wk-proj-line">{p.oneLiner}</p>
               {p.highlights && (
-                <ul class="grid sm:grid-cols-2 gap-x-8 gap-y-2 mb-4">
+                <ul class="wk-points">
                   {p.highlights.map((h) => (
-                    <li class="work-highlight">{h}</li>
+                    <li class="t-small">{h}</li>
                   ))}
                 </ul>
               )}
-              {p.href && (
-                <a
-                  href={p.href}
-                  class="link-underline text-sm font-semibold"
-                  style={`color: ${d.accent};`}
-                >
-                  Read the full story <span aria-hidden="true">→</span>
-                </a>
-              )}
-              {p.demo && (
-                <a
-                  href={p.demo}
-                  target="_blank"
-                  rel="noreferrer"
-                  class="link-underline text-sm font-bold ml-4"
-                  style={`color: ${d.accent};`}
-                >
-                  Live demo <span aria-hidden="true">↗</span>
-                </a>
+              {(p.href || p.demo) && (
+                <div class="wk-proj-links">
+                  {p.href && (
+                    <a href={p.href} class="tlink">
+                      Read the full story <Icon name="arrow-right" size={14} />
+                    </a>
+                  )}
+                  {p.demo && (
+                    <a href={p.demo} target="_blank" rel="noreferrer" class="tlink wk-demo">
+                      Live demo <Icon name="arrow-up-right" size={14} />
+                    </a>
+                  )}
+                </div>
               )}
             </div>
           </article>
         ))}
       </div>
-    </section>
+    </div>
+  </section>
 
-    <!-- Articles -->
-    <section class="mt-14 lg:mt-20 reveal" data-reveal>
-      <p class="eyebrow mb-2" style={`color: ${d.accent};`}>The writing</p>
-      <h2 class="display-sm text-text dark:text-dk-text mb-8">
-        Notes from this side of the work.
-      </h2>
-      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-        {d.articles.map((a) => (
-          <a href={a.href} class="no-lift post-card group flex flex-col">
-            {a.img && (
-              <div class="relative overflow-hidden">
-                <Picture
-                  src={a.img}
-                  alt=""
-                  width={600}
-                  height={320}
-                  class="w-full h-36 object-cover transition duration-500 group-hover:scale-[1.04]"
-                />
-              </div>
-            )}
-            <div class="p-5 flex flex-col gap-2 flex-1">
-              <h3 class="text-base lg:text-lg font-bold tracking-tight text-text dark:text-dk-text leading-snug group-hover:text-[var(--dx)] transition">
-                {a.title}
-              </h3>
-              <span class="text-xs font-semibold mt-auto" style={`color: ${d.accent};`}>
-                Read <span aria-hidden="true">→</span>
-              </span>
-            </div>
-          </a>
-        ))}
+  <!-- The writing -->
+  <section class="wk-sec" aria-labelledby="wk-writing">
+    <div class="wrap">
+      <div class="sec-head" data-reveal>
+        <div class="sec-head-main">
+          <h2 id="wk-writing" class="t-h2">
+            The writing.
+            <span class="t-tail">Notes from this side of the work.</span>
+          </h2>
+        </div>
+        <a href="/posts" class="tlink">All posts <Icon name="arrow-right" size={14} /></a>
       </div>
-    </section>
+      <ul class="rows" data-reveal>
+        {articles.map((a) => (
+          <li>
+            <a href={a.href} class="row-link wk-row">
+              <span class="wk-thumb" aria-hidden="true">
+                {hasPublic(a.img) ? (
+                  <Picture src={a.img ?? ""} alt="" width={160} height={108} />
+                ) : (
+                  <span class="wk-fallback"></span>
+                )}
+              </span>
+              <span class="wk-row-text">
+                <span class="t-h4 wk-row-name">{a.title}</span>
+                {a.meta && <span class="t-meta wk-row-meta">{a.meta}</span>}
+              </span>
+              <span class="wk-row-arrow" aria-hidden="true"><Icon name="arrow-right" size={16} /></span>
+            </a>
+          </li>
+        ))}
+      </ul>
+    </div>
+  </section>
 
-    <!-- Prev / next -->
-    <nav class="mt-16 pt-8 border-t border-text/10 dark:border-dk-text/10 flex items-center justify-between gap-4" aria-label="Discipline navigation">
-      <a
-        href={`/work/${prev.slug}`}
-        class="no-lift group inline-flex items-center gap-3 text-sm font-semibold text-text/60 dark:text-dk-text/60 hover:text-text dark:hover:text-dk-text transition"
-      >
-        <span aria-hidden="true" class="transition-transform group-hover:-translate-x-1">←</span>
-        <span>
-          <span class="block text-[0.62rem] uppercase tracking-[0.16em] text-text/40 dark:text-dk-text/40">Previous</span>
-          {prev.name}
-        </span>
-      </a>
-      <a
-        href={`/work/${next.slug}`}
-        class="no-lift group inline-flex items-center gap-3 text-sm font-semibold text-text/60 dark:text-dk-text/60 hover:text-text dark:hover:text-dk-text transition text-right"
-      >
-        <span>
-          <span class="block text-[0.62rem] uppercase tracking-[0.16em] text-text/40 dark:text-dk-text/40">Next</span>
-          {next.name}
-        </span>
-        <span aria-hidden="true" class="transition-transform group-hover:translate-x-1">→</span>
-      </a>
-    </nav>
-  </div>
+  <!-- Previous and next -->
+  <section class="wk-sec wk-pn-sec">
+    <div class="wrap">
+      <nav class="wk-pn" aria-label="Discipline navigation">
+        <a href={`/work/${prev.slug}`} class="surface surface-pad wk-pn-link">
+          <span class="t-meta wk-pn-dir">
+            <span class="wk-pn-back"><Icon name="arrow-right" size={14} /></span> Previous
+          </span>
+          <span class="t-h4 wk-pn-name">{prev.name}</span>
+        </a>
+        <a href={`/work/${next.slug}`} class="surface surface-pad wk-pn-link wk-pn-next">
+          <span class="t-meta wk-pn-dir">
+            Next <Icon name="arrow-right" size={14} />
+          </span>
+          <span class="t-h4 wk-pn-name">{next.name}</span>
+        </a>
+      </nav>
+    </div>
+  </section>
 </BaseLayout>
+
+<style>
+  /* Page top */
+  .wk-top { padding-bottom: clamp(40px, 5vw, 64px); }
+  .wk-title { margin-top: 24px; }
+  .wk-lede { margin-top: 24px; }
+  .wk-facts { margin-top: 28px; display: flex; flex-wrap: wrap; align-items: center; gap: 12px; }
+  .wk-tabs { margin-top: clamp(40px, 5vw, 56px); }
+
+  /* The discipline's artwork, framed and in grey so colour keeps meaning
+     the tab. Only where there is room for it beside the story. */
+  .wk-art {
+    display: none;
+    margin: 28px 0 0;
+    padding: 8px;
+    border-radius: 24px;
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.07), rgba(255, 255, 255, 0.015));
+    border: 1px solid var(--line-strong);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.14), 0 40px 80px -40px rgba(0, 0, 0, 1);
+  }
+  @media (min-width: 1024px) { .wk-art { display: block; } }
+  .wk-art :global(img) {
+    display: block;
+    width: 100%;
+    height: auto;
+    aspect-ratio: 16 / 9;
+    object-fit: cover;
+    border-radius: 17px;
+    filter: grayscale(1) contrast(1.06) brightness(1.04);
+  }
+
+  /* Sections after the story share one rhythm. */
+  .wk-sec { position: relative; padding-bottom: clamp(72px, 9vw, 120px); }
+
+  /* The story: a readable column. */
+  .wk-story-sec { padding-top: clamp(48px, 6vw, 88px); }
+  .wk-story { display: grid; grid-template-columns: 1fr; gap: 24px; }
+  @media (min-width: 1024px) {
+    .wk-story { grid-template-columns: minmax(0, 4fr) minmax(0, 8fr); gap: 56px; }
+  }
+  .wk-prose { max-width: 68ch; display: grid; gap: 20px; }
+  .wk-prose p { font-size: 1rem; line-height: 1.7; }
+  @media (min-width: 1024px) { .wk-prose p { font-size: 1.0625rem; } }
+
+  /* What I bring */
+  .wk-grid4 {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    gap: 16px;
+    grid-template-columns: 1fr;
+  }
+  @media (min-width: 640px) { .wk-grid4 { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  @media (min-width: 1024px) { .wk-grid4 { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 20px; } }
+
+  /* The projects */
+  .wk-projects { display: grid; gap: 16px; }
+  @media (min-width: 1024px) { .wk-projects { gap: 20px; } }
+  .wk-proj {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 20px;
+    padding: 16px;
+    transition: border-color 200ms var(--ease-glass);
+  }
+  .wk-proj:hover { border-color: var(--line-strong); }
+  @media (min-width: 768px) {
+    .wk-proj { grid-template-columns: 280px minmax(0, 1fr); gap: 28px; padding: 20px; }
+  }
+  @media (min-width: 1024px) {
+    .wk-proj { grid-template-columns: 340px minmax(0, 1fr); gap: 36px; }
+  }
+  .wk-proj-media {
+    display: block;
+    overflow: hidden;
+    border-radius: 12px;
+    border: 1px solid var(--line);
+    background: #07080b;
+    aspect-ratio: 16 / 10;
+    align-self: start;
+  }
+  a.wk-proj-media:hover { transform: none; }
+  .wk-proj-media :global(img) {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 600ms var(--ease-glass);
+  }
+  a.wk-proj-media:hover :global(img) { transform: scale(1.03); }
+  .wk-fallback {
+    display: grid;
+    place-items: center;
+    width: 100%;
+    height: 100%;
+    padding: 12px;
+    text-align: center;
+    background:
+      radial-gradient(80% 100% at 20% 0%, rgba(var(--tone-rgb), 0.22), transparent 70%),
+      radial-gradient(70% 90% at 100% 100%, rgba(var(--tone-rgb), 0.1), transparent 70%),
+      #07080b;
+  }
+  .wk-fallback span { font-size: 0.9375rem; font-weight: 500; color: var(--ink-faint); }
+  .wk-proj-body { min-width: 0; padding: 4px 4px 8px; }
+  @media (min-width: 768px) { .wk-proj-body { padding: 6px 8px 6px 0; } }
+  .wk-proj-name { margin-top: 14px; font-size: clamp(1.25rem, 1.8vw, 1.5rem); line-height: 1.2; }
+  .wk-proj-link { color: inherit; text-decoration: none; }
+  .wk-proj-link:hover { transform: none; text-decoration: underline; text-underline-offset: 4px; text-decoration-thickness: 1px; text-decoration-color: var(--ink-ghost); }
+  .wk-proj-line { margin-top: 8px; max-width: 68ch; }
+  .wk-points { list-style: none; margin: 16px 0 0; padding: 0; display: grid; gap: 8px; max-width: 68ch; }
+  .wk-points li { position: relative; padding-left: 18px; }
+  .wk-points li::before {
+    content: "";
+    position: absolute;
+    left: 2px;
+    top: 0.62em;
+    width: 5px;
+    height: 5px;
+    border-radius: 9999px;
+    background: var(--ink-ghost);
+  }
+  .wk-proj-links { margin-top: 20px; display: flex; flex-wrap: wrap; gap: 10px 24px; }
+  .wk-proj-links a:hover, .tlink:hover { transform: none; }
+
+  /* The writing */
+  .wk-row { align-items: center; gap: 16px; }
+  .wk-row:hover { transform: none; }
+  .wk-thumb {
+    flex: none;
+    width: 80px;
+    height: 54px;
+    border-radius: 12px;
+    overflow: hidden;
+    background: #07080b;
+    border: 1px solid var(--line);
+  }
+  .wk-thumb :global(img) { display: block; width: 100%; height: 100%; object-fit: cover; }
+  .wk-thumb .wk-fallback { padding: 0; }
+  .wk-row-text { flex: 1; min-width: 0; display: block; }
+  .wk-row-name { display: block; }
+  .wk-row-meta { display: block; margin-top: 4px; }
+  .wk-row-arrow { flex: none; color: var(--ink-faint); transition: color 150ms var(--ease-glass), transform 250ms var(--ease-glass); }
+  .wk-row-arrow :global(svg) { display: block; }
+  .wk-row:hover .wk-row-arrow { color: var(--tone); transform: translateX(3px); }
+  @media (max-width: 639px) {
+    .wk-thumb { width: 64px; height: 44px; }
+    .wk-row-arrow { display: none; }
+  }
+
+  /* Previous and next */
+  .wk-pn { display: grid; gap: 16px; grid-template-columns: 1fr; }
+  @media (min-width: 640px) { .wk-pn { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; } }
+  .wk-pn-link { display: flex; flex-direction: column; gap: 8px; }
+  @media (min-width: 640px) { .wk-pn-next { text-align: right; align-items: flex-end; } }
+  .wk-pn-dir { display: inline-flex; align-items: center; gap: 6px; }
+  .wk-pn-back { display: inline-flex; transform: scaleX(-1); }
+  .wk-pn-name { display: block; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .wk-proj, .wk-proj-media :global(img), .wk-row-arrow { transition: none; }
+    a.wk-proj-media:hover :global(img), .wk-row:hover .wk-row-arrow { transform: none; }
+  }
+</style>

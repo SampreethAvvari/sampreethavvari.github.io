@@ -12,5 +12,6 @@ export default defineConfig({
     rehypePlugins: [rehypeAccessibleEmojis],
   },
   site: 'https://sampreethavvari.github.io',
+  devToolbar: { enabled: false },
   integrations: [tailwind(), react(), robotsTxt(), sitemap()]
 });

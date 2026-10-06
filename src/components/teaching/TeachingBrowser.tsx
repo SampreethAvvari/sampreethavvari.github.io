@@ -8,6 +8,9 @@ import {
 } from "../../data/teaching";
 import { getStats, type Stat } from "../../lib/teachingApi";
 
+// Styles for this island live in src/pages/teaching.astro. Streams are plain
+// filters and neutral badges: the only colour on the page is the Teaching tab.
+
 type SortKey = "newest" | "views" | "downloads" | "rating";
 
 const SORTS: { key: SortKey; label: string }[] = [
@@ -64,18 +67,16 @@ export default function TeachingBrowser({
 
   return (
     <div>
-      {/* Controls */}
-      <div className="flex flex-wrap items-center justify-between gap-4 mb-9">
-        <div className="flex flex-wrap items-center gap-2" role="tablist" aria-label="Filter by stream">
-          <Chip active={stream === "all"} accent="#8b8b90" onClick={() => setStream("all")}>
+      <div className="tb-bar">
+        <div className="tb-filter lg" role="group" aria-label="Filter by discipline">
+          <Chip active={stream === "all"} onClick={() => setStream("all")}>
             All
           </Chip>
           {STREAM_ORDER.map((s) => (
             <Chip
               key={s}
               active={stream === s}
-              accent={streamMeta[s].accent}
-              dimmed={!streamsWithContent.has(s)}
+              quiet={!streamsWithContent.has(s)}
               onClick={() => setStream(s)}
               title={streamMeta[s].label}
             >
@@ -83,69 +84,83 @@ export default function TeachingBrowser({
             </Chip>
           ))}
         </div>
-        <label className="inline-flex items-center gap-2 text-sm text-text/60 dark:text-dk-text/60">
-          <span className="font-medium">Sort</span>
-          <select
-            value={sort}
-            onChange={(e) => setSort(e.target.value as SortKey)}
-            className="rounded-full border border-text/15 dark:border-dk-text/15 bg-transparent px-3 py-1.5 text-sm font-semibold text-text dark:text-dk-text focus:outline-none focus:ring-2 focus:ring-secondary/40"
-          >
-            {SORTS.map((s) => (
-              <option key={s.key} value={s.key} className="bg-primary dark:bg-dk-primary">
-                {s.label}
-              </option>
-            ))}
-          </select>
+        <label className="tb-sort">
+          <span className="t-meta">Sort</span>
+          <span className="relative inline-flex">
+            <select
+              value={sort}
+              onChange={(e) => setSort(e.target.value as SortKey)}
+              className="tb-sort-select lg"
+            >
+              {SORTS.map((s) => (
+                <option key={s.key} value={s.key}>
+                  {s.label}
+                </option>
+              ))}
+            </select>
+            <svg className="tb-sort-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <path d="m6 9 6 6 6-6" />
+            </svg>
+          </span>
         </label>
       </div>
 
-      {/* Grid */}
       {visible.length === 0 ? (
-        <div className="teach-empty">
-          <span className="teach-empty-dot" aria-hidden="true" />
-          <p className="text-sm font-medium text-text/55 dark:text-dk-text/55">
-            More {stream === "all" ? "" : streamMeta[stream as Stream].acronym + " "}material coming soon.
+        <div className="tb-empty inset">
+          <span className="tb-empty-dot" aria-hidden="true" />
+          <p className="t-small">
+            More {stream === "all" ? "" : streamMeta[stream as Stream].acronym + " "}material is on the way.
           </p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="tb-grid">
           {visible.map((m) => {
             const c = cover(m.cover);
             const s = stats?.[m.slug];
             const meta = streamMeta[m.stream];
             const tm = typeMeta[m.type];
+            const size =
+              m.type === "pdf" && m.pages
+                ? `${m.pages} pages`
+                : m.type === "video" && m.durationMin
+                  ? `${m.durationMin} min`
+                  : "";
             return (
-              <a
-                key={m.slug}
-                href={`/teaching/${m.slug}`}
-                className="teach-card group no-lift"
-                style={{ ["--pa" as any]: meta.accent }}
-              >
-                <div className="teach-card-cover">
+              <a key={m.slug} href={`/teaching/${m.slug}`} className="surface tb-card">
+                <div className="surface-media tb-cover">
                   <picture>
                     <source srcSet={c.avif} type="image/avif" />
                     <source srcSet={c.webp} type="image/webp" />
-                    <img src={c.webp} alt={m.title} loading="lazy" decoding="async" className="teach-card-img" />
+                    <img src={c.webp} alt={m.title} loading="lazy" decoding="async" />
                   </picture>
-                  <span className="teach-badge">
-                    <i className={tm.icon} aria-hidden="true" /> {tm.label}
-                  </span>
                 </div>
-                <div className="teach-card-body">
-                  <p className="teach-card-stream">
-                    <span className="teach-dot" aria-hidden="true" /> {meta.acronym}
-                  </p>
-                  <h3 className="teach-card-title">{m.title}</h3>
-                  <p className="teach-card-desc">{m.description}</p>
-                  {s && (
-                    <div className="teach-card-stats">
-                      <span title="Views"><i className="fas fa-eye" /> {fmt(s.views)}</span>
-                      <span title="Downloads"><i className="fas fa-download" /> {fmt(s.downloads)}</span>
-                      {s.ratingCount > 0 && (
-                        <span title="Average rating"><i className="fas fa-star" /> {s.ratingAvg.toFixed(1)}</span>
-                      )}
-                    </div>
-                  )}
+                <div className="surface-pad tb-body">
+                  <div className="tb-badges">
+                    <span className="badge">{tm.label}</span>
+                    <span className="badge" title={meta.label}>{meta.acronym}</span>
+                    {size && <span className="t-meta">{size}</span>}
+                  </div>
+                  <h2 className="t-h3 tb-title">{m.title}</h2>
+                  <p className="t-small tb-desc">{m.description}</p>
+                  <div className="tb-foot">
+                    <span className="t-meta">
+                      {s
+                        ? [
+                            `${fmt(s.views)} views`,
+                            `${fmt(s.downloads)} downloads`,
+                            s.ratingCount > 0 ? `${s.ratingAvg.toFixed(1)} of 5` : "",
+                          ]
+                            .filter(Boolean)
+                            .join(" · ")
+                        : null}
+                    </span>
+                    <span className="tlink">
+                      Read it
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                        <path d="M5 12h14m0 0-6-6m6 6-6 6" />
+                      </svg>
+                    </span>
+                  </div>
                 </div>
               </a>
             );
@@ -158,15 +173,13 @@ export default function TeachingBrowser({
 
 function Chip({
   active,
-  accent,
-  dimmed,
+  quiet,
   onClick,
   title,
   children,
 }: {
   active: boolean;
-  accent: string;
-  dimmed?: boolean;
+  quiet?: boolean;
   onClick: () => void;
   title?: string;
   children: React.ReactNode;
@@ -176,8 +189,7 @@ function Chip({
       type="button"
       onClick={onClick}
       title={title}
-      className={`teach-chip no-lift ${active ? "teach-chip-active" : ""} ${dimmed ? "teach-chip-dim" : ""}`}
-      style={{ ["--pa" as any]: accent }}
+      className={`chip no-lift${active ? " is-on" : ""}${quiet ? " is-quiet" : ""}`}
       aria-pressed={active}
     >
       {children}

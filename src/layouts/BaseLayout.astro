@@ -1,7 +1,6 @@
 ---
 import Nav from "../components/navbar/Nav";
 import TopButton from "../components/TopButton";
-import Pointer from "../components/Pointer";
 import ChatWidget from "../components/chatbot/ChatWidget";
 import FooterBar from "../components/footer/FooterBar";
 import SpaceField from "../components/hero/SpaceField.astro";
@@ -15,6 +14,8 @@ const {
   // Optional LCP image to preload (an AVIF path). Pages pass their above-the-fold
   // hero/cover so the browser fetches it before it discovers the <img> in markup.
   preloadImage,
+  // The page's tab. Its colour marks the kicker, links and background wash.
+  tone: toneProp,
 } = Astro.props;
 
 // Canonical URL for the current page (no query strings), absolute via astro.config `site`.
@@ -53,37 +54,46 @@ const personSchema = {
 import { searchItems } from "../data/searchItems";
 
 import "../styles/global.css";
+import "../styles/system.css";
 
-// Section-coloured comets for every page. Home and the writing index place
-// their own per section, so they are skipped here; every other route gets a
-// page-spanning layer whose colours match that tab's theme.
+// One colour per tab. Derived from the first path segment unless a page
+// passes its own.
 const pathname = Astro.url.pathname.replace(/\/+$/, "") || "/";
-// /mind draws its own constellation and wants a still sky — no page comets.
+const seg = pathname.split("/").filter(Boolean)[0] || "";
+const TONE_FOR: Record<string, string> = {
+  projects: "projects",
+  work: "work",
+  posts: "writing",
+  filmmaking: "film",
+  gallery: "film",
+  teaching: "teaching",
+  mind: "mind",
+};
+const tone = toneProp || TONE_FOR[seg] || "home";
+const TONE_RGB: Record<string, string> = {
+  projects: "91,141,239",
+  work: "245,165,36",
+  writing: "52,211,153",
+  film: "244,63,94",
+  teaching: "34,211,238",
+  mind: "167,139,250",
+  home: "91,141,239",
+};
+const toneRgb = TONE_RGB[tone];
+
+// Comets in the tab's colour on every page. Home and the writing index place
+// their own per section, and /mind wants a still sky.
 const hasOwnComets = pathname === "/" || pathname === "/posts" || pathname === "/mind";
-const cometPalettes: Array<[string, string[]]> = [
-  ["/work", ["52,211,153", "167,139,250", "245,165,36", "244,63,94"]],
-  ["/projects", ["91,141,239", "34,211,238", "167,139,250"]],
-  ["/gallery", ["167,139,250", "91,141,239"]],
-  ["/filmmaking", ["91,141,239", "34,211,238"]],
-  ["/teaching", ["34,211,238", "91,141,239"]],
-  ["/resume", ["91,141,239", "52,211,153"]],
-  ["/posts/", ["52,211,153", "91,141,239"]],
-];
-const palette = hasOwnComets
-  ? null
-  : cometPalettes.find(([p]) => pathname === p || pathname.startsWith(p))?.[1] ??
-    ["91,141,239", "52,211,153"];
-// Eight comets spread down the page, alternating sides.
-const pageComets = palette
-  ? Array.from({ length: 8 }, (_, i) => ({
-      color: palette[i % palette.length],
+const pageComets = hasOwnComets
+  ? []
+  : Array.from({ length: 8 }, (_, i) => ({
+      color: toneRgb,
       top: [5, 17, 30, 43, 56, 69, 81, 91][i],
       side: i % 2 === 0 ? "right" : "left",
       inset: 4 + ((i * 9) % 26),
       w: 104 + ((i * 13) % 40),
       rz: [-16, 12, -8, 18, -20, 6, 14, -12][i],
-    }))
-  : [];
+    }));
 ---
 
 <!doctype html>
@@ -97,6 +107,15 @@ const pageComets = palette
     <meta http-equiv="Content-Language" content="en" />
     <meta name="google" content="notranslate" />
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#000000" />
+    <!-- Inter, the variable build with the optical size axis, the only face
+         on the site. -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,100..900&display=swap"
+    />
     {
       preloadImage && (
         <link
@@ -224,7 +243,7 @@ const pageComets = palette
       }
     </script>
   </head>
-  <body class="relative bg-primary dark:bg-dk-primary text-text dark:text-dk-text w-full overflow-x-clip font-display">
+  <body class="relative bg-dk-primary text-dk-text w-full overflow-x-clip" data-tone={tone}>
     <!-- Shared space backdrop on every page: starfield, ambient colour
          flow, and film grain. All behind the content (z -1, grain overlay). -->
     <SpaceField />
@@ -248,9 +267,10 @@ const pageComets = palette
       // (landing, writing) call initAmbient again and win. The comet engine
       // is idempotent per element, so page-level calls coexist with this.
       import { initAmbient, initComets } from "../scripts/spatial";
+      const rgb = getComputedStyle(document.body).getPropertyValue("--tone-rgb").replace(/\s/g, "") || "91,141,239";
       initAmbient([
-        ["91,141,239", "52,211,153"],
-        ["167,139,250", "34,211,238"],
+        [rgb, rgb],
+        [rgb, rgb],
       ]);
       initComets(".space-el");
     </script>
@@ -261,6 +281,5 @@ const pageComets = palette
     <FooterBar variant={footerVariant} />
     <ChatWidget client:only />
     <TopButton client:only />
-    <Pointer client:only />
   </body>
 </html>

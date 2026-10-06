@@ -1,178 +1,315 @@
 ---
 import BaseLayout from "../layouts/BaseLayout.astro";
+import Icon from "../components/common/Icon.astro";
+import { info } from "../data/info";
 
 const title = "SA: Resume";
 
-// One resume per discipline, each in its accent colour. The PDFs live in
-// public/ and open in a new tab (no forced download) so a recruiter can read
-// first and save only if they want to.
+// One resume per discipline. The PDFs open in a new tab (no forced download)
+// so a recruiter can read first and save only if they want to. Disciplines
+// are plain labels here, never colours.
 const RESUMES = [
   {
     acronym: "AIE",
     name: "AI Engineering",
-    accent: "#34D399",
-    rgb: "52, 211, 153",
     file: "https://hi.switchy.io/yIPL",
     blurb: "RAG, LLM systems, and production AI shipped to real users.",
   },
   {
     acronym: "FDE",
-    name: "Forward-Deployed Engineering",
-    accent: "#F5A524",
-    rgb: "245, 165, 36",
+    name: "Forward Deployed Engineering",
     file: "https://hi.switchy.io/yIPO",
     blurb: "Embedded with the customer: find the problem, ship, hand it off.",
   },
   {
     acronym: "MLE",
     name: "Machine Learning Engineering",
-    accent: "#A78BFA",
-    rgb: "167, 139, 250",
     file: "https://hi.switchy.io/yIPR",
     blurb: "Models, MLOps, and evaluation from training through serving.",
   },
   {
     acronym: "SDE",
     name: "Software Engineering",
-    accent: "#5B8DEF",
-    rgb: "91, 141, 239",
     file: "https://hi.switchy.io/yIPa",
     blurb: "Typed, tested services and the platforms that run them.",
   },
 ];
+const primary = RESUMES[0];
+
+const { experience, education, skills } = info.about;
+
+// Highlights carry inline [text](url) links and `code`. Escape first, then
+// turn those two into markup.
+const esc = (s: string) =>
+  s.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]!);
+const md = (s: string) =>
+  esc(s)
+    .replace(/\[([^\]]+)\]\(([^)\s]+)\)/g, '<a class="ilink" href="$2">$1</a>')
+    .replace(/`([^`]+)`/g, "<code>$1</code>");
+
+// Logos show as quiet monochrome marks, so no brand colour competes with the
+// tabs. Most are drawn for a light page and get inverted; Shure's is already
+// a light mark made for dark backgrounds.
+const DARK_READY = new Set(["/logos/shure.svg"]);
+const logoClass = (src: string) => (DARK_READY.has(src) ? "res-logo is-light" : "res-logo");
+
+// "Sept 2025 - Present" reads as "Sept 2025 to present".
+const span = (d: string) => d.replace(/\s+-\s+/, " to ").replace(/\bPresent\b/, "present");
 ---
 
-<BaseLayout title={title}>
-  <main class="mx-auto w-full max-w-screen-xl px-6 lg:px-12 pt-24 pb-10 lg:py-28">
-    <div class="max-w-2xl">
-      <p class="eyebrow text-secondary dark:text-dk-secondary mb-3 lg:mb-4">Resume</p>
-      <h1 class="text-2xl lg:text-5xl font-bold tracking-tight text-text dark:text-dk-text">
-        Four resumes, one for each discipline.
-      </h1>
-      <p class="mt-3 lg:mt-5 text-sm lg:text-lg text-text/70 dark:text-dk-text/70 leading-relaxed">
-        Same person, four lenses. Open the one that fits the role. Each opens in
-        a new tab so you can read it there and download only if you want to.
-      </p>
-    </div>
+<BaseLayout
+  title={title}
+  description="Sampreeth Avvari's resume: four versions as PDFs, plus experience, education and skills."
+>
+  <div class="res-page">
+    <section class="page-top res-top relative overflow-hidden">
+      <div class="tone-atmos" aria-hidden="true"></div>
+      <div class="wrap on-top">
+        <p class="kicker">Resume</p>
+        <h1 class="t-title res-title">
+          Sampreeth Avvari
+          <span class="t-tail">AI engineer in New York.</span>
+        </h1>
+        <p class="t-lede res-lede">
+          Same person, four lenses. Open the one that fits the role. Each opens
+          in a new tab so you can read it there and download only if you want to.
+        </p>
+        <div class="res-actions">
+          <a href={primary.file} target="_blank" rel="noopener" class="btn btn-primary">
+            Open the AI engineering resume <Icon name="arrow-up-right" size={15} class="arrow-ur" />
+          </a>
+          <a href="#versions" class="btn btn-ghost">
+            All four versions <Icon name="arrow-down" size={15} />
+          </a>
+        </div>
+      </div>
+    </section>
 
-    <div class="resume-grid mt-6 lg:mt-14">
-      {RESUMES.map((r) => (
-        <a
-          class="resume-card no-lift"
-          href={r.file}
-          target="_blank"
-          rel="noopener"
-          style={`--accent:${r.accent};--rgb:${r.rgb};`}
-          aria-label={`Open the ${r.name} resume in a new tab`}
-        >
-          <span class="resume-acr">{r.acronym}</span>
-          <span class="resume-name text-text dark:text-dk-text">{r.name}</span>
-          <span class="resume-blurb text-text/65 dark:text-dk-text/65">{r.blurb}</span>
-          <span class="resume-open">
-            Open PDF <span aria-hidden="true">↗</span>
-          </span>
-        </a>
-      ))}
-    </div>
-  </main>
+    <!-- The four PDFs -->
+    <section id="versions" class="section-tight res-sec">
+      <div class="wrap">
+        <div class="res-head">
+          <h2 class="t-h2">
+            Four resumes.
+            <span class="t-tail">One for each kind of role.</span>
+          </h2>
+        </div>
+        <div class="res-versions">
+          {RESUMES.map((r) => (
+            <a
+              class="surface surface-pad res-version"
+              href={r.file}
+              target="_blank"
+              rel="noopener"
+              aria-label={`Open the ${r.name} resume in a new tab`}
+              data-reveal
+            >
+              <span class="badge">{r.acronym}</span>
+              <span class="t-h4 res-version-name">{r.name}</span>
+              <span class="t-small res-version-blurb">{r.blurb}</span>
+              <span class="tlink res-version-open">
+                Open PDF <Icon name="arrow-up-right" size={14} />
+              </span>
+            </a>
+          ))}
+        </div>
+      </div>
+    </section>
+
+    <!-- Experience -->
+    <section id="experience" class="section-tight res-sec">
+      <div class="wrap">
+        <div class="res-head">
+          <h2 class="t-h2">Experience</h2>
+        </div>
+        <div class="res-roles">
+          {experience.map((exp) => (
+            <article class="surface res-role" data-reveal>
+              <header class="res-role-head">
+                {exp.logo && (
+                  <span class={logoClass(exp.logo)}>
+                    <img src={exp.logo} alt="" loading="lazy" decoding="async" />
+                  </span>
+                )}
+                <h3 class="t-h3 res-role-title">{exp.title}</h3>
+                <p class="t-small res-role-org">{exp.location}</p>
+                <p class="t-meta res-role-date">{span(exp.date)}</p>
+              </header>
+              {exp.highlights?.length ? (
+                <ul class="res-bullets">
+                  {exp.highlights.map((h) => (
+                    <li class="t-body" set:html={md(h)} />
+                  ))}
+                </ul>
+              ) : null}
+            </article>
+          ))}
+        </div>
+      </div>
+    </section>
+
+    <!-- Education -->
+    <section id="education" class="section-tight res-sec">
+      <div class="wrap">
+        <div class="res-head">
+          <h2 class="t-h2">Education</h2>
+        </div>
+        <div class="res-edu">
+          {education.map((ed) => (
+            <article class="surface surface-pad res-edu-card" data-reveal>
+              {ed.logo && (
+                <span class={logoClass(ed.logo)}>
+                  <img src={ed.logo} alt="" loading="lazy" decoding="async" />
+                </span>
+              )}
+              <h3 class="t-h4 res-edu-title">{ed.title}</h3>
+              <p class="t-small res-edu-school">{ed.location}</p>
+              <p class="t-meta res-edu-meta">
+                {span(ed.date)}{ed.gpa ? ` · GPA ${ed.gpa}` : ""}
+              </p>
+            </article>
+          ))}
+        </div>
+      </div>
+    </section>
+
+    <!-- Skills -->
+    <section id="skills" class="section-tight res-sec res-last">
+      <div class="wrap">
+        <div class="res-head">
+          <h2 class="t-h2">Skills</h2>
+        </div>
+        <ul class="rows res-skills" data-reveal>
+          {skills.map((group) => (
+            <li class="res-skill-row">
+              <h3 class="t-h4 res-skill-label">{group.label}</h3>
+              <div class="res-chips">
+                {group.items.map((item) => (
+                  <span class="chip">{item}</span>
+                ))}
+              </div>
+            </li>
+          ))}
+        </ul>
+      </div>
+    </section>
+  </div>
 </BaseLayout>
 
 <style>
-  /* 2x2 on every width so all four resumes fit one screen without scrolling. */
-  .resume-grid {
+  .res-title { margin-top: 22px; }
+  .res-lede { margin-top: 22px; }
+  .res-actions { margin-top: 32px; display: flex; flex-wrap: wrap; gap: 12px; }
+
+  .res-sec { position: relative; z-index: 1; }
+  .res-last { padding-bottom: clamp(72px, 9vw, 120px); }
+  .res-head { margin-bottom: clamp(24px, 3vw, 36px); }
+
+  /* The four versions */
+  .res-versions { display: grid; gap: 16px; grid-template-columns: 1fr; }
+  @media (min-width: 640px) { .res-versions { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  @media (min-width: 1024px) { .res-versions { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 20px; } }
+  .res-version { display: flex; flex-direction: column; align-items: flex-start; }
+  .res-version-name { margin-top: 18px; }
+  .res-version-blurb { margin-top: 8px; }
+  .res-version-open { margin-top: auto; padding-top: 22px; }
+  /* Phones: two by two, names only, so all four fit in one glance. */
+  @media (max-width: 639px) {
+    .res-versions { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+    .res-version { padding: 18px 16px; }
+    .res-version-name { margin-top: 14px; }
+    .res-version-blurb { display: none; }
+    .res-version-open { padding-top: 16px; font-size: 0.875rem; }
+  }
+
+  /* Roles: who, where and when on the left, what on the right. */
+  .res-roles { display: grid; gap: 16px; }
+  @media (min-width: 1024px) { .res-roles { gap: 20px; } }
+  .res-role {
     display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 0.8rem;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 20px;
+    padding: 24px;
   }
-  @media (min-width: 720px) {
-    .resume-grid { gap: 1.5rem; }
+  @media (min-width: 640px) { .res-role { padding: 28px; } }
+  @media (min-width: 1024px) {
+    .res-role { grid-template-columns: minmax(0, 4fr) minmax(0, 8fr); gap: 48px; padding: 36px; }
+    .res-role-head { position: sticky; top: 104px; align-self: start; }
   }
-  /* Compact the cards on phones so the 2x2 grid + heading fit one screen. */
-  @media (max-width: 719px) {
-    .resume-card { padding: 1rem 0.9rem; gap: 0.3rem; border-radius: 1rem; }
-    .resume-acr { font-size: 0.62rem; letter-spacing: 0.16em; }
-    .resume-name { font-size: 0.95rem; }
-    .resume-blurb { display: none; }
-    .resume-open { margin-top: 0.55rem; padding: 0.38rem 0.8rem; font-size: 0.72rem; }
-  }
+  .res-role-title { margin-top: 0; }
+  .res-logo + .res-role-title,
+  .res-logo + .res-edu-title { margin-top: 18px; }
+  .res-role-org { margin-top: 6px; }
+  .res-role-date { margin-top: 4px; }
 
-  /* Liquid-glass card carrying its discipline colour via --accent / --rgb. */
-  .resume-card {
-    position: relative;
-    display: flex;
-    flex-direction: column;
-    gap: 0.45rem;
-    padding: 1.7rem 1.6rem 1.5rem;
-    border-radius: 1.25rem;
-    border: 1px solid rgba(var(--rgb), 0.32);
-    background:
-      linear-gradient(150deg, rgba(var(--rgb), 0.16), rgba(var(--rgb), 0.04) 58%, transparent),
-      rgba(255, 255, 255, 0.04);
-    -webkit-backdrop-filter: blur(16px) saturate(165%);
-    backdrop-filter: blur(16px) saturate(165%);
-    box-shadow: 0 12px 44px -26px rgba(var(--rgb), 0.6);
-    overflow: hidden;
-    transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
-  }
-  .resume-card::before {
-    content: "";
-    position: absolute;
-    inset: 0 0 auto 0;
-    height: 3px;
-    background: linear-gradient(90deg, rgba(var(--rgb), 0.95), rgba(var(--rgb), 0.08));
-  }
-  .resume-card:hover {
-    transform: translateY(-5px);
-    border-color: rgba(var(--rgb), 0.7);
-    box-shadow: 0 24px 64px -28px rgba(var(--rgb), 0.85);
-  }
-
-  .resume-acr {
-    font-family: "SF Mono", "JetBrains Mono", Menlo, Monaco, Consolas, monospace;
-    font-size: 0.72rem;
-    font-weight: 700;
-    letter-spacing: 0.2em;
-    color: var(--accent);
-  }
-  .resume-name {
-    font-size: 1.35rem;
-    font-weight: 700;
-    line-height: 1.15;
-    margin-top: 0.15rem;
-  }
-  .resume-blurb {
-    font-size: 0.92rem;
-    line-height: 1.5;
-  }
-  .resume-open {
-    margin-top: 0.85rem;
-    align-self: flex-start;
+  /* Logos as quiet monochrome marks. Inverted and screened onto the dark
+     card, so a white logo background drops out and the mark reads light. */
+  .res-logo {
     display: inline-flex;
     align-items: center;
-    gap: 0.4rem;
-    padding: 0.5rem 1.05rem;
-    border-radius: 9999px;
-    font-size: 0.82rem;
-    font-weight: 600;
-    color: var(--accent);
-    border: 1px solid rgba(var(--rgb), 0.42);
-    background: rgba(var(--rgb), 0.12);
-    -webkit-backdrop-filter: blur(8px);
-    backdrop-filter: blur(8px);
-    transition: background 0.25s ease, gap 0.25s ease;
+    height: 26px;
   }
-  .resume-card:hover .resume-open {
-    background: rgba(var(--rgb), 0.22);
-    gap: 0.62rem;
+  .res-logo img {
+    display: block;
+    height: 100%;
+    width: auto;
+    max-width: 128px;
+    object-fit: contain;
+    object-position: left center;
+    filter: grayscale(1) invert(1) contrast(1.15);
+    mix-blend-mode: screen;
+    opacity: 0.8;
+  }
+  .res-logo.is-light img { filter: grayscale(1) brightness(1.15); mix-blend-mode: normal; }
+
+  .res-bullets {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    gap: 14px;
+  }
+  .res-bullets li {
+    position: relative;
+    padding-left: 20px;
+    max-width: 46rem;
+    overflow-wrap: anywhere;
+  }
+  .res-bullets li::before {
+    content: "";
+    position: absolute;
+    left: 2px;
+    top: 0.72em;
+    width: 5px;
+    height: 5px;
+    border-radius: 9999px;
+    background: var(--ink-ghost);
+  }
+  .res-bullets :global(.ilink) { font-weight: 500; }
+  .res-bullets :global(code) {
+    font-size: 0.875em;
+    padding: 1px 6px;
+    border-radius: 6px;
+    background: var(--wash-strong);
+    color: var(--ink);
   }
 
-  @media (prefers-reduced-motion: reduce) {
-    .resume-card,
-    .resume-open {
-      transition: none;
-    }
-    .resume-card:hover {
-      transform: none;
-    }
+  /* Education */
+  .res-edu { display: grid; gap: 16px; grid-template-columns: 1fr; }
+  @media (min-width: 768px) { .res-edu { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; } }
+  .res-edu-school { margin-top: 6px; }
+  .res-edu-meta { margin-top: 4px; }
+
+  /* Skills: one row per bucket, the bucket name on the left. */
+  .res-skill-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 12px;
+    padding: 20px 4px;
   }
+  @media (min-width: 768px) {
+    .res-skill-row { grid-template-columns: 180px minmax(0, 1fr); gap: 32px; align-items: baseline; padding: 22px 4px; }
+  }
+  .res-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+  .res-chips .chip { white-space: normal; height: auto; min-height: 28px; padding-block: 6px; line-height: 1.2; }
 </style>

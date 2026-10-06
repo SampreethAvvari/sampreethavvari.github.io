@@ -43,7 +43,7 @@ I'm cutting *Among Monsters* between work weeks right now.
 
 A small short has a director, a writer, a DP, a sound mixer, a gaffer, a costumer, an art department, an editor. Each one speaks a different vocabulary. Each one defines "done" differently. Your job as director is not to know how each department does its job. Your job is to translate the scene you're trying to make into the eight languages on your set.
 
-This is the same situation I walk into at work. The senior treatment coordinator who's quoted full-arch implant cases for ten years doesn't care about my Postgres trigger. She cares whether the system gives her the same number she quoted last month. The controller doesn't care about my retry-with-backoff decorator. He cares whether the bank CSV makes it into the cashflow sheet before his 5pm cutoff.
+This is the same situation I walk into at work. The senior treatment coordinator who's quoted full-arch implant cases for ten years doesn't care how I store a frozen price. She cares whether the system gives her the same number she quoted last month. The controller doesn't care about my retry-with-backoff decorator. He cares whether the bank CSV makes it into the cashflow sheet before his 5pm cutoff.
 
 Specialists. None of them wrong. One person whose job is to make it add up.
 
