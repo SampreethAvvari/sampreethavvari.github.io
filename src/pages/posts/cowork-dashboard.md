@@ -52,7 +52,7 @@ The 25 leftover patients were re-treatment cases the ops team had filed without 
 
 ## One source of truth, finally
 
-The old dashboard had filtering logic copy-pasted into eight tabs. They drifted. I rebuilt the data layer around three flat tables, one per Monday board, pulled from weekly Excel exports. Every metric lives in exactly one function:
+The old dashboard had filtering logic copy-pasted into eight tabs. They drifted. I rebuilt the data layer around three flat tables, one per Monday board, pulled from weekly Excel exports. Every metric lives in exactly one function *(not quite, see the update at the end)*:
 
 ```js
 function getLeads_(snap, f) {
@@ -67,7 +67,7 @@ function getLeads_(snap, f) {
 }
 ```
 
-Change the definition of "marketing source" in one place and every chart on every tab updates. Two tabs cannot disagree about the same number anymore.
+Change the definition of "marketing source" in one place and every chart on every tab updates. Two tabs cannot disagree about the same number anymore. *(Not quite. See the update at the end.)*
 
 ## What changed
 
@@ -90,4 +90,60 @@ A weekly workflow that used to eat 6-8 hours of senior time across the team now 
 
 The dashboard has six tabs: Dashboard, Monthly, History, Lead Sources, Trends, Playground. All pull from the same in-memory snapshot and the same metric functions. About 4,200 lines of Apps Script, deployed internally, costs nothing to run.
 
-The front office uses this dashboard every day. They do not think about how it works. They open it, see one number, and trust it. That is only possible because every business rule lives in one function. When leadership asks "why does this tab say X," there is exactly one place to look. The orphans do not disappear silently anymore. If a re-treatment patient has no Lead row, the dashboard shows them as an orphan instead of dropping them from the funnel. That is the job: not shipping code, but making sure the business can see itself clearly.
+The front office uses this dashboard every day. They do not think about how it works. They open it, see one number, and trust it. That is only possible because every business rule lives in one function. *(Not quite. See the update at the end.)* When leadership asks "why does this tab say X," there is exactly one place to look. The orphans do not disappear silently anymore. If a re-treatment patient has no Lead row, the dashboard shows them as an orphan instead of dropping them from the funnel. That is the job: not shipping code, but making sure the business can see itself clearly.
+
+## Update, September 2026: I moved it off Apps Script, and found what I got wrong
+
+In September I moved this dashboard off Apps Script and onto Cloud Run. Porting it meant rereading every line of the old build, and two things I wrote above did not survive that.
+
+The first is the claim that every metric lived in one function, so two tabs could not disagree. It was not true. The old build had three implementations of every metric: one for the card, one for the drilldown list behind it, and one for the trend overlay. Three copies of "what counts as a case acceptance" is exactly how a card and its own drilldown could show different numbers. I had unified the filters, solved one layer of the problem, and written as if I had solved all of it.
+
+### What moved
+
+The weekly routine did not change: export the Leads board and one patient board per clinic (three now, since Syracuse went live in June) and drop the four files into a Drive folder.
+
+<div class="aside">
+<strong>How it runs now.</strong>
+<ol>
+<li>A scheduler checks the folder every 5 minutes.</li>
+<li>A private ingest service rebuilds only when all four exports have changed, so a half finished upload never becomes a half updated dashboard.</li>
+<li>It writes an immutable snapshot named by a hash of its contents, then writes the pointer to it last, so a failed build leaves the last good one in place.</li>
+<li>The browser pins one snapshot for the whole session and computes everything locally. A newer one raises a banner, and the numbers change only when you click.</li>
+</ol>
+</div>
+
+One core package runs in both the ingest service and the browser, with a single metric registry where the card number is computed from the drilldown rows. From `packages/core/src/metrics.ts`, lines 305 to 313:
+
+```ts
+/** The card number. By construction this is a function of the drilldown rows. */
+export function metricValue(
+  snap: Snapshot, f: Filter, key: MetricKey, opts: MetricOpts = {},
+): number {
+  const def = DEFS[key];
+  if (!def) return 0;
+  const rows = metricRows(snap, f, key, opts);
+  return def.value ? def.value(rows) : rows.length;
+}
+```
+
+There is no second copy to drift, and a test checks this for every metric across a grid of date ranges and locations.
+
+Custom dates now apply when you press Go, instead of recalculating on every half typed date. Every load carries a sequence number, so a stale result can no longer land on top of a newer one. The Weekly tab over several years went from about 5.2 seconds to about 17 milliseconds. The old code scanned every lead about 1,900 times for that view; with sorted date indexes, a one week query touches about 60 rows.
+
+### The join was quietly wrong
+
+Above, I said the fix took linkage from 49 to 99 percent. That measured coverage, how many patients pointed at some lead, not whether it was the right one. The connect column holds only the lead's surname, and surnames repeat a lot. The old join took the first match, so about 31 percent of patients resolved to an arbitrary lead who shared their last name.
+
+Breaking ties on the patient's first name cut that to 5.8 percent, and every row now records how it was linked, so the leftovers are counted instead of hidden. No card moved, since the cards read lead fields copied onto each patient row. What was wrong was the linkage claim, mine and the Data Quality panel's.
+
+### A bug the parity test could not see
+
+Before switching over, I ran the original Apps Script code in a Node VM against the same exports and diffed every metric. It matched, and it was still off by a day. ExcelJS returns date cells as midnight UTC, and reading them in New York time pushed each one back a day: 948 case acceptance dates on one clinic's board. Parity could not see it because both sides used the same reader. So I added a golden test with figures read straight off the production dashboard, and that is what caught it.
+
+### What is new
+
+A Cash Flow tab. Every other tab looks back at what we sold. This one looks forward, windowed on treatment start date instead of acceptance date, so it shows what is booked to begin. Only accepted cases count, because a few lost cases still carry a start date nobody cleared.
+
+Late in September I restyled it in the Hybridge design. The capacity planner, built after it, copied its pinned snapshot pattern, since it is the one live data setup we have that I know holds up.
+
+A sentence like "two tabs cannot disagree" should come with a test that proves it. This time it does.

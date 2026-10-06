@@ -142,6 +142,20 @@ export const disciplines: Discipline[] = [
         ],
       },
       {
+        name: "Marketing Data Warehouse",
+        status: "In production",
+        oneLiner:
+          "A BigQuery warehouse that joins six marketing sources from ad spend through calls and leads to booked patients and treatment value, documented column by column so an LLM reads a data guide before it answers, and checked weekly against 22 golden questions.",
+        img: "/marketing-warehouse.png",
+        href: "/posts/marketing-warehouse",
+        highlights: [
+          "Every column described, plus a data guide written for LLMs to read first",
+          "A weekly Gemini eval on 22 golden questions with an 80% gate; the first run scored 77%, short of it",
+          "View types that carry callers', reviewers' or leads' identities are blocked in code",
+          "98.5% of patients linked to their lead; 99.5% join agreement with the weekly exports",
+        ],
+      },
+      {
         name: "CRM intelligence layer",
         status: "Design complete",
         oneLiner:
@@ -170,6 +184,7 @@ export const disciplines: Discipline[] = [
       { title: "Building an enterprise search that knows when to say 'I don't know'", href: "/posts/enterprise-search", img: "/enterprise-search.png" },
       { title: "How I built an AI that grades every patient consult", href: "/posts/clinical-rag", img: "/doc-coach.png" },
       { title: "Rebuilding a brittle call grader into a coaching platform", href: "/posts/npc-coach", img: "/npc-coach.png" },
+      { title: "A marketing warehouse that people and LLMs can both read", href: "/posts/marketing-warehouse", img: "/marketing-warehouse.png" },
       { title: "JobPilot: my open-source job-hunt app", href: "/posts/jobpilot-v2", img: "/jobpilot-flagship.png" },
     ],
     heroImg: "/discipline-aie.png",
@@ -210,6 +225,34 @@ export const disciplines: Discipline[] = [
       },
     ],
     projects: [
+      {
+        name: "Patient Dashboard",
+        status: "In production",
+        oneLiner:
+          "The dashboard treatment coordinators work from: one row per patient, every document one click away, built around how the practice actually runs, where every system named a patient differently and test rows sat among real ones.",
+        img: "/patient-dashboard.png",
+        href: "/posts/patient-dashboard",
+        highlights: [
+          "Patients, intake surveys, manual intake, patient experience, estimates and consultations in one place",
+          "Records now join on the Denticon id, and a person's link decision always beats the matcher",
+          "An honest unknown: a journey step with no linked chart is never reported as a no",
+          "Data freshness went from six days behind to 2.6 minutes behind",
+        ],
+      },
+      {
+        name: "Capacity Planner",
+        status: "In production",
+        oneLiner:
+          "Replaced the operations lead's seven sheet staffing workbook with one forward view of demand, capacity and capability across three offices, reading the live schedule every minute and never writing back.",
+        img: "/capacity-planner.png",
+        href: "/posts/capacity-planner",
+        highlights: [
+          "Started from the workbook itself, including the fixed ranges that undercounted without a warning",
+          "Burnout treated as a design goal: proposed defaults flag three heavy days in a row",
+          "Cover suggestions explain themselves: five ranked keys, every reason traced to its rule",
+          "Plans doctors, assistants, treatment coordinators and front desk; reschedule emails go to each office's admin director",
+        ],
+      },
       {
         name: "Centralized Diagnostic Filter",
       demo: "https://sampreethavvari.github.io/ai-systems-tours/tours/patient-assessment/",
@@ -278,6 +321,8 @@ export const disciplines: Discipline[] = [
       },
     ],
     articles: [
+      { title: "The patient dashboard and the Denticon mirror behind it", href: "/posts/patient-dashboard", img: "/patient-dashboard.png" },
+      { title: "Replacing a staffing workbook with a capacity planner", href: "/posts/capacity-planner", img: "/capacity-planner.png" },
       { title: "How I fixed the patient-to-lead link and found the orphan revenue", href: "/posts/cowork-dashboard", img: "/cowork-dashboard.png" },
       { title: "Accounting automation: 400 hours a year", href: "/posts/accounting-automation", img: "/accounting-automation.png" },
       { title: "Film and engineering", href: "/posts/film-and-engineering", img: "/film-and-engineering.png" },
@@ -335,6 +380,20 @@ export const disciplines: Discipline[] = [
         ],
       },
       {
+        name: "Daily Sales Report",
+        status: "In production",
+        oneLiner:
+          "Forecasts invoiced lab revenue and new arch starts for this month and the next two, with bands calibrated to cover about 68% of outcomes. A faithful port of the finance team's model that refuses any in sample win that loses out of sample.",
+        img: "/daily-sales-report.png",
+        href: "/posts/daily-sales-report",
+        highlights: [
+          "Current month revenue error falls from 4.2% early in the month to 1.5% late",
+          "No auto tuning: the best in sample grid lost 0.62 points out of sample, so it stayed out",
+          "A better lag model waits behind a switch until its gain clears the noise floor",
+          "Gemini commentary checked number by number, with a deterministic template as the fallback",
+        ],
+      },
+      {
         name: "LLM Persuasion (NYU research)",
         status: "Research",
         oneLiner:
@@ -376,6 +435,7 @@ export const disciplines: Discipline[] = [
     ],
     articles: [
       { title: "How I built a validator that catches bad dental scans", href: "/posts/cbct-scan-validator", img: "/cbct-validator.png" },
+      { title: "A daily sales forecast that refuses to tune itself", href: "/posts/daily-sales-report", img: "/daily-sales-report.png" },
       { title: "Teaching Llama to argue better (RLHF / GRPO / PPO)", href: "/posts/llama-rlhf", img: "/llm-persuasion.png" },
       { title: "Loan Radar: ML CI/CD end to end", href: "/posts/loan-radar-mlops", img: "/loan-radar.png" },
       { title: "ResNet under 5M parameters", href: "/posts/resnet-under-5m", img: "/resnet-compact.png" },
@@ -418,6 +478,34 @@ export const disciplines: Discipline[] = [
     ],
     projects: [
       {
+        name: "Patient Dashboard",
+        status: "In production",
+        oneLiner:
+          "Two Cloud Run services from one image: a dashboard that holds no vendor credentials, and a sync service that keeps a Firestore mirror of Denticon fresh through webhooks and scheduled sweeps. Other apps read it through a registry API with one secret per caller.",
+        img: "/patient-dashboard.png",
+        href: "/posts/patient-dashboard",
+        highlights: [
+          "Only query parameters proven to change totalCount are allowed; the query builder throws on anything else",
+          "The freshness report starts from the cursors it expects, so a missing one shows as the worst status",
+          "Link writes are transactions that decide again on fresh reads, and every link is versioned, audited and undoable",
+          "Bearer checks where an unset secret closes the door and a length mismatch costs the same as a wrong key",
+        ],
+      },
+      {
+        name: "Capacity Planner",
+        status: "In production",
+        oneLiner:
+          "A pnpm monorepo with a pure TypeScript engine shared by the minute sync and the browser, Postgres and Drizzle on Cloud Run, and read only access to the source system enforced by a type level test.",
+        img: "/capacity-planner.png",
+        href: "/posts/capacity-planner",
+        highlights: [
+          "1,600+ tests: engine, web unit, Postgres integration with testcontainers, and Playwright",
+          "A mass cancel guard: a sync that would cancel an office's bookings in bulk changes nothing",
+          "Logs carry Postgres error codes, never SQL parameters that could hold a patient's name",
+          "48 tagged releases in its first eight days, deployed only on tags through Workload Identity Federation",
+        ],
+      },
+      {
         name: "Treatment Estimator",
       demo: "https://sampreethavvari.github.io/ai-systems-tours/tours/treatment-estimator/",
         status: "In production",
@@ -430,6 +518,20 @@ export const disciplines: Discipline[] = [
           "Per-location price books with propose/approve workflows, so pricing changes need no developer",
           "Six-year estimate reproducibility for HIPAA record-keeping",
           "~$35/month total cloud footprint",
+        ],
+      },
+      {
+        name: "Treatment Sequence",
+        status: "In production",
+        oneLiner:
+          "Shared packages that generate a patient's visit plan from an accepted estimate by picking a transcribed practice master, never by guessing, then let the coordinator edit it in a three pane builder and export it to Word and PDF.",
+        img: "/treatment-sequence.png",
+        href: "/posts/treatment-sequence",
+        highlights: [
+          "Never invents a visit, never guesses a template, never makes up a date",
+          "A living plan plus immutable version snapshots, with a unique index as the concurrency guard",
+          "Shipped as a committed build snapshot: no registry, no token to expire, and a check that core and ui share one commit",
+          "The Word export embeds Inter after it kept opening in Times New Roman",
         ],
       },
       {
@@ -474,6 +576,26 @@ export const disciplines: Discipline[] = [
         ],
       },
       {
+        name: "Case Intake",
+        status: "Prototype",
+        oneLiner:
+          "A morning list of lab prescription cases that duplicate an earlier scan case, so customer service can merge them. Running as a demo on sample data while the vendor API license is pending.",
+        highlights: [
+          "Name matching forgives case, spacing, a middle initial, swapped names and one typo; anything more is a different person",
+          "The data source sits behind an interface: sample data now, the vendor API and Firestore once the license lands",
+        ],
+      },
+      {
+        name: "Hybridge Forms",
+        status: "In build",
+        oneLiner:
+          "A forms platform to replace a Tally, Zapier and Monday chain on four company websites, built so no submission is ever lost: a storage fallback when the database fails, and browser retries with the same id when both do.",
+        highlights: [
+          "About 11 of 18 build tasks done and 1,300+ tests; not deployed yet",
+          "The importer handles all 32 live Tally forms",
+        ],
+      },
+      {
         name: "This website",
         status: "Live",
         oneLiner:
@@ -482,7 +604,10 @@ export const disciplines: Discipline[] = [
       },
     ],
     articles: [
+      { title: "The patient dashboard and the Denticon mirror behind it", href: "/posts/patient-dashboard", img: "/patient-dashboard.png" },
+      { title: "Replacing a staffing workbook with a capacity planner", href: "/posts/capacity-planner", img: "/capacity-planner.png" },
       { title: "Rebuilding a 10-year-old pricing tool in a month", href: "/posts/treatment-estimator", img: "/treatment-estimator.png" },
+      { title: "Turning hand built visit plans into shared packages", href: "/posts/treatment-sequence", img: "/treatment-sequence.png" },
       { title: "Pipeline observability and silent-failure hardening", href: "/posts/pipeline-ghosting", img: "/pipeline-ghosting.png" },
       { title: "Accounting automation: 400 hours a year", href: "/posts/accounting-automation", img: "/accounting-automation.png" },
     ],

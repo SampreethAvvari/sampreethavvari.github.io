@@ -116,3 +116,17 @@ The redesign stacks three things that tell the TC where they are:
 Drizzle and Postgres and Next.js are everywhere these days. The tools were not the hard part. The hard part was sitting with Chelsea until her mental pricing model was precise enough to write a schema for, writing nine ADR decisions before touching code, and knowing that a service-level check on price changes would always be one missed call away from a broken promise. A Postgres trigger cannot be skipped. A business guarantee probably can.
 
 That gap, between what an org says it does and what the system actually enforces, is where this kind of work lives. Draw the line in schema and code, and the next engineer extending it cannot blur it by accident.
+
+## Update, October 2026
+
+The estimator has shipped 72 releases since May, and a lot has changed:
+
+- **A workspace instead of a wizard.** In August a three pane, drag and drop workspace became the default way to build an estimate, with phases and a scenario builder that sets upper and lower options side by side. The wizard above is still there.
+- **Visit sequences.** From any estimate, a coordinator can now generate the patient's plan of visits from one of the practice's own master documents, edit it, and export it to Word and PDF. That grew big enough to get [its own post](/posts/treatment-sequence).
+- **The day's schedule is the front page.** The app now opens on today's consults, pulled from the CDF registry, and one click opens that patient's estimate or starts a new one.
+- **The arch comes from the options.** Coordinators used to pick Upper, Lower or Both before building anything, a guess that could disagree with what they built. Now the arch is whatever the saved options add up to, set in the same transaction as every option save and delete, with a one time backfill for older estimates.
+- **The Hybridge design.** Nine releases in one day at the end of September moved every screen and both PDFs into the practice's design language: a glass navigation shell, Inter, and the new logo.
+- **Printing.** The PDF and the Excel export carry the office's logo, list the workup first, and keep each option whole on a page.
+- **Coordinator feedback in October.** Future phases and "to be determined" fees still print but stay out of the totals. Options can be duplicated, a tooth can come off a grouped line onto its own, each card can show the math behind its fees, and a fee box accepts a formula.
+
+The unit test count went from about 300 in mid August to 527 by the end of September. Most of the October changes came straight from coordinators' notes on real estimates, which is still the best spec I get.
