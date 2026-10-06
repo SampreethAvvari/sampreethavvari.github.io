@@ -1,5 +1,5 @@
 ---
-demo: https://sampreethavvari.github.io/ai-systems-tours/tours/npc-coach/
+demo: /demos/npc-coach
 title: "How I rebuilt a brittle call grader into a coaching platform"
 date: "2026-06-21"
 layout: ../../layouts/PostLayout.astro

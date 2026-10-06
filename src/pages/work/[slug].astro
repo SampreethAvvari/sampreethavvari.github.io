@@ -94,18 +94,22 @@ const articles = d.articles.map((a) => {
     </div>
   </section>
 
-  <!-- The story -->
+  <!-- How I work: short points beside the framed art -->
   <section class="section wk-story-sec" aria-labelledby="wk-story">
     <div class="wrap wk-story" data-reveal>
-      <div class="wk-story-side">
-        <h2 id="wk-story" class="t-h2">The story.</h2>
-        <figure class="wk-art">
-          <Picture src={d.heroImg} alt={`${d.name} abstract artwork`} width={960} height={540} />
-        </figure>
+      <div>
+        <h2 id="wk-story" class="t-h2">How I work.</h2>
+        <ul class="wk-pts">
+          {d.points.map((pt) => (
+            <li>
+              <p><strong>{pt.lead}</strong> {pt.text}</p>
+            </li>
+          ))}
+        </ul>
       </div>
-      <div class="wk-prose">
-        {d.narrative.map((para) => <p class="t-body">{para}</p>)}
-      </div>
+      <figure class="wk-art">
+        <Picture src={d.heroImg} alt={`${d.name} abstract artwork`} width={960} height={540} />
+      </figure>
     </div>
   </section>
 
@@ -141,7 +145,6 @@ const articles = d.articles.map((a) => {
             <span class="t-tail">Built, shipped, and used.</span>
           </h2>
         </div>
-        <span class="t-meta">{d.projects.length} projects</span>
       </div>
 
       <div class="wk-projects">
@@ -173,8 +176,8 @@ const articles = d.articles.map((a) => {
               <p class="t-body wk-proj-line">{p.oneLiner}</p>
               {p.highlights && (
                 <ul class="wk-points">
-                  {p.highlights.map((h) => (
-                    <li class="t-small">{h}</li>
+                  {p.highlights.slice(0, 3).map((h) => (
+                    <li class="t-small" title={h}>{h}</li>
                   ))}
                 </ul>
               )}
@@ -186,8 +189,8 @@ const articles = d.articles.map((a) => {
                     </a>
                   )}
                   {p.demo && (
-                    <a href={p.demo} target="_blank" rel="noreferrer" class="tlink wk-demo">
-                      Live demo <Icon name="arrow-up-right" size={14} />
+                    <a href={p.demo} class="tlink wk-demo">
+                      Live demo <Icon name="arrow-right" size={14} />
                     </a>
                   )}
                 </div>
@@ -267,7 +270,7 @@ const articles = d.articles.map((a) => {
      the tab. Only where there is room for it beside the story. */
   .wk-art {
     display: none;
-    margin: 28px 0 0;
+    margin: 0;
     padding: 8px;
     border-radius: 24px;
     background: linear-gradient(180deg, rgba(255, 255, 255, 0.07), rgba(255, 255, 255, 0.015));
@@ -290,13 +293,30 @@ const articles = d.articles.map((a) => {
 
   /* The story: a readable column. */
   .wk-story-sec { padding-top: clamp(48px, 6vw, 88px); }
-  .wk-story { display: grid; grid-template-columns: 1fr; gap: 24px; }
+  .wk-story { display: grid; grid-template-columns: 1fr; gap: 40px; align-items: center; }
   @media (min-width: 1024px) {
-    .wk-story { grid-template-columns: minmax(0, 4fr) minmax(0, 8fr); gap: 56px; }
+    .wk-story { grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); gap: 64px; }
   }
-  .wk-prose { max-width: 68ch; display: grid; gap: 20px; }
-  .wk-prose p { font-size: 1rem; line-height: 1.7; }
-  @media (min-width: 1024px) { .wk-prose p { font-size: 1.0625rem; } }
+  .wk-pts { list-style: none; margin: 28px 0 0; padding: 0; max-width: 62ch; }
+  .wk-pts li {
+    position: relative;
+    padding: 12px 0 12px 22px;
+    border-top: 1px solid var(--line);
+  }
+  .wk-pts li:last-child { border-bottom: 1px solid var(--line); }
+  .wk-pts li::before {
+    content: "";
+    position: absolute;
+    left: 2px;
+    top: calc(12px + 0.8em - 3px);
+    width: 6px;
+    height: 6px;
+    border-radius: 9999px;
+    background: var(--tone);
+    box-shadow: 0 0 8px rgba(var(--tone-rgb), 0.6);
+  }
+  .wk-pts p { margin: 0; font-size: 1rem; line-height: 1.6; color: var(--ink-soft); text-wrap: pretty; }
+  .wk-pts strong { font-weight: 600; color: var(--ink); }
 
   /* What I bring */
   .wk-grid4 {
@@ -366,6 +386,10 @@ const articles = d.articles.map((a) => {
   .wk-proj-line { margin-top: 8px; max-width: 68ch; }
   .wk-points { list-style: none; margin: 16px 0 0; padding: 0; display: grid; gap: 8px; max-width: 68ch; }
   .wk-points li { position: relative; padding-left: 18px; }
+  @media (min-width: 1024px) {
+    .wk-points { max-width: none; }
+    .wk-points li { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  }
   .wk-points li::before {
     content: "";
     position: absolute;

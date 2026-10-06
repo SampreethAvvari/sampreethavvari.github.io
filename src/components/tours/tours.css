@@ -1,0 +1,433 @@
+/* ===========================================================================
+   Guided system tours (/demos). The player's controls are clear glass, the
+   mock screens and the architecture are solid surfaces, and the only accent
+   is the page's tab colour (var(--tone), the Projects blue). Status inside a
+   mock app keeps its own meaning: green ok, amber check, red wrong.
+   =========================================================================== */
+
+/* ---------------------------------------------------------------------------
+   The player
+   --------------------------------------------------------------------------- */
+.tp {
+  display: grid;
+  gap: 16px;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-areas: "steps" "stage" "controls";
+}
+@media (min-width: 1024px) {
+  .tp {
+    grid-template-columns: minmax(0, 21rem) minmax(0, 1fr);
+    grid-template-rows: auto 1fr;
+    grid-template-areas: "steps stage" "controls stage";
+    gap: 20px 28px;
+    align-items: start;
+  }
+}
+
+/* The step list: one glass control. A row of numbers on phones, a column of
+   titled steps on wide screens. */
+.tp-steps {
+  grid-area: steps;
+  display: flex;
+  gap: 2px;
+  padding: 4px;
+  border-radius: 9999px;
+}
+.tp-step {
+  position: relative;
+  flex: 1 1 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  min-width: 0;
+  height: 40px;
+  padding: 0;
+  border: 0;
+  border-radius: 9999px;
+  background: transparent;
+  color: var(--ink-soft);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color 150ms var(--ease-glass), color 150ms var(--ease-glass), box-shadow 200ms var(--ease-glass);
+}
+.tp-step:hover { color: var(--ink); background: var(--wash-strong); }
+.tp-step:focus-visible { outline: none; box-shadow: 0 0 0 2px rgba(var(--tone-rgb), 0.7); }
+.tp-step.is-on {
+  color: var(--ink);
+  background: rgba(255, 255, 255, 0.11);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.22),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.2),
+    0 2px 8px -2px rgba(0, 0, 0, 0.6);
+}
+.tp-step.is-on:focus-visible {
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.22),
+    0 0 0 2px rgba(var(--tone-rgb), 0.7);
+}
+.tp-num {
+  display: inline-grid;
+  place-items: center;
+  flex: none;
+  width: 24px;
+  height: 24px;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink-faint);
+  background: var(--wash-strong);
+  transition: background-color 150ms var(--ease-glass), color 150ms var(--ease-glass);
+}
+.tp-step:hover .tp-num { color: var(--ink); }
+.tp-step.is-on .tp-num {
+  color: #000;
+  background: var(--tone);
+  box-shadow: 0 0 12px rgba(var(--tone-rgb), 0.55);
+}
+.tp-step-text { display: none; min-width: 0; }
+.tp-step-title {
+  display: block;
+  font-size: 0.9375rem;
+  font-weight: 500;
+  line-height: 1.35;
+  letter-spacing: -0.008em;
+}
+.tp-step-body {
+  display: block;
+  margin-top: 6px;
+  font-size: 0.8125rem;
+  line-height: 1.6;
+  color: var(--ink-soft);
+}
+
+@media (min-width: 1024px) {
+  .tp-steps {
+    flex-direction: column;
+    gap: 2px;
+    padding: 6px;
+    border-radius: 22px;
+  }
+  .tp-step {
+    flex: none;
+    align-items: flex-start;
+    justify-content: flex-start;
+    height: auto;
+    padding: 11px 14px 11px 12px;
+    border-radius: 16px;
+  }
+  .tp-step-text { display: block; padding-top: 2px; }
+}
+
+/* The stage: the current step in words (phones only; wide screens show it in
+   the list) and the mock screen. */
+.tp-stage { grid-area: stage; min-width: 0; scroll-margin-top: 96px; }
+.tp-now { margin-bottom: 16px; }
+.tp-now-title { margin-top: 6px; }
+.tp-now-body { margin-top: 6px; }
+@media (min-width: 1024px) {
+  .tp-now { display: none; }
+  /* The window stands as tall as the step list beside it, so a short
+     screen does not leave a hole and a step change does not jump. */
+  .tp-stage { align-self: stretch; display: flex; flex-direction: column; }
+  .tp-screen { flex: 1; display: flex; flex-direction: column; }
+  .tp-screen > .ms { flex: 1; }
+}
+.tp-screen { animation: tp-in 280ms var(--ease-glass); }
+@keyframes tp-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: none; }
+}
+
+/* Progress and the two actions. */
+.tp-controls { grid-area: controls; display: grid; gap: 14px; }
+.tp-progress {
+  display: flex;
+  gap: 4px;
+  padding: 4px;
+  border-radius: 9999px;
+}
+.tp-seg {
+  flex: 1 1 0;
+  height: 4px;
+  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.12);
+  transition: background-color 250ms var(--ease-glass), box-shadow 250ms var(--ease-glass);
+}
+.tp-seg.is-done { background: var(--tone); box-shadow: 0 0 8px rgba(var(--tone-rgb), 0.5); }
+.tp-nav { display: flex; align-items: center; justify-content: flex-end; gap: 8px; }
+.tp-count { display: none; margin-right: auto; }
+@media (min-width: 1024px) {
+  .tp-count { display: inline; }
+}
+.tp-nav .btn:disabled { opacity: 0.35; cursor: default; transform: none; }
+.tp-nav .btn:disabled:hover { transform: none; }
+
+/* ---------------------------------------------------------------------------
+   Mock screens. The frame and chrome follow the site; the inside keeps the
+   look of the app it stands in for.
+   --------------------------------------------------------------------------- */
+.ms { margin: 0; overflow: hidden; }
+.ms-chrome {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.015);
+}
+.ms-dots { display: inline-flex; gap: 6px; flex: none; }
+.ms-dots i { width: 9px; height: 9px; border-radius: 9999px; background: rgba(255, 255, 255, 0.14); }
+.ms-title {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  line-height: 1.35;
+  color: var(--ink-soft);
+}
+.ms-synth { flex: none; }
+.ms-body { padding: 16px; container-type: inline-size; }
+@media (min-width: 640px) { .ms-body { padding: 20px; } }
+
+.ms-stack { display: grid; gap: 10px; }
+.ms-row { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+.ms-name { font-size: 0.875rem; font-weight: 600; line-height: 1.4; color: var(--ink); }
+.ms-sub { font-size: 0.8125rem; line-height: 1.45; color: var(--ink-faint); }
+.ms-strong { font-weight: 600; font-variant-numeric: tabular-nums; color: var(--ink); }
+.ms-good { color: #4ade80; }
+.ms-warn { color: #fbbf24; }
+.ms-bad { color: #f87171; }
+.ms-dim { color: var(--ink-faint); }
+
+/* Table */
+.ms-scroll { overflow-x: auto; margin: -4px 0; }
+.ms-table { width: 100%; border-collapse: collapse; font-size: 0.875rem; line-height: 1.45; }
+.ms-table th {
+  padding: 4px 16px 10px 0;
+  text-align: left;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--ink-faint);
+  white-space: nowrap;
+}
+.ms-table td {
+  padding: 10px 16px 10px 0;
+  vertical-align: top;
+  border-top: 1px solid var(--line);
+  color: var(--ink-soft);
+}
+.ms-table th:last-child, .ms-table td:last-child { padding-right: 0; }
+.ms-table .ms-lead { color: var(--ink); }
+/* Narrow windows: tighter columns so most tables fit without scrolling. */
+@container (max-width: 420px) {
+  .ms-table { font-size: 0.8125rem; }
+  .ms-table th, .ms-table td { padding-right: 10px; }
+  .ms-table th { font-size: 0.75rem; }
+}
+
+/* Report */
+.ms-block {
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: var(--wash);
+  border: 1px solid var(--line);
+}
+.ms-edge-good { box-shadow: inset 3px 0 0 #4ade80; }
+.ms-edge-warn { box-shadow: inset 3px 0 0 #fbbf24; }
+.ms-edge-bad { box-shadow: inset 3px 0 0 #f87171; }
+.ms-score { font-size: 0.875rem; font-weight: 600; font-variant-numeric: tabular-nums; color: var(--ink); }
+.ms-note { margin: 8px 0 0; font-size: 0.8125rem; line-height: 1.6; color: var(--ink-soft); }
+.ms-track {
+  margin-top: 8px;
+  height: 4px;
+  border-radius: 9999px;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.08);
+}
+.ms-track-lg { height: 6px; max-width: 24rem; margin: 14px auto 0; }
+.ms-fill { display: block; height: 100%; border-radius: inherit; background: var(--tone); }
+.ms-fill.ms-good { background: #4ade80; }
+.ms-fill.ms-warn { background: #fbbf24; }
+.ms-fill.ms-bad { background: #f87171; }
+
+/* Search */
+.ms-query {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 16px;
+  border-radius: 9999px;
+  background: var(--wash);
+  border: 1px solid var(--line-strong);
+  font-size: 0.9375rem;
+  line-height: 1.4;
+  color: var(--ink);
+}
+.ms-query svg { flex: none; color: var(--ink-faint); }
+.ms-answer {
+  padding: 14px 16px;
+  border-radius: 14px;
+  background: var(--wash);
+  font-size: 0.875rem;
+  line-height: 1.65;
+  color: var(--ink-soft);
+}
+.ms-cites { display: grid; gap: 8px; }
+@container (min-width: 520px) { .ms-cites { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.ms-cite { padding: 12px; border-radius: 12px; border: 1px solid var(--line); background: rgba(255, 255, 255, 0.02); }
+.ms-cite-doc { font-size: 0.75rem; font-weight: 600; line-height: 1.45; color: var(--tone); }
+.ms-cite-snip { margin-top: 4px; font-size: 0.75rem; line-height: 1.55; color: var(--ink-faint); }
+
+/* Upload */
+.ms-drop {
+  padding: 20px;
+  text-align: center;
+  border-radius: 14px;
+  border: 1px dashed var(--line-strong);
+  background: rgba(255, 255, 255, 0.02);
+}
+.ms-drop .ms-sub { margin-top: 4px; }
+.ms-verdict { font-size: 0.9375rem; font-weight: 600; line-height: 1.4; }
+.ms-pairs { margin-top: 10px; display: grid; gap: 6px; }
+@container (min-width: 520px) { .ms-pairs { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.ms-pair {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 7px 10px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.03);
+  font-size: 0.8125rem;
+  line-height: 1.45;
+  color: var(--ink-soft);
+}
+.ms-pair .ms-strong { text-align: right; }
+
+/* Cards */
+.ms-cards { display: grid; gap: 10px; }
+@container (min-width: 440px) { .ms-cards { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@container (min-width: 680px) { .ms-cards { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+.ms-card {
+  padding: 14px;
+  border-radius: 14px;
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.03);
+}
+.ms-card.is-hi { border-color: rgba(var(--tone-rgb), 0.45); background: rgba(var(--tone-rgb), 0.07); }
+.ms-card .ms-row { align-items: center; }
+.ms-card .badge { flex: none; }
+.ms-lines {
+  list-style: none;
+  margin: 8px 0 0;
+  padding: 0;
+  display: grid;
+  gap: 4px;
+  font-size: 0.8125rem;
+  line-height: 1.5;
+  color: var(--ink-soft);
+}
+
+/* Bars */
+.ms-bars { gap: 14px; }
+.ms-bar-head { font-size: 0.8125rem; line-height: 1.45; color: var(--ink-soft); }
+.ms-bars .ms-track { margin-top: 6px; height: 6px; }
+
+/* Terminal: the one place type stays monospace. */
+.ms-term {
+  padding: 14px 16px;
+  border-radius: 12px;
+  background: rgba(0, 0, 0, 0.55);
+  border: 1px solid var(--line);
+  font-family: ui-monospace, "Cascadia Code", "SF Mono", Menlo, Consolas, monospace;
+  font-size: 0.78rem;
+  line-height: 1.75;
+  color: var(--ink-soft);
+}
+.ms-term-cmd { color: var(--ink); }
+.ms-term-sign { color: var(--tone); margin-right: 0.6ch; }
+
+/* Chat */
+.ms-chat { gap: 8px; }
+.ms-msg { display: flex; justify-content: flex-start; }
+.ms-msg-user { justify-content: flex-end; }
+.ms-bubble {
+  max-width: 85%;
+  padding: 9px 14px;
+  border-radius: 18px;
+  font-size: 0.875rem;
+  line-height: 1.55;
+}
+.ms-msg-user .ms-bubble {
+  color: var(--ink);
+  background: rgba(var(--tone-rgb), 0.16);
+  border: 1px solid rgba(var(--tone-rgb), 0.24);
+  border-bottom-right-radius: 6px;
+}
+.ms-msg-agent .ms-bubble {
+  color: var(--ink-soft);
+  background: var(--wash-strong);
+  border: 1px solid var(--line);
+  border-bottom-left-radius: 6px;
+}
+
+/* ---------------------------------------------------------------------------
+   Architecture: numbered lanes, left to right.
+   --------------------------------------------------------------------------- */
+.ar {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 16px;
+  grid-template-columns: minmax(0, 1fr);
+}
+@media (min-width: 640px) { .ar { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (min-width: 1024px) { .ar { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 20px; } }
+.ar-lane { padding: 20px; }
+.ar-head { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
+.ar-num {
+  display: inline-grid;
+  place-items: center;
+  flex: none;
+  width: 24px;
+  height: 24px;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--tone);
+  background: rgba(var(--tone-rgb), 0.12);
+  box-shadow: inset 0 0 0 1px rgba(var(--tone-rgb), 0.3);
+}
+.ar-items { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.ar-items li {
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: var(--wash);
+  border: 1px solid var(--line);
+  font-size: 0.8125rem;
+  line-height: 1.5;
+  color: var(--ink-soft);
+}
+/* A quiet chevron between lanes where they sit in one row. */
+@media (min-width: 1024px) {
+  .ar-lane:not(:last-child)::after {
+    content: "";
+    position: absolute;
+    top: 28px;
+    right: -15px;
+    width: 8px;
+    height: 8px;
+    border-top: 1.5px solid var(--ink-ghost);
+    border-right: 1.5px solid var(--ink-ghost);
+    transform: rotate(45deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tp-screen { animation: none; }
+  .tp-step, .tp-num, .tp-seg { transition: none; }
+}

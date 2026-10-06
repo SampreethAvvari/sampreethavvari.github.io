@@ -193,7 +193,7 @@ html { scroll-padding-top: 88px; }
   gap: 20px 40px;
   margin-bottom: clamp(32px, 4vw, 48px);
 }
-.sec-head-main { max-width: 52rem; }
+.sec-head-main { flex: 1 1 32rem; max-width: 56rem; }
 .sec-head-main > .kicker { margin-bottom: 18px; }
 .sec-head-main > .t-lede { margin-top: 18px; }
 
@@ -560,10 +560,14 @@ a.chip:hover, button.chip:hover { color: var(--ink); border-color: var(--line-st
   font-size: 0.8125rem;
   font-weight: 600;
   letter-spacing: -0.02em;
-  color: #000;
-  background: var(--ink);
-  transition: transform 250ms var(--ease-glass);
+  color: var(--ink);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.03)),
+    #0b0c10;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.22), 0 0 0 1px rgba(255, 255, 255, 0.12);
+  transition: transform 250ms var(--ease-glass), box-shadow 250ms var(--ease-glass);
 }
+.nav-brand:hover .nav-mono { box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.28), 0 0 0 1px rgba(255, 255, 255, 0.24), 0 0 18px rgba(91, 141, 239, 0.35); }
 .nav-condensed .nav-mono { transform: scale(0.9); }
 .nav-name { font-size: 0.9375rem; font-weight: 600; letter-spacing: -0.015em; white-space: nowrap; }
 .nav-sep { width: 1px; height: 22px; background: var(--line-strong); flex: none; }
@@ -698,28 +702,61 @@ html.dark .search-modal { background: linear-gradient(180deg, rgba(255, 255, 255
    Footer
    --------------------------------------------------------------------------- */
 .site-foot { position: relative; z-index: 1; border-top: 1px solid var(--line); margin-top: 40px; }
-.site-foot-grid {
-  display: grid;
-  gap: 32px;
-  padding-block: 48px 28px;
-  grid-template-columns: 1fr;
-}
-@media (min-width: 768px) {
-  .site-foot-grid { grid-template-columns: 1.4fr 1fr 1fr; }
-}
-.site-foot h2 { font-size: 0.8125rem; font-weight: 500; color: var(--ink-faint); margin: 0 0 14px; letter-spacing: 0; }
-.site-foot ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
-.site-foot a.foot-link { display: inline-flex; align-items: center; gap: 9px; font-size: 0.9375rem; color: var(--ink-soft); text-decoration: none; }
-.site-foot a.foot-link:hover { color: var(--ink); }
-.site-foot .nav-dot { opacity: 1; }
-.site-foot-base {
+.foot-top {
   display: flex;
   flex-wrap: wrap;
+  align-items: center;
   justify-content: space-between;
-  gap: 12px;
+  gap: 24px;
+  padding-block: 40px 28px;
+}
+.foot-id { display: flex; align-items: center; gap: 14px; max-width: 30rem; }
+.foot-mark {
+  flex: none;
+  width: 44px;
+  height: 44px;
+  padding: 6px;
+  border-radius: 9999px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.03)), #0b0c10;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.22), 0 0 0 1px rgba(255, 255, 255, 0.12);
+}
+.foot-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+.foot-base {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px 24px;
   padding-block: 20px 32px;
   border-top: 1px solid var(--line);
 }
+.foot-tabs { display: flex; flex-wrap: wrap; gap: 6px 20px; }
+.site-foot a.foot-link { display: inline-flex; align-items: center; gap: 8px; font-size: 0.875rem; color: var(--ink-soft); text-decoration: none; transition: color 150ms var(--ease-glass); }
+.site-foot a.foot-link:hover { color: var(--ink); }
+.site-foot .nav-dot { opacity: 1; }
+
+/* Social links: round glass buttons with the brand mark, which take the
+   brand's own colour on hover. */
+.social {
+  display: inline-grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 9999px;
+  color: var(--ink);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.03)),
+    rgba(10, 11, 15, 0.35);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2), 0 8px 24px -14px rgba(0, 0, 0, 0.8);
+  transition: transform 250ms var(--ease-glass), color 150ms var(--ease-glass), border-color 150ms var(--ease-glass), box-shadow 250ms var(--ease-glass);
+}
+.social:hover { transform: translateY(-2px); border-color: rgba(255, 255, 255, 0.28); }
+.social:focus-visible { outline: none; box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.2); }
+.social-linkedin:hover { color: #fff; background: #0a66c2; border-color: #0a66c2; box-shadow: 0 10px 28px -10px rgba(10, 102, 194, 0.8); }
+.social-github:hover { color: #000; background: #f5f5f7; border-color: #f5f5f7; box-shadow: 0 10px 28px -10px rgba(255, 255, 255, 0.5); }
+.social-instagram:hover { color: #fff; border-color: transparent; background: radial-gradient(circle at 30% 107%, #fdf497 0%, #fdf497 5%, #fd5949 45%, #d6249f 60%, #285aeb 90%); box-shadow: 0 10px 28px -10px rgba(214, 36, 159, 0.8); }
+.social-imdb { width: auto; padding: 0 10px; }
 
 /* Back to top: a small glass button. */
 .to-top {
@@ -810,8 +847,160 @@ a.surface[data-reveal].reveal-visible:hover { transform: translateY(-3px); }
   a.surface:hover, .surface-link:hover, .btn:hover { transform: none; }
 }
 
+
+/* ---------------------------------------------------------------------------
+   One sky. The fixed ambient layer (BaseLayout) is the only colour behind the
+   page: initAmbient blends --amb1 and --amb2 by scroll position, so the whole
+   space shifts from one tab's colour to the next while the content scrolls
+   over it. Nothing in a section paints its own wash, so there are no edges.
+   --------------------------------------------------------------------------- */
+html.dark .ambient, .ambient {
+  background:
+    radial-gradient(70% 60% at 18% 22%, rgba(var(--amb1, 91, 141, 239), 0.17), transparent 70%),
+    radial-gradient(60% 55% at 84% 72%, rgba(var(--amb2, 34, 211, 238), 0.13), transparent 70%),
+    radial-gradient(90% 70% at 50% 110%, rgba(var(--amb1, 91, 141, 239), 0.08), transparent 70%);
+}
+/* Comets that live in the sky rather than in a section: fixed to the
+   viewport, tinted by the same blend. */
+.sky-comets {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+.sky-comets .space-el.space-live { pointer-events: none; cursor: default; }
+
 /* The map on /mind fills the screen and has its own panel at the bottom on
    phones, so the chat bubble steps aside there. */
 @media (max-width: 1023px) {
   body[data-tone="mind"] .chat-launcher { display: none !important; }
 }
+
+/* ---------------------------------------------------------------------------
+   Refracting glass (Chromium). liquid-glass.ts gives each glass element a
+   lens filter cut to its own size, so the frost goes: the glass turns clear,
+   the backdrop stays sharp, and only the rim bends it. The bar keeps a little
+   more tint so its labels read over busy content.
+   --------------------------------------------------------------------------- */
+html.lg-live .lg:not(.lg-thick),
+html.lg-live .btn-glass,
+html.lg-live .social,
+html.lg-live .to-top,
+html.lg-live .proj-arrow,
+html.lg-live .chat-launcher {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.09) 0%, rgba(255, 255, 255, 0.015) 55%, rgba(255, 255, 255, 0.05) 100%),
+    rgba(8, 9, 12, 0.14);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.32),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.1),
+    inset 1px 0 0 rgba(255, 255, 255, 0.06),
+    inset -1px 0 0 rgba(255, 255, 255, 0.06),
+    0 18px 40px -20px rgba(0, 0, 0, 0.85);
+}
+html.lg-live .nav-glass {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0.01) 60%, rgba(255, 255, 255, 0.04) 100%),
+    rgba(6, 7, 10, 0.4);
+}
+html.lg-live .nav-mono {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.02)),
+    rgba(8, 9, 12, 0.2);
+}
+
+/* ---------------------------------------------------------------------------
+   The bar's icons and its island. Each tab has a line icon in its own colour.
+   At rest the bar spans the page with icon and label; once you scroll it
+   folds into a small centred island of just the coloured icons (labels come
+   back as tooltips), and opens again at the top of the page.
+   --------------------------------------------------------------------------- */
+:root { interpolate-size: allow-keywords; }
+.nav-tab { gap: 7px; }
+.nav-icon-glyph { flex: none; color: var(--tone); opacity: 0.9; transition: opacity 150ms var(--ease-glass), transform 250ms var(--ease-glass); }
+.nav-tab:hover .nav-icon-glyph, .nav-tab.is-active .nav-icon-glyph { opacity: 1; transform: scale(1.08); }
+.nav-tab.is-active { box-shadow: inset 0 0 0 1px rgba(var(--tone-rgb), 0.28), inset 0 1px 0 rgba(255, 255, 255, 0.18); }
+.nav-resume .nav-icon-glyph { color: #000; }
+.nav-sheet .nav-icon-glyph { width: 18px; height: 18px; }
+.nav-label {
+  display: inline-block;
+  max-width: 7.5rem;
+  overflow: hidden;
+  white-space: nowrap;
+  opacity: 1;
+  transition: max-width 380ms var(--ease-glass), opacity 220ms var(--ease-glass), margin 380ms var(--ease-glass);
+}
+.nav-name {
+  display: inline-block;
+  max-width: 12rem;
+  overflow: hidden;
+  white-space: nowrap;
+  transition: max-width 380ms var(--ease-glass), opacity 220ms var(--ease-glass);
+}
+.nav-bar {
+  width: 100%;
+  margin-inline: auto;
+  transition:
+    width 460ms var(--ease-glass),
+    height 300ms var(--ease-glass),
+    border-radius 300ms var(--ease-glass),
+    padding 300ms var(--ease-glass),
+    gap 300ms var(--ease-glass);
+}
+.nav-condensed .nav-bar { width: fit-content; height: 50px; gap: 6px; padding: 0 7px; border-radius: 9999px; }
+.nav-condensed .nav-label,
+.nav-condensed .nav-name { max-width: 0; opacity: 0; margin: 0; }
+.nav-condensed .nav-tabs { margin: 0 4px; }
+.nav-condensed .nav-tab { width: 36px; padding: 0; justify-content: center; gap: 0; border-radius: 9999px; }
+.nav-condensed .nav-resume { width: 36px; padding: 0; gap: 0; }
+.nav-condensed .nav-brand { padding-right: 0; gap: 0; }
+.nav-condensed .nav-sep { display: none; }
+.nav-condensed .nav-actions { margin-left: 0; gap: 2px; }
+.nav-condensed .nav-mono { transform: scale(0.94); }
+
+/* Phones: the icons are the tabs, at rest and in the island. */
+@media (max-width: 959px) {
+  .nav-tabs { display: flex; margin: 0 auto; gap: 0; }
+  .nav-tab { width: 34px; height: 34px; padding: 0; justify-content: center; gap: 0; border-radius: 9999px; }
+  .nav-tab .nav-label, .nav-name { max-width: 0; opacity: 0; margin: 0; }
+  .nav-resume { width: 34px; padding: 0; gap: 0; }
+  .nav-resume .nav-label { max-width: 0; opacity: 0; }
+  .nav-bar { gap: 6px; padding: 0 8px; }
+}
+@media (max-width: 380px) {
+  .nav-resume { display: none; }
+  .nav-tab { width: 31px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .nav-bar, .nav-label, .nav-name, .nav-icon-glyph { transition: none; }
+}
+
+/* Over busy content the bar keeps a deeper tint, still clear, so its labels
+   read; the smaller pieces of glass stay lighter. */
+html.lg-live .nav-glass {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0.01) 60%, rgba(255, 255, 255, 0.04) 100%),
+    rgba(6, 7, 10, 0.62);
+}
+@media (max-width: 519px) {
+  .nav-resume { display: none; }
+}
+
+/* Legibility on any backdrop. Clear glass over a bright image washes out thin
+   coloured strokes, so the island carries a deeper tint than the open bar, and
+   every glyph on the bar gets a soft dark halo and a slightly heavier line. */
+.nav-icon-glyph,
+.nav-icon svg,
+.nav-mono svg {
+  filter: drop-shadow(0 0 3px rgba(0, 0, 0, 0.85)) drop-shadow(0 1px 1px rgba(0, 0, 0, 0.6));
+}
+.nav-icon-glyph { stroke-width: 2; }
+.nav-tab, .nav-name, .nav-icon { text-shadow: 0 1px 6px rgba(0, 0, 0, 0.7); }
+html.lg-live .nav-condensed .nav-glass,
+.nav-condensed .nav-glass {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0.01) 60%, rgba(255, 255, 255, 0.04) 100%),
+    rgba(5, 6, 9, 0.74);
+}
+.nav-condensed .nav-tab.is-active { background: rgba(255, 255, 255, 0.14); }

@@ -1,5 +1,5 @@
 ---
-demo: https://sampreethavvari.github.io/ai-systems-tours/tours/doc-coach/
+demo: /demos/doc-coach
 title: "How I caught my pipeline lying to me (and made it confess)"
 date: "2026-05-29"
 layout: ../../layouts/PostLayout.astro

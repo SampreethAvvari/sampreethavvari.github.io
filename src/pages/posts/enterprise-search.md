@@ -1,5 +1,5 @@
 ---
-demo: https://sampreethavvari.github.io/ai-systems-tours/tours/enterprise-search/
+demo: /demos/enterprise-search
 title: "Building an enterprise search that knows when to say 'I don't know'"
 date: "2026-06-23"
 layout: ../../layouts/PostLayout.astro

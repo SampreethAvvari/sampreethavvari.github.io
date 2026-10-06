@@ -1,4 +1,5 @@
 ---
+demo: /demos/marketing-warehouse
 title: "How I joined five marketing logins into one warehouse a model can read"
 date: "2026-10-02"
 layout: ../../layouts/PostLayout.astro

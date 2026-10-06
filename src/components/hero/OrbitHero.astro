@@ -1,0 +1,228 @@
+---
+// The landing page's living element: the portrait at the centre of a small
+// orbit system. Three thin rings in perspective, each carrying a comet with a
+// short trail. The rings pass behind the portrait and in front of it (two
+// canvases share one animation loop), lean toward the cursor, and the comets
+// speed up a little while the cursor is over the hero. Colours come from the
+// sky's scroll blend (--amb1, --amb2), so the orbit takes each section's
+// colour with the rest of the space. One still frame for reduced motion; the
+// loop pauses when the hero is off screen or the tab is hidden.
+---
+
+<div class="orbit" data-orbit>
+  <canvas class="orbit-layer" data-orbit-back aria-hidden="true"></canvas>
+  <figure class="orbit-portrait">
+    <slot />
+  </figure>
+  <canvas class="orbit-layer orbit-front" data-orbit-front aria-hidden="true"></canvas>
+</div>
+
+<style>
+  .orbit {
+    position: relative;
+    width: min(560px, 92vw);
+    aspect-ratio: 1 / 1;
+  }
+  .orbit-layer {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+  }
+  .orbit-front { pointer-events: none; }
+  .orbit-portrait {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: 48%;
+    margin: 0;
+    transform: translate(-50%, -50%);
+    padding: 8px;
+    border-radius: 26px;
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.02));
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.2),
+      0 40px 80px -40px rgba(0, 0, 0, 1),
+      0 0 80px -20px rgba(var(--amb1, 91, 141, 239), 0.35);
+  }
+  .orbit-portrait :global(img) {
+    display: block;
+    width: 100%;
+    height: auto;
+    aspect-ratio: 520 / 640;
+    object-fit: cover;
+    border-radius: 19px;
+  }
+</style>
+
+<script>
+  (function () {
+    const root = document.querySelector<HTMLElement>("[data-orbit]");
+    const back = root?.querySelector<HTMLCanvasElement>("[data-orbit-back]");
+    const front = root?.querySelector<HTMLCanvasElement>("[data-orbit-front]");
+    if (!root || !back || !front) return;
+    const bctx = back.getContext("2d");
+    const fctx = front.getContext("2d");
+    if (!bctx || !fctx) return;
+    const still = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+    // Radii are fractions of the box; rot is the ring's lean in radians.
+    const RINGS = [
+      { rx: 0.4, ry: 0.12, rot: -0.38, speed: 0.34, phase: 0.6, col: 1, width: 1.2 },
+      { rx: 0.47, ry: 0.16, rot: 0.22, speed: -0.24, phase: 2.4, col: 2, width: 1.2 },
+      { rx: 0.49, ry: 0.07, rot: -0.04, speed: 0.17, phase: 4.2, col: 0, width: 1 },
+    ];
+    const TRAIL = 22;
+
+    let size = 0;
+    let dpr = 1;
+    let tiltX = 0;
+    let tiltY = 0;
+    let targetX = 0;
+    let targetY = 0;
+    let boost = 0;
+    let targetBoost = 0;
+    let time = 0;
+    let last = 0;
+    let raf = 0;
+    let visible = true;
+    let frame = 0;
+    let c1 = "91,141,239";
+    let c2 = "34,211,238";
+
+    const readColours = () => {
+      const cs = getComputedStyle(document.documentElement);
+      c1 = (cs.getPropertyValue("--amb1") || c1).replace(/\s/g, "") || c1;
+      c2 = (cs.getPropertyValue("--amb2") || c2).replace(/\s/g, "") || c2;
+    };
+
+    const resize = () => {
+      // Phones draw at 1.5x: sharp enough for thin rings, half the pixels.
+      const cap = window.matchMedia("(max-width: 767px)").matches ? 1.5 : 2;
+      dpr = Math.min(cap, window.devicePixelRatio || 1);
+      size = root.clientWidth;
+      for (const cv of [back, front]) {
+        cv.width = Math.round(size * dpr);
+        cv.height = Math.round(size * dpr);
+      }
+    };
+
+    const colourFor = (k: number) => (k === 1 ? c1 : k === 2 ? c2 : "245,245,247");
+
+    // A point on a ring: x, y in px, and z, its depth (+1 nearest).
+    const at = (ring: (typeof RINGS)[number], a: number) => {
+      const rot = ring.rot + tiltX * 0.16;
+      const rx = ring.rx * size;
+      const ry = ring.ry * size * (1 + tiltY * 0.35);
+      const px = rx * Math.cos(a);
+      const py = ry * Math.sin(a);
+      return {
+        x: size / 2 + px * Math.cos(rot) - py * Math.sin(rot),
+        y: size / 2 + px * Math.sin(rot) + py * Math.cos(rot),
+        z: Math.sin(a),
+      };
+    };
+
+    const draw = () => {
+      for (const ctx of [bctx, fctx]) {
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        ctx.clearRect(0, 0, size, size);
+      }
+      for (const ring of RINGS) {
+        const rgb = colourFor(ring.col);
+        // The ring itself, in short segments so its near half can sit in
+        // front of the portrait and its far half behind it.
+        const steps = 120;
+        let prev = at(ring, 0);
+        for (let i = 1; i <= steps; i++) {
+          const a = (i / steps) * Math.PI * 2;
+          const p = at(ring, a);
+          const near = (prev.z + p.z) / 2 > 0;
+          const ctx = near ? fctx : bctx;
+          ctx.strokeStyle = `rgba(${rgb},${near ? 0.42 : 0.2})`;
+          ctx.lineWidth = ring.width;
+          ctx.beginPath();
+          ctx.moveTo(prev.x, prev.y);
+          ctx.lineTo(p.x, p.y);
+          ctx.stroke();
+          prev = p;
+        }
+
+        // The comet: a bright head and a trail that fades behind it.
+        const head = ring.phase + time * ring.speed;
+        const dir = Math.sign(ring.speed) || 1;
+        for (let j = TRAIL; j >= 0; j--) {
+          const a = head - dir * j * 0.035;
+          const p = at(ring, a);
+          const ctx = p.z > 0 ? fctx : bctx;
+          const f = 1 - j / TRAIL;
+          ctx.fillStyle = `rgba(${rgb},${(0.08 + 0.55 * f * f).toFixed(3)})`;
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, 0.7 + 2 * f, 0, Math.PI * 2);
+          ctx.fill();
+        }
+        const h = at(ring, head);
+        const ctx = h.z > 0 ? fctx : bctx;
+        const glow = ctx.createRadialGradient(h.x, h.y, 0, h.x, h.y, 18);
+        glow.addColorStop(0, "rgba(255,255,255,0.95)");
+        glow.addColorStop(0.3, `rgba(${rgb},0.55)`);
+        glow.addColorStop(1, `rgba(${rgb},0)`);
+        ctx.fillStyle = glow;
+        ctx.beginPath();
+        ctx.arc(h.x, h.y, 18, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    };
+
+    const loop = (now: number) => {
+      raf = 0;
+      const dt = last ? Math.min(0.05, (now - last) / 1000) : 0;
+      last = now;
+      // Ease toward the cursor and the hover boost, so nothing snaps.
+      tiltX += (targetX - tiltX) * 0.06;
+      tiltY += (targetY - tiltY) * 0.06;
+      boost += (targetBoost - boost) * 0.05;
+      time += dt * (1 + boost * 0.7);
+      if (frame++ % 20 === 0) readColours();
+      draw();
+      if (visible && !document.hidden) raf = requestAnimationFrame(loop);
+    };
+    const start = () => {
+      if (!raf && !still) {
+        last = 0;
+        raf = requestAnimationFrame(loop);
+      }
+    };
+
+    const hero = root.closest("section") || root;
+    window.addEventListener(
+      "pointermove",
+      (e) => {
+        const r = root.getBoundingClientRect();
+        targetX = Math.max(-1, Math.min(1, (e.clientX - (r.left + r.width / 2)) / (window.innerWidth / 2)));
+        targetY = Math.max(-1, Math.min(1, (e.clientY - (r.top + r.height / 2)) / (window.innerHeight / 2)));
+      },
+      { passive: true },
+    );
+    hero.addEventListener("pointerenter", () => (targetBoost = 1));
+    hero.addEventListener("pointerleave", () => (targetBoost = 0));
+
+    resize();
+    readColours();
+    draw();
+    if (still) return;
+    if ("IntersectionObserver" in window) {
+      new IntersectionObserver((entries) => {
+        visible = entries[0]?.isIntersecting ?? true;
+        if (visible) start();
+      }).observe(root);
+    }
+    document.addEventListener("visibilitychange", () => !document.hidden && start());
+    window.addEventListener("resize", () => {
+      resize();
+      draw();
+    });
+    start();
+  })();
+</script>

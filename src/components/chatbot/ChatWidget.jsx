@@ -186,7 +186,7 @@ export default function ChatWidget() {
               aria-label="Close chat"
               onClick={() => setIsOpen(false)}
             >
-              <i className="fas fa-xmark"></i>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12" /></svg>
             </button>
           </div>
 
@@ -230,7 +230,7 @@ export default function ChatWidget() {
                 disabled={isLoading || !input.trim()}
                 aria-label="Send message"
               >
-                <i className="fas fa-arrow-up"></i>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M12 19V5M5 12l7-7 7 7" /></svg>
               </button>
             </div>
           </div>

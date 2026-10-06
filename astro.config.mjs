@@ -13,5 +13,8 @@ export default defineConfig({
   },
   site: 'https://sampreethavvari.github.io',
   devToolbar: { enabled: false },
+  // Fetch a page as soon as a link is hovered or tapped, so moving between
+  // tabs feels instant on phones too.
+  prefetch: { prefetchAll: true, defaultStrategy: 'hover' },
   integrations: [tailwind(), react(), robotsTxt(), sitemap()]
 });

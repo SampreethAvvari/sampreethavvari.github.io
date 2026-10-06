@@ -7,7 +7,7 @@ import { disciplines } from "../data/disciplines";
 import { teaching } from "../data/teaching";
 import Picture from "../components/common/Picture.astro";
 import Icon from "../components/common/Icon.astro";
-import GlassHero from "../components/hero/GlassHero.astro";
+import OrbitHero from "../components/hero/OrbitHero.astro";
 import CareerTimeline from "../components/about_section/CareerTimeline.astro";
 import { readingTime } from "../utils/readingTime";
 
@@ -40,64 +40,88 @@ const tabs = [
   { name: "Mind", href: "/mind", tone: "mind" },
 ];
 
-// Numbers that are already told in full in a post.
-const proof = [
-  { value: "70 hrs", label: "a week handed back to a three person insurance team", href: "/posts/reconciliation" },
-  { value: "$98K", label: "vendor quote replaced by a tool that costs under $50 a month", href: "/posts/cbct-scan-validator" },
-  { value: "400 hrs", label: "a year handed back to our accountant", href: "/posts/accounting-automation" },
-  { value: "1 engineer", label: "from the first interview with the team to the deploy, on every system here", href: "/projects" },
-];
 
-// The projects shown on the landing page, newest flagship first.
-const lead = {
-  title: "Patient Dashboard",
-  line:
-    "Every system at the practice named a patient differently. Now there is one row per patient, every record one click away, read live from the practice's own scheduling system and never written back.",
-  href: "/posts/patient-dashboard",
-  img: "/patient-dashboard.png",
-  meta: "Hybridge Implants · 2026",
-};
-const side = [
+// The projects strip, newest flagship first. On wide screens the section
+// pins and the strip slides sideways as you scroll; on phones it swipes.
+const strip = [
+  {
+    title: "Patient Dashboard",
+    line: "Every system at the practice named a patient differently. Now there is one row per patient, every record one click away.",
+    href: "/posts/patient-dashboard",
+    img: "/patient-dashboard.png",
+    badge: "New",
+    year: "2026",
+    lead: true,
+  },
   {
     title: "Enterprise Search",
     line: "Company search that cites its sources, or says it does not know.",
     href: "/posts/enterprise-search",
     img: "/enterprise-search.png",
+    year: "2026",
   },
   {
     title: "Doc Coach",
     line: "Grades every patient consult against the founder's checklist and coaches the doctor.",
     href: "/posts/clinical-rag",
     img: "/doc-coach.png",
+    year: "2025",
   },
-];
-const row = [
   {
     title: "Capacity Planner",
     line: "Places doctors and assistants across three offices without burning anyone out.",
     href: "/posts/capacity-planner",
     img: "/capacity-planner.png",
+    badge: "New",
+    year: "2026",
   },
   {
     title: "Scan Validator",
-    line: "Catches bad CT scans before they reach the design team.",
+    line: "Catches bad CT scans before they reach the design team, for under $50 a month.",
     href: "/posts/cbct-scan-validator",
     img: "/cbct-validator.png",
+    year: "2026",
   },
   {
     title: "Reconciliation",
     line: "Reads three daily exports so the insurance team only reads the exceptions.",
     href: "/posts/reconciliation",
     img: "/reconciliation.png",
+    year: "2026",
+  },
+  {
+    title: "JobPilot",
+    line: "An open source robot that hunts for jobs while I sleep. The demo runs the real product.",
+    href: "/posts/jobpilot-v2",
+    img: "/jobpilot.png",
+    badge: "Open source",
+    year: "2026",
   },
 ];
+const projectCount = info.projects.length;
 
-const jobRows = [
-  { score: "96", left: "Forward Deployed Engineer", right: "Marrowstone AI" },
-  { score: "94", left: "AI Engineer, Applied Models", right: "Osprey Compute" },
-  { score: "91", left: "ML Engineer, Risk", right: "Bluewater Ledger" },
-  { score: "88", left: "AI Engineer, Insights", right: "Driftwood Metrics" },
-];
+// The back of each card: the points, numbers and tech from the project's own
+// record, so the landing page never says more than the projects page does.
+const RECORD: Record<string, string> = {
+  "Patient Dashboard": "Patient Dashboard",
+  "Enterprise Search": "Enterprise Search",
+  "Doc Coach": "Doc Coach, Consultation QA Pipeline",
+  "Capacity Planner": "Capacity Planner",
+  "Scan Validator": "CBCT Scan Validator",
+  Reconciliation: "Reconciliation",
+  JobPilot: "JobPilot",
+};
+const cards = strip.map((p) => {
+  const rec: any = info.projects.find((x: any) => x.title === RECORD[p.title]);
+  const d = rec?.details ?? {};
+  return {
+    ...p,
+    points: (d.highlights ?? []).slice(0, 2) as string[],
+    stats: (d.stats ?? []).slice(0, 2) as { value: string; label: string }[],
+    tech: (rec?.tech ?? []).slice(0, 3) as string[],
+    demo: (rec?.demo as string | undefined) || undefined,
+  };
+});
 
 const disciplineLines: Record<string, string> = {
   aie: "RAG, agents, evals and guardrails. Systems that answer honestly or not at all.",
@@ -117,214 +141,212 @@ const guides = [...teaching]
   .sort((a, b) => b.addedAt.localeCompare(a.addedAt))
   .slice(0, 2);
 
-// Comets per section, in that section's colour.
-const comets = (rgb: string, n: number, seed: number) =>
-  Array.from({ length: n }, (_, i) => ({
-    rgb,
-    top: [10, 46, 78, 24, 62][(i + seed) % 5],
-    side: (i + seed) % 2 === 0 ? "right" : "left",
-    inset: 4 + (((i + seed) * 11) % 22),
-    w: 108 + (((i + seed) * 17) % 44),
-    rz: [-16, 12, -8, 18, -12][(i + seed) % 5],
-  }));
-const RGB = {
-  projects: "91,141,239",
-  work: "245,165,36",
-  writing: "52,211,153",
-  film: "244,63,94",
-  teaching: "34,211,238",
-  home: "91,141,239",
-};
+// Comets in the one fixed sky, half on each blended colour.
+const sky = Array.from({ length: 6 }, (_, i) => ({
+  v: i % 2 === 0 ? "--amb1" : "--amb2",
+  top: [12, 64, 30, 82, 46, 20][i],
+  side: i % 2 === 0 ? "right" : "left",
+  inset: 4 + ((i * 11) % 22),
+  w: 110 + ((i * 17) % 44),
+  rz: [-16, 12, -8, 18, -12, 6][i],
+}));
 ---
 
 <BaseLayout title="Sampreeth Avvari" preloadImage="/pic.avif">
+  <!-- One sky. The comets live in a fixed layer and take their colour from
+       the same scroll blend as the ambient wash, so the space itself changes
+       colour while the sections scroll over it. -->
+  <div class="sky-comets" aria-hidden="true">
+    {sky.map((c) => (
+      <span class="space-el" style={`width:${c.w}px;height:${Math.round(c.w * 0.28)}px;top:${c.top}%;${c.side}:${c.inset}%;`}><span class="comet-glow" style={`--sr-rgb:var(${c.v}, 91,141,239);`}></span><span class="space-comet" style={`--sr-rgb:var(${c.v}, 91,141,239);--rz:${c.rz}deg;`}></span></span>
+    ))}
+  </div>
   <!-- ── Hero ─────────────────────────────────────────────────────────── -->
   <section id="home" class="hero relative overflow-hidden" data-tone="home">
-    <GlassHero />
-    <span class="glow" style="width:620px;height:620px;--gc:#5B8DEF;top:-120px;left:-140px;" aria-hidden="true"></span>
-    <span class="glow glow-2" style="width:520px;height:520px;--gc:#22D3EE;bottom:-120px;right:-80px;" aria-hidden="true"></span>
-    {comets(RGB.home, 4, 0).map((c) => (
-      <span class="space-el" style={`width:${c.w}px;height:${Math.round(c.w * 0.28)}px;top:${c.top}%;${c.side}:${c.inset}%;`} aria-hidden="true"><span class="comet-glow" style={`--sr-rgb:${c.rgb};`}></span><span class="space-comet" style={`--sr-rgb:${c.rgb};--rz:${c.rz}deg;`}></span></span>
-    ))}
-
     <div class="wrap on-top hero-grid">
       <div class="hero-copy">
-        <span class="chip chip-live">AI engineer at Hybridge Implants · New York</span>
+        <span class="chip chip-live">AI engineer · New York</span>
         <h1 class="t-display hero-title">
           I'm Sampreeth.
           <span class="t-tail">I ship AI and direct films.</span>
         </h1>
         <p class="t-lede hero-lede">
-          Whether it's a model or a movie, the job is making the messy thing
-          make sense to someone else. Right now that means the systems a dental
-          implant practice runs on, every day.
+          I build the systems a dental implant practice runs on, and I make films.
         </p>
         <div class="hero-actions">
           <a href="#projects" class="btn btn-primary">
             See the projects <Icon name="arrow-down" size={15} />
           </a>
-          <a href="https://hi.switchy.io/zIhU" target="_blank" rel="noopener" class="btn btn-glass">
-            Try JobPilot <Icon name="arrow-up-right" size={15} class="arrow-ur" />
+          <a href="#contact" class="btn btn-glass">
+            Contact <Icon name="mail" size={15} />
           </a>
-          <a href="/posts" class="btn btn-ghost">Read the writing</a>
         </div>
-        <nav class="hero-legend" aria-label="Sections">
-          <span class="t-meta">Every colour is a place on the site</span>
-          <div class="hero-legend-chips">
-            {tabs.map((t) => (
-              <a href={t.href} class="chip chip-dot" data-tone={t.tone}>{t.name}</a>
-            ))}
-          </div>
-        </nav>
       </div>
 
-      <figure class="hero-portrait">
-        <Picture
-          src={info.picture}
-          alt={info.picture_alt}
-          width={520}
-          height={640}
-          class="hero-portrait-img"
-          loading="eager"
-          fetchpriority="high"
-        />
-        <figcaption class="sr-only">{info.name}</figcaption>
-      </figure>
-    </div>
-  </section>
-
-  <!-- ── Proof ────────────────────────────────────────────────────────── -->
-  <section class="proof" data-tone="home" aria-label="In numbers">
-    <div class="wrap">
-      <ul class="proof-grid">
-        {proof.map((p) => (
-          <li>
-            <a href={p.href} class="proof-item">
-              <span class="stat-num">{p.value}</span>
-              <span class="stat-cap">{p.label}</span>
-            </a>
-          </li>
-        ))}
-      </ul>
+      <div class="hero-art">
+        <OrbitHero>
+          <Picture
+            src={info.picture}
+            alt={info.picture_alt}
+            width={520}
+            height={640}
+            loading="eager"
+            fetchpriority="high"
+          />
+        </OrbitHero>
+      </div>
     </div>
   </section>
 
   <!-- ── Projects ─────────────────────────────────────────────────────── -->
-  <section id="projects" class="section overflow-hidden" data-tone="projects">
-    <div class="tone-atmos" aria-hidden="true"></div>
-    {comets(RGB.projects, 3, 1).map((c) => (
-      <span class="space-el" style={`width:${c.w}px;height:${Math.round(c.w * 0.28)}px;top:${c.top}%;${c.side}:${c.inset}%;`} aria-hidden="true"><span class="comet-glow" style={`--sr-rgb:${c.rgb};`}></span><span class="space-comet" style={`--sr-rgb:${c.rgb};--rz:${c.rz}deg;`}></span></span>
-    ))}
-    <div class="wrap on-top">
-      <div class="sec-head" data-reveal>
-        <div class="sec-head-main">
-          <p class="kicker">Projects</p>
-          <h2 class="t-h2">
-            Things I've built.
-            <span class="t-tail">Most of them run a dental practice every day.</span>
-          </h2>
+  <section id="projects" class="proj" data-tone="projects">
+    <div class="proj-pin">
+      <div class="wrap on-top">
+        <div class="sec-head proj-head">
+          <div class="sec-head-main">
+            <p class="kicker">Projects</p>
+            <h2 class="t-h2">
+              Things I've built.
+              <span class="t-tail">Most of them run a dental practice.</span>
+            </h2>
+          </div>
+          <a href="/projects" class="tlink">All projects <Icon name="arrow-right" size={14} /></a>
         </div>
-        <a href="/projects" class="tlink">All projects <Icon name="arrow-right" size={14} /></a>
       </div>
 
-      <div class="bento">
-        <a href={lead.href} class="surface bento-lead" data-reveal>
-          <div class="surface-media bento-lead-media">
-            {hasPublic(lead.img) ? (
-              <Picture src={lead.img} alt={lead.title} width={900} height={560} />
-            ) : (
-              <div class="media-fallback" aria-hidden="true"><span>{lead.title}</span></div>
-            )}
-          </div>
-          <div class="surface-pad">
-            <div class="card-badges">
-              <span class="badge badge-live">Live</span>
-              <span class="badge badge-tone">New</span>
-            </div>
-            <h3 class="t-h3 bento-lead-title">{lead.title}</h3>
-            <p class="t-body mt-2">{lead.line}</p>
-            <p class="t-meta mt-4">{lead.meta}</p>
-          </div>
-        </a>
+      <div class="proj-viewport on-top">
+        <button type="button" class="proj-arrow is-prev" data-row-prev aria-label="Previous projects" disabled>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6" /></svg>
+        </button>
+        <button type="button" class="proj-arrow is-next" data-row-next aria-label="More projects">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 18 6-6-6-6" /></svg>
+        </button>
+        <div class="drag-lens" aria-hidden="true">
+          <svg class="drag-lens-l" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6" /></svg>
+          <span class="drag-lens-label" data-lens-label>Drag</span>
+          <svg class="drag-lens-r" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6" /></svg>
+        </div>
+        <div class="proj-clip">
+        <ul class="proj-track">
+          {cards.map((p, i) => (
+            <li class={`proj-item ${p.lead ? "is-lead" : ""}`}>
+              <div class="proj-card" data-flip>
+                <div class="proj-flip">
+                  <button type="button" class="surface proj-face proj-front" data-flip-open aria-label={`${p.title}: show details`}>
+                    <span class="proj-media">
+                      {hasPublic(p.img) ? (
+                        <Picture src={p.img} alt="" width={p.lead ? 900 : 640} height={p.lead ? 560 : 400} class="proj-img" loading={i === 0 ? "eager" : "lazy"} />
+                      ) : (
+                        <span class="media-fallback proj-img" aria-hidden="true"></span>
+                      )}
+                      <span class="proj-num t-meta tabular">{String(i + 1).padStart(2, "0")}</span>
+                    </span>
+                    <span class="proj-body">
+                      <span class="t-meta block">
+                        {p.badge && <span class="badge badge-tone mr-2">{p.badge}</span>}
+                        {p.year}
+                      </span>
+                      <span class="t-h3 block mt-2">{p.title}</span>
+                      <span class="t-small block mt-1.5 line-clamp-2">{p.line}</span>
+                      <span class="proj-hint t-meta">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 0 1 15.5-6.2L21 8M21 3v5h-5M21 12a9 9 0 0 1-15.5 6.2L3 16m0 5v-5h5" /></svg>
+                        Details
+                      </span>
+                    </span>
+                  </button>
 
-        <div class="bento-side">
-          {side.map((p) => (
-            <a href={p.href} class="surface card-h" data-reveal>
-              <div class="card-h-media">
-                {hasPublic(p.img) ? (
-                  <Picture src={p.img} alt={p.title} width={400} height={300} />
-                ) : (
-                  <div class="media-fallback" aria-hidden="true"></div>
-                )}
+                  <div class="surface proj-face proj-back" aria-hidden="true" inert>
+                    <div class="proj-back-head">
+                      <span class="t-meta">
+                        {p.badge && <span class="badge badge-tone mr-2">{p.badge}</span>}
+                        {p.year}
+                      </span>
+                      <button type="button" class="proj-close" data-flip-close aria-label="Turn the card back">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 0 1 15.5-6.2L21 8M21 3v5h-5M21 12a9 9 0 0 1-15.5 6.2L3 16m0 5v-5h5" /></svg>
+                      </button>
+                    </div>
+                    <h3 class="t-h3 mt-3">{p.title}</h3>
+                    <p class="t-small mt-1.5">{p.line}</p>
+                    {p.stats.length > 0 && (
+                      <dl class="proj-stats">
+                        {p.stats.map((st) => (
+                          <div>
+                            <dt class="proj-stat-num">{st.value}</dt>
+                            <dd class="t-meta line-clamp-2">{st.label}</dd>
+                          </div>
+                        ))}
+                      </dl>
+                    )}
+                    {p.points.length > 0 && (
+                      <ul class="proj-points">
+                        {p.points.map((pt) => <li class="line-clamp-2">{pt}</li>)}
+                      </ul>
+                    )}
+                    {p.tech.length > 0 && (
+                      <div class="proj-tech">
+                        {p.tech.map((t) => <span class="badge">{t}</span>)}
+                      </div>
+                    )}
+                    <div class="proj-actions">
+                      <a href={p.href} class="btn btn-primary btn-sm">
+                        Read the case study <Icon name="arrow-right" size={14} class="arrow-r" />
+                      </a>
+                      {p.demo && (
+                        <a href={p.demo} class="btn btn-glass btn-sm">Live demo</a>
+                      )}
+                    </div>
+                  </div>
+                </div>
               </div>
-              <div class="card-h-body">
-                <h3 class="t-h4">{p.title}</h3>
-                <p class="t-small mt-1.5">{p.line}</p>
-              </div>
-            </a>
+            </li>
           ))}
+          <li class="proj-item is-end">
+            <a href="/projects" class="surface proj-card proj-end" data-flip-skip>
+              <span class="stat-num">{projectCount}</span>
+              <span class="t-h4 mt-3">projects in all</span>
+              <span class="t-small mt-2">Every system, research project and side build, with the case study behind each one.</span>
+              <span class="tlink mt-6">See them all <Icon name="arrow-right" size={14} /></span>
+            </a>
+          </li>
+        </ul>
         </div>
+      </div>
 
-        {row.map((p) => (
-          <a href={p.href} class="surface bento-cell" data-reveal>
-            <div class="surface-media bento-cell-media">
-              {hasPublic(p.img) ? (
-                <Picture src={p.img} alt={p.title} width={600} height={340} />
-              ) : (
-                <div class="media-fallback" aria-hidden="true"><span>{p.title}</span></div>
-              )}
-            </div>
-            <div class="surface-pad">
-              <h3 class="t-h4">{p.title}</h3>
-              <p class="t-small mt-1.5">{p.line}</p>
-            </div>
-          </a>
-        ))}
+      <div class="wrap on-top proj-foot">
+        <span class="proj-hint-row t-meta" data-row-hint>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 7l-5 5 5 5M16 7l5 5-5 5M3 12h18" /></svg>
+          <span class="hint-fine">Drag, scroll sideways or use the arrows</span>
+          <span class="hint-touch">Swipe for more</span>
+        </span>
+        <span class="proj-bar"></span>
+        <span class="t-meta tabular" data-proj-count>01 / {String(strip.length + 1).padStart(2, "0")}</span>
+      </div>
+    </div>
+  </section>
 
-        <div class="surface bento-wide" data-reveal>
-          <div class="jp-copy">
-            <span class="badge">Open source · live demo</span>
-            <h3 class="t-h3 mt-4">Fly JobPilot yourself.</h3>
-            <p class="t-body mt-2">
-              A robot that hunts for jobs while I sleep. Every hour it finds new
-              postings, scores how well each one fits, writes a one page resume
-              for the good ones and watches the inbox for replies. The demo runs
-              the real product on a made up person, so you can click around
-              without signing up.
-            </p>
-            <div class="mt-6 flex flex-wrap gap-3">
-              <a href="https://hi.switchy.io/zIhU" target="_blank" rel="noopener" class="btn btn-glass btn-sm">
-                Open the demo <Icon name="arrow-up-right" size={14} class="arrow-ur" />
-              </a>
-              <a href="/posts/jobpilot-v2" class="btn btn-ghost btn-sm">How I built it</a>
-            </div>
-          </div>
-          <a href="https://hi.switchy.io/zIhU" target="_blank" rel="noopener" class="jp-mock" aria-label="JobPilot demo">
-            <div class="jp-mock-bar">
-              <span class="jp-dots" aria-hidden="true"><i></i><i></i><i></i></span>
-              <span>Today's matches</span>
-              <span class="t-meta ml-auto">Fictional data</span>
-            </div>
-            {jobRows.map((r) => (
-              <div class="jp-row">
-                <span class="jp-score tabular">{r.score}</span>
-                <span class="jp-bar"><span style={`width:${r.score}%`}></span></span>
-                <span class="truncate">{r.left}</span>
-                <span class="jp-co">{r.right}</span>
-              </div>
-            ))}
-          </a>
+  <!-- ── About ────────────────────────────────────────────────────────── -->
+  <section id="about" class="section" data-tone="home">
+    <div class="wrap on-top about-grid">
+      <div data-reveal>
+        <p class="kicker">About</p>
+        <h2 class="t-h2 mt-5">
+          An engineer
+          <span class="t-tail">who happens to make movies.</span>
+        </h2>
+        <p class="t-body about-text mt-5">{info.about.description}</p>
+        <div class="mt-7 flex flex-wrap gap-3">
+          <a href="/resume" class="btn btn-glass btn-sm">Resume and toolkit</a>
+          <a href="/projects" class="btn btn-ghost btn-sm">Every project</a>
         </div>
+      </div>
+      <div class="surface surface-pad about-timeline" data-reveal>
+        <CareerTimeline />
       </div>
     </div>
   </section>
 
   <!-- ── Work ─────────────────────────────────────────────────────────── -->
-  <section id="work" class="section overflow-hidden" data-tone="work">
-    <div class="tone-atmos" aria-hidden="true"></div>
-    {comets(RGB.work, 3, 2).map((c) => (
-      <span class="space-el" style={`width:${c.w}px;height:${Math.round(c.w * 0.28)}px;top:${c.top}%;${c.side}:${c.inset}%;`} aria-hidden="true"><span class="comet-glow" style={`--sr-rgb:${c.rgb};`}></span><span class="space-comet" style={`--sr-rgb:${c.rgb};--rz:${c.rz}deg;`}></span></span>
-    ))}
+  <section id="work" class="section" data-tone="work">
     <div class="wrap on-top">
       <div class="sec-head" data-reveal>
         <div class="sec-head-main">
@@ -352,12 +374,64 @@ const RGB = {
     </div>
   </section>
 
+  <!-- ── Film ─────────────────────────────────────────────────────────── -->
+  <section id="film" class="section" data-tone="film">
+    <div class="wrap on-top">
+      <div class="sec-head" data-reveal>
+        <div class="sec-head-main">
+          <p class="kicker">Film</p>
+          <h2 class="t-h2">
+            Gray characters and tight spaces.
+            <span class="t-tail">The chaos hiding inside ordinary lives.</span>
+          </h2>
+        </div>
+        <a href="/filmmaking" class="tlink">The full slate <Icon name="arrow-right" size={14} /></a>
+      </div>
+
+      <div class="film-stage">
+        <a href="/filmmaking#among-monsters" class="film-poster" data-reveal aria-label="Among Monsters, the feature I wrote and directed">
+          <Picture src="/among-monsters-poster.webp" alt="Among Monsters poster" width={1600} height={900} class="film-poster-img" />
+          <span class="film-poster-tag">
+            <span class="badge badge-tone">Premiering 2026</span>
+            <span class="badge">New York</span>
+          </span>
+        </a>
+
+        <div class="film-side" data-reveal>
+          <p class="t-meta">Now in post</p>
+          <h3 class="t-h3 mt-2">Among Monsters</h3>
+          <p class="t-small mt-2">
+            An independent crime feature I wrote, directed, edited and scored,
+            shot across New York between work weeks.
+          </p>
+          <div class="mt-5 flex flex-wrap gap-2">
+            <a href="https://www.imdb.com/title/tt39700295/" target="_blank" rel="noreferrer" class="btn btn-glass btn-sm">
+              <span class="imdb-wordmark">IMDb</span> Page <Icon name="arrow-up-right" size={13} class="arrow-ur" />
+            </a>
+            <a href="/filmmaking#among-monsters" class="btn btn-ghost btn-sm">Stills and crew</a>
+          </div>
+
+          <p class="t-meta film-more">Also on the slate</p>
+          <ul class="film-list">
+            {filmCredits.slice(1).map((c) => (
+              <li>
+                <a href="/filmmaking" class="film-row">
+                  <span class="min-w-0">
+                    <span class="block film-row-title">{c.title}</span>
+                    <span class="block t-meta mt-0.5">{c.role}</span>
+                  </span>
+                  <span class="t-meta tabular">{c.year}</span>
+                </a>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
   <!-- ── Writing ──────────────────────────────────────────────────────── -->
-  <section id="writing" class="section overflow-hidden" data-tone="writing">
-    <div class="tone-atmos" aria-hidden="true"></div>
-    {comets(RGB.writing, 3, 3).map((c) => (
-      <span class="space-el" style={`width:${c.w}px;height:${Math.round(c.w * 0.28)}px;top:${c.top}%;${c.side}:${c.inset}%;`} aria-hidden="true"><span class="comet-glow" style={`--sr-rgb:${c.rgb};`}></span><span class="space-comet" style={`--sr-rgb:${c.rgb};--rz:${c.rz}deg;`}></span></span>
-    ))}
+  <section id="writing" class="section" data-tone="writing">
     <div class="wrap on-top">
       <div class="sec-head" data-reveal>
         <div class="sec-head-main">
@@ -418,49 +492,8 @@ const RGB = {
     </div>
   </section>
 
-  <!-- ── Film ─────────────────────────────────────────────────────────── -->
-  <section id="film" class="section overflow-hidden" data-tone="film">
-    <div class="tone-atmos" aria-hidden="true"></div>
-    {comets(RGB.film, 3, 4).map((c) => (
-      <span class="space-el" style={`width:${c.w}px;height:${Math.round(c.w * 0.28)}px;top:${c.top}%;${c.side}:${c.inset}%;`} aria-hidden="true"><span class="comet-glow" style={`--sr-rgb:${c.rgb};`}></span><span class="space-comet" style={`--sr-rgb:${c.rgb};--rz:${c.rz}deg;`}></span></span>
-    ))}
-    <div class="wrap on-top film-grid">
-      <div data-reveal>
-        <p class="kicker">Film</p>
-        <h2 class="t-h2 mt-5">
-          Gray characters and tight spaces.
-          <span class="t-tail">The chaos hiding inside ordinary lives.</span>
-        </h2>
-        <p class="t-lede mt-5">
-          I write, direct, edit and score. <span class="text-dk-text font-medium">Among Monsters</span> is
-          the independent feature I'm cutting between work weeks.
-        </p>
-        <div class="mt-8 flex flex-wrap items-center gap-3">
-          <a href="https://www.imdb.com/title/tt39700295/" target="_blank" rel="noreferrer" class="btn btn-glass">
-            <span class="imdb-wordmark">IMDb</span> Among Monsters <Icon name="arrow-up-right" size={14} class="arrow-ur" />
-          </a>
-          <a href="/filmmaking" class="tlink ml-2">The full slate <Icon name="arrow-right" size={14} /></a>
-        </div>
-      </div>
-      <ul class="rows" data-reveal>
-        {filmCredits.map((c) => (
-          <li>
-            <a href="/filmmaking" class="row-link">
-              <span class="min-w-0">
-                <span class="block t-h4">{c.title}</span>
-                <span class="block t-meta mt-1">{c.role}</span>
-              </span>
-              <span class="ml-auto t-meta text-base tabular">{c.year}</span>
-            </a>
-          </li>
-        ))}
-      </ul>
-    </div>
-  </section>
-
   <!-- ── Teaching ─────────────────────────────────────────────────────── -->
-  <section id="teaching" class="section overflow-hidden" data-tone="teaching">
-    <div class="tone-atmos" aria-hidden="true"></div>
+  <section id="teaching" class="section" data-tone="teaching">
     <div class="wrap on-top">
       <div class="sec-head" data-reveal>
         <div class="sec-head-main">
@@ -494,30 +527,8 @@ const RGB = {
     </div>
   </section>
 
-  <!-- ── About ────────────────────────────────────────────────────────── -->
-  <section id="about" class="section overflow-hidden" data-tone="home">
-    <div class="wrap on-top about-grid">
-      <div data-reveal>
-        <p class="kicker">About</p>
-        <h2 class="t-h2 mt-5">
-          An engineer
-          <span class="t-tail">who happens to make movies.</span>
-        </h2>
-        <p class="t-body about-text mt-5">{info.about.description}</p>
-        <div class="mt-7 flex flex-wrap gap-3">
-          <a href="/resume" class="btn btn-glass btn-sm">Resume and toolkit</a>
-          <a href="/projects" class="btn btn-ghost btn-sm">Every project</a>
-        </div>
-      </div>
-      <div class="surface surface-pad about-timeline" data-reveal>
-        <CareerTimeline />
-      </div>
-    </div>
-  </section>
-
   <!-- ── Contact ──────────────────────────────────────────────────────── -->
-  <section id="contact" class="section overflow-hidden text-center" data-tone="home">
-    <span class="glow" style="width:640px;height:640px;--gc:#5B8DEF;top:-140px;left:50%;margin-left:-320px;" aria-hidden="true"></span>
+  <section id="contact" class="section text-center" data-tone="home">
     <div class="wrap on-top" data-reveal>
       <p class="kicker">Contact</p>
       <h2 class="t-title mt-6">
@@ -528,15 +539,18 @@ const RGB = {
         Hiring for applied AI, or the last mile where software meets the people
         who use it? I'd love to hear about it.
       </p>
-      <div class="mt-9 flex flex-wrap justify-center gap-3">
+      <div class="mt-9 flex flex-wrap items-center justify-center gap-3">
         <a href={`mailto:${info.contact.email}`} class="btn btn-primary">
           <Icon name="mail" size={16} /> {info.contact.email}
         </a>
-        <a href={info.contact.linkedin} target="_blank" rel="noreferrer" class="btn btn-glass" aria-label="LinkedIn">
-          <Icon name="linkedin" size={15} /> LinkedIn
+        <a href={info.contact.linkedin} target="_blank" rel="noreferrer" class="social social-linkedin" aria-label="LinkedIn" title="LinkedIn">
+          <Icon name="linkedin" size={19} />
         </a>
-        <a href={info.contact.github} target="_blank" rel="noreferrer" class="btn btn-glass" aria-label="GitHub">
-          <Icon name="github" size={15} /> GitHub
+        <a href={info.contact.github} target="_blank" rel="noreferrer" class="social social-github" aria-label="GitHub" title="GitHub">
+          <Icon name="github" size={19} />
+        </a>
+        <a href={info.contact.instagram} target="_blank" rel="noreferrer" class="social social-instagram" aria-label="Instagram" title="Instagram">
+          <Icon name="instagram" size={19} />
         </a>
       </div>
     </div>
@@ -544,150 +558,319 @@ const RGB = {
 </BaseLayout>
 
 <style>
-  /* Hero */
-  .hero { min-height: 100svh; display: flex; align-items: center; padding-block: 120px 72px; }
+  /* Hero: a name, one line, two actions, and the orbit. */
+  .hero { min-height: 100svh; display: flex; align-items: center; padding-block: 112px 64px; }
   .hero-grid {
     display: grid;
     grid-template-columns: 1fr;
-    gap: 48px;
+    gap: 32px;
     align-items: center;
   }
   @media (min-width: 1024px) {
-    .hero-grid { grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); gap: 64px; }
+    .hero-grid { grid-template-columns: minmax(0, 6fr) minmax(0, 6fr); gap: 48px; }
   }
-  .hero-title { margin-top: 28px; }
-  .hero-lede { margin-top: 24px; }
+  .hero-title { margin-top: 26px; }
+  .hero-lede { margin-top: 22px; max-width: 30rem; }
   .hero-actions { margin-top: 32px; display: flex; flex-wrap: wrap; gap: 12px; }
-  .hero-legend { margin-top: 44px; display: grid; gap: 12px; }
-  .hero-legend-chips { display: flex; flex-wrap: wrap; gap: 8px; }
-  .hero-portrait {
-    justify-self: center;
-    width: min(340px, 78vw);
-    margin: 0;
-    padding: 10px;
-    border-radius: 28px;
-    background: linear-gradient(180deg, rgba(255, 255, 255, 0.09), rgba(255, 255, 255, 0.02));
-    border: 1px solid rgba(255, 255, 255, 0.12);
-    box-shadow:
-      inset 0 1px 0 rgba(255, 255, 255, 0.2),
-      0 40px 80px -40px rgba(0, 0, 0, 1);
-  }
-  @media (min-width: 1024px) { .hero-portrait { justify-self: end; } }
-  .hero-portrait :global(.hero-portrait-img) {
-    display: block;
-    width: 100%;
-    height: auto;
-    aspect-ratio: 520 / 640;
-    object-fit: cover;
-    border-radius: 20px;
-  }
+  .hero-art { display: flex; justify-content: center; }
+  @media (min-width: 1024px) { .hero-art { justify-content: flex-end; } }
 
-  /* Proof strip */
-  .proof { position: relative; z-index: 1; border-block: 1px solid var(--line); background: rgba(0, 0, 0, 0.35); }
-  .proof-grid {
+  /* Projects row, the way a streaming row works: it starts on the page
+     margin and runs off the right edge of the screen, scrolls sideways with
+     a trackpad, a swipe or the arrows, and snaps card by card. */
+  .proj { position: relative; padding-block: clamp(72px, 9vw, 120px); --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1); }
+  .proj-viewport { position: relative; }
+  .proj-track {
+    --row-start: max(var(--gutter), calc((100% - var(--max)) / 2));
     list-style: none;
     margin: 0;
-    padding: 0;
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    display: flex;
+    gap: 16px;
+    padding: 14px var(--gutter) 28px var(--row-start);
+    scroll-padding-inline: var(--row-start);
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scroll-snap-type: x mandatory;
+    scrollbar-width: none;
   }
-  @media (min-width: 1024px) { .proof-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
-  .proof-grid > li { border-left: 1px solid var(--line); }
-  .proof-grid > li:nth-child(odd) { border-left: 0; }
+  .proj-track::-webkit-scrollbar { display: none; }
+  .proj-item { flex: none; width: min(82vw, 360px); scroll-snap-align: start; }
+  .proj-item.is-lead { width: min(88vw, 520px); }
+  .proj-item.is-end { width: min(70vw, 280px); }
   @media (min-width: 1024px) {
-    .proof-grid > li:nth-child(odd) { border-left: 1px solid var(--line); }
-    .proof-grid > li:first-child { border-left: 0; }
+    .proj-track { gap: 20px; }
+    .proj-media { height: 230px; }
+    .proj-item { width: 360px; }
+    .proj-item.is-lead { width: 540px; }
   }
-  @media (max-width: 1023px) {
-    .proof-grid > li:nth-child(n + 3) { border-top: 1px solid var(--line); }
+
+  /* A card that turns around. The front and back sit in one grid cell, so the
+     card is as tall as its taller face; the inner layer rotates. */
+  .proj-card {
+    height: 100%;
+    perspective: 1600px;
+    transition: transform 300ms var(--ease-glass);
   }
-  .proof-item {
+  .proj-item:hover .proj-card { transform: translateY(-6px); }
+  .proj-card.proj-end { display: flex; flex-direction: column; overflow: hidden; }
+  .proj-flip {
+    position: relative;
+    display: grid;
+    height: 100%;
+    transform-style: preserve-3d;
+    transition: transform 720ms var(--ease-glass);
+  }
+  .proj-card.is-flipped .proj-flip { transform: rotateY(180deg); }
+  .proj-face {
+    grid-area: 1 / 1;
     display: flex;
     flex-direction: column;
-    height: 100%;
-    padding: 28px 20px;
-    text-decoration: none;
-    transition: background-color 150ms var(--ease-glass);
+    min-height: 0;
+    overflow: hidden;
+    -webkit-backface-visibility: hidden;
+    backface-visibility: hidden;
+    text-align: left;
+    font: inherit;
+    color: var(--ink);
   }
-  @media (min-width: 1024px) { .proof-item { padding: 36px 28px; } }
-  .proof-item:hover { background: var(--wash); }
-
-  /* Projects bento */
-  .bento { display: grid; grid-template-columns: 1fr; gap: 16px; }
-  @media (min-width: 768px) { .bento { grid-template-columns: repeat(6, minmax(0, 1fr)); } }
-  @media (min-width: 1024px) { .bento { grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 20px; } }
-  .bento-lead { display: flex; flex-direction: column; }
-  @media (min-width: 768px) { .bento-lead { grid-column: span 6; } }
-  @media (min-width: 1024px) { .bento-lead { grid-column: span 7; } }
-  .bento-lead-media { aspect-ratio: 16 / 9; }
-  .bento-lead-title { font-size: clamp(1.375rem, 2.2vw, 1.75rem); margin-top: 14px; }
-  .card-badges { display: flex; gap: 6px; }
-  .bento-side { display: grid; gap: 16px; }
-  @media (min-width: 768px) { .bento-side { grid-column: span 6; grid-template-columns: 1fr 1fr; } }
-  @media (min-width: 1024px) { .bento-side { grid-column: span 5; grid-template-columns: 1fr; gap: 20px; } }
-  .card-h { display: grid; grid-template-columns: 132px minmax(0, 1fr); overflow: hidden; }
-  @media (min-width: 768px) and (max-width: 1023px) { .card-h { grid-template-columns: 1fr; } }
-  .card-h-media { overflow: hidden; background: #07080b; border-right: 1px solid var(--line); border-radius: 19px 0 0 19px; min-height: 120px; }
-  @media (min-width: 768px) and (max-width: 1023px) { .card-h-media { border-radius: 19px 19px 0 0; border-right: 0; border-bottom: 1px solid var(--line); aspect-ratio: 16 / 9; } }
-  .card-h-media :global(img) { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform 600ms var(--ease-glass); }
-  .card-h:hover .card-h-media :global(img) { transform: scale(1.04); }
-  .card-h-body { padding: 20px 22px; align-self: center; }
-  .bento-cell { display: flex; flex-direction: column; }
-  @media (min-width: 768px) { .bento-cell { grid-column: span 2; } }
-  @media (min-width: 1024px) { .bento-cell { grid-column: span 4; } }
-  .bento-cell-media { aspect-ratio: 16 / 9; }
-  .bento-wide {
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: 24px;
-    padding: 24px;
-    align-items: center;
+  .proj-front { padding: 0; cursor: pointer; }
+  .proj-front:hover { border-color: var(--line-strong); }
+  .proj-front:focus-visible, .proj-close:focus-visible { outline: none; box-shadow: 0 0 0 4px rgba(var(--tone-rgb), 0.35); }
+  /* Every cover is the same height, so the row has one clean top and bottom
+     edge however wide a card is. */
+  .proj-media {
+    position: relative;
+    display: block;
+    height: 200px;
+    overflow: hidden;
+    border-radius: 19px 19px 0 0;
+    border-bottom: 1px solid var(--line);
+    background: #07080b;
   }
-  @media (min-width: 768px) { .bento-wide { grid-column: span 6; } }
-  @media (min-width: 1024px) { .bento-wide { grid-column: span 12; grid-template-columns: minmax(0, 6fr) minmax(0, 5fr); gap: 40px; padding: 36px; } }
-  .media-fallback {
+  .proj-media :global(.proj-img) {
+    display: block;
     width: 100%;
     height: 100%;
-    min-height: 100%;
+    object-fit: cover;
+    transition: transform 600ms var(--ease-glass);
+  }
+  .proj-item:hover .proj-media :global(.proj-img) { transform: scale(1.05); }
+  .proj-num {
+    position: absolute;
+    left: 14px;
+    top: 12px;
+    padding: 4px 8px;
+    border-radius: 9999px;
+    background: rgba(0, 0, 0, 0.45);
+    color: var(--ink-soft);
+  }
+  .proj-body { display: block; padding: 18px 20px 20px; }
+  .proj-hint {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 12px;
+    color: var(--ink-faint);
+    transition: color 150ms var(--ease-glass);
+  }
+  .proj-front:hover .proj-hint { color: var(--tone); }
+  .proj-back {
+    transform: rotateY(180deg);
+    padding: 18px 20px;
+    overflow-y: auto;
+    scrollbar-width: none;
+    background:
+      radial-gradient(90% 60% at 0% 0%, rgba(var(--tone-rgb), 0.12), transparent 70%),
+      var(--surface-solid);
+  }
+  .proj-back::-webkit-scrollbar { display: none; }
+  .proj-back-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+  .proj-close {
+    display: inline-grid;
+    place-items: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 9999px;
+    color: var(--ink-soft);
+    background: var(--wash-strong);
+    border: 1px solid var(--line);
+    cursor: pointer;
+    transition: color 150ms var(--ease-glass), background-color 150ms var(--ease-glass);
+  }
+  .proj-close:hover { color: var(--ink); background: rgba(255, 255, 255, 0.12); }
+  .proj-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 14px 0 0; }
+  .proj-stats > div { padding: 10px 12px; border-radius: 12px; background: var(--wash); border: 1px solid var(--line); }
+  .proj-stat-num { font-size: 1.0625rem; font-weight: 600; letter-spacing: -0.02em; color: var(--ink); }
+  .proj-stats dd { margin: 4px 0 0; }
+  .proj-points { list-style: none; margin: 14px 0 0; padding: 0; display: grid; gap: 8px; }
+  .proj-points li {
+    position: relative;
+    padding-left: 16px;
+    font-size: 0.8125rem;
+    line-height: 1.5;
+    color: var(--ink-soft);
+  }
+  .proj-points li::before {
+    content: "";
+    position: absolute;
+    left: 2px;
+    top: 0.62em;
+    width: 5px;
+    height: 5px;
+    border-radius: 9999px;
+    background: var(--tone);
+  }
+  .proj-tech { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 14px; }
+  .proj-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: auto; padding-top: 16px; }
+  .proj-end {
+    justify-content: center;
+    padding: 28px;
+    background:
+      radial-gradient(80% 70% at 20% 0%, rgba(var(--tone-rgb), 0.18), transparent 70%),
+      var(--surface-solid);
+  }
+
+  /* Dragging. With a mouse the row takes a press and a fling, so the pointer
+     becomes a small glass lens that says what a press will do: drag the row,
+     or turn the card under it. */
+  @media (hover: hover) and (pointer: fine) {
+    .proj-track { cursor: none; }
+    .proj-track :global(a),
+    .proj-track .proj-close { cursor: pointer; }
+  }
+  .proj-track.is-dragging { scroll-snap-type: none; cursor: none; user-select: none; }
+  .proj-track.is-dragging .proj-item:hover .proj-card { transform: none; }
+  .proj-track :global(img) { -webkit-user-drag: none; user-select: none; }
+  .drag-lens {
+    position: fixed;
+    left: 0;
+    top: 0;
+    z-index: 80;
+    display: none;
+    align-items: center;
+    gap: 6px;
+    height: 44px;
+    padding: 0 12px;
+    border-radius: 9999px;
+    color: var(--ink);
+    font-size: 0.8125rem;
+    font-weight: 500;
+    white-space: nowrap;
+    pointer-events: none;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    background:
+      linear-gradient(180deg, rgba(255, 255, 255, 0.16), rgba(255, 255, 255, 0.04)),
+      rgba(10, 11, 15, 0.5);
+    -webkit-backdrop-filter: blur(4px) saturate(1.7);
+    backdrop-filter: blur(4px) saturate(1.7);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35), 0 14px 32px -12px rgba(0, 0, 0, 0.9);
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.6);
+    transition: opacity 180ms var(--ease-glass), transform 260ms var(--ease-spring), width 260ms var(--ease-glass);
+    will-change: left, top, transform;
+  }
+  @media (hover: hover) and (pointer: fine) { .drag-lens { display: inline-flex; } }
+  .drag-lens.is-on { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+  .drag-lens.is-down { transform: translate(-50%, -50%) scale(0.86); }
+  .drag-lens.is-off { opacity: 0; transform: translate(-50%, -50%) scale(0.6); }
+  .drag-lens svg { color: var(--tone); transition: transform 260ms var(--ease-glass); }
+  .drag-lens.is-down .drag-lens-l { transform: translateX(-3px); }
+  .drag-lens.is-down .drag-lens-r { transform: translateX(3px); }
+
+  /* The first time the row comes into view it glides a little left and
+     springs back: there is more this way. */
+  .proj-track.is-peek { animation: row-peek 1500ms var(--ease-glass) 1; }
+  @keyframes row-peek {
+    0% { transform: translateX(0); }
+    38% { transform: translateX(-96px); }
+    62% { transform: translateX(-96px); }
+    100% { transform: translateX(0); }
+  }
+  .proj-hint-row {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--ink-soft);
+    white-space: nowrap;
+    transition: opacity 400ms var(--ease-glass);
+  }
+  .proj-hint-row svg { color: var(--tone); }
+  .proj-hint-row.is-gone { opacity: 0; }
+  .hint-touch { display: none; }
+  @media (hover: none) {
+    .hint-fine { display: none; }
+    .hint-touch { display: inline; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .proj-track.is-peek { animation: none; }
+    .drag-lens { transition: opacity 150ms linear; }
+  }
+
+  /* Arrows: round glass buttons over the row's ends, shown when the row is
+     hovered and there is somewhere to go. Touch screens swipe instead. */
+  .proj-arrow {
+    position: absolute;
+    top: calc(14px + 100px - 24px);
+    z-index: 3;
     display: grid;
     place-items: center;
+    width: 48px;
+    height: 48px;
+    border-radius: 9999px;
+    color: var(--ink);
+    border: 1px solid rgba(255, 255, 255, 0.16);
     background:
-      radial-gradient(70% 90% at 20% 10%, rgba(var(--tone-rgb), 0.22), transparent 70%),
-      radial-gradient(60% 80% at 90% 100%, rgba(var(--tone-rgb), 0.1), transparent 70%),
-      #07080b;
+      linear-gradient(180deg, rgba(255, 255, 255, 0.14), rgba(255, 255, 255, 0.04)),
+      rgba(10, 11, 15, 0.45);
+    -webkit-backdrop-filter: blur(6px) saturate(1.6);
+    backdrop-filter: blur(6px) saturate(1.6);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.25), 0 12px 30px -12px rgba(0, 0, 0, 0.9);
+    cursor: pointer;
+    opacity: 0;
+    transform: scale(0.92);
+    transition: opacity 200ms var(--ease-glass), transform 250ms var(--ease-glass), background-color 150ms var(--ease-glass);
   }
-  .media-fallback span { font-size: 0.9375rem; font-weight: 500; color: var(--ink-faint); }
+  .proj-arrow.is-prev { left: max(12px, calc((100% - var(--max)) / 2 - 24px)); }
+  .proj-arrow.is-next { right: 24px; }
+  .proj-viewport:hover .proj-arrow:not(:disabled),
+  .proj-arrow:focus-visible { opacity: 1; transform: scale(1); }
+  .proj-arrow:hover { transform: scale(1.06); }
+  .proj-arrow:active { transform: scale(0.94); }
+  .proj-arrow:disabled { cursor: default; }
+  .proj-arrow:focus-visible { outline: none; box-shadow: 0 0 0 4px rgba(var(--tone-rgb), 0.35); }
+  @media (hover: none) { .proj-arrow { display: none; } }
 
-  /* JobPilot mock: a quiet window, the scores in their own green. */
-  .jp-mock {
-    display: block;
-    border-radius: 16px;
-    border: 1px solid var(--line);
-    background: #07080b;
-    text-decoration: none;
-    font-size: 0.8125rem;
+  /* One segment per page of the row. The bar fills in notches, and a segment
+     and the counter give a small spring as the row lands on a new page. */
+  .proj-foot { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 20px; margin-top: 4px; }
+  .proj-foot .proj-bar { min-width: 120px; }
+  .proj-bar { flex: 1; display: flex; gap: 6px; }
+  .proj-seg {
+    flex: 1;
+    height: 3px;
+    border-radius: 9999px;
+    background: var(--line-strong);
     overflow: hidden;
-    transition: border-color 200ms var(--ease-glass);
+    transform-origin: 50% 50%;
   }
-  .jp-mock:hover { border-color: var(--line-strong); }
-  .jp-mock-bar { display: flex; align-items: center; gap: 10px; padding: 12px 14px; border-bottom: 1px solid var(--line); color: var(--ink); font-weight: 500; }
-  .jp-dots { display: inline-flex; gap: 5px; }
-  .jp-dots i { width: 8px; height: 8px; border-radius: 9999px; background: rgba(255, 255, 255, 0.16); }
-  .jp-row {
-    display: grid;
-    grid-template-columns: 24px 36px minmax(0, 1fr) auto;
-    align-items: center;
-    gap: 12px;
-    padding: 11px 14px;
-    color: var(--ink-soft);
-    border-bottom: 1px solid var(--line);
+  .proj-seg > i {
+    display: block;
+    height: 100%;
+    background: var(--tone);
+    transform-origin: 0 50%;
+    transform: scaleX(0);
+    transition: transform 300ms var(--ease-glass);
   }
-  .jp-row:last-child { border-bottom: 0; }
-  .jp-score { color: #4ade80; font-weight: 600; }
-  .jp-bar { height: 4px; border-radius: 9999px; background: rgba(255, 255, 255, 0.08); overflow: hidden; }
-  .jp-bar span { display: block; height: 100%; background: #4ade80; border-radius: inherit; }
-  .jp-co { color: var(--ink-faint); white-space: nowrap; }
-  @media (max-width: 480px) { .jp-co { display: none; } .jp-row { grid-template-columns: 24px 36px minmax(0, 1fr); } }
+  .proj-seg.is-on { box-shadow: 0 0 10px rgba(var(--tone-rgb), 0.55); }
+  .proj-seg.tick { animation: seg-tick 420ms var(--ease-spring); }
+  [data-proj-count] { display: inline-block; min-width: 4.5em; text-align: right; }
+  [data-proj-count].tick { animation: count-tick 420ms var(--ease-spring); }
+  @keyframes seg-tick { 0% { transform: scaleY(1); } 35% { transform: scaleY(2.4); } 100% { transform: scaleY(1); } }
+  @keyframes count-tick { 0% { transform: translateY(0); } 35% { transform: translateY(-3px); } 100% { transform: translateY(0); } }
+  @media (prefers-reduced-motion: reduce) {
+    .proj-flip, .proj-card, .proj-media :global(.proj-img), .proj-arrow, .proj-seg > i { transition: none; }
+    .proj-seg.tick, [data-proj-count].tick { animation: none; }
+  }
 
   /* Work */
   .grid4 { display: grid; gap: 16px; grid-template-columns: 1fr; }
@@ -707,9 +890,77 @@ const RGB = {
   .write-thumb { width: 96px; height: 76px; border-radius: 12px; overflow: hidden; background: #07080b; border: 1px solid var(--line); }
   .write-thumb :global(img) { width: 100%; height: 100%; object-fit: cover; display: block; }
 
-  /* Film */
-  .film-grid { display: grid; gap: 48px; grid-template-columns: 1fr; align-items: center; }
-  @media (min-width: 1024px) { .film-grid { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 72px; } }
+  /* Film: the poster is the attention, everything else sits beside it in
+     one screen. */
+  .film-stage { display: grid; gap: 20px; grid-template-columns: 1fr; align-items: stretch; }
+  @media (min-width: 1024px) {
+    .film-stage { grid-template-columns: minmax(0, 7.2fr) minmax(0, 4.8fr); gap: 24px; }
+    /* Side by side, the poster takes the height of the column beside it and
+       crops around its centre, where the title and the figure are. */
+    .film-poster { aspect-ratio: auto; min-height: 360px; }
+    .film-poster :global(.film-poster-img) { object-position: 50% 42%; }
+  }
+  .film-poster {
+    position: relative;
+    display: block;
+    align-self: stretch;
+    width: 100%;
+    min-width: 0;
+    overflow: hidden;
+    border-radius: 22px;
+    aspect-ratio: 16 / 9;
+    background: #07080b;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.12),
+      0 40px 90px -40px rgba(0, 0, 0, 1),
+      0 0 120px -30px rgba(var(--tone-rgb), 0.45);
+    transition: transform 400ms var(--ease-glass), box-shadow 400ms var(--ease-glass), border-color 200ms var(--ease-glass);
+  }
+  .film-poster:hover {
+    transform: translateY(-3px);
+    border-color: rgba(var(--tone-rgb), 0.4);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.16),
+      0 50px 100px -40px rgba(0, 0, 0, 1),
+      0 0 140px -24px rgba(var(--tone-rgb), 0.6);
+  }
+  /* The image fills the frame and never sizes it, so the frame follows its
+     column at every width. */
+  .film-poster :global(.film-poster-img) {
+    position: absolute;
+    inset: 0;
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 900ms var(--ease-glass);
+  }
+  .film-poster:hover :global(.film-poster-img) { transform: scale(1.03); }
+  .film-poster-tag { position: absolute; z-index: 1; left: 14px; top: 14px; display: flex; gap: 6px; }
+  .film-poster-tag .badge { background: rgba(0, 0, 0, 0.55); }
+  .film-poster-tag .badge-tone { background: rgba(var(--tone-rgb), 0.22); }
+  .film-side {
+    display: flex;
+    flex-direction: column;
+    padding: 4px 4px 0;
+  }
+  @media (min-width: 1024px) { .film-side { padding: 6px 4px 0 8px; } }
+  .film-more { margin-top: 26px; padding-bottom: 8px; border-bottom: 1px solid var(--line); }
+  .film-list { list-style: none; margin: 0; padding: 0; }
+  .film-list li { border-bottom: 1px solid var(--line); }
+  .film-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+    padding: 11px 2px;
+    text-decoration: none;
+    color: var(--ink);
+    transition: padding 250ms var(--ease-glass), background-color 150ms var(--ease-glass);
+  }
+  .film-row:hover { padding-inline: 10px; background: var(--wash); }
+  .film-row-title { font-size: 0.9375rem; font-weight: 600; letter-spacing: -0.012em; }
 
   /* Teaching */
   .teach-grid { display: grid; gap: 16px; grid-template-columns: 1fr; }
@@ -730,6 +981,251 @@ const RGB = {
 <script>
   import { initAmbient, initComets } from "../scripts/spatial";
 
+  // Cards turn around on click to show their details; nothing navigates
+  // until a button on the back is chosen. One card is turned at a time, focus
+  // moves to the face that is showing, and Escape turns it back.
+  (function () {
+    const flips = Array.from(document.querySelectorAll<HTMLElement>("[data-flip]"));
+    let open: HTMLElement | null = null;
+    const setFlipped = (card: HTMLElement, on: boolean, focus = true) => {
+      const front = card.querySelector<HTMLElement>(".proj-front");
+      const back = card.querySelector<HTMLElement>(".proj-back");
+      if (!front || !back) return;
+      card.classList.toggle("is-flipped", on);
+      back.toggleAttribute("inert", !on);
+      back.setAttribute("aria-hidden", on ? "false" : "true");
+      front.toggleAttribute("inert", on);
+      front.setAttribute("aria-hidden", on ? "true" : "false");
+      if (focus) {
+        // Move focus once the turn has passed its middle.
+        window.setTimeout(() => {
+          if (on) back.querySelector<HTMLElement>("a, button")?.focus({ preventScroll: true });
+          else front.focus({ preventScroll: true });
+        }, 260);
+      }
+      if (on) open = card;
+      else if (open === card) open = null;
+    };
+    flips.forEach((card) => {
+      card.querySelector("[data-flip-open]")?.addEventListener("click", () => {
+        if (open && open !== card) setFlipped(open, false, false);
+        setFlipped(card, true);
+      });
+      card.querySelector("[data-flip-close]")?.addEventListener("click", () => setFlipped(card, false));
+    });
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape" && open) setFlipped(open, false);
+    });
+  })();
+
+  // The projects row. Sideways scroll comes from the trackpad, a swipe or the
+  // arrows, which move one screen of cards at a time; the browser snaps each
+  // card to the margin. The bar has one segment per page and fills as the row
+  // moves; landing on a new page gives its segment and the counter a small
+  // spring.
+  (function () {
+    const sec = document.getElementById("projects");
+    const track = sec?.querySelector<HTMLElement>(".proj-track");
+    const prev = sec?.querySelector<HTMLButtonElement>("[data-row-prev]");
+    const next = sec?.querySelector<HTMLButtonElement>("[data-row-next]");
+    const bar = sec?.querySelector<HTMLElement>(".proj-bar");
+    const count = sec?.querySelector<HTMLElement>("[data-proj-count]");
+    if (!sec || !track || !bar) return;
+    const items = Array.from(track.querySelectorAll<HTMLElement>(".proj-item"));
+    let segs: HTMLElement[] = [];
+    let page = -1;
+    let raf = 0;
+
+    const pages = () => Math.max(1, Math.ceil((track.scrollWidth - 1) / Math.max(1, track.clientWidth)));
+    const buildSegs = () => {
+      const n = pages();
+      if (segs.length === n) return;
+      bar.innerHTML = "";
+      segs = Array.from({ length: n }, () => {
+        const g = document.createElement("span");
+        g.className = "proj-seg";
+        g.appendChild(document.createElement("i"));
+        bar.appendChild(g);
+        return g;
+      });
+      page = -1;
+    };
+    const tick = (el: HTMLElement | null | undefined) => {
+      if (!el) return;
+      el.classList.remove("tick");
+      void el.offsetWidth;
+      el.classList.add("tick");
+    };
+
+    const paint = () => {
+      raf = 0;
+      const max = Math.max(1, track.scrollWidth - track.clientWidth);
+      const x = track.scrollLeft;
+      if (prev) prev.disabled = x < 4;
+      if (next) next.disabled = x > max - 4;
+      const n = segs.length;
+      const pos = (x / max) * (n - 1); // fractional page
+      segs.forEach((g, i) => {
+        const fill = g.firstElementChild as HTMLElement | null;
+        const v = Math.min(1, Math.max(0, pos + 1 - i));
+        if (fill) fill.style.transform = `scaleX(${v.toFixed(3)})`;
+      });
+      const now = Math.round(pos);
+      if (now !== page) {
+        const first = page === -1;
+        page = now;
+        segs.forEach((g, i) => g.classList.toggle("is-on", i === now));
+        if (!first) {
+          tick(segs[now]);
+          tick(count);
+        }
+      }
+      // The counter names the first card fully on screen.
+      const start = items[0]?.offsetLeft ?? 0;
+      let first = items.findIndex((li) => li.offsetLeft - x >= start - 8);
+      if (first < 0) first = items.length - 1;
+      if (x > max - 4) first = items.length - 1;
+      if (count) count.textContent = `${String(first + 1).padStart(2, "0")} / ${String(items.length).padStart(2, "0")}`;
+    };
+    const queue = () => { if (!raf) raf = requestAnimationFrame(paint); };
+
+    const step = (dir: number) => {
+      const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      track.scrollBy({ left: dir * track.clientWidth * 0.8, behavior: reduce ? "auto" : "smooth" });
+    };
+    // The hint goes once someone has moved the row.
+    const hint = sec.querySelector<HTMLElement>("[data-row-hint]");
+    let interacted = false;
+    const settle = () => {
+      if (interacted) return;
+      interacted = true;
+      hint?.classList.add("is-gone");
+    };
+    window.setTimeout(() => hint?.classList.add("is-gone"), 12000);
+
+    // A peek the first time the row is in view.
+    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (!reduce && "IntersectionObserver" in window) {
+      const io = new IntersectionObserver((entries) => {
+        if (!entries[0]?.isIntersecting) return;
+        io.disconnect();
+        if (track.scrollLeft > 4 || interacted) return;
+        window.setTimeout(() => {
+          track.classList.add("is-peek");
+          track.addEventListener("animationend", () => track.classList.remove("is-peek"), { once: true });
+        }, 350);
+      }, { threshold: 0.55 });
+      io.observe(track);
+    }
+
+    // Press and fling with a mouse, with momentum, then snap to a card. A
+    // press that does not travel is still a click, so cards still turn.
+    const lens = sec.querySelector<HTMLElement>(".drag-lens");
+    const lensLabel = sec.querySelector<HTMLElement>("[data-lens-label]");
+    let down = false;
+    let moved = false;
+    let startX = 0;
+    let startLeft = 0;
+    let lastX = 0;
+    let lastT = 0;
+    let vel = 0;
+    let glideRaf = 0;
+    const snapToNearest = () => {
+      track.classList.remove("is-dragging");
+    };
+    track.addEventListener("pointerdown", (e) => {
+      if (e.pointerType !== "mouse" || e.button !== 0) return;
+      if ((e.target as HTMLElement).closest("a, .proj-close")) return;
+      down = true;
+      moved = false;
+      startX = lastX = e.clientX;
+      startLeft = track.scrollLeft;
+      lastT = performance.now();
+      vel = 0;
+      cancelAnimationFrame(glideRaf);
+      lens?.classList.add("is-down");
+    });
+    window.addEventListener("pointermove", (e) => {
+      if (!down) return;
+      const dx = e.clientX - startX;
+      if (!moved && Math.abs(dx) > 6) {
+        moved = true;
+        track.classList.add("is-dragging");
+        settle();
+        if (lensLabel) lensLabel.textContent = "Drag";
+      }
+      if (!moved) return;
+      track.scrollLeft = startLeft - dx;
+      const now = performance.now();
+      vel = (e.clientX - lastX) / Math.max(1, now - lastT);
+      lastX = e.clientX;
+      lastT = now;
+    });
+    window.addEventListener("pointerup", () => {
+      if (!down) return;
+      down = false;
+      lens?.classList.remove("is-down");
+      if (!moved) return;
+      let v = -vel * 16;
+      const glide = () => {
+        v *= 0.93;
+        track.scrollLeft += v;
+        if (Math.abs(v) > 0.4) glideRaf = requestAnimationFrame(glide);
+        else snapToNearest();
+      };
+      glideRaf = requestAnimationFrame(glide);
+    });
+    // A drag must not also click the card under it.
+    track.addEventListener(
+      "click",
+      (e) => {
+        if (moved) {
+          e.preventDefault();
+          e.stopPropagation();
+          moved = false;
+        }
+      },
+      true,
+    );
+
+    // The lens follows the pointer and names what a press will do.
+    if (lens && window.matchMedia("(hover: hover) and (pointer: fine)").matches) {
+      let lx = 0;
+      let ly = 0;
+      let lensRaf = 0;
+      const place = () => {
+        lensRaf = 0;
+        lens.style.left = `${lx}px`;
+        lens.style.top = `${ly}px`;
+      };
+      track.addEventListener("pointermove", (e) => {
+        lx = e.clientX;
+        ly = e.clientY;
+        if (!lensRaf) lensRaf = requestAnimationFrame(place);
+        const t = e.target as HTMLElement;
+        const overLink = !!t.closest("a, .proj-close");
+        lens.classList.toggle("is-off", overLink);
+        lens.classList.add("is-on");
+        if (!down && lensLabel) {
+          const front = t.closest(".proj-front");
+          const flipped = t.closest(".is-flipped");
+          lensLabel.textContent = front && !flipped ? "Details" : "Drag";
+        }
+      });
+      track.addEventListener("pointerleave", () => lens.classList.remove("is-on"));
+    }
+    track.addEventListener("wheel", (e) => { if (Math.abs(e.deltaX) > Math.abs(e.deltaY)) settle(); }, { passive: true });
+    track.addEventListener("touchstart", settle, { passive: true, once: true });
+
+    prev?.addEventListener("click", () => { settle(); step(-1); });
+    next?.addEventListener("click", () => { settle(); step(1); });
+    track.addEventListener("scroll", queue, { passive: true });
+    window.addEventListener("resize", () => { buildSegs(); queue(); });
+    window.addEventListener("load", () => { buildSegs(); queue(); });
+    buildSegs();
+    paint();
+  })();
+
   initComets(".space-el");
   // The background wash follows the section in view, so the sky takes each
   // tab's colour as you scroll past its preview.
@@ -737,13 +1233,13 @@ const RGB = {
     [
       ["91,141,239", "34,211,238"],
       ["91,141,239", "91,141,239"],
-      ["245,165,36", "245,165,36"],
-      ["52,211,153", "52,211,153"],
-      ["244,63,94", "244,63,94"],
-      ["34,211,238", "34,211,238"],
       ["91,141,239", "167,139,250"],
+      ["245,165,36", "245,165,36"],
+      ["244,63,94", "244,63,94"],
+      ["52,211,153", "52,211,153"],
+      ["34,211,238", "34,211,238"],
       ["91,141,239", "34,211,238"],
     ],
-    ["home", "projects", "work", "writing", "film", "teaching", "about", "contact"],
+    ["home", "projects", "about", "work", "film", "writing", "teaching", "contact"],
   );
 </script>

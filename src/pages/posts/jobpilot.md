@@ -1,5 +1,5 @@
 ---
-demo: https://jobpilot-demo.pages.dev
+demo: /demos/jobpilot
 title: "How I built a job-search autopilot in 5 hours"
 date: "2026-06-10"
 layout: ../../layouts/PostLayout.astro
