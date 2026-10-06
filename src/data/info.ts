@@ -408,10 +408,98 @@ export const info = {
 
   projects: [
     {
+      title: "Patient Dashboard",
+      tier: "industry",
+      flagshipRank: 1,
+      date: "Jun 2026 - Present",
+      description:
+        "I built the staff side of our patient platform: one row per patient, every document one click away, and a live read only mirror of the practice management system that the estimator and capacity planner read through.",
+      link: "",
+      post: "/posts/patient-dashboard",
+      details: {
+        summary_short:
+          "The staff dashboard behind the CDF platform. One row per patient for treatment coordinators, every document one click away, and the only app that talks to the Denticon API; the estimator and capacity planner read through it.",
+        stats: [
+          { value: "6 days → 2.6 min", label: "How far the mirror runs behind the vendor's data" },
+          { value: "100%", label: "Right chart chosen in a blind test of the record matcher" },
+          { value: "~4 in 5", label: "Intake surveys that link to their chart on their own" },
+          { value: "38", label: "Findings from an eight lens adversarial review, run before the matcher could write" },
+        ],
+        star: {
+          problem:
+            "Every system built for the practice named a patient differently: the intake survey by response id, the estimator by its own number, the consult grader by Zoom meeting, the experience survey by email. The Denticon id was optional, typed by hand, and joined nothing. Offices had three spellings, nightly smoke tests sat among real intakes, and the experience report PDF was in storage all along, but the dashboard could not open it.",
+          solution:
+            "Two Cloud Run services from one image. The dashboard, behind Google sign in limited to the company domain, holds no Denticon credentials; a sync service that serves no pages holds them. Webhooks and three scheduled jobs keep a Firestore mirror of offices, providers, patients and appointments current, and a registry API with one secret per caller serves it to the estimator and the capacity planner. Profiles join every record on the Denticon id at read time.",
+          process:
+            "The vendor API has no patient search, so the mirror is the only patient index there is. It also drops unknown query parameters silently and returns the whole table with a 200, so a parameter is allowed only once it is proven to change totalCount. The record matcher went through an adversarial review, ran in shadow mode, and refuses when unsure. A person's decision always wins: each link write is a transaction that decides again on fresh documents, and every link is versioned, audited and undoable. A journey step with no linked chart reads unknown, never no.",
+          result:
+            "Started in June 2026 and rebuilt around the Denticon API in September; production reads were proven on 29 September and v0.24.0 shipped on 5 October. The mirror went from six days behind to 2.6 minutes behind, the matcher picked the right chart every time in a blind test, about four in five intakes link to their chart on their own, and the capacity planner reads the registry every minute.",
+        },
+        summary:
+          "The staff side of the Centralized Diagnostic Filter platform for treatment coordinators: patients, intake surveys, manual intake, patient experience, estimates and consultations in one place. Behind it sit a read only Denticon mirror kept fresh by webhooks and scheduled sweeps, a record matcher that refuses when unsure, and a registry API that other internal apps read through.",
+        highlights: [
+          "Two Cloud Run services from one image: the dashboard holds no vendor credentials, and the sync service that holds them serves no pages.",
+          "Only query parameters proven to change totalCount are allowed, because the vendor drops unknown ones silently and still answers 200.",
+          "A freshness report that starts from the cursors it expects, so a missing one shows as the worst status instead of vanishing.",
+          "Record matcher kept in shadow mode after an adversarial review (38 findings that collapsed to 4 critical and 11 high defects), lifted only for rules that were measured.",
+          "Registry API with one secret per caller, so revoking one consumer never blinds another.",
+          "77 vendor API operations transcribed and tested, 18 webhook subscriptions across three offices, and 1,000+ tests.",
+          "Caught a sweep that reported green while all 18 of its calls failed, and secrets that carried a hidden Windows carriage return.",
+        ],
+      },
+      tech: ["Next.js 15", "TypeScript", "Firestore", "Cloud Run", "Cloud Scheduler", "Cloud Storage", "Cloud Build", "GitHub Actions"],
+      img_alt: "Patient Dashboard, Hybridge Implants LLC",
+      img_path: "/patient-dashboard.png",
+    },
+    {
+      title: "Capacity Planner",
+      tier: "industry",
+      flagshipRank: 7,
+      date: "Sep 2026 - Present",
+      description:
+        "I replaced the operations lead's staffing workbook with a planner that shows demand, capacity and capability across three offices, reads the live schedule every minute, and never writes back.",
+      link: "",
+      post: "/posts/capacity-planner",
+      details: {
+        summary_short:
+          "One forward view of demand, capacity and capability across three offices. A pure scheduling engine, live Denticon bookings every minute through the patient dashboard, and read only by design, down to the type system.",
+        stats: [
+          { value: "Every minute", label: "Live schedule sync, with no vendor credential in the planner" },
+          { value: "48", label: "Tagged releases in the first eight days after the first deploy" },
+          { value: "1,600+", label: "Tests across engine, web, Postgres integration and Playwright" },
+          { value: "0", label: "Write paths to the source system, enforced by a type test" },
+        ],
+        star: {
+          problem:
+            "Staffing for three offices lived in the operations lead's workbook: seven sheets and twenty pasted week blocks. Fixed ranges undercounted silently when a row landed outside them, typing over a formula deleted it, and time off entered later never changed the plan. Leadership spent its time solving last minute coverage gaps instead of asking who the best person to place was.",
+          solution:
+            "A pnpm monorepo: a pure TypeScript engine package with no I/O, and a Next.js 16 app on Cloud Run with Cloud SQL Postgres, Drizzle and Google sign in. The same engine runs in the minute sync and in the browser for instant what if changes, golden tested against the workbook. Bookings come from Denticon through the patient dashboard's registry, so the planner holds no vendor credential and only reads.",
+          process:
+            "Read only is a type level test: the appointment source may have no member named like write, create, update, delete, cancel or book. A mass cancel guard stops any sync that would cancel an office's bookings in bulk and changes nothing, after a silently dropped office code nearly did exactly that. Sync failures return 200 so the scheduler does not retry storm, and staleness shows on a status pill. Cover suggestions rank five keys (capability, willingness, presence, free day, pairing), and every reason shown comes from the rule that produced it.",
+          result:
+            "Deployed internally on 28 September 2026, reading live Denticon data the next day, and at v0.44.0 by 5 October with a Needs action tab and Bandwidth suggestions. It plans doctors, assistants, treatment coordinators and front desk. Live data caught real modeling bugs early, like one doctor stacked three rows deep because the schedule books the doctor in the assistant's chair.",
+        },
+        summary:
+          "An internal capacity planner for a three office implant practice: demand, capacity and capability in one forward view, with burnout treated as a design goal (proposed defaults flag three heavy days in a row). HIPAA from day one: role based access, an audit log, and logs that never carry patient data. Explainable rules only, no generated advice.",
+        highlights: [
+          "Pure engine package with no I/O: the same math in the minute sync and the browser's instant what if, golden tested against the workbook.",
+          "Postgres over Firestore for person by weekday by location joins; NextAuth over IAP alone so roles and the audit log know who signed in.",
+          "Its own cloud project, to isolate patient data and stay clear of a sibling app's database connection ceiling.",
+          "Minute sync behind a version pointer, never a hot swap; failures return 200 and show up as staleness.",
+          "Excel files parsed in the browser and never stored.",
+          "A dependency upgrade put SQL parameters into error messages, so the logger now records only the Postgres error code, constraint and table.",
+          "Cover suggestions ranked on five explainable keys, with ties broken on person id.",
+        ],
+      },
+      tech: ["Next.js 16", "TypeScript", "Cloud SQL Postgres", "Drizzle", "NextAuth", "Cloud Run", "Cloud Scheduler", "Playwright"],
+      img_alt: "Capacity Planner, Hybridge Implants LLC",
+      img_path: "/capacity-planner.png",
+    },
+    {
       title: "Enterprise Search",
       demo: "https://sampreethavvari.github.io/ai-systems-tours/tours/enterprise-search/",
       tier: "industry",
-      flagshipRank: 1,
+      flagshipRank: 2,
       date: "Jun 2026 - Present",
       description:
         "I am building an internal AI search over all of Hybridge's knowledge. Ask a question in plain language, get a cited answer, and get an honest 'I don't know' when the evidence is not there.",
@@ -453,7 +541,7 @@ export const info = {
       title: "CBCT Scan Validator",
       demo: "https://sampreethavvari.github.io/ai-systems-tours/tours/scan-validator/",
       tier: "industry",
-      flagshipRank: 3,
+      flagshipRank: 4,
       date: "Mar 2026 - Present",
       description:
         "I built the tool that catches bad dental scans before they ever reach the design team.",
@@ -497,16 +585,16 @@ export const info = {
       tier: "industry",
       date: "May 2026 - Present",
       description:
-        "I rebuilt a 10-year-old pricing tool. The 6-month price promise is now something the database itself enforces.",
+        "I rebuilt a ten year old pricing tool, and the six month price promise is now something the database itself enforces. Since May it has shipped 72 releases, including visit sequences and the day's consult schedule as its front page.",
       link: "",
       details: {
         summary_short:
-          "Rebuilt a decade-old quoting tool. The 6-month price guarantee is now a database invariant.",
+          "Rebuilt a decade old quoting tool; the six month price guarantee is a database invariant. 72 releases since May 2026, now with visit sequences, the day's consult schedule as its landing page, and the Hybridge design.",
         stats: [
           { value: "~1 month", label: "Spec → end-to-end (vendor: never)" },
           { value: "100%", label: "Branch coverage on pricing engine" },
           { value: "5", label: "Pricing model kinds" },
-          { value: "<$35/mo", label: "Cost target hit" },
+          { value: "72", label: "Tagged releases from May to October 2026" },
         ],
         star: {
           problem:
@@ -516,15 +604,20 @@ export const info = {
           process:
             "9-decision ADR with tradeoff tables and library citations before any code. 100% branch coverage on the pricing engine. Golden snapshots lock every documented wizard path. A `questions-for-Chelsea` doc with worked numbers lets the clinical SME review without reading code.",
           result:
-            "Shipped end-to-end in about a month, what a vendor failed to ship in a decade. Runs under $35/mo. A BACKLOG.md of 30+ consciously deferred items keeps scope honest.",
+            "Shipped end-to-end in about a month, what a vendor failed to ship in a decade. Runs under $35/mo. Since then, 72 tagged releases through October 2026: a three pane drag and drop workspace with phases and scenarios, an Excel export that matches the coordinator's own file with live formulas, a landing page that is the day's consult schedule, visit sequences built from the estimate, and a full restyle in the Hybridge design in nine releases on one day.",
         },
         summary:
-          "Next.js 16 + Postgres + Drizzle for treatment coordinators across three clinics. Five pricing models with write-once price snapshots. Price-book lifecycle: proposed → approved → published.",
+          "Next.js 16 + Postgres + Drizzle for treatment coordinators across three clinics. Five pricing models with write-once price snapshots. Price-book lifecycle: proposed → approved → published. Since May it has added visit sequences, the day's consult schedule as its landing page, and the Hybridge design.",
         highlights: [
           "9-decision ADR with tradeoff tables before any code.",
           "Write-once *_at_capture columns + Postgres triggers turn the 6-month guarantee into a DB invariant.",
           "Three-affordance wizard so the TC never loses context mid-consult.",
           "100% branch coverage on the pricing engine; golden snapshots per wizard path.",
+          "72 tagged releases from May to October 2026, with about 800 test cases in the repo.",
+          "Visit sequences generated from the estimate and edited in a three pane builder, from the shared Treatment Sequence packages.",
+          "The landing page is the day's consultation schedule, read from the patient dashboard's registry API.",
+          "An estimate's arch now comes from its options, so the up front Upper, Lower or Both question is gone.",
+          "Restyled in the Hybridge design (glass shell, Inter, a new logo, restyled PDFs) in nine releases on one day.",
         ],
       },
       tech: ["Next.js 16", "TypeScript", "Drizzle", "PostgreSQL", "Auth.js", "Cloud Run", "@react-pdf/renderer", "Zod"],
@@ -532,42 +625,86 @@ export const info = {
       img_path: "/treatment-estimator.png",
     },
     {
-      title: "Cowork Dashboard",
-      demo: "https://sampreethavvari.github.io/ai-systems-tours/tours/cowork-dashboard/",
+      title: "Treatment Sequence",
       tier: "industry",
-      date: "Apr 2026 - May 2026",
+      date: "Aug 2026 - Present",
       description:
-        "I rebuilt a flaky dashboard on weekly exports. Two clinics, one set of numbers everyone finally trusts.",
+        "I replaced hand built Word visit plans with shared packages that generate the plan from an estimate, let the coordinator edit it in a three pane builder, and export it to Word and PDF.",
       link: "",
+      post: "/posts/treatment-sequence",
       details: {
         summary_short:
-          "Replaced a brittle live-API dashboard with weekly Excel exports. Two clinics, one source of truth.",
+          "The ordered plan of visits, with chair time, that delivers an accepted treatment. Generated from an estimate by picking a transcribed practice master, never by guessing, and edited by the treatment coordinator inside the estimator.",
         stats: [
-          { value: "49% → 99%", label: "Patient ↔ lead linkage" },
-          { value: "~$460k", label: "Orphan value surfaced" },
-          { value: "½ day → 3 min", label: "Weekly recon time" },
-          { value: "6 tabs, 1 truth", label: "Shared metrics module" },
+          { value: "11", label: "Practice masters transcribed verbatim as data, all validated" },
+          { value: "84 of 92", label: "Generation attempts matched to a validated master in a dev database audit, 0 errors" },
+          { value: "~8 hrs", label: "Chair time in a full arch case, spread across about nine months" },
+          { value: "0 tokens", label: "Shipped as a committed build snapshot, so no registry credential can expire" },
         ],
         star: {
           problem:
-            "The old dashboard hit the Monday.com API live, broke constantly, and patient↔lead linkage sat at 49% / 65% across the two clinics. Leadership argued about whose numbers were right.",
+            "Coordinators wrote each patient's visit plan by hand in Word, copied from master documents in Drive, in two formats: a flat list of chair time units, and a six column table for full arch cases and dentures. Every change meant renumbering the visits and redating everything after it by hand, on a case that can run nine months.",
           solution:
-            "Apps Script on weekly Excel exports. One shared metrics module so every tab and widget computes from the same definitions. Six tabs share one filter bar.",
+            "Two packages. sequence-core holds the domain model, the practice masters stored as data, generation from an estimate, date and wait arithmetic, and the Word and text renderers, with no React. sequence-ui is a three pane React editor: visit list, flowchart and a live document preview. The estimator stores a living plan plus immutable version snapshots, and one shared text module keeps the preview, Word and PDF from drifting apart.",
           process:
-            "Found that Monday's connect column (a real board_relation, not a mirror) survives Excel export. Encoded every business rule explicitly: marketing taxonomy, location filter, excluded reasons, scheduled-date semantics, consult-show parsing.",
+            "Generation picks a template; it never infers a plan. A procedure with no matching visit prints as a yellow open item, an unsupported combination asks for a manual build, and a free text wait stops date projection instead of guessing. Anything not transcribed from a master carries a DRAFT banner on screen, in the PDF and in Word. The packages reach the estimator as a committed build snapshot stamped with its source commit, and a check fails if core and ui come from different commits.",
           result:
-            "Linkage 49.5% / 65.3% → 98.8% / 99.9% across two boards. Weekly recon: half a day → 3 minutes. Surfaced orphan re-treatment patients worth ~$460k of treatment value.",
+            "Live inside the estimator since 27 August 2026, with save, versions and PDF a release later, a read only lookup for the patient dashboard, and a Word export that now embeds Inter instead of opening in Times New Roman. A dev database audit matched 84 of 92 generation attempts to a validated master with 0 errors. The named tradeoff: nothing fails yet when the two repos fall out of step, so automating the refresh is next.",
         },
         summary:
-          "Apps Script web app on weekly Monday.com exports for two clinics (Rochester / Buffalo).",
+          "Shared TypeScript packages that turn an accepted treatment estimate into an ordered plan of visits, with chair time in 15 minute units, providers, teeth, waits and dates, edited by the treatment coordinator in a three pane builder inside the estimator.",
         highlights: [
-          "Linkage 49% → 99% via the Monday connect column.",
-          "Weekly recon: half a day → 3 minutes.",
-          "Six tabs share one filter bar and one metric module.",
+          "Every template is a verbatim transcription of one practice master, with its source document recorded.",
+          "Staging became an explicit mode after a bug sent every full arch case to manual build: no implant teeth had been read as no staging.",
+          "The both arches master was transcribed instead of composed from two single arch masters, because composing them puts the visits in the wrong order.",
+          "A unique index on sequence and version number guards concurrent saves; at most one accepted plan per estimate.",
+          "Export routes take the plan in the request body, so a coordinator can export what is on screen without saving first.",
+          "No registry and no package token in the Dockerfile: a committed snapshot, after pnpm's file protocol quietly kept serving an old build.",
+        ],
+      },
+      tech: ["TypeScript", "React", "Tailwind CSS", "dnd-kit", "docx", "PostgreSQL", "Drizzle", "pnpm"],
+      img_alt: "Treatment Sequence, Hybridge Implants LLC",
+      img_path: "/treatment-sequence.png",
+    },
+    {
+      title: "Cowork Dashboard",
+      demo: "https://sampreethavvari.github.io/ai-systems-tours/tours/cowork-dashboard/",
+      tier: "industry",
+      date: "Apr 2026 - Present",
+      description:
+        "I rebuilt a flaky dashboard on weekly exports, then rebuilt it again on Cloud Run so a card and its drilldown can never disagree. The Weekly tab went from 5.2 seconds to about 17 ms.",
+      link: "",
+      details: {
+        summary_short:
+          "Weekly Monday.com exports turned into an always in sync leadership dashboard. Moved from Apps Script to Cloud Run in September 2026, with one metric registry so cards and drilldowns cannot disagree.",
+        stats: [
+          { value: "5.2 s → ~17 ms", label: "Weekly tab over a multi year range" },
+          { value: "1 registry", label: "Every card number is computed from its own drilldown rows" },
+          { value: "31% → 5.8%", label: "Ambiguous patient to lead links, after first name checks" },
+          { value: "½ day → 3 min", label: "Weekly recon time, still just drop four files" },
+        ],
+        star: {
+          problem:
+            "The April version on Apps Script replaced a live API dashboard that broke constantly, but it claimed more than it delivered. Every metric had three implementations (card, drilldown and trend overlay), so two tabs could disagree. The connect column holds only the surname, so about 31% of patients resolved to an arbitrary lead: the 49% to 99% jump measured coverage, not correctness. A multi year Weekly view took about 5.2 seconds.",
+          solution:
+            "A rebuild on Cloud Run behind IAP. Cloud Scheduler checks Drive every five minutes; a private ingest service parses the four exports with ExcelJS, joins and hashes them, and writes an immutable snapshot to Cloud Storage. The browser loads one pinned snapshot of about 0.4 MB and computes everything locally with the same core package the ingest uses, and each card number is a function of its drilldown rows by construction.",
+          process:
+            "Business rules were ported verbatim and held to a parity gate that runs the original Apps Script code in a Node VM. When parity could not catch a one day date shift (both sides used the same reader), a golden test pinned figures read off the old production dashboard. A sorted date index means a one week query touches about 60 rows instead of scanning every lead, and a request sequence guard stops stale results from landing.",
+          result:
+            "Live on Cloud Run since 2 September 2026. The Weekly tab dropped from about 5.2 seconds to about 17 ms, ambiguous links fell from 31% to 5.8% with link quality recorded on every row, a Cash Flow tab shipped on 15 September, and on 30 September it took on the Hybridge design while staying dark. The weekly routine did not change: drop four files.",
+        },
+        summary:
+          "A leadership dashboard on weekly Monday.com exports, first in Apps Script and rebuilt on Cloud Run in September 2026. Eight tabs, one metric registry, and a snapshot the browser computes from locally.",
+        highlights: [
+          "Linkage 49% → 99% via the Monday connect column, then made correct in September: first name checks cut ambiguous links from 31% to 5.8%.",
+          "Weekly recon: half a day → 3 minutes, and the routine is still drop four files.",
+          "One metric registry: every card is computed from its own drilldown rows, so the two cannot disagree.",
+          "Weekly tab from about 5.2 s to about 17 ms with a sorted date index.",
+          "Cash Flow tab: what is booked to begin, windowed on treatment start date, with weekly totals built from the daily numbers.",
           "Surfaced ~$460k of orphan patient value the old dashboard was silently dropping.",
         ],
       },
-      tech: ["Google Apps Script", "Monday.com GraphQL", "Drive API", "Chart.js", "JavaScript"],
+      tech: ["TypeScript", "Node.js", "ExcelJS", "Cloud Run", "Cloud Storage", "Cloud Scheduler", "Cloud IAP", "Chart.js"],
       img_alt: "Cowork Dashboard - Hybridge Implants LLC",
       img_path: "/cowork-dashboard.png",
     },
@@ -617,7 +754,7 @@ export const info = {
       title: "Doc Coach, Consultation QA Pipeline",
       demo: "https://sampreethavvari.github.io/ai-systems-tours/tours/doc-coach/",
       tier: "industry",
-      flagshipRank: 2,
+      flagshipRank: 3,
       date: "Aug 2025 - Present",
       description:
         "I built the tool that grades every implant consult from its Zoom call and sends a color-coded report to the doctor and CEO.",
@@ -660,7 +797,7 @@ export const info = {
       title: "NPC Coach",
       demo: "https://sampreethavvari.github.io/ai-systems-tours/tours/npc-coach/",
       tier: "industry",
-      flagshipRank: 5,
+      flagshipRank: 6,
       date: "Aug 2025 - Present",
       description:
         "I rebuilt a brittle n8n call grader into a coaching platform: it finds every new-patient call, grades it with a quoted transcript line behind each score, and tracks each coordinator's trend.",
@@ -743,10 +880,94 @@ export const info = {
       img_path: "/reconciliation.png",
     },
     {
+      title: "Daily Sales Report",
+      tier: "industry",
+      date: "Sep 2026 - Present",
+      description:
+        "I turned the VP of Finance's morning Excel forecast into an automated pipeline that projects lab revenue and new arch starts three months out, with honest error bands and commentary that cannot invent a number.",
+      link: "",
+      post: "/posts/daily-sales-report",
+      details: {
+        summary_short:
+          "Projects invoiced lab revenue and new arch starts for this month and the next two, each with a band calibrated to cover about 68% of outcomes. A faithful port of the finance team's model, automated, with LLM commentary fenced in by code.",
+        stats: [
+          { value: "4.2% → 1.5%", label: "Current month revenue error, early in the month to late" },
+          { value: "15 + 6", label: "Acceptance values and edge cases pinned on every commit" },
+          { value: "108", label: "Model constants ported exactly from the original" },
+          { value: "~290", label: "Tests, up from 31 at the start" },
+        ],
+        star: {
+          problem:
+            "The VP of Finance had built a sound forecast in Excel and handed it over with a spec, but it needed a manual paste, recalculate and send every morning, fed by two daily export emails from the dental lab's case system.",
+          solution:
+            "A pure Python engine package with no I/O, and a pipeline package with parsers, a dedupe ledger and a BigQuery loader, with Terraform for the infrastructure. A daily Cloud Run job runs the model, and a Cloud Run web app behind IAP shows the dashboard, history and a Projections tab. An Apps Script bridge runs inside the VP's own Google account and copies the report attachments to a landing bucket, so the project never holds a credential that can read his mailbox. Gemini writes the commentary over finished numbers only.",
+          process:
+            "Parity first: every acceptance value and edge case from the spec is pinned on every commit. Every number in the Gemini commentary must appear in the report payload, a list of banned phrases blocks advice the model has no business giving, and if the guard fails the report falls back to a deterministic template. No auto tuning: the best in sample parameter grid scored 2.59% but was 0.62 points worse out of sample. A better lag model sits behind a switch because its 0.28 point gain did not clear the noise floor.",
+          result:
+            "In production since 25 September 2026. Current month revenue error falls from 4.2% early in the month to 1.5% late, and the report never depends on the LLM. The one hand typed figure now lives in BigQuery as rows that supersede instead of overwrite, after a scale to zero quietly lost it while the form still said Saved.",
+        },
+        summary:
+          "An automated daily sales report for an implant practice's lab revenue: a pure forecasting engine ported exactly from the finance team's model, a daily Cloud Run pipeline into BigQuery, a dashboard behind IAP, and Gemini commentary that is checked number by number.",
+        highlights: [
+          "Bands calibrated to cover about 68% of outcomes, for this month and the next two.",
+          "The mail bridge runs in the VP's own account, so the project never holds a mailbox credential.",
+          "A number guard on the LLM: any figure not in the payload fails the check and the template takes over.",
+          "No auto tuning: an in sample win that lost 0.62 points out of sample stayed out.",
+          "Fixed reflected XSS and path traversal through untrusted filenames, including escaping the model's own output.",
+          "A hand typed figure that lived in container memory now persists in BigQuery as superseding rows.",
+        ],
+      },
+      tech: ["Python", "BigQuery", "Cloud Run Jobs", "Cloud Run", "Cloud IAP", "Gemini", "Apps Script", "Terraform"],
+      img_alt: "Daily Sales Report, Hybridge Implants LLC",
+      img_path: "/daily-sales-report.png",
+    },
+    {
+      title: "Marketing Data Warehouse",
+      tier: "industry",
+      date: "Aug 2026 - Present",
+      description:
+        "I built a BigQuery warehouse that joins ad spend, calls and leads to booked patients and treatment value every day, documented so both people and LLMs can query it.",
+      link: "",
+      post: "/posts/marketing-warehouse",
+      details: {
+        summary_short:
+          "Six marketing sources pulled daily into one BigQuery warehouse and joined from ad spend through calls and leads to booked patients and treatment value. Every column described, a data guide written for LLMs to read first, and a weekly eval of golden questions.",
+        stats: [
+          { value: "98.5%", label: "Patients linked to their lead" },
+          { value: "99.5%", label: "Join agreement with the weekly exports" },
+          { value: "22", label: "Golden questions in the weekly Gemini eval" },
+          { value: "~2 days", label: "From spec to a running pipeline" },
+        ],
+        star: {
+          problem:
+            "Marketing numbers lived in five separate logins, and no off the shelf connector could join ad spend all the way through to treatment value, so a connector product was ruled out.",
+          solution:
+            "Google Ads lands through the BigQuery Data Transfer Service; Microsoft Ads, Meta, CallRail, Monday CRM and TapClicks come in through Python connectors running as Cloud Run jobs on Cloud Scheduler. Data moves from raw to staging to marts, every column carries a description, and a data guide tells an LLM what to read first. People query it through Looker Studio, Gemini and an MCP connection.",
+          process:
+            "A daily ops job checks freshness and runs a drift check that alerts on a z score above 3 against a 28 day baseline, and a weekly eval harness asks Gemini 22 golden questions. The lead to patient join moved from fuzzy phone, click id and email matching to the CRM's own board relation link, with the match method recorded on every row. View types that carry the identities of callers, reviewers or leads are blocked in code, whatever the config asks for.",
+          result:
+            "Live since early August 2026, with the TapClicks connector added on 25 September. 98.5% of patients link to their lead, and the join agrees with the weekly exports 99.5% of the time. It is not perfect: the first eval run passed 77% against an 80% gate, and on 23 September pipeline health stood at 32 of 36 checks with the CallRail sync failing two nights running.",
+        },
+        summary:
+          "A marketing data warehouse for a multi office implant practice: daily pulls from six sources, a documented raw, staging and marts layout, freshness and drift checks, a weekly LLM eval, and a pipeline monitoring dashboard.",
+        highlights: [
+          "A CallRail backfill looked like the account had no history; the API silently ignores created_after, and start_date brought calls back to June 2025.",
+          "Lead to patient join on the CRM's own relation link, with match_method on every row.",
+          "Every column described and a data guide written for LLMs, so a model reads the map first.",
+          "Drift alerts at a z score above 3 against a 28 day baseline.",
+          "Identity carrying view types blocked in code: callers, reviewers, commenters and leads.",
+          "A demo rule of thumb: a funnel conversion near 96 percent means a bad join.",
+        ],
+      },
+      tech: ["Python", "BigQuery", "BigQuery Data Transfer", "Cloud Run Jobs", "Cloud Scheduler", "Gemini", "Looker Studio", "MCP"],
+      img_alt: "Marketing Data Warehouse, Hybridge Implants LLC",
+      img_path: "/marketing-warehouse.png",
+    },
+    {
       title: "Centralized Diagnostic Filter",
       demo: "https://sampreethavvari.github.io/ai-systems-tours/tours/patient-assessment/",
       tier: "industry",
-      flagshipRank: 4,
+      flagshipRank: 5,
       date: "Jun 2026 - Present",
       description:
         "I am turning a founder's diagnostic mental model into a standardized system: every scan, photo, and survey into one report, with the doctor validating every finding.",
@@ -941,6 +1162,84 @@ export const info = {
       tech: ["AWS", "Docker", "n8n", "Data Pipelines", "Automation"],
       img_alt: "Enterprise Data Project - Hybridge Implants LLC",
       img_path: "/enterprise-data.png",
+    },
+    {
+      title: "Case Intake",
+      tier: "industry",
+      date: "Sep 2026 - Present",
+      description:
+        "I built a morning list of lab cases that duplicate an earlier scan case, so customer service can merge them. It runs as a demo on sample data while the vendor API license is pending.",
+      link: "",
+      details: {
+        summary_short:
+          "Each morning it lists the prescription cases in the dental lab's case system that duplicate an earlier scan case, so customer service can merge them. A demo on sample data; live mode waits on a vendor API license.",
+        stats: [
+          { value: "06:00 ET", label: "Daily run on Cloud Scheduler" },
+          { value: "1 letter", label: "The most a name can be mistyped and still match" },
+          { value: "67", label: "Tests" },
+          { value: "Demo", label: "Deployed 30 Sep 2026 on sample data; live mode waits on a license" },
+        ],
+        star: {
+          problem:
+            "Doctors write the prescription in the lab vendor's customer portal, which cannot edit an existing case, so every prescription arrives as a second case that duplicates the scan case already in the system, and customer service has to catch each pair to merge it.",
+          solution:
+            "A Next.js app in the Hybridge design on Cloud Run behind IAP. A Cloud Scheduler job runs at 06:00 ET and lists the likely duplicates. The data sits behind a case source and store interface: sample data today, the vendor's API and Firestore once the license lands.",
+          process:
+            "The name matcher forgives case, spacing, a middle initial, swapped first and last names, and a single mistyped letter. Anything more is a different person.",
+          result:
+            "Demo deployed on 30 September 2026 on sample data, with 67 tests. Live mode is blocked on a vendor API license, and a second phase doctor portal is parked.",
+        },
+        summary:
+          "A duplicate case finder for the dental lab: prescription cases matched to earlier scan cases every morning, behind IAP, with the data source behind an interface so moving from sample data to the vendor API swaps one implementation.",
+        highlights: [
+          "Forgiving but bounded name matching: case, spacing, middle initial, swapped names, one typo.",
+          "Case source and store interfaces: sample data now, the vendor API and Firestore later.",
+          "Runs every morning at 06:00 ET on Cloud Scheduler, on Cloud Run behind IAP.",
+          "Built in the Hybridge design system.",
+        ],
+      },
+      tech: ["Next.js", "TypeScript", "Cloud Run", "Cloud Scheduler", "Cloud IAP"],
+      img_alt: "Case Intake, Hybridge Implants LLC",
+      img_path: "/discipline-fde.png",
+    },
+    {
+      title: "Hybridge Forms",
+      tier: "industry",
+      date: "Sep 2026 - Present",
+      description:
+        "I am building our own forms platform to replace a Tally, Zapier and Monday chain on four company websites, around one rule: no submission is ever lost.",
+      link: "",
+      details: {
+        summary_short:
+          "A forms platform to replace Tally, Zapier and Monday on four company websites: a public forms app and embed script, an admin dashboard and form builder behind IAP, a read API and nightly checks. In build, not deployed yet.",
+        stats: [
+          { value: "32 of 32", label: "Live Tally forms the importer handles" },
+          { value: "1,300+", label: "Tests across core, admin, renderer and forms" },
+          { value: "11 of 18", label: "Build tasks done as of October 2026" },
+          { value: "4 sites", label: "Company websites it will serve" },
+        ],
+        star: {
+          problem:
+            "Website forms on four company sites ran through a chain of three vendors: Tally to collect, Zapier to move, Monday to land.",
+          solution:
+            "One owned platform: a public forms app with an embed script, an admin dashboard with a form builder behind IAP, a read API for downstream tools, and nightly checks.",
+          process:
+            "Built around one rule: no submission is ever lost. If Firestore fails, the answers go to a private Cloud Storage bucket and the visitor still sees success. If both fail, the server answers 503 and the browser retries four times over about 15 seconds with the same id, then keeps the answers on the device. An importer brings over all 32 live Tally forms.",
+          result:
+            "In build: about 11 of 18 build tasks done as of October 2026, with over 1,300 tests across the core, admin, renderer and forms packages. Not deployed yet.",
+        },
+        summary:
+          "An owned forms platform for a multi office practice's websites, designed so a submission survives a database outage, a storage outage and a flaky connection.",
+        highlights: [
+          "Firestore first, a private Cloud Storage bucket as the fallback, and the visitor still gets a success.",
+          "The browser retries four times over about 15 seconds with the same id, then keeps the answers locally.",
+          "The Tally importer works on all 32 live forms.",
+          "Admin dashboard and form builder behind IAP, plus a read API for downstream tools.",
+        ],
+      },
+      tech: ["TypeScript", "Firestore", "Cloud Storage", "Cloud IAP", "Vitest"],
+      img_alt: "Hybridge Forms, Hybridge Implants LLC",
+      img_path: "/discipline-sde.png",
     },
     {
       title: "JobPilot",
