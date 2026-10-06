@@ -1,0 +1,232 @@
+---
+// /demos/<slug>, one guided tour per system: the page top, the player, the
+// problem and its numbers, the architecture, where it landed, and the
+// neighbouring demos. These belong to the Projects tab, so they wear its blue.
+import fs from "node:fs";
+import path from "node:path";
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import Icon from "../../components/common/Icon.astro";
+import TourPlayer from "../../components/tours/TourPlayer";
+import Arch from "../../components/tours/Arch";
+import { TOURS } from "../../data/tours";
+import type { Tour } from "../../data/tours";
+
+export function getStaticPaths() {
+  return TOURS.map((tour, idx) => ({ params: { slug: tour.slug }, props: { tour, idx } }));
+}
+
+const { tour, idx } = Astro.props as { tour: Tour; idx: number };
+const prev = TOURS[(idx + TOURS.length - 1) % TOURS.length];
+const next = TOURS[(idx + 1) % TOURS.length];
+
+// Link the case study only when the post file is really there.
+const postsDir = path.join(process.cwd(), "src", "pages", "posts");
+const post =
+  tour.post &&
+  [".md", ".mdx", ".astro"].some((ext) =>
+    fs.existsSync(path.join(postsDir, tour.post!.replace(/^\/posts\//, "") + ext)),
+  )
+    ? tour.post
+    : null;
+
+const WORDS = ["zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten"];
+const stepWord = WORDS[tour.steps.length] ?? String(tour.steps.length);
+---
+
+<BaseLayout
+  title={`${tour.name} demo · Sampreeth Avvari`}
+  description={tour.pitch}
+  tone="projects"
+>
+  <!-- Page top -->
+  <section class="page-top dm-top relative overflow-hidden">
+    <div class="tone-atmos" aria-hidden="true"></div>
+    <div class="wrap on-top">
+      <a href="/projects" class="tlink dm-back">
+        <Icon name="arrow-left" size={14} /> Projects
+      </a>
+      <p class="kicker dm-kicker">Live demo</p>
+      <h1 class="t-title dm-title">
+        {tour.name}.
+        <span class="t-tail">{tour.tail}</span>
+      </h1>
+      <p class="t-lede dm-lede">{tour.pitch}</p>
+      <div class="dm-facts">
+        <span class="badge">{tour.kicker}</span>
+        <span class="t-meta">{tour.steps.length} steps · synthetic data</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- The tour -->
+  <section class="dm-player" aria-labelledby="dm-walk">
+    <div class="wrap">
+      <h2 id="dm-walk" class="sr-only">Walk through it, {stepWord} steps</h2>
+      <TourPlayer client:load tour={tour} />
+      <p class="t-meta dm-note">
+        Every name, number, transcript and document in this tour is synthetic. The mechanisms,
+        thresholds and architecture are real. The production system and its data stay private.
+      </p>
+    </div>
+  </section>
+
+  <!-- The problem and its numbers -->
+  <section class="dm-sec" aria-labelledby="dm-problem">
+    <div class="wrap">
+      <div class="dm-split" data-reveal>
+        <h2 id="dm-problem" class="t-h2">The problem.</h2>
+        <p class="dm-prose">{tour.problem}</p>
+      </div>
+      <ul class="dm-stats">
+        {tour.metrics.map((m) => (
+          <li class="surface surface-pad dm-stat" data-reveal>
+            <span class="t-meta">{m.label}</span>
+            <span class="dm-stat-num">{m.value}</span>
+            {m.sub && <span class="dm-stat-sub">{m.sub}</span>}
+          </li>
+        ))}
+      </ul>
+    </div>
+  </section>
+
+  <!-- Architecture -->
+  <section class="dm-sec" aria-labelledby="dm-arch">
+    <div class="wrap">
+      <div class="sec-head" data-reveal>
+        <div class="sec-head-main">
+          <h2 id="dm-arch" class="t-h2">How it fits together.</h2>
+        </div>
+        <span class="t-meta">{tour.architecture.length} layers, left to right</span>
+      </div>
+      <Arch lanes={tour.architecture} />
+    </div>
+  </section>
+
+  <!-- Where it landed -->
+  <section class="dm-sec" aria-labelledby="dm-landed">
+    <div class="wrap">
+      <div class="dm-split" data-reveal>
+        <h2 id="dm-landed" class="t-h2">Where it landed.</h2>
+        <div>
+          <p class="dm-prose">{tour.outcome}</p>
+          <div class="dm-tags">
+            <p class="t-meta">Concepts</p>
+            <div class="dm-tag-row">
+              {tour.concepts.map((c) => <span class="chip">{c}</span>)}
+            </div>
+          </div>
+          <div class="dm-tags">
+            <p class="t-meta">Stack</p>
+            <div class="dm-tag-row">
+              {tour.stack.map((s) => <span class="badge">{s}</span>)}
+            </div>
+          </div>
+          <div class="dm-actions">
+            {post && (
+              <a href={post} class="btn btn-glass">
+                Read the case study <Icon name="arrow-right" size={15} class="arrow-r" />
+              </a>
+            )}
+            {tour.links?.map((l) => (
+              <a href={l.url} target="_blank" rel="noreferrer" class="btn btn-ghost">
+                {l.label} <Icon name="arrow-up-right" size={15} class="arrow-ur" />
+              </a>
+            ))}
+            <a href="/demos" class="btn btn-ghost">All demos</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Previous and next -->
+  <section class="dm-sec dm-pn-sec">
+    <div class="wrap">
+      <nav class="dm-pn" aria-label="More demos">
+        <a href={`/demos/${prev.slug}`} class="surface surface-pad dm-pn-link">
+          <span class="t-meta dm-pn-dir">
+            <span class="dm-pn-back"><Icon name="arrow-right" size={14} /></span> Previous demo
+          </span>
+          <span class="t-h4">{prev.name}</span>
+        </a>
+        <a href={`/demos/${next.slug}`} class="surface surface-pad dm-pn-link dm-pn-next">
+          <span class="t-meta dm-pn-dir">
+            Next demo <Icon name="arrow-right" size={14} />
+          </span>
+          <span class="t-h4">{next.name}</span>
+        </a>
+      </nav>
+    </div>
+  </section>
+</BaseLayout>
+
+<style>
+  /* Page top */
+  .dm-top { padding-bottom: clamp(32px, 4vw, 48px); }
+  .dm-back { font-size: 0.875rem; }
+  .dm-back:hover :global(svg) { transform: translateX(-3px); }
+  .dm-kicker { display: flex; margin-top: 28px; }
+  .dm-title { margin-top: 20px; }
+  .dm-lede { margin-top: 24px; max-width: 44rem; }
+  .dm-facts { margin-top: 24px; display: flex; flex-wrap: wrap; align-items: center; gap: 10px 12px; }
+
+  /* The tour */
+  .dm-player { position: relative; padding-bottom: clamp(56px, 7vw, 96px); }
+  .dm-note { margin-top: 20px; max-width: 44rem; }
+
+  /* Sections after the tour share one rhythm. */
+  .dm-sec { position: relative; padding-bottom: clamp(64px, 8vw, 112px); }
+
+  /* A heading on the left, a readable column on the right. */
+  .dm-split { display: grid; grid-template-columns: minmax(0, 1fr); gap: 20px; }
+  @media (min-width: 1024px) {
+    .dm-split { grid-template-columns: minmax(0, 4fr) minmax(0, 8fr); gap: 56px; }
+  }
+  .dm-prose {
+    max-width: 68ch;
+    font-size: 1rem;
+    line-height: 1.7;
+    color: var(--ink-soft);
+    text-wrap: pretty;
+  }
+  @media (min-width: 1024px) { .dm-prose { font-size: 1.0625rem; } }
+
+  /* The numbers */
+  .dm-stats {
+    list-style: none;
+    margin: clamp(32px, 4vw, 48px) 0 0;
+    padding: 0;
+    display: grid;
+    gap: 16px;
+    grid-template-columns: minmax(0, 1fr);
+  }
+  @media (min-width: 560px) { .dm-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  @media (min-width: 1024px) { .dm-stats { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 20px; } }
+  .dm-stat { display: flex; flex-direction: column; }
+  .dm-stat-num {
+    margin-top: 12px;
+    font-size: clamp(1.5rem, 2.2vw, 1.875rem);
+    line-height: 1.1;
+    letter-spacing: -0.03em;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    color: var(--ink);
+    text-wrap: balance;
+  }
+  .dm-stat-sub { margin-top: 10px; font-size: 0.875rem; line-height: 1.5; color: var(--ink-soft); }
+
+  /* Where it landed */
+  .dm-tags { margin-top: 28px; }
+  .dm-tag-row { margin-top: 10px; display: flex; flex-wrap: wrap; gap: 8px; }
+  .dm-tag-row :global(.chip) { white-space: normal; height: auto; min-height: 28px; padding-block: 5px; }
+  .dm-tag-row :global(.badge) { white-space: normal; height: auto; min-height: 22px; padding-block: 4px; }
+  .dm-actions { margin-top: 32px; display: flex; flex-wrap: wrap; gap: 10px; }
+
+  /* Previous and next */
+  .dm-pn { display: grid; grid-template-columns: minmax(0, 1fr); gap: 16px; }
+  @media (min-width: 640px) { .dm-pn { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; } }
+  .dm-pn-link { display: flex; flex-direction: column; gap: 8px; }
+  .dm-pn-next { align-items: flex-end; text-align: right; }
+  .dm-pn-dir { display: inline-flex; align-items: center; gap: 6px; }
+  .dm-pn-back { display: inline-flex; transform: rotate(180deg); }
+</style>

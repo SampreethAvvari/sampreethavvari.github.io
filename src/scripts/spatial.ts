@@ -172,11 +172,21 @@ export function initAmbient(stops: Array<[string, string]>, sectionIds?: string[
     centers = cs;
   };
 
+  // The two colours are also published on <html>, so anything in the page
+  // (the fixed comet layer, a section's sky) can tint from the same blend.
+  const root = document.documentElement;
   const setAt = (i: number, f: number) => {
+    // Smootherstep: each section's colour holds while its section is in
+    // view, then hands over to the next one gently, with no corner.
+    const e = f * f * f * (f * (f * 6 - 15) + 10);
     const mix = (a: number[], b: number[]) =>
-      a.map((v, k) => Math.round(v + (b[k] - v) * f)).join(",");
-    el.style.setProperty("--amb1", mix(cols[i][0], cols[i + 1][0]));
-    el.style.setProperty("--amb2", mix(cols[i][1], cols[i + 1][1]));
+      a.map((v, k) => Math.round(v + (b[k] - v) * e)).join(",");
+    const a1 = mix(cols[i][0], cols[i + 1][0]);
+    const a2 = mix(cols[i][1], cols[i + 1][1]);
+    el.style.setProperty("--amb1", a1);
+    el.style.setProperty("--amb2", a2);
+    root.style.setProperty("--amb1", a1);
+    root.style.setProperty("--amb2", a2);
   };
 
   const apply = () => {

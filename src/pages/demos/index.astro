@@ -1,0 +1,227 @@
+---
+// /demos: every live demo in one place. JobPilot is the real app; the rest
+// are guided tours that rebuild a private production system on synthetic
+// data. Part of the Projects tab, so the page wears its blue.
+import fs from "node:fs";
+import path from "node:path";
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import Icon from "../../components/common/Icon.astro";
+import Picture from "../../components/common/Picture.astro";
+import { TOURS } from "../../data/tours";
+
+// A cover only renders when its file (or its .avif/.webp sibling) exists.
+const hasPublic = (p?: string) =>
+  !!p &&
+  [p, p.replace(/\.(png|jpe?g)$/i, ".avif"), p.replace(/\.(png|jpe?g)$/i, ".webp")].some((f) =>
+    fs.existsSync(path.join(process.cwd(), "public", f)),
+  );
+
+const firstSentence = (s: string) => {
+  const dot = s.indexOf(". ");
+  return dot > 0 ? s.slice(0, dot + 1) : s;
+};
+// "Delivery SLO" reads "delivery SLO" after a number; acronyms keep their case.
+const asTail = (label: string) => label.replace(/^([A-Z])(?![A-Z])/, (c) => c.toLowerCase());
+
+const WORDS = ["Zero", "One", "Two", "Three", "Four", "Five", "Six", "Seven", "Eight", "Nine", "Ten", "Eleven", "Twelve"];
+const tourCount = WORDS[TOURS.length] ?? String(TOURS.length);
+---
+
+<BaseLayout
+  title="Live demos · Sampreeth Avvari"
+  description="Interactive tours of the AI systems I built and run in production, rebuilt on synthetic data, plus JobPilot running live."
+  tone="projects"
+>
+  <!-- Page top -->
+  <section class="page-top dx-top relative overflow-hidden">
+    <div class="tone-atmos" aria-hidden="true"></div>
+    <div class="wrap on-top">
+      <a href="/projects" class="tlink dx-back">
+        <Icon name="arrow-left" size={14} /> Projects
+      </a>
+      <p class="kicker dx-kicker">Live demos</p>
+      <h1 class="t-title dx-title">
+        Click through the systems.
+        <span class="t-tail">Real mechanics, synthetic data.</span>
+      </h1>
+      <p class="t-lede dx-lede">
+        These are guided tours of systems I built at Hybridge Implants. The production code and data
+        stay private, so every tour rebuilds the experience with synthetic data. The flows,
+        thresholds, failure stories and architecture are real. JobPilot is the exception: that one is the
+        real app.
+      </p>
+      <div class="dx-facts">
+        <span class="chip chip-live">1 live app</span>
+        <span class="chip">{TOURS.length} guided tours</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- JobPilot -->
+  <section class="dx-sec" aria-labelledby="dx-app">
+    <div class="wrap">
+      <h2 id="dx-app" class="sr-only">The live app</h2>
+      <a href="/demos/jobpilot" class="surface dx-feature" data-reveal>
+        <span class="dx-feature-media" aria-hidden="true">
+          <Picture src="/jobpilot.png" alt="" width={960} height={600} loading="eager" />
+        </span>
+        <span class="dx-feature-body">
+          <span class="dx-badges">
+            <span class="badge badge-live">Live app</span>
+            <span class="badge">Open source</span>
+          </span>
+          <span class="t-h2 dx-feature-name">JobPilot.</span>
+          <span class="t-body dx-feature-line">
+            My open source job hunt autopilot. It watches 160+ company boards, scores each role against my
+            profile, and tailors a resume and cover letter per match. The demo is the real console on
+            fictional data, so click anything.
+          </span>
+          <span class="tlink dx-go">Open the demo <Icon name="arrow-right" size={14} /></span>
+        </span>
+      </a>
+    </div>
+  </section>
+
+  <!-- The tours -->
+  <section class="dx-sec" aria-labelledby="dx-tours">
+    <div class="wrap">
+      <div class="sec-head" data-reveal>
+        <div class="sec-head-main">
+          <h2 id="dx-tours" class="t-h2">
+            Guided tours.
+            <span class="t-tail">{tourCount} systems, step by step.</span>
+          </h2>
+        </div>
+        <span class="t-meta">{TOURS.length} tours</span>
+      </div>
+
+      <ul class="dx-grid">
+        {TOURS.map((t) => (
+          <li data-reveal>
+            <a href={`/demos/${t.slug}`} class="surface dx-card">
+              <span class="surface-media dx-media" aria-hidden="true">
+                {hasPublic(t.cover) ? (
+                  <Picture src={t.cover ?? ""} alt="" width={640} height={400} />
+                ) : (
+                  <span class="media-fallback"></span>
+                )}
+              </span>
+              <span class="dx-body">
+                <span class="t-meta">{t.kicker}</span>
+                <span class="t-h3 dx-name">{t.name}</span>
+                <span class="t-small dx-line">{firstSentence(t.pitch)}</span>
+                <span class="dx-metrics">
+                  {t.metrics.slice(0, 2).map((m) => (
+                    <span class="badge">
+                      {m.value} · {asTail(m.label)}
+                    </span>
+                  ))}
+                </span>
+                <span class="dx-foot">
+                  <span class="tlink">Take the tour <Icon name="arrow-right" size={14} /></span>
+                  <span class="t-meta">{t.steps.length} steps</span>
+                </span>
+              </span>
+            </a>
+          </li>
+        ))}
+      </ul>
+
+      <p class="t-meta dx-note">
+        Every tour uses synthetic data. No patient information, company code, prices or internal documents
+        appear anywhere on these pages.
+      </p>
+    </div>
+  </section>
+</BaseLayout>
+
+<style>
+  /* Page top */
+  .dx-top { padding-bottom: clamp(40px, 5vw, 64px); }
+  .dx-back { font-size: 0.875rem; }
+  .dx-back:hover :global(svg) { transform: translateX(-3px); }
+  .dx-kicker { display: flex; margin-top: 28px; }
+  .dx-title { margin-top: 20px; }
+  .dx-lede { margin-top: 24px; max-width: 44rem; }
+  .dx-facts { margin-top: 28px; display: flex; flex-wrap: wrap; gap: 8px; }
+
+  .dx-sec { position: relative; padding-bottom: clamp(56px, 7vw, 96px); }
+
+  /* JobPilot, the one live app: a wide card. */
+  .dx-feature {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    overflow: hidden;
+  }
+  @media (min-width: 900px) {
+    .dx-feature { grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); }
+  }
+  .dx-feature-media {
+    display: block;
+    overflow: hidden;
+    background: #07080b;
+    border-bottom: 1px solid var(--line);
+    aspect-ratio: 16 / 10;
+  }
+  @media (min-width: 900px) {
+    .dx-feature-media { border-bottom: 0; border-right: 1px solid var(--line); aspect-ratio: auto; min-height: 340px; }
+  }
+  .dx-feature-media :global(img) {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 600ms var(--ease-glass);
+  }
+  .dx-feature:hover .dx-feature-media :global(img) { transform: scale(1.03); }
+  .dx-feature-body {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 16px;
+    padding: 24px;
+  }
+  @media (min-width: 640px) { .dx-feature-body { padding: 36px; } }
+  .dx-badges { display: flex; flex-wrap: wrap; gap: 8px; }
+  .dx-feature-name { display: block; }
+  .dx-feature-line { display: block; max-width: 34rem; }
+  .dx-go { margin-top: 4px; }
+
+  /* Tour cards */
+  .dx-grid {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    gap: 16px;
+    grid-template-columns: minmax(0, 1fr);
+  }
+  @media (min-width: 640px) { .dx-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  @media (min-width: 1024px) { .dx-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px; } }
+  .dx-grid > li { display: flex; }
+  .dx-card { display: flex; flex-direction: column; width: 100%; }
+  .dx-media { aspect-ratio: 16 / 10; }
+  .dx-media :global(.media-fallback) { display: block; }
+  .dx-body { display: flex; flex-direction: column; flex: 1; padding: 20px 22px 22px; }
+  .dx-name { display: block; margin-top: 8px; }
+  .dx-line {
+    display: -webkit-box;
+    margin-top: 8px;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 3;
+    overflow: hidden;
+  }
+  .dx-metrics { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 16px; }
+  .dx-metrics :global(.badge) { white-space: normal; height: auto; min-height: 22px; padding-block: 4px; line-height: 1.3; }
+  .dx-foot {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-top: auto;
+    padding-top: 20px;
+  }
+  .dx-card:hover .dx-foot .tlink { text-decoration: underline; text-underline-offset: 4px; text-decoration-thickness: 1px; }
+  .dx-card:hover .dx-foot :global(svg) { transform: translateX(3px); }
+  .dx-note { margin-top: 28px; max-width: 44rem; }
+</style>

@@ -1,5 +1,5 @@
 ---
-demo: https://sampreethavvari.github.io/ai-systems-tours/tours/cowork-dashboard/
+demo: /demos/cowork-dashboard
 title: "How I built a clinic dashboard people actually trust"
 date: "2026-05-12"
 layout: ../../layouts/PostLayout.astro

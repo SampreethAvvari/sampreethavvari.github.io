@@ -19,6 +19,7 @@ const pages: SearchItem[] = [
   { title: "Work", description: "Four disciplines: AI, forward-deployed, ML, and software engineering.", url: "/work", type: "page" },
   { title: "Gallery", description: "Screenshots and documents from production systems, by project.", url: "/gallery", type: "page" },
   { title: "Projects", description: "AI, research, and industry projects.", url: "/projects", type: "page" },
+  { title: "Live demos", description: "Interactive tours of the systems, with synthetic data, and the JobPilot app.", url: "/demos", type: "page" },
   { title: "Filmmaking", description: "Among Monsters and film work.", url: "/filmmaking", type: "page" },
   { title: "Writing", description: "Blog posts and research notes.", url: "/posts", type: "page" },
   { title: "Teaching", description: "Course materials and the teaching hub.", url: "/teaching", type: "page" },

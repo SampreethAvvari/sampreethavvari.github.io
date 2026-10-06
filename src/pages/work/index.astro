@@ -25,6 +25,15 @@ const statusClass = (s: string) =>
     : s === "In build" || s === "Pilot-ready"
       ? "badge badge-build"
       : "badge";
+
+// A card shows only the tagline's first sentence (or the part before its
+// colon), the same line that finishes the discipline page's headline.
+const taglineHead = (t: string) => {
+  const dot = t.indexOf(". ");
+  if (dot > 0) return t.slice(0, dot + 1);
+  const colon = t.indexOf(": ");
+  return colon > 0 ? t.slice(0, colon) + "." : t;
+};
 ---
 
 <BaseLayout title="Work · Sampreeth Avvari">
@@ -38,11 +47,8 @@ const statusClass = (s: string) =>
         <span class="t-tail">Here it is, told four ways.</span>
       </h1>
       <p class="t-lede wk-lede">
-        Most of this work comes from Hybridge, a dental implant company where
-        I've been the only engineer in the building. Every project there runs
-        the full arc: find the real problem, design the system, train the model
-        or wire the LLM, ship it into someone's workflow, and teach people to
-        run it. Different projects lean on different disciplines.
+        Most of it comes from Hybridge, a dental implant company where I've
+        been the only engineer in the building.
       </p>
       <div class="wk-actions">
         <a href="/gallery" class="btn btn-glass">
@@ -67,7 +73,7 @@ const statusClass = (s: string) =>
                 <span class="t-meta">{d.projects.length} projects</span>
               </span>
               <span class="t-h3 wk-disc-name">{d.name}</span>
-              <span class="t-small wk-disc-line">{d.tagline}</span>
+              <span class="t-small wk-disc-line">{taglineHead(d.tagline)}</span>
               <span class="tlink wk-disc-open">
                 Open <Icon name="arrow-right" size={14} />
               </span>
@@ -98,12 +104,7 @@ const statusClass = (s: string) =>
             </a>
 
             <div class="wk-panel-main">
-              <div class="wk-panel-meta">
-                <span class="badge">{d.acronym}</span>
-                <span class="t-meta">
-                  {d.projects.length} projects · {d.articles.length} articles
-                </span>
-              </div>
+              <span class="badge">{d.acronym}</span>
               <h3 class="t-h3 wk-panel-title">{d.name}</h3>
               <p class="t-body wk-panel-summary">{d.summary}</p>
 
@@ -162,7 +163,7 @@ const statusClass = (s: string) =>
   @media (min-width: 1024px) { .wk-grid4 { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 20px; } }
   .wk-grid4 > li { display: flex; }
   .wk-disc { display: flex; flex-direction: column; width: 100%; }
-  @media (min-width: 640px) { .wk-disc { min-height: 250px; } }
+  @media (min-width: 640px) { .wk-disc { min-height: 200px; } }
   .wk-disc-top { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
   .wk-disc-name { display: block; margin-top: 20px; }
   .wk-disc-line { display: block; margin-top: 8px; }
@@ -206,7 +207,6 @@ const statusClass = (s: string) =>
      projects down. */
   @media (max-width: 1023px) { .wk-art { display: none; } }
 
-  .wk-panel-meta { display: flex; align-items: center; gap: 12px; }
   .wk-panel-title { margin-top: 16px; font-size: clamp(1.5rem, 2.4vw, 1.875rem); line-height: 1.15; letter-spacing: -0.026em; }
   .wk-panel-summary { margin-top: 12px; max-width: 68ch; }
 

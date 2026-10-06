@@ -1,0 +1,125 @@
+---
+// /demos/jobpilot: the one demo that is the real app. It lives on Cloudflare
+// Pages and allows framing (no X-Frame-Options, no frame-ancestors CSP as of
+// October 2026), so it runs right here in a framed surface.
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import Icon from "../../components/common/Icon.astro";
+
+const APP = "https://jobpilot-demo.pages.dev";
+---
+
+<BaseLayout
+  title="JobPilot demo · Sampreeth Avvari"
+  description="The real JobPilot console, running live on fictional data. My open source job hunt autopilot."
+  tone="projects"
+>
+  <!-- Page top -->
+  <section class="page-top jp-top relative overflow-hidden">
+    <div class="tone-atmos" aria-hidden="true"></div>
+    <div class="wrap on-top">
+      <a href="/projects" class="tlink jp-back">
+        <Icon name="arrow-left" size={14} /> Projects
+      </a>
+      <p class="kicker jp-kicker">Live demo</p>
+      <h1 class="t-title jp-title">
+        JobPilot.
+        <span class="t-tail">The real console, on fictional data.</span>
+      </h1>
+      <p class="t-lede jp-lede">
+        My open source job hunt autopilot. It watches 160+ company boards, scores each role against my
+        profile, and tailors a resume and cover letter per match. Nothing here is a recording, so click
+        anything.
+      </p>
+      <div class="jp-facts">
+        <span class="badge badge-live">Live app</span>
+        <span class="badge">Open source</span>
+        <span class="t-meta">Fictional data</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- The app -->
+  <section class="jp-sec" aria-labelledby="jp-app">
+    <div class="wrap">
+      <h2 id="jp-app" class="sr-only">The JobPilot console</h2>
+      <div class="surface jp-frame">
+        <div class="jp-chrome">
+          <span class="jp-dots" aria-hidden="true"><i></i><i></i><i></i></span>
+          <span class="jp-url">jobpilot-demo.pages.dev</span>
+          <a href={APP} target="_blank" rel="noreferrer" class="btn btn-glass btn-xs jp-full">
+            Open full screen <Icon name="arrow-up-right" size={13} class="arrow-ur" />
+          </a>
+        </div>
+        <iframe
+          src={APP}
+          title="JobPilot live demo"
+          loading="lazy"
+          referrerpolicy="strict-origin-when-cross-origin"
+          sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox allow-downloads"
+          allow="clipboard-write"
+        ></iframe>
+      </div>
+      <p class="t-meta jp-note">
+        Small screen? The console is built for a desktop, so it reads best opened full screen.
+      </p>
+      <div class="jp-actions">
+        <a href="/posts/jobpilot-v2" class="btn btn-glass">
+          Read the case study <Icon name="arrow-right" size={15} class="arrow-r" />
+        </a>
+        <a href="https://github.com/SampreethAvvari/job-pilot" target="_blank" rel="noreferrer" class="btn btn-ghost">
+          Code on GitHub <Icon name="arrow-up-right" size={15} class="arrow-ur" />
+        </a>
+        <a href="/demos" class="btn btn-ghost">All demos</a>
+      </div>
+    </div>
+  </section>
+</BaseLayout>
+
+<style>
+  /* Page top */
+  .jp-top { padding-bottom: clamp(32px, 4vw, 48px); }
+  .jp-back { font-size: 0.875rem; }
+  .jp-back:hover :global(svg) { transform: translateX(-3px); }
+  .jp-kicker { display: flex; margin-top: 28px; }
+  .jp-title { margin-top: 20px; }
+  .jp-lede { margin-top: 24px; max-width: 44rem; }
+  .jp-facts { margin-top: 24px; display: flex; flex-wrap: wrap; align-items: center; gap: 10px 12px; }
+
+  .jp-sec { position: relative; padding-bottom: clamp(64px, 8vw, 112px); }
+
+  /* The app in a frame: a solid surface with a quiet chrome bar. */
+  .jp-frame { overflow: hidden; }
+  .jp-chrome {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 8px 8px 8px 16px;
+    border-bottom: 1px solid var(--line);
+    background: rgba(255, 255, 255, 0.015);
+  }
+  .jp-dots { display: inline-flex; gap: 6px; flex: none; }
+  .jp-dots i { width: 9px; height: 9px; border-radius: 9999px; background: rgba(255, 255, 255, 0.14); }
+  .jp-url {
+    flex: 1 1 auto;
+    min-width: 0;
+    font-size: 0.8125rem;
+    font-weight: 500;
+    color: var(--ink-faint);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .jp-full { flex: none; }
+  .jp-frame iframe {
+    display: block;
+    width: 100%;
+    height: 80vh;
+    min-height: 520px;
+    max-height: 960px;
+    border: 0;
+    background: #07080b;
+  }
+  .jp-note { margin-top: 16px; }
+  @media (min-width: 1024px) { .jp-note { display: none; } }
+  .jp-actions { margin-top: 28px; display: flex; flex-wrap: wrap; gap: 10px; }
+</style>

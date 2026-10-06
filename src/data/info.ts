@@ -420,7 +420,7 @@ export const info = {
         summary_short:
           "The staff dashboard behind the CDF platform. One row per patient for treatment coordinators, every document one click away, and the only app that talks to the Denticon API; the estimator and capacity planner read through it.",
         stats: [
-          { value: "1 chart", label: "intakes, estimates and consult recordings land on the patient's Denticon chart" },
+          { value: "1 chart", label: "intakes, estimates and consults, all on one chart" },
           { value: "100%", label: "Right chart chosen in a blind test of the record matcher" },
           { value: "~4 in 5", label: "Intake surveys that link to their chart on their own" },
           { value: "38", label: "Findings from an eight lens adversarial review, run before the matcher could write" },
@@ -497,7 +497,7 @@ export const info = {
     },
     {
       title: "Enterprise Search",
-      demo: "https://sampreethavvari.github.io/ai-systems-tours/tours/enterprise-search/",
+      demo: "/demos/enterprise-search",
       tier: "industry",
       flagshipRank: 2,
       date: "Jun 2026 - Present",
@@ -539,7 +539,7 @@ export const info = {
     },
     {
       title: "CBCT Scan Validator",
-      demo: "https://sampreethavvari.github.io/ai-systems-tours/tours/scan-validator/",
+      demo: "/demos/scan-validator",
       tier: "industry",
       flagshipRank: 4,
       date: "Mar 2026 - Present",
@@ -581,7 +581,7 @@ export const info = {
     },
     {
       title: "Treatment Estimator",
-      demo: "https://sampreethavvari.github.io/ai-systems-tours/tours/treatment-estimator/",
+      demo: "/demos/treatment-estimator",
       tier: "industry",
       date: "May 2026 - Present",
       description:
@@ -668,7 +668,7 @@ export const info = {
     },
     {
       title: "Cowork Dashboard",
-      demo: "https://sampreethavvari.github.io/ai-systems-tours/tours/cowork-dashboard/",
+      demo: "/demos/cowork-dashboard",
       tier: "industry",
       date: "Apr 2026 - Present",
       description:
@@ -752,7 +752,7 @@ export const info = {
     },
     {
       title: "Doc Coach, Consultation QA Pipeline",
-      demo: "https://sampreethavvari.github.io/ai-systems-tours/tours/doc-coach/",
+      demo: "/demos/doc-coach",
       tier: "industry",
       flagshipRank: 3,
       date: "Aug 2025 - Present",
@@ -795,7 +795,7 @@ export const info = {
     },
     {
       title: "NPC Coach",
-      demo: "https://sampreethavvari.github.io/ai-systems-tours/tours/npc-coach/",
+      demo: "/demos/npc-coach",
       tier: "industry",
       flagshipRank: 6,
       date: "Aug 2025 - Present",
@@ -839,7 +839,7 @@ export const info = {
     },
     {
       title: "Reconciliation",
-      demo: "https://sampreethavvari.github.io/ai-systems-tours/tours/reconciliation/",
+      demo: "/demos/reconciliation",
       tier: "industry",
       date: "Jun 2026 - Present",
       description:
@@ -923,6 +923,7 @@ export const info = {
     },
     {
       title: "Marketing Data Warehouse",
+      demo: "/demos/marketing-warehouse",
       tier: "industry",
       date: "Aug 2026 - Present",
       description:
@@ -965,7 +966,7 @@ export const info = {
     },
     {
       title: "Centralized Diagnostic Filter",
-      demo: "https://sampreethavvari.github.io/ai-systems-tours/tours/patient-assessment/",
+      demo: "/demos/patient-assessment",
       tier: "industry",
       flagshipRank: 5,
       date: "Jun 2026 - Present",
@@ -1243,7 +1244,7 @@ export const info = {
     },
     {
       title: "JobPilot",
-      demo: "https://jobpilot-demo.pages.dev",
+      demo: "/demos/jobpilot",
       tier: "personal",
       date: "2026 - Present",
       description:

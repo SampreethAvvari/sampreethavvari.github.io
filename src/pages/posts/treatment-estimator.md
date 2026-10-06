@@ -1,5 +1,5 @@
 ---
-demo: https://sampreethavvari.github.io/ai-systems-tours/tours/treatment-estimator/
+demo: /demos/treatment-estimator
 title: "How I rebuilt a 10-year-old pricing tool in a month"
 date: "2026-05-18"
 layout: ../../layouts/PostLayout.astro
