@@ -4,6 +4,7 @@ import TopButton from "../components/TopButton";
 import ChatWidget from "../components/chatbot/ChatWidget";
 import FooterBar from "../components/footer/FooterBar";
 import SpaceField from "../components/hero/SpaceField.astro";
+import WarpLoader from "../components/hero/WarpLoader.astro";
 import { info } from "../data/info";
 import "../styles/landing.css";
 
@@ -81,6 +82,10 @@ const TONE_RGB: Record<string, string> = {
   home: "91,141,239",
 };
 const toneRgb = TONE_RGB[tone];
+// The loader's comets: home blends every tab, so it gets all their colours.
+// Blue and green lead, the same pair the sky starts on.
+const warpPalette =
+  tone === "home" ? [...new Set([toneRgb, TONE_RGB.writing, ...Object.values(TONE_RGB)])] : [toneRgb];
 
 // Comets in the tab's colour on every page. Home and the writing index place
 // their own per section, and /mind wants a still sky.
@@ -242,6 +247,8 @@ const pageComets = hasOwnComets
     data-sky={toneRgb}
     data-own-sky={pathname === "/" ? "true" : undefined}
   >
+    <!-- First in the body so it covers the very first paint. -->
+    <WarpLoader palette={warpPalette} />
     <!-- Shared space backdrop on every page: starfield, ambient colour
          flow, and film grain. All behind the content (z -1, grain overlay). -->
     <SpaceField />

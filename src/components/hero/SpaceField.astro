@@ -211,7 +211,16 @@ void main() {
       requestAnimationFrame(frame);
       if (hidden) return;
       const t = (performance.now() - t0) / 1000;
-      const target = window.scrollY * 0.006 + t * 0.22;
+      // Arrival from the page loader (WarpLoader sets the time): the camera
+      // is still flying when the loader hands over, then coasts to a stop,
+      // so the sky streaks and settles under the page as it flies in.
+      const arrivedAt = (window as Window & { __warpArrive?: number }).__warpArrive;
+      let coast = 0;
+      if (arrivedAt) {
+        const p = Math.min(1, (performance.now() - arrivedAt) / 1800);
+        coast = 7 * (1 - Math.pow(1 - p, 3));
+      }
+      const target = window.scrollY * 0.006 + t * 0.22 + coast;
       const prev = cam;
       cam += (target - cam) * 0.08;
       // Smoothed camera speed drives the warp streaks.
