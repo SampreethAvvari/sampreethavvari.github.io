@@ -492,9 +492,31 @@ export function mountMind() {
     if (!n) { clearDetail(); return; }
     camTarget = { dist: clamp(cam.dist, worldR * 0.7, worldR * 2.2) };
     showDetail(n);
+    setFolded(false); // a tapped star's story needs the panel open
   }
 
   // ---- panel --------------------------------------------------------------
+  // On a thin or short window the panel starts folded to its top row, so it
+  // does not sit on top of the map.
+  function setFolded(folded: boolean) {
+    panel!.classList.toggle("is-folded", folded);
+    if (!foldBtn) return;
+    const label = folded ? "Show panel" : "Hide panel";
+    foldBtn.setAttribute("aria-expanded", String(!folded));
+    foldBtn.setAttribute("aria-label", label);
+    foldBtn.title = label;
+  }
+  const foldBtn = panel.querySelector<HTMLButtonElement>("[data-mind-fold]");
+  foldBtn?.addEventListener("click", (e) => {
+    e.stopPropagation();
+    setFolded(!panel.classList.contains("is-folded"));
+  });
+  // Folded, the whole pill opens it.
+  panel.addEventListener("click", () => {
+    if (panel.classList.contains("is-folded")) setFolded(false);
+  });
+  setFolded(window.matchMedia("(max-width: 1100px), (max-height: 640px)").matches);
+
   function showDetail(n: Node) {
     const kind = TYPE_LABELS[n.type] || n.type;
     const safeUrl = n.url && /^(https?:\/\/|\/)/.test(n.url) ? n.url : "";

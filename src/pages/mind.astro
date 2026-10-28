@@ -17,34 +17,50 @@ const dataJson = JSON.stringify(mindGraphs).replace(/</g, "\\u003c");
 
     <!-- The panel floats over the map, so it is navigation layer glass. -->
     <aside class="mind-panel lg lg-thick" data-mind-panel>
-      <header class="mind-head">
+      <div class="mind-top">
         <p class="kicker">Mind</p>
-        <h1 class="mind-title">
-          A star map of my work.
-          <span class="t-tail">Everything I've built, and what ties it together.</span>
-        </h1>
-        <p class="mind-sub" data-mind-sub>Loading the sky…</p>
-      </header>
-
-      <div class="mind-modes" role="tablist" aria-label="Which map">
-        <button class="mind-mode is-active" data-mode="portfolio" role="tab" aria-selected="true">
-          Portfolio graph
-        </button>
-        <button class="mind-mode" data-mode="repo" role="tab" aria-selected="false">
-          Git mind
+        <!-- Folds the panel down to this row so the whole map shows. -->
+        <button
+          class="mind-fold"
+          data-mind-fold
+          aria-controls="mind-panel-body"
+          aria-expanded="true"
+          aria-label="Hide panel"
+          title="Hide panel"
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m18 15-6-6-6 6"/></svg>
         </button>
       </div>
 
-      <div class="mind-detail" data-mind-detail>
-        <p class="mind-detail-hint">Drift through the map. Tap a star to open it.</p>
+      <div class="mind-body" id="mind-panel-body">
+        <header class="mind-head">
+          <h1 class="mind-title">
+            A star map of my work.
+            <span class="t-tail">Everything I've built, and what ties it together.</span>
+          </h1>
+          <p class="mind-sub" data-mind-sub>Loading the sky…</p>
+        </header>
+
+        <div class="mind-modes" role="tablist" aria-label="Which map">
+          <button class="mind-mode is-active" data-mode="portfolio" role="tab" aria-selected="true">
+            Portfolio graph
+          </button>
+          <button class="mind-mode" data-mode="repo" role="tab" aria-selected="false">
+            Git mind
+          </button>
+        </div>
+
+        <div class="mind-detail" data-mind-detail>
+          <p class="mind-detail-hint">Drift through the map. Tap a star to open it.</p>
+        </div>
+
+        <ul class="mind-legend" data-mind-legend aria-hidden="true"></ul>
+
+        <p class="mind-hint">
+          <span>Scroll to zoom</span><span class="mind-dot">·</span><span>drag to turn</span
+          ><span class="mind-dot">·</span><span>tap a star</span>
+        </p>
       </div>
-
-      <ul class="mind-legend" data-mind-legend aria-hidden="true"></ul>
-
-      <p class="mind-hint">
-        <span>Scroll to zoom</span><span class="mind-dot">·</span><span>drag to turn</span
-        ><span class="mind-dot">·</span><span>tap a star</span>
-      </p>
     </aside>
 
     <button class="mind-reset lg" data-mind-reset title="Reset view" aria-label="Reset view">
@@ -99,9 +115,48 @@ const dataJson = JSON.stringify(mindGraphs).replace(/</g, "\\u003c");
     animation: mind-rise 500ms var(--ease-glass) both;
   }
 
+  /* Top row: the kicker, and the fold button at the far end. */
+  .mind-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+  }
+  .mind-fold {
+    width: 30px;
+    height: 30px;
+    margin: -6px -6px -6px 0;
+    padding: 0;
+    border: 0;
+    border-radius: 9999px;
+    display: grid;
+    place-items: center;
+    flex: none;
+    color: var(--ink-faint);
+    background: var(--wash);
+    cursor: pointer;
+    transition: color 150ms var(--ease-glass), background-color 150ms var(--ease-glass);
+  }
+  .mind-fold:hover { color: var(--ink); background: var(--wash-strong); }
+  .mind-fold:focus-visible { outline: none; box-shadow: 0 0 0 3px rgba(var(--tone-rgb), 0.45); }
+  .mind-fold svg { transition: transform 250ms var(--ease-glass); }
+  .mind-body { display: flex; flex-direction: column; gap: 16px; }
+
+  /* Folded: only the top row stays, a small pill over the map. */
+  .mind-panel.is-folded {
+    width: auto;
+    padding: 10px 10px 10px 16px;
+    border-radius: 9999px;
+    gap: 0;
+    cursor: pointer;
+  }
+  .mind-panel.is-folded .mind-body { display: none; }
+  .mind-panel.is-folded .mind-fold { margin: -4px; }
+  .mind-panel.is-folded .mind-fold svg { transform: rotate(180deg); }
+
   .mind-head { display: flex; flex-direction: column; }
   .mind-title {
-    margin: 16px 0 0;
+    margin: 0;
     font-size: 1.5rem;
     line-height: 1.16;
     letter-spacing: -0.03em;
@@ -323,8 +378,13 @@ const dataJson = JSON.stringify(mindGraphs).replace(/</g, "\\u003c");
       gap: 12px;
       border-radius: 22px;
     }
-    .mind-title { margin-top: 12px; font-size: 1.25rem; }
+    .mind-body { gap: 12px; }
+    .mind-title { font-size: 1.25rem; }
     .mind-title .t-tail, .mind-sub, .mind-hint { display: none; }
+    /* The sheet folds down to a pill in the corner. */
+    .mind-fold svg { transform: rotate(180deg); }
+    .mind-panel.is-folded { right: auto; }
+    .mind-panel.is-folded .mind-fold svg { transform: none; }
     .mind-detail { min-height: 0; padding: 12px 14px; }
     .mind-reset { right: 16px; bottom: auto; top: calc(env(safe-area-inset-top, 0px) + 88px); }
   }
