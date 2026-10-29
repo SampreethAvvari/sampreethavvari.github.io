@@ -1,133 +1,82 @@
 ---
 demo: /demos/jobpilot
-title: "How I built a job-search autopilot in 5 hours"
+title: "I turned my job hunt into a pipeline in one night"
 date: "2026-06-10"
 layout: ../../layouts/PostLayout.astro
-description: "Refreshing LinkedIn for jobs that were posted three weeks ago is not a strategy. So I built JobPilot: 7 job sources, 4 runs a day, 4 tailored resumes, one dashboard, for under $5 a month."
+description: "Reading reposted LinkedIn listings to reach a no sponsorship line in paragraph six was not a plan. So one night I built JobPilot: fresh jobs from the source, scored and tailored while I slept."
 img_path: "/jobpilot.png"
+architecture: "jobpilot"
 img_alt: "JobPilot, a stream of job postings funneling into one tailored resume, taking flight"
 tag: "Process"
 tone: "blue"
 stats:
-  - value: "5 hours"
-    label: "from idea to deployed on GCP"
+  - value: "40 minutes"
+    label: "from an empty Google Cloud project at 3:14 AM to a running pipeline and console, June 10"
     tone: "blue"
-  - value: "< $5/mo"
-    label: "total running cost"
+  - value: "16 patterns"
+    label: "of citizenship, clearance and no sponsorship text that drop a job before any model sees it"
     tone: "emerald"
-  - value: "7 sources, 4×/day"
-    label: "fresh jobs, automatically"
+  - value: "7 sources"
+    label: "Greenhouse, Lever, Ashby, Hacker News, RemoteOK, Adzuna and LinkedIn, merged into one list"
     tone: "amber"
+facts:
+  - label: "Problem"
+    value: "Finding a job that would sponsor a visa meant reading reposted LinkedIn listings down to paragraph six."
+  - label: "What I built"
+    value: "A pipeline that reads company job boards, drops roles I could never take and tailors a resume per match."
+  - label: "Outcome"
+    value: "Used from the first morning; the pipeline ran 1,008 times before my copy stopped on October 8, 2026."
+  - label: "Runs on"
+    value: "A Cloud Run job with Gemini scoring, a Google Sheet as the database and a console behind sign in."
+  - label: "Built"
+    value: "On June 10, 2026, 40 minutes from an empty Google Cloud project to a running pipeline and console."
+  - label: "Status"
+    value: "Off since October 8, 2026; the code is public under MIT and a demo runs on fictional data."
 ---
 
-Here's what applying from LinkedIn alone actually looks like: a posting says "2 weeks ago," it's been reposted twice, 1,000+ people clicked Apply, and (the part that stings if you're an international student) paragraph six says *"unable to provide visa sponsorship."* You read all of it anyway. Multiply by fifty, every day, forever.
+## The problem
 
-I decided my evenings were worth more than that. So one night I sat down with Claude Code and built **JobPilot**, a job-search autopilot that runs on GCP while I sleep. Total build time: **about 5 hours**.
+I needed a job that would sponsor a visa, and LinkedIn made me find out the slow way. A posting says two weeks ago, it has been reposted twice, and paragraph six says the company cannot sponsor. I read all of it anyway, because that line could sit anywhere.
 
-## Where the jobs actually come from
+Recruiters run their side of hiring on an ATS with dashboards and automation. I was running mine on a browser tab and a spreadsheet I forgot to update. A job search is a pipeline, and I was doing every stage by hand.
 
-The trick is to skip the aggregator lag and go to the source. JobPilot pulls from **7 sources**, almost all free:
+## What I built
 
-- **Greenhouse, Lever, and Ashby**: the ATS boards companies *actually post to first*. I watch **39 companies** directly: Stripe, Anthropic, OpenAI, Databricks, Notion, Ramp, Figma, Datadog, Palantir, Cursor… These APIs are public, keyless, and free.
-- **Hacker News "Who is Hiring"**: free via the Algolia API.
-- **RemoteOK**: free public JSON.
-- **Adzuna**: free API key, capped to postings ≤ 2 days old.
-- **LinkedIn**: yes, it's still in there, via an Apify scraper actor on free credits, capped at 50 results from the last 24 hours so it never costs real money.
+JobPilot reads companies' own job boards, drops the postings I could never take, scores the rest against my profile with Gemini, and writes a tailored one page resume and cover letter for the good ones. A Google Sheet is the database. A small console behind Google sign in sits on top, and a digest email lists the best matches.
 
-A job posted on a company's Greenhouse board this morning is in my inbox by the next run. That's the whole point: **I see jobs hours old, not weeks old.**
+[Open the drawing](/architecture/jobpilot) to see every part. This post is the first version. The [full tour](/posts/jobpilot-v2) covers what it grew into.
 
-## The pipeline (runs 4× a day)
+## The sprint
 
-Cloud Scheduler kicks off a Cloud Run job at midnight, 6 AM, noon, and 6 PM ET:
+The first version took one evening, <span class="egg" tabindex="0" data-egg="Google Cloud keeps timestamps for the last forty minutes. The first four hours are on my word alone.">about five hours by my count</span>. Google Cloud only saw the end. The project was created at 3:14 AM on June 10. The pipeline job existed three minutes later and ran for the first time at 3:25. The console went up at 3:54.
 
-```
-fetch (7 sources)          ~100 jobs per source, in parallel
-  → filter                 drop stale, senior, contract, no-sponsorship
-  → dedupe                 SHA1(company|title|location) across sources
-  → score                  Gemini 2.5 Flash, fit 0-100, batches of 10
-  → record                 Google Sheet, 27 columns
-  → scan Gmail             classify replies → update statuses
-  → tailor                 auto-tailor every job scoring ≥ 60
-  → digest                 one email: today's shortlist, ranked
+At 7:12 PM the same day the code went public on GitHub under MIT as JobPilot v1.0, with seven job sources and four resume variants. By midnight the pipeline had run 11 times. Two days later it was running every 30 minutes.
+
+## The hard parts
+
+**Resumes a parser could not read.** My first PDFs came out of XeTeX. They looked perfect, and a text extractor read them as "New Y ork" and "T erraform", which is what an ATS would see. Switching to pdflatex with the cmap package fixed the text layer. A check script now pulls the text out of the real PDF and fails any resume over one page or under 85 percent keyword coverage.
+
+**A Tailor button that ran everything.** The console's Tailor button was meant to start the job for one row. It started the whole pipeline. Cloud Run's per run arguments replace a Dockerfile's CMD, so mine were thrown away. Arguments added to an ENTRYPOINT append, so one line fixed it:
+
+```dockerfile
+# Dockerfile
+ENTRYPOINT ["python", "-m", "jobpilot"]
 ```
 
-The dedupe step matters more than it sounds: the same job shows up on LinkedIn, Adzuna, *and* the company's own board. JobPilot hashes company + title + location, keeps the highest-fidelity source, and I see it exactly once.
+**The cheapest filter goes first.** Sixteen regex patterns drop citizenship, clearance and no sponsorship postings before any model sees them, and title words drop senior, staff, contract and intern roles. Whatever survives goes to Gemini in batches of 10. If the text still hints that sponsorship is unlikely, the scorer caps the fit at 10 and the row is <span class="egg" tabindex="0" data-egg="Recorded for audit, never shown. The Sheet remembers every door that was never going to open.">rejected with a note</span>.
 
-## Built for the international-student reality
+## What I said no to
 
-This is the part no job board does for you. Before any job even reaches the scorer, **13 regex patterns** auto-reject the dead ends:
+**Sending anything on its own.** Outreach lands in Gmail drafts, and I press send. Reply tracking can move an application's status forward and never overwrites an edit I made by hand.
 
-- "US citizenship required" → gone
-- "security clearance / TS-SCI / polygraph / ITAR" → gone
-- "unable to provide visa sponsorship" / "cannot sponsor" → gone
-- senior / staff / principal / 5+ years / contract / part-time → gone (I'm early-career; 0 to 2 years only)
+**A real database.** The Sheet is free, I can filter it, and I can fix a row from my phone. For one person's job hunt, a database server would be one more thing to run.
 
-Then the scorer double-checks: if the description *hints* sponsorship is unlikely, the fit score gets capped at 10 and the row is auto-rejected with a note. I never spend ten minutes reading a posting that was never going to work.
+**LinkedIn as the main source.** It stays in, through an Apify actor capped at 50 results a run so it lives on free credits. The company boards carry the load. Greenhouse, Lever and Ashby publish their job boards through public APIs that need no key.
 
-## Four resumes, tailored while I sleep
+## Where it landed
 
-I keep **4 master resumes** as one-page LaTeX files: SDE, MLE, AI Engineer, and Forward-Deployed Engineer. The scorer picks which variant fits each job, then Gemini tailors it:
+I used it from the first morning. In late June it settled into two runs each morning, and it ran 1,008 times before my copy stopped on October 8. The code stays public, and a demo of the console runs on fictional data.
 
-- **Automatic** for anything scoring ≥ 60 (capped at 15 per run).
-- **One click** for everything else, a Tailor button in the dashboard.
-- Output: a tailored one-page PDF **plus a matching cover letter**, compiled with pdflatex, filed into Drive as `{company}_resume.pdf`.
+I never measured hours saved or which interviews came from it, so I will not guess.
 
-Two guardrails I refuse to ship without. First, **truth**: the model may reorder, rephrase, and re-emphasize, but it may never invent an employer, a date, a metric, or a skill. Second, **format**: if the PDF spills past one page, it gets recut automatically, and an ATS check gates every resume at ≥ 85% keyword coverage.
-
-Cost per tailored resume + cover letter? **About a penny.** Gemini 2.5 Flash is absurdly cheap for this.
-
-## The application pipeline, tracked
-
-Every job moves through stages in the Sheet: **New → Applied → Response → Interview → Offer** (or Rejected). The fun part is that the statuses update themselves: a Gmail scanner reads the last 3 days of replies, matches them to tracked applications, and classifies each one: rejection, interview invite, next steps.
-
-Two hard rules: the system **never sends an email on its own** (outreach drafts land in my Gmail drafts, I hit send), and automation **never overwrites my manual edits**, it only ever moves a status forward.
-
-## The dashboard
-
-A Next.js console on Cloud Run (locked behind IAP, so only I can see it) sitting on top of a Google Sheet that serves as the entire database. Filter by fit, source, status, resume variant; click Tailor; read the "why" the scorer wrote for each match. Plus a morning digest email with the day's shortlist ranked by fit. Most days I make my apply list from the email alone.
-
-## Tech stack & what it costs
-
-- **Pipeline:** Python 3.12, httpx, pydantic, on a Cloud Run job
-- **Brain:** Gemini 2.5 Flash on Vertex AI (scoring + tailoring + reply classification)
-- **Resumes:** LaTeX + pdflatex in Docker
-- **Dashboard:** Next.js 16 on Cloud Run, behind IAP
-- **Database:** a Google Sheet (genuinely; it's free, visual, and I can edit it from my phone)
-- **Glue:** Cloud Scheduler, Secret Manager, GitHub Actions auto-deploy on push
-
-| | Cost |
-|---|---|
-| Setup | $0 |
-| Cloud Run + Scheduler + Sheets + Drive | ≈ $0 (free tiers) |
-| Gemini 2.5 Flash (scoring ~hundreds of jobs + tailoring daily) | pennies |
-| Apify LinkedIn scraper | $0 to $5/mo (free credits) |
-| **Total** | **< $5/month** |
-
-## By the numbers
-
-<div class="post-stats-grid my-8">
-  <div class="stat-callout stat-blue">
-    <div class="stat-value">5 hours</div>
-    <div class="stat-label">idea → deployed on GCP</div>
-  </div>
-  <div class="stat-callout stat-emerald">
-    <div class="stat-value">&lt; $5/mo</div>
-    <div class="stat-label">to run the whole thing</div>
-  </div>
-  <div class="stat-callout stat-amber">
-    <div class="stat-value">~1¢</div>
-    <div class="stat-label">per tailored resume + cover letter</div>
-  </div>
-</div>
-
-| | LinkedIn alone | JobPilot |
-|---|---|---|
-| Job freshness | days to weeks old, reposts | hours old, straight from ATS boards |
-| Sponsorship dead ends | read them all yourself | auto-rejected before you see them |
-| Resume per application | one generic PDF | 1 of 4 variants, tailored per job, ~1¢ |
-| Tracking | a spreadsheet you forget to update | statuses update from your inbox |
-| Daily effort | hours of scrolling | read one digest email |
-
-One last detail: the hero image on this post was generated by Nano Banana inside the same GCP project the pipeline runs in. The job hunt is fully on-brand now.
-
-The realization that made me build this: **a job search is a pipeline problem, not a willpower problem.** Recruiters have ATS systems, dashboards, and automation on their side of the table. There's no rule that says applicants can't have the same. Mine just had to cost less than a coffee.
+What I would keep: run the cheapest filter first, and let the machine write the drafts while I decide what gets sent.

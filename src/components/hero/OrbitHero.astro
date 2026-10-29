@@ -11,7 +11,7 @@
 
 <div class="orbit" data-orbit>
   <canvas class="orbit-layer" data-orbit-back aria-hidden="true"></canvas>
-  <figure class="orbit-portrait">
+  <figure class="orbit-portrait" data-amb>
     <slot />
   </figure>
   <canvas class="orbit-layer orbit-front" data-orbit-front aria-hidden="true"></canvas>
@@ -92,7 +92,8 @@
     let c2 = "34,211,238";
 
     const readColours = () => {
-      const cs = getComputedStyle(document.documentElement);
+      // The sky's blend lands on data-amb elements, not <html> (initAmbient).
+      const cs = getComputedStyle(document.querySelector("[data-amb]") || document.documentElement);
       c1 = (cs.getPropertyValue("--amb1") || c1).replace(/\s/g, "") || c1;
       c2 = (cs.getPropertyValue("--amb2") || c2).replace(/\s/g, "") || c2;
     };
@@ -219,10 +220,16 @@
       }).observe(root);
     }
     document.addEventListener("visibilitychange", () => !document.hidden && start());
-    window.addEventListener("resize", () => {
+    // The frame can be zero wide when this first runs (in a production build
+    // the portrait may not have laid out yet), so size the canvases whenever
+    // the frame itself changes size, not only when the window does.
+    const refit = () => {
+      if (root.clientWidth === size) return;
       resize();
       draw();
-    });
+    };
+    if ("ResizeObserver" in window) new ResizeObserver(refit).observe(root);
+    else window.addEventListener("resize", refit);
     start();
   })();
 </script>

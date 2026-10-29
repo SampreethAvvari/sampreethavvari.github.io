@@ -1,153 +1,93 @@
 ---
 demo: /demos/enterprise-search
-title: "Building an enterprise search that knows when to say 'I don't know'"
+title: "A company search that cites its sources or says it does not know"
 date: "2026-06-23"
 layout: ../../layouts/PostLayout.astro
-description: "Hybridge's knowledge is scattered across drives, decks, and people's heads. I'm building an internal search that answers questions in plain language, with citations, and that refuses to guess when it isn't sure. This is how I'm thinking about a RAG you can actually trust, built one stage at a time."
+description: "Hybridge staff could ask a question and get an answer cited to the exact passage, filtered by who may see what. Built in a month, paused since October."
 img_path: "/enterprise-search.png"
 img_alt: "Enterprise Search: documents flowing into one governed index, a question flowing out as a cited answer"
+architecture: "enterprise-search"
 tag: "AIE"
 tone: "emerald"
 stats:
-  - value: "Ask Hybridge"
-    label: "one chat box over the whole company's knowledge, with citations"
+  - value: "24 days"
+    label: "from the first commit to real models in production, with sign in, permissions and cited answers"
     tone: "emerald"
-  - value: "cite or abstain"
-    label: "the model answers from retrieved evidence, or it says it doesn't know"
+  - value: "8 passages"
+    label: "the most Gemini sees per question, picked from up to 100 candidates the asker may see"
     tone: "blue"
-  - value: "live in production"
-    label: "the full loop is on at work, with 122 automated tests and the first retrieval numbers enforced in CI"
+  - value: "55 minutes"
+    label: "for the whole read path on June 27, from the permission filter to the eval test"
     tone: "amber"
+facts:
+  - label: "Problem"
+    value: "Hybridge documents were spread across shared drives, decks and SOPs, so answers meant asking around."
+  - label: "What I built"
+    value: "A staff chat that answers from passages the asker may see, with citations, or says it does not know."
+  - label: "Who uses it"
+    value: "Anyone at Hybridge with a company Google account; uploaders added documents through Dropoff."
+  - label: "Runs on"
+    value: "FastAPI on Cloud Run, Postgres with pgvector on Cloud SQL, Vertex AI reranking and Gemini 2.5 Flash."
+  - label: "Built"
+    value: "24 days from the first commit to real models in production."
+  - label: "Status"
+    value: "Paused since October 8, 2026, when billing for its Google Cloud project was turned off."
 ---
 
-Every company my size has the same quiet problem. The answer to your question exists. It is in a slide deck from eight months ago, or a policy doc nobody re-shares, or in one person's head, and that person is on vacation. So you ask around, you guess, and sometimes you act on a version of the truth that got replaced in March.
+## The problem
 
-I am building the fix for Hybridge: an internal search where anyone signs in with their company account, types a question in plain language, and gets a real answer with the sources attached. We call it **Ask Hybridge**. People who are allowed to add documents drop them into a portal, and those documents flow through a careful pipeline before they ever become searchable.
+Hybridge runs on documents spread across shared drives, slide decks, SOPs and a few people's heads. When someone needs an answer, they ask around, or they find a document and hope it is the current one.
 
-<div class="aside">
-<strong>Two companion pieces go deeper than this post.</strong> The <a href="/enterprise-search/demo-guide.html">interactive demo guide</a> walks every stage of the pipeline with clickable diagrams, from dedup to the abstain guardrail. The <a href="/enterprise-search/slides.html">slide deck</a> is the version I present from. Both are living documents that grow as the platform does.
-</div>
+A search box over all of it is harder than it sounds. Patient details, HR records and business plans sit side by side, so the search has to know who may see what before it looks. Documents disagree, like an old schedule nobody deleted next to the new one. And a confident wrong answer is worse than none, because people act on it.
 
-The easy version of this is a weekend project now. You chunk some documents, embed them, stuff the top matches into a prompt, and call it RAG. I did not want the easy version. We work in healthcare, which means patient data, HR records, and trade secrets all live in the same building. In that setting a confident wrong answer is not a cute demo bug. It is a liability. So the whole design is organized around one idea: the system should be trustworthy first, and clever second.
+## What I built
 
-## The one rule everything serves
+Ask Hybridge is a chat. Anyone with a company Google account signs in, asks a question, and gets an answer streamed back with numbered citations. Click one and the source opens beside the chat, scrolled to the highlighted passage.
 
-Here is the principle I keep coming back to. The system should answer from what it actually found, and when it did not find enough, it should say so. No filling the gap with a plausible guess. An honest "I don't know, here is the closest thing" is a feature, not a failure.
+Behind it, a FastAPI service on Cloud Run searches Postgres two ways inside the asker's group permissions: by meaning with pgvector and by exact words with full text search. Vertex AI reranks the merged list down to 8 passages. Gemini 2.5 Flash answers from those 8, cites every claim, and otherwise replies "I don't have that in the knowledge base." If the asker can see no passages at all, the API sends that line without calling the model.
 
-That sounds obvious. It is surprisingly hard, and almost every shortcut in RAG quietly breaks it.
+Dropoff is the second tab, for uploaders. You drop a file and set who can see it, its class and its effective date. The API hashes it, skips duplicates, keeps the original in Cloud Storage, has Gemini write a short card, then chunks it with character offsets, embeds it and indexes it. [Open the drawing](/architecture/enterprise-search) to see every part.
 
-<div class="stat-callout stat-emerald">
-  <div class="stat-value">trust first, clever second</div>
-  <div class="stat-label">Every stage either makes the answer more trustworthy (hybrid retrieval, reranking, conflict resolution, citations, grounding) or it stays off the hot path until the evaluation says it earns its place.</div>
-</div>
+## The sprint
 
-## Why I am not building a "basic" RAG
+I wrote the retrieval research and the design on June 22, then built it in five stages, each with its own spec, plan and tests. June 23 was the busiest day: sign in, roles and audit logs after midnight, then Terraform and the Cloud Build pipeline, then the whole ingestion pipeline that evening. The last commit of that night landed at <span class="egg" tabindex="0" data-egg="It told Terraform which project to bill for sign in. Months later, the billing switch is what paused the whole thing.">3:44 AM</span>.
 
-A basic RAG fails in three ways that matter in a real company, so I planned for all three from the start.
+On June 27 the read path went in between 10:42 and 11:37 PM: the permission filter, both searches, rank fusion, the reranker, the conflict rules, the generator and a small eval test. It took 55 minutes, against a plan written four days earlier. The chat front end followed on June 30 and the Dropoff front end on July 1. On July 16 I wired the real models into ingestion and wrote a demo guide and a slide deck. The last merge was July 23.
 
-It fails on exact terms. Pure vector search is great at meaning and bad at specifics. Search a part number, a policy code, or a person's name and a semantic-only index will hand you something that "feels related" instead of the exact match. The fix is to run keyword search and vector search together.
+From the first commit to real models in production took 24 days. Much of the work happened after 10 PM. The deploy pipeline runs both test suites before it migrates the schema and ships the API and the web app.
 
-It fails on conflicts. Two documents disagree. One is the current SOP, one is a draft from last year that nobody deleted. A naive system picks whichever happens to rank higher and presents it with total confidence. That is the dangerous one.
+## The hard parts
 
-It fails on permissions. The marketing team should never retrieve a document restricted to the clinical group, even by accident, even as "context" the model quietly reads. Access has to be enforced before retrieval, not bolted on after.
+**Permissions before ranking.** Every chunk carries the groups of its document. The filter is a SQL condition inside both searches, next to a clause that keeps only current documents, so a restricted passage never becomes a candidate. It never reaches the reranker or the model, so no prompt can talk it out.
 
-## How a question gets answered (the read path)
+```python
+# api/app/serving/acl.py
+acl = Chunk.group_acl == []
+if caller_groups:
+    acl = acl | Chunk.group_acl.op("&&")(list(caller_groups))
+clauses.append(acl)
+```
 
-When someone asks a question, the answer travels a fixed path. I kept the common case fast and simple, and put the expensive, clever steps behind a gate so they only run when a question actually needs them.
+In the demo, a leadership document exists only for members of the leadership group.
 
-<div class="aside">
-<strong>The read path, in order.</strong>
-<ol>
-<li><strong>Rewrite</strong> the question only if it is vague or part of a back-and-forth chat. A well-formed question skips this.</li>
-<li><strong>Filter by permission</strong> first, as a database condition. Documents you are not allowed to see never enter the search.</li>
-<li><strong>Retrieve two ways at once</strong>: keyword search (BM25) for exact terms, vector search for meaning.</li>
-<li><strong>Merge</strong> the two result lists with Reciprocal Rank Fusion.</li>
-<li><strong>Rerank</strong> a small top slice with a dedicated ranking model, for precision without paying the latency on everything.</li>
-<li><strong>Resolve conflicts</strong> deterministically (see below).</li>
-<li><strong>Answer</strong>, citing the exact passages. If the evidence is thin, abstain.</li>
-</ol>
-</div>
+**When two documents disagree, rules decide.** Each document gets an authority score from its class, its uploader's role and its source. Superseded versions drop out, and the rest sort by authority, then effective date. If the top two are within one point and dated differently, the API adds a conflict note that Gemini must address and the chat shows in a callout. The demo set has two office hours schedules that disagree, <span class="egg" tabindex="0" data-egg="Same authority, different dates. Friday wins on recency, and both get cited, so nobody turns up on Thursday.">Thursday at 3 PM and Friday at 11 AM</span>. The newer one wins and both are cited.
 
-Most questions are simple lookups, and they take the fast path and finish. Only the hard ones, the low-confidence or multi-step questions, trigger a corrective loop: re-plan, retrieve again, fall back to a web search if the answer genuinely is not in our knowledge, check the draft answer against the evidence, and only then respond.
+**The breakages were plumbing.** The bug that blocked every sign in was a Google SDK that had to be set up before its first token check; the fix went in at 11:57 PM on June 30. Later, the reranking library was missing from the image for a week, and the wrapper around the reranker fell back to the fused order and logged why.
 
-I want to be clear about why that loop is gated rather than always-on. An agent that re-plans on every single query feels smart and behaves badly. It is slower, it costs more, and it pulls in noisier context that can make a simple answer worse. So the expensive behavior only switches on when a confidence check says the simple path did not work. The default is fast and boring. The cleverness is held in reserve.
+## What I said no to
 
-## When sources disagree, the model does not get to pick
+**A separate vector database.** At hundreds to low thousands of documents, one Postgres on Cloud SQL holds vectors, the keyword index, permissions, versions and chats under one filter. My research before the first line of code found no speed reason for a second store at that size.
 
-This is the part I am most careful about. When two retrieved passages make conflicting claims, the model is never allowed to just choose one. A small piece of plain code ranks the evidence first, by rules anyone can read.
+**GraphRAG and vectorless trees.** In the benchmarks I checked, graph retrieval lost to vector search with reranking on simple fact lookups and used far more prompt tokens. Vectorless page trees had no verified benchmark and no managed option on Google Cloud. Both stay off until a real question needs several hops.
 
-<div class="aside">
-<strong>The conflict ladder (deterministic).</strong>
-<ol>
-<li>Group the evidence by what each piece actually claims.</li>
-<li>Drop anything marked superseded or deprecated. A replaced document cannot win.</li>
-<li>Higher authority wins (an official policy outranks a personal note).</li>
-<li>If authority ties, the most recent effective date wins.</li>
-<li>If it still cannot be resolved, declare the disagreement: show both answers with their author, date, and source, and say plainly that the sources disagree.</li>
-</ol>
-</div>
+**An agent loop on every question.** The design put a corrective loop (plan again, search again, check the draft) behind a confidence check. Nothing ever measured a need for it, so I never built it.
 
-The model's job is only to notice that two passages genuinely contradict each other and to write the answer in a way that honors that ranking, or to surface the disagreement honestly. The decision about which source is more authoritative is made by rules, not vibes. That is the difference between a search you can run a company on and a search that sounds confident.
+## Where it landed
 
-## What happens when a document comes in (the write path)
+It ran on Google Cloud from June 23, and anyone at Hybridge with a company Google account could sign in. I built a demo set of 13 short documents about Hybridge projects, with a conflicting pair and a restricted one. The <a href="/enterprise-search/demo-guide.html">demo guide</a> walks each stage, and the <a href="/enterprise-search/slides.html">slides</a> are the short version.
 
-Retrieval is only as good as what got indexed, so the ingestion side gets the same care. A document does not become searchable just because someone uploaded it.
+It is paused. Higher priority tools came first after July 23, and billing for its Google Cloud project has been off since October 8, 2026, so the database is suspended and the chat does not answer. I have no usage numbers. No billing export ever covered the project, so its cost was never measured.
 
-<div class="aside">
-<strong>The write path, in order.</strong> Store the original safely and fingerprint it. Skip it if it is a duplicate. Parse it with layout awareness so tables and slides survive. Chunk it on real topic and structure boundaries, not blind fixed windows. Attach metadata and a short "document card" (a title, a one-paragraph summary, key entities, the effective date, who can see it). Embed in batches. Index the vectors, the keyword text, and the permissions together.
-</div>
+Retrieval quality on real staff questions was not measured either. A seeded test fails the build if recall at 8 drops below 0.8 or mean reciprocal rank below 0.35, but it runs on test models and a fixed set, so it guards the wiring.
 
-Two details there do a lot of quiet work. The **document card** stays small no matter how long the document is, so the system can route and display a document without re-reading the whole thing. And every chunk is stamped with the version of the embedding model and chunking strategy that produced it, so when I improve either one later, I can re-index safely instead of guessing what is stale.
-
-## The part most people skip: measuring it
-
-Here is the question that started the whole project for me. How do I know the answer is good before I trust it? Most RAG demos never answer that. They look impressive in a screenshot and nobody checks the hit rate.
-
-So I am building an evaluation harness alongside the system, not after it. It measures retrieval with the standard metrics (did the right document show up, and how high), and it measures the generation for faithfulness, whether every claim in the answer is actually backed by a cited source. It even runs a managed search product in parallel as a yardstick, so I can compare what I built against a strong baseline and know whether my extra machinery is earning its keep.
-
-<div class="post-stats-grid my-8">
-  <div class="stat-callout stat-emerald">
-    <div class="stat-value">recall · nDCG · MRR</div>
-    <div class="stat-label">did the right source come back, and did it rank near the top</div>
-  </div>
-  <div class="stat-callout stat-blue">
-    <div class="stat-value">faithfulness</div>
-    <div class="stat-label">is every sentence in the answer grounded in a citation, or did the model improvise</div>
-  </div>
-  <div class="stat-callout stat-amber">
-    <div class="stat-value">vs. a managed baseline</div>
-    <div class="stat-label">my pipeline runs next to an off-the-shelf one so the comparison is honest</div>
-  </div>
-</div>
-
-The first slice of that referee now runs inside the test suite. A seeded corpus of question and answer cases is scored on every build, and the build fails if recall at 8 drops below 0.8 or mean reciprocal rank drops below 0.35. Today it scores 1.0 recall at 8 and 0.42 MRR, and dedicated cases prove the abstain path and the conflict ladder actually fire. Small corpus, honest floors, checked automatically. The broader continuous harness, with faithfulness scoring and the managed baseline comparison, is still ahead.
-
-The harness is the referee. It is what decides when a fancier idea actually goes into production and when it stays a nice diagram. That rule is how I keep an ambitious system from turning into an over-engineered one.
-
-## The stack, in one box
-
-<div class="aside">
-<strong>Built on Google Cloud, open-source and GCP-native only (no third-party SaaS).</strong> Identity Platform for domain-locked Google sign-in. Cloud Run for the API and pipeline jobs, with Pub/Sub and Eventarc for event-driven ingestion. Document AI for layout-aware parsing. Vertex AI for embeddings, reranking, and Gemini for generation (a bigger model for ingestion, a fast one for most answers). Postgres on Cloud SQL holding the vectors (pgvector), the keyword index, the metadata, and the access rules in one place. Terraform for the infrastructure, Cloud Build for CI/CD. Everything chosen is HIPAA-eligible under a Google business associate agreement, with customer-managed encryption and full audit logging.
-</div>
-
-I deliberately started on Cloud SQL with pgvector instead of a heavier specialized vector database. It meets every need we have at our current size of hundreds to low thousands of documents, at roughly half the cost, and there is a clean upgrade path the day the evaluation harness tells me I have outgrown it. That is the theme again: pick the simple thing, and let the measurements, not the hype, tell me when to add complexity.
-
-## Where it stands, with no rounding up
-
-I am building this the way you would teach it, one stage at a time, because each stage is also a chunk of RAG I wanted to learn properly by hand.
-
-| Stage | What it owns | Status |
-|---|---|---|
-| Foundation and auth | GCP setup, domain-locked sign-in, roles and groups, secrets, CI/CD, infrastructure as code | Shipped |
-| Ingestion | upload, dedup, parse, chunk, metadata, embed, index | Shipped |
-| Query serving | filter, hybrid retrieval, rerank, grounded streaming answer, abstain guardrail | Shipped, live in production |
-| Evaluation | retrieval and faithfulness metrics, conflict tests, managed baseline | First version runs in CI with enforced floors; the continuous harness is in build |
-| Search and Dropoff front ends | the chat experience and the upload portal | Shipped |
-
-What is real today, as of July 2026: the whole loop is live in production. You sign in with your company account, ask a question, and watch a cited answer stream back from documents you are allowed to see, with conversation history kept. Clicking a citation opens the source document in a side pane, scrolled to the exact highlighted passage it came from. The abstain rule is not a prompt suggestion anymore, it is enforced in code: if retrieval comes back empty, the system short-circuits and says it does not have the answer, and the model is never even called. Authorized people add documents through the Dropoff portal, scoping each one at upload time with its visibility, tags, document class, and effective date, exactly the metadata the conflict ladder needs later, and then watch it move through the pipeline. Tabs and uploads are gated by role, and the API degrades gracefully instead of hallucinating when the AI backend is unavailable.
-
-Behind it sits the discipline column: 122 automated tests across backend and frontend, 96 and 26, covering permissions in both directions, streaming, version chains, citation math, and the UI flows. Every subproject was built with tests first and then reviewed twice, once per task and once across the whole branch by a stronger model prompted to attack it. Those reviews caught a permission sentinel bug, an authority scoring bug, and a race that would have wiped the first streamed answer. The retrieval numbers above come from the seeded evaluation that runs in CI; the fuller harness with faithfulness scoring is the part still being built, and the numbers it owns stay unpublished until it says so. The referee gets built before the victory lap.
-
-If you want the stage by stage tour with the clickable pipeline, the <a href="/enterprise-search/demo-guide.html">demo guide</a> covers everything this post compresses, and the <a href="/enterprise-search/slides.html">slides</a> are the ten minute version.
-
-One war story from shipping it, because it repeats a pattern I keep seeing: the bug that blocked every single login for a day was not the retrieval stack or the model. It was an auth SDK that needed initializing before its first token check. The AI is rarely the thing that breaks. The plumbing is.
+What I would keep: the permission filter inside the SQL, before anything ranks or reads a passage.

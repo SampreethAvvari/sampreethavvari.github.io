@@ -9,6 +9,7 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
 import WorkTabs from "../../components/work_section/WorkTabs.astro";
 import Picture from "../../components/common/Picture.astro";
 import Icon from "../../components/common/Icon.astro";
+import NextStep from "../../components/common/NextStep.astro";
 import { disciplines } from "../../data/disciplines";
 
 // A cover only renders when its file (or its .avif/.webp sibling) exists, so
@@ -139,6 +140,8 @@ const taglineHead = (t: string) => {
       </div>
     </div>
   </section>
+
+  <NextStep next={{ href: "/projects", label: "See every project" }} />
 </BaseLayout>
 
 <style>
@@ -151,6 +154,8 @@ const taglineHead = (t: string) => {
 
   /* The four cards */
   .wk-cards { position: relative; z-index: 1; }
+  /* The closer card follows, so this section keeps only a short tail. */
+  .wk-closer { padding-bottom: clamp(16px, 2vw, 24px); }
   .wk-grid4 {
     list-style: none;
     margin: 0;
@@ -166,6 +171,9 @@ const taglineHead = (t: string) => {
   @media (min-width: 640px) { .wk-disc { min-height: 200px; } }
   .wk-disc-top { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
   .wk-disc-name { display: block; margin-top: 20px; }
+  /* Four in a row: every name holds two lines, so the lines under them
+     start together. */
+  @media (min-width: 1024px) { .wk-disc-name { min-height: calc(2em * 1.25); } }
   .wk-disc-line { display: block; margin-top: 8px; }
   .wk-disc-open { margin-top: auto; padding-top: 20px; }
 
@@ -228,8 +236,8 @@ const taglineHead = (t: string) => {
     width: 100%;
     height: 100%;
     background:
-      radial-gradient(80% 100% at 20% 0%, rgba(var(--tone-rgb), 0.24), transparent 70%),
-      radial-gradient(70% 90% at 100% 100%, rgba(var(--tone-rgb), 0.1), transparent 70%),
+      radial-gradient(80% 100% at 20% 0%, rgba(var(--tone-rgb), 0.24) 0%, rgba(var(--tone-rgb), 0.2341) 7%, rgba(var(--tone-rgb), 0.2171) 14%, rgba(var(--tone-rgb), 0.1905) 21%, rgba(var(--tone-rgb), 0.1571) 28%, rgba(var(--tone-rgb), 0.12) 35%, rgba(var(--tone-rgb), 0.0829) 42%, rgba(var(--tone-rgb), 0.0495) 49%, rgba(var(--tone-rgb), 0.0229) 56%, rgba(var(--tone-rgb), 0.0059) 63%, rgba(var(--tone-rgb), 0) 70%),
+      radial-gradient(70% 90% at 100% 100%, rgba(var(--tone-rgb), 0.1) 0%, rgba(var(--tone-rgb), 0.0976) 7%, rgba(var(--tone-rgb), 0.0905) 14%, rgba(var(--tone-rgb), 0.0794) 21%, rgba(var(--tone-rgb), 0.0655) 28%, rgba(var(--tone-rgb), 0.05) 35%, rgba(var(--tone-rgb), 0.0345) 42%, rgba(var(--tone-rgb), 0.0206) 49%, rgba(var(--tone-rgb), 0.0095) 56%, rgba(var(--tone-rgb), 0.0024) 63%, rgba(var(--tone-rgb), 0) 70%),
       #07080b;
   }
   .wk-row-text { flex: 1; min-width: 0; display: block; }

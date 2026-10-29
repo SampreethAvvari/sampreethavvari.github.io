@@ -5,6 +5,7 @@ import BaseLayout from "../layouts/BaseLayout.astro";
 import { info } from "../data/info";
 import Picture from "../components/common/Picture.astro";
 import Icon from "../components/common/Icon.astro";
+import { itemListNode } from "../utils/seo";
 
 const title = "SA: Projects";
 
@@ -273,7 +274,19 @@ const STAR_PARTS = [
 const FACE_STATS = { flag: 2, tile: 1 };
 ---
 
-<BaseLayout title={title}>
+<BaseLayout
+  title={title}
+  description="Systems Sampreeth Avvari built and runs at Hybridge Implants, a dental implant group in New York, plus research, school and personal projects."
+  schema={[
+    itemListNode(
+      Astro.site!.toString(),
+      "/projects",
+      "Projects by Sampreeth Avvari",
+      [...flagships, ...rest].map((c) => ({ name: c.title, path: c.post ?? `/projects#${c.id}` })),
+    ),
+  ]}
+  crumbs={[{ name: "Home", path: "/" }, { name: "Projects", path: "/projects" }]}
+>
   <!-- ── Page top ─────────────────────────────────────────────────────── -->
   <section id="projects-top" class="page-top proj-top relative overflow-hidden">
     <div class="tone-atmos" aria-hidden="true"></div>
@@ -713,8 +726,8 @@ const FACE_STATS = { flag: 2, tile: 1 };
     padding: 16px;
     text-align: center;
     background:
-      radial-gradient(70% 90% at 20% 10%, rgba(var(--tone-rgb), 0.22), transparent 70%),
-      radial-gradient(60% 80% at 90% 100%, rgba(var(--tone-rgb), 0.1), transparent 70%),
+      radial-gradient(70% 90% at 20% 10%, rgba(var(--tone-rgb), 0.22) 0%, rgba(var(--tone-rgb), 0.2146) 7%, rgba(var(--tone-rgb), 0.199) 14%, rgba(var(--tone-rgb), 0.1747) 21%, rgba(var(--tone-rgb), 0.144) 28%, rgba(var(--tone-rgb), 0.11) 35%, rgba(var(--tone-rgb), 0.076) 42%, rgba(var(--tone-rgb), 0.0453) 49%, rgba(var(--tone-rgb), 0.021) 56%, rgba(var(--tone-rgb), 0.0054) 63%, rgba(var(--tone-rgb), 0) 70%),
+      radial-gradient(60% 80% at 90% 100%, rgba(var(--tone-rgb), 0.1) 0%, rgba(var(--tone-rgb), 0.0976) 7%, rgba(var(--tone-rgb), 0.0905) 14%, rgba(var(--tone-rgb), 0.0794) 21%, rgba(var(--tone-rgb), 0.0655) 28%, rgba(var(--tone-rgb), 0.05) 35%, rgba(var(--tone-rgb), 0.0345) 42%, rgba(var(--tone-rgb), 0.0206) 49%, rgba(var(--tone-rgb), 0.0095) 56%, rgba(var(--tone-rgb), 0.0024) 63%, rgba(var(--tone-rgb), 0) 70%),
       #07080b;
   }
   .media-fallback span { font-size: 0.9375rem; font-weight: 500; color: var(--ink-faint); }

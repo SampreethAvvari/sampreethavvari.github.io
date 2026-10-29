@@ -2,9 +2,12 @@
 import BaseLayout from "./BaseLayout.astro";
 import Picture from "../components/common/Picture.astro";
 import Icon from "../components/common/Icon.astro";
+import ArchCard from "../components/architecture/ArchCard.astro";
+import { architectureBySlug } from "../data/architecture";
 import Contact from "../components/contact_section/Contact";
 import { info } from "../data/info";
 import { readingTime } from "../utils/readingTime";
+import { articleNode } from "../utils/seo";
 import {
   disciplinesFor,
   slugOf,
@@ -15,7 +18,7 @@ import {
 import "../styles/post-article.css";
 
 const { frontmatter, headings = [] } = Astro.props;
-const { title, date, description, img_path, img_alt, tag, stats, demo } = frontmatter;
+const { title, date, description, img_path, img_alt, tag, stats, demo, architecture, facts } = frontmatter;
 
 const allPosts = await Astro.glob("../pages/posts/*.md");
 const slug = slugOf(Astro.url.pathname);
@@ -23,6 +26,38 @@ const self = allPosts.find((p) => slugOf(p.url) === slug);
 const minutes = self ? readingTime(self.rawContent()) : null;
 
 const hasCover = hasPublic(img_path);
+
+// Search and AI engines: this post as an article, with its key facts as the
+// abstract, linked to the system it describes, and its own share image.
+const DISC = { aie: "AI engineering", fde: "Forward deployed engineering", mle: "Machine learning engineering", sde: "Software engineering" } as const;
+const keyFacts: Array<{ label: string; value: string }> = Array.isArray(facts) ? facts : [];
+const words = self ? self.rawContent().split(/\s+/).filter(Boolean).length : undefined;
+const siteBase = Astro.site!.toString();
+const archFor = architecture ? architectureBySlug[architecture] : undefined;
+const postPath = `/posts/${slug}`;
+const ogPath = `/og/post-${slug}.jpg`;
+const postSchema = [
+  articleNode(siteBase, postPath, {
+    type: architecture ? "TechArticle" : "BlogPosting",
+    title,
+    description,
+    date,
+    image: ogPath,
+    keywords: [...(disciplinesFor[slug] || []).map((d: keyof typeof DISC) => DISC[d]), ...(tag ? [tag] : [])],
+    facts: keyFacts,
+    wordCount: words,
+    about: archFor
+      ? { name: archFor.name, url: new URL(`/architecture/${archFor.slug}`, siteBase).toString(), description: archFor.lede }
+      : undefined,
+  }),
+];
+const postCrumbs = [
+  { name: "Home", path: "/" },
+  { name: "Writing", path: "/posts" },
+  { name: title, path: postPath },
+];
+// The drawing behind this post, if it has one, for the step at the end.
+const archForPost = architecture ? architectureBySlug[architecture] : undefined;
 // Preload the cover (the LCP element on a post page) as AVIF.
 const coverPreload = hasCover ? img_path.replace(/\.(png|jpe?g)$/i, ".avif") : undefined;
 
@@ -46,7 +81,16 @@ const related = others.filter((p) =>
 const more = [...related, ...others.filter((p) => !related.includes(p))].slice(0, 3);
 ---
 
-<BaseLayout title={title} description={description} preloadImage={coverPreload}>
+<BaseLayout
+  title={title}
+  description={description}
+  preloadImage={coverPreload}
+  ogImage={ogPath}
+  ogType="article"
+  schema={postSchema}
+  crumbs={postCrumbs}
+  published={date}
+>
   <div class="post-progress" id="post-progress" aria-hidden="true"></div>
 
   <article class="post">
@@ -105,6 +149,14 @@ const more = [...related, ...others.filter((p) => !related.includes(p))].slice(0
     }
 
     {
+      architecture && (
+        <div class="wrap">
+          <ArchCard slug={architecture} />
+        </div>
+      )
+    }
+
+    {
       Array.isArray(stats) && stats.length > 0 && (
         <div class="wrap">
           <ul class="post-stats" aria-label="In numbers">
@@ -115,6 +167,24 @@ const more = [...related, ...others.filter((p) => !related.includes(p))].slice(0
               </li>
             ))}
           </ul>
+        </div>
+      )
+    }
+
+    {
+      keyFacts.length > 0 && (
+        <div class="wrap">
+          <section class="surface post-facts" aria-labelledby="post-facts-title">
+            <h2 class="post-facts-title" id="post-facts-title">Key facts</h2>
+            <dl class="post-facts-list">
+              {keyFacts.map((f) => (
+                <div class="post-fact">
+                  <dt>{f.label}</dt>
+                  <dd>{f.value}</dd>
+                </div>
+              ))}
+            </dl>
+          </section>
         </div>
       )
     }
@@ -154,6 +224,22 @@ const more = [...related, ...others.filter((p) => !related.includes(p))].slice(0
           <p class="t-h4">{info.name}</p>
           <p class="t-meta post-sign-role">{info.role} · {info.location}</p>
           <Contact contact={info.contact} className="t-body post-sign-line" />
+          <!-- The one next step: the drawing when the post has one, then a
+               quiet way to get in touch. -->
+          <div class="post-next">
+            {archForPost ? (
+              <>
+                <a href={`/architecture/${archForPost.slug}`} class="btn btn-primary btn-sm">
+                  Open the drawing <Icon name="arrow-right" size={14} class="arrow-r" />
+                </a>
+                <a href="/#contact" class="tlink">Get in touch <Icon name="arrow-right" size={14} /></a>
+              </>
+            ) : (
+              <a href="/#contact" class="btn btn-primary btn-sm">
+                Get in touch <Icon name="arrow-right" size={14} class="arrow-r" />
+              </a>
+            )}
+          </div>
         </div>
       </footer>
     </div>

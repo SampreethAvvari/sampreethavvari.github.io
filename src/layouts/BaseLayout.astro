@@ -5,53 +5,61 @@ import ChatWidget from "../components/chatbot/ChatWidget";
 import FooterBar from "../components/footer/FooterBar";
 import SpaceField from "../components/hero/SpaceField.astro";
 import WarpLoader from "../components/hero/WarpLoader.astro";
+import ScrollOrbit from "../components/ScrollOrbit.astro";
 import { info } from "../data/info";
+import { personNode, websiteNode, breadcrumbNode, graph, type Crumb } from "../utils/seo";
 import "../styles/landing.css";
 
 const {
   title,
-  description = "AI Engineer specializing in agentic AI, RAG, and ML systems.",
+  description = "Sampreeth Avvari, forward deployed engineer in New York. The only engineer at a three office dental implant practice, running about 45 services, each drawn with its parts, failure paths and monthly cost.",
   footerVariant = "default",
   // Optional LCP image to preload (an AVIF path). Pages pass their above-the-fold
   // hero/cover so the browser fetches it before it discovers the <img> in markup.
   preloadImage,
   // The page's tab. Its colour marks the kicker, links and background wash.
   tone: toneProp,
+  // Search and sharing: this page's share image (a path under public), its
+  // Open Graph type, extra structured data nodes, breadcrumbs, and dates.
+  ogImage: ogImageProp,
+  ogType = "website",
+  schema = [],
+  crumbs,
+  published,
+  modified,
+}: {
+  title: string;
+  description?: string;
+  footerVariant?: string;
+  preloadImage?: string;
+  tone?: string;
+  ogImage?: string;
+  ogType?: "website" | "article" | "profile";
+  schema?: unknown[];
+  crumbs?: Crumb[];
+  published?: string;
+  modified?: string;
 } = Astro.props;
 
 // Canonical URL for the current page (no query strings), absolute via astro.config `site`.
 const canonicalURL = new URL(Astro.url.pathname, Astro.site).toString();
 // Absolute URL for social-share / structured-data image.
-const ogImage = new URL(info.picture, Astro.site).toString();
+const ogImage = new URL(ogImageProp ?? "/og/home.jpg", Astro.site).toString();
 
-// Person structured data. The `sameAs` array tells Google the portfolio,
-// LinkedIn, and GitHub all belong to the same Sampreeth Avvari.
-const personSchema = {
-  "@context": "https://schema.org",
-  "@type": "Person",
-  name: info.name,
-  jobTitle: info.role,
-  url: Astro.site?.toString(),
-  image: ogImage,
-  email: info.contact.email,
-  address: {
-    "@type": "PostalAddress",
-    addressLocality: "New York",
-    addressRegion: "NY",
-    addressCountry: "US",
-  },
-  alumniOf: {
-    "@type": "CollegeOrUniversity",
-    name: "New York University",
-  },
-  // Canonical profile URLs (NOT the Switchy short links in info.contact) so the
-  // structured data establishes identity correctly for search engines.
-  sameAs: [
-    "https://www.linkedin.com/in/sampreethavvari/",
-    "https://github.com/SampreethAvvari",
-    "https://www.instagram.com/sampreeth.sharma/",
-  ],
-};
+// Structured data: one graph per page. The person and the website on every
+// page (shared ids, so search and AI engines join them into one entity), then
+// whatever the page adds (an article, a system, a list) and its breadcrumbs.
+const base = Astro.site!.toString();
+const jsonLd = graph([
+  personNode(base, {
+    image: info.picture,
+    email: info.contact.email,
+    description: "Forward deployed engineer in New York. The only engineer at a three office dental implant practice, building and running its software, and a filmmaker.",
+  }),
+  websiteNode(base, "Sampreeth Avvari: forward deployed engineer. Systems, architecture drawings with real costs, writing and films."),
+  ...(crumbs?.length ? [breadcrumbNode(base, crumbs)] : []),
+  ...schema,
+]);
 import { searchItems } from "../data/searchItems";
 
 import "../styles/global.css";
@@ -64,11 +72,12 @@ const seg = pathname.split("/").filter(Boolean)[0] || "";
 const TONE_FOR: Record<string, string> = {
   projects: "projects",
   demos: "projects",
+  architecture: "architecture",
   work: "work",
   posts: "writing",
   filmmaking: "film",
   gallery: "film",
-  teaching: "teaching",
+  teaching: "writing",
   mind: "mind",
 };
 const tone = toneProp || TONE_FOR[seg] || "home";
@@ -77,11 +86,16 @@ const TONE_RGB: Record<string, string> = {
   work: "245,165,36",
   writing: "52,211,153",
   film: "244,63,94",
-  teaching: "34,211,238",
+  architecture: "34,211,238",
+  teaching: "52,211,153",
   mind: "167,139,250",
   home: "91,141,239",
 };
 const toneRgb = TONE_RGB[tone];
+// Every tab's colour by its first path segment, so the loader can blend
+// toward the next page before it arrives. "" is home.
+const toneMap: Record<string, string> = { "": TONE_RGB.home };
+for (const [seg, t] of Object.entries(TONE_FOR)) toneMap[seg] = TONE_RGB[t];
 // The loader's comets: home blends every tab, so it gets all their colours.
 // Blue and green lead, the same pair the sky starts on.
 const warpPalette =
@@ -108,7 +122,7 @@ const pageComets = hasOwnComets
     <meta charset="UTF-8" />
     <meta name="description" content={description} />
     <link rel="canonical" href={canonicalURL} />
-    <meta name="keywords" content="Sampreeth Avvari, AI engineer, agentic AI, RAG, ML, MLOps, NYU" />
+    <meta name="keywords" content="Sampreeth Avvari, Sampreeth Sharma, forward deployed engineer, AI engineer, software engineer, machine learning engineer, system architecture, healthcare AI, portfolio, New York, filmmaker" />
     <meta name="author" content="Sampreeth Avvari" />
     <meta http-equiv="Content-Language" content="en" />
     <meta name="google" content="notranslate" />
@@ -146,7 +160,7 @@ const pageComets = hasOwnComets
     />
     <meta name="generator" content={Astro.generator} />
     <!-- Open Graph / social share -->
-    <meta property="og:type" content="website" />
+    <meta property="og:type" content={ogType} />
     <meta property="og:site_name" content="Sampreeth Avvari" />
     <meta property="og:title" content={title} />
     <meta property="og:description" content={description} />
@@ -156,8 +170,13 @@ const pageComets = hasOwnComets
     <meta name="twitter:title" content={title} />
     <meta name="twitter:description" content={description} />
     <meta name="twitter:image" content={ogImage} />
-    <!-- Person structured data: links portfolio + LinkedIn + GitHub as one identity -->
-    <script type="application/ld+json" set:html={JSON.stringify(personSchema)} />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    {published && <meta property="article:published_time" content={published} />}
+    {(modified ?? published) && <meta property="article:modified_time" content={modified ?? published} />}
+    {ogType === "article" && <meta property="article:author" content="Sampreeth Avvari" />}
+    <!-- Structured data: the person, the site and this page, one graph -->
+    <script type="application/ld+json" set:html={JSON.stringify(jsonLd)} />
     <!-- No icon font: every icon is an inline SVG. -->
     <title>{title}</title>
     <script is:inline>
@@ -248,7 +267,7 @@ const pageComets = hasOwnComets
     data-own-sky={pathname === "/" ? "true" : undefined}
   >
     <!-- First in the body so it covers the very first paint. -->
-    <WarpLoader palette={warpPalette} />
+    <WarpLoader palette={warpPalette} toneMap={toneMap} />
     <!-- Shared space backdrop on every page: starfield, ambient colour
          flow, and film grain. All behind the content (z -1, grain overlay). -->
     <SpaceField />
@@ -273,6 +292,7 @@ const pageComets = hasOwnComets
       // is idempotent per element, so page-level calls coexist with this.
       import { initAmbient, initComets } from "../scripts/spatial";
       import { initLiquidGlass } from "../scripts/liquid-glass";
+      import { tweenToneFromWarp } from "../scripts/toneTween";
       // Real refracting glass on the navigation layer (Chromium only).
       initLiquidGlass(".nav-glass, .btn-glass, .social, .to-top, .proj-arrow, .chat-launcher");
       // Every page's sky takes its tab's colour. The landing page blends its
@@ -285,8 +305,11 @@ const pageComets = hasOwnComets
         ]);
       }
       initComets(".space-el");
+      // Finish the colour blend the loader started on the page before.
+      tweenToneFromWarp();
     </script>
-    <Nav client:visible searchItems={searchItems} />
+    <Nav client:visible searchItems={searchItems} cv={info.cv} />
+    <ScrollOrbit />
     <main class="w-full">
       <slot />
     </main>

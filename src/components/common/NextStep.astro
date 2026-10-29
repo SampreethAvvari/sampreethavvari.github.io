@@ -1,0 +1,48 @@
+---
+// The closer at the end of an index page: the same card the projects page
+// ends on, so every tab finishes on one calm next step. One primary button
+// (get in touch) and one quiet link to the next place worth reading.
+import Icon from "./Icon.astro";
+
+interface Props {
+  // The quiet link beside the button.
+  next?: { href: string; label: string };
+}
+const { next } = Astro.props;
+---
+
+<section class="section-tight next-step">
+  <div class="wrap">
+    <div class="surface surface-pad next-card" data-reveal>
+      <div>
+        <h2 class="t-h2 next-h2">
+          Let's build something.
+          <span class="t-tail">Tell me what you're working on.</span>
+        </h2>
+        <p class="t-body next-text">
+          Hiring for applied AI, or for the last mile where software meets the
+          people who use it? I'd love to hear about it.
+        </p>
+      </div>
+      <div class="next-actions">
+        <a href="/#contact" class="btn btn-primary">Get in touch</a>
+        {next && (
+          <a href={next.href} class="tlink">
+            {next.label} <Icon name="arrow-right" size={14} />
+          </a>
+        )}
+      </div>
+    </div>
+  </div>
+</section>
+
+<style>
+  .next-step { position: relative; z-index: 1; }
+  .next-card { display: grid; gap: 24px; align-items: end; }
+  @media (min-width: 900px) {
+    .next-card { grid-template-columns: minmax(0, 1fr) auto; gap: 40px; padding: 40px; }
+  }
+  .next-h2 { font-size: clamp(1.75rem, 3vw, 2.5rem); }
+  .next-text { margin-top: 16px; max-width: 34rem; }
+  .next-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 20px; }
+</style>

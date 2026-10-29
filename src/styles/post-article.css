@@ -37,7 +37,9 @@
 /* ---------------------------------------------------------------------------
    Header
    --------------------------------------------------------------------------- */
-.post-head { position: relative; padding-bottom: clamp(36px, 4.5vw, 56px); }
+.post-head { position: relative; padding-bottom: clamp(22px, 2.6vw, 32px); }
+/* A tighter top than other pages, so the architecture shows on first screen. */
+.post-head.page-top { padding-top: clamp(104px, 10vw, 128px); }
 .post-head-inner { max-width: 54rem; }
 .post-head .post-back { font-size: 0.875rem; gap: 7px; }
 .post-head .post-back:hover { transform: none; }
@@ -48,12 +50,12 @@
   flex-wrap: wrap;
   align-items: center;
   gap: 8px 10px;
-  margin-top: 28px;
+  margin-top: 18px;
 }
 .post-meta .post-badge { margin-left: 4px; }
 .post-title {
-  margin-top: 18px;
-  font-size: clamp(2.125rem, 4.6vw, 3.625rem);
+  margin-top: 12px;
+  font-size: clamp(1.875rem, 3.5vw, 2.75rem);
   line-height: 1.05;
   letter-spacing: -0.036em;
   font-weight: 600;
@@ -61,18 +63,20 @@
   color: var(--ink);
 }
 .post-title-long {
-  font-size: clamp(1.875rem, 3.7vw, 2.875rem);
+  font-size: clamp(1.75rem, 3vw, 2.375rem);
   line-height: 1.08;
   letter-spacing: -0.032em;
 }
-.post-lede { margin-top: 22px; max-width: 44rem; }
+/* The summary stays short: two lines of quieter, smaller type. */
+.post-head .post-lede { margin-top: 12px; max-width: 42rem; font-size: 1rem; line-height: 1.6; color: var(--ink-faint); }
 .post-actions { margin-top: 28px; display: flex; flex-wrap: wrap; gap: 12px; }
 
 /* Cover, in a rounded frame. */
 .post-cover-frame {
   margin: 0;
   overflow: hidden;
-  aspect-ratio: 2 / 1;
+  /* A wide banner, not a poster, so the architecture card below it is in view. */
+  aspect-ratio: 5 / 1;
   border-radius: 20px;
   background: #07080b;
   border: 1px solid var(--line);
@@ -87,7 +91,7 @@
   object-fit: cover;
 }
 @media (max-width: 639px) {
-  .post-cover-frame { aspect-ratio: 16 / 9; border-radius: 16px; }
+  .post-cover-frame { aspect-ratio: 5 / 2; border-radius: 16px; }
 }
 
 /* The post's numbers, one solid tile each. */
@@ -489,6 +493,8 @@
 }
 .post-sign-role { margin-top: 3px; }
 .post-sign-line { margin-top: 12px; max-width: 34rem; }
+/* The post's one next step, under the sign off. */
+.post-next { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 20px; margin-top: 18px; }
 
 .post-more { position: relative; z-index: 1; }
 .post-more-head {
@@ -533,8 +539,8 @@
   width: 100%;
   height: 100%;
   background:
-    radial-gradient(70% 90% at 20% 10%, rgba(var(--tone-rgb), 0.2), transparent 70%),
-    radial-gradient(60% 80% at 90% 100%, rgba(var(--tone-rgb), 0.09), transparent 70%),
+    radial-gradient(70% 90% at 20% 10%, rgba(var(--tone-rgb), 0.2) 0%, rgba(var(--tone-rgb), 0.1951) 7%, rgba(var(--tone-rgb), 0.1809) 14%, rgba(var(--tone-rgb), 0.1588) 21%, rgba(var(--tone-rgb), 0.1309) 28%, rgba(var(--tone-rgb), 0.1) 35%, rgba(var(--tone-rgb), 0.0691) 42%, rgba(var(--tone-rgb), 0.0412) 49%, rgba(var(--tone-rgb), 0.0191) 56%, rgba(var(--tone-rgb), 0.0049) 63%, rgba(var(--tone-rgb), 0) 70%),
+    radial-gradient(60% 80% at 90% 100%, rgba(var(--tone-rgb), 0.09) 0%, rgba(var(--tone-rgb), 0.0878) 7%, rgba(var(--tone-rgb), 0.0814) 14%, rgba(var(--tone-rgb), 0.0715) 21%, rgba(var(--tone-rgb), 0.0589) 28%, rgba(var(--tone-rgb), 0.045) 35%, rgba(var(--tone-rgb), 0.0311) 42%, rgba(var(--tone-rgb), 0.0185) 49%, rgba(var(--tone-rgb), 0.0086) 56%, rgba(var(--tone-rgb), 0.0022) 63%, rgba(var(--tone-rgb), 0) 70%),
     #07080b;
 }
 .post-more-body { padding: 18px 20px 22px; }
@@ -551,3 +557,75 @@
 @media (prefers-reduced-motion: reduce) {
   .post-toc a, .post-prose a, .post-head .post-back svg { transition: none; }
 }
+
+/* ---------------------------------------------------------------------------
+   Easter eggs. A word with a dotted underline hides a nerdy aside that opens
+   on hover, on keyboard focus, or on a tap. Write them in the markdown as
+   <span class="egg" tabindex="0" data-egg="The aside.">the word</span>
+   One or two per post, and never the only place a fact lives.
+   --------------------------------------------------------------------------- */
+.post-prose .egg {
+  position: relative;
+  color: var(--ink);
+  text-decoration: underline dotted rgba(var(--tone-rgb), 0.85);
+  text-decoration-thickness: 1.5px;
+  text-underline-offset: 4px;
+  cursor: help;
+  outline: none;
+}
+.post-prose .egg::after {
+  content: attr(data-egg);
+  position: absolute;
+  left: 50%;
+  bottom: calc(100% + 12px);
+  width: max-content;
+  max-width: min(300px, 80vw);
+  padding: 10px 13px;
+  border-radius: 12px;
+  border: 1px solid rgba(var(--tone-rgb), 0.35);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.02)),
+    rgba(10, 12, 16, 0.94);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+  box-shadow: 0 18px 40px -16px rgba(0, 0, 0, 0.9), 0 0 24px -10px rgba(var(--tone-rgb), 0.6);
+  font-size: 0.8125rem;
+  line-height: 1.5;
+  font-weight: 400;
+  color: var(--ink-soft);
+  white-space: normal;
+  text-align: left;
+  opacity: 0;
+  transform: translate(-50%, 6px);
+  pointer-events: none;
+  transition: opacity 180ms var(--ease-glass), transform 220ms var(--ease-glass);
+  z-index: 5;
+}
+.post-prose .egg:hover::after,
+.post-prose .egg:focus-visible::after,
+.post-prose .egg:focus::after { opacity: 1; transform: translate(-50%, 0); }
+.post-prose .egg:focus-visible { box-shadow: 0 0 0 3px rgba(var(--tone-rgb), 0.35); border-radius: 3px; }
+@media (prefers-reduced-motion: reduce) { .post-prose .egg::after { transition: none; } }
+
+/* ---------------------------------------------------------------------------
+   Key facts: the post in five or six lines, label on the left, the fact on
+   the right. It is the passage search snippets and AI answers quote, so it
+   sits above the story and reads on its own.
+   --------------------------------------------------------------------------- */
+.post-facts { margin-top: 16px; padding: 18px 22px 8px; border-radius: 18px; }
+@media (min-width: 640px) { .post-facts { padding: 22px 28px 10px; } }
+.post-facts-title { font-size: 0.8125rem; font-weight: 500; color: var(--tone); margin: 0 0 6px; }
+.post-facts-list { margin: 0; }
+.post-fact {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 2px;
+  padding: 11px 0;
+  border-top: 1px solid var(--line);
+}
+.post-fact:first-child { border-top: 0; }
+@media (min-width: 640px) {
+  .post-fact { grid-template-columns: 9.5rem minmax(0, 1fr); gap: 18px; align-items: baseline; }
+}
+.post-fact dt { font-size: 0.8125rem; font-weight: 500; color: var(--ink-faint); }
+.post-fact dd { margin: 0; font-size: 0.9375rem; line-height: 1.5; color: var(--ink); }

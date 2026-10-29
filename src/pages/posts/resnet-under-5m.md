@@ -1,106 +1,76 @@
 ---
-title: "How we went from 42nd to 1st in a class AI contest"
+title: "Augmentation took our capped ResNet to 97.12% on CIFAR-10"
 date: "2024-12-08"
 layout: ../../layouts/PostLayout.astro
-description: "A CIFAR-10 competition across 55 teams, a hard 5M-parameter cap, and two weeks. Tuning got us stuck at 92%. The thing that actually won it was almost embarrassingly simple."
+description: "A class contest: CIFAR-10, a ResNet, a hard cap of 5 million parameters. Flip and crop topped out at 93.76%. Augmentation, which adds zero parameters, took us to 97.12%."
 img_path: "/resnet-compact.png"
+architecture: "resnet-under-5m"
 img_alt: "A compact ResNet learning from rotated, cropped, flipped CIFAR-10 images"
 tag: "Research"
 tone: "violet"
 stats:
-  - value: "#1 / 55"
-    label: "on the professor's secret unseen test set"
-    tone: "emerald"
   - value: "97.12%"
-    label: "CIFAR-10 accuracy, up from ~92%"
+    label: "on the 10,000 CIFAR-10 test images after 300 epochs"
+    tone: "emerald"
+  - value: "4,978,810"
+    label: "trainable parameters, 21,190 under the 5 million cap"
     tone: "blue"
-  - value: "< 5M"
-    label: "hard parameter cap, ResNet-only"
+  - value: "93.76%"
+    label: "our best run with flip and crop only, before AutoAugment and perspective"
     tone: "violet"
+facts:
+  - label: "Problem"
+    value: "A class contest: the best CIFAR-10 ResNet under a hard cap of 5 million trainable parameters."
+  - label: "What I built"
+    value: "With two teammates, a PyTorch training pipeline that put the effort into augmentation, which costs no parameters."
+  - label: "Outcome"
+    value: "97.12% on the 10,000 CIFAR-10 test images, up from 93.76% with flip and crop alone."
+  - label: "Runs on"
+    value: "PyTorch notebooks; the final ResNet has 4,978,810 trainable parameters, 21,190 under the cap."
+  - label: "Built"
+    value: "April 11 to 24, 2024; the final model trained for 300 epochs."
+  - label: "Status"
+    value: "Coursework, finished in April 2024 and not deployed."
 ---
 
-In our deep learning class, the professor turned the final into a competition. **55 teams. Two weeks. One job:** build the best image classifier for CIFAR-10. Two rules. Keep it a ResNet, and keep it **under 5 million parameters**. Inside those lines you could do anything, any ResNet variant, any trick you'd read about. The bar to clear was 85% accuracy.
+## The problem
 
-We cleared it. And then the leaderboard came out and we were sitting at **42nd**.
+In our deep learning class the final became a contest. Build the best CIFAR-10 classifier you can, keep it a ResNet, and keep it under 5 million trainable parameters. The course scored every team on 10,000 hidden images that nobody had labels for. We were a team of three.
 
-That did not sit right with me.
+The cap takes away the usual lever. The official ResNet18 has over 11 million parameters and scored 88.56% in our own runs. So the job was to find accuracy that does not cost parameters.
 
-## Two weeks, one stubborn ceiling
+## What I built
 
-So I put my head down. I tried different ResNet architectures. I swept hyperparameters, learning rates, schedules, weight decay, batch sizes, until I found a combination that genuinely worked. Our accuracy climbed to about **92%**.
+A PyTorch training pipeline in notebooks. Every training image is augmented as it loads, batches of 128 go through a ResNet with four stages of three blocks, and SGD runs on a cosine schedule for 300 epochs. A cell counts trainable parameters before the first epoch. Each epoch is scored on the 10,000 labeled test images, and the final model writes a CSV of labels for the 10,000 hidden ones. Every run went into a shared results sheet. [Open the drawing](/architecture/resnet-under-5m).
 
-I shared the winning hyperparameters with my team. That jumped us to **16th** in the class.
+## The sprint
 
-Better. Not good enough. Because I could see where this was going: the teams ahead of us were hitting **94 to 94.5%**, and no amount of extra tuning was closing that gap. Under a 5-million-parameter cap, the model can only get so smart. The rules said I couldn't buy more accuracy with more parameters, and I'd already squeezed hyperparameters dry. I'd hit a wall.
+The repo's history runs April 11 to 24, 2024, with three of us pushing into it. The busiest stretch came just after midnight on April 13, from 12:05 to 12:50 AM, while we merged notebooks and model weights into one repo. The report went in at 6:10 PM that day.
 
-<div class="post-stats-grid my-8">
-  <div class="stat-callout stat-amber">
-    <div class="stat-value">42nd → 16th</div>
-    <div class="stat-label">after architecture + hyperparameter tuning (~92%)</div>
-  </div>
-  <div class="stat-callout stat-violet">
-    <div class="stat-value">94 to 94.5%</div>
-    <div class="stat-label">what the teams ahead of us were hitting</div>
-  </div>
-  <div class="stat-callout stat-blue">
-    <div class="stat-value">5M params</div>
-    <div class="stat-label">the cap that made "just tune harder" a dead end</div>
-  </div>
-</div>
+## The hard parts
 
-(If you want the receipts, every run and result is in our [results sheet](https://docs.google.com/spreadsheets/d/1ZGsL-hlqXFQmKHCA-6-J81xIbBcJNZBSGYnldBHzYlA/edit?usp=sharing).)
+**Tuning hit a ceiling.** Our first runs used flip and crop with a step schedule, and they landed between 79% and 91% whatever we changed. A ResNet34 with 11.7 million parameters, more than twice the cap, scored 90%. Bigger was not working, and it was against the rules anyway. Adadelta on a cosine schedule got the best flip and crop run to 93.76%.
 
-## So I asked a different question
+**The data was the lever.** If the model is as big as the rules allow and the hyperparameters are dialed in, what is left? The cap was on parameters, and augmentation costs none. Each image becomes a slightly different image every time it loads, and a <span class="egg" tabindex="0" data-egg="AutoAugment's CIFAR-10 policy was itself found by a search. We borrowed a machine's taste in rotations.">cat rotated a little</span> is still a cat. The report lines it up: flip and crop, 93.76%. Add AutoAugment, 95.34%. Add a perspective warp, 97.12%.
 
-If the model is already as good as the rules let it be, and the hyperparameters are dialed in, what's actually left to improve?
+```python
+# Notebooks/ResNet26_97_best_model_1.ipynb, cell 2
+transforms.AutoAugment(torchvision.transforms.AutoAugmentPolicy.CIFAR10),
+transforms.RandomCrop(32, padding=4),
+transforms.RandomHorizontalFlip(p=0.5),
+transforms.RandomPerspective(distortion_scale=0.6, p=0.5),
+```
 
-Not the model. The **data**.
+**Spending the budget.** With the data settled, the parameters went where they helped. Channels of 128, 100, 164 and 200 came out of sweeping widths under the cap. The plain 16, 32, 64, 128 ladder scored 79%, and ResNet34's 3, 4, 6, 3 blocks scored 91% while needing 5.3 million. The final model has four stages of three blocks, 3 by 3 kernels, 1 by 1 shortcuts and 4,978,810 parameters, with <span class="egg" tabindex="0" data-egg="Enough for one more 3 by 3 convolution from 48 channels to 48. We let it go.">21,190 to spare</span>.
 
-More data makes almost any model better. But there was a catch: we had to stick to CIFAR-10. We couldn't go grab more images. So how do you get more data out of a fixed dataset?
+## What I said no to
 
-**Augmentation.**
+**Heavier machinery.** Teacher student setups and exotic architectures were on the table, and we had only half heard of some of them. We read papers and open source CIFAR-10 repos instead, kept the plain residual block, and put the effort into data and training.
 
-It's a simple idea. Take each training image and make new versions of it on the fly: rotate it a little, flip it, crop out a piece, nudge the colors. The label doesn't change, a cat rotated ten degrees is still a cat, but the model now sees far more variety. You get a flood of new training examples without collecting a single new image, and without adding a single parameter to the model.
+**Trusting one test score.** The repo keeps two finalists. ResNet26 scored 97.12% on the labeled test set. A slimmer ResNet24, with 3, 3, 2, 3 blocks and 4,969,776 parameters, scored 96.82% there, and it is the one the repo names best on unseen data. The test set we could see was never the one that counted.
 
-Which was the whole point. The cap was on *parameters*, not on *data*.
+## Where it landed
 
-## The game changer
+It was coursework, finished in April 2024. The report, the notebooks and the trained weights are public in the repo, along with the results sheet of every run. The ResNet26 notebook's last epoch read 9,712 of 10,000 test images right.
 
-This is where it turned. Feeding my already-good models all that augmented data, accuracy just shot up. We landed at **97.12%**.
-
-That put us **2nd in the entire class**, a heartbreaking **0.17%** behind the team in 1st.
-
-<div class="stat-callout stat-emerald">
-  <div class="stat-value">97.12%</div>
-  <div class="stat-label">final CIFAR-10 accuracy, 2nd of 55 teams, 0.17% off the top spot</div>
-</div>
-
-We were thrilled. And then came the cherry on top.
-
-## The secret test set
-
-The professor had held something back: a set of images **none of us had ever seen** while building. After submissions closed, he ran every team's model against it.
-
-Every model did worse on the secret set than on CIFAR-10's own test data. That was the tell, most teams had quietly *memorized* the CIFAR-10 test images. Their models knew the test, not the world.
-
-Ours dropped the least. By a lot. Because we'd trained on all those rotated, cropped, flipped versions, our model had learned the actual shapes of things instead of the exact pixels of the test set. On data it had never seen before, **it came first in the whole class.**
-
-We did not see that coming. We partied that night. Genuinely did not know we had it in us.
-
-## Why I keep telling this one
-
-Here's the part I love. Going in, we thought we were average. Other teams were pulling out heavy machinery, teacher-student setups, exotic architectures, things we'd only half-heard of. We assumed someone like that would run away with it.
-
-Instead we:
-
-- **kept the problem simple** and refused to over-engineer it,
-- **read everything**, papers and open-source repos, to see how the best people in the world were attacking CIFAR-10,
-- **learned from them**, used a little common sense, and just put our heads down for two weeks.
-
-That's it. No magic. The team that thought it was average finished 2nd on the test set and **1st on the data that actually mattered**, the stuff the model had never seen. The professor handed us a bonus grade point for the effort.
-
-> The teams ahead of us had fancier models. We had more data and a model that generalized. On unseen data, generalization wins.
-
-The lesson stuck: when the obvious lever (a bigger model) is off the table, don't push harder on it, step back and find the lever nobody's pulling. Ours was data. It cost zero parameters and won the only test that didn't tell us the answers ahead of time.
-
-Full results: [our CIFAR-10 competition sheet](https://docs.google.com/spreadsheets/d/1ZGsL-hlqXFQmKHCA-6-J81xIbBcJNZBSGYnldBHzYlA/edit?usp=sharing).
+What I would keep: when the obvious lever is capped, step back and find the one nobody is pulling. Ours was data, and it cost zero parameters.

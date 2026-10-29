@@ -1,94 +1,79 @@
 ---
-title: "How I caught fake news and read the mood of an election"
+title: "Labeling 2020 election tweets with a 4 bit Llama 3 on one GPU"
 date: "2024-05-12"
 layout: ../../layouts/PostLayout.astro
-description: "I built two models for the 2020 election: one to flag fake news, one to read how people felt across 1.8 million tweets. The modeling was the easy part."
+description: "A three person NYU project on the 2020 election: a fine tuned Llama 3 labels tweets true, false or opinion, RoBERTa reads their mood, and I turned the results into state maps."
 img_path: "/fake-news.png"
+architecture: "fake-news-sentiment"
 img_alt: "One model flagging fake news, another reading the mood of millions of tweets"
 tag: "Research"
 tone: "violet"
 stats:
   - value: "76%"
-    label: "accuracy catching fake claims"
+    label: "accuracy on LIAR test claims, true or false, as the report states"
     tone: "violet"
-  - value: "1.8M+"
-    label: "election tweets read for mood"
+  - value: "1.7M"
+    label: "election tweets under #JoeBiden and #DonaldTrump, Oct 15 to Nov 8, 2020"
     tone: "blue"
-  - value: "2 models"
-    label: "one for lies, one for feelings"
+  - value: "315,020"
+    label: "cleaned tweets found under both hashtags, removed from both"
     tone: "emerald"
+facts:
+  - label: "Problem"
+    value: "A three person NYU course project asking how much 2020 election talk on Twitter was false."
+  - label: "What I built"
+    value: "Teammates tuned a 4 bit Llama 3 to label tweets; I built the RoBERTa mood pass and state maps."
+  - label: "Outcome"
+    value: "76 percent accuracy on LIAR test claims; the model labeled about 32 percent of tweets false."
+  - label: "Runs on"
+    value: "One 32 GB V100 on NYU's Greene cluster, with QLoRA training 83.9 million adapter parameters."
+  - label: "Built"
+    value: "May 8 to 12, 2024, from the first commit to the final report."
+  - label: "Status"
+    value: "School project, not running."
 ---
 
-Everyone says they want to "detect fake news." That phrase is hiding two completely different jobs.
+## The problem
 
-Job one: someone makes a claim. Is it true? That's a fact-checking problem.
+Our NLP course project took on a question people argued about all through 2020: how much of the election talk on Twitter was false, and how did people feel about each candidate? The data was a public set of about 1.7 million tweets tagged #JoeBiden or #DonaldTrump, from October 15 to November 8, 2020.
 
-Job two: a million people are tweeting about that claim. How do they feel, and what are they actually mad about? That's a mood problem.
+"Detect fake news" hides two jobs. One asks whether a claim is true. The other asks how a crowd feels. They need different models and different data.
 
-For a grad-school project on the 2020 US election, I built both. And the fun part is: the AI models were the easy bit. The hard, messy, interesting work was everywhere else.
+## What I built
 
-## Two jobs, two models
+We were a team of three. Teammates fine tuned the claim model: Llama 3 8B in 4 bit with a QLoRA adapter, trained on LIAR, a benchmark of political claims rated by PolitiFact editors. It labels each tweet True, False or Personal. My part was the mood side and the results: a RoBERTa sentiment pass, the state maps and swing state charts in Power BI, and the write up. [Open the drawing](/architecture/fake-news-sentiment).
 
-I didn't try to make one giant model do everything. That almost never works. Instead I picked the right tool for each job.
+## The sprint
 
+The first commit went in at 9:45 PM on May 8, 2024, and the claim model notebooks followed at 12:13 AM. Most of my work landed on May 11. The final report went up at 10:36 PM on May 12.
+
+## The hard parts
+
+**Six labels down to two.** LIAR rates claims on six steps from true to <span class="egg" tabindex="0" data-egg="A real PolitiFact rating. Here it was folded into false without ceremony.">pants on fire</span>. We collapsed them: true and mostly true became true; false, barely true and pants on fire became false; half true was split at random between the two. Training ended with 5,545 false and 4,695 true claims. QLoRA froze the 4 bit base and trained 83.9 million adapter parameters, which fit on one 32 GB V100. Accuracy on LIAR's test claims was 76 percent.
+
+**A one token answer.** The classifier generates exactly <span class="egg" tabindex="0" data-egg="max_new_tokens = 1. The shortest possible opinion, delivered 156,123 times on one run alone.">one token</span> per tweet. That is cheap, and it is also all you get. One prompt version used markdown headings with four hash marks, and on that run 2,945 answers came back as "####". A plain text version of the same examples left 5 stray answers in 156,123. My read is that the model copied the prompt's own formatting.
+
+**The same tweet under both hashtags.** After cleaning, 315,020 tweets in the #DonaldTrump file also appeared in the #JoeBiden file. Kept, each would count once for each candidate, so they were dropped from both:
+
+```python
+# Fake_News_Detection/fake_news_detection_inference.ipynb
+common_texts = trump_final[trump_final['tweet'].isin(joe_final['tweet'])]['tweet']
+trump_final_cleaned = trump_final[~trump_final['tweet'].isin(common_texts)]
+joe_final_cleaned = joe_final[~joe_final['tweet'].isin(common_texts)]
 ```
-                  text comes in
-                       │
-        ┌──────────────┴──────────────┐
-        ▼                             ▼
-   Is this claim fake?           How do people feel?
-   Llama 3 (8B)                  RoBERTa
-   trained on labeled claims     trained on tweets
-        │                             │
-        └──────────────┬──────────────┘
-                       ▼
-              What are they arguing about?
-              (topic grouping)
-```
 
-For the **fake-news job**, I needed a model that understands the meaning of a short, slippery political statement. I used Llama 3, a big language model, and trained it on a public set of claims that experts had already labeled true or false.
+## What I learned
 
-For the **mood job**, I had 1.8 million tweets and zero patience for a slow, expensive model running on all of them. So I used RoBERTa, a smaller, faster model that's great at reading tone. The right tool isn't always the biggest one. At 1.8 million tweets, "cheap and fast" wins.
+**Constrain the output, then count the misses.** With one free token, anything can come back. Next time I would restrict decoding to the allowed labels and report how many answers fell outside them.
 
-## The cheap trick that made the big model affordable
+**A benchmark score is not a score on your data.** The 76 percent is on LIAR claims. The tweets have no answer key, and our report says so: the tweet labels are the model's judgment, not checked facts.
 
-Training an 8-billion-parameter model sounds like it needs a server farm. It doesn't, if you're a little clever.
+**Mood is not stance.** RoBERTa says whether a tweet is positive or negative, not whom it supports. Our report read a positive #JoeBiden tweet as pro Biden and named that as an assumption. A negative tweet under #JoeBiden can just as easily be an attack on the other candidate.
 
-I used a trick called **QLoRA**. The short version: instead of retraining the whole giant model (expensive, slow, needs lots of memory), you freeze it and train a tiny add-on layer on top. The big model stays put; you only teach the small new piece. It fits on a single regular GPU, and the thing you ship at the end is a few megabytes instead of gigabytes.
+## Where it landed
 
-<div class="post-stats-grid my-8">
-  <div class="stat-callout stat-violet">
-    <div class="stat-value">76%</div>
-    <div class="stat-label">accuracy on hard, expert-labeled claims</div>
-  </div>
-  <div class="stat-callout stat-blue">
-    <div class="stat-value">1 GPU</div>
-    <div class="stat-label">all it took, thanks to the QLoRA trick</div>
-  </div>
-  <div class="stat-callout stat-emerald">
-    <div class="stat-value">megabytes</div>
-    <div class="stat-label">the size of what I actually shipped</div>
-  </div>
-</div>
+A class project, not running. My share is in the repo: the sentiment notebook, the Power BI file with the state and swing state views, and the report. The model labeled about 32 percent of tweets false overall, 36 percent of negative tweets and 18 percent of positive ones. Those are model labels, not verified claims.
 
-**76% accuracy** might not sound flashy, but these claims are short and politically loaded with no extra context to lean on. They're genuinely hard. If I'd reported 95%, I'd have assumed I'd cheated somewhere by accident.
+What I would keep: split a fuzzy goal into the jobs inside it, give each job its own model, and say plainly which numbers were measured and which were inferred.
 
-## What actually broke (and what it taught me)
-
-**The model learned to be lazy.** The labeled claims weren't evenly split, so my first model figured out it could look smart just by guessing the most common answer. Accuracy looked fine; the model was useless. The fix was to stop trusting one number and start checking how it did on *each* type of claim. Lesson that stuck: a single accuracy score can lie to your face.
-
-**My two models disagreed on basic cleanup.** Early on, the tweet cleaner and the claim cleaner were slightly different, so "the same sentence" got chopped up two different ways depending on which model saw it. I merged them into one shared cleanup step. Boring fix, big difference.
-
-**My "topics" were mostly punctuation.** I also grouped the tweets by topic to see what people were arguing about. The first run proudly told me the hottest topics were... hashtags and exclamation marks. After cleaning those out, real themes finally showed up.
-
-## So what's the actual takeaway?
-
-The flashy way to describe this is "I fine-tuned an LLM to detect fake news."
-
-The honest way is "I figured out there were two different problems, used a cheap fast model for the big firehose and a smart one only where it mattered, and refused to believe a single accuracy number without looking underneath it."
-
-> The model is the footnote. Knowing which problem you're solving, and how you'll know you solved it, is the actual job.
-
-That's the habit I took from this one: when someone hands you a big fuzzy goal like "detect fake news," the first move isn't to grab a model. It's to ask what you're really being asked to do.
-
-Full project: [Fake News and Sentiment Analysis](https://hi.switchy.io/U4wO).
+Full project: [Fake News and Sentiment Analysis](https://github.com/SampreethAvvari/us2020electionanalysis).

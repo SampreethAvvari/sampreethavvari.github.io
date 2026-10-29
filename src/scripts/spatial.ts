@@ -145,6 +145,12 @@ export function initParallax(selector = "[data-parallax]"): void {
   apply();
 }
 
+/** Elements outside the ambient field that tint from its blend. They carry
+ *  data-amb and get --amb1/--amb2 set on them directly. */
+export function ambTargets(): HTMLElement[] {
+  return Array.from(document.querySelectorAll<HTMLElement>("[data-amb]"));
+}
+
 /** One continuous ambient colour field behind the whole page. The colours
  *  interpolate through per-section stops as you scroll, so hues flow
  *  between sections instead of cutting off at borders. Each stop is a pair
@@ -172,9 +178,11 @@ export function initAmbient(stops: Array<[string, string]>, sectionIds?: string[
     centers = cs;
   };
 
-  // The two colours are also published on <html>, so anything in the page
-  // (the fixed comet layer, a section's sky) can tint from the same blend.
-  const root = document.documentElement;
+  // The two colours also go to every element marked data-amb (the fixed
+  // comet layer, the portrait's glow), so they tint from the same blend.
+  // Not on <html>: a custom property that changes there makes the browser
+  // restyle every element on the page, on every scroll frame.
+  const targets = [el, ...ambTargets()];
   const setAt = (i: number, f: number) => {
     // Smootherstep: each section's colour holds while its section is in
     // view, then hands over to the next one gently, with no corner.
@@ -183,10 +191,10 @@ export function initAmbient(stops: Array<[string, string]>, sectionIds?: string[
       a.map((v, k) => Math.round(v + (b[k] - v) * e)).join(",");
     const a1 = mix(cols[i][0], cols[i + 1][0]);
     const a2 = mix(cols[i][1], cols[i + 1][1]);
-    el.style.setProperty("--amb1", a1);
-    el.style.setProperty("--amb2", a2);
-    root.style.setProperty("--amb1", a1);
-    root.style.setProperty("--amb2", a2);
+    for (const t of targets) {
+      t.style.setProperty("--amb1", a1);
+      t.style.setProperty("--amb2", a2);
+    }
   };
 
   const apply = () => {
@@ -321,14 +329,24 @@ export function initComets(selector = ".space-el"): void {
   }
   if (!comets.length) return;
 
+  // Read every section's box once a frame, before any comet moves, so the
+  // writes below never force the browser to lay the page out again mid-frame.
+  // Moving a comet never changes its section's box, so the numbers are the
+  // same ones a read after each move would give.
+  const parents = [...new Set(comets.map((st) => st.parent))];
+  const boxes = new Map<HTMLElement, { top: number; bottom: number; w: number; h: number }>();
   let last = performance.now();
   (function tick(now: number = performance.now()) {
     requestAnimationFrame(tick);
     const dt = Math.min((now - last) / 1000, 0.08);
     last = now;
     const vh = window.innerHeight;
+    for (const p of parents) {
+      const r = p.getBoundingClientRect();
+      boxes.set(p, { top: r.top, bottom: r.bottom, w: p.clientWidth, h: p.clientHeight });
+    }
     for (const st of comets) {
-      const pr = st.parent.getBoundingClientRect();
+      const pr = boxes.get(st.parent)!;
       if (pr.bottom < -60 || pr.top > vh + 60) continue; // section offscreen
       if (st.flying) continue;
       st.life += dt;
@@ -337,8 +355,8 @@ export function initComets(selector = ".space-el"): void {
       const t = st.life / st.maxLife;
       const out =
         t >= 1 ||
-        st.x < -80 || st.x > st.parent.clientWidth + 80 ||
-        st.y < -80 || st.y > st.parent.clientHeight + 80;
+        st.x < -80 || st.x > pr.w + 80 ||
+        st.y < -80 || st.y > pr.h + 80;
       if (out) {
         (st as CometState & { respawn?: () => void }).respawn?.();
         continue;
@@ -348,6 +366,36 @@ export function initComets(selector = ".space-el"): void {
       st.wrap.style.opacity = alpha.toFixed(3);
     }
   })();
+}
+
+/** Endless CSS animations inside these elements (a drawing's flowing paths,
+ *  a breathing dot) pause while the element is more than a screen away and
+ *  carry on from the same frame before it scrolls back in. Browsers keep
+ *  ticking them off screen otherwise. Finite animations and transitions are
+ *  left alone. */
+export function pauseOffscreen(selector: string): void {
+  const els = document.querySelectorAll<HTMLElement>(selector);
+  if (!els.length || !("IntersectionObserver" in window) || !els[0].getAnimations) return;
+  const held = new WeakSet<Animation>();
+  const io = new IntersectionObserver(
+    (entries) => {
+      for (const en of entries) {
+        for (const a of (en.target as HTMLElement).getAnimations({ subtree: true })) {
+          if (en.isIntersecting) {
+            if (held.has(a)) {
+              held.delete(a);
+              a.play();
+            }
+          } else if (a.playState === "running" && a.effect?.getComputedTiming().endTime === Infinity) {
+            held.add(a);
+            a.pause();
+          }
+        }
+      }
+    },
+    { rootMargin: "100% 0px" },
+  );
+  els.forEach((el) => io.observe(el));
 }
 
 /** Numbers with data-count animate from 0 when they first become visible.

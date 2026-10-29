@@ -1,0 +1,189 @@
+---
+// Every architecture drawing on the site, grouped by project, with filters
+// for the four kinds of work. Each tile opens that system's drawing.
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import ArchTile from "../../components/architecture/ArchTile.astro";
+import NextStep from "../../components/common/NextStep.astro";
+import { architectures } from "../../data/architecture";
+import { disciplines } from "../../data/disciplines";
+import { itemListNode } from "../../utils/seo";
+
+// Projects keep the order of their best ranked drawing.
+const projects: Array<{ name: string; items: typeof architectures }> = [];
+for (const a of architectures) {
+  const p = projects.find((x) => x.name === a.project);
+  if (p) p.items.push(a);
+  else projects.push({ name: a.project, items: [a] });
+}
+
+const totalParts = architectures.reduce((n, a) => n + Object.keys(a.parts).length, 0);
+const totalFails = architectures.reduce((n, a) => n + a.breaks.length, 0);
+const measured = architectures.filter((a) => a.cost);
+const monthly = measured.reduce((n, a) => n + a.cost!.parts.reduce((s, p) => s + p.usd, 0), 0);
+
+const counts = Object.fromEntries(
+  disciplines.map((d) => [d.slug, architectures.filter((a) => a.disciplines.includes(d.slug)).length]),
+);
+
+const listSchema = [
+  itemListNode(
+    Astro.site!.toString(),
+    "/architecture",
+    "System architecture drawings by Sampreeth Avvari",
+    architectures.map((a) => ({ name: a.name + " architecture", path: "/architecture/" + a.slug })),
+  ),
+];
+---
+
+<BaseLayout
+  title="Architecture"
+  description="Every system I run, drawn: the parts, what each one does when it fails, and what it costs a month."
+  tone="architecture"
+  schema={listSchema}
+  crumbs={[{ name: "Home", path: "/" }, { name: "Architecture", path: "/architecture" }]}
+>
+  <section class="page-top arch-ix">
+    <div class="tone-atmos" aria-hidden="true"></div>
+    <div class="wrap on-top">
+      <div class="sec-head">
+        <div class="sec-head-main">
+          <p class="kicker">Architecture</p>
+          <h1 class="t-title">
+            Every system, drawn.
+            <span class="t-tail">Click any part to see how it fails and what it costs.</span>
+          </h1>
+        </div>
+      </div>
+
+      <ul class="ix-totals" aria-label="Across every drawing">
+        <li class="surface"><b>{architectures.length}</b><span>drawings</span></li>
+        <li class="surface"><b>{totalParts}</b><span>parts drawn</span></li>
+        <li class="surface"><b>{totalFails}</b><span>failure paths written down</span></li>
+        <li class="surface"><b>${Math.round(monthly)}</b><span>a month, the {measured.length} measured so far</span></li>
+      </ul>
+
+      <div class="ix-filters" role="group" aria-label="Filter by kind of work">
+        <button type="button" class="chip is-on" data-filter="all" aria-pressed="true">All <span class="ix-n">{architectures.length}</span></button>
+        {disciplines.map((d) => (
+          <button type="button" class="chip" data-filter={d.slug} aria-pressed="false" disabled={counts[d.slug] === 0}>
+            {d.name} <span class="ix-n">{counts[d.slug]}</span>
+          </button>
+        ))}
+      </div>
+
+      <!-- One grid, best ranked first, so a project's drawings sit together
+           and every row fills: the script widens the last row's tiles. -->
+      <div class="ix-grid" data-grid>
+        {projects.flatMap((p) => p.items).map((a) => (
+          <div class="ix-cell" data-cell>
+            <ArchTile arch={a} />
+          </div>
+        ))}
+      </div>
+      <p class="ix-empty t-lede" data-empty hidden>Nothing drawn for that kind of work yet.</p>
+    </div>
+  </section>
+
+  <NextStep next={{ href: "/posts", label: "Read the writing" }} />
+
+  <script>
+    const chips = document.querySelectorAll<HTMLButtonElement>(".ix-filters [data-filter]");
+    const cells = [...document.querySelectorAll<HTMLElement>("[data-cell]")];
+    const empty = document.querySelector<HTMLElement>("[data-empty]");
+    // No lone card on a last row: on three columns, one leftover spans the
+    // row and two leftovers take half each; on two columns, one spans both.
+    const balance = () => {
+      const shown = cells.filter((c) => !c.hidden);
+      shown.forEach((c) => c.removeAttribute("data-tail"));
+      const n = shown.length;
+      if (n % 3 === 1) shown[n - 1].dataset.tail = "3-1";
+      if (n % 3 === 2) shown.slice(-2).forEach((c) => (c.dataset.tail = "3-2"));
+      if (n % 2 === 1) shown[n - 1].dataset.tail = (shown[n - 1].dataset.tail || "") + " 2-1";
+    };
+    const apply = (f: string) => {
+      chips.forEach((c) => {
+        const on = c.dataset.filter === f;
+        c.classList.toggle("is-on", on);
+        c.setAttribute("aria-pressed", String(on));
+      });
+      cells.forEach((c) => {
+        const d = c.querySelector<HTMLElement>("[data-arch-tile]")?.dataset.disciplines || "";
+        c.hidden = f !== "all" && !d.split(" ").includes(f);
+      });
+      balance();
+      if (empty) empty.hidden = cells.some((c) => !c.hidden);
+      try {
+        sessionStorage.setItem("arch-filter", f);
+      } catch {}
+    };
+    chips.forEach((c) => c.addEventListener("click", () => apply(c.dataset.filter || "all")));
+    balance();
+    try {
+      const saved = new URLSearchParams(location.search).get("kind") || sessionStorage.getItem("arch-filter");
+      if (saved && [...chips].some((c) => c.dataset.filter === saved && !c.disabled)) apply(saved);
+    } catch {}
+  </script>
+</BaseLayout>
+
+<style>
+  .arch-ix { position: relative; padding-bottom: clamp(16px, 2vw, 24px); }
+  .ix-totals {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+    margin: 34px 0 28px;
+    padding: 0;
+    list-style: none;
+  }
+  @media (min-width: 900px) { .ix-totals { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+  .ix-totals li { padding: 18px 20px; border-radius: 16px; display: flex; flex-direction: column; gap: 6px; }
+  .ix-totals b { font-size: clamp(1.75rem, 3vw, 2.25rem); font-weight: 600; letter-spacing: -0.04em; line-height: 1; font-variant-numeric: tabular-nums; }
+  .ix-totals span { font-size: 0.8125rem; color: var(--ink-faint); }
+  .ix-filters { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 34px; }
+  .ix-filters .chip { cursor: pointer; height: 34px; padding: 0 14px; font: inherit; font-size: 0.875rem; }
+  .ix-filters .chip:disabled { opacity: 0.4; cursor: default; }
+  /* Phones: the five filters stay on one line and swipe sideways inside
+     their row, instead of wrapping into a ragged stack of single chips. */
+  @media (max-width: 639px) {
+    .ix-filters {
+      flex-wrap: nowrap;
+      overflow-x: auto;
+      overscroll-behavior-x: contain;
+      scrollbar-width: none;
+      margin-inline: calc(-1 * var(--gutter));
+      /* Room at the end so the last chip scrolls clear of the fade. */
+      padding: 5px 40px 5px var(--gutter);
+      margin-bottom: 29px;
+      -webkit-mask-image: linear-gradient(90deg, #000 calc(100% - 32px), transparent);
+      mask-image: linear-gradient(90deg, #000 calc(100% - 32px), transparent);
+    }
+    .ix-filters::-webkit-scrollbar { display: none; }
+    .ix-filters .chip { flex: none; }
+  }
+  .ix-n { font-variant-numeric: tabular-nums; opacity: 0.6; }
+  /* Six tracks on wide screens so tiles can be a third, a half or a whole. */
+  .ix-grid { display: grid; gap: 14px; grid-template-columns: 1fr; }
+  .ix-cell { min-width: 0; }
+  .ix-cell[hidden] { display: none; }
+  @media (min-width: 680px) and (max-width: 1079px) {
+    .ix-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .ix-cell[data-tail~="2-1"] { grid-column: 1 / -1; }
+  }
+  @media (min-width: 1080px) {
+    .ix-grid { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+    .ix-cell { grid-column: span 2; }
+    .ix-cell[data-tail~="3-2"] { grid-column: span 3; }
+    .ix-cell[data-tail~="3-1"] { grid-column: 1 / -1; }
+  }
+  /* A tile that takes a whole row lays its art beside its words. */
+  @media (min-width: 680px) {
+    .ix-cell[data-tail~="3-1"] :global(.arch-tile),
+    .ix-cell[data-tail~="2-1"] :global(.arch-tile) { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+    .ix-cell[data-tail~="3-1"] :global(.tile-art),
+    .ix-cell[data-tail~="2-1"] :global(.tile-art) { aspect-ratio: auto; min-height: 220px; border-bottom: 0; border-right: 1px solid var(--line); }
+  }
+  @media (min-width: 1080px) {
+    .ix-cell[data-tail="2-1"] :global(.arch-tile) { display: flex; }
+    .ix-cell[data-tail="2-1"] :global(.tile-art) { aspect-ratio: 16 / 8; min-height: 0; border-right: 0; border-bottom: 1px solid var(--line); }
+  }
+</style>

@@ -104,9 +104,11 @@ const trackH = rows.length * ROW_H;
 ---
 
 <div class="career-tl relative" id="career-tl">
-  <div class="flex items-baseline justify-between gap-4 mb-3">
+  <!-- On a narrow card the hint drops under the title instead of squeezing
+       it into three short lines; touch screens get the touch wording. -->
+  <div class="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 mb-3">
     <p class="t-h4 m-0">Education and experience</p>
-    <p class="tl-hint m-0">Hover a year, click for the story</p>
+    <p class="tl-hint m-0"><span class="tl-hint-fine">Hover a year, click for the story</span><span class="tl-hint-touch">Tap a year for the story</span></p>
   </div>
 
   <div class="tl-legend" aria-hidden="true">
@@ -185,6 +187,11 @@ const trackH = rows.length * ROW_H;
     font-size: 0.8125rem;
     color: rgba(245, 245, 247, 0.44);
     white-space: nowrap;
+  }
+  .career-tl .tl-hint-touch { display: none; }
+  @media (hover: none) {
+    .career-tl .tl-hint-fine { display: none; }
+    .career-tl .tl-hint-touch { display: inline; }
   }
 
   .career-tl .tl-legend {

@@ -1,91 +1,92 @@
 ---
 demo: /demos/doc-coach
-title: "How I caught my pipeline lying to me (and made it confess)"
+title: "No more green checks on consults that never emailed"
 date: "2026-05-29"
 layout: ../../layouts/PostLayout.astro
-description: "Runs showed ✅ done while emails never sent, rows never appeared, and whole meetings just vanished. Nine kinds of silent failure, all hidden. The fix was making the dashboard stop lying."
+description: "Runs went green while emails never sent. I moved the run row to the top, made every failure retry or turn amber, and added logs anyone can read."
 img_path: "/pipeline-ghosting.png"
 img_alt: "Run dashboard with a green status pill that hides amber and red failures underneath"
+architecture: "doc-coach"
 tag: "Process"
 tone: "blue"
 stats:
-  - value: "51 / 0 / 0"
-    label: "green / amber / red in the consistency audit"
+  - value: "13 runs"
+    label: "that scored but never emailed, found and resent on May 29"
     tone: "emerald"
-  - value: "+50"
-    label: "new tests on the exact silent-fail paths"
+  - value: "36 failures"
+    label: "since May, 9 scoring, 10 note and 17 Drive upload, each shown as a row with a code and a plain English fix"
     tone: "blue"
-  - value: "9"
-    label: "flavors of silent failure, all swallowed by bare except"
+  - value: "5 min"
+    label: "between sweeps that retry a failed run, up to 3 times before a person gets an email"
     tone: "amber"
+facts:
+  - label: "Problem"
+    value: "Consult grading runs showed green while the email never went out and the Sheet never got its row."
+  - label: "What I built"
+    value: "A run row for every event, one status legend, two layers of retry and a plain English Logs tab."
+  - label: "Who uses it"
+    value: "Treatment coordinators and our CEO, who read the run dashboard."
+  - label: "Outcome"
+    value: "13 runs that scored but never emailed were found and resent; every failure now shows as a row."
+  - label: "Runs on"
+    value: "The Doc Coach service on Cloud Run, with a sweep every 5 minutes retrying up to 3 times."
+  - label: "Built"
+    value: "May 27 to June 2, 2026, on a grader that had been live about a week."
 ---
 
-A while back I wrote about [the pipeline that grades every implant consult](/posts/clinical-rag) against our CEO's seven-criterion rubric. Zoom drops a transcript, Gemini scores it, an email goes to the doctor + treatment coordinator + CEO, and a row appends to a master Sheet. Beautiful on paper.
+## The problem
 
-In practice it was a polite liar. Runs would proudly show ✅ **complete** while the email never went out, the Sheet never got the row, and half my coordinators' meetings just… weren't there. I'd been manually rerunning consults for two weeks and didn't know why, while the CEO was actively testing in prod. Cool cool cool.
+The consult grader had been live for about a week, and it was a polite liar. A run could show complete while the email never went out and the master Sheet never got its row. Some consults never showed up at all.
 
-The task: stop the lying. Every failure visible, every transient error retry-able, every state in sync, and the logs readable by humans who don't write Python.
+The complaints came in two shapes. "I ran it but no email came." And errors nobody could see in All Runs, the dashboard table. I was rerunning consults by hand and could not always say why the first run had failed.
 
-## Nine flavors of silent failure, stacked like a sad lasagna
+The people reading that dashboard are treatment coordinators (TCs) and our CEO. "Check Cloud Logging" is not an answer they can use. The job was to make every failure visible, make every temporary failure retry itself, and make the dashboard agree with what really happened.
 
-1. **The missing-host mystery.** Two coordinators were migrated to `@hybridgeimplants.com` mailboxes; the allowlist only knew their old `@elmwooddental.com` ones. Every meeting they hosted just quietly `return`-ed. Now multi-email TCs live in `host_mapping.yaml`, a YAML edit, no Secret Manager dance.
-2. **The rerun ghost button.** `RerunBody.send_email: bool = False`. Click *Rerun*, get a green checkmark, no email lands. Flipped the default.
-3. **The bare-except graveyard.** Gmail, Sheets, and OAuth blips all swallowed while the run marched on to mark itself "complete." Each one now surfaces as amber **needs attention** with a plain-English line.
-4. **The yellow that wasn't there.** One tab painted *running* yellow, another painted *failed* yellow. Same run, two meanings. I unified the legend: 🟢 done · 🟠 needs attention · 🔴 failed · 🔵 running.
-5. **The retry that wasn't.** A single 429 or broken pipe was a silent kill. Added exponential backoff with jitter for transient errors (more below).
-6. **The rerun-creates-duplicates problem.** A successful rerun left two rows for one consultation. Built *rerun-replaces-old*: successful reruns delete the original and dedupe the Sheet; failed reruns leave the known-good baseline alone.
-7. **The disappearing runs.** Events that died at the host gate or download step, before scoring, left zero trace. Moved dashboard row creation to the very top of the webhook handler, so every event leaves a clickable row even if it died at step zero.
-8. **The "logs are in Cloud Logging" wall** and **9. the orphan-state drift**, both below.
+## What I built
 
-## Make the failures retry themselves
+Four changes to the same pipeline. Every transcript event now gets a run row before any gate, so nothing can vanish. One status legend everywhere: green done, amber needs attention, red failed, blue running, and green only when both the email and the Sheet row landed. Two layers of retry: in the call for Google API blips, and a sweep every 5 minutes for runs that failed anyway. And a Logs tab on every run, with an Easy view in plain English and a Developer view with the audit events and the raw record. Behind all of it, a reconciler checks the Sheet after every status change. [Open the drawing](/architecture/doc-coach).
 
-The connection-level errors were the sneaky ones. `HttpError` covers the 429/5xx case Google's client knows how to raise, but a `BrokenPipeError` or `ConnectionResetError` comes up from the socket layer and never wears an `HttpError` jacket, so a decorator that only caught `HttpError` waved them straight through to a silent kill. The fix: retry on all three families, with jittered backoff so a herd of reruns doesn't synchronize into the next rate-limit wall.
+## The sprint
+
+The first fix went in on May 27 at 5:14 PM: run rows for every event, TCs with more than one mailbox, one status legend.
+
+On May 29 the work ran from 2:31 PM to 10:58 PM. The fix for "I ran it but no email came" was one flipped default: the Rerun button's send email flag had defaulted to off. A one shot script found 13 runs that had scored but never emailed and resent them. The same script replayed 4 missing Sheet rows from the scorecards still in Drive; the other 9 had no saved scorecard and needed a full rerun. Then the reconciler, retries with backoff, the broken pipe fix at 9:24 PM, and the Logs tab at 10:58 PM.
+
+June 1 added the 5 minute sweep. Between 1:34 AM and <span class="egg" tabindex="0" data-egg="The sweep runs every five minutes. I ran on a slightly less reliable schedule.">2:20 AM</span> on June 2 came delete as a tombstone so the sweep stops touching a meeting, repair the delivery without scoring again, escalate when the budget runs out, and a Mark complete button for when a human knows better.
+
+## The hard parts
+
+**The run row came too late.** It used to be created deep in the webhook flow, after the host check, the dedupe claim and the Zoom download. Anything dropped before that left no trace. Two TCs had moved mailboxes from one company domain to the other, the host allowlist only knew their old addresses, and their consults were dropped without a trace. Now the row comes first, every drop marks it failed with a reason and a fix, and a TC can have several addresses.
+
+**Errors that are not HTTP errors.** The retry helper caught Google's HTTP errors and OAuth refresh errors. A <span class="egg" tabindex="0" data-egg="A broken pipe is the network hanging up mid sentence. Python, being polite, does not call it an HTTP error.">BrokenPipeError</span> from the TLS socket never becomes an HTTP response, so it slipped past, and a bare except swallowed it: the consult scored cleanly and the Sheet row was never written. In June an SSL error killed a report card run the same way, because it is an OSError but not a ConnectionError. Now the transient set is explicit:
 
 ```python
-RETRYABLE = (HttpError, RefreshError, BrokenPipeError,
-             ConnectionResetError, TimeoutError)
-
-for attempt in range(MAX_RETRIES):
-    try:
-        return fn()
-    except RETRYABLE as e:
-        if attempt == MAX_RETRIES - 1:
-            raise            # loud: surfaces as amber, never swallowed
-        sleep(BASE * 2**attempt + jitter())
+# zoom-transcript-pipeline/app/retry.py
+TRANSIENT_CONNECTION_ERRORS = (
+    BrokenPipeError, ConnectionResetError, ConnectionAbortedError,
+    ConnectionRefusedError, TimeoutError,
+    ssl.SSLError, http.client.HTTPException,
+)
 ```
 
-A transient blip is no longer a death sentence, and a permanent failure still raises loudly instead of being marked complete.
+Three attempts with 1 and 2 seconds of backoff plus a little jitter, then it raises, so the run turns amber.
 
-## Logs humans can read, state that can't lie
+**A flag set before the work finished.** The record said "Sheet appended" when the append had not happened, and sometimes the opposite, when an error came after the append succeeded. The reconciler reads the Sheet after every status change. Flag says yes and the row is missing: flip it and show amber. Flag says no and the row is there: flip it and show green. It never appends or deletes rows on its own, because that is the direction it cannot prove safe.
 
-The biggest cultural fix was killing "the logs are in Cloud Logging" as an answer. Every run detail page now has a **Logs tab** with two views: an **Easy view**, the nine stages as a stepper (✅ ⚠️ ❌ ⏭ 🔄 ⏸), each non-passed stage carrying a plain-English line plus *what to do*, and a **Developer view** with BigQuery audit events, tracebacks, and the raw Firestore doc. A non-technical operator can finally tell what failed without learning what a `RefreshError` is.
+## What I said no to
 
-Behind it runs a consistency reconciler after every status change: if the doc says "Sheet appended" but the row isn't there → flip to amber; if the row *is* there but the flag says no → flip to green. The dashboard mirrors reality instead of trusting a flag set optimistically before the work finished.
+**Retrying everything.** The sweep only touches failure codes a rerun can fix. A host it does not know, a filtered meeting, a duplicate or an unresolved doctor is a config question, so it waits for a person. Each run gets 3 tries. The code comment says it plainly: burning model tokens on a broken meeting is worse than leaving the red row.
 
-<div class="stat-callout stat-amber">
-  <div class="stat-value">0 drift</div>
-  <div class="stat-label">Doc state and real-world state reconcile after every status change, so the flag can't lie about what actually happened</div>
-</div>
+**Throwing away the last good run.** A rerun that succeeds replaces the original row and dedupes the Sheet, so there is one row per consult. A rerun that fails leaves the original alone as the known good baseline.
 
-A sprinkle of one-off cleanup scripts repaired the existing damage: resent 13 silently-failed emails (no duplicates), backfilled 4 missing Sheet rows, deduped one stray row, and reconciled one stubborn consultation that had lost its scorecard to a broken pipe.
+**A queue I did not need yet.** The work runs as a background task after the 202. The scaling notes say when to move to Cloud Tasks: around five consults at once per instance, or Zoom retries climbing. At about 80 consults a month, a queue would be one more system to watch.
 
 ## Where it landed
 
-<div class="post-stats-grid my-10">
-  <div class="stat-callout stat-emerald">
-    <div class="stat-value">51 / 0 / 0</div>
-    <div class="stat-label">green / amber / red, with 0 drift and 0 duplicates in the audit</div>
-  </div>
-  <div class="stat-callout stat-blue">
-    <div class="stat-value">234</div>
-    <div class="stat-label">tests green, +50 of them covering the exact silent-fail paths</div>
-  </div>
-  <div class="stat-callout stat-amber">
-    <div class="stat-value">7 → 1</div>
-    <div class="stat-label">production deploys shipped in a single push</div>
-  </div>
-</div>
+Every transcript event leaves a row, and every failure path in the pipeline marks that row with a code and a plain English fix. Since May the audit log shows 9 scoring failures, 10 note failures and 17 Drive upload failures, each a row someone could see.
 
-The best part: the next time something breaks (and something always breaks) I'll know in five seconds, because the dashboard isn't allowed to lie to me anymore.
+The sweep, the repair path and the reconciler still run every day. The Logs tab now walks ten stages, since the chart note became one.
 
-The lesson, free of charge: **`bare except` is technical debt accruing interest.** Every silent failure I caught had been swallowed by one. Make your code loud when things go wrong. Your future self will thank you, and your CEO will stop emailing at 11pm asking "why didn't I get the report?"
+What is not measured: I do not have a count of manual reruns before and after, so I will not claim a drop.
+
+What I would keep: never set a flag before the work it describes is done, and check it against the real thing after.

@@ -1,110 +1,80 @@
 ---
-title: "How I built the boring parts of an ML system on purpose"
+title: "Loan Radar: training and serving that load one saved transform"
 date: "2025-05-01"
 layout: ../../layouts/PostLayout.astro
-description: "A loan-scoring service where I built the unglamorous parts on purpose: training in containers, model history, quality gates, automatic retraining. The gates mattered most."
+description: "A three person NYU class project that scores loan default risk from the public LendingClub book. I built the data pipeline and the tests, and made training and serving share one transform."
 img_path: "/loan-radar.png"
+architecture: "loan-radar-mlops"
 img_alt: "Loan Radar architecture: training, lineage, gates, inference, retraining"
 tag: "MLOps"
 tone: "violet"
 stats:
   - value: "0.79 ms"
-    label: "median single-caller latency"
+    label: "median to score one loan row with the model in process, over 100 calls"
     tone: "cyan"
-  - value: "~33k req/s"
-    label: "sustained throughput before p99 climbs"
+  - value: "1.81M"
+    label: "loans in the training split, scored with 2 fold cross validation"
     tone: "blue"
-  - value: "6"
-    label: "quality gates before any promotion"
+  - value: "22,607"
+    label: "held out loans the stress tests run the model on"
     tone: "emerald"
+facts:
+  - label: "Problem"
+    value: "Credit risk officers wanted a low or high default risk label back while the applicant waited."
+  - label: "What I built"
+    value: "My part of a three person NYU project: the ETL, one saved transform for training and serving, and tests."
+  - label: "Outcome"
+    value: "ROC AUC of 0.71 in 2 fold cross validation, catching about two thirds of high risk loans."
+  - label: "Runs on"
+    value: "Chameleon Cloud, with XGBoost, MLflow, a Ray cluster and a FastAPI scorer."
+  - label: "Built"
+    value: "May 5 to 11, 2025, for the class demo."
+  - label: "Status"
+    value: "School project, not running; no lender used it."
 ---
 
-The hardest part of ML in production is not the model. The hardest part is everything that happens after: how you know when to retrain, who approved the version running right now, what data it was trained on, and how fast you can swap it out when something goes wrong. Most projects skip those questions. They show up as the post-incident follow-up six months later.
+## The problem
 
-Loan Radar was a grad-school project built with that gap in mind. The domain is loan-default scoring, where the modeling problem is well-understood. I picked it precisely because it let me put all my time into the operational layer: lineage, gates, automated retraining, rollback paths. The stuff teams usually defer until the first fire.
+Our Machine Learning Systems course at NYU asked for a system, not a notebook. The brief we wrote named a user: credit risk officers at regional banks and micro finance lenders, whose rule based underwriting was slow and subjective. They wanted a low or high default risk label back while the applicant waited.
 
-## The whole system in one diagram
+The data was the public LendingClub loan book, 2007 to 2018, about 2 GB of accepted loans. A model like this rarely fails on the math. It fails when the loan scored at serving time is prepared differently from the loans it learned from.
 
-```
-Container: train.py --config configs/baseline.yaml
-        │
-        ▼
-MLflow run = code commit + data hash + hyperparams + metrics + weights
-        │
-        ▼ candidate
-┌────────────────────────────────────────────────┐
-│  6 quality gates                               │
-│  ── min AUC                                    │
-│  ── calibration vs reference                   │
-│  ── subgroup fairness                          │
-│  ── inference latency p95 ≤ 50ms               │
-│  ── output-distribution KL on canary           │
-│  ── serialised size cap                        │
-└────────────────────────────────────────────────┘
-        │  all green
-        ▼
-Staging → Slack ack → Production (canary rollout)
+## What I built
 
-Weekly Airflow DAG re-runs the whole loop against fresh data.
-```
+Loan Radar was a three person project on Chameleon Cloud. My part was data engineering and offline evaluation: the ETL containers, the compose file that runs MLflow and a Ray cluster, and the pytest suite. Teammates ran training and built the FastAPI scorer, the Flask page and the monitoring.
 
-## The six gates are the project
+The ETL pulls the loan book, turns each loan's status into a risk label, fits medians, modes, encoders and a scaler on the training rows only, and saves that fitted state as <span class="egg" tabindex="0" data-egg="joblib.dump on one side, joblib.load on the other. The whole train and serve contract is two calls.">one pickle</span> beside the data. Validation and the API both load it, so a loan gets the same treatment wherever it goes. [Open the drawing](/architecture/loan-radar-mlops).
 
-Every model run goes through the same six checks before it can be promoted. Any failure short-circuits the build:
+## The sprint
 
-```
-gate_01_min_auc            held-out AUC ≥ floor
-gate_02_calibration        Brier score within tolerance
-gate_03_subgroup_fairness  no subgroup with TPR delta > threshold
-gate_04_inference_latency  containerised p95 ≤ 50ms on the harness
-gate_05_drift_canary       output-distribution KL within bounds
-gate_06_size               serialised model under size cap
+The repo opened on March 30, 2025, with our proposal. The build ran from May 5 to May 11. My first commit on May 10 was at 1:39 AM. The change that saves the fitted transform went in at 11:10 PM that night. At 4:01 AM on May 11 the three risk levels became two, low and high, and the stress test sets followed from 6:31 AM. My last README commit landed at 11:34 PM.
+
+## The hard parts
+
+**One transform, two places.** The first version fit its medians and its scaler on whatever file it was handed. That is fine for training and wrong everywhere else, because a validation row filled with validation medians has already seen its own answers. So I split it: the training step fits and saves, and every later step loads.
+
+```python
+# etl/docker/docker-compose-etl.yaml, val-transform-data
+artifacts = joblib.load("/mnt/data/LoanData/train/transform_artifacts.pkl")
+median_values = artifacts["median_values"]
+scaler = artifacts["scaler"]
+df[numeric_cols] = scaler.transform(df[numeric_cols])
 ```
 
-Reason they're scripts in git instead of checkboxes in a dashboard: it makes "did the model pass our quality bar" a deterministic, auditable thing instead of an opinion.
+**Tests that know the answer.** A validation score says little about how a model fails. So I cut a stratified tenth off validation, 22,607 loans, and built five altered copies: the top five features zeroed, everything else zeroed, the top five raised by <span class="egg" tabindex="0" data-egg="Adding 10,000,000 to a standardized feature is the statistics version of shouting.">ten million</span>, everything else raised, and Gaussian noise on every feature. The top five by importance were sub grade, revolving accounts opened in the last year, interest rate, unverified income and funded amount. pytest checks macro F1 and average confidence on each copy.
 
-## Honest latency numbers, not vibes
+**A skewed label.** About one loan in seven was high risk: 244,480 of 1,808,534 training rows. XGBoost's scale_pos_weight of 6.4 is that ratio, so the two classes carry about equal weight in training.
 
-A benchmark harness runs against the production model on a single 2-CPU container. Results: **0.79ms** median latency for a single caller, **0.87ms** at p95, sustained throughput around **33,000 samples/second** before p99 climbs.
+## What I learned
 
-<div class="post-stats-grid my-8">
-  <div class="stat-callout stat-cyan">
-    <div class="stat-value">0.79 ms</div>
-    <div class="stat-label">median single-caller latency</div>
-  </div>
-  <div class="stat-callout stat-blue">
-    <div class="stat-value">~33k req/s</div>
-    <div class="stat-label">throughput before p99 climbs</div>
-  </div>
-  <div class="stat-callout stat-emerald">
-    <div class="stat-value">6 gates</div>
-    <div class="stat-label">before any model can be promoted</div>
-  </div>
-</div>
+**Set a threshold from a baseline.** The noise checks failed. They asserted a macro F1 below 0.10, and the model scored 0.373 and 0.517. A model that always answers low risk already scores a macro F1 near 0.46 on that mix, so a working model could never pass. I had picked the ceiling by feel. Now I score a dumb baseline first and set the bar from it.
 
-Numbers exist because the harness exists. Plenty of teams quote "tens of thousands of QPS" off back-of-envelope math. Running the load test is the difference.
+**Know which number you measured.** The 0.79 ms median, 0.87 ms at the 95th percentile, is the model scoring one row inside a notebook over 100 calls. A request through FastAPI adds parsing and the transform on top, and we never load tested that path. Next time I measure the round trip first.
 
-## Retraining is half automated, half human
+## Where it landed
 
-The Airflow DAG runs weekly:
+It ran for the class demo on Chameleon and is not running now. No lender used it. In 2 fold cross validation the served model reached a ROC AUC of 0.71 and caught about two thirds of the high risk loans.
 
-1. Pull the latest data manifest.
-2. Skip if manifest diff is below threshold.
-3. Train the container against the new manifest.
-4. Run the six gates.
-5. If green, promote to staging + Slack ack required.
-6. After human ack, canary roll to production.
+What I would keep: fit the data transform once, save it, and load that same file everywhere a row gets scored. And write tests whose right answer you already know.
 
-The Slack ack is deliberate. Fully automated rollouts on a financial model only make sense when rollback is trivially safe. A five-minute human pause is cheap compared to an automatic rollout that violates a calibration assumption nobody'd thought to gate on.
-
-## What this taught me
-
-> The boring parts are the parts. A 99% accurate model with no lineage and no gates is operationally worse than a 92% accurate model with both.
-
-The Hybridge work I did later carries the same DNA. The [CBCT validator](/posts/cbct-scan-validator) has a gate before any promotion. The [consultation QA pipeline](/posts/clinical-rag) has schema-validated outputs and a single-retry contract. Both use a hot-swap deploy shape so retrains don't need a rebuild. Both share a single ETL module across train and serve.
-
-Those patterns came out of Loan Radar.
-
-The kind of engineer I want to be is the one who asks "how do we roll this back" before asking "what accuracy did we hit." Demos age out; gates are what survive contact with reality. Loan Radar was the project that taught me to build in that order.
-
-Live demo: [Loan Radar](https://hi.switchy.io/cv-i).
+Code and README: [Loan Radar on GitHub](https://github.com/ds28-ops/loan-default-risk-assessment).

@@ -8,6 +8,7 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
 import WorkTabs from "../../components/work_section/WorkTabs.astro";
 import Picture from "../../components/common/Picture.astro";
 import Icon from "../../components/common/Icon.astro";
+import NextStep from "../../components/common/NextStep.astro";
 import { disciplines } from "../../data/disciplines";
 import { readingTime } from "../../utils/readingTime";
 
@@ -256,6 +257,8 @@ const articles = d.articles.map((a) => {
       </nav>
     </div>
   </section>
+
+  <NextStep next={{ href: "/architecture", label: "See the drawings" }} />
 </BaseLayout>
 
 <style>
@@ -290,6 +293,8 @@ const articles = d.articles.map((a) => {
 
   /* Sections after the story share one rhythm. */
   .wk-sec { position: relative; padding-bottom: clamp(72px, 9vw, 120px); }
+  /* The closer card follows the previous and next links. */
+  .wk-pn-sec { padding-bottom: 0; }
 
   /* The story: a readable column. */
   .wk-story-sec { padding-top: clamp(48px, 6vw, 88px); }
@@ -373,8 +378,8 @@ const articles = d.articles.map((a) => {
     padding: 12px;
     text-align: center;
     background:
-      radial-gradient(80% 100% at 20% 0%, rgba(var(--tone-rgb), 0.22), transparent 70%),
-      radial-gradient(70% 90% at 100% 100%, rgba(var(--tone-rgb), 0.1), transparent 70%),
+      radial-gradient(80% 100% at 20% 0%, rgba(var(--tone-rgb), 0.22) 0%, rgba(var(--tone-rgb), 0.2146) 7%, rgba(var(--tone-rgb), 0.199) 14%, rgba(var(--tone-rgb), 0.1747) 21%, rgba(var(--tone-rgb), 0.144) 28%, rgba(var(--tone-rgb), 0.11) 35%, rgba(var(--tone-rgb), 0.076) 42%, rgba(var(--tone-rgb), 0.0453) 49%, rgba(var(--tone-rgb), 0.021) 56%, rgba(var(--tone-rgb), 0.0054) 63%, rgba(var(--tone-rgb), 0) 70%),
+      radial-gradient(70% 90% at 100% 100%, rgba(var(--tone-rgb), 0.1) 0%, rgba(var(--tone-rgb), 0.0976) 7%, rgba(var(--tone-rgb), 0.0905) 14%, rgba(var(--tone-rgb), 0.0794) 21%, rgba(var(--tone-rgb), 0.0655) 28%, rgba(var(--tone-rgb), 0.05) 35%, rgba(var(--tone-rgb), 0.0345) 42%, rgba(var(--tone-rgb), 0.0206) 49%, rgba(var(--tone-rgb), 0.0095) 56%, rgba(var(--tone-rgb), 0.0024) 63%, rgba(var(--tone-rgb), 0) 70%),
       #07080b;
   }
   .wk-fallback span { font-size: 0.9375rem; font-weight: 500; color: var(--ink-faint); }

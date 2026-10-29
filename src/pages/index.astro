@@ -10,6 +10,25 @@ import Icon from "../components/common/Icon.astro";
 import OrbitHero from "../components/hero/OrbitHero.astro";
 import CareerTimeline from "../components/about_section/CareerTimeline.astro";
 import { readingTime } from "../utils/readingTime";
+import ArchTile from "../components/architecture/ArchTile.astro";
+import { architectures as archAll } from "../data/architecture";
+import { profilePageNode, faqNode } from "../utils/seo";
+
+// The home page shows the three best ranked drawings; the rest live on
+// /architecture with the filters.
+const archShown = archAll.slice(0, 3);
+
+// Four numbers under the hero: money, time, reach and trust, each a link to
+// where it is proven. Sources: the cowork and reconciliation posts; Doc
+// Coach's 471 scored consults and NPC Coach's 690 graded calls (BigQuery,
+// 2026-10-29); the Google Cloud BAA tracker (16 of 16 billed Hybridge
+// projects signed, 2026-10-28).
+const heroProof = [
+  { value: "~$460K", label: "of patient value found that no report showed", href: "/posts/cowork-dashboard" },
+  { value: "70 hrs", label: "a week back for the insurance team", href: "/posts/reconciliation" },
+  { value: "1,161", label: "doctor consults and patient calls graded", href: "/architecture/doc-coach" },
+  { value: "16/16", label: "patient data projects under a HIPAA BAA", href: "/architecture" },
+];
 
 // A cover only renders when its file exists, so a project whose art is still
 // being made shows a calm panel instead of a broken image.
@@ -54,32 +73,40 @@ const strip = [
     lead: true,
   },
   {
-    title: "Enterprise Search",
-    line: "Company search that cites its sources, or says it does not know.",
-    href: "/posts/enterprise-search",
-    img: "/enterprise-search.png",
-    year: "2026",
-  },
-  {
-    title: "Doc Coach",
-    line: "Grades every patient consult against the founder's checklist and coaches the doctor.",
-    href: "/posts/clinical-rag",
-    img: "/doc-coach.png",
-    year: "2025",
-  },
-  {
     title: "Capacity Planner",
-    line: "Places doctors and assistants across three offices without burning anyone out.",
+    line: "Places doctors and assistants across three offices from live Denticon data, every minute.",
     href: "/posts/capacity-planner",
     img: "/capacity-planner.png",
     badge: "New",
     year: "2026",
   },
   {
-    title: "Scan Validator",
-    line: "Catches bad CT scans before they reach the design team, for under $50 a month.",
-    href: "/posts/cbct-scan-validator",
-    img: "/cbct-validator.png",
+    title: "Doc Coach",
+    line: "Grades every recorded consult against the founder's checklist and sends the doctor a report card.",
+    href: "/posts/clinical-rag",
+    img: "/doc-coach.png",
+    year: "2026",
+  },
+  {
+    title: "NPC Coach",
+    line: "Grades new patient calls with a quote behind every score, minutes after the call ends.",
+    href: "/posts/npc-coach",
+    img: "/npc-coach.png",
+    year: "2026",
+  },
+  {
+    title: "Treatment Estimator",
+    line: "Prices each quote from the office's own price book and keeps every saved line at its price.",
+    href: "/posts/treatment-estimator",
+    img: "/treatment-estimator.png",
+    year: "2026",
+  },
+  {
+    title: "Hybridge Forms",
+    line: "Moved every website lead off Tally and Zapier into our own cloud, straight to Monday.",
+    href: "/posts/hybridge-forms",
+    img: "/hybridge-forms.png",
+    badge: "New",
     year: "2026",
   },
   {
@@ -89,14 +116,6 @@ const strip = [
     img: "/reconciliation.png",
     year: "2026",
   },
-  {
-    title: "JobPilot",
-    line: "An open source robot that hunts for jobs while I sleep. The demo runs the real product.",
-    href: "/posts/jobpilot-v2",
-    img: "/jobpilot.png",
-    badge: "Open source",
-    year: "2026",
-  },
 ];
 const projectCount = info.projects.length;
 
@@ -104,12 +123,12 @@ const projectCount = info.projects.length;
 // record, so the landing page never says more than the projects page does.
 const RECORD: Record<string, string> = {
   "Patient Dashboard": "Patient Dashboard",
-  "Enterprise Search": "Enterprise Search",
-  "Doc Coach": "Doc Coach, Consultation QA Pipeline",
   "Capacity Planner": "Capacity Planner",
-  "Scan Validator": "CBCT Scan Validator",
+  "Doc Coach": "Doc Coach, Consultation QA Pipeline",
+  "NPC Coach": "NPC Coach",
+  "Treatment Estimator": "Treatment Estimator",
+  "Hybridge Forms": "Hybridge Forms",
   Reconciliation: "Reconciliation",
-  JobPilot: "JobPilot",
 };
 const cards = strip.map((p) => {
   const rec: any = info.projects.find((x: any) => x.title === RECORD[p.title]);
@@ -137,6 +156,41 @@ const filmCredits = [
   { title: "Strangers", year: "2019", role: "Cinematographer · Music" },
 ];
 
+// Short answers for people who skim and for search and AI engines, which
+// read the same text as an FAQ in the page's structured data.
+const costed = archAll.filter((a) => a.cost);
+const costedMonthly = Math.round(costed.reduce((n, a) => n + a.cost!.parts.reduce((s, p) => s + p.usd, 0), 0));
+const faq = [
+  {
+    q: "Who is Sampreeth Avvari?",
+    a: "A forward deployed engineer in New York. Sampreeth builds and runs the software at Hybridge Implants, a dental implant group, and writes and directs films as Sampreeth Sharma.",
+  },
+  {
+    q: "What has Sampreeth built at Hybridge Implants?",
+    a: "The tools staff use every day: a capacity planner that syncs the practice system every minute, a treatment estimator, Doc Coach and NPC Coach, which grade recorded doctor consults and new patient calls, lead forms that replaced Tally, a marketing warehouse Claude can query, and both public websites. Each one has its own architecture drawing.",
+  },
+  {
+    q: "What has the work changed for the business?",
+    a: "About $460K of patient value found that no report showed, about 70 hours a week back for the insurance team, and 1,161 doctor consults and patient calls graded. All 16 projects that touch patient data run under a signed Google Cloud HIPAA BAA.",
+  },
+  {
+    q: "What does a forward deployed engineer do?",
+    a: "Sits with the people who have the problem, builds the fix inside their real systems, and stays until it works for them. At Hybridge that means the front desk, finance, marketing and clinical teams, with everything shipped on Google Cloud.",
+  },
+  {
+    q: "How much do these systems cost to run?",
+    a: `The ${costed.length} systems with billing history cost about $${costedMonthly} a month together, read from the Google Cloud billing export. Each architecture page shows its own cost and what was tuned to get there.`,
+  },
+  {
+    q: "Is Sampreeth Avvari the same person as Sampreeth Sharma?",
+    a: "Yes. Film credits read Sampreeth Sharma, including Among Monsters (2026), an independent crime drama shot in New York and listed on IMDb.",
+  },
+];
+const homeSchema = [
+  profilePageNode(Astro.site!.toString(), "/"),
+  faqNode(Astro.site!.toString(), "/", faq.map(({ q, a }) => ({ q, a }))),
+];
+
 const guides = [...teaching]
   .sort((a, b) => b.addedAt.localeCompare(a.addedAt))
   .slice(0, 2);
@@ -152,11 +206,11 @@ const sky = Array.from({ length: 6 }, (_, i) => ({
 }));
 ---
 
-<BaseLayout title="Sampreeth Avvari" preloadImage="/pic.avif">
+<BaseLayout title="Sampreeth Avvari" preloadImage="/pic.avif" schema={homeSchema}>
   <!-- One sky. The comets live in a fixed layer and take their colour from
        the same scroll blend as the ambient wash, so the space itself changes
        colour while the sections scroll over it. -->
-  <div class="sky-comets" aria-hidden="true">
+  <div class="sky-comets" aria-hidden="true" data-amb>
     {sky.map((c) => (
       <span class="space-el" style={`width:${c.w}px;height:${Math.round(c.w * 0.28)}px;top:${c.top}%;${c.side}:${c.inset}%;`}><span class="comet-glow" style={`--sr-rgb:var(${c.v}, 91,141,239);`}></span><span class="space-comet" style={`--sr-rgb:var(${c.v}, 91,141,239);--rz:${c.rz}deg;`}></span></span>
     ))}
@@ -165,14 +219,24 @@ const sky = Array.from({ length: 6 }, (_, i) => ({
   <section id="home" class="hero relative overflow-hidden" data-tone="home">
     <div class="wrap on-top hero-grid">
       <div class="hero-copy">
-        <span class="chip chip-live">AI engineer · New York</span>
+        <span class="chip chip-live">Forward deployed engineer · New York</span>
         <h1 class="t-display hero-title">
           I'm Sampreeth.
-          <span class="t-tail">I ship AI and direct films.</span>
+          <span class="t-tail">I ship in the room.</span>
         </h1>
         <p class="t-lede hero-lede">
-          I build the systems a dental implant practice runs on, and I make films.
+          The only engineer at a three office dental implant practice. I find the problem next to the people who have it, build the fix, and run it in production. I also make films.
         </p>
+        <ul class="hero-proof" aria-label="In numbers">
+          {heroProof.map((p) => (
+            <li>
+              <a href={p.href}>
+                <b>{p.value}</b>
+                <span>{p.label}</span>
+              </a>
+            </li>
+          ))}
+        </ul>
         <div class="hero-actions">
           <a href="#projects" class="btn btn-primary">
             See the projects <Icon name="arrow-down" size={15} />
@@ -324,23 +388,25 @@ const sky = Array.from({ length: 6 }, (_, i) => ({
     </div>
   </section>
 
-  <!-- ── About ────────────────────────────────────────────────────────── -->
-  <section id="about" class="section" data-tone="home">
-    <div class="wrap on-top about-grid">
-      <div data-reveal>
-        <p class="kicker">About</p>
-        <h2 class="t-h2 mt-5">
-          An engineer
-          <span class="t-tail">who happens to make movies.</span>
-        </h2>
-        <p class="t-body about-text mt-5">{info.about.description}</p>
-        <div class="mt-7 flex flex-wrap gap-3">
-          <a href="/resume" class="btn btn-glass btn-sm">Resume and toolkit</a>
-          <a href="/projects" class="btn btn-ghost btn-sm">Every project</a>
+  <!-- ── Architecture ─────────────────────────────────────────────────── -->
+  <section id="architecture" class="section" data-tone="architecture">
+    <div class="wrap on-top">
+      <div class="sec-head" data-reveal>
+        <div class="sec-head-main">
+          <p class="kicker">Architecture</p>
+          <h2 class="t-h2">
+            How it is built.
+            <span class="t-tail">Every part, every failure path, every dollar a month.</span>
+          </h2>
         </div>
+        <a href="/architecture" class="tlink">All {archAll.length} drawings <Icon name="arrow-right" size={14} /></a>
       </div>
-      <div class="surface surface-pad about-timeline" data-reveal>
-        <CareerTimeline />
+      <div class:list={["home-arch", `n-${archShown.length}`]}>
+        {archShown.map((a, i) => (
+          <div class:list={["home-arch-cell", { "is-lead": i === 0 }]} data-reveal>
+            <ArchTile arch={a} featured={i === 0} />
+          </div>
+        ))}
       </div>
     </div>
   </section>
@@ -370,62 +436,6 @@ const sky = Array.from({ length: 6 }, (_, i) => ({
             <span class="tlink mt-auto pt-5">Open <Icon name="arrow-right" size={14} /></span>
           </a>
         ))}
-      </div>
-    </div>
-  </section>
-
-  <!-- ── Film ─────────────────────────────────────────────────────────── -->
-  <section id="film" class="section" data-tone="film">
-    <div class="wrap on-top">
-      <div class="sec-head" data-reveal>
-        <div class="sec-head-main">
-          <p class="kicker">Film</p>
-          <h2 class="t-h2">
-            Gray characters and tight spaces.
-            <span class="t-tail">The chaos hiding inside ordinary lives.</span>
-          </h2>
-        </div>
-        <a href="/filmmaking" class="tlink">The full slate <Icon name="arrow-right" size={14} /></a>
-      </div>
-
-      <div class="film-stage">
-        <a href="/filmmaking#among-monsters" class="film-poster" data-reveal aria-label="Among Monsters, the feature I wrote and directed">
-          <Picture src="/among-monsters-poster.webp" alt="Among Monsters poster" width={1600} height={900} class="film-poster-img" />
-          <span class="film-poster-tag">
-            <span class="badge badge-tone">Premiering 2026</span>
-            <span class="badge">New York</span>
-          </span>
-        </a>
-
-        <div class="film-side" data-reveal>
-          <p class="t-meta">Now in post</p>
-          <h3 class="t-h3 mt-2">Among Monsters</h3>
-          <p class="t-small mt-2">
-            An independent crime feature I wrote, directed, edited and scored,
-            shot across New York between work weeks.
-          </p>
-          <div class="mt-5 flex flex-wrap gap-2">
-            <a href="https://www.imdb.com/title/tt39700295/" target="_blank" rel="noreferrer" class="btn btn-glass btn-sm">
-              <span class="imdb-wordmark">IMDb</span> Page <Icon name="arrow-up-right" size={13} class="arrow-ur" />
-            </a>
-            <a href="/filmmaking#among-monsters" class="btn btn-ghost btn-sm">Stills and crew</a>
-          </div>
-
-          <p class="t-meta film-more">Also on the slate</p>
-          <ul class="film-list">
-            {filmCredits.slice(1).map((c) => (
-              <li>
-                <a href="/filmmaking" class="film-row">
-                  <span class="min-w-0">
-                    <span class="block film-row-title">{c.title}</span>
-                    <span class="block t-meta mt-0.5">{c.role}</span>
-                  </span>
-                  <span class="t-meta tabular">{c.year}</span>
-                </a>
-              </li>
-            ))}
-          </ul>
-        </div>
       </div>
     </div>
   </section>
@@ -492,6 +502,83 @@ const sky = Array.from({ length: 6 }, (_, i) => ({
     </div>
   </section>
 
+  <!-- ── About ────────────────────────────────────────────────────────── -->
+  <section id="about" class="section" data-tone="home">
+    <div class="wrap on-top about-grid">
+      <div data-reveal>
+        <p class="kicker">About</p>
+        <h2 class="t-h2 mt-5">
+          An engineer
+          <span class="t-tail">who happens to make movies.</span>
+        </h2>
+        <p class="t-body about-text mt-5">{info.about.description}</p>
+        <div class="mt-7 flex flex-wrap gap-3">
+          <a href="/resume" class="btn btn-glass btn-sm">Resume and toolkit</a>
+          <a href="/projects" class="btn btn-ghost btn-sm">Every project</a>
+        </div>
+      </div>
+      <div class="surface surface-pad about-timeline" data-reveal>
+        <CareerTimeline />
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Film ─────────────────────────────────────────────────────────── -->
+  <section id="film" class="section" data-tone="film">
+    <div class="wrap on-top">
+      <div class="sec-head" data-reveal>
+        <div class="sec-head-main">
+          <p class="kicker">Film</p>
+          <h2 class="t-h2">
+            Gray characters and tight spaces.
+            <span class="t-tail">The chaos hiding inside ordinary lives.</span>
+          </h2>
+        </div>
+        <a href="/filmmaking" class="tlink">The full slate <Icon name="arrow-right" size={14} /></a>
+      </div>
+
+      <div class="film-stage">
+        <a href="/filmmaking#among-monsters" class="film-poster" data-reveal aria-label="Among Monsters, the feature I wrote and directed">
+          <Picture src="/among-monsters-poster.webp" alt="Among Monsters poster" width={1600} height={900} class="film-poster-img" />
+          <span class="film-poster-tag">
+            <span class="badge badge-tone">Premiering 2026</span>
+            <span class="badge">New York</span>
+          </span>
+        </a>
+
+        <div class="film-side" data-reveal>
+          <p class="t-meta">Now in post</p>
+          <h3 class="t-h3 mt-2">Among Monsters</h3>
+          <p class="t-small mt-2">
+            An independent crime feature I wrote, directed, edited and scored,
+            shot across New York between work weeks.
+          </p>
+          <div class="mt-5 flex flex-wrap gap-2">
+            <a href="https://www.imdb.com/title/tt39700295/" target="_blank" rel="noreferrer" class="btn btn-glass btn-sm">
+              <span class="imdb-wordmark">IMDb</span> Page <Icon name="arrow-up-right" size={13} class="arrow-ur" />
+            </a>
+            <a href="/filmmaking#among-monsters" class="btn btn-ghost btn-sm">Stills and crew</a>
+          </div>
+
+          <p class="t-meta film-more">Also on the slate</p>
+          <ul class="film-list">
+            {filmCredits.slice(1).map((c) => (
+              <li>
+                <a href="/filmmaking" class="film-row">
+                  <span class="min-w-0">
+                    <span class="block film-row-title">{c.title}</span>
+                    <span class="block t-meta mt-0.5">{c.role}</span>
+                  </span>
+                  <span class="t-meta tabular">{c.year}</span>
+                </a>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
   <!-- ── Teaching ─────────────────────────────────────────────────────── -->
   <section id="teaching" class="section" data-tone="teaching">
     <div class="wrap on-top">
@@ -527,6 +614,32 @@ const sky = Array.from({ length: 6 }, (_, i) => ({
     </div>
   </section>
 
+  <!-- ── Quick answers ────────────────────────────────────────────────── -->
+  <section id="faq" class="section" data-tone="home">
+    <div class="wrap on-top">
+      <div class="sec-head" data-reveal>
+        <div class="sec-head-main">
+          <p class="kicker">Questions</p>
+          <h2 class="t-h2">
+            Quick answers.
+            <span class="t-tail">Who, what, and what it changed.</span>
+          </h2>
+        </div>
+      </div>
+      <div class="faq-grid">
+        {faq.map((f) => (
+          <details class="surface faq-item" data-reveal>
+            <summary>
+              <span>{f.q}</span>
+              <span class="faq-mark" aria-hidden="true"></span>
+            </summary>
+            <p class="t-body">{f.a}</p>
+          </details>
+        ))}
+      </div>
+    </div>
+  </section>
+
   <!-- ── Contact ──────────────────────────────────────────────────────── -->
   <section id="contact" class="section text-center" data-tone="home">
     <div class="wrap on-top" data-reveal>
@@ -543,15 +656,19 @@ const sky = Array.from({ length: 6 }, (_, i) => ({
         <a href={`mailto:${info.contact.email}`} class="btn btn-primary">
           <Icon name="mail" size={16} /> {info.contact.email}
         </a>
-        <a href={info.contact.linkedin} target="_blank" rel="noreferrer" class="social social-linkedin" aria-label="LinkedIn" title="LinkedIn">
-          <Icon name="linkedin" size={19} />
-        </a>
-        <a href={info.contact.github} target="_blank" rel="noreferrer" class="social social-github" aria-label="GitHub" title="GitHub">
-          <Icon name="github" size={19} />
-        </a>
-        <a href={info.contact.instagram} target="_blank" rel="noreferrer" class="social social-instagram" aria-label="Instagram" title="Instagram">
-          <Icon name="instagram" size={19} />
-        </a>
+        <!-- The three icons travel as one group, so a narrow screen wraps
+             them together under the email instead of leaving one alone. -->
+        <span class="contact-socials">
+          <a href={info.contact.linkedin} target="_blank" rel="noreferrer" class="social social-linkedin" aria-label="LinkedIn" title="LinkedIn">
+            <Icon name="linkedin" size={19} />
+          </a>
+          <a href={info.contact.github} target="_blank" rel="noreferrer" class="social social-github" aria-label="GitHub" title="GitHub">
+            <Icon name="github" size={19} />
+          </a>
+          <a href={info.contact.instagram} target="_blank" rel="noreferrer" class="social social-instagram" aria-label="Instagram" title="Instagram">
+            <Icon name="instagram" size={19} />
+          </a>
+        </span>
       </div>
     </div>
   </section>
@@ -567,10 +684,50 @@ const sky = Array.from({ length: 6 }, (_, i) => ({
     align-items: center;
   }
   @media (min-width: 1024px) {
-    .hero-grid { grid-template-columns: minmax(0, 6fr) minmax(0, 6fr); gap: 48px; }
+    .hero-grid { grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); gap: 40px; }
   }
   .hero-title { margin-top: 26px; }
-  .hero-lede { margin-top: 22px; max-width: 30rem; }
+  /* Both lines of the name and the promise stay whole on wide screens. */
+  @media (min-width: 1024px) {
+    .hero-title { font-size: clamp(3.25rem, 5.1vw, 4.75rem); }
+    .hero-title, .hero-title .t-tail { white-space: nowrap; }
+  }
+  .hero-lede { margin-top: 22px; max-width: 34rem; }
+  /* Proof under the promise: four numbers, each a link to where it is shown.
+     Hairline dividers, no boxes, so it reads as one line of evidence. */
+  .hero-proof {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0;
+    margin: 28px 0 0;
+    padding: 0;
+    list-style: none;
+    max-width: 40rem;
+    border-top: 1px solid var(--line);
+  }
+  @media (min-width: 720px) { .hero-proof { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+  .hero-proof li { border-bottom: 1px solid var(--line); }
+  @media (min-width: 720px) {
+    .hero-proof li { border-bottom: 0; }
+    .hero-proof li + li { border-left: 1px solid var(--line); }
+  }
+  @media (max-width: 719px) { .hero-proof li:nth-child(even) { border-left: 1px solid var(--line); } }
+  .hero-proof a { display: flex; flex-direction: column; gap: 6px; padding: 16px 16px 14px 0; text-decoration: none; color: inherit; }
+  .hero-proof li + li a { padding-left: 16px; }
+  /* Scoped styles add an attribute to every element in a selector, so the
+     reset needs the same shape (li + li) to outweigh the rule above; without
+     it the third number sat 16px in from the first. */
+  @media (max-width: 719px) {
+    .hero-proof li:nth-child(odd) a,
+    .hero-proof li + li:nth-child(odd) a { padding-left: 0; }
+  }
+  .hero-proof b { font-size: clamp(1.375rem, 2.2vw, 1.75rem); font-weight: 600; letter-spacing: -0.035em; line-height: 1; color: var(--ink); font-variant-numeric: tabular-nums; }
+  .hero-proof span { font-size: 0.75rem; line-height: 1.4; color: var(--ink-faint); transition: color 150ms var(--ease-glass); }
+  /* On a phone the proof line is the first evidence a reader sees; one size
+     up so the labels read without zooming. */
+  @media (max-width: 719px) { .hero-proof span { font-size: 0.8125rem; } }
+  .hero-proof a:hover span { color: var(--ink-soft); }
+  .hero-proof a:focus-visible { outline: none; box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.25); border-radius: 6px; }
   .hero-actions { margin-top: 32px; display: flex; flex-wrap: wrap; gap: 12px; }
   .hero-art { display: flex; justify-content: center; }
   @media (min-width: 1024px) { .hero-art { justify-content: flex-end; } }
@@ -599,7 +756,6 @@ const sky = Array.from({ length: 6 }, (_, i) => ({
   .proj-item.is-end { width: min(70vw, 280px); }
   @media (min-width: 1024px) {
     .proj-track { gap: 20px; }
-    .proj-media { height: 230px; }
     .proj-item { width: 360px; }
     .proj-item.is-lead { width: 540px; }
   }
@@ -633,27 +789,41 @@ const sky = Array.from({ length: 6 }, (_, i) => ({
     font: inherit;
     color: var(--ink);
   }
-  .proj-front { padding: 0; cursor: pointer; }
+  /* A button lays its children out at their own width (the browser gives
+     buttons align-items: flex-start), so the cover stopped at the image's
+     natural width on wide cards. Stretch the children across the card. */
+  .proj-front { padding: 0; cursor: pointer; align-items: stretch; }
   .proj-front:hover { border-color: var(--line-strong); }
   .proj-front:focus-visible, .proj-close:focus-visible { outline: none; box-shadow: 0 0 0 4px rgba(var(--tone-rgb), 0.35); }
   /* Every cover is the same height, so the row has one clean top and bottom
-     edge however wide a card is. */
+     edge however wide a card is. The front is as tall as the back (they share
+     a grid cell), so the cover takes the spare height instead of leaving an
+     empty band under the words. */
   .proj-media {
     position: relative;
     display: block;
-    height: 200px;
+    flex: 1 0 200px;
+    min-height: 200px;
     overflow: hidden;
     border-radius: 19px 19px 0 0;
     border-bottom: 1px solid var(--line);
     background: #07080b;
   }
   .proj-media :global(.proj-img) {
+    position: absolute;
+    inset: 0;
     display: block;
     width: 100%;
     height: 100%;
     object-fit: cover;
     transition: transform 600ms var(--ease-glass);
   }
+  @media (min-width: 1024px) { .proj-media { flex-basis: 230px; min-height: 230px; } }
+  .proj-num { z-index: 1; }
+  .proj-body { flex: none; }
+  /* The date line holds a badge on some cards; one height for all keeps the
+     covers' bottom edges on one line. */
+  .proj-body > .t-meta { display: flex; align-items: center; min-height: 22px; }
   .proj-item:hover .proj-media :global(.proj-img) { transform: scale(1.05); }
   .proj-num {
     position: absolute;
@@ -680,7 +850,7 @@ const sky = Array.from({ length: 6 }, (_, i) => ({
     overflow-y: auto;
     scrollbar-width: none;
     background:
-      radial-gradient(90% 60% at 0% 0%, rgba(var(--tone-rgb), 0.12), transparent 70%),
+      radial-gradient(90% 60% at 0% 0%, rgba(var(--tone-rgb), 0.12) 0%, rgba(var(--tone-rgb), 0.1171) 7%, rgba(var(--tone-rgb), 0.1085) 14%, rgba(var(--tone-rgb), 0.0953) 21%, rgba(var(--tone-rgb), 0.0785) 28%, rgba(var(--tone-rgb), 0.06) 35%, rgba(var(--tone-rgb), 0.0415) 42%, rgba(var(--tone-rgb), 0.0247) 49%, rgba(var(--tone-rgb), 0.0115) 56%, rgba(var(--tone-rgb), 0.0029) 63%, rgba(var(--tone-rgb), 0) 70%),
       var(--surface-solid);
   }
   .proj-back::-webkit-scrollbar { display: none; }
@@ -726,7 +896,7 @@ const sky = Array.from({ length: 6 }, (_, i) => ({
     justify-content: center;
     padding: 28px;
     background:
-      radial-gradient(80% 70% at 20% 0%, rgba(var(--tone-rgb), 0.18), transparent 70%),
+      radial-gradient(80% 70% at 20% 0%, rgba(var(--tone-rgb), 0.18) 0%, rgba(var(--tone-rgb), 0.1756) 7%, rgba(var(--tone-rgb), 0.1628) 14%, rgba(var(--tone-rgb), 0.1429) 21%, rgba(var(--tone-rgb), 0.1178) 28%, rgba(var(--tone-rgb), 0.09) 35%, rgba(var(--tone-rgb), 0.0622) 42%, rgba(var(--tone-rgb), 0.0371) 49%, rgba(var(--tone-rgb), 0.0172) 56%, rgba(var(--tone-rgb), 0.0044) 63%, rgba(var(--tone-rgb), 0) 70%),
       var(--surface-solid);
   }
 
@@ -873,10 +1043,33 @@ const sky = Array.from({ length: 6 }, (_, i) => ({
   }
 
   /* Work */
+  /* Architecture: the lead drawing large on the left, the next two stacked
+     on the right. With fewer drawings the lead takes the whole row. */
+  .home-arch { display: grid; gap: 16px; grid-template-columns: 1fr; }
+  @media (min-width: 900px) {
+    .home-arch.n-2 { grid-template-columns: 1.35fr 1fr; }
+    .home-arch.n-3 { grid-template-columns: 1.35fr 1fr; grid-template-rows: 1fr 1fr; }
+    .home-arch.n-3 .is-lead { grid-row: span 2; }
+  }
+  .home-arch-cell { min-width: 0; }
+  .home-arch.n-1 .is-lead :global(.tile-art) { aspect-ratio: 16 / 5; }
+  /* The two beside the lead stretch to its height; their art takes the
+     extra room instead of leaving an empty middle. */
+  @media (min-width: 900px) {
+    .home-arch.n-3 .home-arch-cell:not(.is-lead) :global(.tile-art) { aspect-ratio: auto; flex: 1 1 auto; min-height: 150px; }
+    .home-arch.n-3 .home-arch-cell:not(.is-lead) :global(.tile-body) { flex: 0 0 auto; }
+  }
+
   .grid4 { display: grid; gap: 16px; grid-template-columns: 1fr; }
   @media (min-width: 640px) { .grid4 { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
   @media (min-width: 1024px) { .grid4 { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 20px; } }
-  .disc-card { display: flex; flex-direction: column; min-height: 230px; }
+  .disc-card { display: flex; flex-direction: column; }
+  /* Stacked on a phone each card sizes to its words; side by side they share
+     one height. */
+  @media (min-width: 640px) { .disc-card { min-height: 230px; } }
+  /* Four in a row: names take two lines' room, so every description starts
+     on the same line. */
+  @media (min-width: 1024px) { .disc-card .t-h4 { min-height: calc(2em * 1.35); } }
 
   /* Writing */
   .write-grid { display: grid; gap: 16px; grid-template-columns: 1fr; }
@@ -971,6 +1164,53 @@ const sky = Array.from({ length: 6 }, (_, i) => ({
   .teach-cover :global(img) { width: 100%; height: 100%; object-fit: cover; display: block; }
   .teach-body { display: flex; flex-direction: column; align-items: flex-start; padding-block: 4px; }
 
+  /* Quick answers: two equal lanes; an open answer grows on its own. */
+  .faq-grid { display: grid; gap: 14px; grid-template-columns: 1fr; align-items: start; }
+  @media (min-width: 900px) { .faq-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px 20px; } }
+  .faq-item summary {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    min-height: 64px;
+    padding: 18px 22px;
+    cursor: pointer;
+    list-style: none;
+    font-size: 1rem;
+    font-weight: 600;
+    letter-spacing: -0.012em;
+    color: var(--ink);
+  }
+  .faq-item summary::-webkit-details-marker { display: none; }
+  .faq-item summary:focus-visible { outline: 2px solid rgba(var(--tone-rgb), 0.6); outline-offset: -2px; border-radius: 20px; }
+  .faq-mark {
+    position: relative;
+    flex: none;
+    width: 28px;
+    height: 28px;
+    border-radius: 999px;
+    border: 1px solid var(--line-strong);
+    transition: transform 300ms var(--ease-glass), border-color 200ms var(--ease-glass);
+  }
+  .faq-mark::before,
+  .faq-mark::after {
+    content: "";
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: 10px;
+    height: 1.5px;
+    border-radius: 2px;
+    background: var(--ink-soft);
+    transform: translate(-50%, -50%);
+  }
+  .faq-mark::after { transform: translate(-50%, -50%) rotate(90deg); }
+  .faq-item[open] .faq-mark { transform: rotate(45deg); border-color: rgba(var(--tone-rgb), 0.5); }
+  .faq-item summary:hover .faq-mark { border-color: rgba(var(--tone-rgb), 0.5); }
+  .faq-item p { padding: 0 22px 22px; margin: 0; color: var(--ink-soft); max-width: 38rem; }
+
+  .contact-socials { display: inline-flex; align-items: center; gap: 12px; }
+
   /* About */
   .about-grid { display: grid; gap: 40px; grid-template-columns: 1fr; align-items: start; }
   @media (min-width: 1024px) { .about-grid { grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: 56px; } }
@@ -979,7 +1219,7 @@ const sky = Array.from({ length: 6 }, (_, i) => ({
 </style>
 
 <script>
-  import { initAmbient, initComets } from "../scripts/spatial";
+  import { initAmbient, initComets, pauseOffscreen } from "../scripts/spatial";
 
   // Cards turn around on click to show their details; nothing navigates
   // until a button on the back is chosen. One card is turned at a time, focus
@@ -1227,19 +1467,25 @@ const sky = Array.from({ length: 6 }, (_, i) => ({
   })();
 
   initComets(".space-el");
+  // The running drawing and the timeline's live head stop ticking while
+  // they are far off screen.
+  pauseOffscreen(".tile-live, .career-tl");
   // The background wash follows the section in view, so the sky takes each
   // tab's colour as you scroll past its preview.
   initAmbient(
     [
       ["91,141,239", "34,211,238"],
       ["91,141,239", "91,141,239"],
-      ["91,141,239", "167,139,250"],
+      ["34,211,238", "34,211,238"],
       ["245,165,36", "245,165,36"],
+      ["52,211,153", "52,211,153"],
+      ["91,141,239", "167,139,250"],
       ["244,63,94", "244,63,94"],
       ["52,211,153", "52,211,153"],
-      ["34,211,238", "34,211,238"],
       ["91,141,239", "34,211,238"],
     ],
-    ["home", "projects", "about", "work", "film", "writing", "teaching", "contact"],
+    // Page order: the promise, then proof (projects, drawings, how I work,
+    // the notes), then the person (about, film, teaching), then contact.
+    ["home", "projects", "architecture", "work", "writing", "about", "film", "teaching", "contact"],
   );
 </script>

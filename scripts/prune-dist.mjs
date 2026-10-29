@@ -17,7 +17,9 @@ const walk = (d) =>
 
 const all = walk(DIST);
 const htmlBlob = all
-  .filter((f) => f.endsWith(".html") || f.endsWith(".xml") || f.endsWith(".json"))
+  // Client only islands (the chat widget) name their images in the JS
+  // bundles, not the HTML, so scripts and styles count as references too.
+  .filter((f) => /\.(html|xml|json|js|mjs|css)$/.test(f))
   .map((f) => readFileSync(f, "utf8"))
   .join("\n");
 
