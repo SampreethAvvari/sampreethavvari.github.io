@@ -26,7 +26,7 @@ const TABS = [
   { name: "Work", href: "/work", tone: "work" },
   { name: "Film", href: "/filmmaking", tone: "film" },
   { name: "Writing", href: "/posts", tone: "writing" },
-  { name: "Teaching", href: "/teaching", tone: "teaching" },
+  { name: "Architecture", href: "/architecture", tone: "architecture" },
   { name: "Mind", href: "/mind", tone: "mind" },
 ];
 
@@ -59,7 +59,7 @@ export default function FooterBar({ variant = "default" }: FooterBarProps) {
               <Brand d={BRAND.instagram} />
             </a>
             {variant === "filmmaking" && (
-              <a href="https://hi.switchy.io/q94P" target="_blank" rel="noreferrer" className="social social-imdb" aria-label="IMDb" title="IMDb">
+              <a href="https://www.imdb.com/title/tt39700295/" target="_blank" rel="noreferrer" className="social social-imdb" aria-label="IMDb" title="IMDb">
                 <span className="imdb-wordmark">IMDb</span>
               </a>
             )}

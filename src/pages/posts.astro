@@ -2,7 +2,10 @@
 import BaseLayout from "../layouts/BaseLayout.astro";
 import Picture from "../components/common/Picture.astro";
 import Icon from "../components/common/Icon.astro";
+import NextStep from "../components/common/NextStep.astro";
 import { readingTime } from "../utils/readingTime";
+import { teaching } from "../data/teaching";
+import { itemListNode } from "../utils/seo";
 import {
   disciplinesFor,
   impactRank,
@@ -12,6 +15,9 @@ import {
 } from "../utils/postTopics";
 
 const allPosts = await Astro.glob("../pages/posts/*.md");
+
+// Teaching left the top bar and lives here: the guides are writing too.
+const guides = [...teaching].sort((a, b) => b.addedAt.localeCompare(a.addedAt));
 allPosts.sort(
   (a, b) =>
     new Date(b.frontmatter.date).getTime() -
@@ -58,6 +64,15 @@ const WRITING_RGB = "52,211,153";
   title="SA: Writing"
   description="Notes from the systems Sampreeth Avvari builds: real numbers, real screwups, real fixes."
   preloadImage={featuredPreload}
+  schema={[
+    itemListNode(
+      Astro.site!.toString(),
+      "/posts",
+      "Writing by Sampreeth Avvari",
+      allPosts.map((p) => ({ name: p.frontmatter.title, path: `/posts/${slugOf(p.url)}` })),
+    ),
+  ]}
+  crumbs={[{ name: "Home", path: "/" }, { name: "Writing", path: "/posts" }]}
 >
   <div class="wr-page relative overflow-hidden">
     <span class="glow" style="width:630px;height:630px;--gc:#34D399;top:-100px;left:-120px;" aria-hidden="true"></span>
@@ -199,10 +214,54 @@ const WRITING_RGB = "52,211,153";
         No posts in this one yet.
       </p>
     </section>
+
+    <!-- Teaching: guides I wrote, kept beside the posts -->
+    <section id="teaching" class="wrap on-top wr-teach relative" aria-labelledby="wr-teach-title">
+      <div class="sec-head">
+        <div class="sec-head-main">
+          <p class="kicker">Teaching</p>
+          <h2 class="t-h2" id="wr-teach-title">
+            Guides I wrote.
+            <span class="t-tail">Free PDFs for engineers who ship AI.</span>
+          </h2>
+        </div>
+        <a href="/teaching" class="tlink">All materials <Icon name="arrow-right" size={14} /></a>
+      </div>
+      <div class="wr-teach-grid">
+        {guides.map((g) => (
+          <a href={`/teaching/${g.slug}`} class="surface wr-teach-card">
+            <div class="wr-teach-cover">
+              {hasPublic(g.cover) ? (
+                <Picture src={g.cover} alt={g.title} width={360} height={460} />
+              ) : (
+                <div class="post-media-fallback" aria-hidden="true"></div>
+              )}
+            </div>
+            <div class="wr-teach-body">
+              <span class="badge">{g.pages ? `PDF · ${g.pages} pages` : "PDF"}</span>
+              <h3 class="t-h3 mt-4">{g.title}</h3>
+              <p class="t-small mt-2">{g.description}</p>
+              <span class="tlink mt-auto pt-5">Read it <Icon name="arrow-right" size={14} /></span>
+            </div>
+          </a>
+        ))}
+      </div>
+    </section>
+
+    <NextStep next={{ href: "/architecture", label: "See the drawings" }} />
   </div>
 </BaseLayout>
 
 <style>
+  .wr-teach { padding-block: clamp(56px, 7vw, 96px) clamp(8px, 1vw, 16px); }
+  .wr-page :global(.next-step) { padding-bottom: clamp(72px, 9vw, 120px); }
+  .wr-teach-grid { display: grid; gap: 16px; grid-template-columns: 1fr; }
+  @media (min-width: 900px) { .wr-teach-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; } }
+  .wr-teach-card { display: grid; grid-template-columns: 120px minmax(0, 1fr); gap: 20px; padding: 16px; }
+  @media (min-width: 640px) { .wr-teach-card { grid-template-columns: 150px minmax(0, 1fr); gap: 24px; padding: 20px; } }
+  .wr-teach-cover { border-radius: 12px; overflow: hidden; aspect-ratio: 3 / 4; background: #07080b; border: 1px solid var(--line); }
+  .wr-teach-cover :global(img) { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .wr-teach-body { display: flex; flex-direction: column; align-items: flex-start; padding-block: 4px; }
   /* Page top */
   .wr-top { padding-bottom: clamp(40px, 5vw, 64px); }
   .wr-title { margin-top: 24px; }
@@ -282,8 +341,8 @@ const WRITING_RGB = "52,211,153";
     place-items: center;
     padding: 24px;
     background:
-      radial-gradient(70% 90% at 20% 10%, rgba(var(--tone-rgb), 0.2), transparent 70%),
-      radial-gradient(60% 80% at 90% 100%, rgba(var(--tone-rgb), 0.09), transparent 70%),
+      radial-gradient(70% 90% at 20% 10%, rgba(var(--tone-rgb), 0.2) 0%, rgba(var(--tone-rgb), 0.1951) 7%, rgba(var(--tone-rgb), 0.1809) 14%, rgba(var(--tone-rgb), 0.1588) 21%, rgba(var(--tone-rgb), 0.1309) 28%, rgba(var(--tone-rgb), 0.1) 35%, rgba(var(--tone-rgb), 0.0691) 42%, rgba(var(--tone-rgb), 0.0412) 49%, rgba(var(--tone-rgb), 0.0191) 56%, rgba(var(--tone-rgb), 0.0049) 63%, rgba(var(--tone-rgb), 0) 70%),
+      radial-gradient(60% 80% at 90% 100%, rgba(var(--tone-rgb), 0.09) 0%, rgba(var(--tone-rgb), 0.0878) 7%, rgba(var(--tone-rgb), 0.0814) 14%, rgba(var(--tone-rgb), 0.0715) 21%, rgba(var(--tone-rgb), 0.0589) 28%, rgba(var(--tone-rgb), 0.045) 35%, rgba(var(--tone-rgb), 0.0311) 42%, rgba(var(--tone-rgb), 0.0185) 49%, rgba(var(--tone-rgb), 0.0086) 56%, rgba(var(--tone-rgb), 0.0022) 63%, rgba(var(--tone-rgb), 0) 70%),
       #07080b;
   }
   .fb-num {

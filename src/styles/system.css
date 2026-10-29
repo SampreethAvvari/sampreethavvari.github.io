@@ -28,7 +28,9 @@
   --c-projects: #5b8def;  --c-projects-rgb: 91, 141, 239;
   --c-work: #f5a524;      --c-work-rgb: 245, 165, 36;
   --c-writing: #34d399;   --c-writing-rgb: 52, 211, 153;
-  --c-teaching: #22d3ee;  --c-teaching-rgb: 34, 211, 238;
+  --c-architecture: #22d3ee; --c-architecture-rgb: 34, 211, 238;
+  /* Teaching lives under Writing now, so it wears Writing's colour. */
+  --c-teaching: #34d399;  --c-teaching-rgb: 52, 211, 153;
   --c-film: #f43f5e;      --c-film-rgb: 244, 63, 94;
   --c-mind: #a78bfa;      --c-mind-rgb: 167, 139, 250;
   --c-home: #f5f5f7;      --c-home-rgb: 245, 245, 247;
@@ -45,6 +47,7 @@
 [data-tone="projects"] { --tone: var(--c-projects); --tone-rgb: var(--c-projects-rgb); }
 [data-tone="work"]     { --tone: var(--c-work);     --tone-rgb: var(--c-work-rgb); }
 [data-tone="writing"]  { --tone: var(--c-writing);  --tone-rgb: var(--c-writing-rgb); }
+[data-tone="architecture"] { --tone: var(--c-architecture); --tone-rgb: var(--c-architecture-rgb); }
 [data-tone="teaching"] { --tone: var(--c-teaching); --tone-rgb: var(--c-teaching-rgb); }
 [data-tone="film"]     { --tone: var(--c-film);     --tone-rgb: var(--c-film-rgb); }
 [data-tone="mind"]     { --tone: var(--c-mind);     --tone-rgb: var(--c-mind-rgb); }
@@ -344,8 +347,8 @@ a.surface:hover .surface-media img { transform: scale(1.03); }
   display: grid;
   place-items: center;
   background:
-    radial-gradient(70% 90% at 20% 10%, rgba(var(--tone-rgb), 0.22), transparent 70%),
-    radial-gradient(60% 80% at 90% 100%, rgba(var(--tone-rgb), 0.1), transparent 70%),
+    radial-gradient(70% 90% at 20% 10%, rgba(var(--tone-rgb), 0.22) 0%, rgba(var(--tone-rgb), 0.2146) 7%, rgba(var(--tone-rgb), 0.199) 14%, rgba(var(--tone-rgb), 0.1747) 21%, rgba(var(--tone-rgb), 0.144) 28%, rgba(var(--tone-rgb), 0.11) 35%, rgba(var(--tone-rgb), 0.076) 42%, rgba(var(--tone-rgb), 0.0453) 49%, rgba(var(--tone-rgb), 0.021) 56%, rgba(var(--tone-rgb), 0.0054) 63%, rgba(var(--tone-rgb), 0) 70%),
+    radial-gradient(60% 80% at 90% 100%, rgba(var(--tone-rgb), 0.1) 0%, rgba(var(--tone-rgb), 0.0976) 7%, rgba(var(--tone-rgb), 0.0905) 14%, rgba(var(--tone-rgb), 0.0794) 21%, rgba(var(--tone-rgb), 0.0655) 28%, rgba(var(--tone-rgb), 0.05) 35%, rgba(var(--tone-rgb), 0.0345) 42%, rgba(var(--tone-rgb), 0.0206) 49%, rgba(var(--tone-rgb), 0.0095) 56%, rgba(var(--tone-rgb), 0.0024) 63%, rgba(var(--tone-rgb), 0) 70%),
     #07080b;
 }
 /* A quieter group inside a surface. */
@@ -510,8 +513,8 @@ a.chip:hover, button.chip:hover { color: var(--ink); border-color: var(--line-st
   pointer-events: none;
   z-index: 0;
   background:
-    radial-gradient(48rem 26rem at 12% 0%, rgba(var(--tone-rgb), 0.13), transparent 70%),
-    radial-gradient(40rem 24rem at 92% 12%, rgba(var(--tone-rgb), 0.06), transparent 70%);
+    radial-gradient(48rem 26rem at 12% 0%, rgba(var(--tone-rgb), 0.13) 0%, rgba(var(--tone-rgb), 0.1268) 7%, rgba(var(--tone-rgb), 0.1176) 14%, rgba(var(--tone-rgb), 0.1032) 21%, rgba(var(--tone-rgb), 0.0851) 28%, rgba(var(--tone-rgb), 0.065) 35%, rgba(var(--tone-rgb), 0.0449) 42%, rgba(var(--tone-rgb), 0.0268) 49%, rgba(var(--tone-rgb), 0.0124) 56%, rgba(var(--tone-rgb), 0.0032) 63%, rgba(var(--tone-rgb), 0) 70%),
+    radial-gradient(40rem 24rem at 92% 12%, rgba(var(--tone-rgb), 0.06) 0%, rgba(var(--tone-rgb), 0.0585) 7%, rgba(var(--tone-rgb), 0.0543) 14%, rgba(var(--tone-rgb), 0.0476) 21%, rgba(var(--tone-rgb), 0.0393) 28%, rgba(var(--tone-rgb), 0.03) 35%, rgba(var(--tone-rgb), 0.0207) 42%, rgba(var(--tone-rgb), 0.0124) 49%, rgba(var(--tone-rgb), 0.0057) 56%, rgba(var(--tone-rgb), 0.0015) 63%, rgba(var(--tone-rgb), 0) 70%);
 }
 .on-top { position: relative; z-index: 1; }
 
@@ -856,9 +859,9 @@ a.surface[data-reveal].reveal-visible:hover { transform: translateY(-3px); }
    --------------------------------------------------------------------------- */
 html.dark .ambient, .ambient {
   background:
-    radial-gradient(70% 60% at 18% 22%, rgba(var(--amb1, 91, 141, 239), 0.17), transparent 70%),
-    radial-gradient(60% 55% at 84% 72%, rgba(var(--amb2, 34, 211, 238), 0.13), transparent 70%),
-    radial-gradient(90% 70% at 50% 110%, rgba(var(--amb1, 91, 141, 239), 0.08), transparent 70%);
+    radial-gradient(70% 60% at 18% 22%, rgba(var(--amb1, 91, 141, 239), 0.17) 0%, rgba(var(--amb1, 91, 141, 239), 0.1658) 7%, rgba(var(--amb1, 91, 141, 239), 0.1538) 14%, rgba(var(--amb1, 91, 141, 239), 0.135) 21%, rgba(var(--amb1, 91, 141, 239), 0.1113) 28%, rgba(var(--amb1, 91, 141, 239), 0.085) 35%, rgba(var(--amb1, 91, 141, 239), 0.0587) 42%, rgba(var(--amb1, 91, 141, 239), 0.035) 49%, rgba(var(--amb1, 91, 141, 239), 0.0162) 56%, rgba(var(--amb1, 91, 141, 239), 0.0042) 63%, rgba(var(--amb1, 91, 141, 239), 0) 70%),
+    radial-gradient(60% 55% at 84% 72%, rgba(var(--amb2, 34, 211, 238), 0.13) 0%, rgba(var(--amb2, 34, 211, 238), 0.1268) 7%, rgba(var(--amb2, 34, 211, 238), 0.1176) 14%, rgba(var(--amb2, 34, 211, 238), 0.1032) 21%, rgba(var(--amb2, 34, 211, 238), 0.0851) 28%, rgba(var(--amb2, 34, 211, 238), 0.065) 35%, rgba(var(--amb2, 34, 211, 238), 0.0449) 42%, rgba(var(--amb2, 34, 211, 238), 0.0268) 49%, rgba(var(--amb2, 34, 211, 238), 0.0124) 56%, rgba(var(--amb2, 34, 211, 238), 0.0032) 63%, rgba(var(--amb2, 34, 211, 238), 0) 70%),
+    radial-gradient(90% 70% at 50% 110%, rgba(var(--amb1, 91, 141, 239), 0.08) 0%, rgba(var(--amb1, 91, 141, 239), 0.078) 7%, rgba(var(--amb1, 91, 141, 239), 0.0724) 14%, rgba(var(--amb1, 91, 141, 239), 0.0635) 21%, rgba(var(--amb1, 91, 141, 239), 0.0524) 28%, rgba(var(--amb1, 91, 141, 239), 0.04) 35%, rgba(var(--amb1, 91, 141, 239), 0.0276) 42%, rgba(var(--amb1, 91, 141, 239), 0.0165) 49%, rgba(var(--amb1, 91, 141, 239), 0.0076) 56%, rgba(var(--amb1, 91, 141, 239), 0.002) 63%, rgba(var(--amb1, 91, 141, 239), 0) 70%);
 }
 /* Comets that live in the sky rather than in a section: fixed to the
    viewport, tinted by the same blend. */
@@ -1026,4 +1029,74 @@ html.lg-live .nav-condensed .nav-glass,
   background: none;
   box-shadow: none;
   filter: drop-shadow(0 4px 18px rgba(91, 141, 239, 0.35));
+}
+
+/* ---------------------------------------------------------------------------
+   Touch. Small controls keep their size and look, but on a touch screen each
+   one answers a press across at least 44 by 44 pixels: an invisible layer
+   centred on the control. The phone nav's icons sit edge to edge, so theirs
+   only grows in height.
+   --------------------------------------------------------------------------- */
+@media (pointer: coarse) {
+  .nav-tab, .nav-icon, .nav-brand, .btn-sm, .btn-xs, .tlink, .chip, .foot-link,
+  .sv, .tick-btn, .insp-close, .proj-close, .mind-fold, .wk-proj-link, .xlink, .pc-go, .insp-links button {
+    position: relative;
+  }
+  .nav-tab::after, .nav-icon::after, .nav-brand::after, .btn-sm::after, .btn-xs::after,
+  .tlink::after, a.chip::after, button.chip::after, .foot-link::after, .sv::after,
+  .tick-btn::after, .insp-close::after, .proj-close::after, .mind-fold::after,
+  .wk-proj-link::after, .xlink::after, .pc-go::after, .insp-links button::after {
+    content: "";
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: max(100%, 44px);
+    height: max(100%, 44px);
+    transform: translate(-50%, -50%);
+  }
+  .nav-tab::after { width: 100%; }
+}
+
+/* Card and list headings settle into even lines, so no name ends on one
+   lonely word. */
+.t-h3, .t-h4 { text-wrap: balance; }
+
+/* ---------------------------------------------------------------------------
+   Edge dither. A screen has 256 levels per channel, so where a glow fades into
+   pure black its last step (from one or two levels to zero) can draw a faint
+   arc on large 4K panels. A whisper of noise, masked to the band where each
+   glow fades out, breaks that step up. It adds about one level at most and
+   only inside that band; everywhere else black stays black.
+   --------------------------------------------------------------------------- */
+.ambient::after,
+.tone-atmos::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='128' height='128'%3E%3Cfilter id='d'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='1.1' numOctaves='1' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23d)'/%3E%3C/svg%3E");
+  background-size: 128px 128px;
+  mix-blend-mode: screen;
+  opacity: 0.012;
+}
+.ambient::after {
+  -webkit-mask-image:
+    radial-gradient(70% 60% at 18% 22%, #000 55%, transparent 100%),
+    radial-gradient(60% 55% at 84% 72%, #000 55%, transparent 100%),
+    radial-gradient(90% 70% at 50% 110%, #000 55%, transparent 100%);
+  mask-image:
+    radial-gradient(70% 60% at 18% 22%, #000 55%, transparent 100%),
+    radial-gradient(60% 55% at 84% 72%, #000 55%, transparent 100%),
+    radial-gradient(90% 70% at 50% 110%, #000 55%, transparent 100%);
+}
+.tone-atmos::after {
+  -webkit-mask-image:
+    radial-gradient(48rem 26rem at 12% 0%, #000 55%, transparent 100%),
+    radial-gradient(40rem 24rem at 92% 12%, #000 55%, transparent 100%);
+  mask-image:
+    radial-gradient(48rem 26rem at 12% 0%, #000 55%, transparent 100%),
+    radial-gradient(40rem 24rem at 92% 12%, #000 55%, transparent 100%);
+}
+@media (prefers-reduced-transparency: reduce) {
+  .ambient::after, .tone-atmos::after { display: none; }
 }

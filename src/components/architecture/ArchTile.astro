@@ -1,0 +1,185 @@
+---
+// One architecture as a tile, for the /architecture index and the home page.
+// The blueprint art on top, the system's own headline, and the same three
+// numbers the card on its post shows.
+import Picture from "../common/Picture.astro";
+import { svgWithOwners, type Architecture } from "../../data/architecture";
+// The featured tile draws the real system, so it needs the drawing's styles.
+import "../../styles/architecture.css";
+
+const { arch, featured = false } = Astro.props as { arch: Architecture; featured?: boolean };
+const parts = Object.values(arch.parts);
+const mine = parts.filter((p) => p.owner === "mine").length;
+const ACRONYM = { aie: "AIE", fde: "FDE", mle: "MLE", sde: "SDE" } as const;
+// The featured tile is the tallest thing in its row, so it shows the system
+// itself: the drawing with light moving along its main path, and its numbers.
+const liveSvg = featured ? svgWithOwners(arch).replace('class="arch-svg"', 'class="arch-svg tile-svg" aria-hidden="true"') : "";
+---
+
+<a
+  href={`/architecture/${arch.slug}`}
+  class:list={["arch-tile", { "is-featured": featured }]}
+  data-arch-tile
+  data-disciplines={arch.disciplines.join(" ")}
+>
+  <span class="tile-art">
+    <Picture src={`/arch/${arch.slug}.png`} alt="" width={1200} height={675} />
+    <span class="tile-kind">{arch.kind === "service" ? "Shared service" : "System"}</span>
+  </span>
+  <span class="tile-body">
+    <span class="tile-project">{arch.project}</span>
+    <span class="tile-title">
+      {arch.headline}{" "}<span class="tile-tail">{arch.tail}</span>
+    </span>
+    <span class="tile-facts">
+      <span><b>{parts.length}</b> parts, {mine} mine</span>
+      <span><b>{arch.breaks.length}</b> failure paths</span>
+      {arch.cost && <span><b>{arch.cost.total}</b> {arch.cost.period}</span>}
+    </span>
+    {featured && (
+      <>
+        <span class="tile-live">
+          <span class="tile-live-tag"><i aria-hidden="true"></i>The drawing, running</span>
+          <span class="tile-live-svg" set:html={liveSvg} />
+        </span>
+        <span class="tile-reads">
+          {arch.readouts.map((r) => (
+            <span class="tile-read">
+              <b>{r.value}{r.unit && <small>{r.unit}</small>}</b>
+              <span>{r.label}</span>
+            </span>
+          ))}
+        </span>
+      </>
+    )}
+    <span class="tile-foot">
+      <span class="tile-disc">{arch.disciplines.map((d) => <span class="badge">{ACRONYM[d]}</span>)}</span>
+      <span class="tile-open">Open the drawing</span>
+    </span>
+  </span>
+</a>
+
+<style>
+  .arch-tile {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    border-radius: 20px;
+    border: 1px solid var(--line);
+    background:
+      linear-gradient(180deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0.012) 40%),
+      var(--surface-solid);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06), 0 30px 60px -42px rgba(0, 0, 0, 0.95);
+    color: var(--ink);
+    text-decoration: none;
+    overflow: hidden;
+    transition: transform 300ms var(--ease-glass), border-color 200ms var(--ease-glass), box-shadow 300ms var(--ease-glass);
+  }
+  .arch-tile:hover {
+    transform: translateY(-3px);
+    border-color: rgba(var(--c-architecture-rgb), 0.5);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.09), 0 40px 70px -40px rgba(0, 0, 0, 1), 0 0 50px -22px rgba(var(--c-architecture-rgb), 0.6);
+  }
+  .arch-tile:focus-visible { outline: none; box-shadow: 0 0 0 4px rgba(var(--c-architecture-rgb), 0.4); }
+  .arch-tile[hidden] { display: none; }
+
+  .tile-art { position: relative; display: block; aspect-ratio: 16 / 8; overflow: hidden; border-bottom: 1px solid var(--line); background: #05070c; }
+  .tile-art :global(img) {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transform: scale(1.25);
+    transition: transform 900ms var(--ease-glass), filter 600ms var(--ease-glass);
+  }
+  .arch-tile:hover .tile-art :global(img) { transform: scale(1.34); filter: saturate(1.2) brightness(1.1); }
+  .tile-kind {
+    position: absolute;
+    left: 14px;
+    top: 14px;
+    height: 24px;
+    padding: 0 10px;
+    border-radius: 9999px;
+    display: inline-flex;
+    align-items: center;
+    font-size: 0.71875rem;
+    font-weight: 500;
+    color: var(--ink);
+    background: rgba(5, 7, 12, 0.6);
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    -webkit-backdrop-filter: blur(8px);
+    backdrop-filter: blur(8px);
+  }
+
+  .tile-body { display: flex; flex-direction: column; gap: 10px; flex: 1; padding: 20px 22px 20px; }
+  .tile-project { font-size: 0.8125rem; font-weight: 500; color: var(--c-architecture); }
+  .tile-title { font-size: 1.1875rem; font-weight: 600; letter-spacing: -0.022em; line-height: 1.2; text-wrap: balance; }
+  .tile-tail { color: var(--ink-faint); }
+  .is-featured .tile-title { font-size: clamp(1.375rem, 2.2vw, 1.75rem); letter-spacing: -0.028em; }
+  .tile-facts { display: flex; flex-wrap: wrap; gap: 6px; }
+  .tile-facts > span {
+    height: 24px;
+    padding: 0 10px;
+    border-radius: 9999px;
+    border: 1px solid var(--line-strong);
+    font-size: 0.71875rem;
+    line-height: 24px;
+    color: var(--ink-faint);
+  }
+  .tile-facts b { color: var(--ink); font-weight: 600; font-variant-numeric: tabular-nums; }
+  .tile-foot { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: auto; padding-top: 6px; }
+  .tile-disc { display: flex; gap: 6px; }
+  .tile-open { font-size: 0.875rem; font-weight: 500; color: var(--c-architecture); }
+  .arch-tile:hover .tile-open { text-decoration: underline; text-underline-offset: 4px; }
+  /* The featured tile's live drawing: a sheet of drafting film with the
+     system on it, light running along the main path. */
+  .tile-live {
+    --sheet-solid: #05070c;
+    position: relative;
+    display: block;
+    margin-top: 6px;
+    padding: 30px 14px 10px;
+    border-radius: 14px;
+    border: 1px solid var(--line);
+    background:
+      linear-gradient(rgba(255, 255, 255, 0.025) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255, 255, 255, 0.025) 1px, transparent 1px),
+      #05070c;
+    background-size: 14px 14px;
+  }
+  .tile-live-tag {
+    position: absolute;
+    top: 9px;
+    left: 12px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.6875rem;
+    color: var(--ink-faint);
+  }
+  .tile-live-tag i { width: 6px; height: 6px; border-radius: 50%; background: var(--live); box-shadow: 0 0 8px rgba(34, 197, 94, 0.8); animation: live-pulse 2.4s ease-in-out infinite; }
+  .tile-live-svg { display: block; }
+  .tile-live-svg :global(svg) { display: block; width: 100%; height: auto; overflow: visible; }
+  .tile-live-svg :global(g[data-node-id]) { cursor: inherit; }
+  .tile-live-svg :global(.a-emphasis) {
+    stroke-dasharray: 3 10;
+    animation: tile-flow 1.1s linear infinite;
+  }
+  .tile-live-svg :global(.a-default),
+  .tile-live-svg :global(.a-dashed) { stroke-dasharray: 2 9; animation: tile-flow 2.4s linear infinite; }
+  @keyframes tile-flow { to { stroke-dashoffset: -13; } }
+
+  .tile-reads { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1px; margin-top: 4px; border-radius: 12px; overflow: hidden; background: var(--line); }
+  .tile-read { display: flex; flex-direction: column; gap: 4px; padding: 12px 14px; background: var(--surface-solid); }
+  .tile-read b { font-size: 1.375rem; font-weight: 600; letter-spacing: -0.035em; line-height: 1; font-variant-numeric: tabular-nums; }
+  .tile-read small { margin-left: 3px; font-size: 0.55em; font-weight: 500; letter-spacing: 0; color: var(--ink-faint); }
+  .tile-read span { font-size: 0.71875rem; line-height: 1.4; color: var(--ink-faint); }
+  @media (min-width: 1200px) { .is-featured .tile-reads { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+
+  @media (prefers-reduced-motion: reduce) {
+    .tile-art :global(img) { transition: none; }
+    .tile-live-svg :global(path) { animation: none !important; }
+  }
+</style>

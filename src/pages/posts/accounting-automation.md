@@ -1,137 +1,88 @@
 ---
-title: "How I saved our accountant 400 hours a year"
+title: "Nine accounting scripts moved from a laptop to one page in an evening"
 date: "2026-05-20"
 layout: ../../layouts/PostLayout.astro
-description: "Every week our accountant hand-copied numbers from five different systems. A dozen small Python scripts do it for him now, built the way he actually works."
+description: "Our controller ran nine Python scripts by hand, with 26 terminal prompts between them. I put them behind one page that asks every question before the run, in one evening."
 img_path: "/accounting-automation.png"
+architecture: "accounting-automation"
 img_alt: "Accounting automation pipeline: Denticon, MagicTouch, Paychex, banks into Google Sheets and QuickBooks"
 tag: "Process"
 tone: "amber"
 stats:
-  - value: "~400 hrs/yr"
-    label: "of senior accounting time recovered"
-    tone: "amber"
-  - value: "6-8 h → 30 min"
-    label: "weekly reformat workload"
+  - value: "62 minutes"
+    label: "from the first commit to the first live revision on May 20"
     tone: "emerald"
-  - value: "12"
-    label: "small Python scripts replacing one platform"
+  - value: "3.7 hours"
+    label: "from the first commit to the browser editor our controller asked for, live at 7:56 PM"
     tone: "blue"
+  - value: "26 prompts"
+    label: "typed into a terminal across the nine old scripts, now asked up front in one form"
+    tone: "amber"
+facts:
+  - label: "Problem"
+    value: "Our controller ran nine Python scripts on a laptop, answering 26 terminal prompts between them."
+  - label: "What I built"
+    value: "One page that suggests the script for each export, asks its questions in one form and runs it."
+  - label: "Outcome"
+    value: "The scripts kept their logic and ran from a browser, with a diff shown before any edit was published."
+  - label: "Runs on"
+    value: "FastAPI on Cloud Run behind Identity Aware Proxy, with reference workbooks in Cloud Storage."
+  - label: "Built"
+    value: "Live 62 minutes after the first commit, and finished in one evening on May 20, 2026."
+  - label: "Status"
+    value: "Offline now: the Google Cloud project's billing is off."
 ---
 
-Garrett is the controller at Hybridge. Every Monday morning he'd download CSVs from five different systems, open each one, rename columns, copy-paste rows, hand-tag deposit accounts, look up vendor names by check number. Then do it again for the next file. An entire workday a week was disappearing into reformatting work that produced no decisions, only inputs.
+## The problem
 
-The cost isn't just his time. Garrett is the person the operations team needs when something looks wrong in the numbers. While he was buried in paste-and-rename, everyone else was waiting. A small dental-implant clinic can't afford to have its only senior accountant running a manual ETL pipeline every week.
+Our controller turned exports into books with nine Python scripts on a Windows laptop. Each one found its file in the Downloads folder by a hard coded path, stopped halfway to ask questions in a terminal, and wrote its result back to Downloads. Out came QuickBooks import files from Denticon, the lab system, Ramp and the bank, a cleaned Paychex time off workbook and a receivables aging report. Two of the scripts wrote straight into Google Sheets.
 
-I'm the sole AI engineer at Hybridge. When I sat down with Garrett and watched the Monday workflow, the problem wasn't that nobody had tried to fix it. The problem was that the obvious fix, one unified import platform, would have broken every time a vendor changed a column header, which they do constantly. What Garrett actually needed was a dozen small scripts: one per upstream system, short enough to read in ten minutes, and editable without my help.
+Between them the scripts called `input()` <span class="egg" tabindex="0" data-egg="Counted with grep across the old scripts. Some sit inside loops, so a file with many cash payments asks far more than 26 times.">26 times</span>. Which deposit account does this cash payment go to? Which department does this new employee belong to? Which of these vendors does this ACH line match? Write this tab or skip it?
 
-## The five upstream systems
+Our controller asked for one internal site: upload a file, have it pick the right script, ask what it needs, run it, and hand back the output. Our controller also wanted to edit the scripts from a browser and see a diff before publishing.
 
-```
-MagicTouch (DLCPM)  →  payments + production
-Denticon            →  Buffalo location's PMS
-Paychex             →  payroll, time-off exports
-Bank (Buffalo)      →  AccountTransactionDetail CSV
-Bank (Hybridge)     →  AccountTransactionDetail CSV
-```
+## What I built
 
-None of them speak each other's format. None of them export the columns the downstream sheets need. The bank CSV has a two-line preamble and a two-line trailer. Paychex encodes company name into the filename and department codes need a lookup table. Denticon and MagicTouch label the same payment type three different ways.
+Accounting Tools, a FastAPI app on Cloud Run behind Google's Identity Aware Proxy. Upload an export and the page recommends a script from the file name. The script's questions come up as one form, then it runs and leaves a file to download, or rows in a Sheet.
 
-## What I built instead
+Around that: a Scripts tab with an editor, a diff view, version history and revert, a Reference files tab for the three workbooks the scripts keep, a Run history tab, and an Access tab for admins. A second service built from the same image runs the checks import, which pulls check sheets out of Gmail into the outstanding checks Sheet. [Open the drawing](/architecture/accounting-automation).
 
-A dozen small Python scripts. Each one is the verb for one upstream system. Each one is short enough to read in ten minutes.
+## The sprint
 
-```
-AR_Aging.py                             receivables aging, multi-sheet Excel
-Buffalo_Ramp_IIF_Reformat.py            IIF for QuickBooks
-cashflow_import.py                      bank CSV → master cashflow Sheet
-checks_import.py                        outstanding checks ledger
-Denticon_Payment_Import_Buffalo.py      Denticon payments
-Denticon_Production_Import_Buffalo.py   Denticon production
-MT_Payments_Import.py                   MagicTouch payments
-MT_Sales_Import.py                      MagicTouch sales
-Paychex_Time_Off_Information_Cleanup.py payroll time-off
-+ three reference Excel files
-```
+All of it happened on May 20. The spec was approved that day and the first commit went in at 4:12 PM. The shared contract every script would follow came minutes later. By 4:56 PM one script, the Ramp reformatter, worked from upload to download with an end to end test. The first live revision went up at 5:14 PM, 62 minutes after the first commit.
 
-Garrett never runs a generic ETL command. He runs `python MT_Payments_Import.py` after he downloads the MagicTouch export, and a clean IIF appears in his Downloads folder. The mental model matches the calendar reality.
+Then the rest of the upload scripts moved onto the contract between 5:44 PM and 6:22 PM, simplest first. The checks import had its own live service by 6:57 PM.
 
-## Configuration that respects how the user actually works
+The editor our controller asked for was live at 7:56 PM: open a script, change it, see the diff, publish. That was 3.7 hours after the first commit. The Access tab followed at 8:20 PM and the last change of the night at 8:46 PM.
 
-Each script has the same shape: imports, then a config block, then the functions. The config sits at the top so Garrett can edit it himself without asking me.
+## The hard parts
+
+**A web page cannot wait at a prompt.** A terminal script can stop and wait for someone to type. A web request cannot. So each script now has two entry points. Prescan reads the file and the reference workbooks, writes nothing, and returns every question the run will need. Run takes the answers and does the work. A small adapter in each script turns the JSON it gets into one or the other:
 
 ```python
-DEPOSIT_ACCOUNTS = {
-    "credit card":     "Cardpointe Clearing",
-    "check":           "ACH Check Clearing",
-    "echeck":          "ACH Check Clearing",
-    "ach":             "ACH Check Clearing",
-    "direct deposit":  "ACH Check Clearing",
-    "echecks/ach":     "ACH Check Clearing",
-    "direct deposits": "ACH Check Clearing",
-}
+# scripts/_lib.py
+if mode == "prescan":
+    result = prescan_fn(ctx)
+elif mode == "run":
+    result = run_fn(ctx, request.get("answers", {}))
 ```
 
-When MagicTouch invents a new deposit type label, Garrett opens the file and adds a line. No database migration. No deploy. No engineer.
+Cashflow import, the largest, turned ambiguous ACH matches, unmatched vendors and a confirm for each Sheet tab into one form. Deleting the matched outstanding checks became a second step after the run, with its own confirm.
 
-## The interactive y/s/d prompt, because automation shouldn't be silent
+**Running code that can change.** Scripts can be edited from the browser, so the server never imports one. Each runs as its own process with JSON in, JSON out and a timeout, so a broken script returns an error and the server keeps going. A publish first compiles the new code and runs that script's smoke test in a copy of the project. If either fails, the editor shows the error and nothing is committed.
 
-I'd originally written the bank import as a one-pass loop that processes every matching file. Garrett pushed back. Half the time the glob picks up old downloads, partial files, test files from a vendor call. He wants to see each one and decide.
+**Two bugs that had been there all along.** In the aging report, the list of platinum customers was missing a comma, so Python <span class="egg" tabindex="0" data-egg="Two string literals side by side are joined into one. Python calls it a feature. Here it quietly made a customer number that does not exist.">joined two customer numbers into one</span> and one platinum customer dropped off the list. In the Denticon production import, the line that names the output file was indented into the block above it, so some paths reached the write with no file name. Both were fixed in the move, and the comma has a regression test.
 
-```python
-for f in files:
-    print(f"\nFile detected:\n{f}")
-    choice = input("Process this file? (y = yes, s = skip, d = delete): ").strip()
-    if choice == 'y': approved.append(f)
-    elif choice == 's': pass
-    elif choice == 'd': os.remove(f)
-```
+## What I said no to
 
-This is the kind of detail you only know if you watch the work get done. The script *could* be silent. The accountant doesn't *want* silent. Trust grows by showing each step.
+**Rewriting the scripts.** They stayed in Python with their logic intact, so our controller still recognizes them. I changed where they read and write, how they ask, and the two bugs.
 
-## Retry with backoff, because Sheets API throttles
+**A database for reference data.** The ACH matcher, the cashflow matcher and the department list stayed Excel workbooks. Our controller works in Excel and sometimes downloads one, edits it and puts it back. On a GCS Fuse mount they are plain files to the scripts, and bucket versioning keeps each old copy for 30 days.
 
-Long imports hit `APIError: Quota exceeded` two or three times mid-run. The decorator that wraps every Sheets call:
+**A general platform.** The spec ruled out more users, other scripts, phones and a custom domain. It runs these nine scripts for our controller, and that kept it to an evening.
 
-```python
-def retry_with_backoff(retries=5, backoff_in_seconds=1):
-    def decorator(func):
-        def wrapper(*args, **kwargs):
-            for x in range(retries + 1):
-                try: return func(*args, **kwargs)
-                except APIError as e:
-                    if x == retries: raise
-                    time.sleep(backoff_in_seconds * (2 ** x))
-        return wrapper
-    return decorator
-```
+## Where it landed
 
-Garrett never sees the throttle. He sees a one-line "retrying in 4s" message and the run continues.
+It went live on May 20 for our controller. The Google Cloud project's billing is off now, so the site is offline. I have no record of how often it was used while it ran, no measured cost, and no measure of time saved, so I am not going to guess at one.
 
-## By the numbers
-
-<div class="post-stats-grid my-8">
-  <div class="stat-callout stat-amber">
-    <div class="stat-value">~400 hrs/yr</div>
-    <div class="stat-label">of senior accounting time saved</div>
-  </div>
-  <div class="stat-callout stat-emerald">
-    <div class="stat-value">6-8 h → 30 min</div>
-    <div class="stat-label">weekly reformat workload</div>
-  </div>
-  <div class="stat-callout stat-blue">
-    <div class="stat-value">12</div>
-    <div class="stat-label">small Python scripts, one per system</div>
-  </div>
-</div>
-
-| | Before | After |
-|---|---|---|
-| Weekly accounting reformat workload | ~6-8 hours | ~30-45 minutes |
-| Of which is actual work | All of it | Downloading files + answering y/s/d |
-| Reformat errors per quarter | Occasional silent paste-wrong-column | Near zero (deterministic output) |
-| Lines of code per script | 80-500 | Short enough to read in 10 min |
-
-The pattern here matters more than the code. **Most internal automation projects fail not because the engineering is bad but because the engineering builds a platform when the user wanted a tool.** A tool is a thing you keep in a drawer. A platform is a thing you log into. Tools are easier to trust.
-
-Garrett doesn't run a server. He runs scripts. Six months in, he has already edited two config blocks himself when a vendor renamed a column. He didn't need to file a ticket or wait for me. That's the deliverable I was aiming for: not automation that requires an engineer to maintain it, but automation that belongs to the person using it.
+What I would keep: the prescan and run split. Asking every question before anything is written made the old terminal scripts work in a browser without changing what they do.

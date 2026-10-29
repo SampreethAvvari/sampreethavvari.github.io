@@ -5,14 +5,15 @@ import path from "node:path";
 import SmartImage from "../components/common/SmartImage.astro";
 import Icon from "../components/common/Icon.astro";
 import { canonicalImageList } from "../utils/optimizedImage";
+import { filmNodes } from "../utils/seo";
 
 const title = "SA: Filmmaking";
 const description =
   "Films by Sampreeth Avvari. Among Monsters, an independent crime drama shot in New York, plus the full slate, stills, cast and crew.";
-const playlistUrl = "https://hi.switchy.io/gB-4";
+const playlistUrl = "https://www.youtube.com/@DudeStrong";
 const screenplayUrl = "/among-monsters-screenplay.pdf";
-const imdbUrl = "https://hi.switchy.io/q94P";
-const photographyUrl = "https://hi.switchy.io/q3TE";
+const imdbUrl = "https://www.imdb.com/title/tt39700295/";
+const photographyUrl = "https://www.instagram.com/on.my.earth/";
 
 const posterSrc = "/among-monsters-poster.jpg";
 
@@ -267,7 +268,14 @@ const links = [
 ];
 ---
 
-<BaseLayout title={title} description={description} footerVariant="filmmaking">
+<BaseLayout
+  title={title}
+  description={description}
+  footerVariant="filmmaking"
+  ogImage="/og/film.jpg"
+  schema={filmNodes(Astro.site!.toString())}
+  crumbs={[{ name: "Home", path: "/" }, { name: "Filmmaking", path: "/filmmaking" }]}
+>
   <!-- Page top and the current feature -->
   <section class="page-top film-top">
     <div class="tone-atmos" aria-hidden="true"></div>
@@ -897,7 +905,7 @@ const links = [
     display: grid;
     place-items: center;
     background:
-      radial-gradient(80% 70% at 20% 0%, rgba(var(--tone-rgb), 0.16), transparent 70%),
+      radial-gradient(80% 70% at 20% 0%, rgba(var(--tone-rgb), 0.16) 0%, rgba(var(--tone-rgb), 0.1561) 7%, rgba(var(--tone-rgb), 0.1447) 14%, rgba(var(--tone-rgb), 0.127) 21%, rgba(var(--tone-rgb), 0.1047) 28%, rgba(var(--tone-rgb), 0.08) 35%, rgba(var(--tone-rgb), 0.0553) 42%, rgba(var(--tone-rgb), 0.033) 49%, rgba(var(--tone-rgb), 0.0153) 56%, rgba(var(--tone-rgb), 0.0039) 63%, rgba(var(--tone-rgb), 0) 70%),
       #07080b;
     color: var(--ink-faint);
     font-size: 1.375rem;

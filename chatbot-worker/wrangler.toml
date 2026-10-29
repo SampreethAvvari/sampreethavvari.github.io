@@ -10,7 +10,7 @@ compatibility_flags = ["nodejs_compat"]
 # empty. Replaced "@cf/meta/llama-3.1-8b-instruct" (deprecated 2026-05-30).
 [vars]
 AI_MODEL = "@cf/meta/llama-3.3-70b-instruct-fp8-fast"
-ALLOWED_ORIGINS = "https://sampreethavvari.github.io,http://localhost:4321,http://localhost:3000"
+ALLOWED_ORIGINS = "https://sampreethavvari.com,https://www.sampreethavvari.com,https://sampreethavvari.github.io,http://localhost:4321,http://localhost:3000"
 
 [ai]
 binding = "AI"

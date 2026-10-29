@@ -1,0 +1,323 @@
+---
+// One page per system: the title block, the readouts, the Archify diagram
+// restyled in the site's tokens, then how it fails, what was tuned, the
+// guards, and what it costs. Content lives in src/data/architecture.
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import Icon from "../../components/common/Icon.astro";
+import { architectures, svgWithOwners, type Architecture } from "../../data/architecture";
+import { articleNode } from "../../utils/seo";
+import "../../styles/architecture.css";
+
+export function getStaticPaths() {
+  return architectures.map((arch) => ({ params: { slug: arch.slug }, props: { arch } }));
+}
+
+const { arch } = Astro.props as { arch: Architecture };
+
+// Search results show about 160 characters: the headline, then the lede's
+// first sentence when it still fits.
+const shortLine = `${arch.headline} ${arch.tail}`;
+const firstSentence = (arch.lede.match(/^.+?[.!?](?=\s|$)/) || [arch.lede])[0];
+const metaDescription = shortLine.length + firstSentence.length < 200 ? `${shortLine} ${firstSentence}` : shortLine;
+const at = architectures.findIndex((a) => a.slug === arch.slug);
+const next = architectures.length > 1 ? architectures[(at + 1) % architectures.length] : null;
+
+// Each part's owner rides on its SVG group, so the look is right on first
+// paint with no script: mine glows in the tab colour, the rest stay quiet.
+const svg = svgWithOwners(arch)
+  .replace(/<desc id="archify-diagram-description">[^<]*<\/desc>/, `<desc id="archify-diagram-description">${arch.lede}</desc>`);
+
+// Drawing zones along the stage edges, the way an engineering sheet labels
+// them. Letters skip I and O so nobody reads them as one and zero.
+const zonesX = "ABCDEFGHJKLM".split("");
+const zonesY = ["1", "2", "3", "4", "5", "6"];
+
+// On phones the drawing pans inside its frame. Wider drawings get more room so
+// every part stays big enough to tap: about 0.72 of their drawn width.
+const vbWidth = Number((svg.match(/viewBox="[\d.-]+ [\d.-]+ ([\d.]+)/) || [])[1]) || 1140;
+const partHeights = [...svg.matchAll(/<rect\b[^>]*\bheight="([\d.]+)"[^>]*class="c-(?:frontend|backend|database|external|security|messagebus|cloud)"/g)].map((m) => Number(m[1]));
+const smallest = partHeights.length ? Math.min(...partHeights) : 64;
+// The smallest part should land at least 40px tall on a phone.
+const svgPhoneWidth = Math.max(820, Math.round(vbWidth * Math.max(0.72, 40 / smallest)));
+
+const owners = Object.values(arch.parts);
+const mine = owners.filter((p) => p.owner === "mine").length;
+const hasPlanned = owners.some((p) => p.owner === "planned");
+const costTotal = arch.cost ? arch.cost.parts.reduce((s, p) => s + p.usd, 0) : 0;
+const fmtUsd = (n: number) => (n >= 100 ? `$${Math.round(n)}` : `$${n.toFixed(2)}`);
+
+const sections = [
+  { key: "breaks", title: "When it breaks", lead: "What each failure does, and what it does not do.", facts: arch.breaks },
+  { key: "tuned", title: "What I tuned", lead: "Small choices that keep it fast and cheap.", facts: arch.tuned },
+  { key: "guards", title: "Guards", lead: "Rules the code enforces, not rules people remember.", facts: arch.guards },
+];
+---
+
+<BaseLayout
+  title={`${arch.name} architecture`}
+  description={metaDescription}
+  tone="architecture"
+  ogImage={`/og/arch-${arch.slug}.jpg`}
+  ogType="article"
+  crumbs={[
+    { name: "Home", path: "/" },
+    { name: "Architecture", path: "/architecture" },
+    { name: arch.name, path: `/architecture/${arch.slug}` },
+  ]}
+  schema={[
+    articleNode(Astro.site!.toString(), `/architecture/${arch.slug}`, {
+      type: "TechArticle",
+      title: `${arch.name} architecture: ${arch.headline} ${arch.tail}`,
+      description: arch.lede,
+      image: `/og/arch-${arch.slug}.jpg`,
+      keywords: ["System architecture", arch.project, ...arch.disciplines.map((d) => ({ aie: "AI engineering", fde: "Forward deployed engineering", mle: "Machine learning engineering", sde: "Software engineering" })[d])],
+      facts: [
+        ...arch.titleBlock.map(([label, value]) => ({ label, value })),
+        ...arch.breaks.map((f) => ({ label: `When it breaks: ${f.title}`, value: f.body })),
+        ...arch.guards.map((f) => ({ label: `Guard: ${f.title}`, value: f.body })),
+        ...(arch.cost ? [{ label: "Cost", value: `${arch.cost.total} ${arch.cost.period}. ${arch.cost.method}` }] : []),
+      ],
+      about: { name: arch.name, url: new URL(`/architecture/${arch.slug}`, Astro.site).toString(), description: arch.lede },
+    }),
+  ]}
+>
+  <article class="arch" data-arch={arch.slug}>
+    <header class="arch-head page-top">
+      <div class="tone-atmos" aria-hidden="true"></div>
+      <div class="wrap on-top arch-head-grid">
+        <div class="arch-head-main">
+          <a href={arch.post} class="tlink arch-back">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5m0 0 6 6m-6-6 6-6"></path></svg>
+            Read the story
+          </a>
+          <p class="kicker">Architecture</p>
+          <h1 class="t-title arch-title">{arch.headline}<span class="t-tail">{arch.tail}</span></h1>
+          <p class="t-lede arch-lede">{arch.lede}</p>
+        </div>
+
+        <aside class="arch-plate" aria-label="Title block">
+          <span class="plate-corner tl" aria-hidden="true"></span>
+          <span class="plate-corner br" aria-hidden="true"></span>
+          <div class="plate-head">
+            <span class="plate-name">{arch.name}</span>
+            <span class:list={["plate-live", { "is-preview": arch.status === "preview" }]}><i aria-hidden="true"></i>{arch.statusNote ?? (arch.status === "preview" ? "Preview" : "In production")}</span>
+          </div>
+          <dl class="plate-grid">
+            {arch.titleBlock.map(([k, v]) => (
+              <div class="plate-cell">
+                <dt>{k}</dt>
+                <dd>{v.split(/(\s+)/).map((t) => (t.includes("-") ? <span class="nb">{t}</span> : t))}</dd>
+              </div>
+            ))}
+          </dl>
+          <div class="plate-foot">
+            <span>{owners.length} parts, {mine} of them mine</span>
+            <span title="Every drawing needs a sheet number. This one has a sense of humour.">Sheet 1 of 1</span>
+          </div>
+        </aside>
+      </div>
+    </header>
+
+    <section class="wrap arch-readouts" aria-label="In numbers">
+      {arch.readouts.map((r) => (
+        <div class="surface readout">
+          {typeof r.ring === "number" && (
+            <svg class="readout-ring" viewBox="0 0 36 36" aria-hidden="true">
+              <circle cx="18" cy="18" r="15.5" class="ring-track" />
+              <circle cx="18" cy="18" r="15.5" class="ring-fill" style={`--ring:${r.ring}`} />
+            </svg>
+          )}
+          <p class="readout-num">
+            {r.value}
+            {r.unit && <span class="readout-unit">{r.unit}</span>}
+          </p>
+          <p class="readout-cap">{r.label}</p>
+          {r.spark && (
+            <svg class="readout-spark" viewBox={`0 0 ${r.spark.length * 4} 24`} preserveAspectRatio="none" role="img" aria-label={`Commits per day, peak ${Math.max(...r.spark)}`}>
+              {r.spark.map((v, i) => {
+                const peak = Math.max(...r.spark!);
+                const h = v ? Math.max(2, (v / peak) * 24) : 0.8;
+                return <rect x={i * 4} y={24 - h} width="2.6" height={h} rx="0.8" class={v === peak ? "is-peak" : v ? "is-day" : "is-zero"}><title>{v} commits</title></rect>;
+              })}
+            </svg>
+          )}
+        </div>
+      ))}
+    </section>
+
+    <section class="wrap arch-stage-wrap" aria-label="Architecture diagram">
+      <div class="arch-stage" data-stage>
+        <div class="stage-bar">
+          <div class="stage-views" role="group" aria-label="Show a path">
+            <button type="button" class="sv is-on" data-view="all" aria-pressed="true">Every part</button>
+            {arch.views.map((v) => (
+              <button type="button" class="sv" data-view={v.id} data-focus={v.focus.join(",")} data-note={v.note} aria-pressed="false">
+                {v.label}
+              </button>
+            ))}
+          </div>
+
+        </div>
+
+        <div class="stage-sim">
+          <p class="sim-clock">
+            <span class="sim-dot" aria-hidden="true"></span>
+            <span class="sim-where">New York</span>
+            <b data-sim-clock>--:--</b>
+            <span class="sim-fast">simulated</span>
+          </p>
+          <label class="sim-speed">
+            <span class="sim-speed-label">Speed</span>
+            <input type="range" min="0" max="4" step="1" value="0" data-speed list="arch-speeds" aria-describedby="arch-speed-out" />
+            <datalist id="arch-speeds"><option value="0"></option><option value="1"></option><option value="2"></option><option value="3"></option><option value="4"></option></datalist>
+            <output id="arch-speed-out" data-speed-out>Real time</output>
+          </label>
+          <div
+            class="stage-tick"
+            data-live
+            data-mode={arch.live.mode}
+            data-label={arch.live.label}
+            data-path={arch.live.path.join(",")}
+            data-every={arch.live.everySeconds ?? (arch.live.mode === "event" ? 14 : 60)}
+            data-window={arch.live.window?.join(",") ?? ""}
+            data-at={arch.live.at ?? ""}
+            data-days={arch.live.days?.join(",") ?? ""}
+            data-tz={arch.live.tz ?? "America/New_York"}
+            title={arch.live.source ? `Replays ${arch.live.source}. A clock in your browser, it never calls the real system.` : "A clock in your browser, it never calls the real system."}
+          >
+            <svg viewBox="0 0 20 20" class="tick-ring" aria-hidden="true">
+              <circle cx="10" cy="10" r="8" class="tick-track" />
+              <circle cx="10" cy="10" r="8" class="tick-fill" data-tick-ring />
+            </svg>
+            <span class="tick-text" aria-live="off"><span data-live-label>{arch.live.label}</span> <b data-live-count></b></span>
+            <button type="button" class="tick-btn" data-live-fire aria-label={`Replay: ${arch.live.label}`}>Replay</button>
+          </div>
+        </div>
+
+        <div class="stage-body">
+          <div class="zones zones-x" aria-hidden="true">{zonesX.map((z) => <span>{z}</span>)}</div>
+          <div class="zones zones-y" aria-hidden="true">{zonesY.map((z) => <span>{z}</span>)}</div>
+          <span class="reg reg-tl" aria-hidden="true"></span>
+          <span class="reg reg-tr" aria-hidden="true"></span>
+          <span class="reg reg-bl" aria-hidden="true"></span>
+          <span class="reg reg-br" aria-hidden="true"></span>
+
+          <div class="stage-canvas" data-canvas style={`--svg-phone:${svgPhoneWidth}px`} set:html={svg} />
+
+          <aside class="inspector" data-inspector aria-live="polite" hidden>
+            <button type="button" class="insp-close" data-insp-close aria-label="Close the notes">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"></path></svg>
+            </button>
+            <p class="insp-kind" data-insp-kind></p>
+            <h2 class="insp-name" data-insp-name></h2>
+            <p class="insp-what" data-insp-what></p>
+            <div class="insp-fails" data-insp-fails-wrap>
+              <p class="insp-label">When it fails</p>
+              <p data-insp-fails></p>
+            </div>
+            <div class="insp-links" data-insp-links-wrap>
+              <p class="insp-label">Talks to</p>
+              <ul data-insp-links></ul>
+            </div>
+            <p class="src-chip" data-insp-src></p>
+          </aside>
+        </div>
+
+        <div class="stage-foot">
+          <p class="stage-note" data-note>Hover a part to trace what it touches. Click it for its notes.</p>
+          <ul class="stage-legend" aria-label="Legend">
+            <li><i class="lg lg-mine"></i>Built by me</li>
+            <li><i class="lg lg-managed"></i>Managed by Google</li>
+            <li><i class="lg lg-outside"></i>Outside system</li>
+            {hasPlanned && <li><i class="lg lg-planned"></i>Planned, not live</li>}
+            <li><i class="lg lg-flow"></i>Main data path</li>
+            <li><i class="lg lg-async"></i>On demand</li>
+            <li><i class="lg lg-trust"></i>Credentials cross</li>
+          </ul>
+        </div>
+      </div>
+      <p class="stage-pan-hint" aria-hidden="true">Drag sideways to see the whole drawing</p>
+    </section>
+
+    <section class="wrap arch-lanes">
+      {sections.map((s) => (
+        <div class={`surface lane lane-${s.key}`}>
+          <div class="lane-head">
+            <span class="lane-glyph" aria-hidden="true"></span>
+            <h2 class="lane-title">{s.title}</h2>
+          </div>
+          <p class="lane-lead">{s.lead}</p>
+          <ol class="lane-list">
+            {s.facts.map((f) => (
+              <li>
+                <p class="fact-title">{f.title}</p>
+                <p class="fact-body">{f.body}</p>
+                {f.source && <p class="src-chip">{f.source}</p>}
+              </li>
+            ))}
+          </ol>
+        </div>
+      ))}
+    </section>
+
+    {arch.cost && (
+      <section class="wrap arch-cost-wrap">
+        <div class="surface arch-cost">
+          <div class="cost-head">
+            <div>
+              <h2 class="cost-title">What it costs</h2>
+              <p class="cost-method">{arch.cost.method}</p>
+            </div>
+            <p class="cost-total">{arch.cost.total}<span>{arch.cost.period}</span></p>
+          </div>
+          <div class="cost-bar" role="img" aria-label={arch.cost.parts.map((p) => `${p.label} ${fmtUsd(p.usd)}`).join(", ")}>
+            {arch.cost.parts.map((p, i) => (
+              <i class={`cost-seg seg-${i}`} style={`flex:${Math.max(p.usd / (costTotal || 1), 0.02)}`}></i>
+            ))}
+          </div>
+          <ul class="cost-legend" style={`--n:${arch.cost.parts.length}`}>
+            {arch.cost.parts.map((p, i) => (
+              <li>
+                <i class={`cost-dot seg-${i}`}></i>
+                <b>{fmtUsd(p.usd)}</b>
+                <span>{p.label}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </section>
+    )}
+
+    <nav class="wrap arch-end" aria-label="More">
+      <a href={arch.post} class="surface arch-end-card">
+        <span class="t-meta">The story</span>
+        <span class="arch-end-title">Why it exists and how it shipped</span>
+        <span class="arch-end-go" aria-hidden="true"><Icon name="arrow-right" size={15} /></span>
+      </a>
+      {next && next.slug !== arch.slug ? (
+        <a href={`/architecture/${next.slug}`} class="surface arch-end-card is-next">
+          <span class="t-meta">Next system</span>
+          <span class="arch-end-title">{next.name}</span>
+          <span class="arch-end-go" aria-hidden="true"><Icon name="arrow-right" size={15} /></span>
+        </a>
+      ) : (
+        <a href="/projects" class="surface arch-end-card is-next">
+          <span class="t-meta">Everything else</span>
+          <span class="arch-end-title">All projects</span>
+          <span class="arch-end-go" aria-hidden="true"><Icon name="arrow-right" size={15} /></span>
+        </a>
+      )}
+      <p class="arch-contact">
+        Working on something like this?
+        <a href="/#contact" class="tlink">Get in touch <Icon name="arrow-right" size={14} /></a>
+      </p>
+    </nav>
+  </article>
+
+  <script type="application/json" id="arch-parts" set:html={JSON.stringify(arch.parts)} />
+
+  <script>
+    import { initArchitecture } from "../../scripts/architecture";
+    initArchitecture();
+  </script>
+</BaseLayout>

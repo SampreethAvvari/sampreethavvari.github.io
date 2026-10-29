@@ -1,0 +1,179 @@
+---
+// The box under a post's cover that opens its architecture page in a new tab.
+// Art on the left (a glass blueprint of the system), the system's own
+// headline on the right, and three numbers pulled from the page's data so the
+// card and the page can never disagree.
+import Picture from "../common/Picture.astro";
+import { architectureBySlug } from "../../data/architecture";
+
+const { slug } = Astro.props as { slug: string };
+const arch = architectureBySlug[slug];
+const parts = arch ? Object.values(arch.parts) : [];
+const fallbacks = arch ? arch.breaks.length : 0;
+const guards = arch ? arch.guards.length : 0;
+---
+
+{
+  arch && (
+    <a href={`/architecture/${arch.slug}`} target="_blank" rel="noopener" class="arch-card" data-tone="architecture">
+      <span class="arch-card-art">
+        <Picture src={`/arch/${arch.slug}.png`} alt="" width={1200} height={675} loading="eager" />
+        <span class="arch-card-scan" aria-hidden="true"></span>
+      </span>
+      <span class="arch-card-text">
+        <span class="kicker">Architecture</span>
+        <span class="arch-card-title">
+          {arch.headline}{" "}<span class="arch-card-tail">{arch.tail}</span>
+        </span>
+        <span class="arch-card-sub">The whole system as a drawing you can click: every part, what it does when it fails, and what it costs to run.</span>
+        <span class="arch-card-facts">
+          <span><b>{parts.length}</b> parts</span>
+          <span><b>{fallbacks}</b> failure paths</span>
+          {arch.cost ? (
+            <span><b>{arch.cost.total}</b> {arch.cost.period}</span>
+          ) : (
+            <span><b>{guards}</b> guards</span>
+          )}
+        </span>
+      </span>
+      <span class="arch-card-open" aria-hidden="true">
+        <span class="arch-card-btn">
+          Open the drawing
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17 17 7M8 7h9v9"></path></svg>
+        </span>
+      </span>
+      <span class="sr-only">(opens in a new tab)</span>
+    </a>
+  )
+}
+
+<style>
+  .arch-card {
+    --tone: var(--c-architecture);
+    --tone-rgb: var(--c-architecture-rgb);
+    position: relative;
+    display: grid;
+    /* Full width under the cover: a wide strip of blueprint, then the words. */
+    grid-template-columns: minmax(0, 0.85fr) minmax(0, 1fr) auto;
+    align-items: stretch;
+    margin-top: 16px;
+    border-radius: 20px;
+    border: 1px solid rgba(var(--tone-rgb), 0.42);
+    background:
+      radial-gradient(80% 140% at 0% 0%, rgba(var(--tone-rgb), 0.14) 0%, rgba(var(--tone-rgb), 0.1366) 6%, rgba(var(--tone-rgb), 0.1266) 12%, rgba(var(--tone-rgb), 0.1111) 18%, rgba(var(--tone-rgb), 0.0916) 24%, rgba(var(--tone-rgb), 0.07) 30%, rgba(var(--tone-rgb), 0.0484) 36%, rgba(var(--tone-rgb), 0.0289) 42%, rgba(var(--tone-rgb), 0.0134) 48%, rgba(var(--tone-rgb), 0.0034) 54%, rgba(var(--tone-rgb), 0) 60%),
+      linear-gradient(180deg, rgba(255, 255, 255, 0.045), rgba(255, 255, 255, 0.01) 45%),
+      var(--surface-solid);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.08),
+      0 40px 80px -50px rgba(0, 0, 0, 1),
+      0 0 60px -24px rgba(var(--tone-rgb), 0.55);
+    color: var(--ink);
+    text-decoration: none;
+    overflow: hidden;
+    transition: transform 300ms var(--ease-glass), border-color 200ms var(--ease-glass), box-shadow 300ms var(--ease-glass);
+  }
+  .arch-card:hover {
+    transform: translateY(-3px);
+    border-color: rgba(var(--tone-rgb), 0.7);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.1),
+      0 50px 90px -48px rgba(0, 0, 0, 1),
+      0 0 70px -16px rgba(var(--tone-rgb), 0.6);
+  }
+  .arch-card:focus-visible { outline: none; box-shadow: 0 0 0 4px rgba(var(--tone-rgb), 0.4); }
+
+  .arch-card-art { position: relative; display: block; min-height: 232px; overflow: hidden; }
+  .arch-card-art :global(img) {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transform: scale(1.4);
+    /* Fade the art into the card so the seam reads as light, not an edge. */
+    -webkit-mask-image: linear-gradient(90deg, #000 70%, transparent);
+    mask-image: linear-gradient(90deg, #000 70%, transparent);
+    transition: transform 900ms var(--ease-glass), filter 600ms var(--ease-glass);
+    filter: saturate(1.1);
+  }
+  .arch-card:hover .arch-card-art :global(img) { transform: scale(1.48); filter: saturate(1.25) brightness(1.1); }
+
+  /* A line of light sweeps the blueprint every few seconds: the one moving
+     thing near the top of a post, there to say this card is worth a click. */
+  .arch-card-scan {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: -30%;
+    width: 30%;
+    background: linear-gradient(90deg, transparent, rgba(var(--tone-rgb), 0.3), transparent);
+    mix-blend-mode: screen;
+    opacity: 0;
+    animation: arch-scan 6s var(--ease-glass) 1.2s infinite;
+  }
+  .arch-card:hover .arch-card-scan { animation: arch-scan-once 1.1s var(--ease-glass) forwards; }
+  @keyframes arch-scan {
+    0% { left: -30%; opacity: 1; }
+    18% { left: 110%; opacity: 0.6; }
+    100% { left: 110%; opacity: 0; }
+  }
+  @keyframes arch-scan-once {
+    0% { left: -30%; opacity: 1; }
+    100% { left: 110%; opacity: 0.6; }
+  }
+
+  .arch-card-text { display: flex; flex-direction: column; justify-content: center; gap: 10px; padding: 26px 24px 26px 32px; }
+  .arch-card-text .kicker { margin-bottom: 0; }
+  .arch-card-title { font-size: clamp(1.5rem, 2.4vw, 1.95rem); font-weight: 600; letter-spacing: -0.03em; line-height: 1.12; text-wrap: balance; }
+  .arch-card-tail { color: var(--ink-faint); }
+  .arch-card-sub { font-size: 0.875rem; line-height: 1.55; color: var(--ink-soft); max-width: 48ch; }
+  .arch-card-facts { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; }
+  .arch-card-facts > span {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 5px;
+    height: 26px;
+    padding: 0 11px;
+    border-radius: 9999px;
+    border: 1px solid var(--line-strong);
+    font-size: 0.75rem;
+    line-height: 26px;
+    color: var(--ink-faint);
+  }
+  .arch-card-facts b { color: var(--ink); font-weight: 600; font-variant-numeric: tabular-nums; }
+
+  .arch-card-open { display: grid; place-items: center; padding: 0 30px 0 6px; }
+  .arch-card-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    height: 44px;
+    padding: 0 20px;
+    border-radius: 9999px;
+    font-size: 0.9375rem;
+    font-weight: 600;
+    color: #000;
+    background: var(--ink);
+    box-shadow: 0 10px 30px -12px rgba(var(--tone-rgb), 0.85);
+    white-space: nowrap;
+    transition: transform 250ms var(--ease-glass), background-color 200ms var(--ease-glass);
+  }
+  .arch-card-btn svg { width: 15px; height: 15px; transition: transform 250ms var(--ease-glass); }
+  .arch-card:hover .arch-card-btn { background: #fff; transform: translateY(-1px); }
+  .arch-card:hover .arch-card-btn svg { transform: translate(2px, -2px); }
+
+  @media (max-width: 900px) {
+    .arch-card { grid-template-columns: 1fr; }
+    .arch-card-art { min-height: 0; aspect-ratio: 16 / 7; }
+    .arch-card-art :global(img) {
+      -webkit-mask-image: linear-gradient(180deg, #000 70%, transparent);
+      mask-image: linear-gradient(180deg, #000 70%, transparent);
+    }
+    .arch-card-text { padding: 16px 20px 14px; }
+    .arch-card-open { justify-items: start; padding: 4px 20px 22px; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .arch-card-scan, .arch-card:hover .arch-card-scan { animation: none; }
+    .arch-card-art :global(img) { transition: none; }
+  }
+</style>
