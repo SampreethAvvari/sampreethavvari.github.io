@@ -449,9 +449,12 @@ const rgb2 = palette[1] ?? palette[0];
           [{ offset: 0, translate: (-dx * (1 - s)).toFixed(1) + "px " + (-dy * (1 - s)).toFixed(1) + "px", scale: s.toFixed(3) }],
           { duration: dur, delay: delay, easing: ARRIVE_EASE, fill: "backwards" }
         );
-        // Out of the haze faster than it travels, so it reads early.
+        // Out of the haze faster than it travels, so it reads early. It
+        // starts at 0.001, not 0: that looks the same, and a block at exactly
+        // 0 counts as gone, so the browser would forget it had already
+        // painted the page under the loader.
         el.animate(
-          [{ offset: 0, opacity: 0, filter: "blur(" + (3 + (1 - s) * 9).toFixed(1) + "px)" }],
+          [{ offset: 0, opacity: 0.001, filter: "blur(" + (3 + (1 - s) * 9).toFixed(1) + "px)" }],
           { duration: dur * 0.5, delay: delay, easing: "cubic-bezier(0.3, 0.7, 0.4, 1)", fill: "backwards" }
         );
       });
