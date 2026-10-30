@@ -280,6 +280,16 @@ export function initComets(selector = ".space-el"): void {
     ox: number; oy: number;
   };
   const comets: CometState[] = [];
+  // Section sizes, read once here and kept fresh by a ResizeObserver below,
+  // so a respawn never reads layout in the middle of writing transforms.
+  const boxes = new Map<HTMLElement, { w: number; h: number }>();
+  const dims = (p: HTMLElement) => {
+    let b = boxes.get(p);
+    if (!b) boxes.set(p, (b = { w: p.clientWidth, h: p.clientHeight }));
+    return b;
+  };
+  for (const wrap of wraps) if (wrap.parentElement) dims(wrap.parentElement);
+  const origin = new Map(wraps.map((w) => [w, [w.offsetLeft, w.offsetTop] as const]));
 
   for (const wrap of wraps) {
     // Both the layout and a page script may call initComets; each comet
@@ -297,11 +307,10 @@ export function initComets(selector = ".space-el"): void {
     const st: CometState = {
       wrap, comet, parent,
       x: 0, y: 0, ang: 0, speed: 0, life: 0, maxLife: 1, flying: false,
-      ox: wrap.offsetLeft, oy: wrap.offsetTop,
+      ox: origin.get(wrap)![0], oy: origin.get(wrap)![1],
     };
     const respawn = () => {
-      const w = parent.clientWidth;
-      const h = parent.clientHeight;
+      const { w, h } = dims(parent);
       st.x = w * (0.05 + Math.random() * 0.75);
       st.y = h * (0.05 + Math.random() * 0.7);
       st.ang = Math.random() * Math.PI * 2;
@@ -334,9 +343,7 @@ export function initComets(selector = ".space-el"): void {
   // observers, so a frame reads no layout at all. The loop sleeps while no
   // section with comets is near the screen and wakes when one scrolls in.
   const parents = [...new Set(comets.map((st) => st.parent))];
-  const boxes = new Map<HTMLElement, { w: number; h: number }>();
   const near = new Set<HTMLElement>();
-  for (const p of parents) boxes.set(p, { w: p.clientWidth, h: p.clientHeight });
   const remeasure = () => {
     for (const p of parents) boxes.set(p, { w: p.clientWidth, h: p.clientHeight });
     for (const st of comets) { st.ox = st.wrap.offsetLeft; st.oy = st.wrap.offsetTop; }

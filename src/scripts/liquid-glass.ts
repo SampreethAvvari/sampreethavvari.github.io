@@ -14,7 +14,7 @@
 
 const NS = "http://www.w3.org/2000/svg";
 
-type Cached = { id: string };
+type Cached = { id: string; ready: Promise<void> };
 
 function isChromium(): boolean {
   const brands = (navigator as Navigator & { userAgentData?: { brands?: { brand: string }[] } })
@@ -22,19 +22,35 @@ function isChromium(): boolean {
   return !!brands?.some((b) => /Chromium|Google Chrome|Microsoft Edge/i.test(b.brand));
 }
 
-// The displacement map for one rounded rectangle, as a PNG data URL.
-function drawMap(w: number, h: number, r: number, bezel: number): string {
+// The displacement map for one rounded rectangle, as a PNG data URL. The PNG
+// is encoded with toBlob, which the browser does off the main thread;
+// toDataURL would hold the page for a tenth of a second on a wide map.
+function drawMap(w: number, h: number, r: number, bezel: number): Promise<string> {
   const canvas = document.createElement("canvas");
   canvas.width = w;
   canvas.height = h;
-  const ctx = canvas.getContext("2d");
-  if (!ctx) return "";
+  // A plain memory canvas: the map is written once and read back once, and a
+  // GPU canvas would make that read wait on the graphics card.
+  const ctx = canvas.getContext("2d", { willReadFrequently: true });
+  if (!ctx) return Promise.resolve("");
   const img = ctx.createImageData(w, h);
   const data = img.data;
   const hw = w / 2;
   const hh = h / 2;
+  // Only a band `bezel` wide along the edge bends anything; everywhere else
+  // the map is the neutral grey (128, 128, 128). Fill it all neutral, then
+  // work out real pixels only where they can differ: whole rows near the top
+  // and bottom, and just the two edge bands on the rows between. Same map,
+  // a fraction of the work on a large card.
+  new Uint32Array(data.buffer).fill(new Uint32Array(new Uint8Array([128, 128, 128, 255]).buffer)[0]);
+  // Rows inside the rounded corners bend across their whole corner, so they
+  // are full rows too.
+  const band = Math.ceil(bezel) + 1;
+  const edgeRows = Math.max(band, Math.ceil(r) + 1);
   for (let y = 0; y < h; y++) {
+    const fullRow = Math.abs(y + 0.5 - hh) > hh - edgeRows;
     for (let x = 0; x < w; x++) {
+      if (!fullRow && x === band && w - band > band) x = w - band;
       const px = x + 0.5 - hw;
       const py = y + 0.5 - hh;
       const qx = Math.abs(px) - (hw - r);
@@ -78,7 +94,16 @@ function drawMap(w: number, h: number, r: number, bezel: number): string {
     }
   }
   ctx.putImageData(img, 0, 0);
-  return canvas.toDataURL("image/png");
+  return new Promise((resolve) => {
+    const sync = () => resolve(canvas.toDataURL("image/png"));
+    canvas.toBlob((blob) => {
+      if (!blob) return sync();
+      const reader = new FileReader();
+      reader.onload = () => resolve(String(reader.result));
+      reader.onerror = sync;
+      reader.readAsDataURL(blob);
+    }, "image/png");
+  });
 }
 
 export function initLiquidGlass(selector: string): void {
@@ -100,11 +125,11 @@ export function initLiquidGlass(selector: string): void {
   const cache = new Map<string, Cached>();
   let count = 0;
 
-  const filterFor = (w: number, h: number, r: number): string => {
+  const filterFor = (w: number, h: number, r: number): Cached => {
     const bezel = Math.max(6, Math.min(22, Math.min(w, h) * 0.34));
     const key = `${w}x${h}r${r}`;
     const hit = cache.get(key);
-    if (hit) return hit.id;
+    if (hit) return hit;
     const id = `lg-refract-${++count}`;
     const filter = document.createElementNS(NS, "filter");
     filter.setAttribute("id", id);
@@ -115,7 +140,6 @@ export function initLiquidGlass(selector: string): void {
     filter.setAttribute("height", String(h));
     filter.setAttribute("color-interpolation-filters", "sRGB");
     const map = document.createElementNS(NS, "feImage");
-    map.setAttribute("href", drawMap(w, h, r, bezel));
     map.setAttribute("x", "0");
     map.setAttribute("y", "0");
     map.setAttribute("width", String(w));
@@ -130,21 +154,29 @@ export function initLiquidGlass(selector: string): void {
     disp.setAttribute("yChannelSelector", "G");
     filter.append(map, disp);
     svg.appendChild(filter);
-    cache.set(key, { id });
-    return id;
+    const entry: Cached = { id, ready: drawMap(w, h, r, bezel).then((url) => map.setAttribute("href", url)) };
+    cache.set(key, entry);
+    return entry;
   };
 
   // Sizes come from the ResizeObserver and each corner radius is read once,
   // all reads before any write, so setting one element's filter never makes
   // the browser recompute styles to measure the next.
+  // An element takes its refracting filter once that filter's map is ready;
+  // until then it keeps the clear tinted glass from the CSS.
   const radius = new WeakMap<HTMLElement, number>();
+  const wanted = new WeakMap<HTMLElement, string>();
   const write = (el: HTMLElement, w: number, h: number) => {
     if (w < 8 || h < 8) return;
     const r = Math.min(radius.get(el) ?? 0, w / 2, h / 2);
-    const id = filterFor(w, h, Math.round(r));
-    const value = `url(#${id}) saturate(1.6) brightness(1.06)`;
-    el.style.setProperty("backdrop-filter", value);
-    el.style.setProperty("-webkit-backdrop-filter", value);
+    const filter = filterFor(w, h, Math.round(r));
+    wanted.set(el, filter.id);
+    filter.ready.then(() => {
+      if (wanted.get(el) !== filter.id) return; // resized again since
+      const value = `url(#${filter.id}) saturate(1.6) brightness(1.06)`;
+      el.style.setProperty("backdrop-filter", value);
+      el.style.setProperty("-webkit-backdrop-filter", value);
+    });
   };
   const measureAll = (els: HTMLElement[]) => {
     const sizes = els.map((el) => {
