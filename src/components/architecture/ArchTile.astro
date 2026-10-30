@@ -13,7 +13,10 @@ const mine = parts.filter((p) => p.owner === "mine").length;
 const ACRONYM = { aie: "AIE", fde: "FDE", mle: "MLE", sde: "SDE" } as const;
 // The featured tile is the tallest thing in its row, so it shows the system
 // itself: the drawing with light moving along its main path, and its numbers.
-const liveSvg = featured ? svgWithOwners(arch).replace('class="arch-svg"', 'class="arch-svg tile-svg" aria-hidden="true"') : "";
+// It is a picture here, so its parts are not stops for the keyboard.
+const liveSvg = featured
+  ? svgWithOwners(arch).replace('class="arch-svg"', 'class="arch-svg tile-svg" aria-hidden="true"').replace(/\s?tabindex="0"/g, "")
+  : "";
 ---
 
 <a

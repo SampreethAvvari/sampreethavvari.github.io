@@ -145,7 +145,8 @@ body {
 .t-meta {
   font-size: 0.8125rem;
   line-height: 1.4;
-  color: var(--ink-faint);
+  /* A touch brighter than --ink-faint: small text needs 4.5 to 1 on black. */
+  color: rgba(245, 245, 247, 0.5);
   font-variant-numeric: tabular-nums;
 }
 
