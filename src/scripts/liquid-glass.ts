@@ -134,28 +134,50 @@ export function initLiquidGlass(selector: string): void {
     return id;
   };
 
-  const apply = (el: HTMLElement) => {
-    const rect = el.getBoundingClientRect();
-    const w = Math.round(rect.width);
-    const h = Math.round(rect.height);
+  // Sizes come from the ResizeObserver and each corner radius is read once,
+  // all reads before any write, so setting one element's filter never makes
+  // the browser recompute styles to measure the next.
+  const radius = new WeakMap<HTMLElement, number>();
+  const write = (el: HTMLElement, w: number, h: number) => {
     if (w < 8 || h < 8) return;
-    const raw = parseFloat(getComputedStyle(el).borderTopLeftRadius) || 0;
-    const r = Math.min(raw, w / 2, h / 2);
+    const r = Math.min(radius.get(el) ?? 0, w / 2, h / 2);
     const id = filterFor(w, h, Math.round(r));
     const value = `url(#${id}) saturate(1.6) brightness(1.06)`;
     el.style.setProperty("backdrop-filter", value);
     el.style.setProperty("-webkit-backdrop-filter", value);
   };
+  const measureAll = (els: HTMLElement[]) => {
+    const sizes = els.map((el) => {
+      if (!radius.has(el)) radius.set(el, parseFloat(getComputedStyle(el).borderTopLeftRadius) || 0);
+      const rect = el.getBoundingClientRect();
+      return [Math.round(rect.width), Math.round(rect.height)] as const;
+    });
+    els.forEach((el, i) => write(el, sizes[i][0], sizes[i][1]));
+  };
 
   const seen = new WeakSet<HTMLElement>();
-  const ro = "ResizeObserver" in window ? new ResizeObserver((entries) => entries.forEach((e) => apply(e.target as HTMLElement))) : null;
+  const ro =
+    "ResizeObserver" in window
+      ? new ResizeObserver((entries) => {
+          const els = entries.map((e) => e.target as HTMLElement);
+          for (const el of els) if (!radius.has(el)) radius.set(el, parseFloat(getComputedStyle(el).borderTopLeftRadius) || 0);
+          for (const e of entries) {
+            const box = e.borderBoxSize?.[0];
+            if (box) write(e.target as HTMLElement, Math.round(box.inlineSize), Math.round(box.blockSize));
+            else measureAll([e.target as HTMLElement]);
+          }
+        })
+      : null;
   const scan = () => {
+    const fresh: HTMLElement[] = [];
     document.querySelectorAll<HTMLElement>(selector).forEach((el) => {
       if (seen.has(el)) return;
       seen.add(el);
-      apply(el);
-      ro?.observe(el);
+      fresh.push(el);
     });
+    // The observer reports each new element's size once on its own.
+    if (ro) fresh.forEach((el) => ro.observe(el));
+    else measureAll(fresh);
   };
   scan();
   // Islands (the nav, the chat button, back to top) mount after this runs.

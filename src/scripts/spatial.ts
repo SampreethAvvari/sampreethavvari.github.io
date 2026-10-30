@@ -276,6 +276,8 @@ export function initComets(selector = ".space-el"): void {
     parent: HTMLElement;
     x: number; y: number; ang: number; speed: number;
     life: number; maxLife: number; flying: boolean;
+    /** Where the CSS placed the wrapper inside its section. */
+    ox: number; oy: number;
   };
   const comets: CometState[] = [];
 
@@ -287,16 +289,15 @@ export function initComets(selector = ".space-el"): void {
     const parent = wrap.parentElement as HTMLElement | null;
     if (!parent) continue;
     const comet = wrap.querySelector<HTMLElement>(".space-comet");
-    // JS owns the motion: park the wrapper at the origin and disable the
-    // CSS idle drift so inline transforms win.
-    wrap.style.top = "0";
-    wrap.style.left = "0";
-    wrap.style.right = "auto";
-    wrap.style.bottom = "auto";
+    // JS owns the motion with transforms measured from where the CSS put
+    // the wrapper. Moving the wrapper itself to the corner would count as a
+    // layout shift; a transform never does. The CSS idle drift is turned off
+    // so the inline transforms win.
     if (comet) comet.style.animation = "none";
     const st: CometState = {
       wrap, comet, parent,
       x: 0, y: 0, ang: 0, speed: 0, life: 0, maxLife: 1, flying: false,
+      ox: wrap.offsetLeft, oy: wrap.offsetTop,
     };
     const respawn = () => {
       const w = parent.clientWidth;
@@ -329,25 +330,51 @@ export function initComets(selector = ".space-el"): void {
   }
   if (!comets.length) return;
 
-  // Read every section's box once a frame, before any comet moves, so the
-  // writes below never force the browser to lay the page out again mid-frame.
-  // Moving a comet never changes its section's box, so the numbers are the
-  // same ones a read after each move would give.
+  // Each section's size, and whether it is near the screen, come from
+  // observers, so a frame reads no layout at all. The loop sleeps while no
+  // section with comets is near the screen and wakes when one scrolls in.
   const parents = [...new Set(comets.map((st) => st.parent))];
-  const boxes = new Map<HTMLElement, { top: number; bottom: number; w: number; h: number }>();
+  const boxes = new Map<HTMLElement, { w: number; h: number }>();
+  const near = new Set<HTMLElement>();
+  for (const p of parents) boxes.set(p, { w: p.clientWidth, h: p.clientHeight });
+  const remeasure = () => {
+    for (const p of parents) boxes.set(p, { w: p.clientWidth, h: p.clientHeight });
+    for (const st of comets) { st.ox = st.wrap.offsetLeft; st.oy = st.wrap.offsetTop; }
+  };
+  if ("ResizeObserver" in window) {
+    const ro = new ResizeObserver(remeasure);
+    parents.forEach((p) => ro.observe(p));
+  } else window.addEventListener("resize", remeasure, { passive: true });
+  let raf = 0;
   let last = performance.now();
-  (function tick(now: number = performance.now()) {
-    requestAnimationFrame(tick);
+  const wake = () => {
+    if (raf || !near.size || document.hidden) return;
+    last = performance.now();
+    raf = requestAnimationFrame(tick);
+  };
+  if ("IntersectionObserver" in window) {
+    const io = new IntersectionObserver(
+      (entries) => {
+        for (const en of entries) {
+          if (en.isIntersecting) near.add(en.target as HTMLElement);
+          else near.delete(en.target as HTMLElement);
+        }
+        wake();
+      },
+      { rootMargin: "60px 0px" },
+    );
+    parents.forEach((p) => io.observe(p));
+  } else parents.forEach((p) => near.add(p));
+  document.addEventListener("visibilitychange", wake);
+  function tick(now: number) {
+    raf = 0;
+    if (!near.size || document.hidden) return;
+    raf = requestAnimationFrame(tick);
     const dt = Math.min((now - last) / 1000, 0.08);
     last = now;
-    const vh = window.innerHeight;
-    for (const p of parents) {
-      const r = p.getBoundingClientRect();
-      boxes.set(p, { top: r.top, bottom: r.bottom, w: p.clientWidth, h: p.clientHeight });
-    }
     for (const st of comets) {
+      if (!near.has(st.parent)) continue; // section off screen
       const pr = boxes.get(st.parent)!;
-      if (pr.bottom < -60 || pr.top > vh + 60) continue; // section offscreen
       if (st.flying) continue;
       st.life += dt;
       st.x += Math.cos(st.ang) * st.speed * dt;
@@ -362,10 +389,11 @@ export function initComets(selector = ".space-el"): void {
         continue;
       }
       const alpha = Math.min(1, t / 0.12) * Math.min(1, (1 - t) / 0.2);
-      st.wrap.style.transform = `translate3d(${st.x.toFixed(1)}px, ${st.y.toFixed(1)}px, 0)`;
+      st.wrap.style.transform = `translate3d(${(st.x - st.ox).toFixed(1)}px, ${(st.y - st.oy).toFixed(1)}px, 0)`;
       st.wrap.style.opacity = alpha.toFixed(3);
     }
-  })();
+  }
+  wake();
 }
 
 /** Endless CSS animations inside these elements (a drawing's flowing paths,
