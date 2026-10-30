@@ -171,7 +171,7 @@ const trackH = rows.length * ROW_H;
   <div class="tl-tip" id="tl-tip" role="status" aria-hidden="true"></div>
 
   {/* floating detail panel */}
-  <div class="tl-dialog" id="tl-dialog" role="dialog" aria-modal="false" aria-hidden="true">
+  <div class="tl-dialog" id="tl-dialog" role="dialog" aria-modal="false" aria-hidden="true" inert>
     <div class="tl-dialog-head">
       <p class="tl-dialog-title" id="tl-dialog-title"></p>
       <button type="button" class="tl-close" id="tl-close" aria-label="Close">✕</button>
@@ -841,6 +841,7 @@ const trackH = rows.length * ROW_H;
         .join("");
       dialog.classList.add("open");
       dialog.setAttribute("aria-hidden", "false");
+      dialog.inert = false;
       open = true;
       (closeBtn as HTMLButtonElement).focus({ preventScroll: true });
     };
@@ -848,6 +849,8 @@ const trackH = rows.length * ROW_H;
       if (!open) return;
       dialog.classList.remove("open");
       dialog.setAttribute("aria-hidden", "true");
+      // Closed, nothing inside it can take focus.
+      dialog.inert = true;
       root.querySelectorAll(".tl-year.on").forEach((b) => b.classList.remove("on"));
       open = false;
     };
