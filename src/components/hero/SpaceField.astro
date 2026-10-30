@@ -85,20 +85,27 @@
     window.addEventListener("resize", () => send({ type: "resize", ...size() }), { passive: true });
     document.addEventListener("visibilitychange", () => send({ type: "hidden", hidden: document.hidden }));
 
+    // Either way the sky starts after the page's first paint: compiling the
+    // shaders keeps the browser's graphics process busy, and that process
+    // also puts the page on screen.
+    const later = (window as Window & { requestIdleCallback?: (cb: () => void, o?: { timeout: number }) => number }).requestIdleCallback;
+    const afterPaint = (cb: () => void) => (later ? later(cb, { timeout: 600 }) : setTimeout(cb, 120));
+
     if ("transferControlToOffscreen" in cv && typeof Worker !== "undefined") {
-      const off = cv.transferControlToOffscreen();
-      const worker = new SkyWorker();
-      worker.onmessage = (e: MessageEvent<{ type: string }>) => {
-        if (e.data.type === "ready") on();
-        else if (e.data.type === "fail") worker.terminate();
-      };
-      send = (m) => worker.postMessage(m);
-      worker.postMessage({ type: "init", canvas: off, isMobile, ...size(), input }, [off]);
+      afterPaint(() => {
+        const off = cv.transferControlToOffscreen();
+        const worker = new SkyWorker();
+        worker.onmessage = (e: MessageEvent<{ type: string }>) => {
+          if (e.data.type === "ready") on();
+          else if (e.data.type === "fail") worker.terminate();
+        };
+        send = (m) => worker.postMessage(m);
+        worker.postMessage({ type: "init", canvas: off, isMobile, ...size(), input }, [off]);
+      });
       return;
     }
 
-    // No OffscreenCanvas: draw on this thread, started after the first paint.
-    const later = (window as Window & { requestIdleCallback?: (cb: () => void, o?: { timeout: number }) => number }).requestIdleCallback;
+    // No OffscreenCanvas: draw on this thread.
     const start = () => {
       const sky = createSky(cv, isMobile);
       if (!sky) return;
@@ -121,7 +128,6 @@
         })();
       }, (cb) => requestAnimationFrame(cb));
     };
-    if (later) later(start, { timeout: 600 });
-    else setTimeout(start, 120);
+    afterPaint(start);
   })();
 </script>
