@@ -19,13 +19,13 @@ import { profilePageNode, faqNode } from "../utils/seo";
 const archShown = archAll.slice(0, 3);
 
 // Four numbers under the hero, each a link to where it is proven. Sources:
-// the reconciliation post; the CBCT post (37 days, six figure quote);
+// the reconciliation post; the capacity planner post (planned from daily);
 // Doc Coach's 471 scored consults and NPC Coach's 690 graded calls
 // (BigQuery, 2026-10-29); the platform post's service count (gcloud
 // listings, 2026-10-29).
 const heroProof = [
   { value: "70 hrs", label: "a week back for the insurance team", href: "/posts/reconciliation" },
-  { value: "37 days", label: "to build our dental CT scan check in house", href: "/posts/cbct-scan-validator" },
+  { value: "3 offices", label: "plan their doctors in the capacity planner every day", href: "/posts/capacity-planner" },
   { value: "1,161", label: "doctor consults and patient calls graded", href: "/architecture/doc-coach" },
   { value: "45", label: "services live on Google Cloud, one engineer", href: "/posts/platform" },
 ];
@@ -169,7 +169,7 @@ const faq = [
   },
   {
     q: "What has the work changed for the business?",
-    a: "About 70 hours a week back for the insurance team, 1,161 doctor consults and patient calls graded, and a dental CT scan check built in house in 37 days against a six figure vendor quote.",
+    a: "About 70 hours a week back for the insurance team, 1,161 doctor consults and patient calls graded, and a capacity planner all three offices plan their doctors in every day.",
   },
   {
     q: "What does a forward deployed engineer do?",
