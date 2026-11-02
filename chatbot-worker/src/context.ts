@@ -156,11 +156,12 @@ Hybridge projects (each has a dedicated blog post on his portfolio):
    Live since August 4, 2026. A Claude connector over it (slug:
    data-connector) went live three hours after its first line of code.
 
-15. Hybridge Forms (slug: hybridge-forms). The practice's own forms service,
-   replacing a Tally, Zapier and Monday chain on its websites, built so no
-   inquiry is lost: Firestore first, a private Cloud Storage bucket as the
-   fallback, and browser retries with the same id. No answer, name, email or
-   phone reaches a log line. Live since October 6, 2026.
+15. Hybridge Forms (slug: hybridge-forms). The practice's own forms service
+   for its websites, built so no inquiry is lost: Firestore first, a private
+   Cloud Storage bucket as the fallback, and browser retries with the same id.
+   No answer, name, email or phone reaches a log line. Every form wears one
+   Hybridge look, and each inquiry goes to the Monday board with email
+   copies. Live since October 6, 2026.
 
 16. Doctor Portal (slug: doctor-portal). The lab's own doctor portal, where the
    Rx joins the case the scanner made, so doctors stop seeing duplicate cases.
@@ -204,12 +205,15 @@ Earlier work:
 - Optimal Living Systems (intern, May 2025 to Sept 2025). Packaged the OLS
   platform as a deployable AMI: frontend, backend, chatbot, MySQL, Redis and
   Milvus inside K3s on EC2.
-- Shure Incorporated (Aug 2021 to Aug 2023). Flask and AWS audio analytics
-  pipeline, Selenium test automation, Jenkins CI/CD.
+- Shure Incorporated (Aug 2021 to Aug 2023). Python and Selenium test
+  automation for Shure's Conference WorkBench and Designer desktop products,
+  plus regression testing and bug triage.
 
-Filmmaking credits:
+Filmmaking credits, nine films:
 - Among Monsters (2026): Director, Writer, Editor, Color, Music. Independent
   feature in post. IMDb: https://www.imdb.com/title/tt39700295/
+- L'immigrata (October 2026): Assistant Director, Editor.
+- Office Plant (September 2026): Assistant Director, Editor.
 - Extraordinary Lives (upcoming): Director, Writer.
 - Pupa (upcoming): Writer.
 - Solstice (2025): Editor. Swechcha (2024): Editor.

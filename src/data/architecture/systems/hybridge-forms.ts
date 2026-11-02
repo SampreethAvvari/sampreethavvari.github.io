@@ -10,7 +10,7 @@ const arch: Architecture = {
   disciplines: ["fde", "sde"],
   post: "/posts/hybridge-forms",
   headline: "Saves website leads and puts them on Monday.",
-  tail: "Replaces Tally and Zapier.",
+  tail: "On Cloud Run and Firestore, $9 in October.",
   lede:
     "A patient's answers post from an iframe on our websites to forms-public, which saves them and their delivery jobs in one Firestore write. A private worker, woken at once by Cloud Tasks and every minute by Cloud Scheduler, puts the lead on Monday and sends the email copies.",
   titleBlock: [
@@ -19,8 +19,8 @@ const arch: Architecture = {
     ["Live since", "Oct 6, 2026"],
     ["Runs on", "Cloud Run, Firestore"],
     ["Region", "us-east1"],
-    ["Replaces", "Tally and Zapier"],
-    ["Importer", "32 of 32 Tally forms"],
+    ["Checked", "Every night at 2 AM"],
+    ["Retries", "1 min, 10 min, 1 hour"],
     ["Rollback", "previous revision"],
     ["Scale", "1 inquiry : 1 write"],
     ["Drawn by", "S. Avvari"],
@@ -116,7 +116,7 @@ const arch: Architecture = {
     nightly: {
       kind: "My job",
       owner: "mine",
-      what: "A Cloud Run job at 2 AM New York time. It sends a test inquiry through each open form, opens each page, scans the websites for forms still on Tally, and moves rescued copies from the fallback bucket into Firestore.",
+      what: "A Cloud Run job at 2 AM New York time. It sends a test inquiry through each open form, opens each page, and moves rescued copies from the fallback bucket into Firestore.",
       source: "packages/checks/src/fallback.ts",
     },
   },

@@ -12,7 +12,7 @@ export const reconciliation: Tour = {
   pitch:
     "Takes a dental practice's three daily exports, the schedule, the production ledger, and the clinical notes, and proves that every patient who was seen got both documented and billed. Staff review only the patients who disagree instead of eyeballing three spreadsheets.",
   problem:
-    "Two front office staff were each spending about three hours a day cross-checking three exports by hand: did everyone on the schedule get a note? Did every note get billed? Did the right provider bill it? Six person-hours daily, and misses meant either lost revenue or compliance risk.",
+    "The insurance team spent about 70 hours a week cross checking three exports by hand: did everyone on the schedule get a note? Did every note get billed? Did the right provider bill it? Misses meant either lost revenue or compliance risk.",
   metrics: [
     { label: "Spec to live", value: "8.75 hours", sub: "first commit to the first live revision" },
     { label: "Verified without review", value: "30 of 41", sub: "patients on one June day, first engine version" },
@@ -116,5 +116,5 @@ export const reconciliation: Tour = {
     { lane: "Quality", items: ["Input SHA-256 hashes recorded per run", "Golden assertion pins engine behavior"] },
   ],
   outcome:
-    "Two staff were spending about three hours each a day on this cross check. Now they open one page and review only the patients who disagree. Because the engine is deterministic and every verdict cites its source rows, staff argue with the data, not the tool, and each disagreement became a versioned rule release: v1.7 added provider verification, v1.8 added the wrong-day guard after the 85-phantom-flag incident, and by v1.16 all eight known false-verified cases flag correctly.",
+    "The insurance team spent about 70 hours a week on this cross check by hand. Now they open one page and review only the patients who disagree. Because the engine is deterministic and every verdict cites its source rows, staff argue with the data, not the tool, and each disagreement became a versioned rule release: v1.7 added provider verification, v1.8 added the wrong-day guard after the 85-phantom-flag incident, and by v1.16 all eight known false-verified cases flag correctly.",
 };

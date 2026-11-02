@@ -36,9 +36,9 @@ facts:
 
 ## The problem
 
-Our marketing lead had a question that sounds like thirty seconds of work. Of the people who clicked a Google ad, how many called, how many came in for a consult, and how much treatment did they accept?
+Our marketing lead had a question. Of the people who clicked a Google ad, how many called, how many came in for a consult, and how much treatment did they accept?
 
-In August the answer lived in five logins. Google Ads for clicks and spend, Microsoft Ads and Meta for the rest of the spend, CallRail for phone calls, and Monday, our CRM, where leads sit on one board and patients on three others, one per office. Each had its own date picker and its own idea of a lead. Answering took a spreadsheet and an afternoon.
+In August the answer lived in five logins. Google Ads for clicks and spend, Microsoft Ads and Meta for the rest of the spend, CallRail for phone calls, and Monday, our CRM, where leads sit on one board and patients on three others, one per office. Each had its own date picker and its own idea of a lead.
 
 By October the ask had grown. The marketing lead and I wanted to ask Claude and get answers that say where every number came from, plus a morning email with one Excel tab per source.
 

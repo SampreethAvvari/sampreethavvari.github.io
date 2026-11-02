@@ -17,7 +17,7 @@ stats:
     label: "bad studies the testing team found that the review app's model also flagged, Aug 19 to Oct 28"
     tone: "blue"
   - value: "$62"
-    label: "on Google Cloud from October 1 to 28, measured, against a vendor quote of $2,200 a month"
+    label: "on Google Cloud from October 1 to 28, measured, against a six figure vendor quote plus a monthly fee"
     tone: "cyan"
 facts:
   - label: "Problem"
@@ -29,7 +29,7 @@ facts:
   - label: "Runs on"
     value: "Cloud Run CPU with an OpenVINO encoder, woken by Eventarc, plus a small SFTP VM."
   - label: "Cost"
-    value: "$62 on Google Cloud from October 1 to 28, 2026, measured, against a vendor quote of $2,200 a month."
+    value: "$62 on Google Cloud from October 1 to 28, 2026, measured, against a six figure vendor quote plus a monthly fee."
   - label: "Status"
     value: "Testing on real scans; no real lab case has gone through it yet."
 ---

@@ -39,7 +39,7 @@ I said that out loud on a Saturday morning and three people unfortunately believ
 
 ## Why I wanted this specifically
 
-I have directed, written, edited or shot seven films, two of them still in the works. On a real set, continuity is somebody's full time job. The tool I wanted was a continuity department.
+I have directed, written, edited or shot nine films, two of them still in the works. On a real set, continuity is somebody's full time job. The tool I wanted was a continuity department.
 
 ## The problem, stated plainly
 

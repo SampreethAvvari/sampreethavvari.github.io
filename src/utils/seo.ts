@@ -57,6 +57,8 @@ export function personNode(base: string, opts: { image: string; email: string; d
 // entity; the rest are named with their year and his roles.
 const FILMS: Array<{ name: string; year?: string; imdb?: string; roles: string[] }> = [
   { name: "Among Monsters", year: "2026", imdb: "https://www.imdb.com/title/tt39700295/", roles: ["Director", "Writer", "Editor", "Music"] },
+  { name: "L'immigrata", year: "2026", roles: ["Assistant Director", "Editor"] },
+  { name: "Office Plant", year: "2026", roles: ["Assistant Director", "Editor"] },
   { name: "Tiger Man", year: "2022", roles: ["Director", "Writer", "Editor"] },
   { name: "Solstice", year: "2025", roles: ["Editor"] },
   { name: "Swechcha", year: "2024", roles: ["Editor"] },

@@ -41,7 +41,7 @@ export const info = {
         rgb: "52,211,153",
         kind: "work",
         blurb:
-          "APIs and data pipelines for Shure Cloud audio analytics on AWS, plus the test automation frameworks and the CI/CD around them.",
+          "Python and Selenium test automation for Shure's Conference WorkBench and Designer desktop products, plus regression testing and bug triage.",
       },
       {
         title: "Master of Science, Computer Engineering",
@@ -233,9 +233,8 @@ export const info = {
         location: "Shure Incorporated, India",
         logo: "/logos/shure.svg",
         highlights: [
-          "Built and deployed REST APIs in Flask for the Shure Cloud audio analytics pipeline on AWS (DynamoDB, S3, Amazon MSK).",
-          "Built test automation frameworks in Python with Selenium, using object oriented design with Factory and Strategy patterns.",
-          "Ran backend services and CI/CD pipelines in Python and Jenkins for build, test and release.",
+          "Built test automation in Python and Selenium for Shure's Conference WorkBench and Designer desktop products.",
+          "Ran regression testing and bug triage on both products.",
         ],
       },
     ],
@@ -288,7 +287,6 @@ export const info = {
           "PostgreSQL",
           "MySQL",
           "MongoDB",
-          "DynamoDB",
           "Redis",
           "Milvus",
           "Firestore",
@@ -317,11 +315,9 @@ export const info = {
         items: [
           "EC2",
           "S3",
-          "DynamoDB",
           "ECR",
           "RDS",
           "ElastiCache",
-          "Amazon MSK",
           "CloudWatch",
         ],
       },
@@ -339,7 +335,6 @@ export const info = {
           "Airflow",
           "Ray",
           "OpenTelemetry",
-          "Kafka",
           "Spark",
         ],
       },
@@ -382,7 +377,6 @@ export const info = {
           "GraphQL",
           "Git",
           "GitHub",
-          "Jenkins",
           "Figma",
           "Mermaid",
           "Prometheus",
@@ -1446,27 +1440,27 @@ export const info = {
       tier: "industry",
       date: "Sep 2026 to present",
       description:
-        "I built our own forms service to replace the Tally, Zapier and Monday chain on our practice websites, around one rule: no submission is ever lost.",
+        "I built our own forms service for our practice websites, around one rule: no submission is ever lost.",
       link: "",
       post: "/posts/hybridge-forms",
       details: {
         summary_short:
           "A public forms app with an embed script, a private delivery worker to Monday and email, a dashboard and form builder behind IAP, and nightly checks. Live since Oct 6, 2026.",
         stats: [
-          { value: "32 of 32", label: "Live Tally forms the importer handles, found across 539 pages" },
+          { value: "15 seconds", label: "About how long the browser retries with the same id before it keeps the answers on the device" },
           { value: "0", label: "Answers, names, emails or phones in any log line" },
           { value: "67 leads", label: "Already on the Monday board got their missing tracking fields on Oct 26, the day the gap was seen" },
           { value: "$9", label: "Measured Google Cloud cost in October, a partial month" },
         ],
         star: {
           problem:
-            "Every patient inquiry on our websites went through Tally, then Zapier, before it reached Monday.",
+            "Lead forms on our websites had to keep every inquiry, protect patient privacy, work on a phone, land on the Monday board, and handle conditional questions and spam.",
           solution:
             "One owned platform: a public forms app with an embed script, a delivery worker that puts each inquiry on the Monday Leads board and emails the copies, a dashboard and form builder behind IAP, and nightly checks.",
           process:
-            "Built around one rule: no submission is ever lost. If Firestore fails, the answers go to a private Cloud Storage bucket and the visitor still sees success. If both fail, the server answers 503 and the browser retries over about 15 seconds with the same id, then keeps the answers on the device. A queue task wakes the worker on every send, and a sweep runs every minute. An importer brings over all 32 live Tally forms.",
+            "Built around one rule: no submission is ever lost. If Firestore fails, the answers go to a private Cloud Storage bucket and the visitor still sees success. If both fail, the server answers 503 and the browser retries over about 15 seconds with the same id, then keeps the answers on the device. A queue task wakes the worker on every send, and a sweep runs every minute.",
           result:
-            "Live since 6 October 2026. Elmwood's contact form moved off Tally on 14 October, and on 26 October all six tracking fields reached the Monday board, and the 67 leads already there got their missing ones.",
+            "Live since 6 October 2026. Elmwood's contact form has run on it since 14 October, and on 26 October all six tracking fields reached the Monday board, and the 67 leads already there got their missing ones.",
         },
         summary:
           "An owned forms platform for a multi office practice's websites, designed so a submission survives a database outage, a storage outage and a flaky connection.",
@@ -1474,7 +1468,7 @@ export const info = {
           "Firestore first, a private Cloud Storage bucket as the fallback, and the visitor still gets a success.",
           "The browser retries over about 15 seconds with the same id, then keeps the answers locally.",
           "The logger drops patient fields by name and by shape, so no answer reaches a log line.",
-          "The Tally importer works on all 32 live forms.",
+          "Every inquiry lands on the Monday board with email copies, in one Hybridge look.",
           "A delivery worker wakes on every send, and a sweep runs every minute.",
         ],
       },

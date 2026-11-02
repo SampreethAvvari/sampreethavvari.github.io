@@ -603,13 +603,13 @@ export const disciplines: Discipline[] = [
         name: "Hybridge Forms",
         status: "In production",
         oneLiner:
-          "Replaced the Tally, Zapier and Monday chain on our practice websites, built so no submission is ever lost.",
+          "Our own lead forms for the practice websites, built so no submission is ever lost.",
         img: "/hybridge-forms.png",
         href: "/posts/hybridge-forms",
         highlights: [
           "Firestore first, a private Cloud Storage bucket as the fallback, and the browser retries with the same id",
           "The logger drops patient fields by name and by shape, so no answer reaches a log line",
-          "The importer handles all 32 live Tally forms; live since October 6",
+          "One Hybridge look, delivery to the Monday board and email copies; live since October 6",
         ],
       },
       {
@@ -678,7 +678,7 @@ export const disciplines: Discipline[] = [
       { title: "A twenty copy Excel workbook became a live capacity planner", href: "/posts/capacity-planner", img: "/capacity-planner.png" },
       { title: "A quoting tool live in 14.5 hours, where a saved price stays put", href: "/posts/treatment-estimator", img: "/treatment-estimator.png" },
       { title: "Visit plans generated from the practice's own masters", href: "/posts/treatment-sequence", img: "/treatment-sequence.png" },
-      { title: "Lead forms off Tally and Zapier, into our own Google Cloud", href: "/posts/hybridge-forms", img: "/hybridge-forms.png" },
+      { title: "Website lead forms built so no inquiry is ever lost", href: "/posts/hybridge-forms", img: "/hybridge-forms.png" },
       { title: "No more green checks on consults that never emailed", href: "/posts/pipeline-ghosting", img: "/pipeline-ghosting.png" },
       { title: "How one engineer runs 45 services for a three office practice", href: "/posts/platform", img: "/platform.png" },
     ],

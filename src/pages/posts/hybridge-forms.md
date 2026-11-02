@@ -1,16 +1,16 @@
 ---
-title: "Lead forms off Tally and Zapier, into our own Google Cloud"
+title: "Website lead forms built so no inquiry is ever lost"
 date: "2026-10-14"
 layout: ../../layouts/PostLayout.astro
-description: "Every patient inquiry on our websites went through Tally, then Zapier, before it reached Monday. I built the forms service that replaces both, around one rule: no inquiry is ever lost."
+description: "I built the lead forms for our practice websites around one rule: no inquiry is ever lost. Each one is saved in our own Google Cloud first, then put on the Monday board."
 img_path: "/hybridge-forms.png"
 architecture: "hybridge-forms"
 img_alt: "Hybridge Forms: a glowing glass form with its fields and Send button, wired down to two storage cubes for the database and the fallback copy"
 tag: "Architecture"
 tone: "emerald"
 stats:
-  - value: "32 forms"
-    label: "found on Tally by reading all 539 pages of our four websites, all handled by one tested importer"
+  - value: "15 seconds"
+    label: "about how long the browser retries with the same id if both stores fail, before it keeps the answers on the device"
     tone: "emerald"
   - value: "0 answers"
     label: "in any log line. The logger drops patient fields by name and by shape"
@@ -20,13 +20,13 @@ stats:
     tone: "amber"
 facts:
   - label: "Problem"
-    value: "Every patient inquiry on our four websites passed through Tally, then Zapier, before reaching Monday."
+    value: "Lead forms on our four websites had to keep every inquiry, protect patient privacy, work on a phone and land on the Monday board."
   - label: "What I built"
     value: "A forms service in our own Google Cloud that saves each inquiry first, then puts it on Monday."
   - label: "Who uses it"
     value: "Patients on the Elmwood and Hybridge Implants sites; our digital experience director builds and publishes forms."
   - label: "Outcome"
-    value: "Inquiries reach the Monday board with no Zapier in between, and no log line carries an answer."
+    value: "Each inquiry is saved first, then lands on the Monday board, and no log line carries an answer."
   - label: "Runs on"
     value: "Cloud Run and Firestore, with Cloud Tasks waking a private worker and a bucket as fallback."
   - label: "Cost"
@@ -35,11 +35,9 @@ facts:
 
 ## The problem
 
-Every form on our four websites ran on Tally. Tally handed each answer to Zapier, and Zapier put it on our Monday lead board. So every patient inquiry passed through two outside companies before anyone at the practice saw it.
+Every patient inquiry on our four websites starts in a form. Each one is a lead, and every lead belongs on our Monday lead board.
 
-Our VP of finance asked to move it inside our own Google Cloud, with one rule: no submission is ever lost. Our digital experience director added the rest. Patient privacy, good on a phone, pushes to Monday, conditional questions, spam protection, and the power to edit and add forms without waiting on me.
-
-Before writing code I fetched all 539 pages in the four sitemaps and read every Tally embed. There were 32 live forms.
+Our VP of finance asked for forms in our own Google Cloud, with one rule: no submission is ever lost. Our digital experience director added the rest. Patient privacy, good on a phone, pushes to Monday, conditional questions, spam protection, and the power to edit and add forms without waiting on me.
 
 ## What I built
 
@@ -49,9 +47,9 @@ The public app holds no dashboard code at all, so a bug there has no admin page 
 
 ## The sprint
 
-The first commit went in on September 30 at 11:58 AM: the design, the plan and the 32 Tally forms as fetched. By 4:36 PM the importer read all 32. That night I worked until 5:36 AM. On October 6 a change went in at 3:55 AM, and the first deploy ran that evening.
+The first commit went in on September 30 at 11:58 AM: the design and the plan. That night I worked until 5:36 AM. On October 6 a change went in at 3:55 AM, and the first deploy ran that evening.
 
-On October 14 Monday delivery, email copies and the Hybridge look all went live. That afternoon our digital experience director swapped Elmwood's contact page from Tally to ours. On October 15, in 79 minutes, a step by step quiz, Delete, an email back to the sender, and wildcard hosts for the Webflow designer went live.
+On October 14 Monday delivery, email copies and the Hybridge look all went live. That afternoon our digital experience director put our form on Elmwood's contact page. On October 15, in 79 minutes, a step by step quiz, Delete, an email back to the sender, and wildcard hosts for the Webflow designer went live.
 
 On October 26 the digital team saw only UTM Source reaching Monday. The forms had saved all six tracking fields, but only one had a column mapped. The fix merged that afternoon as v2.6.1, and a script filled in the missing tracking fields on the 67 leads already on the board. Then a marketing colleague asked for a Skip button on the quiz. It went live on October 28 as v2.7.0.
 
@@ -79,13 +77,13 @@ It drops <span class="egg" tabindex="0" data-egg="answers, email, phone, name an
 
 **Patient file uploads.** There is no upload question and no upload endpoint. A send is JSON only, 32 KB at most. The only files in the system are ones staff attach to the email back to a patient, in a private bucket with no public or signed links.
 
-**A theme per website.** Tally matched each site's colours. Every form now wears one Hybridge look, and I removed the theme editor. One look to test on every phone.
+**A theme per website.** Each form could have matched its host site's colours. Every form wears one Hybridge look instead, and I removed the theme editor. One look to test on every phone.
 
 **A new setting for Skip.** The quiz request could have become another checkbox. Instead Skip shows on any step whose visible questions are all optional, so the director just turns Required off. A skipped step sends nothing: Monday leaves the column empty and the PDF leaves the row out.
 
 ## Where it landed
 
-Elmwood's contact form has run on it since October 14. The Email Us and consultation forms on the Hybridge Implants site feed the same Monday board, with no Zapier in between. The director builds and publishes forms, one site at a time. By October 29 the nightly job had run 29 times.
+Elmwood's contact form has run on it since October 14. The Email Us and consultation forms on the Hybridge Implants site feed the same Monday board. The director builds and publishes forms, one site at a time. By October 29 the nightly job had run 29 times.
 
 It cost $9 in October, measured from the billing export, a partial month since the first cost landed on October 6. One warm public instance is $7.14 of it.
 
