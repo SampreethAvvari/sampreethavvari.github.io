@@ -10,13 +10,13 @@ export const enterpriseSearch: Tour = {
   accent: "#22D3EE",
   accentRgb: "34, 211, 238",
   pitch:
-    "Ask the company a plain-language question and get a streamed answer grounded only in internal documents, every claim cited, with sources that open to the exact passage. If retrieval finds nothing you may see, it says so, and the model is never even called.",
+    "Paused since October 2026. Ask a plain language question and get a streamed answer grounded only in internal documents, every claim cited, with sources that open to the exact passage. If retrieval finds nothing you may see, it says so, and the model is never even called.",
   problem:
     "Years of policies, SOPs, and specs lived across drives where the only search was asking a colleague. Worse, documents disagree: the 2025 schedule says Thursday, the 2026 one says Friday. A useful system has to know who may see what, which version is current, and when to admit it does not know.",
   metrics: [
-    { label: "Eval recall@8", value: "1.0", sub: "floor 0.80, seeded eval harness" },
+    { label: "Eval floor", value: "0.80 recall@8", sub: "a seeded eval fails the build below it, or below 0.35 MRR" },
     { label: "Retrieval", value: "hybrid + RRF", sub: "dense 50 ‖ BM25 50 → rerank to 8" },
-    { label: "Tests", value: "122", sub: "96 backend, 26 frontend" },
+    { label: "Build", value: "24 days", sub: "from the first commit to real models in production" },
     { label: "Abstention", value: "0 tokens", sub: "no eligible sources = no model call" },
   ],
   concepts: ["RAG", "Hybrid retrieval", "Reciprocal Rank Fusion", "Reranking", "ACL pre-filtering", "Grounded generation", "Cite or abstain", "Document versioning"],
@@ -80,7 +80,7 @@ export const enterpriseSearch: Tour = {
     },
     {
       title: "Honest abstention",
-      body: "Ask about a restricted document from an account outside its group and retrieval returns nothing eligible. The assistant says it does not have that, with zero sources, and the model is never invoked, so the refusal costs nothing and cannot hallucinate.",
+      body: "If the asker can see no documents at all, retrieval comes back empty and the model is never called. Otherwise the prompt tells the model to say it does not know when the passages do not answer.",
       screen: {
         kind: "chat",
         messages: [
@@ -108,5 +108,5 @@ export const enterpriseSearch: Tour = {
     { lane: "Governance", items: ["Server-side authority from class + role", "Version chains with supersede links", "Deny-by-default ACL, audit log, Terraform infra"] },
   ],
   outcome:
-    "The retrieval stack scores recall@8 of 1.0 and MRR 0.42 on a seeded eval harness with deterministic fakes, honest framing: those are eval-rig numbers, not production traffic. The design decisions that matter survived adversarial review, which caught a permission-sentinel bug, an authority-scoring bug, and a race that would have wiped the first streamed answer. Attachments, voice input, and doc-type facets ship in the real UI as visibly disabled, coming-soon controls rather than pretending.",
+    "A seeded eval fails the build below recall at 8 of 0.8 or MRR of 0.35. The design decisions that matter survived adversarial review, which caught a permission-sentinel bug, an authority-scoring bug, and a race that would have wiped the first streamed answer. Attachments, voice input, and doc-type facets ship in the real UI as visibly disabled, coming-soon controls rather than pretending.",
 };

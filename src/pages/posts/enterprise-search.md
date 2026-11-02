@@ -38,7 +38,7 @@ facts:
 
 Hybridge runs on documents spread across shared drives, slide decks, SOPs and a few people's heads. When someone needs an answer, they ask around, or they find a document and hope it is the current one.
 
-A search box over all of it is harder than it sounds. Patient details, HR records and business plans sit side by side, so the search has to know who may see what before it looks. Documents disagree, like an old schedule nobody deleted next to the new one. And a confident wrong answer is worse than none, because people act on it.
+A search box over all of it is harder than it sounds. HR records and business plans sit beside everyday documents, so the search has to know who may see what before it looks. Documents disagree, like an old schedule nobody deleted next to the new one. And a confident wrong answer is worse than none, because people act on it.
 
 ## What I built
 
@@ -76,7 +76,7 @@ In the demo, a leadership document exists only for members of the leadership gro
 
 ## What I said no to
 
-**A separate vector database.** At hundreds to low thousands of documents, one Postgres on Cloud SQL holds vectors, the keyword index, permissions, versions and chats under one filter. My research before the first line of code found no speed reason for a second store at that size.
+**A separate vector database.** At the size I designed for, hundreds to low thousands of documents, one Postgres on Cloud SQL holds vectors, the keyword index, permissions, versions and chats under one filter. My research before the first line of code found no speed reason for a second store at that size.
 
 **GraphRAG and vectorless trees.** In the benchmarks I checked, graph retrieval lost to vector search with reranking on simple fact lookups and used far more prompt tokens. Vectorless page trees had no verified benchmark and no managed option on Google Cloud. Both stay off until a real question needs several hops.
 

@@ -14,8 +14,8 @@ stats:
   - value: "45 services"
     label: "live on Google Cloud for a three office dental practice and its lab, listed on Oct 29, 2026"
     tone: "blue"
-  - value: "~$460K"
-    label: "of patient value on 25 retreatment cases no lead pointed at, surfaced by fixing one join"
+  - value: "17 days"
+    label: "from taking our operations lead's planning workbook apart on Sep 11 to the capacity planner in production"
     tone: "amber"
 facts:
   - label: "Role"
@@ -60,7 +60,7 @@ Five asks from five teams, and the time each took to go live:
 
 The finance lead's request is the clearest picture of the loop. It arrived at 11:44 AM on October 28 through the request tab inside the Cowork Dashboard, which files into one list that six apps share through [Launchpad](/posts/launchpad). The change was live at 12:03 PM.
 
-The lab lead's portal shows the other half. At the 11:30 AM sync that same day it became the top priority, with a request for a live link starting at version 0.1. The first version went up at 12:59 PM, built from the lab lead's own mockup, and a working revision was live at 3:12 PM. Every release note ends with the four things still pretend: sample data, files listed by name only, payments and emails off, and no doctor sign in.
+The lab lead's portal shows the other half. At the 11:30 AM sync that same day it became the top priority, with a request for a live link starting at version 0.1. The first version was committed at 12:59 PM, built from the lab lead's own mockup, and a working revision was live at 3:12 PM. Every release note ends with the four things still pretend: sample data, files listed by name only, payments and emails off, and no doctor sign in.
 
 Underneath all of it is the [platform](/posts/platform): 45 live services in 14 Google Cloud projects, listed on October 29.
 
@@ -70,15 +70,14 @@ Speed is only safe when the code refuses the dangerous things by itself.
 
 **Read only toward the system of record.** Denticon holds the charts and the bookings, and one service holds its credentials. Other apps read a mirror through the [CDF registry](/architecture/cdf-registry), each with its own secret. The capacity planner's contract with Denticon has only read methods, and a type level test fails the build if anything shaped like a write appears.
 
-**Patient details stay out of logs.** When an ORM upgrade started putting SQL parameters into error messages, the planner's logger switched to describing a failed query by its Postgres code, constraint and table. A test drives a real duplicate insert with a patient style name to prove no log line carries it. The [forms](/architecture/hybridge-forms) logger drops 18 field names outright, from name and email to phone.
+**Patient details stay out of logs.** The planner's logger describes a failed query by its Postgres code, constraint and table only. A test drives a real duplicate insert with a patient style name to prove no log line carries it. The [forms](/architecture/hybridge-forms) logger drops 18 field names outright, from name and email to phone.
 
-**Access the code enforces.** The [data connector](/architecture/data-connector) lets approved staff ask Claude about marketing data. A guard parses every query Claude writes, refuses anything but one SELECT, and points each table at that person's own set of views. Without the patient box ticked, the contact columns are gone.
+**Access the code enforces.** The [data connector](/architecture/data-connector) lets approved staff ask Claude about marketing data. A guard parses every query Claude writes, refuses anything but one SELECT, and points each table at that person's own set of views. Without the right box ticked, those columns are not in the person's views.
 
 ## How do you measure a forward deployed engineer's impact?
 
-In value found, hours a team spent before, and what it costs to run. Where something is not measured, I say so.
+In hours a team spent before, and what it costs to run. Where something is not measured, I say so.
 
-- **About $460K of patient value.** The first leadership dashboard joined patients to leads by name, and only 49.5 percent of Rochester patients linked. Joining on the boards' own connect column took Rochester to 98.8 percent. The 25 patients left over were retreatment cases carrying about $460K of patient value nobody had attributed. ([Cowork Dashboard](/posts/cowork-dashboard))
 - **70 hours a week.** That is the insurance team's own count of the time spent reading three exports against each other by hand. The engine does that reading now and returns a short list. I have no after number yet. ([Reconciliation](/posts/reconciliation))
 - **$132 of Google Cloud** from October 1 to 28 for the six projects the billing export measures. [What it costs](/posts/what-it-costs) has the table and the projects not measured yet.
 
@@ -90,7 +89,7 @@ Five habits, each one from the work above:
 
 1. **Write the old rules down before replacing them.** The planner reproduces all 360 day cells of the old workbook, checked on every test run.
 2. **Ask with a default.** Questions go out with an answer already coded, so the build never waits on a reply.
-3. **Ship something real early.** A live link on the day the work becomes the priority, and live data by day two.
+3. **Ship something real early.** A live link on the day the work becomes the priority. The planner read live Denticon data the morning after its first release.
 4. **Put the guards in code.** Read only by contract, names out of logs, access checked on every query.
 5. **Say no with a reason.** The planner ranks cover suggestions on five plain rules our operations lead can read, with no generated advice. Reconciliation keeps a model out of the verdict until each practice confirms its terminology list.
 

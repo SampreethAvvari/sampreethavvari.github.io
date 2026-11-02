@@ -1,5 +1,5 @@
 ---
-title: "One registry serves the Denticon book to every Hybridge app"
+title: "One registry serves the Denticon book to our other apps"
 date: "2026-09-28"
 layout: ../../layouts/PostLayout.astro
 description: "Two apps needed the appointment book, and only one service may hold the Denticon keys. I built a small read only API over our mirror, with a secret per caller and strict offices."
@@ -43,7 +43,7 @@ One rule stood in the way, and I had written it myself: only the CDF holds Denti
 
 ## What I built
 
-A registry: five read only routes on the CDF dashboard service, over the Firestore mirror that the [Denticon sync](/posts/denticon-sync) keeps fresh. The estimator gets one local day of the book, joined to patient and provider names. The planner gets the book by date window or by what changed, plus providers, visit types and chairs.
+A registry: five read only routes on the CDF dashboard service, over the Firestore mirror that the [Denticon sync](/posts/denticon-sync) keeps fresh. The estimator gets one local day of the book. The planner gets the book by date window or by what changed, plus providers, visit types and chairs.
 
 Each caller has its own bearer secret, compared in constant time, and the registry never calls Denticon. Answers to the planner carry each office's mirror health, so it can show old data as old. [Open the drawing](/architecture/cdf-registry).
 
@@ -61,7 +61,7 @@ On October 1 the registry started serving a block's text as a note, so a reserve
 
 **A day is a local day.** A day is computed per office from the office table, with the offset read from `Intl`, because March 8, 2026 is 23 hours long and November 1 is 25. A fixed minus five puts a March morning appointment on the previous day.
 
-**What counts as a consult.** An appointment carries only a production type id. Consults are types 8 and 19, In Off Consult and Zoom Consult. At 6:03 PM on September 21 I took out NP Intake, the paperwork visit before the consult: counting its 1,054 visits in the staging mirror would have put consults at 1,693 instead of 639. Rows from before the Rochester migration carry no type, so the route reports how many it could not judge.
+**What counts as a consult.** An appointment carries only a production type id. Consults are types 8 and 19, In Off Consult and Zoom Consult. At 6:03 PM on September 21 I took out NP Intake, the paperwork visit before the consult: counting it would have nearly tripled the consult count. Rows from before the Rochester migration carry no type, so the route reports how many it could not judge.
 
 **A dropped office is a cancelled calendar.** The planner cancels whatever a full read does not return. The estimator's day view can drop a mistyped office and lose nothing, but on the planner's routes an unknown office answers 400:
 

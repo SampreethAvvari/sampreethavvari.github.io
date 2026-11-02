@@ -43,7 +43,7 @@ const arch: Architecture = {
     lab: {
       kind: "Lab case system",
       owner: "outside",
-      what: "MagicTouch DLCPM, the lab's case system, emails two exports to the VP of Finance: invoice lines at about 6:02 AM and the new starts reports at 7 PM. Both carry patient names.",
+      what: "MagicTouch DLCPM, the lab's case system, emails two exports to the VP of Finance: invoice lines at about 6:02 AM and the new starts reports at 7 PM.",
       source: "packages/pipeline/dsr_pipeline/landing.py:11",
     },
     bridge: {
@@ -69,7 +69,7 @@ const arch: Architecture = {
     pipeline: {
       kind: "My job",
       owner: "mine",
-      what: "dsr-pipeline on Cloud Run, Python 3.12, one task with a 15 minute timeout. It takes a lock, reads the settled files, drops patient and practice fields as it parses, loads BigQuery, projects, runs nine checks, writes the commentary and publishes. A run with nothing new exits in about seven seconds.",
+      what: "dsr-pipeline on Cloud Run, Python 3.12, one task with a 15 minute timeout. It takes a lock, reads the settled files, keeps only the columns the model uses, loads BigQuery, projects, runs nine checks, writes the commentary and publishes. A run with nothing new exits in about seven seconds.",
       fails: "Failed checks still compute and save, then hold the report. No invoice export by 11 AM ends the morning as missed. Either way an alert email goes out.",
       source: "packages/pipeline/dsr_pipeline/runner.py:1",
     },

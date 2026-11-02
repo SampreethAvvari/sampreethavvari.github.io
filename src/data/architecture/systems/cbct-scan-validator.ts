@@ -12,9 +12,9 @@ const arch: Architecture = {
   disciplines: ["mle"],
   post: "/posts/cbct-scan-validator",
   headline: "Flags bad CT scans before design.",
-  tail: "$62 in October, on CPU.",
+  tail: "On CPU, for $62 in October.",
   lede:
-    "The lab's case system exports each CBCT case zip to an SFTP box, a new zip in the bucket fires Eventarc, and a frozen dental encoder on Cloud Run CPU scores it and sends the verdict PDF back through the same box. Labeled Drive folders become training tensors each morning, and the testing team checks the model on real studies in a review app with its own scoreboard.",
+    "The lab's case system exports each CBCT case zip to a small locked down SFTP box, which hands it to the validator. A frozen dental encoder on Cloud Run CPU scores it and sends the verdict PDF back through the same box. A daily job turns labeled scans into training data, and the testing team checks studies in a review app with its own model and scoreboard.",
   titleBlock: [
     ["System", "CBCT Scan Validator"],
     ["Revision", "v0.6.1"],
@@ -30,16 +30,16 @@ const arch: Architecture = {
   readouts: [
     { value: "2.2", unit: "s", label: "per pass of the frozen encoder on CPU with OpenVINO, measured before deploy" },
     { value: "20", unit: "scans", label: "in a frozen holdout the trainer refuses to train on" },
-    // Mar 25 to May 1, 38 calendar days (git-stats/per-repo.csv); Model H at 5:44 AM May 1 (commits-index.csv).
-    { value: "38", unit: "days", label: "from the first commit on Mar 25 to Model H, the model it runs today, on May 1" },
-    { value: "26 of 30", label: "bad studies the testing team found that the model also flagged, Aug 19 to Oct 28" },
+    // Mar 25 to May 1, 37 days by date difference (git-stats/per-repo.csv); Model H at 5:44 AM May 1 (commits-index.csv).
+    { value: "37", unit: "days", label: "from the first commit on Mar 25 to Model H, the model it runs today, on May 1" },
+    { value: "26 of 30", label: "bad studies the testing team found that the review app's model also flagged, Aug 19 to Oct 28" },
   ],
   svg,
   views: [
-    { id: "a-scan", label: "A scan arrives", focus: ["dlcpm", "sftp", "bucket", "eventarc", "validator"], note: "The lab system exports a case over SFTP, a new zip in the bucket fires Eventarc, and the validator scores it on CPU." },
+    { id: "a-scan", label: "A scan arrives", focus: ["dlcpm", "sftp", "bucket", "eventarc", "validator"], note: "The lab system exports a case to the SFTP box, which hands it to the validator to score on CPU." },
     { id: "way-back", label: "The verdict goes back", focus: ["validator", "sftp", "dlcpm"], note: "The verdict PDF goes back through the same SFTP box, named so the lab system files it on the right case." },
-    { id: "training", label: "Training data", focus: ["drive", "etl", "trainer", "bucket", "validator"], note: "Labeled Drive folders become versioned tensors each morning. A new head reaches the validator through the bucket." },
-    { id: "testing", label: "The testing team", focus: ["testers", "iap", "review", "bucket", "bq"], note: "Testers upload a real study, see the verdict, record the true answer, and a live page counts hits and misses per model." },
+    { id: "training", label: "Training data", focus: ["drive", "etl", "trainer", "bucket", "validator"], note: "A daily job turns labeled scans into versioned training data. A new head reaches the validator at its next cold start." },
+    { id: "testing", label: "The testing team", focus: ["testers", "iap", "review", "bucket", "bq"], note: "Testers upload a study, see a verdict, record the true answer, and a live page counts hits and misses per model." },
   ],
   parts: {
     dlcpm: {
@@ -91,7 +91,7 @@ const arch: Architecture = {
     trainer: {
       kind: "My workstation",
       owner: "mine",
-      what: "Training runs on my laptop's RTX 4080. The encoder stays frozen, so only a head of about 500,000 parameters trains, on tensors pulled from the bucket. The threshold is picked on validation data to minimise 15 times the misses plus the false alarms.",
+      what: "Head training runs on an RTX 4080. The encoder stays frozen, so only a head of about 500,000 parameters trains. The threshold is picked on validation data to minimise 15 times the misses plus the false alarms.",
       source: "scripts/build_and_eval_dentalseg_head.py:487",
     },
     iap: {
@@ -107,7 +107,7 @@ const arch: Architecture = {
     testers: {
       kind: "People",
       owner: "outside",
-      what: "Three people on the testing team. Since August 19 they have uploaded 123 real studies and recorded the true answer on 103.",
+      what: "Our testing team. Since August 19 they have uploaded 123 studies on 38 different days and recorded the true answer on 103.",
     },
     bq: {
       kind: "Managed warehouse",

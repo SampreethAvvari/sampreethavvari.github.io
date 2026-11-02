@@ -24,7 +24,7 @@ facts:
   - label: "What I built"
     value: "A doctor portal, from the lab lead's own mockup, where the Rx joins the case the scanner opened."
   - label: "Who uses it"
-    value: "Meant for the more than 200 outside doctors who send our lab work; the lab lead reviews it now."
+    value: "Meant for the outside doctors who send our lab work; the lab lead reviews it first."
   - label: "Runs on"
     value: "Cloud Run and Firestore, behind Google IAP, open only to Hybridge Google accounts for now."
   - label: "Built"
@@ -35,7 +35,7 @@ facts:
 
 ## The problem
 
-Our dental lab makes the teeth for implant cases, and more than 200 outside doctors send it work. A doctor scans the patient, and the scanner opens a case in MagicTouch, the lab's case system. Then the doctor writes the prescription in MagicTouch's own doctor portal, which cannot edit a case that already exists. So the Rx opens a second case.
+Our dental lab makes the teeth for implant cases, and outside doctors send it work. A doctor scans the patient, and the scanner opens a case in MagicTouch, the lab's case system. Then the doctor writes the prescription in MagicTouch's own doctor portal, which cannot edit a case that already exists. So the Rx opens a second case.
 
 The lab knew which one to keep. The doctor did not. In our lab lead's words, the doctors "see us cancel one and then they get freaked out." The lab lead also said the old portal had "a few workarounds that are confusing to our team," and that doctors reached the lab by email, text, phone and MagicTouch. The ask was one place for all of it.
 
@@ -63,7 +63,7 @@ v0.3 added a Feature requests tab the next afternoon. I deploy by hand from main
 
 ## The hard parts
 
-**One case rests on a question nobody has answered.** In the portal, an Rx sent against a scan case joins it, and the send refuses a case that already has an Rx. That part is code. Whether MagicTouch's API can add an Rx and files to a case the scanner created is not. The vendor says one API only sees its own cases and the other has no file endpoints. It is the first question for a vendor call planned for early October that has not happened.
+**One case rests on a question nobody has answered.** In the portal, an Rx sent against a scan case joins it, and the send refuses a case that already has an Rx. That part is code. Whether MagicTouch's API can add an Rx and files to a case the scanner created is not. The vendor says one API only sees its own cases and the other has no file endpoints. It is the first question for a vendor call that has not happened yet.
 
 **My laptop lied to me.** On my laptop the portal keeps documents in memory. Deployed, they go to Firestore, which refuses an array directly inside an array, and an Rx keeps each answer as a question and answer pair. The memory store never complained, so the first revision died on its first visit. The fix wraps inner arrays on the way in and unwraps them on the way out:
 
@@ -83,7 +83,7 @@ Now a live round trip test, and a script that fills the store before anyone visi
 
 **Merging duplicates after the fact.** That was the September build. The lab lead said no, and was right: a merge on our side still leaves the doctor watching a case get cancelled. I parked it instead of polishing it, and kept its MagicTouch code.
 
-**Pretending the link exists.** Every release note ends with the same four lines: sample data only, files listed by name only, payments and emails off, doctors cannot sign in yet. A feed of upload emails from the old portal, 1,664 since March 27, would make the demo feel alive. It carries patient names, so it stays out.
+**Pretending the link exists.** Every release note ends with the same four lines: sample data only, files listed by name only, payments and emails off, doctors cannot sign in yet. A feed of upload emails from the old portal would make the demo feel alive. It carries patient names, so it stays out.
 
 **Doctor logins and a hole in the lab's network on day one.** Outside doctors will need their own sign in, after the core flow works on real cases. For lab data, the plan is a small connector on a lab machine that only sends changes out over HTTPS, so no port opens into the lab network.
 
@@ -93,6 +93,6 @@ It has no real users yet. It is a live link on sample data for the lab lead to p
 
 The Google Cloud project it shares with the parked duplicate list cost six cents from October 1 to 28. The portal went live on the 28th, so its own month is not measured yet.
 
-Real data waits on the Digital Gateway license at $126 a month, not bought; the vendor call; and the lab server's details and a read only login. File uploads to Cloud Storage are next and need none of them.
+Real data waits on the Digital Gateway license, not bought yet; the vendor call; and the lab server's details and a read only login. File uploads to Cloud Storage are next and need none of them.
 
 What I would keep: put the lab lead's own mockup on a live link the day it becomes the priority, and write down on every release what is still pretend.

@@ -11,7 +11,7 @@ tag: "MLOps"
 tone: "emerald"
 stats:
   - value: "471"
-    label: "consults scored live from May 19 to Oct 28, across Rochester, Buffalo and Syracuse"
+    label: "consults scored live from May 19 to Oct 28 across Rochester, Buffalo and Syracuse"
     tone: "emerald"
   - value: "2.7 min"
     label: "median from transcript to sent report in October, and 9 in 10 under 3.8"
@@ -27,7 +27,7 @@ facts:
   - label: "Who uses it"
     value: "Doctors, treatment coordinators and the CEO get each report; coordinators also get the chart note."
   - label: "Outcome"
-    value: "471 consults scored live by October 28; the October median from transcript to report was 2.7 minutes."
+    value: "471 consults scored live from May 19 to October 28 across Rochester, Buffalo and Syracuse; the October median from transcript to report was 2.7 minutes."
   - label: "Runs on"
     value: "Cloud Run, Firestore and Gemini 2.5 Pro, started by a Zoom webhook."
   - label: "Built"
@@ -38,13 +38,13 @@ facts:
 
 Our CEO has a framework for a good implant consult. Seven steps: build rapport, earn credibility, pick a treatment path, create value, present the fee, agree how to follow up, and stay compassionate throughout. It lived in a Word doc. A consult review was a document someone wrote by hand, one consult at a time.
 
-The ask was simple to say. Score every doctor against that framework after every recorded consult, get a color coded report to the doctor, the treatment coordinator (TC) and the CEO within minutes of the transcript, and log every consult to one master sheet.
+The ask was simple to say. Score every doctor against that framework after every recorded consult, get a color coded report to the doctor, the treatment coordinator (TC) and the CEO within minutes of the transcript, and log every consult.
 
 Two facts made it harder. Any doctor can pair with any TC, so the system has to work out who the doctor was on every call. And I had no Super Admin rights in our Google Workspace.
 
 ## What I built
 
-One Cloud Run service in Python. Zoom posts a webhook when a transcript is ready. The service checks the signature, answers 202, and works in the background: skip what is not a consult, find the doctor, ask Gemini 2.5 Pro for a scorecard as JSON, render the report and PDF, draft a chart note, file it in Drive, send the emails, and append one row to the master Sheet.
+One Cloud Run service in Python. Zoom posts a webhook when a transcript is ready. The service checks the signature, answers 202, and works in the background: skip what is not a consult, find the doctor, ask Gemini 2.5 Pro for a scorecard as JSON, render the report, draft a chart note, send the emails, and log one row per consult.
 
 The rubric has 7 criteria and 25 sub checks. Every rationale must quote the transcript, with a real timestamp or none. Each score is colored against that doctor's own 30 day average, so it coaches a doctor against themselves. [Open the drawing](/architecture/doc-coach).
 
@@ -76,15 +76,15 @@ A response that did not finish cleanly is never accepted, even when it happens t
 
 ## What I said no to
 
-**Waiting on domain wide delegation.** That needs a Super Admin, and I am not one. The service files and sends with a user OAuth grant whose refresh token lives in Secret Manager, so nothing waited on a permission.
+**Waiting on domain wide delegation.** That needs a Super Admin, and I am not one. The service files and sends with an OAuth grant kept in Secret Manager, so nothing waited on a permission.
 
 **A cheaper model before proving quality.** The config says to drop to Flash only after validating quality on the fixture set. Scoring, notes and report cards all still run on 2.5 Pro.
 
-**Scores outside the app.** When the CDF dashboard needed consult details, it got a route that returns the note, recording and transcript, and never a score. The fields are an allowlist, and a test feeds it a record stuffed with scores and checks that none come back.
+**Scores outside the app.** When the CDF dashboard needed consult details, it got a route that never returns a score. The fields are an allowlist, and a test feeds it a record stuffed with scores and checks that none come back.
 
 ## Where it landed
 
-From May 19 to October 28 it scored 471 consults live: 325 in Rochester, 91 in Buffalo and 55 in Syracuse. In October the median consult went from transcript to sent report in 2.7 minutes, and nine in ten took under 3.8. Doctors, TCs and the CEO get the report, TCs get the chart note, and every Monday the scores become report cards.
+From May 19 to October 28 it scored 471 consults live across Rochester, Buffalo and Syracuse. In October the median consult went from transcript to sent report in 2.7 minutes, and nine in ten took under 3.8. Doctors, TCs and the CEO get the report, TCs get the chart note, and every Monday the scores become report cards.
 
 Cost is not measured yet. The billing export for this project only switched on October 28, 2026, so there is no measured month. Since October 29 the warm instance only runs 7 AM to 7 PM.
 

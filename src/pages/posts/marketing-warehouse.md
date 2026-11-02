@@ -1,6 +1,6 @@
 ---
 demo: /demos/marketing-warehouse
-title: "Ten marketing sources joined by 6 AM and in the inbox by 6:30"
+title: "Ten marketing sources pulled at 6 AM and mailed at 6:30"
 date: "2026-10-02"
 layout: ../../layouts/PostLayout.astro
 description: "Our marketing numbers lived in five logins, and nothing joined an ad click to a booked patient. I built a BigQuery warehouse that makes that join every morning and mails it at 6:30."
@@ -10,8 +10,8 @@ img_alt: "Marketing warehouse: six sources flowing through raw, staging and mart
 tag: "AIE"
 tone: "emerald"
 stats:
-  - value: "3,334 of 3,383"
-    label: "lead to patient matches made by the link staff already keep in Monday"
+  - value: "98.6%"
+    label: "of lead to patient matches made by the link staff already keep in Monday, as of October 29"
     tone: "emerald"
   - value: "3.5 hours"
     label: "from the design spec to the first sync job running in the cloud on Aug 4"
@@ -27,7 +27,7 @@ facts:
   - label: "Who uses it"
     value: "Our marketing lead, a marketing teammate and me, by a 6:30 AM email and through Claude."
   - label: "Outcome"
-    value: "3,334 of 3,383 lead to patient matches come from the link staff already keep in Monday."
+    value: "98.6 percent of lead to patient matches came from the link staff already keep in Monday, as of October 29."
   - label: "Runs on"
     value: "Cloud Run jobs and Google's Ads Data Transfer into BigQuery, in its own Google Cloud project."
   - label: "Built"
@@ -62,7 +62,7 @@ I deploy the jobs by hand with gcloud scripts.
 
 ## The hard parts
 
-**The join was already being made by hand.** My first lead to patient join matched on phone, then Google click ID, then email. The funnel said 96 percent of leads became patients. Blanks from Monday were matching each other, so I turned them into nulls. Then I checked which keys fired. Phone and click ID matched zero pairs. Meanwhile staff link each patient back to its lead with a Monday board relation. That link became the primary join, the old keys became fallbacks, and every row records which one fired:
+**The join was already being made by hand.** My first lead to patient join matched on contact details and the Google click ID. The funnel said 96 percent of leads became patients. Blanks from Monday were matching each other, so I turned them into nulls. Then I checked which keys fired. Phone and click ID matched zero pairs. Meanwhile staff link each patient back to its lead with a Monday board relation. That link became the primary join, the old keys became fallbacks, and every row records which one fired:
 
 ```sql
 -- sql/marts/lead_to_patient_funnel.sql
@@ -72,9 +72,9 @@ WHEN l.gclid IS NOT NULL AND l.gclid = p.gclid THEN 'gclid'
 ELSE 'email'
 ```
 
-Today 3,334 of 3,383 matches come from the staff's own link and 49 from email. A weekly copy of Monday's export, compared person by person, agrees on 3,371 patients, 99.3 percent.
+As of October 29, 98.6 percent of matches came from the staff's own link and the rest from email. A weekly copy of Monday's export, compared person by person, agreed on 99.3 percent of patients on October 29.
 
-**A backfill that looked like missing history.** The first 13 month CallRail backfill returned 182 calls, all from the last week. The connector filtered with `created_after`, which CallRail's calls endpoint ignores without an error. Switching to `start_date` brought back 4,877 calls reaching to June 2025.
+**A backfill that looked like missing history.** The first 13 month CallRail backfill returned 182 calls, all from the last week. The connector filtered with `created_after`, which CallRail's calls endpoint ignores without an error. Switching to `start_date` brought back the full history, back to June 2025.
 
 **Writing it for a model that reads it cold.** All 657 staging and marts columns carry a description written in the SQL file, so each redeploy writes it again. A data guide lists purpose, grain, keys and gotchas for 40 tables, next to 30 worked examples. Rows from TapClicks keep a source label, and the rule for Claude is a line that starts "TapClicks flag:" on any answer that uses one.
 
@@ -88,7 +88,7 @@ Today 3,334 of 3,383 matches come from the staff's own link and 49 from email. A
 
 ## Where it landed
 
-Three people get the 6:30 email: our marketing lead, a marketing teammate and me. Each gets a summary and <span class="egg" tabindex="0" data-egg="One tab per source, plus a summary. Coffee is not in the warehouse yet.">11 source tabs</span>, each saying where its rows came from and when they were pulled. The same three ask Claude through the [connector](/posts/data-connector), which logged 469 tool calls from October 23 to 29. On October 29 all nine daily direct sources had landed by the afternoon, and the Monday eval scored 21 of 22 on October 26.
+Three people get the 6:30 email: our marketing lead, a marketing teammate and me. Each gets a summary and <span class="egg" tabindex="0" data-egg="One tab per source, plus a summary. Coffee is not in the warehouse yet.">11 source tabs</span>, each saying where its rows came from and when they were pulled. The same three ask Claude through the [connector](/posts/data-connector), which logged 480 tool calls from October 23 to 29. On October 29 all nine daily direct sources had landed by the afternoon, and the Monday eval scored 21 of 22 on October 26.
 
 Cost is not measured yet. The billing export for this project switched on October 28, 2026, so there is no measured month. I have no number for how long the old spreadsheet answer took or how often the email gets opened. Streaming TV delivery after early October waits on the agency loading the new platform into TapClicks.
 

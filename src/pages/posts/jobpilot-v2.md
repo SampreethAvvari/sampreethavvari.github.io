@@ -36,7 +36,7 @@ facts:
 
 ## The problem
 
-[The first version](/posts/jobpilot) took one night. It found jobs and wrote resumes. Then I used it every morning, and the gaps showed up one at a time.
+[The first version](/posts/jobpilot) found jobs and wrote resumes. Then I used it every morning, and the gaps showed up one at a time.
 
 My resume checker gave my real resume <span class="egg" tabindex="0" data-egg="The bug log calls that checker a golden retriever. Loyal, delighted with everything, no use as a grader.">100 out of 100</span>. ResumeWorded gave the same file 73. Recruiter replies sat in my inbox while the Sheet still said Applied. Adding a company meant editing a config file.
 

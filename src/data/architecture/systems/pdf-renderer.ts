@@ -26,7 +26,7 @@ const arch: Architecture = {
     ["Drawn by", "S. Avvari"],
   ],
   readouts: [
-    { value: "60 to 90", unit: "s", label: "for one survey's whole delivery, run inside the request with full CPU" },
+    { value: "About 50", unit: "s", label: "for one survey's whole delivery, run inside the request with full CPU" },
     { value: "Held", label: "a patient email whose address is on file only for other patients in the Denticon mirror" },
     { value: "7", unit: "min", label: "from the first renderer commit at 11:00 PM on Jun 19 to the service running on Cloud Run" },
     { value: "3", unit: "callers", label: "the delivery queue, the CDF dashboard and the hourly sweep, each with a Google identity token" },

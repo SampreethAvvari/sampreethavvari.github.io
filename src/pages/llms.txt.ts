@@ -18,7 +18,7 @@ export const GET: APIRoute = ({ site }) => {
   lines.push(`# ${info.name}`);
   lines.push("");
   lines.push(
-    `> Sampreeth Avvari is a forward deployed engineer in New York and the only engineer at a three office dental implant practice, building and running about 45 services: patient intake and AI diagnosis, call and consult grading, scheduling, pricing, a marketing data warehouse and the practice websites. Every system on this site has a clickable architecture drawing with its real monthly cost, failure paths and guards. Sampreeth is also a filmmaker.`,
+    `> Sampreeth Avvari is a forward deployed engineer in New York and the only engineer at a three office dental implant practice, building and running about 45 services: patient intake and AI diagnosis, call and consult grading, scheduling, pricing, a marketing data warehouse and previews of the rebuilt practice websites. Every system on this site has a clickable architecture drawing with its real monthly cost, failure paths and guards. Sampreeth is also a filmmaker.`,
   );
   lines.push("");
   lines.push(

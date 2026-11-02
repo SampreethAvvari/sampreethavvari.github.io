@@ -43,7 +43,7 @@ The spec also listed two Excel bugs that had quietly returned wrong numbers. The
 
 ## What I built
 
-A weekday Cloud Run job reads the two exports, drops patient and practice fields as it parses them, loads BigQuery, and runs a pure Python port of the model. Nine checks decide whether the report goes out, and Gemini writes one paragraph over the finished numbers. A short Apps Script in the VP's own Google account carries the exports in and the report out. A dashboard behind Google sign in shows the report as sent and every run with its steps.
+A weekday Cloud Run job reads the two exports, keeps only the columns the model uses, loads BigQuery, and runs a pure Python port of the model. Nine checks decide whether the report goes out, and Gemini writes one paragraph over the finished numbers. A short Apps Script in the VP's own Google account carries the exports in and the report out. A dashboard behind Google sign in shows the report as sent and every run with its steps.
 
 [Open the drawing](/architecture/daily-sales-report).
 
@@ -60,7 +60,7 @@ The first commit, at 2:18 PM on September 8, was the engine reproducing all 15 a
 
 **Reading the lab reports without reading a mailbox.** My first design used the Gmail API with domain wide delegation. Delegation is granted to an identity, and that identity could have read any mailbox in the company. Instead, an Apps Script inside the VP's own account asks Gmail for headers and the attachment layout only, and copies matching files to a bucket where that account can add files and do nothing else. The same script emails the finished report. Nothing in the project holds a credential that can read mail.
 
-**A number nobody typed.** Check 6 wants last month's new arch starts, typed by hand from the P&L into a dashboard form. September's was never typed, and a failed check holds the report, so four mornings from October 2 to 7 were built and held. The VP's reaction: "Wait it already knows! Tell it to learn from itself." The lab's own starts report does count every arch. Now a closed month with no typed figure takes that count, once every row for the month comes from a pull made after it ended, and a typed figure still wins. An alert on the job's own log line now emails me about any held or broken morning.
+**A number nobody typed.** Check 6 wants last month's new arch starts, typed by hand from the P&L into a dashboard form. September's was never typed, and a failed check holds the report, so the report waited four mornings, October 2 to 7, until the fix. The VP's reaction: "Wait it already knows! Tell it to learn from itself." The lab's own starts report does count every arch. Now a closed month with no typed figure takes that count, once every row for the month comes from a pull made after it ended, and a typed figure still wins. An alert on the job's own log line now emails me about any held or broken morning.
 
 **Gemini writes the paragraph, code checks every number.** Gemini's only input is a payload of finished projections, bands and check results. Code checks that every number in the paragraph appears in that payload, in some reasonable rounding.
 

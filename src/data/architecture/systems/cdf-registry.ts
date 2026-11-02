@@ -9,8 +9,8 @@ const arch: Architecture = {
   kind: "service",
   disciplines: ["sde", "fde"],
   post: "/posts/cdf-registry",
-  headline: "Mirrors Denticon for two other apps.",
-  tail: "Refreshed every ten minutes.",
+  headline: "Keeps our copy of Denticon current.",
+  tail: "Webhooks, a worker every ten minutes and a 4 AM poll. Its sync service is the only one that talks to Denticon.",
   lede:
     "A sync service pulls Denticon into a Firestore mirror, woken by webhooks, a worker every ten minutes and a nightly sweep. The estimator and the capacity planner read that mirror through a small registry API, each with its own bearer secret, and neither of them ever touches Denticon.",
   titleBlock: [
@@ -33,13 +33,13 @@ const arch: Architecture = {
       unit: "days",
       label: "from the first Denticon commit on Sep 15 to reading the live practice on Sep 29",
     },
-    { value: "20,111", label: "charts and 22,688 appointments in the first production backfill" },
+    { value: "27", unit: "min", label: "from the planner's routes going live at 5:04 AM on Sep 29 to the planner's production reading through them" },
   ],
   svg,
   views: [
     { id: "mirror-feed", label: "How the mirror stays fresh", focus: ["scheduler", "denticon", "sync", "mirror"], note: "Webhooks say what changed, a worker every ten minutes fetches it, and a nightly sweep catches whatever they missed." },
     { id: "planner-minute", label: "The planner's minute", focus: ["planner", "registry", "mirror"], note: "The capacity planner asks for every row changed since its last watermark, behind its own bearer secret." },
-    { id: "estimator-day", label: "The estimator's day", focus: ["estimator", "registry", "mirror", "dashboard"], note: "One local day of the book, joined to patient and doctor names, for the estimator and the CDF day list." },
+    { id: "estimator-day", label: "The estimator's day", focus: ["estimator", "registry", "mirror", "dashboard"], note: "One local day of the book, for the estimator and the CDF day list." },
     { id: "credentials", label: "Where the keys live", focus: ["secrets", "sync", "denticon"], note: "Only the sync service holds Denticon credentials. The registry and every caller hold none." },
   ],
   parts: {
@@ -91,7 +91,7 @@ const arch: Architecture = {
     estimator: {
       kind: "My service",
       owner: "mine",
-      what: "The treatment estimator's landing page reads one local day of the book, joined to patient and doctor names, with consultations flagged by the scheduler's own visit types.",
+      what: "The treatment estimator's landing page reads one local day of the book, with consultations flagged by the scheduler's own visit types.",
       source: "lib/registry/schedule.ts",
     },
     freshness: {

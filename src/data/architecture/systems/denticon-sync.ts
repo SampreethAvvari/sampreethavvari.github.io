@@ -9,7 +9,7 @@ const arch: Architecture = {
   kind: "service",
   disciplines: ["sde", "fde"],
   post: "/posts/denticon-sync",
-  headline: "Mirrors Denticon for every app.",
+  headline: "Mirrors Denticon for the apps that need it.",
   tail: "Webhooks first, nightly poll behind.",
   lede:
     "When a record changes, Denticon posts a pointer; the receiver saves it and answers inside ten seconds, and a worker every ten minutes fetches the slice with the only Denticon credentials we hold. A 4 AM sweep polls everything changed since each office's cursor, which catches any webhook that went missing.",

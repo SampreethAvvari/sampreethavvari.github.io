@@ -3,15 +3,15 @@ demo: /demos/cowork-dashboard
 title: "Every number defined once, and cash flow read every morning"
 date: "2026-05-12"
 layout: ../../layouts/PostLayout.astro
-description: "Our leadership numbers came from Monday boards joined by name. Fixing the join surfaced about $460K nobody attributed. Then I moved it to Cloud Run, defined every metric once, and made cash flow daily."
+description: "Our leadership numbers came from Monday boards joined by name. Fixing the join linked almost every patient to a lead. Then I moved it to Cloud Run, defined every metric once, and made cash flow daily."
 img_path: "/cowork-dashboard.png"
 architecture: "cowork-dashboard"
 img_alt: "Cowork Dashboard scorecards, trend chart, and funnel"
 tag: "MLOps"
 tone: "amber"
 stats:
-  - value: "~$460K"
-    label: "of patient value on 25 retreatment cases no lead pointed at, found by fixing the join"
+  - value: "23"
+    label: "patients left with no lead after fixing the join, mostly retreatment cases"
     tone: "emerald"
   - value: "3 → 1"
     label: "copies of every metric: the card, the drilldown and the trend each had one, and now the card counts its drilldown rows"
@@ -21,13 +21,13 @@ stats:
     tone: "amber"
 facts:
   - label: "Problem"
-    value: "Leadership numbers joined Monday boards by name, and only 49.5 percent of Rochester patients linked to a lead."
+    value: "Leadership numbers joined Monday boards by name, and in a June review Buffalo's consults and case acceptances read zero."
   - label: "What I built"
     value: "A dashboard that turns the Monday boards into one snapshot, with every metric defined once."
   - label: "Who uses it"
     value: "Nine Hybridge accounts, including our finance lead, who files requests in its Feature requests tab."
   - label: "Outcome"
-    value: "Fixing the join surfaced about $460K of patient value on 25 retreatment cases nobody had attributed."
+    value: "Fixing the join left 23 patients with no lead, mostly retreatment cases filed without a Lead row."
   - label: "Runs on"
     value: "Cloud Run and Cloud Storage, with the three patient boards read from the Monday API at 6 AM."
   - label: "Built"
@@ -38,13 +38,13 @@ facts:
 
 The practice runs on Monday, a work board app: a Leads board, plus a patient board each for Rochester, Buffalo and Syracuse. Leadership reviews come from those boards. The first dashboard joined patients to leads by name. In a review on June 3, Buffalo's consults and case acceptances read zero. Our chief sales officer asked: "What does that mean? The join was failing."
 
-I measured it. Only 49.5 percent of Rochester patients and 65.3 percent of Buffalo patients linked to a lead. Every funnel was off by a different amount.
+I measured it. Every funnel was off by a different amount.
 
 Later our finance lead asked for the cash booked to start this month, every day.
 
 ## What I built
 
-A dashboard that turns the Monday boards into one snapshot. Each week the four board exports go into a Drive folder. A private service checks it every five minutes, rebuilds when all four files have changed, writes an immutable snapshot to Cloud Storage and moves a pointer to it last.
+A dashboard that turns the Monday boards into one snapshot. Each week the four board exports go into a Drive folder. A private service checks it every five minutes and rebuilds when all four files have changed.
 
 <span class="egg" tabindex="0" data-egg="Monday the work board app. It gets read on Sundays too.">Every morning at six</span>, the same check reads the three patient boards from the Monday API for the Cash Flow tab. Anyone can also press Refresh now.
 
@@ -52,7 +52,7 @@ The browser pins the snapshot and computes all nine tabs with the same code the 
 
 ## The sprint
 
-The first version was Apps Script, built in the spring. There, joining on the patient boards' own connect column to Leads took linkage to 98.8 percent in Rochester and 99.9 in Buffalo. The 25 patients left over were retreatment cases filed without a Lead row. Together they carried about $460K of patient value nobody had attributed.
+The first version was Apps Script, built in the spring. There, joining on the patient boards' own connect column to Leads took linkage to 98.9 percent in Rochester and 99.9 in Buffalo. The 23 patients left over were mostly retreatment cases filed without a Lead row.
 
 The move to Cloud Run landed at 4:59 PM on September 2. Both Cloud Run services were created four minutes later.
 
@@ -90,7 +90,7 @@ The linkage number had the same flaw: it counted patients that pointed at some l
 
 **Making every tab live.** Only cash flow reads Monday daily. Every column it needs is native to the patient boards. The other tabs mix in the Leads board, so they stay on the weekly exports.
 
-**Counting stale start dates as cash.** On the September 14 exports, the Rochester board had 356 accepted cases with no start date. 337 were accepted in 2024 or 2025, before the column was filled in reliably, and are finished treatments. Only the last 90 days of acceptances count as pipeline. The rest show as a data quality count.
+**Counting stale start dates as cash.** On the September 14 exports, almost all of the Rochester board's accepted cases with no start date were accepted in 2024 or 2025, before the column was filled in reliably, and are finished treatments. Only the last 90 days of acceptances count as pipeline. The rest show as a data quality count.
 
 **Swapping numbers under someone.** A newer snapshot raises a banner. The numbers change when someone clicks it.
 

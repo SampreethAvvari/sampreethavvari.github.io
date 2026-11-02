@@ -12,15 +12,13 @@ stats:
   - value: "7 minutes"
     label: "from the first renderer commit at 11:00 PM on Jun 19 to the service running on Cloud Run"
     tone: "emerald"
-  - value: "60 to 90 s"
+  - value: "About 50 s"
     label: "for one survey's whole delivery, run inside the request with the CPU kept on"
     tone: "blue"
   - value: "3 ways in"
     label: "the delivery queue, the CDF dashboard and an hourly sweep, each with a Google identity token"
     tone: "amber"
 facts:
-  - label: "Problem"
-    value: "Patients got their survey summary while the clinic got nothing, and no error surfaced anywhere."
   - label: "What I built"
     value: "A shared renderer that turns each patient survey into a summary and a doctor report and emails them."
   - label: "Who uses it"
@@ -35,9 +33,7 @@ facts:
 
 ## The problem
 
-A patient fills in our intake survey on an office tablet before a consult. The practice needs two documents from it: a one page summary for the patient and a doctor report for the office team. The summary goes to the patient by email, and both go to that office's list.
-
-In August my own comment in the code described what kept happening: "the patient got their summary, the clinic got nothing, and no error surfaced anywhere."
+A patient fills in our intake survey on an office tablet before a consult. The practice needs two documents from it: a one page summary for the patient and a doctor report for the office team.
 
 ## What I built
 
@@ -55,7 +51,7 @@ The CDF handshake was live at 1:21 AM on September 30, and the email owner check
 
 ## The hard parts
 
-**Work that ran after the reply.** `/render` used to answer and then deliver. Cloud Run throttles the CPU once a response is out, so the delivery crawled, and died when the instance was recycled. Now the work is awaited inside the request, which holds the instance with full CPU for the 60 to 90 seconds it takes. Concurrency is 8 an instance, because each render forks a browser of about 300 MB.
+**Work that ran after the reply.** `/render` used to answer and then deliver. Cloud Run throttles the CPU once a response is out, so the delivery crawled, and died when the instance was recycled. Now the work is awaited inside the request, which holds the instance with full CPU for the 30 to 60 seconds it usually takes. Concurrency is 8 an instance, because each render forks a browser of about 300 MB.
 
 **Retries that never mail twice.** Cloud Tasks retries until it gets a 2xx, so a survey can run through `/render` more than once. Every run first reads what already went out:
 

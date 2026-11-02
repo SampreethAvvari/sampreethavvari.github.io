@@ -3,18 +3,18 @@ import type { Tour } from "./types";
 export const scanValidator: Tour = {
   slug: "scan-validator",
   name: "CBCT Scan Validator",
-  tail: "A pass, review or reject on every scan as it lands.",
+  tail: "In testing on real scans, with a pass, review or reject for each one.",
   post: "/posts/cbct-scan-validator",
   cover: "/cbct-validator.png",
   kicker: "Medical imaging AI · Quality gate",
   accent: "#5B8DEF",
   accentRgb: "91, 141, 239",
   pitch:
-    "An AI quality gate that inspects every incoming dental CBCT scan the moment it lands and returns a pass, review, or reject verdict, with the specific defect class and the exact action a technician should take, ideally before the patient leaves the chair.",
+    "An AI quality gate, in testing on real scans, that inspects each dental CBCT scan as it lands and returns a pass, review, or reject verdict, with the specific defect class and the exact action a technician should take, ideally before the patient leaves the chair.",
   problem:
-    "Bad scans had been slipping through for a decade: movement blur, cut-off fields of view, scanner artifacts. Each one discovered late costs a design-queue slot and a patient recall. A vendor quoted $98,200 upfront plus $2,200 a month to solve it. The bet: build it in-house on commodity cloud for two orders of magnitude less.",
+    "Bad scans were slipping through: movement blur, cut-off fields of view, scanner artifacts. Each one discovered late costs a design-queue slot and a patient recall. A vendor had quoted a six figure build and a monthly fee to run it. The bet: build it in house on commodity cloud.",
   metrics: [
-    { label: "Cost vs vendor", value: "~$50/mo", sub: "vs $124,600 vendor year one, ~99% cheaper over 3 years" },
+    { label: "Google Cloud", value: "$62", sub: "October 1 to 28, measured, vs a $98,200 quote plus $2,200 a month" },
     { label: "Best AUROC", value: "0.82", sub: "patient-grouped, leakage-free eval, 191 scans" },
     { label: "Inference", value: "2.2 s", sub: "OpenVINO on CPU, scale-to-zero Cloud Run" },
     { label: "CI gate", value: "85%", sub: "accuracy on a fixed holdout or the build fails" },
@@ -24,7 +24,7 @@ export const scanValidator: Tour = {
   steps: [
     {
       title: "A scan lands",
-      body: "Studies arrive from the scanner via a chrooted SFTP endpoint or a scheduled drive mirror. An object-finalize event wakes the inference service, which scales from zero. Everything here is synthetic; real scans never leave the private environment.",
+      body: "Studies arrive from the scanner via a chrooted SFTP endpoint or a scheduled drive mirror. An object-finalize event wakes the inference service, which scales from zero. Everything here is synthetic.",
       screen: {
         kind: "upload",
         filename: "SYNTH-0042.zip · DICOM series",
@@ -104,7 +104,6 @@ export const scanValidator: Tour = {
         lines: [
           "$ git tag v1.4.0 && git push --tags",
           "lint ✓ · 6-arch smoke ✓ · pytest ✓",
-          "CT regression: holdout 20 scans → accuracy 90% (gate: 85%) ✓",
           "build images → registry → deploy service + jobs ✓",
         ],
       },
@@ -112,10 +111,10 @@ export const scanValidator: Tour = {
   ],
   architecture: [
     { lane: "Training", items: ["PyTorch + Lightning + MONAI, six benchmarked architectures", "Frozen nnU-Net encoder + slice-sequence head", "DVC data versions · W&B and MLflow tracking"] },
-    { lane: "Serving", items: ["FastAPI on Cloud Run, CPU only, scale to zero", "PyTorch → ONNX → OpenVINO IR baked into the image", "2.2 s encoder pass · ~20 s event to verdict"] },
+    { lane: "Serving", items: ["FastAPI on Cloud Run, CPU only, scale to zero", "PyTorch → ONNX → OpenVINO IR baked into the image", "2.2 s encoder pass · about 27 s upload to verdict on a real scan"] },
     { lane: "Data flow", items: ["SFTP endpoint + scheduled drive mirror into object storage", "Lifecycle prefixes: intake, tensors, checkpoints, holdout, archive", "Idempotent, self-healing sync with quarantine on repeat failure"] },
     { lane: "Guardrails", items: ["Header rules for defects the model cannot see", "Confidence gates: 0.80 auto, 0.50 review", "85% CT gate in CI · tag-triggered releases"] },
   ],
   outcome:
-    "Shipped about eight weeks ahead of the original schedule, at roughly $50 a month against a vendor's $124,600 first year. The honest part: after cleaning label leakage the best model sits at 0.82 AUROC, the benchmark showed the ceiling is training data rather than architecture, and the system is framed accordingly, a workflow quality gate with a human in the loop, not a diagnostic device. Every scan, name, and number in this tour is synthetic.",
+    "The integration work landed in April, ahead of a June plan, and it ran at $62 of Google Cloud in October, against a vendor quote of $98,200 plus $2,200 a month. The honest part: after cleaning label leakage the best model sits at 0.82 AUROC, the benchmark showed the ceiling is training data rather than architecture, and the system is framed accordingly, a workflow quality gate with a human in the loop, not a diagnostic device. Every scan, name, and number in this tour is synthetic.",
 };

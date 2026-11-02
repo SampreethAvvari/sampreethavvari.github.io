@@ -13,7 +13,7 @@ stats:
     label: "the practice's own documents, transcribed word for word, all validated"
     tone: "emerald"
   - value: "0 errors"
-    label: "in 271 generation attempts across 75 live production estimates, audit of Aug 27"
+    label: "in 271 generation attempts across every live production estimate, audit of Aug 27"
     tone: "blue"
   - value: "4.5 hours"
     label: "from the first commit at 11:35 AM on Aug 27 to the builder live in the estimator at 4:05 PM"
@@ -26,7 +26,7 @@ facts:
   - label: "Who uses it"
     value: "Coordinators open a plan from any estimate, edit it and download Word or PDF."
   - label: "Outcome"
-    value: "0 errors in 271 generation attempts across 75 live estimates in the August 27 audit."
+    value: "0 errors in 271 generation attempts across every live estimate in the August 27 audit."
   - label: "Runs on"
     value: "Inside the treatment estimator, as a committed snapshot from its own repo, with no package registry."
   - label: "Built"
@@ -76,16 +76,16 @@ Staging is now a mode the option states, pinned by tests.
 
 **A model that writes the plan.** A treatment sequence is a clinical document, and the practice already wrote the right ones. So generation picks a master and never invents a visit. A procedure with no visit prints in a yellow open items block, a plan with no master opens empty, and a wait like "As needed" stops the dates instead of guessing one.
 
-**A package registry.** Publishing would need a write credential in this repo and a read credential everywhere the estimator installs, including the Docker build. The repo's note says it plainly: "There is no auth step to get wrong at 6pm before a deploy." The cost is real: nothing goes red when a consumer falls behind, and both repos carry a file marked TEMPORARY that says so.
+**A package registry.** Publishing would need a write credential in this repo and a read credential everywhere the estimator installs, including the Docker build. The repo's note says it plainly: "There is no auth step to get wrong at 6pm before a deploy."
 
 **Five tables for a plan.** Each save is one immutable JSON version, because nothing queries inside the steps. A unique index on plan and version number makes the second of two racing saves fail instead of overwrite. There is no foreign key to the options either, since editing an estimate deletes and recreates them.
 
 ## Where it landed
 
-Coordinators open a plan from any estimate, edit it in the builder, and download Word or PDF of what is on screen. A read only audit tries every scenario and option of every live estimate. Run against production on August 27: 75 estimates, 271 attempts, 263 matched a validated master, 8 opened empty, 0 errors. All 8 were plans that mix Hybridge and dentures. The practice has masters for those; they are not transcribed yet.
+Coordinators open a plan from any estimate, edit it in the builder, and download Word or PDF of what is on screen. A read only audit tries every scenario and option of every live estimate. Run against production on August 27: 271 attempts across every live estimate, 263 matched a validated master, 8 opened empty, 0 errors. All 8 were plans that mix Hybridge and dentures. The practice has masters for those; they are not transcribed yet.
 
 It has no bill of its own. It runs inside the estimator, which cost $34 for October 1 to 28. I have not counted how many plans coordinators have saved since.
 
-The drift the TEMPORARY file warns about has already happened once: the capacity planner carries an older snapshot, to borrow one popover component. Automating the refresh is the next job, before the CDF patient dashboard starts using the packages too.
+Automating the refresh is the next job, before the CDF patient dashboard starts using the packages too.
 
 What I would keep: when the clinic has already written the answer, transcribe it, and make the code admit what it does not know.

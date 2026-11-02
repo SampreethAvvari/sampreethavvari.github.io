@@ -12,7 +12,7 @@ const arch: Architecture = {
   headline: "Lists every Hybridge app on one board.",
   tail: "On Cloud Run, behind IAP.",
   lede:
-    "Anyone with a Hybridge Google account passes IAP and opens any app from one board of 38 projects grouped by status. Four leaders also see Work and History, and one editor changes the cards, each save writing the project and its history entry in a single Firestore transaction.",
+    "Anyone with a Hybridge Google account passes IAP and opens any app from one board, which held 38 projects grouped by status on Oct 29, 2026. Four leaders also see Work and History, and one editor changes the cards, each save writing the project and its history entry in a single Firestore transaction.",
   titleBlock: [
     ["System", "Hybridge Launchpad"],
     ["Revision", "unversioned"],
@@ -22,14 +22,14 @@ const arch: Architecture = {
     ["Sign in", "Hybridge Google, IAP"],
     ["History", "Append only"],
     ["Deploy", "Clean main only"],
-    ["Scale", "38 cards : 1 editor"],
+    ["Scale", "38 cards on Oct 29 : 1 editor"],
     ["Drawn by", "S. Avvari"],
   ],
   readouts: [
     { value: "78", unit: "minutes", label: "from the first commit to a working live board on Oct 22" },
     { value: "1", unit: "editor", label: "moves or edits a card. Four leaders read Work and History, and everyone else sees Apps" },
     // Live Firestore launchpad_projects read, status and kind fields only, 2026-10-29.
-    { value: "38", unit: "projects", label: "on one board in panes by status, 22 of them live" },
+    { value: "38", unit: "projects", label: "on one board on Oct 29, 2026, 22 of them live" },
     { value: "21", unit: "edits", label: "logged since launch, each with who, when, and every field's old and new value" },
   ],
   svg,
@@ -81,7 +81,7 @@ const arch: Architecture = {
     projects: {
       kind: "Managed database",
       owner: "managed",
-      what: "Firestore keeps the 38 projects in launchpad_projects. The database is shared with the retired June board, so Launchpad reads and writes only its own collections.",
+      what: "Firestore keeps the projects in launchpad_projects, 38 on Oct 29, 2026. The database is shared with the retired June board, so Launchpad reads and writes only its own collections.",
       source: "lib/store/firestore.ts:6",
     },
     changes: {

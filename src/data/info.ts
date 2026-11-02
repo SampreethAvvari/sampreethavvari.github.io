@@ -198,10 +198,10 @@ export const info = {
         highlights: [
           "[Consultation QA Pipeline](/posts/clinical-rag). A Zoom webhook starts a Gemini grader that scores every consult against the CEO's seven criterion rubric, with a transcript quote and timestamp behind each score. 471 consults scored live from May 19 to Oct 28 across three offices; median 2.7 minutes from transcript to sent report in October. It also drafts the doctor's chart note, guarded so a truncated note never ships.",
           "[Pipeline observability hardening](/posts/pipeline-ghosting). Runs went green while emails never sent. I moved the run row to the top, made every failure retry or turn amber, resent 13 runs that had scored but never emailed, and added a Logs tab anyone can read.",
-          "[NPC Coach](/posts/npc-coach). Rebuilt an n8n call grader into a coaching platform for the front desk: it finds new patient calls among thousands of recordings, grades each on six criteria with a transcript quote behind every score, and tracks each coordinator against their own 30 day average. 690 real calls graded since June 17, a median 14 minutes after the call ends; live calls 16 days after the first commit.",
-          "[CBCT Scan Validator](/posts/cbct-scan-validator). In house dental CT quality gate, built in 38 days against a $98,200 vendor quote. Frozen DentalSegmentator encoder on OpenVINO CPU, a cost tuned threshold, SFTP both ways with the lab system. Honest 0.63 AUROC on a strict holdout; the testing team has run 123 real studies through it.",
+          "[NPC Coach](/posts/npc-coach). Rebuilt an n8n call grader into a coaching platform for the front desk: it finds new patient calls among thousands of recordings, grades each on six criteria with a transcript quote behind every score, and tracks each coordinator against their own 30 day average. 690 real calls graded by October 29; in October the median grade came 14 minutes after the call ended. Live calls 16 days after the first commit.",
+          "[CBCT Scan Validator](/posts/cbct-scan-validator). In house dental CT quality gate, built in 37 days against a six figure vendor quote. Frozen DentalSegmentator encoder on OpenVINO CPU, a cost tuned threshold, SFTP both ways with the lab system. Honest 0.63 AUROC on a strict holdout; our testing team has uploaded 123 studies to its review app.",
           "[Treatment Estimator](/posts/treatment-estimator). Next.js and Postgres quoting tool for three offices. Every saved line keeps its price, tier, label and price book version, so a later price change never reaches a saved quote. v1.0.0 shipped 14.5 hours after the first commit.",
-          "[Cowork Dashboard](/posts/cowork-dashboard). Monday.com boards turned into the leadership dashboard, moved from Apps Script to Cloud Run in September with one definition per metric. Fixing the patient to lead join surfaced about $460K of patient value no lead pointed at, and cash flow now reads Monday every morning.",
+          "[Cowork Dashboard](/posts/cowork-dashboard). Monday.com boards turned into the leadership dashboard, moved from Apps Script to Cloud Run in September with one definition per metric. Fixing the patient to lead join linked almost every patient to a lead, and cash flow now reads Monday every morning.",
           "[Accounting Automation Suite](/posts/accounting-automation). Our controller's nine Python scripts moved from a laptop terminal to one page behind IAP in one evening. Every question is asked before the run, and every script edit is tested before it is committed.",
           "[Reconciliation](/posts/reconciliation). A deterministic engine that cross checks the schedule, production ledger, and clinical notes across Eaglesoft and Denticon to confirm every patient seen got documented and billed correctly, surfacing only the exceptions. About 70 hours a week of manual cross checking by the insurance team became an exception review; live on Cloud Run.",
           "[Centralized Diagnostic Filter](/posts/cdf-diagnostic-filter). Intake and experience surveys with Gemini writing the doctor's page and a panorex read under the founder's own ruleset. Every Gemini call falls back through newer models, and clinic emails wait for both reports.",
@@ -458,14 +458,14 @@ export const info = {
       flagshipRank: 2,
       date: "Sep 2026 to present",
       description:
-        "I replaced the operations lead's staffing workbook with a planner that shows demand, capacity and capability across three offices, reads the live schedule every minute, and never writes back.",
+        "I replaced the operations lead's staffing workbook with a planner that shows demand, capacity and capability across three offices, reads our Denticon mirror every minute, and never writes back.",
       link: "",
       post: "/posts/capacity-planner",
       details: {
         summary_short:
-          "One forward view of demand, capacity and capability across three offices. A pure scheduling engine, live Denticon bookings every minute through the patient dashboard, and read only by design, down to the type system.",
+          "One forward view of demand, capacity and capability across three offices. A pure scheduling engine, our Denticon mirror read every minute through the patient dashboard, and read only by design, down to the type system.",
         stats: [
-          { value: "Every minute", label: "Live schedule sync, with no vendor credential in the planner" },
+          { value: "Every minute", label: "Sync from our Denticon mirror, with no vendor credential in the planner" },
           { value: "0 write methods", label: "Toward Denticon, held there by a test that fails the build" },
           { value: "360 of 360", label: "Day cells from the old workbook the engine reproduces on every test run" },
           { value: "17 days", label: "From the first commit on Sep 11 to production on Sep 28" },
@@ -488,7 +488,7 @@ export const info = {
           "Its own cloud project, to isolate patient data and stay clear of a sibling app's database connection ceiling.",
           "Minute sync behind a version pointer; failures return 200 and show up as staleness.",
           "Excel files parsed in the browser and never stored.",
-          "A dependency upgrade put SQL parameters into error messages, so the logger now records only the Postgres error code, constraint and table.",
+          "The logger describes a failed query by its Postgres code, constraint and table only, and an integration test proves no log line carries a patient style name.",
           "Cover suggestions ranked on five explainable keys, with ties broken on person id.",
         ],
       },
@@ -544,30 +544,30 @@ export const info = {
       tier: "industry",
       date: "Mar to May 2026",
       description:
-        "I built an in house checker that flags bad dental CT scans before they reach the design team, in 38 days, against a $98,200 vendor quote.",
+        "I built an in house checker that flags bad dental CT scans before they reach the design team, in 37 days, against a six figure vendor quote.",
       link: "",
       post: "/posts/cbct-scan-validator",
       details: {
         summary_short:
-          "Flags bad dental CT scans before they reach the implant design queue. Built in house in 38 days on Cloud Run CPU, and checked by the testing team on real studies.",
+          "Flags bad dental CT scans before they reach the implant design queue. Built in house in 37 days on Cloud Run CPU, and checked by the testing team on real scans.",
         stats: [
-          { value: "$62", label: "Google Cloud in October, measured" },
+          { value: "$62", label: "Google Cloud from October 1 to 28, measured" },
           { value: "2.2 s", label: "Encoder pass on a laptop CPU with OpenVINO" },
           { value: "0.6309", label: "Honest AUROC (leaky 0.80 caught)" },
-          { value: "26 of 30", label: "Bad studies flagged in testing" },
+          { value: "26 of 30", label: "Bad studies the review app's model flagged in testing" },
         ],
         star: {
           problem:
-            "Some CBCT scans arrive unusable: the patient moved, metal threw streaks, or part of the jaw sat outside the field of view. Nobody knew until a designer opened the case and waited on a rescan. A vendor quoted $98,200 to build a checker and $2,200 a month to run it.",
+            "Some CBCT scans arrive unusable: the patient moved, metal threw streaks, or part of the jaw sat outside the field of view. Nobody knew until a designer opened the case and waited on a rescan. A vendor had quoted a six figure build and a monthly fee to run it.",
           solution:
-            "An in house quality gate. The lab's case system exports each case over SFTP to a small locked down VM, the zip lands in Cloud Storage, Eventarc fires, and the validator on Cloud Run scores it with a frozen DentalSegmentator encoder and a small head, then sends the verdict back over SFTP.",
+            "An in house quality gate. The lab's case system exports each case to a small locked down SFTP box, which hands it to the validator on Cloud Run. The validator scores it with a frozen DentalSegmentator encoder and a small head, then sends the verdict back over SFTP.",
           process:
             "Six candidate models sat behind one interface by April 7. Model H's first 0.80 AUROC leaked: seven of the ten bad holdout studies had been in its training data, so I rebuilt the split and kept the honest 0.6309 on 44 test studies. The threshold is priced in rescans, with a missed bad scan counting 15 times a false flag.",
           result:
-            "Deployed on Cloud Run since April 22 and on v0.6.1 since May 1, 38 days after the first commit. The testing team checks it on real studies in a review app: of the 30 they marked bad, the model flagged 26. It cost $62 on Google Cloud in October, measured.",
+            "Deployed on Cloud Run since April 22 and on v0.6.1 since May 1, 37 days after the first commit. Our testing team checks studies in a review app: of the 30 they marked bad, the review app's model flagged 26. That model is separate from the validator's. It cost $62 on Google Cloud from October 1 to 28, measured.",
         },
         summary:
-          "SFTP from the lab's case system, Cloud Storage, Eventarc, a frozen DentalSegmentator encoder with a small head on OpenVINO, a cost tuned threshold, and SFTP back. On Cloud Run CPU, scaling to zero.",
+          "SFTP from the lab's case system, a frozen DentalSegmentator encoder with a small head on OpenVINO, a cost tuned threshold, and SFTP back. On Cloud Run CPU, scaling to zero.",
         highlights: [
           "Six candidate models behind one interface by April 7; Model H, a frozen DentalSegmentator encoder with a head of about 500K parameters, is the one that worked.",
           "Threshold priced in rescans: a missed bad scan costs 15 times a false flag.",
@@ -678,7 +678,7 @@ export const info = {
           "The ordered plan of visits, with chair time, that delivers an accepted treatment. Generated from an estimate by picking one of eleven transcribed practice masters, and edited by the treatment coordinator inside the estimator.",
         stats: [
           { value: "11", label: "Practice masters transcribed word for word as data, all validated" },
-          { value: "0 errors", label: "In 271 generation attempts across 75 live estimates, production audit of Aug 27" },
+          { value: "0 errors", label: "In 271 generation attempts across every live production estimate, audit of Aug 27" },
           { value: "4.5 hours", label: "From the first commit to the builder live in the estimator, Aug 27" },
           { value: "0 tokens", label: "Shipped as a committed build snapshot, so no registry credential can expire" },
         ],
@@ -690,7 +690,7 @@ export const info = {
           process:
             "Generation picks a transcribed master that fits the estimate. A procedure with no matching visit prints as a yellow open item, an unsupported combination asks for a manual build, and a free text wait stops date projection instead of guessing. The packages reach the estimator as a committed build snapshot stamped with its source commit, and a check fails if core and ui come from different commits.",
           result:
-            "Live inside the estimator since 27 August 2026, with save, versions and PDF in a second release that evening. A production audit on 27 August tried every scenario of 75 live estimates: 263 of 271 attempts matched a validated master, 8 opened empty for a manual build, and 0 errored.",
+            "Live inside the estimator since 27 August 2026, with save, versions and PDF in a second release that evening. A production audit on 27 August tried every scenario of every live estimate: 263 of 271 attempts matched a validated master, 8 opened empty for a manual build, and 0 errored.",
         },
         summary:
           "Shared TypeScript packages that turn an accepted treatment estimate into an ordered plan of visits, with chair time in 15 minute units, providers, teeth, waits and dates, edited by the treatment coordinator in a three pane builder inside the estimator.",
@@ -713,23 +713,23 @@ export const info = {
       tier: "industry",
       date: "May 2026 to present",
       description:
-        "I fixed the join behind our leadership dashboard, which surfaced about $460K nobody attributed, then rebuilt it on Cloud Run with every metric defined once and cash flow read every morning.",
+        "I fixed the join behind our leadership dashboard, then rebuilt it on Cloud Run with every metric defined once and cash flow read every morning.",
       link: "",
       post: "/posts/cowork-dashboard",
       details: {
         summary_short:
           "Monday.com boards turned into the leadership dashboard. Moved from Apps Script to Cloud Run in September 2026, with one metric registry so cards and drilldowns cannot disagree.",
         stats: [
-          { value: "~$460K", label: "Patient value on 25 retreatment cases no lead pointed at" },
+          { value: "23", label: "Patients left with no lead after fixing the join, mostly retreatment cases" },
           { value: "5.2 s → ~17 ms", label: "Weekly tab over a multi year range" },
           { value: "31% → 5.8%", label: "Ambiguous patient to lead links, after first name checks" },
           { value: "19 min", label: "From the finance lead's request in the Feature requests tab to it live" },
         ],
         star: {
           problem:
-            "The first version, in Apps Script, joined patients to leads by name. In a review on June 3, Buffalo's consults and case acceptances read zero; only 49.5% of Rochester patients and 65.3% of Buffalo patients linked to a lead. Every metric also had three implementations (card, drilldown and trend), so two tabs could disagree.",
+            "The first version, in Apps Script, joined patients to leads by name. In a review on June 3, Buffalo's consults and case acceptances read zero. Every metric also had three implementations (card, drilldown and trend), so two tabs could disagree.",
           solution:
-            "A rebuild on Cloud Run behind IAP. Cloud Scheduler checks Drive every five minutes; a private ingest service parses the four exports with ExcelJS, joins and hashes them, and writes an immutable snapshot to Cloud Storage. The browser loads one pinned snapshot of about 0.4 MB and computes everything locally with the same core package the ingest uses, and each card number is a function of its drilldown rows by construction. Every morning at six the same check reads the three patient boards from the Monday API for the Cash Flow tab.",
+            "A rebuild on Cloud Run behind IAP. Cloud Scheduler checks Drive every five minutes; a private ingest service parses the four exports with ExcelJS, joins and hashes them, and rebuilds when all four files have changed. The browser loads one pinned snapshot of about 0.4 MB and computes everything locally with the same core package the ingest uses, and each card number is a function of its drilldown rows by construction. Every morning at six the same check reads the three patient boards from the Monday API for the Cash Flow tab.",
           process:
             "Business rules were ported verbatim and diffed against the original Apps Script code. When that parity check missed a one day date shift (both sides used the same Excel reader), a golden test pinned 948 dates read off the old production dashboard. A request sequence guard stops stale results from landing.",
           result:
@@ -738,11 +738,11 @@ export const info = {
         summary:
           "A leadership dashboard on Monday.com boards, first in Apps Script and rebuilt on Cloud Run in September 2026. Nine tabs, one metric registry, and a snapshot the browser computes from locally.",
         highlights: [
-          "Linkage from 49.5% to 98.8% in Rochester and 99.9% in Buffalo by joining on the boards' connect column, then made correct in September: first name checks cut ambiguous links from 31% to 5.8%.",
+          "Linkage to 98.9% in Rochester and 99.9% in Buffalo by joining on the boards' connect column, then made correct in September: first name checks cut ambiguous links from 31% to 5.8%.",
           "Cash flow reads the three patient boards from the Monday API every morning at 6, with Refresh now, pace against a usual month and Rest of month.",
           "One metric registry: every card is computed from its own drilldown rows, so the two cannot disagree.",
           "Weekly tab from about 5.2 s to about 17 ms.",
-          "Surfaced about $460K of patient value on 25 retreatment cases that no lead pointed at.",
+          "Fixing the join left 23 patients with no lead, mostly retreatment cases filed without a Lead row.",
           "A Feature requests tab wired to Launchpad: an October 28 request was live 19 minutes after it was filed.",
         ],
       },
@@ -807,7 +807,7 @@ export const info = {
         summary_short:
           "Grades every implant consult from the Zoom transcript against the CEO's seven criterion rubric. A colored report to the doctor, the CEO and the treatment coordinator.",
         stats: [
-          { value: "471", label: "Consults scored live since May 19" },
+          { value: "471", label: "Consults scored live from May 19 to Oct 28" },
           { value: "2.7 min", label: "Median transcript to report, Oct" },
           { value: "7 + 25", label: "Criteria and sub checks" },
           { value: "392", label: "Older consults regraded on the same rubric" },
@@ -818,7 +818,7 @@ export const info = {
           solution:
             "One Cloud Run service in Python. A Zoom webhook starts it when a transcript is ready; it checks the signature, finds the doctor, and asks Vertex AI Gemini 2.5 Pro for a scorecard as JSON against a versioned rubric prompt and schema. Every rationale must quote the transcript with a real timestamp, and each score is colored against that doctor's own 30 day average before the report and PDF go out.",
           process:
-            "The doctor is found in three layers: Zoom participants against the doctor directory, then transcript speaker labels, then the names Gemini pulls out while scoring. A response that did not finish cleanly is never accepted, and the token budget doubles on a retry. Instead of Workspace domain wide delegation, the pipeline uses a user OAuth grant.",
+            "The doctor is found in three layers: Zoom participants against the doctor directory, then transcript speaker labels, then the names Gemini pulls out while scoring. A response that did not finish cleanly is never accepted, and the token budget doubles on a retry. Instead of Workspace domain wide delegation, the pipeline uses an OAuth grant kept in Secret Manager.",
           result:
             "471 consults scored live from May 19 to Oct 28 across three offices; median 2.7 minutes from transcript to sent report in October. 392 older consults from November 2025 to May 2026 were regraded on the same rubric, so the trends start in November.",
         },
@@ -828,8 +828,8 @@ export const info = {
           "471 consults scored live from May 19 to Oct 28 across three offices; median 2.7 minutes from transcript to sent report in October.",
           "Versioned rubric prompt and JSON schema for every Gemini response, with a real timestamp behind every quote.",
           "A truncated response is never accepted; no consult needed a second scoring attempt in October.",
-          "Master Sheet ledger joined to Monday.com case outcomes for analytics.",
-          "A user OAuth grant instead of Workspace domain wide delegation.",
+          "A ledger row per consult, joined to Monday.com case outcomes for analytics.",
+          "An OAuth grant kept in Secret Manager instead of Workspace domain wide delegation.",
           "Report cards for every doctor each Monday at 8 AM and on the first weekday of each month.",
         ],
       },
@@ -852,7 +852,7 @@ export const info = {
         summary_short:
           "Finds the new patient calls among thousands of recordings, grades each against the practice playbook with a transcript quote behind every criterion, and tracks each coordinator's trend. A full rebuild of an n8n prototype.",
         stats: [
-          { value: "690", label: "Real calls graded since June 17" },
+          { value: "690", label: "Real calls graded from June 17 to October 29" },
           { value: "14 min", label: "Median from call end to grade, October" },
           { value: "40 / 40 / 20", label: "Weighted score + 3 hard gates" },
           { value: "16 days", label: "First commit to live calls" },
@@ -865,7 +865,7 @@ export const info = {
           process:
             "The model returns integers and gate answers; plain Python does the 40/40/20 math, so the same verdict always gives the same score. Hard gates show as a flag beside the score. A run lease stops overlapping runs from grading or emailing a call twice.",
           result:
-            "690 real calls graded since June 17, out of 28,745 recordings the poller read; a median 14 minutes from the end of a call to its grade in October. Live calls were graded 16 days after the first commit. Live on Cloud Run behind Google sign in.",
+            "690 real calls graded from June 17 to October 29, out of 28,745 recordings the poller read; a median 14 minutes from the end of a call to its grade in October. Live calls were graded 16 days after the first commit. Live on Cloud Run behind Google sign in.",
         },
         summary:
           "A New Patient Coordinator coaching platform. It finds the new patient calls among thousands, grades each against the founder's playbook, and gives coordinators and managers per call reports plus team trends. Correctness over conversion.",
@@ -912,7 +912,7 @@ export const info = {
             "Live on Cloud Run. About 70 hours a week of manual cross checking became an exception review, over 3,600 hours a year.",
         },
         summary:
-          "A reconciliation tool for a multi location dental group. A deterministic Python engine confirms each patient seen was documented and billed across Eaglesoft and Denticon; the FastAPI shell adds sign in, a dashboard, history and Gmail delivery.",
+          "A reconciliation tool for a multi location dental group. A deterministic Python engine confirms each patient seen was documented and billed across Eaglesoft and Denticon; the FastAPI shell adds sign in, a dashboard and history.",
         highlights: [
           "Pure deterministic engine split from the app shell: same inputs, byte identical, auditable output.",
           "Two practice management systems normalized into one set of typed models through a source adapter registry.",
@@ -980,8 +980,8 @@ export const info = {
         summary_short:
           "Ten marketing sources pulled daily into one BigQuery warehouse and joined from ad spend through calls and leads to booked patients and treatment value. Every column described, a data guide written for LLMs to read first, a 6:30 AM email, and a weekly eval of golden questions.",
         stats: [
-          { value: "3,334 of 3,383", label: "Lead to patient matches from the staff's own Monday link" },
-          { value: "99.3%", label: "Agreement with Monday's weekly export" },
+          { value: "98.6%", label: "Of lead to patient matches made by the link staff already keep in Monday, as of October 29" },
+          { value: "99.3%", label: "Agreement with Monday's weekly export, October 29" },
           { value: "21 of 22", label: "Weekly Gemini eval, 26 October" },
           { value: "3.5 hours", label: "From design spec to the first sync job in the cloud" },
         ],
@@ -991,14 +991,14 @@ export const info = {
           solution:
             "Google Ads lands through the BigQuery Data Transfer Service; Microsoft Ads, Meta, CallRail, Monday, GA4, Search Console, Business Profile and TapClicks come in through Python connectors running as Cloud Run jobs on Cloud Scheduler. Data moves from raw to staging to marts, every column carries a description, and a data guide tells an LLM what to read first.",
           process:
-            "A daily ops job checks freshness and drift, alerting on a z score above 3 against a 28 day baseline, and a weekly eval asks Gemini 22 golden questions. The lead to patient join moved from fuzzy phone, click id and email matching to the link staff already keep in Monday, with the match method recorded on every row.",
+            "A daily ops job checks freshness and drift, alerting on a z score above 3 against a 28 day baseline, and a weekly eval asks Gemini 22 golden questions. The lead to patient join moved from matching on contact details and the Google click ID to the link staff already keep in Monday, with the match method recorded on every row.",
           result:
-            "Live since 4 August 2026. Ten sources land by 6 AM, a 6:30 email with one tab per source goes to the marketing team every morning, and a Claude connector has answered questions from it since 23 October. The weekly eval scored 21 of 22 on 26 October.",
+            "Live since 4 August 2026. Ten sources are pulled at 6 AM, a 6:30 email with one tab per source goes to the marketing team every morning, and a Claude connector has answered questions from it since 23 October. The weekly eval scored 21 of 22 on 26 October.",
         },
         summary:
           "A marketing data warehouse for a multi office implant practice: daily pulls from ten sources, a described raw, staging and marts layout, freshness and drift checks, a 6:30 AM email, a weekly LLM eval, and a Claude connector.",
         highlights: [
-          "Lead to patient join on the link staff already keep in Monday: 3,334 of 3,383 matches, the other 49 by email, with the method on every row.",
+          "Lead to patient join on the link staff already keep in Monday: 98.6% of matches as of October 29, the rest by email, with the method on every row.",
           "All 657 staging and marts columns described, and a data guide written for LLMs, so a model reads the map first.",
           "A 6:30 AM email with one tab per source, sent every morning since October 22.",
           "Drift alerts at a z score above 3 against a 28 day baseline.",
@@ -1023,7 +1023,7 @@ export const info = {
           "A remote MCP server on Cloud Run that Claude adds as a custom connector. Each person signs in with Google once and queries only the BigQuery views an owner ticked for them.",
         stats: [
           { value: "3 hours", label: "From the first connector code to the live service on Oct 23" },
-          { value: "469 calls", label: "From 3 people in the first seven days, Oct 23 to 29" },
+          { value: "480 calls", label: "From 3 people in the first seven days, Oct 23 to 29" },
           { value: "13 boxes", label: "An owner ticks per person; each set gets its own dataset of views" },
           { value: "39 of 40", label: "Golden questions passed through Claude on main, all 40 answers correct" },
         ],
@@ -1031,11 +1031,11 @@ export const info = {
           problem:
             "Asking Claude about our marketing data took the Google Cloud SDK, two command line sign ins, a database tool, a hand edited Claude config and a fresh Google Cloud login most days. Every new person would repeat all of it.",
           solution:
-            "A remote MCP server on Cloud Run. An owner page lists the people and 13 boxes, one per data source plus patient names and the family practice and lab, and each set of boxes gets its own BigQuery dataset of views. Claude writes SQL against the warehouse's own table names, and a guard points every table at that person's dataset before anything runs.",
+            "A remote MCP server on Cloud Run. An owner page lists the people and 13 boxes, one per data source plus a few that unlock more detail, and each set of boxes gets its own BigQuery dataset of views. Claude writes SQL against the warehouse's own table names, and a guard points every table at that person's dataset before anything runs.",
           process:
             "Each question runs as one SELECT against the asker's own views, and Claude ends every answer with where the numbers came from. An accuracy layer that moves metric math to the server is built on main, with an eval that asks Claude 40 golden questions through the connector.",
           result:
-            "Live since October 23. From October 23 to 29, three people made 469 tool calls on six days, 364 of them queries.",
+            "Live since October 23. From October 23 to 29, three people made 480 tool calls on six days, 370 of them queries.",
         },
         summary:
           "A Claude connector over the marketing warehouse: Google sign in once, a dataset of views per person, and a guard that points every table at the asker's dataset.",
@@ -1067,18 +1067,18 @@ export const info = {
         stats: [
           { value: "6", label: "Gemini calls, each through one retry and fallback chain" },
           { value: "2 of 2", label: "Reports before a clinic list gets an email" },
-          { value: "4 cases", label: "The founder read aloud, turned into the written ruleset" },
-          { value: "103", label: "Real intakes by September 30" },
+          { value: "4 cases", label: "The founder walked through and narrated, turned into the written ruleset" },
+          { value: "0.3 s", label: "For an experience survey submit to return; the reports follow in the queue" },
         ],
         star: {
           problem:
-            "The pre consult assessment ran on a third party intake platform. The practice did not own its patients' answers, one person could edit a question or add a recipient, and a staff member screenshotted pages of each report into OneNote and filed them in Drive by hand.",
+            "The pre consult assessment ran on a third party intake platform. The practice did not own its patients' answers, one person could edit a question or add a recipient, and each report was filed by hand.",
           solution:
             "An intake and experience survey owned by the practice on Google Cloud. Each submit becomes one Cloud Task for the renderer, which draws the patient summary and the doctor report, with Gemini writing the psychographic and reading the panorex. The governing rule is AI assists, doctors validate.",
           process:
-            "I recorded the founder reading four panorexes on camera, turned the narration into a written ruleset where each rule cites its case and timestamp, and implemented it as a Gemini read with structured output: the model lists the teeth, and plain code recomputes the score. Every Gemini call goes through one chain of retries and newer fallback models inside a time budget.",
+            "Our founder walked me through four cases, narrating every call. I turned the narration into a written ruleset where each rule cites its case and timestamp, and implemented it as a Gemini read with structured output: the model lists the teeth, and plain code recomputes the score. Every Gemini call goes through one chain of retries and newer fallback models inside a time budget.",
           result:
-            "Patients at all three offices fill in the intake before a consult, 103 real intakes by 30 September. The founder's review of the first reads shipped as ruleset v2 on 8 July, and since 23 October the clinic email goes out with both reports or waits.",
+            "Patients at all three offices fill in the intake before a consult. The founder's review of the first reads shipped as ruleset v2 on 8 July, and since 23 October the clinic email goes out with both reports or waits.",
         },
         summary:
           "Intake and experience surveys for complex implant cases, built with the practice founder: a patient summary, a doctor report with a 0 to 200 risk score for the doctor to explain, and a panorex read under the founder's own reviewed ruleset.",
@@ -1099,7 +1099,7 @@ export const info = {
       tier: "industry",
       date: "Sep 2026 to present",
       description:
-        "I built the sync that keeps our copy of Denticon fresh for every app: webhooks first, a nightly poll behind them, and the only Denticon credentials in the company.",
+        "I built the sync that keeps our copy of Denticon fresh for the apps that need it: webhooks first, a nightly poll behind them, and the only Denticon credentials in the company.",
       link: "",
       post: "/posts/denticon-sync",
       details: {
@@ -1107,7 +1107,7 @@ export const info = {
           "Mirrors Denticon into Firestore for four services. Webhooks first, a worker every ten minutes, an hourly sweep and a 4 AM poll, on the one service that holds Denticon credentials.",
         stats: [
           { value: "2.6 min", label: "Behind Denticon once the sync ran on a timer on Sep 21, down from 6.0 days" },
-          { value: "20,111 charts", label: "And 22,688 appointments in the first read of the live practice, Sep 29" },
+          { value: "10 min", label: "Between worker runs that fetch each slice a webhook points to, with a 4 AM poll behind them" },
           { value: "1 key holder", label: "Denticon credentials live on this service alone" },
           { value: "6 days", label: "From the first Denticon commit on Sep 15 to the sync service live" },
         ],
@@ -1122,11 +1122,11 @@ export const info = {
             "Four services read the mirror and none holds a Denticon credential: the CDF's patient list, the estimator and the capacity planner through the registry, and the report renderer before it emails a patient.",
         },
         summary:
-          "The service that holds Denticon credentials and keeps a Firestore mirror of offices, providers, patients and appointments current for every other app.",
+          "The service that holds Denticon credentials and keeps a Firestore mirror of offices, providers, patients and appointments current for the apps that need it.",
         highlights: [
           "Webhooks first, a worker every ten minutes, an hourly sweep and a 4 AM poll behind them.",
           "From 6.0 days behind to 2.6 minutes behind once the sync ran on a timer.",
-          "20,111 charts and 22,688 appointments in the first read of the live practice.",
+          "The first read of the live practice ran on September 29.",
           "A webhook body is a pointer; the worker fetches the record itself.",
         ],
       },
@@ -1155,7 +1155,7 @@ export const info = {
           problem:
             "On September 21 two apps needed Denticon's appointment book: the treatment estimator for a landing page of who is coming in today, and the capacity planner for the whole book every minute. Only the CDF may hold Denticon credentials.",
           solution:
-            "A registry: five read only routes on the CDF dashboard service, over the Firestore mirror that the Denticon sync keeps fresh. The estimator gets one local day of the book, joined to patient and provider names; the planner gets the book by date window or by what changed, plus providers, visit types and chairs.",
+            "A registry: five read only routes on the CDF dashboard service, over the Firestore mirror that the Denticon sync keeps fresh. The estimator gets one local day of the book; the planner gets the book by date window or by what changed, plus providers, visit types and chairs.",
           process:
             "Each caller has its own bearer secret, compared in constant time, and the registry never calls Denticon. Answers to the planner carry each office's mirror health, so it can show old data as old.",
           result:
@@ -1186,13 +1186,13 @@ export const info = {
           "A Fastify service on Cloud Run that renders each PDF in a fresh headless Chromium, stores it and delivers it. Three callers share it, and it records each step as it lands.",
         stats: [
           { value: "7 min", label: "From the first renderer commit on Jun 19 to the service on Cloud Run" },
-          { value: "60 to 90 s", label: "For one survey's whole delivery, run inside the request with the CPU kept on" },
+          { value: "About 50 s", label: "For one survey's whole delivery, run inside the request with the CPU kept on" },
           { value: "3 callers", label: "The delivery queue, the CDF dashboard and an hourly sweep" },
           { value: "2 of 2", label: "Reports before a clinic list gets an email" },
         ],
         star: {
           problem:
-            "Every intake survey needs a one page summary for the patient and a doctor report for the office. In August my own comment in the code described what kept happening: the patient got their summary, the clinic got nothing, and no error surfaced anywhere.",
+            "Every intake survey needs a one page summary for the patient and a doctor report for the office.",
           solution:
             "A Fastify service on Cloud Run that renders each PDF in a fresh headless Chromium, stores it and delivers it. A survey submit becomes one named Cloud Task, staff on the CDF dashboard can regenerate a report, and an hourly sweep picks up anything unfinished.",
           process:
@@ -1415,11 +1415,11 @@ export const info = {
           { value: "3.7 hours", label: "From the sync that made it top priority to a working live link, Oct 28" },
           { value: "9 min", label: "From the revision that failed its first visit to the one that fixed it" },
           { value: "4 things", label: "Still pretend, listed on every release note" },
-          { value: "1,664", label: "Uploads doctors made in the old portal since March 27, about ten a business day" },
+          { value: "4 weeks", label: "The portal sat behind other work before the lab lead made it top priority" },
         ],
         star: {
           problem:
-            "More than 200 outside doctors send our lab work. A doctor scans the patient and the scanner opens a case in MagicTouch, the lab's case system. The doctor then writes the Rx in MagicTouch's own portal, which cannot edit a case that already exists, so the Rx opens a second case. In the lab lead's words, the doctors \"see us cancel one and then they get freaked out.\"",
+            "Outside doctors send our lab work. A doctor scans the patient and the scanner opens a case in MagicTouch, the lab's case system. The doctor then writes the Rx in MagicTouch's own portal, which cannot edit a case that already exists, so the Rx opens a second case. In the lab lead's words, the doctors \"see us cancel one and then they get freaked out.\"",
           solution:
             "A doctor portal built from the lab lead's own July mockup. The doctor sends the scan from the scanner, then adds the Rx to that same case here. A switch in the bar flips between the doctor's view and the lab's, which stands in for MagicTouch until a real link exists.",
           process:
@@ -1455,7 +1455,7 @@ export const info = {
         stats: [
           { value: "32 of 32", label: "Live Tally forms the importer handles, found across 539 pages" },
           { value: "0", label: "Answers, names, emails or phones in any log line" },
-          { value: "67 leads", label: "Got all six tracking fields on Oct 26, the day the gap was seen" },
+          { value: "67 leads", label: "Already on the Monday board got their missing tracking fields on Oct 26, the day the gap was seen" },
           { value: "$9", label: "Measured Google Cloud cost in October, a partial month" },
         ],
         star: {
@@ -1466,7 +1466,7 @@ export const info = {
           process:
             "Built around one rule: no submission is ever lost. If Firestore fails, the answers go to a private Cloud Storage bucket and the visitor still sees success. If both fail, the server answers 503 and the browser retries over about 15 seconds with the same id, then keeps the answers on the device. A queue task wakes the worker on every send, and a sweep runs every minute. An importer brings over all 32 live Tally forms.",
           result:
-            "Live since 6 October 2026. Elmwood's contact form moved off Tally on 14 October, and on 26 October all six tracking fields reached the Monday board, backfilled on 67 leads.",
+            "Live since 6 October 2026. Elmwood's contact form moved off Tally on 14 October, and on 26 October all six tracking fields reached the Monday board, and the 67 leads already there got their missing ones.",
         },
         summary:
           "An owned forms platform for a multi office practice's websites, designed so a submission survives a database outage, a storage outage and a flaky connection.",
@@ -1495,13 +1495,13 @@ export const info = {
           "Every Hybridge app on one board behind IAP, Work and History for four leaders, one editor, and one feature request list that six apps share.",
         stats: [
           { value: "78 min", label: "From the first commit to a working live board, Oct 22" },
-          { value: "38 projects", label: "On one board in panes by status, 22 of them live" },
+          { value: "38 projects", label: "On one board on Oct 29, 2026, 22 of them live" },
           { value: "19 min", label: "From the VP of finance's request in the Cowork tab to the live fix, Oct 28" },
           { value: "$0.32", label: "The whole Google Cloud project, October 1 to 28, measured" },
         ],
         star: {
           problem:
-            "By October the list of Hybridge projects had reached 38. Staff needed one place to open any of them, four leaders wanted to see what is being built, and change requests arrived in chats and in passing, with no screenshot, no id and no record of what happened to them.",
+            "By late October the list of Hybridge projects had reached 38. Staff needed one place to open any of them, four leaders wanted to see what is being built, and change requests arrived in chats and in passing, with no screenshot, no id and no record of what happened to them.",
           solution:
             "One page behind Google sign in. The Apps tab shows every project as a card in panes by status, the four leaders also get Work and History, and a Feature requests tab takes a pasted screenshot and a line. The same request screen lives inside six other apps, which all send to one relay.",
           process:

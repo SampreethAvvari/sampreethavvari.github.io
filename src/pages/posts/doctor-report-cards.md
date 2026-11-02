@@ -42,7 +42,7 @@ The goal, in the words of the feature doc, was to keep every consult to the same
 
 ## What I built
 
-Analyse, a second pipeline on top of the same ledger. Pick doctors and a range of 7, 14, 30, 60 or 90 days, or your own dates. It reads the per consult summaries already stored in the master Sheet, plus each doctor's best and worst scoring transcript for concrete moments. Then one Gemini call per doctor and one for the comparison.
+Analyse, a second pipeline on top of the same ledger. Pick doctors and a range of 7, 14, 30, 60 or 90 days, or your own dates. It reads the per consult summaries the grader already stored, plus each doctor's best and worst scoring consult for concrete moments. Then one Gemini call per doctor and one for the comparison.
 
 The report has a cover, one page per doctor with strengths and things to work on across the same 7 categories the consult grader uses, a comparison page with what top performers do and what pulls scores down, 3 green and 3 red examples, and a weekly trend chart. A doctor with fewer than 3 consults in range gets a "limited data, directional only" label. It is only complete when the PDF is rendered and the Sheet is synced; email comes after.
 

@@ -18,14 +18,14 @@ import { profilePageNode, faqNode } from "../utils/seo";
 // /architecture with the filters.
 const archShown = archAll.slice(0, 3);
 
-// Four numbers under the hero: money, time, reach and scale, each a link to
-// where it is proven. Sources: the cowork and reconciliation posts; Doc
-// Coach's 471 scored consults and NPC Coach's 690 graded calls (BigQuery,
-// 2026-10-29); the platform post's service count (gcloud listings,
-// 2026-10-29).
+// Four numbers under the hero, each a link to where it is proven. Sources:
+// the reconciliation post; the feature requests post (FR-0004, Oct 28);
+// Doc Coach's 471 scored consults and NPC Coach's 690 graded calls
+// (BigQuery, 2026-10-29); the platform post's service count (gcloud
+// listings, 2026-10-29).
 const heroProof = [
-  { value: "~$460K", label: "of patient value found that no report showed", href: "/posts/cowork-dashboard" },
   { value: "70 hrs", label: "a week back for the insurance team", href: "/posts/reconciliation" },
+  { value: "19 min", label: "from a staff request to the fix in production", href: "/posts/feature-requests" },
   { value: "1,161", label: "doctor consults and patient calls graded", href: "/architecture/doc-coach" },
   { value: "45", label: "services live on Google Cloud, one engineer", href: "/posts/platform" },
 ];
@@ -74,7 +74,7 @@ const strip = [
   },
   {
     title: "Capacity Planner",
-    line: "Places doctors and assistants across three offices from live Denticon data, every minute.",
+    line: "Places doctors and assistants across three offices from our Denticon mirror, every minute.",
     href: "/posts/capacity-planner",
     img: "/capacity-planner.png",
     badge: "New",
@@ -103,7 +103,7 @@ const strip = [
   },
   {
     title: "Hybridge Forms",
-    line: "Moved every website lead off Tally and Zapier into our own cloud, straight to Monday.",
+    line: "Every website lead form now runs in our own cloud and lands straight in Monday.",
     href: "/posts/hybridge-forms",
     img: "/hybridge-forms.png",
     badge: "New",
@@ -158,8 +158,6 @@ const filmCredits = [
 
 // Short answers for people who skim and for search and AI engines, which
 // read the same text as an FAQ in the page's structured data.
-const costed = archAll.filter((a) => a.cost);
-const costedMonthly = Math.round(costed.reduce((n, a) => n + a.cost!.parts.reduce((s, p) => s + p.usd, 0), 0));
 const faq = [
   {
     q: "Who is Sampreeth Avvari?",
@@ -167,11 +165,11 @@ const faq = [
   },
   {
     q: "What has Sampreeth built at Hybridge Implants?",
-    a: "The tools staff use every day: a capacity planner that syncs the practice system every minute, a treatment estimator, Doc Coach and NPC Coach, which grade recorded doctor consults and new patient calls, lead forms that replaced Tally, a marketing warehouse Claude can query, and both public websites. Each one has its own architecture drawing.",
+    a: "The tools staff use every day: a capacity planner that syncs the practice system every minute, a treatment estimator, Doc Coach and NPC Coach, which grade recorded doctor consults and new patient calls, lead forms, a marketing warehouse Claude can query, and previews of both rebuilt public websites. Each one has its own architecture drawing.",
   },
   {
     q: "What has the work changed for the business?",
-    a: "About $460K of patient value found that no report showed, about 70 hours a week back for the insurance team, and 1,161 doctor consults and patient calls graded.",
+    a: "About 70 hours a week back for the insurance team, 1,161 doctor consults and patient calls graded, and a staff request live in production 19 minutes after it was filed.",
   },
   {
     q: "What does a forward deployed engineer do?",
@@ -179,7 +177,7 @@ const faq = [
   },
   {
     q: "How much do these systems cost to run?",
-    a: `The ${costed.length} systems with billing history cost about $${costedMonthly} a month together, read from the Google Cloud billing export. Each architecture page shows its own cost and what was tuned to get there.`,
+    a: "The six Google Cloud projects with billing history cost $132 from October 1 to 28, 2026, read from the billing export. Each architecture page shows its own cost and what was tuned to get there.",
   },
   {
     q: "Is Sampreeth Avvari the same person as Sampreeth Sharma?",

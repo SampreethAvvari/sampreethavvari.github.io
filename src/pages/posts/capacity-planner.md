@@ -2,7 +2,7 @@
 title: "A twenty copy Excel workbook became a live capacity planner"
 date: "2026-10-05"
 layout: ../../layouts/PostLayout.astro
-description: "Our operations lead planned three offices in a workbook of pasted week blocks. I replaced it with a planner that reads Denticon every minute and cannot write back. Seventeen days to production."
+description: "Our operations lead planned three offices in a workbook of pasted week blocks. I replaced it with a planner that reads our Denticon mirror every minute and cannot write back. Seventeen days to production."
 img_path: "/capacity-planner.png"
 architecture: "capacity-planner"
 img_alt: "Hybridge Capacity Planner: three offices on one coverage board, each day showing who is where and which rule placed them"
@@ -24,11 +24,11 @@ facts:
   - label: "What I built"
     value: "A planner showing who is where, which days have patients and no doctor, and who could cover."
   - label: "Outcome"
-    value: "The operations lead and office directors plan from it every day, on live Denticon bookings."
+    value: "The operations lead and office directors plan from it every day, on bookings from our Denticon mirror."
   - label: "Runs on"
-    value: "Cloud Run and Cloud SQL Postgres, reading Denticon every minute through the CDF, with no way to write back."
+    value: "Cloud Run and Cloud SQL Postgres, reading our Denticon mirror every minute through the CDF, with no way to write back."
   - label: "Cost"
-    value: "$27 a month to run, measured in October 2026; the sync every minute is $1.29 of it."
+    value: "$27 from October 1 to 28, 2026, measured; Cloud Run, which serves the app and runs the minute sync, is $1.29 of it."
   - label: "Built"
     value: "17 days from the first commit on September 11 to production on September 28, 2026."
 ---
@@ -43,7 +43,7 @@ The real cost was people. Last minute coverage calls, and a doctor slammed at on
 
 ## What I built
 
-One forward view of demand, capacity and capability for all three offices. It reads Denticon every minute through the CDF, my service that holds the Denticon credentials, and it has no way to write back. A person still makes every real change in Denticon. The planner shows who is where, which day has patients and no doctor, who is overloaded, and who could cover.
+One forward view of demand, capacity and capability for all three offices. It reads our Denticon mirror every minute through the CDF, my service that holds the Denticon credentials, and it has no way to write back. A person still makes every real change in Denticon. The planner shows who is where, which day has patients and no doctor, who is overloaded, and who could cover.
 
 All the planning math lives in one pure TypeScript package with no database, no network and no clock. The same code runs in the minute sync on the server and in the browser when someone asks what happens if a doctor takes Thursday off. [Open the drawing](/architecture/capacity-planner) to see every part.
 
@@ -51,7 +51,7 @@ All the planning math lives in one pure TypeScript package with no database, no 
 
 On September 11 I took the workbook apart cell by cell, wrote the spec, and sent our operations lead eleven questions. Each one already had a default coded, so nothing waited on an answer. The first commit went in the same day.
 
-v0.1.0 hit production at 3:27 PM on September 28. By 6:50 PM the People screen, the Bandwidth screen, the Coverage board and the Projector were live too. The first full read of live Denticon data landed at 5:34 the next morning, about 12,300 appointments. On October 1 a fix went in at <span class="egg" tabindex="0" data-egg="The planner never writes back to Denticon. I, on the other hand, never wrote back to sleep.">4:53 AM</span>. Later that day a practice director wrote, word for word, "I need an undo button!" It shipped as v0.38.0 at 3:34 PM the same day.
+v0.1.0 was tagged at 3:27 PM on September 28 and running in production by 3:48 PM. By 6:56 PM the People screen, the Bandwidth screen, the Coverage board and the Projector were live too. The first full read of live Denticon data landed at 5:34 the next morning. On October 1 a release went in at <span class="egg" tabindex="0" data-egg="The planner never writes back to Denticon. I, on the other hand, never wrote back to sleep.">4:53 AM</span>. Later that day a practice director wrote, word for word, "I need an undo button!" It shipped as v0.38.0 at 3:34 PM the same day.
 
 ## The hard parts
 
@@ -68,7 +68,7 @@ if (stale >= batch.guard.min && stale > batch.guard.maxShare * active) {
 
 More than half of an office's rows and at least 20 of them, and the whole read rolls back. The error names only an office and two counts.
 
-**Patient names stay out of logs.** An ORM upgrade for a security fix started putting SQL and every bound parameter into error messages. A parameter can be a patient's name. The logger now describes a failed query by its Postgres code, constraint and table only, and an integration test drives a real duplicate insert with a patient style name to prove no log line carries it.
+**Patient names stay out of logs.** The logger describes a failed query by its Postgres code, constraint and table only, and an integration test proves no log line carries a patient style name.
 
 ## What I said no to
 
@@ -82,7 +82,7 @@ More than half of an office's rows and at least 20 of them, and the whole read r
 
 The operations lead and the office directors plan from it every day. Each tab answers one question: Calendar, Coverage, Needs action, Bandwidth, and since October 20 a Room Board where people and blocks drag between rooms with Undo. A 7 AM email goes to the office directors Monday to Friday with what needs action.
 
-It costs $27 a month to run. The database is nine tenths of that. The sync that runs every minute, all month, costs $1.29.
+It cost $27 to run from October 1 to 28. The database is nine tenths of that. Cloud Run, which serves the app and runs the sync every minute, cost $1.29.
 
 I have not measured hours saved. I do not have a before number for how long the workbook took each week. Office hours for each site and categories for 44 appointment types are still waiting on answers.
 

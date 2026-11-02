@@ -10,13 +10,13 @@ export const npcCoach: Tour = {
   accent: "#FB7185",
   accentRgb: "251, 113, 133",
   pitch:
-    "Every new-patient phone call gets transcribed and graded against the practice's documented playbook, producing a coaching report that quotes the exact moment a coordinator missed a non-negotiable, next to their own 90-day average.",
+    "Every new-patient phone call gets transcribed and graded against the practice's documented playbook, producing a coaching report that quotes the exact moment a coordinator missed a non negotiable, next to their own 30 day average.",
   problem:
-    "New-patient coordinators are the practice's first advocates, and their calls set the tone for everything after. But nobody could listen to a thousand calls a month, so coaching was anecdotal. The design constraint came from the top: correctness beats conversion, and booking rate is explicitly not the success metric.",
+    "New-patient coordinators are the practice's first advocates, and their calls set the tone for everything after. But nobody could listen to every call, so coaching was anecdotal. The design constraint came from the top: correctness beats conversion, and booking rate is explicitly not the success metric.",
   metrics: [
-    { label: "First live day", value: "285 → 40", sub: "recordings ingested, relevant calls graded" },
-    { label: "Volume", value: "1k to 5k calls/mo", sub: "5 to 10 minutes each, EN + ES" },
-    { label: "Tests", value: "1,000+", sub: "across ~19k lines of Python" },
+    { label: "Calls graded", value: "690", sub: "real calls since June 17" },
+    { label: "Call end to grade", value: "14 min", sub: "median, October" },
+    { label: "Tests", value: "1,000+" },
     { label: "Built in", value: "16 days", sub: "including the React dashboard" },
   ],
   concepts: ["Speech-to-text + diarization", "Structured LLM scoring", "Hard gates vs weighted scores", "Idempotent ingestion", "Ports and adapters", "Evidence-quoted evals"],
@@ -38,25 +38,23 @@ export const npcCoach: Tour = {
     },
     {
       title: "Filter before grading",
-      body: "Voicemails, wrong numbers, and non-new-patient calls get tagged out with a reason, not deleted. On the first live day, 285 recordings came in, 3 voicemails were auto-filtered, and 40 relevant new-patient calls were graded.",
+      body: "Voicemails, wrong numbers, and non-new-patient calls get tagged out with a reason, not deleted. On the first live day, about 291 recordings came in. After the relevance check, 13 were new patient calls to grade.",
       screen: {
         kind: "bars",
-        title: "First live day (real counts)",
+        title: "First live day",
         bars: [
-          { label: "Recordings ingested", value: 285, max: 285 },
-          { label: "Relevant new-patient calls graded", value: 40, max: 285, tone: "good" },
-          { label: "Flagged: missed a non-negotiable", value: 28, max: 285, tone: "warn" },
-          { label: "Voicemails auto-filtered", value: 3, max: 285 },
+          { label: "Recordings in (about)", value: 291, max: 291 },
+          { label: "New patient calls to grade", value: 13, max: 291, tone: "good" },
         ],
       },
     },
     {
       title: "Score with hard gates, not just averages",
-      body: "Six criteria cover advocacy, identity and referral framing, rapport, classification before conversion, sequencing, and differentiators. Three of them are hard gates: miss one and the score caps at 49 no matter how smooth the call sounded. Weighted buckets put 40% on rapport, 40% on classification, 20% on scheduling outcome.",
+      body: "Six criteria cover advocacy, identity and referral framing, rapport, classification before conversion, sequencing, and differentiators. Three of them are hard gates: miss one and the call carries a red flag, and the score stays the weighted math. Weighted buckets put 40% on rapport, 40% on classification, 20% on scheduling outcome.",
       screen: {
         kind: "report",
         title: "Call SYN-4471 · Coordinator C-3 · 6m 12s (synthetic)",
-        subtitle: "Final 84/100 · coordinator 90-day average: 79",
+        subtitle: "Final 84/100 · coordinator 30 day average: 79",
         sections: [
           { name: "Rapport and advocacy (40%)", score: 9, max: 10, tone: "good", note: "Warm open, used the caller's name, acknowledged the anxiety mention before moving on." },
           { name: "Classification before conversion (40%)", score: 8, max: 10, tone: "good", note: "Scope and duration established before any scheduling talk." },
@@ -85,17 +83,17 @@ export const npcCoach: Tour = {
         headers: ["Call", "Coordinator", "Duration", "Score", "Status"],
         rows: [
           ["SYN-4471", "C-3", "6m 12s", { text: "84", tone: "good" }, { text: "complete", tone: "good" }],
-          ["SYN-4470", "C-1", "4m 45s", { text: "49 (gate cap)", tone: "bad" }, { text: "complete", tone: "good" }],
+          ["SYN-4470", "C-1", "4m 45s", { text: "49 · gate flag", tone: "bad" }, { text: "complete", tone: "good" }],
           ["SYN-4469", "C-5", "0m 38s", "·", { text: "filtered: voicemail", tone: "dim" }],
         ],
       },
     },
     {
       title: "Coaching lands with the coordinator",
-      body: "Each report emails the coordinator and their manager: score, gates, evidence quotes, and one concrete next-call behavior, benchmarked against their own 90-day average rather than each other. Analytics roll up trends per coordinator and per criterion.",
+      body: "Each report emails the coordinator and their manager: score, gates, evidence quotes, and one concrete next-call behavior, benchmarked against their own 30 day average. Analytics roll up trends per coordinator and per criterion.",
       screen: {
         kind: "bars",
-        title: "Coordinator trend · 90 days (synthetic)",
+        title: "Coordinator trend · 30 days (synthetic)",
         bars: [
           { label: "C-3 average", value: 79, max: 100, tone: "good" },
           { label: "This call", value: 84, max: 100, tone: "good" },
@@ -111,5 +109,5 @@ export const npcCoach: Tour = {
     { lane: "Deliver", items: ["React dashboard: runs, steppers, logs, analytics", "Email reports to coordinator + manager", "Firestore state · BigQuery audit · Terraform · ports-and-adapters demo mode"] },
   ],
   outcome:
-    "A thousand-plus monthly calls now get the same rubric a human coach would apply on their best day, with receipts. The ports-and-adapters design means the whole pipeline runs on synthetic data in demo mode, which is exactly what this tour is. This is a PHI workload in production: no real transcripts, recordings, or caller details appear here, and coordinators are anonymized as C-1 through C-8.",
+    "690 new patient calls since June 17 have been graded on the same rubric, with receipts. The ports-and-adapters design means the whole pipeline runs on synthetic data in demo mode, which is exactly what this tour is. No real transcripts, recordings or caller details appear here, and coordinators appear as C-1, C-2 and so on.",
 };

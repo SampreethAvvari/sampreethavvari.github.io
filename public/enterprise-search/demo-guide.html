@@ -186,9 +186,8 @@
   <h1>Hybridge Enterprise Search</h1>
   <p class="lede">An internal, permission aware search assistant. Employees sign in with their Hybridge Google account, ask questions in plain language, and get <b>streamed answers grounded in company documents, with citations that open the exact source passage</b>. Authorized users grow the knowledge base by dropping documents into a governed ingestion pipeline. Built entirely on Google Cloud with open source components. No third party SaaS.</p>
   <div class="badges">
-    <span class="badge">Live at hybridge-search.web.app</span>
+    <span class="badge">Paused since October 2026</span>
     <span class="badge">GCP native</span>
-    <span class="badge">122 automated tests</span>
     <span class="badge">RAG with hard guardrails</span>
   </div>
 
@@ -563,7 +562,7 @@ flowchart LR
         <div class="t">Answer</div>
         "Recommended insertion torque is <b>35 Ncm</b><span style="color:var(--brown); font-weight:800;">¹</span>, up to <b>45 Ncm</b> in dense bone<span style="color:var(--brown); font-weight:800;">¹</span>. Immediate loading requires 35 Ncm<span style="color:var(--brown); font-weight:800;">²</span>."
       </div>
-      <div class="vnote a4">No evidence? <b>No model call.</b> The assistant abstains instead of guessing, and the failed lookup is free.</div>
+      <div class="vnote a4">Nothing the asker may see? <b>No model call.</b> Otherwise the prompt tells the model to say it does not know.</div>
     </div>
   </div>
 
@@ -605,7 +604,7 @@ flowchart LR
     <div class="card"><div class="h">Audit</div><p>Logins, group changes, and membership changes write an audit log with actor, action, target, and time.</p></div>
     <div class="card"><div class="h">Access</div><p>Access is scoped, audited, and revocable per group, and encryption at rest and in transit is on by default across the stack.</p></div>
   </div>
-  <p class="note">Also in the discipline column: 122 automated tests across backend and frontend, adversarial code review on every pull request (which caught real permission and correctness bugs before merge), and an automated security review pass that hardened the error path.</p>
+  <p class="note">Also in the discipline column: adversarial code review on every pull request (which caught real permission and correctness bugs before merge), and an automated security review pass that hardened the error path.</p>
 
   <h2 id="frontend"><span class="n">13</span>The frontend</h2>
   <p>React 19 with TypeScript and Tailwind, built with Vite, served from Firebase Hosting. The visual identity is a warm beige and brown system designed for this product, in both tabs and this document.</p>
@@ -627,7 +626,7 @@ flowchart LR
 
   <h2 id="quality"><span class="n">15</span>Quality and evaluation</h2>
   <ul>
-    <li>A seeded evaluation corpus with question and answer cases runs in the test suite: <b>recall at 8 scored 1.0</b> against a floor of 0.8, and mean reciprocal rank 0.42 against a floor of 0.35, plus dedicated cases proving the abstention path and the conflict path.</li>
+    <li>A seeded evaluation corpus with question and answer cases runs in the test suite and fails the build below <b>recall at 8 of 0.8</b> or mean reciprocal rank of 0.35, plus dedicated cases proving the abstention path and the conflict path.</li>
     <li>96 backend tests and 26 frontend tests cover permissions in both directions (member sees, outsider blocked), streaming framing, version chains, chunk ordering, citation math, and the UI flows.</li>
     <li>Every subproject was built task by task with tests written first, then reviewed twice: once per task, once across the whole branch, by a stronger model prompted to attack it. Those reviews caught, among others, a permission sentinel bug, an authority scoring bug, and a race that would have wiped the first streamed answer.</li>
   </ul>

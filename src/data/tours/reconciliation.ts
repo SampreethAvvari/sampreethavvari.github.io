@@ -3,21 +3,21 @@ import type { Tour } from "./types";
 export const reconciliation: Tour = {
   slug: "reconciliation",
   name: "Reconciliation",
-  tail: "Three daily exports in, a dozen exceptions out.",
+  tail: "Three daily exports in, only the patients who disagree out.",
   post: "/posts/reconciliation",
   cover: "/reconciliation.png",
   kicker: "Deterministic engine · Revenue integrity",
   accent: "#34D399",
   accentRgb: "52, 211, 153",
   pitch:
-    "Takes a dental practice's three daily exports, the schedule, the production ledger, and the clinical notes, and proves that every patient who was seen got both documented and billed. Staff review a dozen flagged exceptions instead of eyeballing three spreadsheets.",
+    "Takes a dental practice's three daily exports, the schedule, the production ledger, and the clinical notes, and proves that every patient who was seen got both documented and billed. Staff review only the patients who disagree instead of eyeballing three spreadsheets.",
   problem:
     "Two front office staff were each spending about three hours a day cross-checking three exports by hand: did everyone on the schedule get a note? Did every note get billed? Did the right provider bill it? Six person-hours daily, and misses meant either lost revenue or compliance risk.",
   metrics: [
-    { label: "Manual work replaced", value: "6 h → 5 min", sub: "daily cross-check becomes exception review" },
-    { label: "Auto-verified", value: "~30 / 41", sub: "patients on a typical day need no review" },
+    { label: "Spec to live", value: "8.75 hours", sub: "first commit to the first live revision" },
+    { label: "Verified without review", value: "30 of 41", sub: "patients on one June day, first engine version" },
     { label: "Determinism", value: "byte-identical", sub: "same inputs always produce the same report" },
-    { label: "Releases", value: "v1.16", sub: "240 tests, every rule traces to a staff review" },
+    { label: "False flags caught", value: "85", sub: "a date check now stops a wrong day export" },
   ],
   concepts: ["Deterministic core", "Record linkage", "Rule engines", "Auditability", "Adapter pattern", "Human feedback loops"],
   stack: ["Python", "FastAPI", "Cloud Run", "Firestore", "Google OAuth", "Docker", "GitHub Actions"],
@@ -81,7 +81,7 @@ export const reconciliation: Tour = {
     },
     {
       title: "The engine never guesses at dates",
-      body: "One real incident produced 85 phantom flags because staff exported the notes for the wrong day. Now a whole-run guard compares the dates inside the files and refuses to pretend: a loud banner says re-export, and the emailed report subject carries a warning prefix.",
+      body: "One real incident produced 85 phantom flags because staff exported the notes for the wrong day. Now a whole-run guard compares the dates inside the files and refuses to pretend: a loud banner says re-export.",
       screen: {
         kind: "report",
         title: "Export coherence guard",
@@ -96,7 +96,7 @@ export const reconciliation: Tour = {
     },
     {
       title: "Close the loop",
-      body: "Reports save to a searchable history; each flagged patient can be marked fixed, reversibly, so the next reviewer sees what was handled. The emailed summary mirrors the dashboard. Every rule in the engine traces back to a dated staff review session that requested it.",
+      body: "Each flagged patient can be marked fixed, reversibly, so the next reviewer sees what was handled, and a past day reopens in one click. Every rule in the engine traces back to a dated staff review session that requested it.",
       screen: {
         kind: "table",
         title: "Report history",
@@ -113,8 +113,8 @@ export const reconciliation: Tour = {
     { lane: "Pure engine", items: ["No network, no database, no clock: same inputs, byte-identical output", "Per-source adapters map columns by name and fail loudly", "Typed records carry their source row for the audit trail"] },
     { lane: "Rules", items: ["7 primary buckets, 6 secondary checks", "Provider, exam, code, arch and perio cross-checks", "Every rule traces to a dated staff review"] },
     { lane: "App shell", items: ["FastAPI on Cloud Run, Google sign-in with allowlist", "Firestore: users, saved reports, fixed-flag state", "Self-service Gmail connect for sending reports"] },
-    { lane: "Quality", items: ["240 tests across 21 files, CI on synthetic fixtures only", "Input SHA-256 hashes recorded per run", "Golden assertion pins engine behavior"] },
+    { lane: "Quality", items: ["Input SHA-256 hashes recorded per run", "Golden assertion pins engine behavior"] },
   ],
   outcome:
-    "Six person-hours of daily spreadsheet triage became a five-minute exception review. Because the engine is deterministic and every verdict cites its source rows, staff argue with the data, not the tool, and each disagreement became a versioned rule release: v1.7 added provider verification, v1.8 added the wrong-day guard after the 85-phantom-flag incident, and by v1.16 all eight known false-verified cases flag correctly.",
+    "Two staff were spending about three hours each a day on this cross check. Now they open one page and review only the patients who disagree. Because the engine is deterministic and every verdict cites its source rows, staff argue with the data, not the tool, and each disagreement became a versioned rule release: v1.7 added provider verification, v1.8 added the wrong-day guard after the 85-phantom-flag incident, and by v1.16 all eight known false-verified cases flag correctly.",
 };

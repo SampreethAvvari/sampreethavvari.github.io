@@ -28,7 +28,7 @@ const arch: Architecture = {
   readouts: [
     { value: "3.5", unit: "hours", label: "from the design spec at 12:35 PM on Aug 4 to the first sync job running in the cloud" },
     { value: "9 of 9", label: "daily direct sources pulled on Oct 29, read from the warehouse's own freshness view", ring: 1 },
-    { value: "3,334", unit: "of 3,383", label: "lead to patient matches made by the link staff already keep in Monday" },
+    { value: "98.6%", label: "of lead to patient matches made by the link staff already keep in Monday, as of Oct 29" },
     // email-daily: 8 scheduled runs Oct 22 to 29, all succeeded (gcloud run jobs executions list).
     { value: "8 of 8", label: "mornings the 6:30 email has gone out since it started on Oct 22" },
   ],

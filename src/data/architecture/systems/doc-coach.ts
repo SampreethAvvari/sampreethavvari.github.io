@@ -12,7 +12,7 @@ const arch: Architecture = {
   headline: "Grades each recorded Zoom consult with Gemini.",
   tail: "Runs on Cloud Run for three offices.",
   lede:
-    "A Zoom webhook says a consult's transcript is ready, and one Cloud Run service scores it against the CEO's seven criteria with Gemini. The report goes to the doctor, the TC and the CEO, the chart note goes to the TC, and every consult becomes one row in a master Sheet that feeds the weekly report cards.",
+    "A Zoom webhook says a consult's transcript is ready, and one Cloud Run service scores it against the CEO's seven criteria with Gemini. The report goes to the doctor, the TC and the CEO, the chart note goes to the TC, and every consult is logged as one row that feeds the weekly report cards.",
   titleBlock: [
     ["System", "Doc Coach"],
     ["Revision", "unversioned"],
@@ -31,7 +31,7 @@ const arch: Architecture = {
     // app/api_lookup.py allowlist, pinned by a test (commit 87c3fc4).
     { value: "0", label: "score fields the one machine route can return, by allowlist and test" },
     // BigQuery audit table, distinct meetings with a completed QA run.
-    { value: "471", unit: "consults", label: "scored live since May 19 across Rochester, Buffalo and Syracuse" },
+    { value: "471", unit: "consults", label: "scored live from May 19 to Oct 28 across Rochester, Buffalo and Syracuse" },
     // commits-index.csv first commit 22dc199 at 7:28 PM May 19; audit table first pipeline_complete (qa) at 8:36 PM.
     { value: "68", unit: "min", label: "from the first commit on May 19 to the first live consult graded that night" },
   ],
@@ -100,7 +100,7 @@ const arch: Architecture = {
     ledger: {
       kind: "Google Workspace",
       owner: "managed",
-      what: "Drive keeps each consult's transcript, scorecard, report PDF, chart note and video, filed by office, month and patient first name with last initial. A master Sheet keeps one 49 column row per consult.",
+      what: "Each consult's scorecard, report PDF and chart note are archived, and one 49 column row per consult is logged.",
       fails: "Drive uploads are keyed in appProperties and the Sheet append checks the meeting id first, so a replay never writes twice.",
       source: "zoom-transcript-pipeline/app/sheets_ledger.py:10",
     },

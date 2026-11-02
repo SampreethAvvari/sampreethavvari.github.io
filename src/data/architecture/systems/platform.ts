@@ -84,7 +84,7 @@ const arch: Architecture = {
     sync: {
       kind: "My shared service",
       owner: "mine",
-      what: "Keeps the Firestore mirror of Denticon: webhooks first, a worker every ten minutes, a sweep at twenty past each hour and a 4 AM poll. It is the only service that holds Denticon credentials, with one warm instance so Denticon's ten second webhook check never meets a cold start.",
+      what: "Keeps our copy of Denticon current: webhooks first, a worker every ten minutes, a sweep at twenty past each hour and a 4 AM poll. It is the only service that talks to Denticon, with one warm instance so Denticon's ten second webhook check never meets a cold start.",
       source: "hybridge-cdf/infra/cloudbuild-sync.yaml:168",
     },
     relay: {

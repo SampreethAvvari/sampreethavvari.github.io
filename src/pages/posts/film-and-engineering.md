@@ -2,14 +2,14 @@
 title: "How making movies made me a better engineer"
 date: "2026-05-20"
 layout: ../../layouts/PostLayout.astro
-description: "People keep treating films and engineering as separate crafts. What making movies since 2019 did to the way I build software, from blocking a scene to cutting a feature."
+description: "People keep treating films and engineering as separate crafts. What making movies since 2014 did to the way I build software, from blocking a scene to cutting a feature."
 img_path: "/film-and-engineering.png"
 img_alt: "Film clapperboard and laptop, same craft"
 tag: "Personal"
 tone: "film"
 stats:
-  - value: "7 films"
-    label: "directed, written, edited, shot or scored"
+  - value: "9 films"
+    label: "directed, written, edited, shot or scored, two of them made in September and October 2026"
     tone: "amber"
   - value: "2019"
     label: "my first credit, Strangers, as cinematographer and composer"
@@ -40,7 +40,7 @@ The credit list, so we're talking about specifics:
 
 | Year | Project | Role |
 |---|---|---|
-| 2026 | **Among Monsters** ([IMDb](https://www.imdb.com/title/tt39700295/)) | Director, Writer, Editor, Color, Music |
+| 2026 | **Among Monsters** ([IMDb](https://www.imdb.com/title/tt39700295/)) | Director, Writer, Editor, Music |
 | upcoming | Extraordinary Lives | Director, Writer |
 | upcoming | Pupa | Writer |
 | 2025 | Solstice | Editor |
@@ -68,7 +68,7 @@ Specialists. None of them wrong. One person whose job is to make it add up.
 
 <div class="aside">
 
-**Listen to the <span class="egg" tabindex="0" data-egg="On set the script supervisor notices the coffee cup moved between takes. In code that person writes the regression test.">script supervisor</span>.** Lowest credit on the call sheet, highest practical authority on the day. At work that's the person who does the job every day. Someone on the accounting team told me the bank import was grabbing half downloaded files, and that is why the import now stops and asks.
+**Listen to the <span class="egg" tabindex="0" data-egg="On set the script supervisor notices the coffee cup moved between takes. In code that person writes the regression test.">script supervisor</span>.** Lowest credit on the call sheet, highest practical authority on the day. At work that's the person who does the job every day. Someone on the accounting team told me the bank import was grabbing half downloaded files, and that is why I made the import stop and ask.
 
 </div>
 

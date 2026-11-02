@@ -79,7 +79,7 @@ Three attempts with 1 and 2 seconds of backoff plus a little jitter, then it rai
 
 **Throwing away the last good run.** A rerun that succeeds replaces the original row and dedupes the Sheet, so there is one row per consult. A rerun that fails leaves the original alone as the known good baseline.
 
-**A queue I did not need yet.** The work runs as a background task after the 202. The scaling notes say when to move to Cloud Tasks: around five consults at once per instance, or Zoom retries climbing. At about 80 consults a month, a queue would be one more system to watch.
+**A queue I did not need yet.** The work runs as a background task after the 202. The scaling notes say when to move to Cloud Tasks: around five consults at once per instance, or Zoom retries climbing. At our consult volume, a queue would be one more system to watch.
 
 ## Where it landed
 

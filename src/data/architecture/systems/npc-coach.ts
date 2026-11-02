@@ -20,18 +20,18 @@ const arch: Architecture = {
     ["Runs on", "Cloud Run Jobs"],
     ["Region", "us-central1"],
     ["Rubric", "prompt v1.5.0"],
-    ["NPC lines", "7 on the allow list"],
+    ["NPC lines", "every one on the allow list"],
     ["Rollback", "previous image tag"],
     ["Scale", "100 points : 0 for booking"],
     ["Drawn by", "S. Avvari"],
   ],
   readouts: [
-    // BigQuery SELECT on npc_ops.call_manifest, calls dated Oct 1 to 29 2026, n = 172:
+    // BigQuery SELECT on npc_ops.call_manifest, calls dated Oct 1 to 31 2026, n = 177:
     // scored_at minus (call start + duration), median 13.9 minutes.
-    { value: "14", unit: "min", label: "median from hang up to a graded call, in October" },
+    { value: "14", unit: "min", label: "median from hang up to a graded call, across 177 in October" },
     { value: "1", unit: "poll", label: "at a time, held by a Firestore lease since reports went out twice" },
     // BigQuery SELECT on npc_ops.call_manifest, all rows (first call date Jun 17 2026).
-    { value: "690", label: "calls graded out of 28,745 recordings read since June 17" },
+    { value: "690", label: "calls graded out of 28,745 recordings read from June 17 to October 29" },
     // per-repo.csv first commit Jun 2; npc-poller job created Jun 18 5:25 AM ET, first transcription 00:21 ET Jun 18.
     { value: "16", unit: "days", label: "from the first commit on Jun 2 to grading live calls on Jun 18" },
   ],
@@ -40,7 +40,7 @@ const arch: Architecture = {
     { id: "five-minutes", label: "Every five minutes", focus: ["scheduler", "sftp", "poller", "grader", "gemini", "gcs", "bq"], note: "From 6 AM to 6 PM the scheduler wakes the poller, which pulls only new recordings and grades each one." },
     { id: "report", label: "The report email", focus: ["grader", "gmail", "staff"], note: "Each graded call's report goes to the NPC who took it, with a quote behind every score." },
     { id: "five-pm", label: "The 5 PM summary", focus: ["bq", "summary", "gmail", "staff"], note: "Weekdays at 5 PM a job reads the day's scores and emails leaders and every NPC with a graded call." },
-    { id: "dashboard", label: "The dashboard", focus: ["staff", "webapp", "bq"], note: "Google sign in, then every graded call, its transcript, its recording and the trends per NPC." },
+    { id: "dashboard", label: "The dashboard", focus: ["staff", "webapp", "bq"], note: "Leaders see every grade and the trends per NPC on a dashboard." },
   ],
   parts: {
     scheduler: {
@@ -99,7 +99,7 @@ const arch: Architecture = {
     staff: {
       kind: "People",
       owner: "outside",
-      what: "Seven NPC lines, the NPC trainer and the practice leaders. They read the reports, dispute grades they think are wrong, and pull a call out of the numbers when it should not count.",
+      what: "The NPCs, the NPC trainer and the practice leaders. They read the reports, dispute grades they think are wrong, and pull a call out of the numbers when it should not count.",
     },
     summary: {
       kind: "My job",

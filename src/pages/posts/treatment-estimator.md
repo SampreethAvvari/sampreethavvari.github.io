@@ -60,7 +60,7 @@ Most of it came from the people quoting. On August 19 our senior coordinator ask
 
 ## The hard parts
 
-**A quote has to survive a price change.** Price books change faster than six months, so the price is written down where it was decided. Every saved line carries its price in <span class="egg" tabindex="0" data-egg="Every amount is stored as whole cents. Floating point was not invited to the consult.">integer cents</span> and the price book version it came from, and every reader uses those. Presenting also freezes the whole estimate as a snapshot. An earlier version of this post said a Postgres trigger enforced the freeze. The design called for one, and it never shipped. The freeze lives in the stored lines and the code that reads them. Saving an option again reprices it from the current book on purpose, the only way a saved number moves.
+**A quote has to survive a price change.** Price books change faster than six months, so the price is written down where it was decided. Every saved line carries its price in <span class="egg" tabindex="0" data-egg="Every amount is stored as whole cents. Floating point was not invited to the consult.">integer cents</span> and the price book version it came from, and every reader uses those. Presenting also freezes the whole estimate as a snapshot. The freeze lives in the stored lines and the code that reads them. Saving an option again reprices it from the current book on purpose, the only way a saved number moves.
 
 **The arch had to stop being a question.** Coordinators picked Upper, Lower or Both before building anything. One picked upper only, built a lower option in the workspace, which always shows both arches, and could not reach the summary. Since September 28 the arch is whatever the saved options add up to, set inside the same transaction as every option save and delete.
 
@@ -87,7 +87,7 @@ The second click finds nothing to update and stops.
 
 ## Where it landed
 
-Coordinators quote from it for all three offices. A read only audit on August 27 counted 75 live estimates in production. I have no usage count since then.
+Coordinators quote from it for all three offices. A read only audit on August 27 covered every live estimate in production. I have no usage count since then.
 
 It cost $34 from October 1 to 28, measured from the billing export. The always on database is $33.20 of that. The app cost 14 cents, because it scales to zero between consults.
 

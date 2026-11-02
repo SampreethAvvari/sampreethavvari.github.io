@@ -9,7 +9,7 @@ const arch: Architecture = {
   kind: "system",
   disciplines: ["fde", "sde"],
   post: "/posts/capacity-planner",
-  headline: "Syncs Denticon into the planner every minute.",
+  headline: "Syncs our Denticon mirror into the planner every minute.",
   tail: "Read only, on Cloud Run and Postgres.",
   lede:
     "A minute sync pulls changed appointments from the CDF mirror into Postgres. One pure engine does all the planning math, the same code on the server and in the browser, so a what if and the real board can never disagree.",
@@ -26,7 +26,7 @@ const arch: Architecture = {
     ["Drawn by", "S. Avvari"],
   ],
   readouts: [
-    { value: "60", unit: "s", label: "from a booking in Denticon to the board", ring: 1 },
+    { value: "60", unit: "s", label: "from a change in our Denticon mirror to the board", ring: 1 },
     { value: "0", label: "write methods toward Denticon, held by a type test" },
     { value: "17", unit: "days", label: "from the first commit to v0.1.0 in production" },
     // Cloud Run line, GCP billing export Oct 1 to 28 2026 (project-docs/fde-refresh/costs/by-service.csv).
@@ -110,7 +110,7 @@ const arch: Architecture = {
   ],
   tuned: [
     { title: "One engine, two places", body: "The same pure package runs in the sync and in the browser. There is no second copy of a rule to drift.", source: "docs/architecture/0001-stack-decisions.md" },
-    { title: "Deltas, not dumps", body: "The first full read was about 12,300 rows. After that, most minutes move only what changed.", source: "STATUS.md:12" },
+    { title: "Deltas, not dumps", body: "After the first full read, most minutes move only what changed.", source: "STATUS.md:12" },
     { title: "Poll the version, not the data", body: "Open boards ask a tiny endpoint whether anything changed, then offer a refresh. No hot swapping under someone's cursor.", source: "docs/architecture/0001-stack-decisions.md" },
   ],
   guards: [
@@ -123,7 +123,7 @@ const arch: Architecture = {
   cost: {
     total: "$27",
     period: "in October",
-    method: "Measured from the Google Cloud billing export, October 1 to 28, net of credits. The always on database is nine tenths of it. A sync every minute, all month, costs $1.29.",
+    method: "Measured from the Google Cloud billing export, October 1 to 28, net of credits. The always on database is nine tenths of it. Cloud Run, which serves the app and runs the sync every minute, cost $1.29.",
     parts: [
       { label: "Cloud SQL, always on", usd: 24.98 },
       { label: "Cloud Run, per request", usd: 1.29 },

@@ -15,12 +15,12 @@ export const docCoach: Tour = {
     "Consultations are where treatment gets accepted or lost, and nobody had time to review them. Recordings piled up unwatched, coaching happened on gut feel, and every clinician ran the conversation their own way. The ask: make every consult reviewable, comparable, and coachable, automatically, without adding a minute of anyone's day.",
   metrics: [
     { label: "Delivery SLO", value: "< 10 min", sub: "transcript ready to inbox" },
-    { label: "Scoring", value: "7 criteria · 70 pts", sub: "24 sub-criteria, versioned rubric" },
-    { label: "Test suite", value: "~700 tests", sub: "85% coverage floor in CI" },
+    { label: "Scoring", value: "7 criteria · 70 pts", sub: "25 sub criteria, versioned rubric" },
+    { label: "Consults scored", value: "471", sub: "live from May 19 to Oct 28, three offices" },
     { label: "Auto reports", value: "2 / week+month", sub: "zero clicks, scheduled" },
   ],
   concepts: ["Structured outputs", "JSON Schema validation", "LLM evals", "Identity resolution", "Prompt versioning", "Idempotent pipelines"],
-  stack: ["Python", "FastAPI", "Cloud Run", "Vertex AI Gemini 2.5 Pro", "Firestore", "BigQuery", "Terraform", "Drive/Gmail APIs"],
+  stack: ["Python", "FastAPI", "Cloud Run", "Vertex AI Gemini 2.5 Pro", "Firestore", "BigQuery", "Terraform", "Gmail API"],
   steps: [
     {
       title: "A recording finishes",
@@ -59,7 +59,7 @@ export const docCoach: Tour = {
         lines: [
           "$ score run#482 rubric=v7 model=gemini-2.5-pro",
           "structured output → validate against schema v7",
-          "scores: 7/7 criteria · 24/24 sub-criteria · evidence quotes: 9",
+          "scores: 7/7 criteria · 25/25 sub criteria · evidence quotes: 9",
           "schema valid ✓ · baseline: 30-day averages loaded",
         ],
       },
@@ -81,7 +81,7 @@ export const docCoach: Tour = {
     },
     {
       title: "Archive, ledger, deliver",
-      body: "Artifacts land in Drive by location and month, one idempotent row per consult lands in a 48-column ledger, a PHI-free audit row lands in the warehouse, and one email goes to the clinician, coordinator, and leadership. A sweeper retries anything stuck every five minutes.",
+      body: "Artifacts are archived, one idempotent row per consult lands in a 49 column ledger, an audit row with counts and ids lands in the warehouse, and one email goes to the clinician, coordinator, and leadership. A sweeper retries anything stuck every five minutes.",
       screen: {
         kind: "table",
         title: "Ledger (excerpt)",
@@ -111,7 +111,7 @@ export const docCoach: Tour = {
     { lane: "Ingest", items: ["Video platform webhooks, HMAC-verified per account", "Firestore claim for idempotency", "Consult filters: topic, duration, participants, opt-out tag"] },
     { lane: "Understand", items: ["Diarized transcript parsing", "3-layer identity resolution", "30-day per-clinician baselines from the ledger"] },
     { lane: "Score and render", items: ["Gemini 2.5 Pro, structured output vs JSON Schema", "Versioned rubric in markdown, editable in the app", "Jinja2 → email-safe HTML → PDF"] },
-    { lane: "Deliver and audit", items: ["Drive archive · 48-column Sheets ledger", "PHI-free audit rows in BigQuery", "Gmail delivery · 5-min retry sweeper · Terraform"] },
+    { lane: "Deliver and audit", items: ["Archive · 49 column ledger", "Audit rows in BigQuery", "Gmail delivery · 5-min retry sweeper · Terraform"] },
   ],
   outcome:
     "Every consultation is now reviewed within minutes, against the same bar, with evidence quotes a coach can act on. Leadership reads one weekly report instead of watching hours of recordings, and the rubric itself is versioned so scoring changes are deliberate, not drift. The seven criteria shown here carry generic names; the real playbook is company IP and stays private.",

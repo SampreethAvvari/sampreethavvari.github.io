@@ -32,14 +32,13 @@ const arch: Architecture = {
     { value: "2 of 2", label: "packages built from the same clean commit, or the estimator's CI fails" },
     // packages/core/src/templates/*.ts, 11 with validated: true.
     { value: "11", unit: "masters", label: "the practice's own documents, transcribed word for word, all validated" },
-    { value: "0", unit: "errors", label: "in 271 attempts across 75 live estimates, production audit of Aug 27" },
+    { value: "0", unit: "errors", label: "in 271 attempts across every live estimate, production audit of Aug 27" },
   ],
   svg,
   views: [
     { id: "ship-change", label: "Ship an engine change", focus: ["repo", "tests", "vendor", "snapshot", "ci", "estimator"], note: "Test and commit here first, vendor with one command, CI checks the stamp, and only an estimator v tag deploys it." },
     { id: "generate", label: "Generate a plan", focus: ["masters", "repo", "estimator", "builder"], note: "The engine reads the estimate, picks a transcribed master, fills in the real teeth, and the builder opens it." },
     { id: "save-print", label: "Save and print", focus: ["builder", "estimator", "db", "exports"], note: "Each save appends a version that never changes. Word and PDF come from the plan on screen." },
-    { id: "drift", label: "Where it can drift", focus: ["vendor", "planner", "snapshot", "ci"], note: "The capacity planner carries an older snapshot. Nothing goes red when a consumer falls behind." },
   ],
   parts: {
     masters: {
@@ -51,8 +50,7 @@ const arch: Architecture = {
     planner: {
       kind: "My app",
       owner: "mine",
-      what: "The capacity planner vendors the same packages for its anchored popovers. Its snapshot is from 28e81cd, older than the estimator's.",
-      fails: "Nothing fails when it falls behind. That is the gap SYNC-STATUS.md exists to name.",
+      what: "The capacity planner vendors the same packages for its anchored popovers.",
       source: "capacity-planner/vendor/sequence/README.md",
     },
     ci: {
@@ -113,7 +111,7 @@ const arch: Architecture = {
     },
   },
   breaks: [
-    { title: "A consumer falls behind", body: "Nothing goes red. vendor:check only notes it when the source repo sits beside it, and both repos carry a file marked TEMPORARY that says so.", source: "SYNC-STATUS.md" },
+    { title: "A wait has no number", body: "A wait like \"As needed\" stops the dates instead of guessing one, and a procedure with no visit prints in a yellow open items block." },
     { title: "No master fits the case", body: "The builder opens empty for a manual build instead of bending a master to fit. The Aug 27 audit found 8 such cases in 271.", source: "estimator/scripts/audit" },
     { title: "A refresh does not take", body: "The vendor script compares node_modules with the new stamp and exits 1 if it still serves the old build.", source: "estimator/scripts/vendor-sequence.mjs:167" },
   ],

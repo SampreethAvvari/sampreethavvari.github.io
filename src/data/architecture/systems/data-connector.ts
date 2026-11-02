@@ -20,16 +20,16 @@ const arch: Architecture = {
     ["Runs on", "Cloud Run, FastMCP"],
     ["Region", "us-central1"],
     ["Sign in", "Google, once"],
-    ["Live code", "older build, main ahead"],
+    ["Live code", "accuracy layer not live yet"],
     ["Views", "6:20 AM daily"],
     ["Scale", "1 call : 1 SELECT"],
     ["Drawn by", "S. Avvari"],
   ],
   readouts: [
     { value: "3", unit: "hours", label: "from the first connector code at 12:06 PM on Oct 23 to the live service" },
-    { value: "13", unit: "boxes", label: "an owner ticks per person; each set of boxes gets its own dataset of views" },
-    // BigQuery connector.calls, Oct 23 to Oct 29 2:30 PM ET.
-    { value: "469", unit: "calls", label: "from 3 people in the first seven days, Oct 23 to 29, 364 of them queries" },
+    { value: "13", unit: "boxes", label: "an owner ticks per person, one per data source plus a few that unlock more detail" },
+    // BigQuery connector.calls, full days Oct 23 to 29.
+    { value: "480", unit: "calls", label: "from 3 people in the first seven days, Oct 23 to 29, 370 of them queries" },
     { value: "39 of 40", label: "golden questions passed through Claude on the main branch code, Oct 27; all 40 answers were correct" },
   ],
   svg,
@@ -172,13 +172,13 @@ const arch: Architecture = {
     access: {
       kind: "My views",
       owner: "mine",
-      what: "One BigQuery dataset of views for each set of boxes, authorized to read marts and staging. Without the patient box the contact columns are dropped, and without the Elmwood box the family practice rows are. Queries run as one of two identities that can read only these datasets.",
+      what: "One BigQuery dataset of views for each set of boxes, authorized to read marts and staging. Without the right box, those columns and rows are not in the person's views. Queries run as one of two identities that can read only these datasets.",
       source: "src/data_connector/datasets.py:1",
     },
     owner: {
       kind: "My page",
       owner: "mine",
-      what: "Owners sign in with Google, add a person by email and tick 13 boxes, from Google Ads to patient names. A change applies on that person's next question.",
+      what: "Owners sign in with Google, add a person by email and tick 13 boxes, one per data source plus a few that unlock more detail. A change applies on that person's next question.",
       source: "src/data_connector/admin.py:1",
     },
     firestore: {
@@ -207,12 +207,12 @@ const arch: Architecture = {
   guards: [
     { title: "Boxes enforced in BigQuery", body: "Each set of boxes is its own dataset of authorized views. The query identities can read those datasets and cannot read marts, staging or raw directly.", source: "src/data_connector/datasets.py:1" },
     { title: "One SELECT, own dataset", body: "The guard parses every query, refuses anything but a single SELECT, and points each table at the person's own dataset.", source: "src/data_connector/sql_guard.py:69" },
-    { title: "New tables start hidden", body: "Every warehouse table needs a rule in the catalog before anyone sees it. Names and phone numbers need the patient box.", source: "src/data_connector/catalog.py:1" },
+    { title: "New tables start hidden", body: "Every warehouse table needs a rule in the catalog before anyone sees it, and more detailed columns need their own box.", source: "src/data_connector/catalog.py:1" },
   ],
   // hybridge-mktg-data bills to account 014441, whose export was switched on
   // Oct 28, 2026 and is still empty (project-docs/fde-refresh/costs/by-project.csv).
   cost: null,
-  // Request driven: a person asks Claude. 469 calls from 3 people, Oct 23 to 29
+  // Request driven: a person asks Claude. 480 calls from 3 people, Oct 23 to 29
   // (connector.calls). Path: ask, MCP call, guard, own views, warehouse, back.
   live: {
     mode: "event",

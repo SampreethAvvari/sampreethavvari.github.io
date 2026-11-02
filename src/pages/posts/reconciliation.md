@@ -44,13 +44,13 @@ The group also runs two practice systems. Elmwood, the general practice, is on E
 
 ## What I built
 
-Reconciliation, a web app. A reviewer picks the practice tab, uploads the day's schedule, ledger and notes, and gets summary cards back. Click a card and each flagged patient opens with their schedule, ledger and note rows, down to tooth, surface, provider and amount. Each flag has a Mark fixed button, every run is saved so a past day reopens in one click, and the report can go out by email.
+Reconciliation, a web app. A reviewer picks the practice tab, uploads the day's schedule, ledger and notes, and gets summary cards back. Click a card and each flagged patient opens with their schedule, ledger and note rows, down to tooth, surface, provider and amount. Each flag has a Mark fixed button, and a past day reopens in one click.
 
 Underneath is a pure Python engine with no network, no database and no clock. Sign in, upload, history and email all wrap it. [Open the drawing](/architecture/reconciliation).
 
 ## The sprint
 
-The first commit, at 5:23 AM on June 16, was the design spec. The engine followed 13 minutes later with a golden test against a real day of exports. The web app went in at noon and the first live revision at 2:09 PM. Two days later Denticon got its own tab.
+The first commit, at 5:23 AM on June 16, was the design spec. The engine followed 13 minutes later with a golden test. The web app went in at noon and the first live revision at 2:09 PM. Two days later Denticon got its own tab.
 
 After that the work became a loop with the reviewers. They sent back patients the tool got wrong, I traced each one, fixed the reading, added a test and shipped. Some of those landed late: 12:00 AM on June 19, and <span class="egg" tabindex="0" data-egg="That commit was office policy rules from the team, written down the night they gave them to me. The rules have tests. The schedule that night did not.">4:28 AM on July 17</span>.
 

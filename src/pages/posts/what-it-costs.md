@@ -2,7 +2,7 @@
 title: "What 45 services cost to run for a three office dental practice"
 date: "2026-10-29"
 layout: ../../layouts/PostLayout.astro
-description: "Six measured Google Cloud projects for a dental practice cost $131.71 from October 1 to 28. Two always on databases are the biggest lines. Here is the table and what drives it."
+description: "Six measured Google Cloud projects for a dental practice cost $131.71 from October 1 to 28. Two always on databases are two of the three biggest lines. Here is the table and what drives it."
 img_path: "/what-it-costs.png"
 img_alt: "Glass coin stacks of different heights, each topped by a small server block, joined by one line of light like a cost chart"
 tag: "Architecture"
@@ -15,13 +15,13 @@ stats:
     label: "for one small always on Postgres instance, the biggest line in both the estimator's and the planner's bill"
     tone: "blue"
   - value: "$1.29"
-    label: "for all of the capacity planner's Cloud Run time in October, a sync every minute included"
+    label: "for all of the capacity planner's Cloud Run time from Oct 1 to 28, which serves the app and runs the minute sync"
     tone: "amber"
 facts:
   - label: "Measured total"
     value: "$131.71 for six Hybridge projects, October 1 to 28, 2026, net of credits"
   - label: "Biggest line"
-    value: "A small always on Cloud SQL Postgres instance, $23.45 each for the estimator and the planner"
+    value: "A small always on Cloud SQL Postgres instance, $23.45 each, the biggest line in the estimator's and the planner's bills"
   - label: "Scale to zero"
     value: "The estimator's Cloud Run cost $0.14 because it scales to zero between consults"
   - label: "One warm instance"
@@ -80,7 +80,7 @@ The one AI system with a measured month is the [CBCT scan validator](/architectu
 
 Scoring a scan is the cheap part. A frozen dental segmentation encoder compiled for CPU runs on Cloud Run and scales to zero, and all the CBCT services together, the validator and the review app included, used $0.68 of Cloud Run. Training runs on my laptop's GPU, so model training adds nothing to this bill.
 
-The money goes to the parts around the model. Cloud Run jobs that turn labeled scans into training data cost $45.54. The main one woke every five minutes until October 28 and now runs once a day at 6 AM; the drop is not measured yet. The always on SFTP VM, where the lab's case system leaves scans and picks up verdicts, cost $11.23.
+The money goes to the parts around the model. Cloud Run jobs that turn labeled scans into training data cost $45.54. The main one woke every five minutes until October 28 and now runs once a day at 6 AM; the drop is not measured yet. The always on SFTP VM that trades files with the lab's case system cost $11.23.
 
 The apps that call Gemini, including Doc Coach, NPC Coach, the patient survey reports and the Daily Sales Report, sit in projects whose export switched on October 28. Their model spend is not measured yet.
 

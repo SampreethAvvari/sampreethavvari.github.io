@@ -1,9 +1,9 @@
 ---
 demo: /demos/jobpilot
-title: "I turned my job hunt into a pipeline in one night"
+title: "I turned my job hunt into a pipeline"
 date: "2026-06-10"
 layout: ../../layouts/PostLayout.astro
-description: "Reading reposted LinkedIn listings to reach a no sponsorship line in paragraph six was not a plan. So one night I built JobPilot: fresh jobs from the source, scored and tailored while I slept."
+description: "I built JobPilot to pull fresh jobs from the source, drop the roles I could never take, and score and tailor the rest while I slept."
 img_path: "/jobpilot.png"
 architecture: "jobpilot"
 img_alt: "JobPilot, a stream of job postings funneling into one tailored resume, taking flight"
@@ -20,8 +20,6 @@ stats:
     label: "Greenhouse, Lever, Ashby, Hacker News, RemoteOK, Adzuna and LinkedIn, merged into one list"
     tone: "amber"
 facts:
-  - label: "Problem"
-    value: "Finding a job that would sponsor a visa meant reading reposted LinkedIn listings down to paragraph six."
   - label: "What I built"
     value: "A pipeline that reads company job boards, drops roles I could never take and tailors a resume per match."
   - label: "Outcome"
@@ -35,8 +33,6 @@ facts:
 ---
 
 ## The problem
-
-I needed a job that would sponsor a visa, and LinkedIn made me find out the slow way. A posting says two weeks ago, it has been reposted twice, and paragraph six says the company cannot sponsor. I read all of it anyway, because that line could sit anywhere.
 
 Recruiters run their side of hiring on an ATS with dashboards and automation. I was running mine on a browser tab and a spreadsheet I forgot to update. A job search is a pipeline, and I was doing every stage by hand.
 

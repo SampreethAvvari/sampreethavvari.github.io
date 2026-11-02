@@ -12,8 +12,8 @@ stats:
   - value: "2.6 minutes"
     label: "behind Denticon once the sync ran on a timer on Sep 21, down from 6.0 days earlier that day"
     tone: "emerald"
-  - value: "20,111 charts"
-    label: "and 22,688 appointments in the first read of the live practice on Sep 29"
+  - value: "10 minutes"
+    label: "between worker runs that fetch each slice a webhook points to, with a 4 AM poll behind them"
     tone: "blue"
   - value: "1 key holder"
     label: "Denticon credentials live on this service alone, and four services read the mirror it keeps"
@@ -30,7 +30,7 @@ facts:
   - label: "Runs on"
     value: "Cloud Run with one warm instance and four at most, writing a Firestore mirror."
   - label: "Built"
-    value: "Deployed September 21, 2026; the first live read on September 29 wrote 20,111 charts and 22,688 appointments."
+    value: "Deployed September 21, 2026; the first live read of the practice ran on September 29."
 ---
 
 ## The problem
@@ -53,7 +53,7 @@ The first Denticon commit went in at 12:36 AM on September 15, a token client an
 
 On September 21 the sync service was deployed at 12:48 PM. At 1:33 PM I committed <span class="egg" tabindex="0" data-egg="The commit message, word for word. All four turned up only once the job actually ran.">"Putting the sync on a timer found four reasons it had never worked"</span>. The same day the mirror trailed Denticon by 2.6 minutes.
 
-Planet DDS turned on our production integration on September 28. At 2:57 AM on September 29 the sync read the live practice, and the backfill wrote 20,111 charts and 22,688 appointments. At 5:24 AM I fixed the two faults the first real webhooks found.
+Planet DDS turned on our production integration on September 28. At 2:57 AM on September 29 the sync read the live practice, and the backfill wrote every chart and appointment. At 5:24 AM I fixed the two faults the first real webhooks found.
 
 ## The hard parts
 

@@ -16,12 +16,23 @@ const hasPublic = (p?: string) =>
     fs.existsSync(path.join(process.cwd(), "public", f)),
   );
 
+// The card line is the pitch's first sentence. A very short opener, like a
+// status note, takes the next sentence along so the card still says what it is.
 const firstSentence = (s: string) => {
   const dot = s.indexOf(". ");
-  return dot > 0 ? s.slice(0, dot + 1) : s;
+  if (dot < 0) return s;
+  if (dot + 1 >= 40) return s.slice(0, dot + 1);
+  const next = s.indexOf(". ", dot + 2);
+  return next > 0 ? s.slice(0, next + 1) : s;
 };
 // "Delivery SLO" reads "delivery SLO" after a number; acronyms keep their case.
-const asTail = (label: string) => label.replace(/^([A-Z])(?![A-Z])/, (c) => c.toLowerCase());
+// Proper nouns keep theirs too: a known name first, or a later word in title
+// case ("Google Cloud"), leaves the label as written.
+const PROPER = /^(Google|Gemini|Denticon|Monday|BigQuery|Claude|Zoom|Vertex|Cloud)\b/;
+const asTail = (label: string) =>
+  PROPER.test(label) || /\s[A-Z][a-z]/.test(label)
+    ? label
+    : label.replace(/^([A-Z])(?![A-Z])/, (c) => c.toLowerCase());
 
 const WORDS = ["Zero", "One", "Two", "Three", "Four", "Five", "Six", "Seven", "Eight", "Nine", "Ten", "Eleven", "Twelve"];
 const tourCount = WORDS[TOURS.length] ?? String(TOURS.length);
@@ -29,7 +40,7 @@ const tourCount = WORDS[TOURS.length] ?? String(TOURS.length);
 
 <BaseLayout
   title="Live demos · Sampreeth Avvari"
-  description="Interactive tours of the AI systems I built and run in production, rebuilt on synthetic data, plus JobPilot running live."
+  description="Interactive tours of the AI systems I built at Hybridge, rebuilt on synthetic data, plus JobPilot running live."
   tone="projects"
 >
   <!-- Page top -->
@@ -128,8 +139,7 @@ const tourCount = WORDS[TOURS.length] ?? String(TOURS.length);
       </ul>
 
       <p class="t-meta dx-note">
-        Every tour uses synthetic data. No patient information, company code, prices or internal documents
-        appear anywhere on these pages.
+        Every tour uses synthetic data.
       </p>
     </div>
   </section>

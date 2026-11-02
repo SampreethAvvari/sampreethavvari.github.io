@@ -16,7 +16,7 @@ stats:
     label: "in any log line. The logger drops patient fields by name and by shape"
     tone: "blue"
   - value: "67 leads"
-    label: "already on the Monday board got all six tracking fields on Oct 26, the day the digital team saw the gap"
+    label: "already on the Monday board got their missing tracking fields on Oct 26, the day the digital team saw the gap"
     tone: "amber"
 facts:
   - label: "Problem"
@@ -53,7 +53,7 @@ The first commit went in on September 30 at 11:58 AM: the design, the plan and t
 
 On October 14 Monday delivery, email copies and the Hybridge look all went live. That afternoon our digital experience director swapped Elmwood's contact page from Tally to ours. On October 15, in 79 minutes, a step by step quiz, Delete, an email back to the sender, and wildcard hosts for the Webflow designer went live.
 
-On October 26 the digital team saw only UTM Source reaching Monday. The forms had saved all six tracking fields, but only one had a column mapped. The fix merged that afternoon as v2.6.1, and a script filled the missing columns on the 67 leads already on the board. Then a marketing colleague asked for a Skip button on the quiz. It went live on October 28 as v2.7.0.
+On October 26 the digital team saw only UTM Source reaching Monday. The forms had saved all six tracking fields, but only one had a column mapped. The fix merged that afternoon as v2.6.1, and a script filled in the missing tracking fields on the 67 leads already on the board. Then a marketing colleague asked for a Skip button on the quiz. It went live on October 28 as v2.7.0.
 
 ## The hard parts
 
@@ -73,7 +73,7 @@ for (const key of Object.keys(fields)) {
 }
 ```
 
-It drops <span class="egg" tabindex="0" data-egg="answers, email, phone, name and ip, plus thirteen cousins from firstname to password. Selective hearing, on purpose.">18 field names</span> outright, and any value that is not plain text, a number or a boolean, so a nested object cannot smuggle an email through. Only two places outside the project get an inquiry: the Monday board and each form's email copies. The public app can reach neither. Only the private worker holds the Monday token and the right to send mail.
+It drops <span class="egg" tabindex="0" data-egg="answers, email, phone, name and ip, plus thirteen cousins from firstname to password. Selective hearing, on purpose.">18 field names</span> outright, and any value that is not plain text, a number or a boolean, so a nested object cannot smuggle an email through. Only the private worker holds the Monday token and the right to send mail.
 
 ## What I said no to
 
@@ -85,10 +85,10 @@ It drops <span class="egg" tabindex="0" data-egg="answers, email, phone, name an
 
 ## Where it landed
 
-Elmwood's contact form has run on it since October 14. The Email Us and consultation forms on the Hybridge Implants site feed the same Monday board, with no Zapier in between. The director builds and publishes forms, one site at a time. The nightly job has run 29 times.
+Elmwood's contact form has run on it since October 14. The Email Us and consultation forms on the Hybridge Implants site feed the same Monday board, with no Zapier in between. The director builds and publishes forms, one site at a time. By October 29 the nightly job had run 29 times.
 
 It cost $9 in October, measured from the billing export, a partial month since the first cost landed on October 6. One warm public instance is $7.14 of it.
 
-Not measured: how many inquiries came through, or how much sooner a patient gets a call. Still open: how long real inquiries are kept, and whether new sign ins should wait for approval. Today every Hybridge account starts as a viewer who can read inquiries, as asked. It is one switch to change.
+Not measured: how many inquiries came through, or how much sooner a patient gets a call. Still open: whether new sign ins should wait for approval.
 
 What I would keep: save first, deliver from the saved copy, and treat the logger as a filter.

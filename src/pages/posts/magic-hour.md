@@ -20,7 +20,7 @@ stats:
     tone: "amber"
 facts:
   - label: "Problem"
-    value: "Image models redraw the same character with a new face by scene 18, and the dialogue drifts too."
+    value: "Image models redraw the same character with a new face a few scenes later, and the dialogue drifts too."
   - label: "What I built"
     value: "A four person hackathon build: an AI filmmaking studio that locks each character's identity and scores every frame."
   - label: "Outcome"
@@ -39,13 +39,13 @@ I said that out loud on a Saturday morning and three people unfortunately believ
 
 ## Why I wanted this specifically
 
-I have directed, written, or cut seven films. On a real set, continuity is somebody's full time job. The tool I wanted was a continuity department.
+I have directed, written, edited or shot seven films, two of them still in the works. On a real set, continuity is somebody's full time job. The tool I wanted was a continuity department.
 
 ## The problem, stated plainly
 
 AI has the memory of a goldfish with a film degree.
 
-Ask an image model for the same character twice and you get siblings. By scene 18 your lead has a new face, and the dialogue drifts too.
+Ask an image model for the same character twice and you get siblings. A few scenes later your lead has a new face, and the dialogue drifts too.
 
 <blockquote class="pull-quote">
 Drift is caused by re-deriving.

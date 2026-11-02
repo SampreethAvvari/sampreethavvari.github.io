@@ -136,7 +136,7 @@ export const disciplines: Discipline[] = [
         img: "/npc-coach.png",
         href: "/posts/npc-coach",
         highlights: [
-          "690 real calls graded since June 17, a median 14 minutes after the call ends",
+          "690 real calls graded by October 29; in October the median grade came 14 minutes after the call ended",
           "Hard gates show as a flag beside the score: a call can score 84 and still carry a missed gate",
           "The model returns integers and gate answers; plain Python does the 40/40/20 math",
           "Booking rate is not graded. The playbook calls a patient who books to get off the phone a failure of advocacy",
@@ -151,7 +151,7 @@ export const disciplines: Discipline[] = [
         img: "/cdf-diagnostic-filter.png",
         href: "/posts/cdf-diagnostic-filter",
         highlights: [
-          "A ruleset written from four cases the founder read aloud, each rule citing its case and timestamp",
+          "A ruleset written from four cases the founder walked through, each rule citing its case and timestamp",
           "The model lists the teeth, and plain code recomputes the score",
           "Every Gemini call has a way out: retries on the same model, then newer models, inside a time budget",
           "The clinic email waits for both reports",
@@ -166,7 +166,7 @@ export const disciplines: Discipline[] = [
         href: "/posts/marketing-warehouse",
         highlights: [
           "All 657 staging and marts columns described, plus a data guide written for LLMs to read first",
-          "3,334 of 3,383 lead to patient matches come from the link staff already keep in Monday",
+          "98.6% of lead to patient matches come from the link staff already keep in Monday, as of October 29",
           "A weekly Gemini eval on 22 golden questions scored 21 of 22 on October 26",
           "A 6:30 AM email with one tab per source, every morning since October 22",
         ],
@@ -181,7 +181,7 @@ export const disciplines: Discipline[] = [
         highlights: [
           "Live three hours after the first connector code on October 23",
           "A guard points every table at the asker's own dataset of views before anything runs",
-          "469 tool calls from 3 people in its first seven days",
+          "480 tool calls from 3 people in its first seven days",
         ],
       },
       {
@@ -213,7 +213,7 @@ export const disciplines: Discipline[] = [
       { title: "The CEO's consult checklist now grades every Zoom consult", href: "/posts/clinical-rag", img: "/doc-coach.png" },
       { title: "Every new patient call graded, with the quote behind each score", href: "/posts/npc-coach", img: "/npc-coach.png" },
       { title: "Gemini reads the patient first, and the clinic waits for both reports", href: "/posts/cdf-diagnostic-filter", img: "/cdf-diagnostic-filter.png" },
-      { title: "Ten marketing sources joined by 6 AM and in the inbox by 6:30", href: "/posts/marketing-warehouse", img: "/marketing-warehouse.png" },
+      { title: "Ten marketing sources pulled at 6 AM and mailed at 6:30", href: "/posts/marketing-warehouse", img: "/marketing-warehouse.png" },
       { title: "A company search that cites its sources or says it does not know", href: "/posts/enterprise-search", img: "/enterprise-search.png" },
       { title: "JobPilot: the open source app that ran my job hunt", href: "/posts/jobpilot-v2", img: "/jobpilot-flagship.png" },
     ],
@@ -232,16 +232,16 @@ export const disciplines: Discipline[] = [
       "As the only engineer at a dental implant company, I sit with the person who has the problem, ship into their tools, then train them.",
     narrative: [
       "My role at Hybridge is titled AI engineer, and the work is embedded engineering: the people I build for are surgeons, a VP of finance, treatment coordinators, an operations lead and the lab, and none of them write tickets. Requirements live in their spreadsheets, their meeting transcripts and their workarounds. The discovery work is the work.",
-      "The leadership dashboard is the cleanest example. It joined patients to leads by name, and in a June review one office's consults read zero. I measured the join, moved it to the patient boards' own connect column, and the fix surfaced about $460K of patient value that no lead pointed at. Later the finance lead filed a request in the dashboard's own Feature requests tab, and it was live 18 minutes later.",
-      "The other half is enablement. I started a weekly AI Power Hour and office hours for seven nontechnical departments, built from a needs survey, with privacy and compliance covered in every session.",
+      "The leadership dashboard is the cleanest example. It joined patients to leads by name, and in a June review one office's consults read zero. I measured the join, moved it to the patient boards' own connect column, and the fix linked almost every patient to a lead. Later the finance lead filed a request in the dashboard's own Feature requests tab, and it was live 19 minutes later.",
+      "The other half is enablement. I started an AI Power Hour and office hours for seven nontechnical departments, built from a needs survey, with privacy and compliance covered in every session.",
       "And sometimes the most valuable deliverable is the honest no. The CRM blueprint I wrote tells leadership plainly: without funded engineering, the correct decision is to stay on the current vendor.",
     ],
     points: [
       { lead: "No one writes tickets.", text: "My users are surgeons, a VP of finance, treatment coordinators, an operations lead and the lab." },
       { lead: "Discovery is the work.", text: "Requirements live in their spreadsheets, meeting transcripts and workarounds, so that is where I dig." },
       { lead: "Build where they work.", text: "The planner started from the operations lead's own workbook, and the doctor portal from the lab lead's own mockup." },
-      { lead: "Fix the data first.", text: "Fixing the broken patient to lead join surfaced about $460K of patient value the old reports dropped." },
-      { lead: "Ask, then ship.", text: "Six apps share one feature request list, and a request filed on October 28 was live 18 minutes later." },
+      { lead: "Fix the data first.", text: "Fixing the broken patient to lead join linked almost every patient to a lead." },
+      { lead: "Ask, then ship.", text: "Six apps share one feature request list, and a request filed on October 28 was live 19 minutes later." },
       { lead: "The honest no.", text: "My CRM blueprint tells leadership plainly: without funded engineering, stay on the current vendor." },
     ],
     strengths: [
@@ -255,7 +255,7 @@ export const disciplines: Discipline[] = [
       },
       {
         title: "Enablement and training",
-        body: "Weekly training and office hours that get nontechnical teams to confident, compliant AI use.",
+        body: "Training and office hours that get nontechnical teams to confident, compliant AI use.",
       },
       {
         title: "Honest scoping",
@@ -313,7 +313,7 @@ export const disciplines: Discipline[] = [
         href: "/posts/launchpad",
         highlights: [
           "A working live board 78 minutes after the first commit",
-          "38 projects on one board, 22 of them live, with every edit logged",
+          "38 projects on one board on Oct 29, 22 of them live, with every edit logged",
           "A request filed in the Cowork Dashboard on October 28 was live 19 minutes later",
         ],
       },
@@ -327,7 +327,7 @@ export const disciplines: Discipline[] = [
         href: "/posts/cowork-dashboard",
         highlights: [
           "One definition per metric since the September rebuild, so a card and its drilldown cannot disagree",
-          "Surfaced about $460K of patient value on 25 retreatment cases the old join dropped",
+          "Fixing the join left 23 patients with no lead, mostly retreatment cases filed without a Lead row",
           "Ambiguous patient to lead links cut from 31% to 5.8% with first name checks, recorded per row",
           "Cash flow reads the three patient boards from the Monday API every morning at 6",
         ],
@@ -336,7 +336,7 @@ export const disciplines: Discipline[] = [
         name: "AI Lab & Office Hours",
         status: "Running program",
         oneLiner:
-          "Weekly AI Power Hour sessions and open office hours for seven nontechnical departments, built from a needs survey.",
+          "AI Power Hour sessions and open office hours for seven nontechnical departments, built from a needs survey.",
         img: "/film-and-engineering.png",
         highlights: [
           "Curriculum built from a structured needs survey across seven departments",
@@ -370,7 +370,7 @@ export const disciplines: Discipline[] = [
       },
     ],
     articles: [
-      { title: "Every patient record on one Denticon chart, linked without guessing", href: "/posts/patient-dashboard", img: "/patient-dashboard.png" },
+      { title: "Patient records on one Denticon chart, linked without guessing", href: "/posts/patient-dashboard", img: "/patient-dashboard.png" },
       { title: "A twenty copy Excel workbook became a live capacity planner", href: "/posts/capacity-planner", img: "/capacity-planner.png" },
       { title: "From top priority to a live doctor portal in under four hours", href: "/posts/doctor-portal", img: "/doctor-portal.png" },
       { title: "Every number defined once, and cash flow read every morning", href: "/posts/cowork-dashboard", img: "/cowork-dashboard.png" },
@@ -390,7 +390,7 @@ export const disciplines: Discipline[] = [
     tagline:
       "Models are easy; pipelines that keep them honest are the work. Medical imaging, RLHF research, and MLOps that survives contact with production.",
     summary:
-      "I ship models with the unglamorous parts done properly, like a dental CT checker built in 38 days that cost $62 on Google Cloud in October, against a $98,200 vendor quote.",
+      "I ship models with the unglamorous parts done properly, like a dental CT checker built in 37 days that cost $62 on Google Cloud in October, against a six figure vendor quote.",
     narrative: [
       "The CBCT scan validator at Hybridge taught me what production ML costs. The model is the small part: a frozen DentalSegmentator encoder with a small head, running on CPU with OpenVINO. The big part is everything that keeps it honest: a 20 scan holdout kept out of training, a threshold priced in rescans, and a training data job with a lock so overlapping runs never multiply the work.",
       "Six candidate models sat behind one interface by April 7. The first one that worked scored 0.80 AUROC, and seven of its ten bad holdout studies had been in its training data. I rebuilt the split and kept the honest 0.6309.",
@@ -419,7 +419,7 @@ export const disciplines: Discipline[] = [
       },
       {
         title: "Cost aware serving",
-        body: "Scale to zero Cloud Run, $62 measured in October against a vendor quote of $98,200 to build.",
+        body: "Scale to zero Cloud Run, $62 measured from October 1 to 28 against a six figure vendor quote.",
       },
     ],
     projects: [
@@ -433,9 +433,9 @@ export const disciplines: Discipline[] = [
         href: "/posts/cbct-scan-validator",
         highlights: [
           "Six candidate models behind one interface; a frozen DentalSegmentator encoder with a small head won",
-          "Event driven: a scan lands in storage, Eventarc fires, and a real zip went end to end in 26.7 seconds",
-          "Of 30 real studies the testing team marked bad, the model flagged 26",
-          "$62 on Google Cloud in October, measured",
+          "Event driven: the SFTP box hands each scan to the validator, and a real zip went end to end in 26.7 seconds",
+          "Of 30 studies the testing team marked bad, the review app's model flagged 26",
+          "$62 on Google Cloud from October 1 to 28, measured",
         ],
       },
       {
@@ -491,7 +491,7 @@ export const disciplines: Discipline[] = [
       },
     ],
     articles: [
-      { title: "A dental CT scan checker in 38 days, on CPU, for $62 a month", href: "/posts/cbct-scan-validator", img: "/cbct-validator.png" },
+      { title: "A dental CT scan checker in 37 days, on CPU, for $62 in October", href: "/posts/cbct-scan-validator", img: "/cbct-validator.png" },
       { title: "The finance forecast now builds itself by 6:25 every weekday", href: "/posts/daily-sales-report", img: "/daily-sales-report.png" },
       { title: "I taught Llama 3 to argue with a judge trained on Reddit deltas", href: "/posts/llama-rlhf", img: "/llm-persuasion.png" },
       { title: "Loan Radar: training and serving that load one saved transform", href: "/posts/loan-radar-mlops", img: "/loan-radar.png" },
@@ -593,7 +593,7 @@ export const disciplines: Discipline[] = [
         img: "/treatment-sequence.png",
         href: "/posts/treatment-sequence",
         highlights: [
-          "0 errors in 271 generation attempts across 75 live estimates, production audit of Aug 27",
+          "0 errors in 271 generation attempts across every live production estimate, audit of Aug 27",
           "A living plan plus immutable version snapshots, with a unique index as the concurrency guard",
           "Shipped as a committed build snapshot: no registry, no token to expire, and a check that core and ui share one commit",
           "Masters transcribed whole, because glued single arch plans put visit 6 and visit 8 in the wrong order",
@@ -674,7 +674,7 @@ export const disciplines: Discipline[] = [
       },
     ],
     articles: [
-      { title: "Every patient record on one Denticon chart, linked without guessing", href: "/posts/patient-dashboard", img: "/patient-dashboard.png" },
+      { title: "Patient records on one Denticon chart, linked without guessing", href: "/posts/patient-dashboard", img: "/patient-dashboard.png" },
       { title: "A twenty copy Excel workbook became a live capacity planner", href: "/posts/capacity-planner", img: "/capacity-planner.png" },
       { title: "A quoting tool live in 14.5 hours, where a saved price stays put", href: "/posts/treatment-estimator", img: "/treatment-estimator.png" },
       { title: "Visit plans generated from the practice's own masters", href: "/posts/treatment-sequence", img: "/treatment-sequence.png" },

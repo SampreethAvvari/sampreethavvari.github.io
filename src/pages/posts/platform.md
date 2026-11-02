@@ -59,7 +59,7 @@ Drawing: [Hybridge Forms](/architecture/hybridge-forms).
 
 Drawings: [Denticon sync](/architecture/denticon-sync), [CDF registry](/architecture/cdf-registry), [PDF renderer](/architecture/pdf-renderer), [CDF dashboard](/architecture/patient-dashboard).
 
-- **Denticon sync.** Keeps the Firestore mirror of Denticon from webhooks, a worker every ten minutes and a 4 AM poll. The only service with Denticon credentials.
+- **Denticon sync.** Keeps our copy of Denticon current from webhooks, a worker every ten minutes and a 4 AM poll. It is the only service that talks to Denticon.
 - **CDF dashboard and registry.** The staff screen with one row per patient, and the read only routes the estimator and the planner call with their own secrets.
 - **PDF renderer.** Turns a finished survey into a patient summary and a doctor report, mails them, and tells the CDF. The survey queue, the CDF and an hourly sweep call it.
 
@@ -105,7 +105,7 @@ Drawings: [Doc Coach](/architecture/doc-coach), [NPC Coach](/architecture/npc-co
 Drawings: [CBCT validator](/architecture/cbct-scan-validator), [Doctor Portal](/architecture/doctor-portal).
 
 - **CBCT validator.** When a scan zip lands in storage, a model checks its quality, and a PDF verdict is written and emailed. A storage event wakes it.
-- **SFTP drop box.** A small VM where the lab's scan system leaves scans and picks up verdicts.
+- **SFTP drop box.** A small always on VM that trades files with the lab's scan system.
 - **Training data job.** At 6 AM turns labeled scans in Drive into training data for the model.
 - **CBCT review app.** The testing team uploads a study, records the true verdict, and sees each model's hits and misses.
 - **Doctor Portal.** Where outside doctors will send an Rx and follow their cases, in preview on sample data.
@@ -135,7 +135,7 @@ Drawings: [Patient website](/architecture/hybridge-website), [Lab website](/arch
 
 **Zero instances, except where speed matters.** The estimator, the planner, Launchpad and the forms worker scale to zero. The Denticon webhook receiver keeps one instance warm because Denticon wants a reply in ten seconds, and the public forms keep one as well.
 
-**A sweep behind every queue.** Forms deliveries retry at one minute, ten minutes and an hour. The renderer's queue has an hourly sweep behind it. Denticon's webhooks have a 4 AM poll. Gemini calls retry and fall back through newer models.
+**A sweep behind every queue.** Forms deliveries retry at one minute, ten minutes and an hour. The renderer's queue has an hourly sweep behind it. Our copy of Denticon has a worker every ten minutes and a 4 AM poll behind its webhooks. Gemini calls retry and fall back through newer models.
 
 ## What I said no to
 

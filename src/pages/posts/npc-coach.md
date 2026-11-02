@@ -3,7 +3,7 @@ demo: /demos/npc-coach
 title: "Every new patient call graded, with the quote behind each score"
 date: "2026-06-21"
 layout: ../../layouts/PostLayout.astro
-description: "The old grader sent a number out of 60 and a Google Doc link. Mine has graded 690 real calls with a quote behind every score, a median 14 minutes after the call ends."
+description: "The old grader sent a number out of 60. Mine had graded 690 real calls by October 29, a quote behind each score. October's median grade came 14 minutes after the call ended."
 img_path: "/npc-coach.png"
 architecture: "npc-coach"
 img_alt: "New Patient Coordinator coaching platform: call recordings in, evidence backed coaching reports out"
@@ -14,7 +14,7 @@ stats:
     label: "graded since June 17, out of 28,745 recordings the poller read"
     tone: "emerald"
   - value: "14 min"
-    label: "median from the end of a call to its grade, across 172 calls in October"
+    label: "median from the end of a call to its grade, across 177 calls in October"
     tone: "blue"
   - value: "16 days"
     label: "from the first commit on June 2 to grading live calls on June 18"
@@ -25,9 +25,9 @@ facts:
   - label: "What I built"
     value: "A grader for every new patient call, with a transcript quote behind each criterion score."
   - label: "Who uses it"
-    value: "New Patient Coordinators get a report per graded call; leaders get a 5 PM summary."
+    value: "New Patient Coordinators get each report by email; a summary goes out at 5 PM on weekdays, and leaders see every grade and trend on a dashboard."
   - label: "Outcome"
-    value: "690 calls graded since June 17; in October the median grade came 14 minutes after the call ended."
+    value: "690 calls graded from June 17 to October 29; in October the median grade came 14 minutes after the call ended."
   - label: "Runs on"
     value: "A Cloud Run Job every five minutes, 6 AM to 6 PM, with Gemini transcribing and judging."
   - label: "Built"
@@ -40,13 +40,13 @@ A New Patient Coordinator, an NPC, takes the first phone call. The caller is oft
 
 A grader already existed, built in n8n. Every hour it scored calls as a flat sum out of 60, wrote each result into a Google Doc named after the patient, shared it with the whole company and emailed a link. No database, so no NPC had a trend. No quote behind a score, so nobody could say why a call got a 47. If the workflow died halfway, the call was simply gone.
 
-The phone system also records everything: 6,670 recordings in October, most not new patients.
+The phone system also records everything: 6,956 recordings in October, most not new patients.
 
 ## What I built
 
 NPC Coach grades every new patient call and puts the result in front of the NPC who took it. Every five minutes from 6 AM to 6 PM, a Cloud Run Job takes the files it has not seen from the phone system's SFTP drop. Lines that are not NPC stations, call park recordings and calls under a minute stop there. Gemini transcribes the rest, and a strict Gemini Pro check asks whether this really is a new patient talking to an NPC before any grading.
 
-The grade is six criteria from 0 to 10, each with a quote from the transcript, plus three hard gates: did the NPC say who they are, get the patient's name, and frame the source as a referral. The NPC gets the report by email, a summary goes out at 5 PM on weekdays, and a dashboard behind Google sign in holds every call and trend. [Open the drawing](/architecture/npc-coach).
+The grade is six criteria from 0 to 10, each with a quote from the transcript, plus three hard gates: did the NPC say who they are, get the patient's name, and frame the source as a referral. The NPC gets the report by email, a summary goes out at 5 PM on weekdays, and leaders see every grade and trend on a dashboard. [Open the drawing](/architecture/npc-coach).
 
 ## The sprint
 
@@ -58,7 +58,7 @@ A few days in, our COO asked, "is a 60.5 from one call or several?" By June 23 e
 
 ## The hard parts
 
-**A flag beside the score.** The first rubric capped any call that failed a hard gate at 49. On real calls that destroyed information: a warm, well sequenced call with one retail phrase collapsed to 49 and told the coach nothing else. Now the score is the plain 40/40/20 weighted sum and a failed gate is a loud red banner beside it. A call can read 84 and still be flagged. 125 of the 690 graded calls carry that banner.
+**A flag beside the score.** The first rubric capped any call that failed a hard gate at 49. On real calls that destroyed information: a warm, well sequenced call with one retail phrase collapsed to 49 and told the coach nothing else. Now the score is the plain 40/40/20 weighted sum and a failed gate is a loud red banner beside it. A call can read 84 and still be flagged. Of the 690 calls graded by October 29, 125 carry that banner.
 
 **"Not gradeable" was a number format.** About 15 of the first 43 real new patient calls came back with no score. I assumed <span class="egg" tabindex="0" data-egg="It also heard the practice name as Hyperjet Omaha. None of our three offices is in Nebraska.">garbled transcripts</span>. The cause was smaller: Gemini sometimes wrote its confidence as 95 instead of 0.95, the schema allowed at most 1.0, and the whole verdict was thrown away. The fix coerces that field, records which field failed, and sends the error back for one repair try.
 
@@ -85,7 +85,7 @@ Create fails if the lease exists, so that one call is the whole lock. If Firesto
 
 ## Where it landed
 
-Seven NPC lines are on the allow list. Each NPC gets a report for every graded call, their numbers colored against their own 30 day average. Leaders get the 5 PM summary, and since October 5 so does every NPC with a graded call that day. Since June 17 the poller has read 28,745 recordings and graded 690 calls; in October it graded 172, a median 14 minutes after the call ended. 34 graded calls have been pulled out of the averages.
+Every NPC line is on the allow list. Each NPC gets a report for every graded call, their numbers colored against their own 30 day average. Leaders get the 5 PM summary, and since October 5 so does every NPC with a graded call that day. Since June 17 the poller has read 28,745 recordings and graded 690 calls; in October it graded 177, a median 14 minutes after the call ended. 34 graded calls have been pulled out of the averages.
 
 No cost yet: this project's billing export only switched on Oct 28, 2026, so there is no measured month.
 

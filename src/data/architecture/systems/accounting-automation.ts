@@ -11,7 +11,7 @@ const arch: Architecture = {
   kind: "system",
   disciplines: ["fde"],
   post: "/posts/accounting-automation",
-  headline: "Runs our controller's nine accounting scripts from one page.",
+  headline: "Ran our controller's nine accounting scripts from one page.",
   tail: "Built in one evening on Cloud Run.",
   lede:
     "Our controller uploads an export from Denticon, Paychex, Ramp, the bank or the lab system, and the page names the script, asks its questions in one form and hands back a QuickBooks import or a clean workbook. Reference workbooks and run logs sit in a Cloud Storage bucket, and every script edit is tested before it is committed to GitHub.",

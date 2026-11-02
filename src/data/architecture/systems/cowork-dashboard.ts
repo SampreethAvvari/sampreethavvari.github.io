@@ -28,9 +28,9 @@ const arch: Architecture = {
   readouts: [
     { value: "17", unit: "ms", label: "for the multi year Weekly tab, down from about 5.2 seconds" },
     { value: "45 of 45", label: "stored snapshot checks the cash flow pace rebuild matched exactly before it shipped" },
-    // Previous post and project-docs/05-cowork-dashboard.md (decision 2026-06-12).
-    { value: "~$460K", label: "of patient value on 25 retreatment cases no lead pointed at, found by fixing the join" },
-    { value: "18", unit: "min", label: "from the finance lead's request in the Feature requests tab to it live, Oct 28" },
+    // Code comment from the Apps Script build: 98.9 percent linkage, 23 left over, mostly retreatments.
+    { value: "23", label: "patients left with no lead after fixing the join, mostly retreatment cases" },
+    { value: "19", unit: "min", label: "from the finance lead's request in the Feature requests tab to it live, Oct 28" },
   ],
   svg,
   views: [

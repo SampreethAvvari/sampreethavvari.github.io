@@ -12,7 +12,7 @@ const arch: Architecture = {
   headline: "Flags patients whose billing and notes disagree.",
   tail: "On Cloud Run since June 16.",
   lede:
-    "Staff upload a day's schedule, ledger and clinical notes from Eaglesoft or Denticon, and a pure Python engine lines them up by patient id. Only the patients whose billing, notes or doctor disagree come back, on a dashboard and by email.",
+    "Staff upload a day's schedule, ledger and clinical notes from Eaglesoft or Denticon, and a pure Python engine lines them up by patient id. Only the patients whose billing, notes or doctor disagree come back, on a dashboard.",
   titleBlock: [
     ["System", "Reconciliation"],
     ["Revision", "v1.19.0"],
@@ -37,8 +37,8 @@ const arch: Architecture = {
   views: [
     { id: "one-day", label: "One day's check", focus: ["team", "pms", "ui", "app", "parsers", "engine"], note: "Staff upload the day's exports. The app parses them in a temp folder and the engine returns only the patients who disagree." },
     { id: "who-signed", label: "Who signed the note", focus: ["parsers", "engine", "registry"], note: "The billing doctor must appear in the note. Nicknames, fused Dr prefixes and small typos match; short names stay exact." },
-    { id: "sign-in", label: "Sign in and history", focus: ["team", "ui", "signin", "app", "db"], note: "Google sign in on two practice domains plus an admin list. Each run is saved so a past day reopens in one click." },
-    { id: "outbound", label: "Email and what is next", focus: ["app", "gmail", "engine", "gemini"], note: "The report email goes out through Gmail. The Gemini matcher is built and kept out of the verdict for now." },
+    { id: "sign-in", label: "Sign in and history", focus: ["team", "ui", "signin", "app", "db"], note: "Google sign in on two practice domains plus an admin list. A past day reopens in one click." },
+    { id: "outbound", label: "What is next", focus: ["app", "engine", "gemini"], note: "The Gemini matcher is built and kept out of the verdict for now." },
   ],
   parts: {
     team: {

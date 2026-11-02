@@ -12,14 +12,14 @@ export const treatmentEstimator: Tour = {
   pitch:
     "A treatment coordinator builds multi-option estimates live during the consult, clicking teeth on a chart and dragging treatments onto option cards while prices compute from that clinic's own versioned price book. Every saved line freezes its price at capture, so the document a patient signs is still reproducible six months later.",
   problem:
-    "The old tool was a 10-year-old script wrapped around one spreadsheet: a rigid 14-step questionnaire that could not express a real consult, where treatments get added in minute 20 and dropped in minute 25. Coordinators hand-checked the math, and a price change silently rewrote history on past estimates.",
+    "The old tool was an Apps Script wrapped around one price list: a rigid 14-step questionnaire that could not express a real consult, where treatments get added in minute 20 and dropped in minute 25. Coordinators hand-checked the math, and a price change silently rewrote history on past estimates.",
   metrics: [
-    { label: "Price guarantee", value: "DB property", sub: "write-once capture columns, trigger-enforced" },
-    { label: "Pricing coverage", value: "100%", sub: "line and branch coverage is a CI gate" },
-    { label: "Tests", value: "316", sub: "incl. 11 golden fixtures from the legacy tool" },
-    { label: "Shipped", value: "3 weeks", sub: "v1 to production, ~77 PRs over 3.5 months" },
+    { label: "Price guarantee", value: "6 months", sub: "price, tier, label and price book version saved on every line" },
+    { label: "Pricing coverage", value: "100%", sub: "line and branch coverage threshold on the pricing engine" },
+    { label: "First commit to v1.0.0", value: "14.5 hours", sub: "live May 8, 2026" },
+    { label: "Pricing models", value: "5", sub: "flat, tiered by zone, tiered, range or per surface, one resolver" },
   ],
-  concepts: ["Domain modeling", "Immutable versioning", "Write-once invariants", "Property-based testing", "Golden fixtures", "Optimistic UI"],
+  concepts: ["Domain modeling", "Immutable versioning", "Write-once invariants", "Snapshot testing", "Optimistic UI"],
   stack: ["Next.js", "TypeScript", "Postgres", "Auth.js + Workspace SSO", "Zustand", "TanStack Query", "react-pdf", "ExcelJS", "Playwright"],
   steps: [
     {
@@ -66,7 +66,7 @@ export const treatmentEstimator: Tour = {
     },
     {
       title: "Prices freeze at capture",
-      body: "Saving an option runs the engine against the currently published price book and writes each line with its price, price book version, tier, and label at capture, write-once columns protected by a database trigger. Publishing next month's prices can never move an estimate a patient already saw. The 6-month guarantee is a schema property, not a promise.",
+      body: "Saving an option writes each line with its price, price book version, tier and label at capture. Publishing next month's prices never moves an estimate a patient already saw.",
       screen: {
         kind: "terminal",
         title: "Save option · transaction",
@@ -74,7 +74,6 @@ export const treatmentEstimator: Tour = {
           "$ save option-1 (estimate EST-100377)",
           "load published price book PB-NRT-003",
           "resolve 5 lines → insert with *_at_capture columns",
-          "trigger: UPDATE of captured price rejected ✓ (write-once)",
         ],
       },
     },
@@ -92,7 +91,7 @@ export const treatmentEstimator: Tour = {
     },
     {
       title: "Present, lock, and audit",
-      body: "PDF for the patient, a clinical variant with procedure codes, and a print-formatted Excel all render from the same snapshotted lines as the live preview, so they cannot disagree. Marking the estimate presented snapshots a revision; any later edit opens revision n+1. An append-only audit table records every state change for six years.",
+      body: "PDF for the patient, a clinical variant with procedure codes, and a print-formatted Excel all render from the same snapshotted lines as the live preview, so they cannot disagree. Marking the estimate presented snapshots a revision; any later edit opens revision n+1. An audit table that only appends records every state change.",
       screen: {
         kind: "table",
         title: "Audit trail (excerpt)",
@@ -109,9 +108,9 @@ export const treatmentEstimator: Tour = {
   architecture: [
     { lane: "Frontend", items: ["Next.js App Router, server components for reads", "Zustand workspace store + TanStack Query", "Debounced live pricing preview (~200 ms)"] },
     { lane: "Pricing core", items: ["Shared procedure catalog: zones, tooth maps, caps", "Per-location immutable price book versions", "One resolver, five pricing models, resettable tier counters"] },
-    { lane: "Integrity", items: ["Write-once *_at_capture columns, trigger-enforced", "Estimate revisions snapshot on present", "Append-only audit table, monthly partitioned"] },
-    { lane: "Output & quality", items: ["react-pdf patient and clinical variants + ExcelJS", "100% pricing coverage gate · property-based invariants", "11 golden fixtures replayed from the legacy tool"] },
+    { lane: "Integrity", items: ["Price, tier, label and price book version saved on every line", "Estimate revisions snapshot on present", "Append-only audit table, monthly partitioned"] },
+    { lane: "Output & quality", items: ["react-pdf patient and clinical variants + ExcelJS", "100% coverage threshold on the pricing engine", "Snapshot tests on the price book"] },
   ],
   outcome:
-    "Coordinators build estimates the way consults actually flow instead of fighting a 14-step form, and the math stopped being anyone's job to double-check: lines must sum to subtotals, caps can never be exceeded, and every line carries the price book version that produced it, invariants enforced by property-based tests in CI and triggers in the database. All prices shown here are invented; the real fee schedules are the company's.",
+    "Coordinators build estimates the way consults actually flow instead of fighting a 14-step form, and the math stopped being anyone's job to double-check: lines must sum to subtotals, caps can never be exceeded, and every line carries the price book version that produced it, checked by tests in CI. All prices shown here are invented; the real fee schedules are the company's.",
 };

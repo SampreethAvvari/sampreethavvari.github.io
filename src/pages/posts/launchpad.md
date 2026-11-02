@@ -51,7 +51,7 @@ Then a Feature requests tab: paste a screenshot with Ctrl+V, write a line, send.
 
 ## The sprint
 
-The June board was built over June 16 and 17. Its last commit, at 1:41 AM, fixed its calendar's month labels <span class="egg" tabindex="0" data-egg="Quoted from the commit message. The labels held until the board went dark in October.">once and for all</span>.
+The June board was built over June 16 and 17. Its last commit that night, at 1:41 AM, fixed its calendar's month labels <span class="egg" tabindex="0" data-egg="Quoted from the commit message. The labels held until the board went dark in October.">once and for all</span>.
 
 Launchpad started at 4:40 PM on October 22. The first revision went live at 5:48 PM and failed every page: my laptop used a JSON store, and the production bundle hid the Firestore class under `default`. The fix was live at 5:58 PM, 78 minutes after the first commit. That evening the June board went dark and its daily sync paused.
 
@@ -95,13 +95,13 @@ The security review before merge added one rule: nobody is an admin through an a
 
 **Coding sessions that start on their own.** A scheduled cloud session cannot take a follow up into the same session, and requests get follow ups. Copy puts the heading, every message and each attachment's download line in one block, and I paste it into Claude Code myself. Copy never changes a status.
 
-**Public files and patient facing apps.** The bucket is private, with no public or signed links, and I read attachments with my own login. The tab stays out of the patient surveys and public forms.
+**Patient facing apps.** The tab stays out of the patient surveys and public forms.
 
 ## Where it landed
 
-The board holds 38 projects, 22 of them live, and its history holds 21 edits. I do not track page views, so I have no visit numbers.
+On October 29 the board held 38 projects, 22 of them live, and its history held 21 edits. I do not track page views, so I have no visit numbers.
 
-The request counter reached FR-0006 on October 29. Four requests about three apps are on the list: two shipped, one in progress and one queued.
+The request counter reached FR-0006 on October 29. That day four requests about three apps were on the list: two shipped, one in progress and one queued.
 
 The whole Google Cloud project cost $0.32 from October 1 to 28, most of it the retired June board's secrets and sync job. Request time for Launchpad, the relay and the old board together came to under two cents.
 

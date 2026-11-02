@@ -1,5 +1,5 @@
 ---
-title: "Every patient record on one Denticon chart, linked without guessing"
+title: "Patient records on one Denticon chart, linked without guessing"
 date: "2026-10-06"
 layout: ../../layouts/PostLayout.astro
 description: "Our coordinators had four tabs and four ids for one patient. I built a read only Denticon mirror, a registry the other apps share, and record links that prove a match before they write."

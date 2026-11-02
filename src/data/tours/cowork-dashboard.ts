@@ -3,28 +3,28 @@ import type { Tour } from "./types";
 export const coworkDashboard: Tour = {
   slug: "cowork-dashboard",
   name: "Cowork Dashboard",
-  tail: "One set of numbers two clinics can trust.",
+  tail: "One set of numbers three offices can trust.",
   post: "/posts/cowork-dashboard",
   cover: "/cowork-dashboard.png",
   kicker: "Data pipeline · Operations truth",
   accent: "#5B8DEF",
   accentRgb: "91, 141, 239",
   pitch:
-    "A two-clinic operations dashboard built on weekly board exports instead of a live API, joining patients to leads through the CRM's native connect column. Six tabs share one metrics module, so two views structurally cannot disagree on the same number.",
+    "An operations dashboard for our three offices. Weekly board exports feed most tabs, and the Cash Flow tab reads the Monday API every morning at 6. Nine tabs, and every metric is defined once. Each card counts the rows of its own drilldown, and a test checks it.",
   problem:
-    "Leadership needed one trustworthy view of the funnel: leads to scheduled to intakes to consults to accepted treatment, across two clinics. The tempting build was a live API dashboard; the honest one was a weekly export pipeline the team actually trusts, with lead-patient linkage done by the CRM's own connect column instead of fuzzy name matching.",
+    "Leadership needed one view of the funnel, leads to scheduled to intakes to consults to accepted treatment, across Rochester, Buffalo and Syracuse.",
   metrics: [
-    { label: "Patient-lead linkage", value: "~99%", sub: "via the CRM connect column, not name matching" },
-    { label: "Weekly workflow", value: "3 min", sub: "drop three exports, hit refresh" },
-    { label: "Views", value: "6 tabs", sub: "one shared metrics module underneath" },
+    { label: "Ambiguous lead matches", value: "31.2% to 5.8%", sub: "after breaking surname ties on first name" },
+    { label: "Request to live", value: "19 minutes", sub: "a finance request in the Feature requests tab, Oct 28" },
+    { label: "Views", value: "9 tabs", sub: "every metric defined once" },
     { label: "Verification", value: "Excel diff", sub: "a harness checks metrics against ground truth" },
   ],
   concepts: ["Single source of truth", "Record linkage", "Boring tech on purpose", "Ground-truth verification", "Header-name parsing"],
-  stack: ["Google Apps Script", "Drive API", "Chart.js", "Monday.com exports", "Python verification harness"],
+  stack: ["TypeScript", "Cloud Run", "ExcelJS", "Cloud IAP", "Chart.js", "Monday.com exports and API", "Python verification harness"],
   steps: [
     {
-      title: "Three files, once a week",
-      body: "Ops exports the leads board and both clinics' patient boards to Excel and drops them in one Drive folder. That is the entire data engineering ask of the team, which is why it actually happens every week.",
+      title: "Four files, once a week",
+      body: "Ops exports the Leads board and the three patient boards to one Drive folder. That is the entire data engineering ask of the team, which is why it actually happens every week.",
       screen: {
         kind: "cards",
         title: "Weekly exports folder",
@@ -32,20 +32,20 @@ export const coworkDashboard: Tour = {
           { name: "Leads.xlsx", lines: ["CRM leads board export"], badge: "week 32" },
           { name: "Patients-ClinicA.xlsx", lines: ["patient board, clinic A"], badge: "week 32" },
           { name: "Patients-ClinicB.xlsx", lines: ["patient board, clinic B"], badge: "week 32" },
+          { name: "Patients-ClinicC.xlsx", lines: ["patient board, clinic C"], badge: "week 32" },
         ],
       },
     },
     {
       title: "One refresh parses everything",
-      body: "The refresh converts each Excel to a sheet, parses by header name so column reordering cannot break it, and writes raw tabs plus a sync state. Twenty to thirty seconds later the dashboard is current.",
+      body: "A private service checks the folder every five minutes and rebuilds when all four files have changed.",
       screen: {
         kind: "terminal",
         title: "Refresh",
         lines: [
-          "$ refresh (button)",
-          "convert 3 xlsx → temp sheets · parse by header name",
-          "Leads_Raw: 61 rows · Patients_A_Raw: 38 · Patients_B_Raw: 23",
-          "linkage via connect column: 99.2% · 2 unlinked → data quality panel",
+          "$ check folder: all four files changed",
+          "parse 4 xlsx · Leads_Raw: 61 rows · three patient boards",
+          "join via connect column · 2 unlinked → data quality panel",
         ],
       },
     },
@@ -66,7 +66,7 @@ export const coworkDashboard: Tour = {
     },
     {
       title: "Structurally consistent numbers",
-      body: "Every tab, scorecards, history, lead sources, trends, weekly rollup, calls the same metrics module with the same filters. There is no second implementation to drift. When two views show leads for the same week, they are the same function call.",
+      body: "Every tab calls the same metric definitions, and each card number is computed from its drilldown's rows.",
       screen: {
         kind: "table",
         title: "Lead sources (synthetic)",
@@ -82,7 +82,7 @@ export const coworkDashboard: Tour = {
     },
     {
       title: "Data quality is a feature, not a footnote",
-      body: "Patients that cannot be linked to a lead surface in their own panel with exactly what to fix in the CRM. The linkage rate stays around 99% because someone can see, weekly, the handful of records that fall out.",
+      body: "Patients that cannot be linked to a lead show in their own panel, with what to fix in Monday.",
       screen: {
         kind: "table",
         title: "Data quality panel (synthetic)",
@@ -95,24 +95,24 @@ export const coworkDashboard: Tour = {
     },
     {
       title: "Trusted because it is verified",
-      body: "A Python harness recomputes every metric from the raw Excel files and diffs against what the dashboard shows. Boring tech, deliberately: an Apps Script web app plus weekly exports beat a real-time dashboard nobody believed.",
+      body: "A Python harness recomputes every metric from the raw Excel files and diffs against what the dashboard shows. Boring tech, deliberately: weekly exports beat a real-time dashboard nobody believed.",
       screen: {
         kind: "terminal",
         title: "Verification harness",
         lines: [
           "$ python verify.py --week 2026-03-03",
-          "recompute 6 metrics × 2 clinics from raw xlsx",
+          "recompute every metric from raw xlsx",
           "diff vs dashboard values → 0 mismatches ✓",
-          "linkage: 99.2% · unlinked: 2 (listed)",
+          "unlinked: 2 (listed)",
         ],
       },
     },
   ],
   architecture: [
-    { lane: "Ingest", items: ["Weekly Excel exports into one Drive folder", "Drive API converts xlsx to sheets", "Header-name-based parser, order-proof"] },
-    { lane: "Model", items: ["Raw tabs + sync state in one spreadsheet", "Lead-patient join via CRM connect column", "One shared metrics module for every view"] },
-    { lane: "Present", items: ["Apps Script web app, Workspace-restricted", "6 tabs: scorecards, history, sources, trends, playground, weekly", "Chart.js with prior-year overlays"] },
-    { lane: "Trust", items: ["Data quality panel with fix instructions", "Python harness diffs metrics vs raw Excel", "3-minute weekly workflow, 10-minute setup"] },
+    { lane: "Ingest", items: ["Weekly Excel exports into one Drive folder", "A private service checks it every five minutes", "Header-name-based parser, order-proof"] },
+    { lane: "Model", items: ["Each card counts its own drilldown rows", "Lead-patient join via CRM connect column", "Every metric defined once, for every view"] },
+    { lane: "Present", items: ["Cloud Run web app behind Google sign in", "9 tabs including Cash Flow and Feature requests", "Chart.js with prior-year overlays"] },
+    { lane: "Trust", items: ["Data quality panel with fix instructions", "Python harness diffs metrics vs raw Excel"] },
   ],
   outcome:
     "Leadership reads one set of numbers that agree with themselves and with the raw exports, and the weekly ritual is light enough that it has survived contact with reality. The interesting engineering decision was restraint: swapping a brittle live-API design for a verifiable weekly pipeline raised trust more than any feature could. Clinic names and all figures shown are synthetic stand-ins.",

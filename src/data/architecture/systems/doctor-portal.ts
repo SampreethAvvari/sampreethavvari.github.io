@@ -32,7 +32,7 @@ const arch: Architecture = {
     { value: "4", label: "things still pretend, listed on every release note" },
     // gcloud run revisions list: doctor-portal-00001 at 19:03:13Z failed its first visit, 00002 at 19:12:54Z fixed it.
     { value: "9", unit: "min", label: "from the revision that failed its first visit to the one that fixed it" },
-    { value: "1,664", unit: "uploads", label: "doctors made in the old portal since March 27, about ten a business day" },
+    { value: "4", unit: "weeks", label: "the portal sat behind other work before the lab lead made it top priority" },
   ],
   svg,
   views: [
@@ -63,7 +63,7 @@ const arch: Architecture = {
     gateway: {
       kind: "Vendor API",
       owner: "planned",
-      what: "Planned, not live. MagicTouch's Digital Gateway license, $126 a month, covers both of its APIs and is not bought yet. Whether that API can add an Rx and files to a case the scanner made is the open question the whole plan rests on.",
+      what: "Planned, not live. MagicTouch's Digital Gateway license covers both of its APIs and is not bought yet. Whether that API can add an Rx and files to a case the scanner made is the open question the whole plan rests on.",
       source: "docs/phase-2-portal/PLAN.md",
     },
     app: {
@@ -82,7 +82,7 @@ const arch: Architecture = {
     people: {
       kind: "People",
       owner: "outside",
-      what: "Today, the lab lead and Hybridge reviewers on Hybridge Google accounts. More than 200 outside doctors and their staff come later, with a sign in of their own.",
+      what: "Today, the lab lead and Hybridge reviewers on Hybridge Google accounts. Outside doctors and their staff come later, with a sign in of their own.",
       source: "docs/phase-2-portal/PLAN.md",
     },
     iap: {

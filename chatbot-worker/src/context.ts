@@ -31,13 +31,14 @@ Hybridge projects (each has a dedicated blog post on his portfolio):
    every failure into a retry or an amber row (slug: pipeline-ghosting).
 
 2. CBCT Scan Validator (slug: cbct-scan-validator). An in house dental CT
-   quality gate, built in 38 days against a vendor quote of $98,200 to build
-   and $2,200 a month to run. A frozen DentalSegmentator encoder with a small
+   quality gate, built in 37 days against a six figure vendor quote and a
+   monthly fee to run it. A frozen DentalSegmentator encoder with a small
    head runs on Cloud Run CPU with OpenVINO (2.2 seconds per encoder pass on
    a laptop CPU), with SFTP both ways to the lab's case system. A leaky split
    showed 0.80 AUROC; he rebuilt it and kept the honest 0.6309. The testing
-   team checks it on real studies: of 30 they marked bad, the model flagged
-   26. It cost $62 on Google Cloud in October 2026, measured.
+   team checks studies in a review app: of 30 they marked bad, the review
+   app's model, which is separate from the validator's, flagged 26. It cost
+   $62 on Google Cloud from October 1 to 28, 2026, measured.
 
 3. Treatment Estimator (slug: treatment-estimator). A Next.js 16, Drizzle and
    Postgres quoting tool for three offices. Five pricing model kinds, and every
@@ -51,8 +52,8 @@ Hybridge projects (each has a dedicated blog post on his portfolio):
 4. Cowork Dashboard (slug: cowork-dashboard). The leadership dashboard on the
    practice's Monday.com boards. The first version, in Apps Script, joined
    patients to leads by name; joining on the boards' connect column took
-   linkage from 49.5% to 98.8% in Rochester and surfaced about $460K of patient
-   value on 25 retreatment cases no lead pointed at. In September 2026 he
+   linkage to 98.9% in Rochester and 99.9% in Buffalo, and the 23 patients
+   left over were mostly retreatment cases. In September 2026 he
    rebuilt it on Cloud Run behind IAP with one metric registry, so a card
    number is computed from its own drilldown rows. The Weekly tab went from
    about 5.2 seconds to about 17 ms, first name checks cut ambiguous patient
@@ -81,9 +82,10 @@ Hybridge projects (each has a dedicated blog post on his portfolio):
    6 PM it reads new recordings from the phone system, finds the new patient
    calls, and grades each on six criteria with a transcript quote behind
    every score plus three hard gates. Gemini returns integers and gate
-   answers; plain Python does the 40/40/20 math. 690 real calls graded since
-   June 17, 2026, a median 14 minutes after the call ends; live calls were
-   graded 16 days after the first commit.
+   answers; plain Python does the 40/40/20 math. 690 real calls graded from
+   June 17 to October 29, 2026; in October the median grade came 14 minutes
+   after the call ended. Live calls were graded 16 days after the first
+   commit.
 
 8. Reconciliation (slug: reconciliation). Replaced about 70 hours a week of
    manual cross checking by the insurance team with a deterministic engine. It
@@ -97,12 +99,12 @@ Hybridge projects (each has a dedicated blog post on his portfolio):
 9. Centralized Diagnostic Filter, CDF (slug: cdf-diagnostic-filter). Intake
    and experience surveys owned by the practice, built with its founder.
    Gemini writes the doctor's page and reads the panorex under a written
-   ruleset taken from four cases the founder read aloud on camera, and the
+   ruleset taken from four cases the founder walked through, and the
    founder's review of the first reads became ruleset v2. The model lists the
    teeth and plain code recomputes the score. Every Gemini call falls back
    through newer models, and the clinic email waits for both reports. Patients
-   at all three offices fill in the intake; 103 real intakes by September 30,
-   2026. The governing rule is AI assists, doctors validate.
+   at all three offices fill in the intake before a consult. The governing
+   rule is AI assists, doctors validate.
 
 10. Patient Dashboard (slug: patient-dashboard). His current number one
    flagship. The staff side of the CDF platform, started June 2026 and rebuilt
@@ -119,7 +121,7 @@ Hybridge projects (each has a dedicated blog post on his portfolio):
    workbook of twenty pasted weeks with one forward view of demand, capacity
    and capability across three offices. A pure TypeScript engine shared by a
    minute sync and the browser, with Next.js 16, Cloud SQL Postgres and
-   Drizzle on Cloud Run. It reads live Denticon bookings every minute through
+   Drizzle on Cloud Run. It reads our Denticon mirror every minute through
    the CDF registry and has 0 write methods toward Denticon, held there by a
    test that fails the build. The engine reproduces 360 of 360 day cells from
    the old workbook. 17 days from the first commit to production on September
@@ -130,7 +132,7 @@ Hybridge projects (each has a dedicated blog post on his portfolio):
    edited by the treatment coordinator in a three pane builder inside the
    estimator and exported to Word and PDF. Generation picks one of 11 word for
    word transcribed practice masters. A production audit on August 27, 2026
-   found 0 errors in 271 generation attempts across 75 live estimates.
+   found 0 errors in 271 generation attempts across every live estimate.
 
 13. Daily Sales Report (slug: daily-sales-report). An automated pipeline that
    projects invoiced lab revenue and new arch starts for this month and the
@@ -148,8 +150,9 @@ Hybridge projects (each has a dedicated blog post on his portfolio):
    and joins ad spend through calls and leads to booked patients and
    treatment value. Every column is described and a data guide is written for
    LLMs to read first; a 6:30 AM email goes out every morning, and a weekly
-   eval asks Gemini 22 golden questions (21 of 22 on October 26). 3,334 of
-   3,383 lead to patient matches come from the link staff keep in Monday.
+   eval asks Gemini 22 golden questions (21 of 22 on October 26). As of
+   October 29, 98.6% of lead to patient matches come from the link staff
+   keep in Monday.
    Live since August 4, 2026. A Claude connector over it (slug:
    data-connector) went live three hours after its first line of code.
 
@@ -165,12 +168,13 @@ Hybridge projects (each has a dedicated blog post on his portfolio):
    it became top priority on October 28, 2026. Live on sample data.
 
 17. Launchpad (slug: launchpad). One board behind IAP where staff open every
-   Hybridge app (38 projects, 22 live), four leaders follow the work, and six
+   Hybridge app (38 projects on October 29, 2026, 22 live), four leaders
+   follow the work, and six
    apps send feature requests through one relay (slug: feature-requests) into
    one list. Live 78 minutes after the first commit.
 
 18. Shared services behind the patient hub: the Denticon sync (slug:
-   denticon-sync), the only service holding Denticon credentials; the CDF
+   denticon-sync), the only service that talks to Denticon; the CDF
    registry (slug: cdf-registry), a read only API the estimator and planner
    use; and the PDF renderer (slug: pdf-renderer), which turns every survey
    into reports and emails.
@@ -264,7 +268,7 @@ REPLY STYLE: follow strictly.
 - For "what projects" style asks, use a compact markdown list: one '- ' line
   per project, with the project name as a markdown link to its post, e.g.
   "- [CBCT Scan Validator](/posts/cbct-scan-validator): a dental CT checker
-  built in 38 days that cost $62 on Google Cloud in October." Max 5 items.
+  built in 37 days that cost $62 on Google Cloud in October." Max 5 items.
 - ALWAYS deep link to the most specific destination, never the bare homepage.
   Education -> [his education](/#education); experience or past jobs ->
   [his experience](/#experience); skills or tech stack -> [his skills](/#skills);

@@ -12,14 +12,14 @@ export const patientAssessment: Tour = {
   pitch:
     "An in-house replacement for a third-party questionnaire vendor: a schema-driven patient assessment that produces a premium patient-facing PDF with a psychographic profile, routes copies to the right clinic's distribution list, and files itself into the patient's records folder.",
   problem:
-    "Three near-duplicate questionnaires, one per location, ran on a paid vendor with no signed healthcare agreement. Staff screenshotted results into notes, hand-filed PDFs, and re-keyed lead sources into the CRM, several minutes of copy-paste per patient, with the interesting signal (how this patient decides) buried in raw answers.",
+    "Three near duplicate questionnaires, one per location, ran on a paid vendor. Staff filed each report by hand and re-keyed lead sources into the CRM, several minutes of copy-paste per patient, with the interesting signal (how this patient decides) buried in raw answers.",
   metrics: [
     { label: "Vendor replaced", value: "3-in-1", sub: "one schema-driven form with location routing" },
-    { label: "Manual loop removed", value: "0 re-keying", sub: "email, filing, and routing are automatic" },
+    { label: "Manual loop removed", value: "Auto filed", sub: "email, Drive filing and location routing" },
     { label: "Questions", value: "30+", sub: "with conditional logic and auto-save" },
-    { label: "Compliance", value: "CMEK + audit", sub: "append-only audit log from day one" },
+    { label: "Clinic email", value: "2 of 2", sub: "reports ready before the clinic email goes" },
   ],
-  concepts: ["Schema-driven forms", "Conditional logic", "LLM profile synthesis", "PDF rendering pipelines", "Monorepo architecture", "HIPAA-minded design"],
+  concepts: ["Schema-driven forms", "Conditional logic", "LLM profile synthesis", "PDF rendering pipelines", "Monorepo architecture"],
   stack: ["Next.js 15", "TypeScript", "Tailwind + shadcn/ui", "Firestore", "Playwright PDF rendering", "Vertex AI", "Cloud Run", "Terraform", "Workload Identity Federation"],
   steps: [
     {
@@ -51,13 +51,13 @@ export const patientAssessment: Tour = {
     },
     {
       title: "Submit fans out automatically",
-      body: "On submit: schema-version validation, risk scoring, a server-side PDF render, email to the patient and to that location's distribution list, and a write into the patient's records folder, queued for retry if the folder is not matched yet. The screenshot-and-re-key loop is gone.",
+      body: "On submit: schema-version validation, risk scoring, a server-side PDF render, email to the patient and to that location's distribution list, and a write into the patient's records folder, queued for retry if the folder is not matched yet. The hand filing is gone.",
       screen: {
         kind: "terminal",
         title: "Submission pipeline",
         lines: [
           "$ submit response #4821 (schema v3)",
-          "validate ✓ · risk score 42/100 (moderate)",
+          "validate ✓ · risk score 42 (moderate)",
           "render PDF (Playwright, React templates) ✓",
           "email: patient ✓ · Clinic A list ✓ · Drive: filed ✓",
         ],
@@ -94,7 +94,7 @@ export const patientAssessment: Tour = {
     },
     {
       title: "Phase 1 of something bigger",
-      body: "This is the first phase of a centralized diagnostic filter: the structured responses later join CBCT imaging and clinical photos into one unified diagnostic packet. Deploys are keyless (Workload Identity Federation) on version tags, with CMEK encryption and an append-only audit log from day one.",
+      body: "This is the first phase of a centralized diagnostic filter: the structured responses later join CBCT imaging and clinical photos into one unified diagnostic packet. Deploys are keyless (Workload Identity Federation) on version tags, and every state change writes an audit record.",
       screen: {
         kind: "cards",
         title: "Roadmap position",
@@ -110,7 +110,7 @@ export const patientAssessment: Tour = {
     { lane: "Apps", items: ["pnpm monorepo: questionnaire app, staff app, PDF renderer", "Next.js 15 + Tailwind + shadcn/ui", "Shared schema, lib, and UI packages"] },
     { lane: "Pipeline", items: ["Signed location-encoded links, no patient login", "Schema-version validation on submit", "Playwright renders React templates to PDF"] },
     { lane: "Delivery", items: ["Patient email + per-location distribution lists", "Records-folder filing with retry queue", "Report regeneration feedback loop"] },
-    { lane: "Platform", items: ["Firestore + Cloud Storage + Firebase Auth", "CMEK, append-only audit log", "Keyless deploys via Workload Identity Federation on version tags"] },
+    { lane: "Platform", items: ["Firestore + Cloud Storage + Firebase Auth", "Audit log that only appends", "Keyless deploys via Workload Identity Federation on version tags"] },
   ],
   outcome:
     "One schema-driven system replaced three vendor questionnaires and an entire manual routing ritual, and turned raw answers into a document staff actually use in the consult room. The honest boundary is stated in the product itself: this phase produces context and a risk score, never a diagnosis or treatment recommendation. The patient and profile shown here are entirely synthetic.",
