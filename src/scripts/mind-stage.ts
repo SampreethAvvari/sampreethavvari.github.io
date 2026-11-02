@@ -431,8 +431,8 @@ export function mountMind() {
     // the core
     const c = projXYZ(0, 0, 0);
     if (c.pz > NEAR) {
-      blit(sprite("soft", "#FFD9A0"), c.px, c.py, clamp(worldR * 0.75 * c.ps, 30, Math.max(W, H)), (0.22 + 0.4 * out) * fade * quiet);
-      blit(sprite("soft", "#A78BFA"), c.px, c.py, clamp(worldR * 1.6 * c.ps, 50, Math.max(W, H) * 1.5), (0.12 + 0.25 * out) * fade * quiet);
+      blit(sprite("soft", "#FFD9A0"), c.px, c.py, clamp(worldR * 0.75 * c.ps, 30, Math.max(W, H)), (0.07 + 0.16 * out) * fade * quiet);
+      blit(sprite("soft", "#A78BFA"), c.px, c.py, clamp(worldR * 1.6 * c.ps, 50, Math.max(W, H) * 1.5), (0.05 + 0.1 * out) * fade * quiet);
     }
     // the disk, turning slowly
     const th = reduced ? 0 : time * 0.012;
@@ -440,9 +440,9 @@ export function mountMind() {
     for (const g of armGlow) {
       const q = projXYZ(g.x * ct - g.z * st, 0, g.x * st + g.z * ct);
       if (q.pz < NEAR) continue;
-      blit(sprite("soft", g.color), q.px, q.py, clamp(g.r * q.ps, 6, Math.max(W, H) * 0.5), (0.05 + 0.12 * out) * fade * quiet);
+      blit(sprite("soft", g.color), q.px, q.py, clamp(g.r * q.ps, 6, Math.max(W, H) * 0.5), (0.015 + 0.045 * out) * fade * quiet);
     }
-    const base = (0.3 + 0.7 * out) * fade * quiet;
+    const base = (0.1 + 0.32 * out) * fade * quiet;
     let tint = -1;
     for (let i = 0; i < disk.length; i += 5) {
       const x0 = disk[i], z0 = disk[i + 2];
@@ -805,9 +805,13 @@ export function mountMind() {
     // how far out the camera is: from far away the map turns into a galaxy,
     // its stars soften and only the anchors keep their names
     const out = clamp((cam.dist - worldR * 1.4) / (worldR * 2.6), 0, 1);
-    // With projects (or repos) switched off, the smaller stars take their
-    // place: brighter, and the background steps back so it covers nothing.
-    const minorBoost = hiddenTypes.has("project") || hiddenTypes.has("repo") ? 2.4 : 1;
+    // The lead kind shines like the projects: the highest switched on of
+    // projects, then case studies, then technologies (repos, then languages
+    // on the git map). The kinds under it stay dim, and with a filter on the
+    // background steps back so it covers nothing.
+    const rank = graphKey === "repo" ? ["repo", "language"] : ["project", "post", "tech"];
+    const lead = rank.find((t) => !hiddenTypes.has(t)) ?? "";
+    const leads = (p: Node) => p.major || p.type === lead;
     const quiet = hiddenTypes.size ? 0.35 : 1;
 
     for (const p of nodes) project(p);
@@ -836,9 +840,9 @@ export function mountMind() {
     drawGalaxy(out * quiet, quiet);
     // every work star lights the region around it, like a star cluster
     for (const p of nodes) {
-      if (!p.major || p.pz < NEAR || p.reveal < 0.05) continue;
+      if (!leads(p) || p.pz < NEAR || p.reveal < 0.05) continue;
       const R = clamp((60 + p.deg * 9) * spread * p.ps, 12, Math.max(W, H) * 0.6);
-      blit(sprite("soft", p.color), p.px, p.py, R, (0.1 + 0.1 * out) * p.reveal * fade * quiet);
+      blit(sprite("soft", p.color), p.px, p.py, R, (0.05 + 0.05 * out) * p.reveal * fade * quiet);
     }
     ctx!.globalAlpha = 1;
     const hoverSet = hover ? adj.get(hover.id) : null;
@@ -851,7 +855,7 @@ export function mountMind() {
     for (const p of nodes) {
       const want = !shown(p)
         ? 0
-        : p.major || p === hover || p === selected || hoverSet?.has(p.id) || selSet?.has(p.id)
+        : leads(p) || p === hover || p === selected || hoverSet?.has(p.id) || selSet?.has(p.id)
           ? 1
           : clamp(1.35 - Math.hypot(p.x - C[0], p.y - C[1], p.z - C[2]) / revealR, 0.32, 1);
       p.reveal = lerp(p.reveal, want, ease);
@@ -866,16 +870,17 @@ export function mountMind() {
       const focus =
         hover && (e.a === hover || e.b === hover) ? 1 :
         selected && (e.a === selected || e.b === selected) ? 0.85 : 0;
-      const base = (e.major ? lerp(0.34, 0.46, near) : lerp(0.13, 0.22, near) * Math.min(minorBoost, 1.8)) * fade * vis;
+      const main = e.major || e.a.type === lead || e.b.type === lead;
+      const base = (main ? lerp(0.34, 0.46, near) : lerp(0.13, 0.22, near)) * fade * vis;
       const op = focus ? 0.85 * vis : selected ? base * 0.16 : base;
       if (op < 0.01) continue;
-      if (e.major || focus) {
-        ctx!.strokeStyle = `rgba(${e.rgb},${(op * 0.22).toFixed(3)})`;
+      if (main || focus) {
+        ctx!.strokeStyle = `rgba(${e.rgb},${(op * 0.12).toFixed(3)})`;
         ctx!.lineWidth = focus ? 5 : 3.6;
         ctx!.beginPath(); ctx!.moveTo(e.a.px, e.a.py); ctx!.lineTo(e.b.px, e.b.py); ctx!.stroke();
       }
       ctx!.strokeStyle = `rgba(${e.rgb},${op.toFixed(3)})`;
-      ctx!.lineWidth = focus ? 1.6 : e.major ? 1.1 : 0.75;
+      ctx!.lineWidth = focus ? 1.6 : main ? 1.1 : 0.75;
       ctx!.beginPath(); ctx!.moveTo(e.a.px, e.a.py); ctx!.lineTo(e.b.px, e.b.py); ctx!.stroke();
     }
 
@@ -885,24 +890,26 @@ export function mountMind() {
       if (p.pz < NEAR || p.reveal < 0.02) continue;
       if (p.px < -160 || p.px > W + 160 || p.py < -160 || p.py > H + 160) continue;
       const nearFade = clamp((p.pz - NEAR) / NEAR, 0, 1);
-      const R = clamp(p.r * p.ps, 0.6, 140);
+      const big = leads(p);
+      const promoted = big && !p.major;
+      const R = clamp(p.r * p.ps * (promoted ? 1.6 : 1), 0.6, 140);
       const depthFade = clamp((p.ps / (cam.focal / cam.dist)) * 0.6 + 0.5, 0.6, 1.25);
       const tw = reduced ? 1 : 0.88 + Math.sin(time * 1.5 + p.tw) * 0.12;
       const dim =
         (hover && hover !== p && !hoverSet?.has(p.id)) ||
         (selected && selected !== p && !selSet?.has(p.id) && !hover);
       const focus = p === hover || p === selected;
-      const lum = focus ? 1.45 : (LUM[p.type] ?? 0.7) * (p.major ? 1 : minorBoost);
+      const lum = focus ? 1.45 : promoted ? LUM.project : LUM[p.type] ?? 0.7;
       const op = (dim ? (selected && !hover ? 0.12 : 0.3) : 1) * fade * depthFade * lum * nearFade * p.reveal * tw;
-      drawStar(p, R * (focus ? 1.25 : 1), op, near, focus, focus ? 0 : out);
+      drawStar(p, R * (focus ? 1.25 : 1), op, near, focus, focus ? 0 : out, big);
 
       // Names: work stars and case studies always; a technology or language
       // only when it, or the star it belongs to, is hovered or open.
-      const named = p.major || p.type === "post";
+      const named = big || p.type === "post";
       const near1 = hover === p || hoverSet?.has(p.id) || selSet?.has(p.id);
       const anchor = PLANET.has(p.type);
       const far1 = anchor ? 1 : clamp(1 - (out - 0.25) * 1.8, 0, 1);
-      const lop = focus ? 1 : named ? (p.major ? 0.78 : 0.62) * far1 : near1 ? 0.75 : 0;
+      const lop = focus ? 1 : named ? (big ? 0.78 : 0.62) * far1 : near1 ? 0.75 : 0;
       if (lop > 0.05 && !(dim && !focus) && R > 1.1) {
         const size = focus ? 14 : clamp((p.major ? 10.5 : 10) + R * 0.1, 10, 13);
         labels.push({
@@ -912,7 +919,7 @@ export function mountMind() {
           font: `${focus ? 600 : 500} ${size}px Inter, -apple-system, "SF Pro Display", sans-serif`,
           size,
           a: Math.min(1, lop * p.reveal),
-          prio: (focus ? 1e6 : 0) + (p.major ? 1000 : 0) + p.ps * 100 + p.r,
+          prio: (focus ? 1e6 : 0) + (big ? 1000 : 0) + p.ps * 100 + p.r,
           focus,
         });
       }
@@ -945,14 +952,14 @@ export function mountMind() {
   // A star. Every star has a soft halo and a hot white core, added as light.
   // Projects and repos carry four point light spikes. Disciplines are planets:
   // a lit sphere with a ring. Up close a project shows a glass rim.
-  function drawStar(p: Node, R: number, op: number, near: number, focus: boolean, out: number) {
+  function drawStar(p: Node, R: number, op: number, near: number, focus: boolean, out: number, big: boolean) {
     op = clamp(op, 0, 1.5);
     if (op <= 0.01) return;
     const x = p.px, y = p.py;
-    const halo = p.major ? Math.max(R * 8 + lerp(16, 6, out), lerp(26, 11, out)) : Math.max(R * 4.6 + 4, lerp(8, 5, out));
-    blit(sprite("glow", p.color), x, y, halo, op * (p.major ? lerp(0.72, 0.5, out) : 0.42));
-    if (SPIKED.has(p.type) && out < 0.85) blit(sprite("spike", p.color), x, y, Math.max(R * 7 + 20, lerp(30, 12, out)), op * 0.55 * (1 - out));
-    const core = Math.max(R * (p.major ? 1.45 : 0.95), p.major ? lerp(2.6, 1.7, out) : 1.2);
+    const halo = big ? Math.max(R * 8 + lerp(16, 6, out), lerp(26, 11, out)) : Math.max(R * 4.6 + 4, lerp(8, 5, out));
+    blit(sprite("glow", p.color), x, y, halo, op * (big ? lerp(0.72, 0.5, out) : 0.42));
+    if ((SPIKED.has(p.type) || (big && !p.major)) && out < 0.85) blit(sprite("spike", p.color), x, y, Math.max(R * 7 + 20, lerp(30, 12, out)), op * 0.55 * (1 - out));
+    const core = Math.max(R * (big ? 1.45 : 0.95), big ? lerp(2.6, 1.7, out) : 1.2);
     blit(sprite("core", p.color), x, y, core * 1.8, Math.min(1, op * 0.92));
     ctx!.globalAlpha = 1;
 
