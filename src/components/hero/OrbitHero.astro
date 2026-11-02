@@ -9,7 +9,7 @@
 // loop pauses when the hero is off screen or the tab is hidden.
 ---
 
-<div class="orbit" data-orbit>
+<div class="orbit" data-orbit-hero>
   <canvas class="orbit-layer" data-orbit-back aria-hidden="true"></canvas>
   <figure class="orbit-portrait" data-amb>
     <slot />
@@ -61,7 +61,9 @@
   import { createOrbit, type OrbitInput } from "../../scripts/orbit-draw";
 
   (function () {
-    const root = document.querySelector<HTMLElement>("[data-orbit]");
+    // Its own hook: the scroll gauge (ScrollOrbit) also carries data-orbit and
+    // comes first in the page.
+    const root = document.querySelector<HTMLElement>("[data-orbit-hero]");
     const back = root?.querySelector<HTMLCanvasElement>("[data-orbit-back]");
     const front = root?.querySelector<HTMLCanvasElement>("[data-orbit-front]");
     if (!root || !back || !front) return;

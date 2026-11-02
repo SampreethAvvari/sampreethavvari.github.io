@@ -119,6 +119,12 @@ footer {
   mix-blend-mode: soft-light;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)' opacity='0.6'/%3E%3C/svg%3E");
 }
+/* Phones skip the grain: blending a full screen layer over the moving sky on
+   every frame is the largest graphics cost there, and the bands it dithers
+   are a large screen problem. */
+@media (max-width: 767px) {
+  .grain { display: none; }
+}
 
 /* Discipline pills. --dx / --dx-rgb carry the accent, set inline. */
 .dpill {
