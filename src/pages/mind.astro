@@ -51,13 +51,17 @@ const dataJson = JSON.stringify(mindGraphs).replace(/</g, "\\u003c");
         </div>
 
         <div class="mind-detail" data-mind-detail>
-          <p class="mind-detail-hint">Drift through the map. Tap a star to open it.</p>
+          <p class="mind-detail-hint">Fly through the map. Tap a star to open it.</p>
         </div>
 
-        <ul class="mind-legend" data-mind-legend aria-hidden="true"></ul>
+        <div class="mind-filter">
+          <p class="mind-filter-label">Show on the map</p>
+          <ul class="mind-legend" data-mind-legend role="group" aria-label="Show on the map"></ul>
+        </div>
 
         <p class="mind-hint">
-          <span>Scroll to zoom</span><span class="mind-dot">·</span><span>drag to turn</span
+          <span>Scroll or pinch to fly</span><span class="mind-dot">·</span><span>drag to turn</span
+          ><span class="mind-dot">·</span><span>right drag or two fingers to move</span
           ><span class="mind-dot">·</span><span>tap a star</span>
         </p>
       </div>
@@ -66,6 +70,20 @@ const dataJson = JSON.stringify(mindGraphs).replace(/</g, "\\u003c");
     <button class="mind-reset lg" data-mind-reset title="Reset view" aria-label="Reset view">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/></svg>
     </button>
+
+    <!-- A star's card: opens over the map when a star is tapped. -->
+    <aside class="mind-card" data-mind-card hidden>
+      <div class="mind-card-frame" role="dialog" aria-labelledby="mind-card-name">
+        <span class="mind-card-corner tl" aria-hidden="true"></span>
+        <span class="mind-card-corner tr" aria-hidden="true"></span>
+        <span class="mind-card-corner bl" aria-hidden="true"></span>
+        <span class="mind-card-corner br" aria-hidden="true"></span>
+        <button class="mind-card-close" data-mind-card-close aria-label="Close" title="Close">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg>
+        </button>
+        <div class="mind-card-body" data-mind-card-body></div>
+      </div>
+    </aside>
 
     <script type="application/json" id="mind-data" set:html={dataJson}></script>
   </div>
@@ -296,6 +314,28 @@ const dataJson = JSON.stringify(mindGraphs).replace(/</g, "\\u003c");
     box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2);
     transition: border-color 150ms var(--ease-glass), background-color 150ms var(--ease-glass), transform 250ms var(--ease-glass);
   }
+  .mind-detail :global(.mind-links) { display: flex; flex-wrap: wrap; gap: 6px; }
+  .mind-detail :global(.mind-links .mind-detail-link) { margin-top: 0; }
+  .mind-detail :global(.mind-near-title) { margin-top: 4px; }
+  .mind-detail :global(.mind-hop) {
+    gap: 6px;
+    border: 0;
+    cursor: pointer;
+    font: inherit;
+    font-size: 0.71875rem;
+    font-weight: 500;
+    transition: background-color 150ms var(--ease-glass), color 150ms var(--ease-glass);
+  }
+  .mind-detail :global(.mind-hop::before) {
+    content: "";
+    width: 6px;
+    height: 6px;
+    border-radius: 9999px;
+    background: var(--hc, currentColor);
+    box-shadow: 0 0 8px var(--hc, transparent);
+  }
+  .mind-detail :global(.mind-hop:hover) { color: var(--ink); background: rgba(255, 255, 255, 0.12); }
+  .mind-detail :global(.mind-hop:focus-visible) { outline: none; box-shadow: 0 0 0 2px rgba(var(--tone-rgb), 0.55); }
   .mind-detail :global(.mind-detail-link:hover) { border-color: rgba(255, 255, 255, 0.26); transform: translateY(-1px); }
   .mind-detail :global(.mind-detail-link svg) { transition: transform 250ms var(--ease-glass); }
   .mind-detail :global(.mind-detail-link:hover svg) { transform: translate(1px, -1px); }
@@ -326,6 +366,287 @@ const dataJson = JSON.stringify(mindGraphs).replace(/</g, "\\u003c");
     box-shadow: 0 0 8px 0 var(--lc);
     flex: none;
   }
+
+
+  /* Filter: the legend's kinds of star, each a switch; the anchors stay. */
+  .mind-filter { display: grid; gap: 8px; }
+  .mind-filter-label {
+    margin: 0;
+    font-size: 0.6875rem;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+  }
+  .mind-legend :global(li:has(.mind-filter-btn))::before { display: none; }
+  .mind-legend :global(.mind-filter-btn) {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    height: 28px;
+    padding: 0 11px 0 9px;
+    border-radius: 9999px;
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    background: rgba(255, 255, 255, 0.06);
+    color: var(--ink);
+    font: inherit;
+    font-size: 0.8125rem;
+    cursor: pointer;
+    transition: background-color 150ms var(--ease-glass), color 150ms var(--ease-glass), border-color 150ms var(--ease-glass);
+  }
+  .mind-legend :global(.mind-filter-btn::before) {
+    content: "";
+    width: 7px;
+    height: 7px;
+    border-radius: 9999px;
+    background: var(--lc);
+    box-shadow: 0 0 8px 0 var(--lc);
+    transition: opacity 150ms var(--ease-glass);
+  }
+  .mind-legend :global(.mind-filter-btn[aria-pressed="false"]) {
+    color: var(--ink-faint);
+    background: transparent;
+    border-color: rgba(255, 255, 255, 0.08);
+  }
+  .mind-legend :global(.mind-filter-btn[aria-pressed="false"]::before) { opacity: 0.25; box-shadow: none; }
+  .mind-legend :global(.mind-filter-btn:hover) { border-color: rgba(255, 255, 255, 0.26); }
+  .mind-legend :global(.mind-filter-btn:focus-visible) { outline: none; box-shadow: 0 0 0 2px rgba(var(--tone-rgb), 0.55); }
+  .mind-legend :global(.mind-filter-fixed) { height: 28px; }
+
+  /* The card: a dossier on one star, floating in the space beside the map.
+     Its edge glows in the star's own colour. */
+  .mind-card {
+    position: absolute;
+    z-index: 7;
+    right: max(var(--gutter), env(safe-area-inset-right, 0px));
+    /* centred in the band between the nav and the chat button */
+    top: 96px;
+    bottom: 112px;
+    width: min(380px, calc(100% - 2 * var(--gutter)));
+    display: flex;
+    align-items: center;
+    pointer-events: none;
+  }
+  .mind-card[hidden] { display: none; }
+  .mind-card-frame {
+    --c: var(--nc, #5b8def);
+    --c-rgb: var(--nc-rgb, 91, 141, 239);
+    position: relative;
+    width: 100%;
+    max-height: 100%;
+    overflow: auto;
+    overscroll-behavior: contain;
+    pointer-events: auto;
+    padding: 22px 20px 20px;
+    border-radius: 18px;
+    color: var(--ink);
+    background:
+      radial-gradient(120% 70% at 0% 0%, rgba(var(--c-rgb), 0.22), transparent 60%),
+      radial-gradient(90% 60% at 100% 100%, rgba(var(--c-rgb), 0.1), transparent 70%),
+      rgba(7, 9, 15, 0.82);
+    border: 1px solid rgba(var(--c-rgb), 0.45);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.12),
+      0 0 0 1px rgba(0, 0, 0, 0.4),
+      0 0 42px -10px rgba(var(--c-rgb), 0.6),
+      0 30px 80px -30px rgba(0, 0, 0, 0.9);
+    -webkit-backdrop-filter: blur(14px) saturate(1.4);
+    backdrop-filter: blur(14px) saturate(1.4);
+    display: grid;
+    gap: 14px;
+    scrollbar-width: thin;
+  }
+  /* a light that sweeps down the card as it opens */
+  .mind-card-frame::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    pointer-events: none;
+    background: linear-gradient(180deg, transparent 0%, rgba(var(--c-rgb), 0.18) 48%, rgba(255, 255, 255, 0.08) 50%, transparent 52%);
+    background-size: 100% 220%;
+    background-position: 0 120%;
+    opacity: 0;
+  }
+  .mind-card.is-in .mind-card-frame { animation: mc-in 420ms cubic-bezier(0.16, 1, 0.3, 1) both; }
+  .mind-card.is-in .mind-card-frame::after { animation: mc-scan 900ms ease-out 120ms both; }
+  @keyframes mc-in {
+    from { opacity: 0; transform: translateX(18px) scale(0.97); filter: blur(6px); }
+    to { opacity: 1; transform: none; filter: none; }
+  }
+  @keyframes mc-scan {
+    0% { opacity: 1; background-position: 0 120%; }
+    100% { opacity: 0; background-position: 0 -20%; }
+  }
+  .mind-card-corner {
+    position: absolute;
+    width: 14px;
+    height: 14px;
+    border: 0 solid rgba(var(--c-rgb), 0.9);
+    pointer-events: none;
+  }
+  .mind-card-corner.tl { top: 7px; left: 7px; border-top-width: 2px; border-left-width: 2px; border-top-left-radius: 6px; }
+  .mind-card-corner.tr { top: 7px; right: 7px; border-top-width: 2px; border-right-width: 2px; border-top-right-radius: 6px; }
+  .mind-card-corner.bl { bottom: 7px; left: 7px; border-bottom-width: 2px; border-left-width: 2px; border-bottom-left-radius: 6px; }
+  .mind-card-corner.br { bottom: 7px; right: 7px; border-bottom-width: 2px; border-right-width: 2px; border-bottom-right-radius: 6px; }
+  .mind-card-close {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    z-index: 1;
+    width: 30px;
+    height: 30px;
+    display: grid;
+    place-items: center;
+    border-radius: 9999px;
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    background: rgba(255, 255, 255, 0.06);
+    color: var(--ink-soft);
+    cursor: pointer;
+    transition: color 150ms var(--ease-glass), border-color 150ms var(--ease-glass);
+  }
+  .mind-card-close:hover { color: var(--ink); border-color: rgba(var(--c-rgb), 0.7); }
+  .mind-card-close:focus-visible { outline: none; box-shadow: 0 0 0 2px rgba(var(--c-rgb), 0.7); }
+  .mind-card-body { display: grid; gap: 14px; }
+
+  .mind-card :global(.mc-head) { display: flex; align-items: center; gap: 14px; padding-right: 30px; }
+  .mind-card :global(.mc-orb) {
+    position: relative;
+    flex: none;
+    width: 48px;
+    height: 48px;
+    border-radius: 9999px;
+    background: radial-gradient(circle at 34% 30%, #fff 0, rgba(var(--c-rgb), 1) 34%, rgba(var(--c-rgb), 0.35) 70%, rgba(var(--c-rgb), 0.05) 100%);
+    box-shadow: 0 0 22px 2px rgba(var(--c-rgb), 0.65), 0 0 60px 4px rgba(var(--c-rgb), 0.25);
+  }
+  .mind-card :global(.mc-orb.is-planet::after) {
+    content: "";
+    position: absolute;
+    left: -14px;
+    right: -14px;
+    top: 50%;
+    height: 14px;
+    margin-top: -7px;
+    border-radius: 50%;
+    border: 2px solid rgba(var(--c-rgb), 0.85);
+    transform: rotate(-20deg);
+  }
+  .mind-card :global(.mc-id) { min-width: 0; display: grid; gap: 4px; }
+  .mind-card :global(.mc-class) {
+    margin: 0;
+    font-size: 0.6875rem;
+    font-weight: 600;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--c);
+  }
+  .mind-card :global(.mc-name) {
+    margin: 0;
+    font-size: 1.375rem;
+    line-height: 1.15;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    text-wrap: balance;
+  }
+  .mind-card :global(.mc-stats) { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+  .mind-card :global(.mc-stat) {
+    display: grid;
+    gap: 3px;
+    padding: 9px 10px 10px;
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+  }
+  .mind-card :global(.mc-k) {
+    font-size: 0.625rem;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+  }
+  .mind-card :global(.mc-stat b) { font-size: 1.25rem; line-height: 1; font-weight: 700; font-variant-numeric: tabular-nums; }
+  .mind-card :global(.mc-stat i) {
+    display: block;
+    height: 3px;
+    margin-top: 4px;
+    border-radius: 9999px;
+    background: linear-gradient(90deg, rgba(var(--c-rgb), 1) calc(var(--v) * 100%), rgba(255, 255, 255, 0.1) calc(var(--v) * 100%));
+    box-shadow: 0 0 8px rgba(var(--c-rgb), 0.45);
+  }
+  .mind-card :global(.mc-bio) { margin: 0; font-size: 0.9375rem; line-height: 1.6; color: var(--ink-soft); max-width: 46ch; }
+  .mind-card :global(.mc-count) {
+    display: grid;
+    gap: 8px;
+    padding: 12px 14px;
+    border-radius: 12px;
+    background: rgba(var(--c-rgb), 0.08);
+    border: 1px solid rgba(var(--c-rgb), 0.28);
+  }
+  .mind-card :global(.mc-count-row) { display: flex; flex-wrap: wrap; gap: 6px 18px; }
+  .mind-card :global(.mc-count-item) { font-size: 0.875rem; color: var(--ink-soft); white-space: nowrap; }
+  .mind-card :global(.mc-count-item b) { font-size: 1.125rem; font-weight: 700; color: var(--ink); font-variant-numeric: tabular-nums; margin-right: 2px; }
+  .mind-card :global(.mc-more[hidden]) { display: none; }
+  .mind-card :global(.mc-more) {
+    display: grid;
+    gap: 12px;
+    padding-top: 14px;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+  }
+  .mind-card :global(.mc-sec) { display: grid; gap: 7px; }
+  .mind-card :global(.mc-label) {
+    margin: 0;
+    font-size: 0.625rem;
+    font-weight: 600;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+  }
+  .mind-card :global(.mc-chips) { display: flex; flex-wrap: wrap; gap: 6px; }
+  .mind-card :global(.mc-chip),
+  .mind-card :global(.mc-hop) {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    height: 24px;
+    padding: 0 10px;
+    border-radius: 9999px;
+    font: inherit;
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: var(--ink-soft);
+    background: rgba(255, 255, 255, 0.07);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    white-space: nowrap;
+  }
+  .mind-card :global(.mc-hop) { cursor: pointer; transition: color 150ms var(--ease-glass), border-color 150ms var(--ease-glass); }
+  .mind-card :global(.mc-hop::before) {
+    content: "";
+    width: 6px;
+    height: 6px;
+    border-radius: 9999px;
+    background: var(--hc, currentColor);
+    box-shadow: 0 0 8px var(--hc, transparent);
+  }
+  .mind-card :global(.mc-hop:hover) { color: var(--ink); border-color: rgba(255, 255, 255, 0.24); }
+  .mind-card :global(.mc-hop:focus-visible) { outline: none; box-shadow: 0 0 0 2px rgba(var(--c-rgb), 0.7); }
+  .mind-card :global(.mc-actions) { display: flex; flex-wrap: wrap; gap: 8px; }
+  .mind-card :global(.mc-btn) {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    height: 34px;
+    padding: 0 14px;
+    border-radius: 9999px;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: #05070c;
+    text-decoration: none;
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.95), rgba(var(--c-rgb), 0.85));
+    box-shadow: 0 0 18px -4px rgba(var(--c-rgb), 0.8), inset 0 1px 0 rgba(255, 255, 255, 0.6);
+    transition: transform 200ms var(--ease-glass), box-shadow 200ms var(--ease-glass);
+  }
+  .mind-card :global(.mc-btn:hover) { transform: translateY(-1px); box-shadow: 0 0 26px -2px rgba(var(--c-rgb), 0.95), inset 0 1px 0 rgba(255, 255, 255, 0.6); }
+  .mind-card :global(.mc-btn:focus-visible) { outline: 2px solid rgba(var(--c-rgb), 0.9); outline-offset: 2px; }
 
   .mind-hint {
     display: flex;
@@ -387,10 +708,22 @@ const dataJson = JSON.stringify(mindGraphs).replace(/</g, "\\u003c");
     .mind-panel.is-folded .mind-fold svg { transform: none; }
     .mind-detail { min-height: 0; padding: 12px 14px; }
     .mind-reset { right: 16px; bottom: auto; top: calc(env(safe-area-inset-top, 0px) + 88px); }
+    .mind-card {
+      left: 12px;
+      right: 12px;
+      top: auto;
+      bottom: calc(env(safe-area-inset-bottom, 0px) + 76px);
+      width: auto;
+      max-height: 58vh;
+      align-items: flex-end;
+    }
+    .mind-card-frame { padding: 18px 16px 16px; }
+    .mind-card :global(.mc-name) { font-size: 1.2rem; }
   }
 
   @media (prefers-reduced-motion: reduce) {
     .mind-panel { animation: none; }
+    .mind-card.is-in .mind-card-frame, .mind-card.is-in .mind-card-frame::after { animation: none; }
     .mind-reset:hover { transform: none; }
   }
 </style>
