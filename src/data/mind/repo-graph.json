@@ -202,7 +202,7 @@
       "label": "hybridge-consultation-qa",
       "data": {
         "owner": "hybridge-implants",
-        "description": "Hybridge Consultation QA — Zoom transcript → Vertex AI Gemini scoring → color-coded reports → master Sheet ledger. HIPAA-aware, multi-tenant Zoom, web UI for manual triggers.",
+        "description": "Hybridge Consultation QA — Zoom transcript → Vertex AI Gemini scoring → color-coded reports → master Sheet ledger. Multi-tenant Zoom, web UI for manual triggers.",
         "stars": 0,
         "url": "https://github.com/hybridge-implants/hybridge-consultation-qa",
         "languages": [
@@ -252,7 +252,7 @@
       "label": "hybridge-npc-coaching",
       "data": {
         "owner": "hybridge-implants",
-        "description": "Hybridge NPC Call Coaching System: post-call AI scoring of New Patient Coordinator calls against the Hybridge playbook (HIPAA-scoped, Google Cloud).",
+        "description": "Hybridge NPC Call Coaching System: post-call AI scoring of New Patient Coordinator calls against the Hybridge playbook.",
         "stars": 0,
         "url": "https://github.com/hybridge-implants/hybridge-npc-coaching",
         "languages": [

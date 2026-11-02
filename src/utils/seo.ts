@@ -39,7 +39,6 @@ export function personNode(base: string, opts: { image: string; email: string; d
       "Google Cloud Run",
       "BigQuery",
       "Healthcare software",
-      "HIPAA minded system design",
       "System architecture",
       "Filmmaking",
     ],

@@ -40,6 +40,17 @@ const QUERY = `query {
   }
 }`;
 
+// Repo descriptions are written for the team. Compliance labels (HIPAA, PHI,
+// BAA) stay out of the public site.
+const publicText = (d) =>
+  (d || "")
+    .replace(/\s*\([^)]*\b(HIPAA|PHI|BAA)\b[^)]*\)/gi, "")
+    .replace(/\b(HIPAA|PHI|BAA)[- ]\w+,?\s*/gi, "")
+    .replace(/\s{2,}/g, " ")
+    .replace(/\s+([.,;:])/g, "$1")
+    .replace(/([.!?]\s+)([a-z])/g, (_, a, b) => a + b.toUpperCase())
+    .trim();
+
 const slug = (s) => (s || "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
 
 function build(repos) {
@@ -67,7 +78,7 @@ function build(repos) {
     const topics = (r.repositoryTopics?.nodes || []).map((t) => t.topic?.name).filter(Boolean);
     const rid = node(`repo:${slug(owner)}-${slug(r.name)}`, "repo", r.name, {
       owner,
-      description: r.description || "",
+      description: publicText(r.description),
       stars: r.stargazerCount || 0,
       url: r.url || "",
       languages: langs,
