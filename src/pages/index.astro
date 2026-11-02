@@ -18,16 +18,16 @@ import { profilePageNode, faqNode } from "../utils/seo";
 // /architecture with the filters.
 const archShown = archAll.slice(0, 3);
 
-// Four numbers under the hero: money, time, reach and trust, each a link to
+// Four numbers under the hero: money, time, reach and scale, each a link to
 // where it is proven. Sources: the cowork and reconciliation posts; Doc
 // Coach's 471 scored consults and NPC Coach's 690 graded calls (BigQuery,
-// 2026-10-29); the Google Cloud BAA tracker (16 of 16 billed Hybridge
-// projects signed, 2026-10-28).
+// 2026-10-29); the platform post's service count (gcloud listings,
+// 2026-10-29).
 const heroProof = [
   { value: "~$460K", label: "of patient value found that no report showed", href: "/posts/cowork-dashboard" },
   { value: "70 hrs", label: "a week back for the insurance team", href: "/posts/reconciliation" },
   { value: "1,161", label: "doctor consults and patient calls graded", href: "/architecture/doc-coach" },
-  { value: "16/16", label: "patient data projects under a HIPAA BAA", href: "/architecture" },
+  { value: "45", label: "services live on Google Cloud, one engineer", href: "/posts/platform" },
 ];
 
 // A cover only renders when its file exists, so a project whose art is still
@@ -171,7 +171,7 @@ const faq = [
   },
   {
     q: "What has the work changed for the business?",
-    a: "About $460K of patient value found that no report showed, about 70 hours a week back for the insurance team, and 1,161 doctor consults and patient calls graded. All 16 projects that touch patient data run under a signed Google Cloud HIPAA BAA.",
+    a: "About $460K of patient value found that no report showed, about 70 hours a week back for the insurance team, and 1,161 doctor consults and patient calls graded.",
   },
   {
     q: "What does a forward deployed engineer do?",

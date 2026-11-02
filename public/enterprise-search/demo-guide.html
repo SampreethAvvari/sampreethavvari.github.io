@@ -603,7 +603,7 @@ flowchart LR
     <div class="card"><div class="h">Data protection</div><p>Originals in Cloud Storage behind short lived signed URLs, issued only after a permission check. Secrets live in Secret Manager. Nothing sensitive is committed to the repository.</p></div>
     <div class="card"><div class="h">Safe failure</div><p>Stream errors are logged in full on the server but the client only ever sees a generic message, so internal details cannot leak. Ingestion of links has a guard against requests to internal or metadata addresses.</p></div>
     <div class="card"><div class="h">Audit</div><p>Logins, group changes, and membership changes write an audit log with actor, action, target, and time.</p></div>
-    <div class="card"><div class="h">Compliance posture</div><p>Google Cloud BAA is in place for the organization. Access is scoped, audited, and revocable per group; encryption at rest and in transit is on by default across the stack, with customer managed keys staged as a hardening step.</p></div>
+    <div class="card"><div class="h">Access</div><p>Access is scoped, audited, and revocable per group, and encryption at rest and in transit is on by default across the stack.</p></div>
   </div>
   <p class="note">Also in the discipline column: 122 automated tests across backend and frontend, adversarial code review on every pull request (which caught real permission and correctness bugs before merge), and an automated security review pass that hardened the error path.</p>
 
@@ -638,7 +638,7 @@ flowchart LR
     <li><span class="tag now">near term</span><b>Chat attachments</b> as ephemeral, single conversation context · <b>web search toggle</b> for questions that should blend public info · <b>multi turn retrieval memory</b> so follow ups use conversation context.</li>
     <li><span class="tag now">near term</span><b>Google Drive connector</b> so shared drives sync into the corpus automatically · batch uploads with one scope · a persistent document library view with supersede and retire actions.</li>
     <li><span class="tag next">later</span>Voice input · dark mode · automatic conversation titles · richer analytics on what people ask and where the corpus has gaps (the abstention log is the roadmap for what to ingest next).</li>
-    <li><span class="tag next">later</span>Scale and hardening: AlloyDB migration when query volume demands it, customer managed encryption keys, DLP scanning at ingestion, and a broader continuous evaluation harness.</li>
+    <li><span class="tag next">later</span>Scale and hardening: AlloyDB migration when query volume demands it, customer managed encryption keys, and a broader continuous evaluation harness.</li>
   </ul>
 
   <h2 id="demo"><span class="n">17</span>Suggested demo script</h2>

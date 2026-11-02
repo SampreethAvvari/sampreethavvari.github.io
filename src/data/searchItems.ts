@@ -17,7 +17,7 @@ const pages: SearchItem[] = [
   { title: "Home", description: "Landing, hero, and quick intro.", url: "/", type: "page" },
   { title: "About", description: "Bio, education, skills, and experience.", url: "/#about", type: "page" },
   { title: "Work", description: "Four disciplines: AI, forward-deployed, ML, and software engineering.", url: "/work", type: "page" },
-  { title: "Gallery", description: "Screenshots and documents from production systems, by project.", url: "/gallery", type: "page" },
+  { title: "Gallery", description: "Documents from the work, by project.", url: "/gallery", type: "page" },
   { title: "Projects", description: "AI, research, and industry projects.", url: "/projects", type: "page" },
   { title: "Live demos", description: "Interactive tours of the systems, with synthetic data, and the JobPilot app.", url: "/demos", type: "page" },
   { title: "Filmmaking", description: "Among Monsters and film work.", url: "/filmmaking", type: "page" },

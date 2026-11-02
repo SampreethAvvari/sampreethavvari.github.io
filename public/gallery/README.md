@@ -29,5 +29,5 @@ array at the top of `src/pages/gallery.astro`.
 - `ai-hour/` — AI Hour (amber)
 - `cbct-scan-validator/` — CBCT Scan Validator (rose)
 
-Remember: screenshots of internal tools should have PHI scrubbed or blurred
-before they land here. This folder deploys to the public internet.
+Remember: screenshots of internal tools never go here. They show patient and
+staff data, and this folder deploys to the public internet.

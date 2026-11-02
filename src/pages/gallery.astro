@@ -6,7 +6,7 @@ import path from "node:path";
 
 const title = "SA: Gallery";
 const description =
-  "Screenshots and documents from the production systems Sampreeth Avvari builds and runs, organized by project.";
+  "Documents from the work Sampreeth Avvari does at a three office dental implant practice, organized by project.";
 
 /*
   Filesystem driven gallery.
@@ -155,6 +155,9 @@ const sections = [...PROJECTS, ...extras].map((cfg, idx) => {
 const totalImages = sections.reduce((n, s) => n + s.images.length, 0);
 const totalDocs = sections.reduce((n, s) => n + s.docs.length, 0);
 const liveSections = sections.filter((s) => s.count > 0).length;
+// Screenshots of the live tools stay inside the practice: they show patient
+// and staff data. Only projects with something public here get a section.
+const shown = sections.filter((s) => s.count > 0);
 ---
 
 <BaseLayout title={title} description={description}>
@@ -165,15 +168,15 @@ const liveSections = sections.filter((s) => s.count > 0).length;
       <p class="kicker">Gallery</p>
       <h1 class="t-title gal-title">
         Proof of work.
-        <span class="t-tail">Live software, up close.</span>
+        <span class="t-tail">Documents from the job.</span>
       </h1>
       <p class="t-lede gal-lede">
-        Screenshots and documents straight from the systems I build and run in
-        production, organized by project. Everything here is live software that
-        real people at a real company use every week.
+        Documents from the work, organized by project. Screenshots of the live
+        tools stay inside the practice; each system's drawing is on its
+        architecture page.
       </p>
       <p class="t-meta gal-count">
-        {plural(totalImages, "screenshot", "screenshots")} · {plural(totalDocs, "document", "documents")} · {liveSections} of {sections.length} projects live
+        {[totalImages ? plural(totalImages, "screenshot", "screenshots") : "", plural(totalDocs, "document", "documents"), plural(liveSections, "project", "projects")].filter(Boolean).join(" · ")}
       </p>
     </div>
   </section>
@@ -183,7 +186,7 @@ const liveSections = sections.filter((s) => s.count > 0).length;
     <div class="wrap">
       <div class="gal-bar lg">
         <div class="gal-track">
-          {sections.map((s) => (
+          {shown.map((s) => (
             <a href={`#p-${s.slug}`} class="chip gal-chip" data-chip={s.slug}>
               <span>{s.title}</span>
               {s.count > 0 && <span class="gal-chip-count">{s.count}</span>}
@@ -196,7 +199,7 @@ const liveSections = sections.filter((s) => s.count > 0).length;
 
   <!-- Projects -->
   <div class="wrap gal-body">
-    {sections.map((s) => (
+    {shown.map((s) => (
       <section id={`p-${s.slug}`} data-spy={s.slug} class="gal-section" aria-labelledby={`t-${s.slug}`}>
         <div class="gal-head" data-reveal>
           <p class="t-meta">{s.meta}</p>
