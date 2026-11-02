@@ -223,7 +223,20 @@ export function initAmbient(stops: Array<[string, string]>, sectionIds?: string[
   }
   const queue = () => { if (!raf) raf = requestAnimationFrame(apply); };
   window.addEventListener("scroll", queue, { passive: true });
-  window.addEventListener("resize", () => { measure(); queue(); }, { passive: true });
+  // Phones fire resize as the address bar comes and goes; section centres
+  // only move when the width changes, so measure again only then.
+  let measuredWidth = window.innerWidth;
+  window.addEventListener(
+    "resize",
+    () => {
+      if (window.innerWidth !== measuredWidth) {
+        measuredWidth = window.innerWidth;
+        measure();
+      }
+      queue();
+    },
+    { passive: true },
+  );
   // Layout can shift as images load; re-measure once things settle.
   window.addEventListener("load", () => { measure(); queue(); }, { once: true });
   apply();

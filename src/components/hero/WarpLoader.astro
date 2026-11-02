@@ -30,7 +30,7 @@ const rgb2 = palette[1] ?? palette[0];
   <div class="warp-sky"></div>
   <canvas class="warp-canvas"></canvas>
   <div class="warp-label">
-    <span class="warp-text"></span>
+    <span class="warp-text"><span class="warp-word"><span class="warp-shine"></span></span></span>
     <span class="warp-bar"></span>
   </div>
 </div>
@@ -113,30 +113,50 @@ const rgb2 = palette[1] ?? palette[0];
     box-shadow: 0 0 12px rgba(var(--warp-rgb), 0.7);
     animation: warp-dot 1.25s ease-in-out infinite;
   }
-  /* The word lives in CSS so it never ends up in the page's text. */
-  .warp-text::after {
+  /* The word lives in CSS so it never ends up in the page's text. A bright
+     copy sweeps across it through a soft window half the word wide. The
+     window slides one way and the copy inside slides back by the same
+     amount, so the copy holds still under the light. Both are transforms,
+     so the shimmer keeps going while the page is busy loading. */
+  .warp-word {
+    position: relative;
+    display: inline-block;
+  }
+  .warp-word::before {
     content: "loading";
-    color: transparent;
-    background: linear-gradient(
-      90deg,
-      rgba(255, 255, 255, 0.5) 0%,
-      rgba(255, 255, 255, 0.5) 40%,
-      #fff 50%,
-      rgba(255, 255, 255, 0.5) 60%,
-      rgba(255, 255, 255, 0.5) 100%
-    );
-    background-size: 250% 100%;
-    -webkit-background-clip: text;
-    background-clip: text;
-    animation: warp-shimmer 1.9s linear infinite;
+    color: rgba(255, 255, 255, 0.5);
+  }
+  .warp-shine {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    width: 50%;
+    overflow: hidden;
+    -webkit-mask-image: linear-gradient(90deg, transparent, #000 50%, transparent);
+    mask-image: linear-gradient(90deg, transparent, #000 50%, transparent);
+    animation: warp-sweep 1.9s linear infinite;
+  }
+  .warp-shine::before {
+    content: "loading";
+    position: absolute;
+    top: 0;
+    left: 0;
+    color: #fff;
+    white-space: nowrap;
+    animation: warp-sweep-back 1.9s linear infinite;
   }
   @keyframes warp-dot {
     0%, 100% { transform: scale(0.8); opacity: 0.6; }
     50% { transform: scale(1.15); opacity: 1; }
   }
-  @keyframes warp-shimmer {
-    from { background-position: 100% 0; }
-    to { background-position: 0% 0; }
+  @keyframes warp-sweep {
+    from { transform: translateX(-100%); }
+    to { transform: translateX(200%); }
+  }
+  @keyframes warp-sweep-back {
+    from { transform: translateX(50%); }
+    to { transform: translateX(-100%); }
   }
 
   .warp-bar {
@@ -162,7 +182,8 @@ const rgb2 = palette[1] ?? palette[0];
 
   @media (prefers-reduced-motion: reduce) {
     .warp-canvas { display: none; }
-    .warp-text::before, .warp-text::after, .warp-bar::after { animation: none; }
+    .warp-text::before, .warp-bar::after { animation: none; }
+    .warp-shine { display: none; }
   }
   @media print {
     .warp { display: none; }
@@ -170,45 +191,20 @@ const rgb2 = palette[1] ?? palette[0];
 </style>
 
 <script is:inline define:vars={{ palette, toneMap }}>
-  (function () {
-    var root = document.getElementById("warp");
-    if (!root) return;
-    var canvas = root.querySelector("canvas");
-    var ctx = canvas && canvas.getContext ? canvas.getContext("2d") : null;
-    var reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    var mobile = window.matchMedia("(max-width: 767px)").matches;
-
-    // Show the word only once Inter is ready (cached after the first page).
-    if (document.fonts && document.fonts.load) {
-      root.classList.add("is-font-wait");
-      var showLabel = function () { root.classList.remove("is-font-wait"); };
-      document.fonts.load('500 13px "Inter"').then(showLabel, showLabel);
-      setTimeout(showLabel, 700);
-    }
-
-    // The first page of a visit gets the full jump; later pages a short one.
-    var first = true;
-    try {
-      first = !sessionStorage.getItem("warp-seen");
-      sessionStorage.setItem("warp-seen", "1");
-    } catch (e) {}
-    var MIN = reduce ? 0 : first ? 1500 : 800;
-
-    // The colour handoff. `base` is where the colours started, `toPal` where
-    // they are heading, `mixed` what is drawn now. Stars and comets keep an
-    // index into the palette, so they all shift together.
+  // The jump itself: stars streaking toward the viewer and comets crossing.
+  // Self contained, so it can run in a worker on an OffscreenCanvas, where a
+  // phone busy laying out the page underneath cannot stall it, or on the
+  // page's own thread where workers cannot draw. `pal` is the colour blend:
+  // where it starts (`base`), where it is heading (`to`), and since when.
+  function warpSky(canvas, mobile, pal) {
+    var ctx = canvas.getContext("2d");
+    if (!ctx) return null;
+    var raf = self.requestAnimationFrame
+      ? self.requestAnimationFrame.bind(self)
+      : function (cb) { return setTimeout(function () { cb(performance.now()); }, 16); };
+    var caf = self.cancelAnimationFrame ? self.cancelAnimationFrame.bind(self) : clearTimeout;
     var BLEND = 1400;
-    var base = palette, toPal = palette, mixed = palette.slice(), blendAt = 0, blending = false;
-    try {
-      var note = JSON.parse(sessionStorage.getItem("warp-from") || "null");
-      sessionStorage.removeItem("warp-from");
-      if (note && note.pal && note.pal.length && Date.now() - note.at < 5000) {
-        base = note.pal;
-        blendAt = note.at;
-        blending = true;
-      }
-    } catch (e) {}
-    window.__warpFrom = blending ? { pal: base, at: blendAt, dur: BLEND } : null;
+    var base = pal.base, toPal = pal.to, mixed = pal.to.slice(), blendAt = pal.at, blending = pal.on;
     function rgbMix(a, b, t) {
       var A = a.split(","), B = b.split(",");
       return [0, 1, 2].map(function (k) { return Math.round(+A[k] + (B[k] - A[k]) * t); }).join(",");
@@ -218,13 +214,9 @@ const rgb2 = palette[1] ?? palette[0];
       var t = Math.min(1, Math.max(0, (Date.now() - blendAt) / BLEND));
       t = t * t * (3 - 2 * t);
       for (var i = 0; i < toPal.length; i++) mixed[i] = rgbMix(base[i % base.length], toPal[i], t);
-      root.style.setProperty("--warp-rgb", mixed[0]);
-      root.style.setProperty("--warp-rgb2", mixed[1 % mixed.length]);
       if (t >= 1) blending = false;
     }
     blendNow();
-    var MAX = 3500; // never hold the page longer than this
-    var t0 = performance.now();
 
     var N = mobile ? 260 : 600;
     var W = 0, H = 0, R = 0;
@@ -232,14 +224,11 @@ const rgb2 = palette[1] ?? palette[0];
     // Camera speed in depth units per second. It eases toward the target, so
     // the jump starts at cruise and builds to warp.
     var v = 0.22, vTarget = 0.95;
-    var raf = 0, last = 0, nextComet = 0, leaving = false;
-    // Bumped on every link click, so timers from an earlier trip are ignored.
-    var trip = 0;
+    var loop = 0, last = 0, nextComet = 0, leaving = false;
 
-    function size() {
-      var dpr = Math.min(window.devicePixelRatio || 1, 1.5);
-      W = window.innerWidth;
-      H = window.innerHeight;
+    function size(w, h, dpr) {
+      W = w;
+      H = h;
       R = Math.max(W, H) * 0.5;
       canvas.width = Math.floor(W * dpr);
       canvas.height = Math.floor(H * dpr);
@@ -285,7 +274,7 @@ const rgb2 = palette[1] ?? palette[0];
     }
 
     function frame(now) {
-      raf = requestAnimationFrame(frame);
+      loop = raf(frame);
       var dt = Math.min((now - last) / 1000, 0.05);
       last = now;
       blendNow();
@@ -369,13 +358,154 @@ const rgb2 = palette[1] ?? palette[0];
     }
 
     function start() {
-      if (reduce || !ctx) return;
-      size();
       if (!stars.length) for (var i = 0; i < N; i++) stars.push(star({}, false));
       for (var k = 0; k < (mobile ? 2 : 3); k++) comet(0.1 + Math.random() * 0.45);
       last = performance.now();
       nextComet = last + 220;
-      if (!raf) raf = requestAnimationFrame(frame);
+      if (!loop) loop = raf(frame);
+    }
+
+    return {
+      size: size,
+      start: start,
+      // The jump ends: the streaks shrink back to points and stay as the sky.
+      leave: function () {
+        leaving = true;
+        vTarget = 0;
+      },
+      // Leaving for another page: back up to speed, blending toward its colour.
+      enter: function (from, to, at) {
+        base = from;
+        toPal = to;
+        mixed = [mixed[0]];
+        blendAt = at;
+        blending = true;
+        leaving = false;
+        v = 0.45;
+        vTarget = 1.1;
+        start();
+      },
+      stop: function () {
+        caf(loop);
+        loop = 0;
+        comets.length = 0;
+      },
+    };
+  }
+
+  // The worker's side: build the sky on the canvas it is handed, then pass
+  // each call from the page on to it.
+  function warpWorker() {
+    var sky = null;
+    onmessage = function (e) {
+      var m = e.data;
+      if (m.type === "init") {
+        sky = warpSky(m.canvas, m.mobile, m.pal);
+        if (sky) {
+          sky.size.apply(null, m.dims);
+          sky.start();
+        }
+      } else if (sky) sky[m.type].apply(null, m.args || []);
+    };
+  }
+
+  (function () {
+    var root = document.getElementById("warp");
+    if (!root) return;
+    var canvas = root.querySelector("canvas");
+    var reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    var mobile = window.matchMedia("(max-width: 767px)").matches;
+
+    // Show the word only once Inter is ready (cached after the first page).
+    if (document.fonts && document.fonts.load) {
+      root.classList.add("is-font-wait");
+      var showLabel = function () { root.classList.remove("is-font-wait"); };
+      document.fonts.load('500 13px "Inter"').then(showLabel, showLabel);
+      setTimeout(showLabel, 700);
+    }
+
+    // The first page of a visit gets the full jump; later pages a short one.
+    var first = true;
+    try {
+      first = !sessionStorage.getItem("warp-seen");
+      sessionStorage.setItem("warp-seen", "1");
+    } catch (e) {}
+    var MIN = reduce ? 0 : first ? 1500 : 800;
+
+    // The colour handoff. `base` is where the colours started, `toPal` where
+    // they are heading, `mixed` what is drawn now. Stars and comets keep an
+    // index into the palette, so they all shift together. The sky behind the
+    // stars and the label follow the same blend here, on the same clock.
+    var BLEND = 1400;
+    var base = palette, toPal = palette, mixed = palette.slice(), blendAt = 0, blending = false;
+    try {
+      var note = JSON.parse(sessionStorage.getItem("warp-from") || "null");
+      sessionStorage.removeItem("warp-from");
+      if (note && note.pal && note.pal.length && Date.now() - note.at < 5000) {
+        base = note.pal;
+        blendAt = note.at;
+        blending = true;
+      }
+    } catch (e) {}
+    window.__warpFrom = blending ? { pal: base, at: blendAt, dur: BLEND } : null;
+    function rgbMix(a, b, t) {
+      var A = a.split(","), B = b.split(",");
+      return [0, 1, 2].map(function (k) { return Math.round(+A[k] + (B[k] - A[k]) * t); }).join(",");
+    }
+    function blendNow() {
+      if (!blending) return;
+      var t = Math.min(1, Math.max(0, (Date.now() - blendAt) / BLEND));
+      t = t * t * (3 - 2 * t);
+      for (var i = 0; i < toPal.length; i++) mixed[i] = rgbMix(base[i % base.length], toPal[i], t);
+      root.style.setProperty("--warp-rgb", mixed[0]);
+      root.style.setProperty("--warp-rgb2", mixed[1 % mixed.length]);
+      if (t >= 1) blending = false;
+    }
+    function tint() {
+      blendNow();
+      if (blending) requestAnimationFrame(tint);
+    }
+    tint();
+    var MAX = 3500; // never hold the page longer than this
+    var t0 = performance.now();
+
+    // The sky draws in a worker when the browser can hand a canvas to one,
+    // and on this thread otherwise. `call` reaches it either way.
+    var sky = null, worker = null, running = false, leaving = false;
+    // Bumped on every link click, so timers from an earlier trip are ignored.
+    var trip = 0;
+    function call(name, args) {
+      if (worker) worker.postMessage({ type: name, args: args });
+      else if (sky) sky[name].apply(null, args || []);
+    }
+    function dims() {
+      return [window.innerWidth, window.innerHeight, Math.min(window.devicePixelRatio || 1, 1.5)];
+    }
+    if (!reduce && canvas && canvas.getContext) {
+      var pal = { base: base, to: toPal, at: blendAt, on: blending };
+      if (canvas.transferControlToOffscreen && window.Worker && window.Blob && window.URL) {
+        try {
+          var src = "var warpSky = " + warpSky + ";\n(" + warpWorker + ")();";
+          var w = new Worker(URL.createObjectURL(new Blob([src], { type: "text/javascript" })));
+          var off = canvas.transferControlToOffscreen();
+          w.postMessage({ type: "init", canvas: off, mobile: mobile, pal: pal, dims: dims() }, [off]);
+          worker = w;
+          running = true;
+        } catch (e) {
+          if (w) w.terminate();
+        }
+      }
+      // No worker drawing, and the canvas is still ours: draw here.
+      if (!worker) {
+        try {
+          sky = warpSky(canvas, mobile, pal);
+        } catch (e) {}
+        if (sky) {
+          sky.size.apply(null, dims());
+          sky.start();
+          running = true;
+        }
+      }
     }
 
     // The page flies in from deep space in layers. Every visible block
@@ -464,7 +594,7 @@ const rgb2 = palette[1] ?? palette[0];
       if (leaving || id !== trip) return;
       leaving = true;
       // The jump ends: the streaks shrink back to points and stay as the sky.
-      vTarget = 0;
+      call("leave");
       root.classList.remove("is-quick");
       root.classList.add("is-done");
       // SpaceField reads this and coasts out of its own warp.
@@ -473,9 +603,8 @@ const rgb2 = palette[1] ?? palette[0];
       setTimeout(function () {
         if (!leaving) return;
         root.hidden = true;
-        cancelAnimationFrame(raf);
-        raf = 0;
-        comets.length = 0;
+        call("stop");
+        running = false;
       }, 2100);
     }
 
@@ -495,20 +624,21 @@ const rgb2 = palette[1] ?? palette[0];
         blendAt = Date.now();
         blending = true;
         try { sessionStorage.setItem("warp-from", JSON.stringify({ pal: base, at: blendAt })); } catch (e) {}
+        tint();
       }
       leaving = false;
-      v = 0.45;
-      vTarget = 1.1;
       root.hidden = false;
       root.classList.add("is-quick");
       void root.offsetWidth;
       root.classList.remove("is-done");
-      start();
+      sized = dims().join();
+      call("size", dims());
+      call("enter", [base, toPal, blendAt]);
+      running = true;
       // If the navigation never happens (cancelled, offline), let go.
       setTimeout(function () { leave(id); }, 6000);
     }
 
-    start();
     function ready() {
       setTimeout(function () { leave(0); }, Math.max(0, MIN - (performance.now() - t0)));
     }
@@ -516,7 +646,15 @@ const rgb2 = palette[1] ?? palette[0];
     else window.addEventListener("load", ready, { once: true });
     setTimeout(function () { leave(0); }, MAX);
 
-    window.addEventListener("resize", function () { if (raf) size(); }, { passive: true });
+    // Phones fire resize as the address bar comes and goes; a canvas resize
+    // clears it, so only pass on a real change of size.
+    var sized = dims().join();
+    window.addEventListener("resize", function () {
+      var d = dims();
+      if (!running || d.join() === sized) return;
+      sized = d.join();
+      call("size", d);
+    }, { passive: true });
 
     // Back/forward cache restores the page as it was left, loader and all.
     window.addEventListener("pageshow", function (e) {
@@ -525,8 +663,8 @@ const rgb2 = palette[1] ?? palette[0];
       root.classList.remove("is-quick");
       root.classList.add("is-done");
       root.hidden = true;
-      cancelAnimationFrame(raf);
-      raf = 0;
+      call("stop");
+      running = false;
     });
 
     if (reduce) return;
