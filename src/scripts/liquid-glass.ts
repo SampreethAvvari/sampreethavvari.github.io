@@ -187,6 +187,11 @@ export function initLiquidGlass(selector: string): void {
     els.forEach((el, i) => write(el, sizes[i][0], sizes[i][1]));
   };
 
+  // While an element animates its size (the nav folding into an island as a
+  // page starts to scroll), every in between size would draw a map of its
+  // own. Its first size draws at once; after that a new size waits until it
+  // holds still for a moment, and the glass keeps its last map meanwhile.
+  const settle = new WeakMap<HTMLElement, number>();
   const seen = new WeakSet<HTMLElement>();
   const ro =
     "ResizeObserver" in window
@@ -194,9 +199,15 @@ export function initLiquidGlass(selector: string): void {
           const els = entries.map((e) => e.target as HTMLElement);
           for (const el of els) if (!radius.has(el)) radius.set(el, parseFloat(getComputedStyle(el).borderTopLeftRadius) || 0);
           for (const e of entries) {
+            const el = e.target as HTMLElement;
             const box = e.borderBoxSize?.[0];
-            if (box) write(e.target as HTMLElement, Math.round(box.inlineSize), Math.round(box.blockSize));
-            else measureAll([e.target as HTMLElement]);
+            const apply = () => (box ? write(el, Math.round(box.inlineSize), Math.round(box.blockSize)) : measureAll([el]));
+            if (!wanted.has(el)) {
+              apply();
+              continue;
+            }
+            clearTimeout(settle.get(el));
+            settle.set(el, window.setTimeout(apply, 180));
           }
         })
       : null;

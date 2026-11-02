@@ -367,8 +367,11 @@ export function initComets(selector = ".space-el"): void {
   } else window.addEventListener("resize", remeasure, { passive: true });
   let raf = 0;
   let last = performance.now();
+  // Below 1024px the comets are display: none (landing.css), so the loop
+  // stays asleep there instead of moving what nobody can see.
+  const hiddenHere = window.matchMedia("(max-width: 1023px)");
   const wake = () => {
-    if (raf || !near.size || document.hidden) return;
+    if (raf || !near.size || document.hidden || hiddenHere.matches) return;
     last = performance.now();
     raf = requestAnimationFrame(tick);
   };
@@ -386,9 +389,10 @@ export function initComets(selector = ".space-el"): void {
     parents.forEach((p) => io.observe(p));
   } else parents.forEach((p) => near.add(p));
   document.addEventListener("visibilitychange", wake);
+  hiddenHere.addEventListener?.("change", wake);
   function tick(now: number) {
     raf = 0;
-    if (!near.size || document.hidden) return;
+    if (!near.size || document.hidden || hiddenHere.matches) return;
     raf = requestAnimationFrame(tick);
     const dt = Math.min((now - last) / 1000, 0.08);
     last = now;

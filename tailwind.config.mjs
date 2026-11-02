@@ -37,6 +37,12 @@ export default {
 		},
 	},
 	darkMode: 'class',
+	// Tailwind's transform, ring and shadow defaults go only on the elements
+	// that use those utilities, not on every element and pseudo element. Same
+	// output, much less work for the browser each time it computes styles.
+	experimental: {
+		optimizeUniversalDefaults: true,
+	},
 	plugins: [
 		typography,
 	],
