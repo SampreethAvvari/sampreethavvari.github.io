@@ -317,7 +317,9 @@ const pageComets = hasOwnComets
       <slot />
     </main>
     <FooterBar variant={footerVariant} />
-    <ChatWidget client:only />
+    <!-- In the HTML from the first paint, so the launcher arrives with the page;
+         it wakes up once the browser is idle. -->
+    <ChatWidget client:idle />
     <TopButton client:only />
   </body>
 </html>

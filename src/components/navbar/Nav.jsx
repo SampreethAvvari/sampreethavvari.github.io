@@ -96,7 +96,6 @@ export default function Nav({ searchItems, cv = "/resume" }) {
                   className={`nav-tab ${active === t.match ? "is-active lg-pill" : ""}`}
                   aria-current={active === t.match ? "page" : undefined}
                   title={t.name}
-                  data-astro-prefetch="viewport"
                 >
                   <TabIcon name={t.match} />
                   <span className="nav-label">{t.name}</span>

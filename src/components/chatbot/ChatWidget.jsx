@@ -156,7 +156,7 @@ export default function ChatWidget() {
         onClick={() => setIsOpen(true)}
       >
         <img
-          src="/logos/samp-chat.png"
+          src="/logos/samp-chat.webp"
           alt="Chat with Sampreeth's assistant"
           className="w-full h-full rounded-full object-cover p-[3px]"
         />
@@ -171,7 +171,7 @@ export default function ChatWidget() {
           <div className="flex items-center gap-3 px-4 py-3.5 border-b border-text/10 dark:border-dk-text/10">
             <span className="relative shrink-0">
               <img
-                src="/logos/samp-chat.png"
+                src="/logos/samp-chat.webp"
                 alt=""
                 className="w-9 h-9 rounded-full object-cover ring-1 ring-text/15 dark:ring-dk-text/20"
               />
