@@ -59,7 +59,6 @@ const TYPE_LABELS: Record<string, string> = {
   tech: "Technology",
   post: "Case study",
   repo: "Repository",
-  org: "Organization",
   language: "Language",
   category: "Tech stack",
 };
@@ -82,10 +81,9 @@ const TYPE_TINT: Record<string, string> = {
   project: "#5B8DEF",
   post: "#34D399",
   category: "#A78BFA",
-  repo: "#DCE1EA",
-  org: "#F5F5F7",
-  tech: "#8E96A6",
-  language: "#8E96A6",
+  repo: "#22D3EE",
+  tech: "#F25C5C",
+  language: "#F25C5C",
 };
 // What the legend lists, and which of those can be switched off. The anchors
 // (disciplines, stacks) always stay.
@@ -100,17 +98,15 @@ const LUM: Record<string, number> = {
   discipline: 1.25,
   category: 1.25,
   project: 1.22,
-  repo: 1.12,
-  org: 1.15,
+  repo: 0.6,
   post: 0.8,
   tech: 0.4,
   language: 0.44,
-  topic: 0.38,
 };
 // The work stars are always there; the supporting stars come forward as the
 // camera gets near them.
-const MAJOR = new Set(["discipline", "category", "project", "repo", "org"]);
-const PLANET = new Set(["discipline", "category", "org"]);
+const MAJOR = new Set(["discipline", "category", "project", "repo"]);
+const PLANET = new Set(["discipline", "category"]);
 const SPIKED = new Set(["project", "repo"]);
 // A meaningful 2x2. X: business-driven (left) -> tech-driven (right).
 // Y: product & delivery (top) -> models & intelligence (bottom).
@@ -119,25 +115,31 @@ const SPIKED = new Set(["project", "repo"]);
 // A project wired to both sides settles in the middle = business + tech metrics.
 // Each anchor also takes a depth, on alternate corners of a cube (a
 // tetrahedron), so the four clusters fill the space instead of one plane and
-// still read as their quadrant from the front.
+// still read as their quadrant from the front. Depth is the third axis:
+// FDE and MLE start from data (the customer's systems, the training set), AIE
+// and SDE from the system they build.
 const QUAD: Record<string, V3> = {
   fde: [-1, 1, 1],
   aie: [-1, -1, -1],
   sde: [1, 1, -1],
   mle: [1, -1, 1],
 };
-// Git Mind quadrants: tech-stack corners (repos settle toward the stacks they use).
+// Git Mind: the four stacks take the matching discipline's corner (AI and
+// LLMs where AIE is, machine learning where MLE is, web where SDE is, backend
+// and data where FDE is), and repos settle toward the stacks they belong to.
 const CAT_QUAD: Record<string, V3> = {
-  aiml: [-1, 1, 1], // top-left, near
-  frontend: [1, 1, -1], // top-right, far
-  backend: [-1, -1, -1], // bottom-left, far
-  data: [1, -1, 1], // bottom-right, near
+  ai: [-1, -1, -1],
+  ml: [1, -1, 1],
+  web: [1, 1, -1],
+  data: [-1, 1, 1],
 };
 const AXES: { at: V3; label: string }[] = [
   { at: [-1, 0, 0], label: "Business-driven" },
   { at: [1, 0, 0], label: "Tech-driven" },
   { at: [0, 1, 0], label: "Product & delivery" },
   { at: [0, -1, 0], label: "Models & intelligence" },
+  { at: [0, 0, 1], label: "Data & integration" },
+  { at: [0, 0, -1], label: "Systems & platforms" },
 ];
 // The site's tab colours, for comets and clouds.
 const SPACE_TINTS = ["#A78BFA", "#5B8DEF", "#22D3EE", "#34D399", "#F5A524", "#F43F5E"];
@@ -464,6 +466,8 @@ export function mountMind() {
     adj.clear();
     byId.clear();
     hiddenTypes.clear();
+    leadCache = { key: "", list: [] };
+    relCache = new Map();
     nodes = g.nodes.map((n) => {
       const node: Node = {
         ...n,
@@ -597,40 +601,43 @@ export function mountMind() {
   }
 
   function drawAxes(showLabels: boolean, vis: number) {
-    const ext = 380 * spread;
-    // three axes through the centre of the map, brightest in the middle
-    const lines: [V3, V3, string][] = [
-      [[-ext, 0, 0], [ext, 0, 0], "X"],
-      [[0, -ext, 0], [0, ext, 0], "Y"],
-      [[0, 0, -ext], [0, 0, ext], "Z"],
+    const ext = 640 * spread;
+    // Three long dotted axes through the centre of the map, a cool tint so
+    // they never read as connection lines.
+    const lines: [V3, V3][] = [
+      [[-ext, 0, 0], [ext, 0, 0]],
+      [[0, -ext, 0], [0, ext, 0]],
+      [[0, 0, -ext], [0, 0, ext]],
     ];
-    ctx!.lineWidth = 1.2;
-    ctx!.textAlign = "center";
-    ctx!.textBaseline = "middle";
-    for (const [a, b, letter] of lines) {
+    ctx!.save();
+    ctx!.lineWidth = 1.3;
+    ctx!.lineCap = "round";
+    ctx!.setLineDash([1.5, 7]);
+    for (const [a, b] of lines) {
       const A = projXYZ(a[0], a[1], a[2]);
       const B = projXYZ(b[0], b[1], b[2]);
       if (A.pz < NEAR || B.pz < NEAR) continue;
       const grad = ctx!.createLinearGradient(A.px, A.py, B.px, B.py);
-      grad.addColorStop(0, "rgba(200,212,255,0.04)");
-      grad.addColorStop(0.5, `rgba(220,228,255,${0.42 * fade * vis})`);
-      grad.addColorStop(1, `rgba(200,212,255,${0.16 * fade * vis})`);
+      grad.addColorStop(0, "rgba(150,200,255,0)");
+      grad.addColorStop(0.18, `rgba(150,200,255,${0.5 * fade * vis})`);
+      grad.addColorStop(0.5, `rgba(185,220,255,${0.75 * fade * vis})`);
+      grad.addColorStop(0.82, `rgba(150,200,255,${0.5 * fade * vis})`);
+      grad.addColorStop(1, "rgba(150,200,255,0)");
       ctx!.strokeStyle = grad;
       ctx!.beginPath(); ctx!.moveTo(A.px, A.py); ctx!.lineTo(B.px, B.py); ctx!.stroke();
-      // the axis letter at its positive end
-      ctx!.font = '600 10.5px Inter, ui-sans-serif, system-ui, sans-serif';
-      ctx!.fillStyle = `rgba(200,212,255,${0.55 * fade * vis})`;
-      const dx = B.px - A.px, dy = B.py - A.py, dl = Math.hypot(dx, dy) || 1;
-      ctx!.fillText(letter, B.px + (dx / dl) * 12, B.py + (dy / dl) * 12);
     }
+    ctx!.restore();
     if (showLabels) {
-      ctx!.font = '600 12px Inter, ui-sans-serif, system-ui, sans-serif';
-      ctx!.shadowColor = "rgba(0,0,0,0.85)";
-      ctx!.shadowBlur = 6;
+      ctx!.textAlign = "center";
+      ctx!.textBaseline = "middle";
+      ctx!.font = '600 13px Inter, ui-sans-serif, system-ui, sans-serif';
+      ctx!.shadowColor = "rgba(0,0,0,0.9)";
+      ctx!.shadowBlur = 8;
       for (const ax of AXES) {
-        const e = projXYZ(ax.at[0] * ext * 1.08, ax.at[1] * ext * 1.08, ax.at[2] * ext * 1.08);
+        const e = projXYZ(ax.at[0] * ext * 0.86, ax.at[1] * ext * 0.86, ax.at[2] * ext * 0.86);
         if (e.pz < NEAR) continue;
-        ctx!.fillStyle = `rgba(226,232,255,${0.7 * fade * vis * vis})`;
+        if (nodes.some((n) => PLANET.has(n.type) && Math.hypot(n.px - e.px, n.py - e.py) < 70)) continue;
+        ctx!.fillStyle = `rgba(214,232,255,${0.95 * fade * vis})`;
         ctx!.fillText(ax.label, e.px, e.py);
       }
       ctx!.shadowBlur = 0;
@@ -758,6 +765,78 @@ export function mountMind() {
     }
   }
 
+  // Lines from each anchor (discipline, stack) to the stars of the lead kind:
+  // direct where they touch, else through the project or repo between them.
+  let leadCache = { key: "", list: [] as Edge[] };
+  function leadEdges(lead: string): Edge[] {
+    const key = `${graphKey}:${lead}`;
+    if (leadCache.key === key) return leadCache.list;
+    const list: Edge[] = [];
+    const seen = new Set<string>();
+    const add = (a: Node, b: Node) => {
+      const k = `${a.id}|${b.id}`;
+      if (seen.has(k)) return;
+      seen.add(k);
+      list.push({ a, b, rgb: rgbOf(mix(mix(a.color, b.color, 0.5), "#ffffff", 0.2)), major: true });
+    };
+    for (const A of nodes) {
+      if (!PLANET.has(A.type) || !lead) continue;
+      for (const id of adj.get(A.id) || []) {
+        const X = byId.get(id);
+        if (!X) continue;
+        if (X.type === lead) add(A, X);
+        else if (X.major && !PLANET.has(X.type)) {
+          for (const id2 of adj.get(X.id) || []) {
+            const Y = byId.get(id2);
+            if (Y && Y.type === lead) add(A, Y);
+          }
+        }
+      }
+    }
+    leadCache = { key, list };
+    return list;
+  }
+
+  // The highest kind switched on: projects, then case studies, then
+  // technologies (repos, then languages on the git map).
+  const RANK: Record<string, number> = { discipline: 0, category: 0, project: 1, repo: 1, post: 2, tech: 3, language: 2 };
+  function leadKind(): string {
+    const order = graphKey === "repo" ? ["repo", "language"] : ["project", "post", "tech"];
+    return order.find((t) => !hiddenTypes.has(t)) ?? "";
+  }
+  // A star's connections. An anchor shows only the one kind below it that is
+  // switched on (through the stars between when those are off). Any other
+  // star shows what it touches, everything below it in the hierarchy (a case
+  // study shows its project's technologies), and reaches through switched
+  // off stars to the ones still on.
+  let relCache = new Map<string, Node[]>();
+  function related(S: Node): Node[] {
+    const hit = relCache.get(S.id);
+    if (hit) return hit;
+    const out = new Set<Node>();
+    if (PLANET.has(S.type)) {
+      for (const e of leadEdges(leadKind())) if (e.a === S && shown(e.b)) out.add(e.b);
+    } else {
+      const r = RANK[S.type] ?? 9;
+      for (const id of adj.get(S.id) || []) {
+        const X = byId.get(id);
+        if (!X) continue;
+        if (shown(X)) out.add(X);
+        const through = !shown(X);
+        const parent = !PLANET.has(X.type) && (RANK[X.type] ?? 9) < r;
+        if (!through && !parent) continue;
+        for (const id2 of adj.get(X.id) || []) {
+          const Y = byId.get(id2);
+          if (!Y || Y === S || !shown(Y) || Y.type === S.type) continue;
+          if (through || (RANK[Y.type] ?? 0) > r) out.add(Y);
+        }
+      }
+    }
+    const list = [...out];
+    relCache.set(S.id, list);
+    return list;
+  }
+
   // ---- render -------------------------------------------------------------
   function resize() {
     dpr = Math.min(window.devicePixelRatio || 1, phone ? 1.75 : 2);
@@ -809,8 +888,7 @@ export function mountMind() {
     // projects, then case studies, then technologies (repos, then languages
     // on the git map). The kinds under it stay dim, and with a filter on the
     // background steps back so it covers nothing.
-    const rank = graphKey === "repo" ? ["repo", "language"] : ["project", "post", "tech"];
-    const lead = rank.find((t) => !hiddenTypes.has(t)) ?? "";
+    const lead = leadKind();
     const leads = (p: Node) => p.major || p.type === lead;
     const quiet = hiddenTypes.size ? 0.35 : 1;
 
@@ -845,8 +923,8 @@ export function mountMind() {
       blit(sprite("soft", p.color), p.px, p.py, R, (0.05 + 0.05 * out) * p.reveal * fade * quiet);
     }
     ctx!.globalAlpha = 1;
-    const hoverSet = hover ? adj.get(hover.id) : null;
-    const selSet = selected ? adj.get(selected.id) : null;
+    const hoverSet = hover ? new Set(related(hover).map((m) => m.id)) : null;
+    const selSet = selected ? new Set(related(selected).map((m) => m.id)) : null;
 
     // The small stars come forward as the camera nears them; filtered ones go.
     const C = camPos();
@@ -861,27 +939,34 @@ export function mountMind() {
       p.reveal = lerp(p.reveal, want, ease);
     }
 
-    // edges: threads of light, a soft glow under a bright line
+    // Lines. At rest only the anchors' lines to the lead kind: discipline to
+    // project, or with projects off discipline to case study (traced through
+    // the project between them), and so on down. An open or hovered star
+    // shows its own lines instead, and they take the stage.
+    const line = (a: Node, b: Node, rgb: string, op: number, width: number) => {
+      if (op < 0.01) return;
+      ctx!.strokeStyle = `rgba(${rgb},${(op * 0.16).toFixed(3)})`;
+      ctx!.lineWidth = width * 3.2;
+      ctx!.beginPath(); ctx!.moveTo(a.px, a.py); ctx!.lineTo(b.px, b.py); ctx!.stroke();
+      ctx!.strokeStyle = `rgba(${rgb},${op.toFixed(3)})`;
+      ctx!.lineWidth = width;
+      ctx!.beginPath(); ctx!.moveTo(a.px, a.py); ctx!.lineTo(b.px, b.py); ctx!.stroke();
+    };
     ctx!.globalAlpha = 1;
-    for (const e of edges) {
-      if (e.a.pz < NEAR || e.b.pz < NEAR) continue;
-      const vis = Math.min(e.a.reveal, e.b.reveal);
-      if (vis < 0.02) continue;
-      const focus =
-        hover && (e.a === hover || e.b === hover) ? 1 :
-        selected && (e.a === selected || e.b === selected) ? 0.85 : 0;
-      const main = e.major || e.a.type === lead || e.b.type === lead;
-      const base = (main ? lerp(0.34, 0.46, near) : lerp(0.13, 0.22, near)) * fade * vis;
-      const op = focus ? 0.85 * vis : selected ? base * 0.16 : base;
-      if (op < 0.01) continue;
-      if (main || focus) {
-        ctx!.strokeStyle = `rgba(${e.rgb},${(op * 0.12).toFixed(3)})`;
-        ctx!.lineWidth = focus ? 5 : 3.6;
-        ctx!.beginPath(); ctx!.moveTo(e.a.px, e.a.py); ctx!.lineTo(e.b.px, e.b.py); ctx!.stroke();
+    const lit = selected || hover;
+    if (!selected) {
+      for (const e of leadEdges(lead)) {
+        if (e.a.pz < NEAR || e.b.pz < NEAR) continue;
+        const vis = Math.min(e.a.reveal, e.b.reveal);
+        if (vis < 0.02) continue;
+        line(e.a, e.b, e.rgb, (hover ? 0.28 : 0.6) * fade * vis, 1.1);
       }
-      ctx!.strokeStyle = `rgba(${e.rgb},${op.toFixed(3)})`;
-      ctx!.lineWidth = focus ? 1.6 : main ? 1.1 : 0.75;
-      ctx!.beginPath(); ctx!.moveTo(e.a.px, e.a.py); ctx!.lineTo(e.b.px, e.b.py); ctx!.stroke();
+    }
+    if (lit && lit.pz > NEAR) {
+      for (const m of related(lit)) {
+        if (m.pz < NEAR || m.reveal < 0.02) continue;
+        line(lit, m, rgbOf(mix(mix(lit.color, m.color, 0.5), "#ffffff", 0.25)), 0.9 * fade * Math.min(1, m.reveal + 0.3), 1.5);
+      }
     }
 
     // stars
@@ -892,24 +977,31 @@ export function mountMind() {
       const nearFade = clamp((p.pz - NEAR) / NEAR, 0, 1);
       const big = leads(p);
       const promoted = big && !p.major;
-      const R = clamp(p.r * p.ps * (promoted ? 1.6 : 1), 0.6, 140);
+      const R = clamp(p.r * p.ps * (promoted ? 1.6 : p.type === "repo" ? 1.2 : 1), 0.6, 140);
       const depthFade = clamp((p.ps / (cam.focal / cam.dist)) * 0.6 + 0.5, 0.6, 1.25);
-      const tw = reduced ? 1 : 0.88 + Math.sin(time * 1.5 + p.tw) * 0.12;
+      const pace = 0.7 + (Math.sin(p.tw * 7.3) + 1) * 0.45;
+      const tw = reduced ? 1 : 0.8 + 0.2 * (0.62 * Math.sin(time * pace + p.tw) + 0.38 * Math.sin(time * pace * 2.3 + p.tw * 1.7));
       const dim =
         (hover && hover !== p && !hoverSet?.has(p.id)) ||
         (selected && selected !== p && !selSet?.has(p.id) && !hover);
       const focus = p === hover || p === selected;
-      const lum = focus ? 1.45 : promoted ? LUM.project : LUM[p.type] ?? 0.7;
+      const hotHue = p.type === "repo" || p.type === "tech" || p.type === "language";
+      const baseLum = promoted ? LUM.project * (hotHue ? 0.55 : 1) : LUM[p.type] ?? 0.7;
+      const lum = p === selected ? Math.min(1.45, baseLum * 1.3) : p === hover ? Math.min(1.35, baseLum * 1.15) : baseLum;
       const op = (dim ? (selected && !hover ? 0.12 : 0.3) : 1) * fade * depthFade * lum * nearFade * p.reveal * tw;
-      drawStar(p, R * (focus ? 1.25 : 1), op, near, focus, focus ? 0 : out, big);
+      // the white centre stays small on every work star, so colour leads
+      const coreLift = hotHue ? 0.45 : p.type === "project" ? 0.55 : 1;
+      const lift = p === selected ? 1.1 : p === hover ? 1.05 : 1;
+      drawStar(p, R * lift * (0.97 + (tw - 0.8) * 0.25), op, near, focus, focus ? 0 : out, big, coreLift);
 
-      // Names: work stars and case studies always; a technology or language
-      // only when it, or the star it belongs to, is hovered or open.
-      const named = big || p.type === "post";
+      // Names follow the same order as the lines: the anchors and the lead
+      // kind always, crisp; any other star only when it, or a star it is
+      // joined to, is hovered or open. Nothing faint in between.
+      const named = big;
       const near1 = hover === p || hoverSet?.has(p.id) || selSet?.has(p.id);
       const anchor = PLANET.has(p.type);
       const far1 = anchor ? 1 : clamp(1 - (out - 0.25) * 1.8, 0, 1);
-      const lop = focus ? 1 : named ? (big ? 0.78 : 0.62) * far1 : near1 ? 0.75 : 0;
+      const lop = focus ? 1 : named ? 0.88 * far1 : near1 ? 0.88 : 0;
       if (lop > 0.05 && !(dim && !focus) && R > 1.1) {
         const size = focus ? 14 : clamp((p.major ? 10.5 : 10) + R * 0.1, 10, 13);
         labels.push({
@@ -918,7 +1010,7 @@ export function mountMind() {
           y: p.py + Math.max(R * 1.4, 7) + 4,
           font: `${focus ? 600 : 500} ${size}px Inter, -apple-system, "SF Pro Display", sans-serif`,
           size,
-          a: Math.min(1, lop * p.reveal),
+          a: Math.min(1, lop * Math.max(p.reveal, near1 ? 1 : 0)),
           prio: (focus ? 1e6 : 0) + (big ? 1000 : 0) + p.ps * 100 + p.r,
           focus,
         });
@@ -952,7 +1044,7 @@ export function mountMind() {
   // A star. Every star has a soft halo and a hot white core, added as light.
   // Projects and repos carry four point light spikes. Disciplines are planets:
   // a lit sphere with a ring. Up close a project shows a glass rim.
-  function drawStar(p: Node, R: number, op: number, near: number, focus: boolean, out: number, big: boolean) {
+  function drawStar(p: Node, R: number, op: number, near: number, focus: boolean, out: number, big: boolean, coreLift = 1) {
     op = clamp(op, 0, 1.5);
     if (op <= 0.01) return;
     const x = p.px, y = p.py;
@@ -960,7 +1052,7 @@ export function mountMind() {
     blit(sprite("glow", p.color), x, y, halo, op * (big ? lerp(0.72, 0.5, out) : 0.42));
     if ((SPIKED.has(p.type) || (big && !p.major)) && out < 0.85) blit(sprite("spike", p.color), x, y, Math.max(R * 7 + 20, lerp(30, 12, out)), op * 0.55 * (1 - out));
     const core = Math.max(R * (big ? 1.45 : 0.95), big ? lerp(2.6, 1.7, out) : 1.2);
-    blit(sprite("core", p.color), x, y, core * 1.8, Math.min(1, op * 0.92));
+    blit(sprite("core", p.color), x, y, core * 1.8, Math.min(1, op * 0.92 * coreLift));
     ctx!.globalAlpha = 1;
 
     if (PLANET.has(p.type) && R > 2.6) {
@@ -1147,7 +1239,7 @@ export function mountMind() {
     selected = n;
     if (!n) { closeCard(); return; }
     // the star and every visible connection, inside one sphere
-    const group = [n, ...[...(adj.get(n.id) || [])].map((id) => byId.get(id)!).filter((m) => m && shown(m))];
+    const group = [n, ...related(n)];
     let lo: V3 = [Infinity, Infinity, Infinity], hi: V3 = [-Infinity, -Infinity, -Infinity];
     for (const m of group) {
       lo = [Math.min(lo[0], m.x), Math.min(lo[1], m.y), Math.min(lo[2], m.z)];
@@ -1158,13 +1250,16 @@ export function mountMind() {
     for (const m of group) R = Math.max(R, Math.hypot(m.x - c[0], m.y - c[1], m.z - c[2]) + 30 * spread);
     // the open space: left of the card on a wide screen, above it on a phone
     const sheet = W < 641;
-    const availW = sheet ? W : W - Math.min(420, W * 0.36) - 48;
+    const panelOpen = !sheet && !panel!.classList.contains("is-folded");
+    const leftEdge = panelOpen ? Math.max(0, panel!.getBoundingClientRect().right + 16) : 0;
+    const rightEdge = sheet ? W : W - Math.min(420, W * 0.36) - 48;
+    const availW = Math.max(240, rightEdge - leftEdge);
     const availH = sheet ? H * 0.5 : H - 150;
     const half = Math.max(90, (Math.min(availW, availH) / 2) * 0.86);
     const dist = clamp((cam.focal * R) / half + R * 0.6, minDist(), maxDist());
     const s = cam.focal / dist;
     const { right, up } = axes();
-    const shiftX = sheet ? 0 : (W / 2 - availW / 2) / s;
+    const shiftX = sheet ? 0 : (W / 2 - (leftEdge + availW / 2)) / s;
     const shiftY = sheet ? (H / 2 - availH / 2 - 40) / s : 0;
     camTarget = {
       tx: c[0] + right[0] * shiftX - up[0] * shiftY,
@@ -1185,7 +1280,7 @@ export function mountMind() {
   function openCard(n: Node) {
     if (!cardEl || !cardBody) return;
     const kind = TYPE_LABELS[n.type] || n.type;
-    const neighbours = [...(adj.get(n.id) || [])].map((id) => byId.get(id)!).filter((m) => m && shown(m));
+    const neighbours = related(n);
     const linkList = (n.links && n.links.length ? n.links : n.url ? [{ label: n.url.startsWith("http") ? "Open" : "View", url: n.url }] : [])
       .map((l) => ({ label: l.label, url: safe(l.url) }))
       .filter((l) => l.url);
@@ -1294,8 +1389,9 @@ export function mountMind() {
     const on = hiddenTypes.has(type);
     if (on) hiddenTypes.delete(type); else hiddenTypes.add(type);
     b.setAttribute("aria-pressed", String(on));
-    if (selected && !shown(selected)) select(null);
+    relCache = new Map();
     if (hover && !shown(hover)) hover = null;
+    if (selected) select(shown(selected) ? selected : null);
   });
 
   modeBtns.forEach((btn) => {

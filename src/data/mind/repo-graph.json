@@ -27,18 +27,6 @@
       "data": {}
     },
     {
-      "id": "topic:config",
-      "type": "topic",
-      "label": "config",
-      "data": {}
-    },
-    {
-      "id": "topic:github-config",
-      "type": "topic",
-      "label": "github-config",
-      "data": {}
-    },
-    {
       "id": "repo:sampreethavvari-sampreethavvari-github-io",
       "type": "repo",
       "label": "sampreethavvari.github.io",
@@ -48,29 +36,29 @@
         "stars": 0,
         "url": "https://github.com/SampreethAvvari/sampreethavvari.github.io",
         "languages": [
-          "Astro",
           "TypeScript",
+          "Astro",
           "CSS",
           "HTML",
           "JavaScript",
           "PowerShell",
           "PLpgSQL"
         ],
-        "primary_language": "Astro",
+        "primary_language": "TypeScript",
         "topics": [],
         "private": false
       }
     },
     {
-      "id": "language:astro",
-      "type": "language",
-      "label": "Astro",
-      "data": {}
-    },
-    {
       "id": "language:typescript",
       "type": "language",
       "label": "TypeScript",
+      "data": {}
+    },
+    {
+      "id": "language:astro",
+      "type": "language",
+      "label": "Astro",
       "data": {}
     },
     {
@@ -138,7 +126,8 @@
           "JavaScript",
           "Shell",
           "Makefile",
-          "PowerShell"
+          "PowerShell",
+          "Dockerfile"
         ],
         "primary_language": "Python",
         "topics": [],
@@ -164,9 +153,9 @@
       "data": {}
     },
     {
-      "id": "org:hybridge-implants",
-      "type": "org",
-      "label": "hybridge-implants",
+      "id": "language:dockerfile",
+      "type": "language",
+      "label": "Dockerfile",
       "data": {}
     },
     {
@@ -180,21 +169,15 @@
         "url": "https://github.com/hybridge-implants/treatment-estimator",
         "languages": [
           "TypeScript",
-          "PLpgSQL",
-          "Dockerfile",
           "JavaScript",
-          "CSS"
+          "CSS",
+          "Dockerfile",
+          "PLpgSQL"
         ],
         "primary_language": "TypeScript",
         "topics": [],
         "private": true
       }
-    },
-    {
-      "id": "language:dockerfile",
-      "type": "language",
-      "label": "Dockerfile",
-      "data": {}
     },
     {
       "id": "repo:hybridge-implants-hybridge-consultation-qa",
@@ -242,6 +225,30 @@
           "Dockerfile"
         ],
         "primary_language": "Python",
+        "topics": [],
+        "private": true
+      }
+    },
+    {
+      "id": "repo:rivachllp-voiceagents-demo",
+      "type": "repo",
+      "label": "voiceagents-demo",
+      "data": {
+        "owner": "RivachLLP",
+        "description": "",
+        "stars": 0,
+        "url": "https://github.com/RivachLLP/voiceagents-demo",
+        "languages": [
+          "TypeScript",
+          "Python",
+          "CSS",
+          "JavaScript",
+          "HTML",
+          "Shell",
+          "HCL",
+          "PLpgSQL"
+        ],
+        "primary_language": "TypeScript",
         "topics": [],
         "private": true
       }
@@ -314,7 +321,9 @@
         "url": "https://github.com/hybridge-implants/ledger-notes-verifier",
         "languages": [
           "Python",
+          "CSS",
           "HTML",
+          "JavaScript",
           "Dockerfile"
         ],
         "primary_language": "Python",
@@ -337,6 +346,29 @@
           "JavaScript",
           "CSS",
           "Dockerfile"
+        ],
+        "primary_language": "TypeScript",
+        "topics": [],
+        "private": true
+      }
+    },
+    {
+      "id": "repo:hybridge-implants-hybridge-assessment",
+      "type": "repo",
+      "label": "hybridge-assessment",
+      "data": {
+        "owner": "hybridge-implants",
+        "description": "HYBRIDGE patient assessment platform — Phase 1 of CDF",
+        "stars": 0,
+        "url": "https://github.com/hybridge-implants/hybridge-assessment",
+        "languages": [
+          "TypeScript",
+          "JavaScript",
+          "Python",
+          "HTML",
+          "Dockerfile",
+          "HCL",
+          "CSS"
         ],
         "primary_language": "TypeScript",
         "topics": [],
@@ -395,14 +427,147 @@
       }
     },
     {
-      "id": "repo:tastemakerclub-tastemaker-app",
+      "id": "repo:kingsing22-golden-hammer-sports",
       "type": "repo",
-      "label": "tastemaker-app",
+      "label": "Golden-Hammer-Sports",
       "data": {
-        "owner": "tastemakerclub",
-        "description": "The App!",
+        "owner": "KingSing22",
+        "description": "",
+        "stars": 1,
+        "url": "https://github.com/KingSing22/Golden-Hammer-Sports",
+        "languages": [
+          "TypeScript",
+          "PLpgSQL",
+          "HTML",
+          "CSS",
+          "JavaScript",
+          "PowerShell",
+          "Shell",
+          "Dockerfile"
+        ],
+        "primary_language": "TypeScript",
+        "topics": [],
+        "private": true
+      }
+    },
+    {
+      "id": "repo:sahajm99-previz",
+      "type": "repo",
+      "label": "previz",
+      "data": {
+        "owner": "sahajm99",
+        "description": "",
         "stars": 0,
-        "url": "https://github.com/tastemakerclub/tastemaker-app",
+        "url": "https://github.com/sahajm99/previz",
+        "languages": [
+          "Python",
+          "JavaScript",
+          "HTML",
+          "CSS",
+          "Shell",
+          "HCL",
+          "PowerShell",
+          "Dockerfile"
+        ],
+        "primary_language": "Python",
+        "topics": [],
+        "private": false
+      }
+    },
+    {
+      "id": "repo:sampreethavvari-magic-hour",
+      "type": "repo",
+      "label": "magic-hour",
+      "data": {
+        "owner": "SampreethAvvari",
+        "description": "Magic Hour: an AI filmmaking studio. Storyboards, screenwriting, location scouting and character development, all grounded in one story bible. Vertex AI + Cloud Run.",
+        "stars": 0,
+        "url": "https://github.com/SampreethAvvari/magic-hour",
+        "languages": [
+          "Shell"
+        ],
+        "primary_language": "Shell",
+        "topics": [],
+        "private": false
+      }
+    },
+    {
+      "id": "repo:sampreethavvari-hybridge-marketing-warehouse",
+      "type": "repo",
+      "label": "hybridge-marketing-warehouse",
+      "data": {
+        "owner": "SampreethAvvari",
+        "description": "",
+        "stars": 0,
+        "url": "https://github.com/SampreethAvvari/hybridge-marketing-warehouse",
+        "languages": [
+          "Python",
+          "JavaScript",
+          "CSS",
+          "Shell",
+          "HTML",
+          "Dockerfile"
+        ],
+        "primary_language": "Python",
+        "topics": [],
+        "private": true
+      }
+    },
+    {
+      "id": "repo:sampreethavvari-personal-diary",
+      "type": "repo",
+      "label": "personal-diary",
+      "data": {
+        "owner": "SampreethAvvari",
+        "description": "",
+        "stars": 0,
+        "url": "https://github.com/SampreethAvvari/personal-diary",
+        "languages": [
+          "TypeScript",
+          "CSS",
+          "Dockerfile",
+          "Batchfile",
+          "JavaScript"
+        ],
+        "primary_language": "TypeScript",
+        "topics": [],
+        "private": true
+      }
+    },
+    {
+      "id": "language:batchfile",
+      "type": "language",
+      "label": "Batchfile",
+      "data": {}
+    },
+    {
+      "id": "repo:sampreethavvari-ai-systems-tours",
+      "type": "repo",
+      "label": "ai-systems-tours",
+      "data": {
+        "owner": "SampreethAvvari",
+        "description": "",
+        "stars": 0,
+        "url": "https://github.com/SampreethAvvari/ai-systems-tours",
+        "languages": [
+          "TypeScript",
+          "CSS",
+          "JavaScript"
+        ],
+        "primary_language": "TypeScript",
+        "topics": [],
+        "private": false
+      }
+    },
+    {
+      "id": "repo:hybridge-implants-hybridge-treatment-sequence",
+      "type": "repo",
+      "label": "hybridge-treatment-sequence",
+      "data": {
+        "owner": "hybridge-implants",
+        "description": "Treatment sequence service: the practice's master sequence templates as data, generation from a treatment estimate, and the timeline UI mounted by the estimator and the patients dashboard.",
+        "stars": 0,
+        "url": "https://github.com/hybridge-implants/hybridge-treatment-sequence",
         "languages": [
           "TypeScript",
           "JavaScript"
@@ -413,10 +578,213 @@
       }
     },
     {
-      "id": "org:tastemakerclub",
-      "type": "org",
-      "label": "tastemakerclub",
-      "data": {}
+      "id": "repo:hybridge-implants-hybridge-cdf",
+      "type": "repo",
+      "label": "hybridge-cdf",
+      "data": {
+        "owner": "hybridge-implants",
+        "description": "HYBRIDGE Centralized Diagnostic Filter dashboard. Serves cdf.hybridgeimplants.com. Split out of hybridge-assessment 2026-08-28.",
+        "stars": 0,
+        "url": "https://github.com/hybridge-implants/hybridge-cdf",
+        "languages": [
+          "TypeScript",
+          "JavaScript",
+          "CSS",
+          "Dockerfile"
+        ],
+        "primary_language": "TypeScript",
+        "topics": [],
+        "private": true
+      }
+    },
+    {
+      "id": "repo:hybridge-implants-hybridge-cowork-dashboard",
+      "type": "repo",
+      "label": "hybridge-cowork-dashboard",
+      "data": {
+        "owner": "hybridge-implants",
+        "description": "Cowork Dashboard: weekly Monday.com exports in Drive to an always-in-sync Cloud Run dashboard. Replaces the Apps Script build. IAP-gated.",
+        "stars": 0,
+        "url": "https://github.com/hybridge-implants/hybridge-cowork-dashboard",
+        "languages": [
+          "TypeScript",
+          "JavaScript",
+          "CSS",
+          "HTML",
+          "Shell"
+        ],
+        "primary_language": "TypeScript",
+        "topics": [],
+        "private": true
+      }
+    },
+    {
+      "id": "repo:hybridge-implants-hybridge-capacity-planner",
+      "type": "repo",
+      "label": "hybridge-capacity-planner",
+      "data": {
+        "owner": "hybridge-implants",
+        "description": "Shared resource and capacity planning for Hybridge: doctors, assistants and treatment coordinators across ROC, BUF and SYR. Live Denticon demand, treatment sequence projection, availability and coverage..",
+        "stars": 0,
+        "url": "https://github.com/hybridge-implants/hybridge-capacity-planner",
+        "languages": [
+          "TypeScript",
+          "PLpgSQL",
+          "JavaScript",
+          "CSS",
+          "PowerShell",
+          "Dockerfile"
+        ],
+        "primary_language": "TypeScript",
+        "topics": [],
+        "private": true
+      }
+    },
+    {
+      "id": "repo:hybridge-implants-hybridge-portal",
+      "type": "repo",
+      "label": "hybridge-portal",
+      "data": {
+        "owner": "hybridge-implants",
+        "description": "Scan intake, duplicate case detection and customer portal around MagicTouch DLCPM",
+        "stars": 0,
+        "url": "https://github.com/hybridge-implants/hybridge-portal",
+        "languages": [
+          "TypeScript",
+          "CSS",
+          "Shell",
+          "JavaScript",
+          "Dockerfile"
+        ],
+        "primary_language": "TypeScript",
+        "topics": [],
+        "private": true
+      }
+    },
+    {
+      "id": "repo:hybridge-implants-hybridge-forms",
+      "type": "repo",
+      "label": "hybridge-forms",
+      "data": {
+        "owner": "hybridge-implants",
+        "description": "Hybridge forms on our own Google Cloud, replacing Tally",
+        "stars": 0,
+        "url": "https://github.com/hybridge-implants/hybridge-forms",
+        "languages": [
+          "TypeScript",
+          "Shell",
+          "CSS",
+          "JavaScript",
+          "HTML",
+          "Python",
+          "Dockerfile"
+        ],
+        "primary_language": "TypeScript",
+        "topics": [],
+        "private": true
+      }
+    },
+    {
+      "id": "repo:rivachllp-social-media-automation",
+      "type": "repo",
+      "label": "social-media-automation",
+      "data": {
+        "owner": "RivachLLP",
+        "description": "Two Gemini agents that find breaking Indian and Hollywood film news and turn it into Instagram posts I approve from Telegram.",
+        "stars": 0,
+        "url": "https://github.com/RivachLLP/social-media-automation",
+        "languages": [],
+        "primary_language": "",
+        "topics": [],
+        "private": true
+      }
+    },
+    {
+      "id": "repo:hybridge-implants-hybridge-ui-lab",
+      "type": "repo",
+      "label": "hybridge-ui-lab",
+      "data": {
+        "owner": "hybridge-implants",
+        "description": "Practice repo for the UI restyle",
+        "stars": 0,
+        "url": "https://github.com/hybridge-implants/hybridge-ui-lab",
+        "languages": [
+          "Python",
+          "HTML",
+          "CSS",
+          "Dockerfile"
+        ],
+        "primary_language": "Python",
+        "topics": [],
+        "private": true
+      }
+    },
+    {
+      "id": "repo:hybridge-implants-hybridge-launchpad",
+      "type": "repo",
+      "label": "hybridge-launchpad",
+      "data": {
+        "owner": "hybridge-implants",
+        "description": "Every Hybridge app in one place, plus the Work board for leadership",
+        "stars": 0,
+        "url": "https://github.com/hybridge-implants/hybridge-launchpad",
+        "languages": [
+          "TypeScript",
+          "PowerShell",
+          "CSS",
+          "JavaScript",
+          "Dockerfile"
+        ],
+        "primary_language": "TypeScript",
+        "topics": [],
+        "private": true
+      }
+    },
+    {
+      "id": "repo:hybridge-implants-hybridge-website",
+      "type": "repo",
+      "label": "hybridge-website",
+      "data": {
+        "owner": "hybridge-implants",
+        "description": "Redesign of hybridgeimplants.com: Astro site, AR smile generator, online referral form. Preview, not the live site.",
+        "stars": 0,
+        "url": "https://github.com/hybridge-implants/hybridge-website",
+        "languages": [
+          "JavaScript",
+          "Astro",
+          "TypeScript",
+          "Python",
+          "CSS",
+          "PowerShell",
+          "Dockerfile"
+        ],
+        "primary_language": "JavaScript",
+        "topics": [],
+        "private": true
+      }
+    },
+    {
+      "id": "repo:hybridge-implants-hybridge-lab-website",
+      "type": "repo",
+      "label": "hybridge-lab-website",
+      "data": {
+        "owner": "hybridge-implants",
+        "description": "Hybridge Dental Lab website redesign (Astro, Cloud Run preview)",
+        "stars": 0,
+        "url": "https://github.com/hybridge-implants/hybridge-lab-website",
+        "languages": [
+          "Astro",
+          "TypeScript",
+          "CSS",
+          "JavaScript",
+          "Python",
+          "Shell",
+          "Dockerfile"
+        ],
+        "primary_language": "Astro",
+        "topics": [],
+        "private": true
+      }
     },
     {
       "id": "repo:tastemakerclub-tastemaker-api-py",
@@ -440,10 +808,61 @@
       }
     },
     {
-      "id": "language:batchfile",
-      "type": "language",
-      "label": "Batchfile",
-      "data": {}
+      "id": "repo:tastemakerclub-tastemaker-app",
+      "type": "repo",
+      "label": "tastemaker-app",
+      "data": {
+        "owner": "tastemakerclub",
+        "description": "The App!",
+        "stars": 0,
+        "url": "https://github.com/tastemakerclub/tastemaker-app",
+        "languages": [
+          "TypeScript",
+          "JavaScript"
+        ],
+        "primary_language": "TypeScript",
+        "topics": [],
+        "private": true
+      }
+    },
+    {
+      "id": "repo:rivachllp-bluetroop-com",
+      "type": "repo",
+      "label": "Bluetroop.com",
+      "data": {
+        "owner": "RivachLLP",
+        "description": "",
+        "stars": 0,
+        "url": "https://github.com/RivachLLP/Bluetroop.com",
+        "languages": [
+          "TypeScript",
+          "Astro",
+          "JavaScript",
+          "CSS"
+        ],
+        "primary_language": "TypeScript",
+        "topics": [],
+        "private": false
+      }
+    },
+    {
+      "id": "repo:rivachllp-kandjservices-website",
+      "type": "repo",
+      "label": "KandJServices-website",
+      "data": {
+        "owner": "RivachLLP",
+        "description": "",
+        "stars": 0,
+        "url": "https://github.com/RivachLLP/KandJServices-website",
+        "languages": [
+          "Astro",
+          "CSS",
+          "JavaScript"
+        ],
+        "primary_language": "Astro",
+        "topics": [],
+        "private": false
+      }
     },
     {
       "id": "repo:marcomorucci-llm-persuasion",
@@ -602,12 +1021,6 @@
       }
     },
     {
-      "id": "org:nyu-3idiots",
-      "type": "org",
-      "label": "NYU-3Idiots",
-      "data": {}
-    },
-    {
       "id": "repo:sampreethavvari-testasdata",
       "type": "repo",
       "label": "TestasData",
@@ -657,12 +1070,6 @@
         "topics": [],
         "private": true
       }
-    },
-    {
-      "id": "org:nyu-big-data",
-      "type": "org",
-      "label": "nyu-big-data",
-      "data": {}
     },
     {
       "id": "repo:nyu-big-data-homework-1-sampreethavvari",
@@ -774,23 +1181,13 @@
       "rel": "uses-language"
     },
     {
-      "source": "repo:sampreethavvari-sampreethavvari",
-      "target": "topic:config",
-      "rel": "tagged"
-    },
-    {
-      "source": "repo:sampreethavvari-sampreethavvari",
-      "target": "topic:github-config",
-      "rel": "tagged"
-    },
-    {
       "source": "repo:sampreethavvari-sampreethavvari-github-io",
-      "target": "language:astro",
+      "target": "language:typescript",
       "rel": "uses-language"
     },
     {
       "source": "repo:sampreethavvari-sampreethavvari-github-io",
-      "target": "language:typescript",
+      "target": "language:astro",
       "rel": "uses-language"
     },
     {
@@ -870,22 +1267,12 @@
     },
     {
       "source": "repo:hybridge-implants-cbct-scan-validator",
-      "target": "org:hybridge-implants",
-      "rel": "owned-by-org"
+      "target": "language:dockerfile",
+      "rel": "uses-language"
     },
     {
       "source": "repo:hybridge-implants-treatment-estimator",
       "target": "language:typescript",
-      "rel": "uses-language"
-    },
-    {
-      "source": "repo:hybridge-implants-treatment-estimator",
-      "target": "language:plpgsql",
-      "rel": "uses-language"
-    },
-    {
-      "source": "repo:hybridge-implants-treatment-estimator",
-      "target": "language:dockerfile",
       "rel": "uses-language"
     },
     {
@@ -900,8 +1287,13 @@
     },
     {
       "source": "repo:hybridge-implants-treatment-estimator",
-      "target": "org:hybridge-implants",
-      "rel": "owned-by-org"
+      "target": "language:dockerfile",
+      "rel": "uses-language"
+    },
+    {
+      "source": "repo:hybridge-implants-treatment-estimator",
+      "target": "language:plpgsql",
+      "rel": "uses-language"
     },
     {
       "source": "repo:hybridge-implants-hybridge-consultation-qa",
@@ -939,11 +1331,6 @@
       "rel": "uses-language"
     },
     {
-      "source": "repo:hybridge-implants-hybridge-consultation-qa",
-      "target": "org:hybridge-implants",
-      "rel": "owned-by-org"
-    },
-    {
       "source": "repo:hybridge-implants-hybridge-accounting-tools",
       "target": "language:python",
       "rel": "uses-language"
@@ -969,9 +1356,44 @@
       "rel": "uses-language"
     },
     {
-      "source": "repo:hybridge-implants-hybridge-accounting-tools",
-      "target": "org:hybridge-implants",
-      "rel": "owned-by-org"
+      "source": "repo:rivachllp-voiceagents-demo",
+      "target": "language:typescript",
+      "rel": "uses-language"
+    },
+    {
+      "source": "repo:rivachllp-voiceagents-demo",
+      "target": "language:python",
+      "rel": "uses-language"
+    },
+    {
+      "source": "repo:rivachllp-voiceagents-demo",
+      "target": "language:css",
+      "rel": "uses-language"
+    },
+    {
+      "source": "repo:rivachllp-voiceagents-demo",
+      "target": "language:javascript",
+      "rel": "uses-language"
+    },
+    {
+      "source": "repo:rivachllp-voiceagents-demo",
+      "target": "language:html",
+      "rel": "uses-language"
+    },
+    {
+      "source": "repo:rivachllp-voiceagents-demo",
+      "target": "language:shell",
+      "rel": "uses-language"
+    },
+    {
+      "source": "repo:rivachllp-voiceagents-demo",
+      "target": "language:hcl",
+      "rel": "uses-language"
+    },
+    {
+      "source": "repo:rivachllp-voiceagents-demo",
+      "target": "language:plpgsql",
+      "rel": "uses-language"
     },
     {
       "source": "repo:hybridge-implants-hybridge-npc-coaching",
@@ -1009,11 +1431,6 @@
       "rel": "uses-language"
     },
     {
-      "source": "repo:hybridge-implants-hybridge-npc-coaching",
-      "target": "org:hybridge-implants",
-      "rel": "owned-by-org"
-    },
-    {
       "source": "repo:sampreethavvari-job-pilot",
       "target": "language:python",
       "rel": "uses-language"
@@ -1050,18 +1467,23 @@
     },
     {
       "source": "repo:hybridge-implants-ledger-notes-verifier",
+      "target": "language:css",
+      "rel": "uses-language"
+    },
+    {
+      "source": "repo:hybridge-implants-ledger-notes-verifier",
       "target": "language:html",
+      "rel": "uses-language"
+    },
+    {
+      "source": "repo:hybridge-implants-ledger-notes-verifier",
+      "target": "language:javascript",
       "rel": "uses-language"
     },
     {
       "source": "repo:hybridge-implants-ledger-notes-verifier",
       "target": "language:dockerfile",
       "rel": "uses-language"
-    },
-    {
-      "source": "repo:hybridge-implants-ledger-notes-verifier",
-      "target": "org:hybridge-implants",
-      "rel": "owned-by-org"
     },
     {
       "source": "repo:hybridge-implants-hybridge-dashboard",
@@ -1089,9 +1511,39 @@
       "rel": "uses-language"
     },
     {
-      "source": "repo:hybridge-implants-hybridge-dashboard",
-      "target": "org:hybridge-implants",
-      "rel": "owned-by-org"
+      "source": "repo:hybridge-implants-hybridge-assessment",
+      "target": "language:typescript",
+      "rel": "uses-language"
+    },
+    {
+      "source": "repo:hybridge-implants-hybridge-assessment",
+      "target": "language:javascript",
+      "rel": "uses-language"
+    },
+    {
+      "source": "repo:hybridge-implants-hybridge-assessment",
+      "target": "language:python",
+      "rel": "uses-language"
+    },
+    {
+      "source": "repo:hybridge-implants-hybridge-assessment",
+      "target": "language:html",
+      "rel": "uses-language"
+    },
+    {
+      "source": "repo:hybridge-implants-hybridge-assessment",
+      "target": "language:dockerfile",
+      "rel": "uses-language"
+    },
+    {
+      "source": "repo:hybridge-implants-hybridge-assessment",
+      "target": "language:hcl",
+      "rel": "uses-language"
+    },
+    {
+      "source": "repo:hybridge-implants-hybridge-assessment",
+      "target": "language:css",
+      "rel": "uses-language"
     },
     {
       "source": "repo:hybridge-implants-hybridge-enterprise-search",
@@ -1134,11 +1586,6 @@
       "rel": "uses-language"
     },
     {
-      "source": "repo:hybridge-implants-hybridge-enterprise-search",
-      "target": "org:hybridge-implants",
-      "rel": "owned-by-org"
-    },
-    {
       "source": "repo:sampreethavvari-jobpilot-demo",
       "target": "language:typescript",
       "rel": "uses-language"
@@ -1164,19 +1611,419 @@
       "rel": "uses-language"
     },
     {
-      "source": "repo:tastemakerclub-tastemaker-app",
+      "source": "repo:kingsing22-golden-hammer-sports",
       "target": "language:typescript",
       "rel": "uses-language"
     },
     {
-      "source": "repo:tastemakerclub-tastemaker-app",
+      "source": "repo:kingsing22-golden-hammer-sports",
+      "target": "language:plpgsql",
+      "rel": "uses-language"
+    },
+    {
+      "source": "repo:kingsing22-golden-hammer-sports",
+      "target": "language:html",
+      "rel": "uses-language"
+    },
+    {
+      "source": "repo:kingsing22-golden-hammer-sports",
+      "target": "language:css",
+      "rel": "uses-language"
+    },
+    {
+      "source": "repo:kingsing22-golden-hammer-sports",
       "target": "language:javascript",
       "rel": "uses-language"
     },
     {
-      "source": "repo:tastemakerclub-tastemaker-app",
-      "target": "org:tastemakerclub",
-      "rel": "owned-by-org"
+      "source": "repo:kingsing22-golden-hammer-sports",
+      "target": "language:powershell",
+      "rel": "uses-language"
+    },
+    {
+      "source": "repo:kingsing22-golden-hammer-sports",
+      "target": "language:shell",
+      "rel": "uses-language"
+    },
+    {
+      "source": "repo:kingsing22-golden-hammer-sports",
+      "target": "language:dockerfile",
+      "rel": "uses-language"
+    },
+    {
+      "source": "repo:sahajm99-previz",
+      "target": "language:python",
+      "rel": "uses-language"
+    },
+    {
+      "source": "repo:sahajm99-previz",
+      "target": "language:javascript",
+      "rel": "uses-language"
+    },
+    {
+      "source": "repo:sahajm99-previz",
+      "target": "language:html",
+      "rel": "uses-language"
+    },
+    {
+      "source": "repo:sahajm99-previz",
+      "target": "language:css",
+      "rel": "uses-language"
+    },
+    {
+      "source": "repo:sahajm99-previz",
+      "target": "language:shell",
+      "rel": "uses-language"
+    },
+    {
+      "source": "repo:sahajm99-previz",
+      "target": "language:hcl",
+      "rel": "uses-language"
+    },
+    {
+      "source": "repo:sahajm99-previz",
+      "target": "language:powershell",
+      "rel": "uses-language"
+    },
+    {
+      "source": "repo:sahajm99-previz",
+      "target": "language:dockerfile",
+      "rel": "uses-language"
+    },
+    {
+      "source": "repo:sampreethavvari-magic-hour",
+      "target": "language:shell",
+      "rel": "uses-language"
+    },
+    {
+      "source": "repo:sampreethavvari-hybridge-marketing-warehouse",
+      "target": "language:python",
+      "rel": "uses-language"
+    },
+    {
+      "source": "repo:sampreethavvari-hybridge-marketing-warehouse",
+      "target": "language:javascript",
+      "rel": "uses-language"
+    },
+    {
+      "source": "repo:sampreethavvari-hybridge-marketing-warehouse",
+      "target": "language:css",
+      "rel": "uses-language"
+    },
+    {
+      "source": "repo:sampreethavvari-hybridge-marketing-warehouse",
+      "target": "language:shell",
+      "rel": "uses-language"
+    },
+    {
+      "source": "repo:sampreethavvari-hybridge-marketing-warehouse",
+      "target": "language:html",
+      "rel": "uses-language"
+    },
+    {
+      "source": "repo:sampreethavvari-hybridge-marketing-warehouse",
+      "target": "language:dockerfile",
+      "rel": "uses-language"
+    },
+    {
+      "source": "repo:sampreethavvari-personal-diary",
+      "target": "language:typescript",
+      "rel": "uses-language"
+    },
+    {
+      "source": "repo:sampreethavvari-personal-diary",
+      "target": "language:css",
+      "rel": "uses-language"
+    },
+    {
+      "source": "repo:sampreethavvari-personal-diary",
+      "target": "language:dockerfile",
+      "rel": "uses-language"
+    },
+    {
+      "source": "repo:sampreethavvari-personal-diary",
+      "target": "language:batchfile",
+      "rel": "uses-language"
+    },
+    {
+      "source": "repo:sampreethavvari-personal-diary",
+      "target": "language:javascript",
+      "rel": "uses-language"
+    },
+    {
+      "source": "repo:sampreethavvari-ai-systems-tours",
+      "target": "language:typescript",
+      "rel": "uses-language"
+    },
+    {
+      "source": "repo:sampreethavvari-ai-systems-tours",
+      "target": "language:css",
+      "rel": "uses-language"
+    },
+    {
+      "source": "repo:sampreethavvari-ai-systems-tours",
+      "target": "language:javascript",
+      "rel": "uses-language"
+    },
+    {
+      "source": "repo:hybridge-implants-hybridge-treatment-sequence",
+      "target": "language:typescript",
+      "rel": "uses-language"
+    },
+    {
+      "source": "repo:hybridge-implants-hybridge-treatment-sequence",
+      "target": "language:javascript",
+      "rel": "uses-language"
+    },
+    {
+      "source": "repo:hybridge-implants-hybridge-cdf",
+      "target": "language:typescript",
+      "rel": "uses-language"
+    },
+    {
+      "source": "repo:hybridge-implants-hybridge-cdf",
+      "target": "language:javascript",
+      "rel": "uses-language"
+    },
+    {
+      "source": "repo:hybridge-implants-hybridge-cdf",
+      "target": "language:css",
+      "rel": "uses-language"
+    },
+    {
+      "source": "repo:hybridge-implants-hybridge-cdf",
+      "target": "language:dockerfile",
+      "rel": "uses-language"
+    },
+    {
+      "source": "repo:hybridge-implants-hybridge-cowork-dashboard",
+      "target": "language:typescript",
+      "rel": "uses-language"
+    },
+    {
+      "source": "repo:hybridge-implants-hybridge-cowork-dashboard",
+      "target": "language:javascript",
+      "rel": "uses-language"
+    },
+    {
+      "source": "repo:hybridge-implants-hybridge-cowork-dashboard",
+      "target": "language:css",
+      "rel": "uses-language"
+    },
+    {
+      "source": "repo:hybridge-implants-hybridge-cowork-dashboard",
+      "target": "language:html",
+      "rel": "uses-language"
+    },
+    {
+      "source": "repo:hybridge-implants-hybridge-cowork-dashboard",
+      "target": "language:shell",
+      "rel": "uses-language"
+    },
+    {
+      "source": "repo:hybridge-implants-hybridge-capacity-planner",
+      "target": "language:typescript",
+      "rel": "uses-language"
+    },
+    {
+      "source": "repo:hybridge-implants-hybridge-capacity-planner",
+      "target": "language:plpgsql",
+      "rel": "uses-language"
+    },
+    {
+      "source": "repo:hybridge-implants-hybridge-capacity-planner",
+      "target": "language:javascript",
+      "rel": "uses-language"
+    },
+    {
+      "source": "repo:hybridge-implants-hybridge-capacity-planner",
+      "target": "language:css",
+      "rel": "uses-language"
+    },
+    {
+      "source": "repo:hybridge-implants-hybridge-capacity-planner",
+      "target": "language:powershell",
+      "rel": "uses-language"
+    },
+    {
+      "source": "repo:hybridge-implants-hybridge-capacity-planner",
+      "target": "language:dockerfile",
+      "rel": "uses-language"
+    },
+    {
+      "source": "repo:hybridge-implants-hybridge-portal",
+      "target": "language:typescript",
+      "rel": "uses-language"
+    },
+    {
+      "source": "repo:hybridge-implants-hybridge-portal",
+      "target": "language:css",
+      "rel": "uses-language"
+    },
+    {
+      "source": "repo:hybridge-implants-hybridge-portal",
+      "target": "language:shell",
+      "rel": "uses-language"
+    },
+    {
+      "source": "repo:hybridge-implants-hybridge-portal",
+      "target": "language:javascript",
+      "rel": "uses-language"
+    },
+    {
+      "source": "repo:hybridge-implants-hybridge-portal",
+      "target": "language:dockerfile",
+      "rel": "uses-language"
+    },
+    {
+      "source": "repo:hybridge-implants-hybridge-forms",
+      "target": "language:typescript",
+      "rel": "uses-language"
+    },
+    {
+      "source": "repo:hybridge-implants-hybridge-forms",
+      "target": "language:shell",
+      "rel": "uses-language"
+    },
+    {
+      "source": "repo:hybridge-implants-hybridge-forms",
+      "target": "language:css",
+      "rel": "uses-language"
+    },
+    {
+      "source": "repo:hybridge-implants-hybridge-forms",
+      "target": "language:javascript",
+      "rel": "uses-language"
+    },
+    {
+      "source": "repo:hybridge-implants-hybridge-forms",
+      "target": "language:html",
+      "rel": "uses-language"
+    },
+    {
+      "source": "repo:hybridge-implants-hybridge-forms",
+      "target": "language:python",
+      "rel": "uses-language"
+    },
+    {
+      "source": "repo:hybridge-implants-hybridge-forms",
+      "target": "language:dockerfile",
+      "rel": "uses-language"
+    },
+    {
+      "source": "repo:hybridge-implants-hybridge-ui-lab",
+      "target": "language:python",
+      "rel": "uses-language"
+    },
+    {
+      "source": "repo:hybridge-implants-hybridge-ui-lab",
+      "target": "language:html",
+      "rel": "uses-language"
+    },
+    {
+      "source": "repo:hybridge-implants-hybridge-ui-lab",
+      "target": "language:css",
+      "rel": "uses-language"
+    },
+    {
+      "source": "repo:hybridge-implants-hybridge-ui-lab",
+      "target": "language:dockerfile",
+      "rel": "uses-language"
+    },
+    {
+      "source": "repo:hybridge-implants-hybridge-launchpad",
+      "target": "language:typescript",
+      "rel": "uses-language"
+    },
+    {
+      "source": "repo:hybridge-implants-hybridge-launchpad",
+      "target": "language:powershell",
+      "rel": "uses-language"
+    },
+    {
+      "source": "repo:hybridge-implants-hybridge-launchpad",
+      "target": "language:css",
+      "rel": "uses-language"
+    },
+    {
+      "source": "repo:hybridge-implants-hybridge-launchpad",
+      "target": "language:javascript",
+      "rel": "uses-language"
+    },
+    {
+      "source": "repo:hybridge-implants-hybridge-launchpad",
+      "target": "language:dockerfile",
+      "rel": "uses-language"
+    },
+    {
+      "source": "repo:hybridge-implants-hybridge-website",
+      "target": "language:javascript",
+      "rel": "uses-language"
+    },
+    {
+      "source": "repo:hybridge-implants-hybridge-website",
+      "target": "language:astro",
+      "rel": "uses-language"
+    },
+    {
+      "source": "repo:hybridge-implants-hybridge-website",
+      "target": "language:typescript",
+      "rel": "uses-language"
+    },
+    {
+      "source": "repo:hybridge-implants-hybridge-website",
+      "target": "language:python",
+      "rel": "uses-language"
+    },
+    {
+      "source": "repo:hybridge-implants-hybridge-website",
+      "target": "language:css",
+      "rel": "uses-language"
+    },
+    {
+      "source": "repo:hybridge-implants-hybridge-website",
+      "target": "language:powershell",
+      "rel": "uses-language"
+    },
+    {
+      "source": "repo:hybridge-implants-hybridge-website",
+      "target": "language:dockerfile",
+      "rel": "uses-language"
+    },
+    {
+      "source": "repo:hybridge-implants-hybridge-lab-website",
+      "target": "language:astro",
+      "rel": "uses-language"
+    },
+    {
+      "source": "repo:hybridge-implants-hybridge-lab-website",
+      "target": "language:typescript",
+      "rel": "uses-language"
+    },
+    {
+      "source": "repo:hybridge-implants-hybridge-lab-website",
+      "target": "language:css",
+      "rel": "uses-language"
+    },
+    {
+      "source": "repo:hybridge-implants-hybridge-lab-website",
+      "target": "language:javascript",
+      "rel": "uses-language"
+    },
+    {
+      "source": "repo:hybridge-implants-hybridge-lab-website",
+      "target": "language:python",
+      "rel": "uses-language"
+    },
+    {
+      "source": "repo:hybridge-implants-hybridge-lab-website",
+      "target": "language:shell",
+      "rel": "uses-language"
+    },
+    {
+      "source": "repo:hybridge-implants-hybridge-lab-website",
+      "target": "language:dockerfile",
+      "rel": "uses-language"
     },
     {
       "source": "repo:tastemakerclub-tastemaker-api-py",
@@ -1204,9 +2051,49 @@
       "rel": "uses-language"
     },
     {
-      "source": "repo:tastemakerclub-tastemaker-api-py",
-      "target": "org:tastemakerclub",
-      "rel": "owned-by-org"
+      "source": "repo:tastemakerclub-tastemaker-app",
+      "target": "language:typescript",
+      "rel": "uses-language"
+    },
+    {
+      "source": "repo:tastemakerclub-tastemaker-app",
+      "target": "language:javascript",
+      "rel": "uses-language"
+    },
+    {
+      "source": "repo:rivachllp-bluetroop-com",
+      "target": "language:typescript",
+      "rel": "uses-language"
+    },
+    {
+      "source": "repo:rivachllp-bluetroop-com",
+      "target": "language:astro",
+      "rel": "uses-language"
+    },
+    {
+      "source": "repo:rivachllp-bluetroop-com",
+      "target": "language:javascript",
+      "rel": "uses-language"
+    },
+    {
+      "source": "repo:rivachllp-bluetroop-com",
+      "target": "language:css",
+      "rel": "uses-language"
+    },
+    {
+      "source": "repo:rivachllp-kandjservices-website",
+      "target": "language:astro",
+      "rel": "uses-language"
+    },
+    {
+      "source": "repo:rivachllp-kandjservices-website",
+      "target": "language:css",
+      "rel": "uses-language"
+    },
+    {
+      "source": "repo:rivachllp-kandjservices-website",
+      "target": "language:javascript",
+      "rel": "uses-language"
     },
     {
       "source": "repo:marcomorucci-llm-persuasion",
@@ -1284,11 +2171,6 @@
       "rel": "uses-language"
     },
     {
-      "source": "repo:nyu-3idiots-resnetunder50",
-      "target": "org:nyu-3idiots",
-      "rel": "owned-by-org"
-    },
-    {
       "source": "repo:sampreethavvari-testasdata",
       "target": "language:jupyter-notebook",
       "rel": "uses-language"
@@ -1304,16 +2186,6 @@
       "rel": "uses-language"
     },
     {
-      "source": "repo:nyu-big-data-hw2",
-      "target": "org:nyu-big-data",
-      "rel": "owned-by-org"
-    },
-    {
-      "source": "repo:nyu-big-data-homework-1-sampreethavvari",
-      "target": "org:nyu-big-data",
-      "rel": "owned-by-org"
-    },
-    {
       "source": "repo:safdarahmedd-needforspeed",
       "target": "language:c",
       "rel": "uses-language"
@@ -1324,5 +2196,5 @@
       "rel": "uses-language"
     }
   ],
-  "generatedAt": "2026-07-25T06:19:33.384Z"
+  "generatedAt": "2026-11-02T22:36:28.241Z"
 }

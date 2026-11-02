@@ -44,7 +44,7 @@ const QUERY = `query {
 // BAA) stay out of the public site.
 const publicText = (d) =>
   (d || "")
-    .replace(/\s*\([^)]*\b(HIPAA|PHI|BAA)\b[^)]*\)/gi, "")
+    .replace(/\s*\([^)]*\b(HIPAA|PHI|BAA|patient data)\b[^)]*\)/gi, "")
     .replace(/\b(HIPAA|PHI|BAA)[- ]\w+,?\s*/gi, "")
     .replace(/\s{2,}/g, " ")
     .replace(/\s+([.,;:])/g, "$1")
@@ -72,7 +72,6 @@ function build(repos) {
 
   for (const r of repos) {
     const owner = r.owner?.login || "";
-    const isOrg = r.owner?.__typename === "Organization";
     const langs = (r.languages?.nodes || []).map((n) => n.name).filter(Boolean);
     const primary = r.primaryLanguage?.name || langs[0] || "";
     const topics = (r.repositoryTopics?.nodes || []).map((t) => t.topic?.name).filter(Boolean);
@@ -91,16 +90,6 @@ function build(repos) {
     for (const lang of allLangs) {
       const lid = node(`language:${slug(lang)}`, "language", lang, {});
       edge(rid, lid, "uses-language");
-    }
-    if (isOrg && owner) {
-      const oid = node(`org:${slug(owner)}`, "org", owner, {});
-      edge(rid, oid, "owned-by-org");
-    }
-    for (const t of r.repositoryTopics?.nodes || []) {
-      const name = t.topic?.name;
-      if (!name) continue;
-      const tid = node(`topic:${slug(name)}`, "topic", name, {});
-      edge(rid, tid, "tagged");
     }
   }
   return { nodes: [...nodes.values()], edges };
@@ -138,8 +127,7 @@ async function main() {
     fs.mkdirSync(path.dirname(OUT), { recursive: true });
     fs.writeFileSync(OUT, JSON.stringify(graph, null, 2) + "\n", "utf-8");
     const repoCount = graph.nodes.filter((n) => n.type === "repo").length;
-    const orgCount = graph.nodes.filter((n) => n.type === "org").length;
-    console.log(`[mind] wrote repo-graph.json: ${repoCount} repos, ${orgCount} orgs`);
+    console.log(`[mind] wrote repo-graph.json: ${repoCount} repos`);
   } catch (err) {
     console.log("[mind] fetch failed, keeping snapshot:", err?.message || err);
   }

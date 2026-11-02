@@ -239,19 +239,88 @@ function buildPortfolio(): MindGraph {
   };
 }
 
-// The repo snapshot is authored in JobPilot's shape (nodes: repo/org/language,
-// edges: source/target/rel). Fold it into the Mind shape and tint by language.
-const LANG_TINT: Record<string, string> = {
-  python: "#5B8DEF",
-  typescript: "#22D3EE",
-  javascript: "#F5A524",
-  go: "#34D399",
-  java: "#F43F5E",
-  "c++": "#A78BFA",
-  jupyter: "#F5A524",
-  html: "#F5A524",
-  shell: "#34D399",
+// Git Mind follows the portfolio's rules: four tech stacks are the anchors
+// (like the disciplines), every repository hangs off the stacks it belongs to
+// (like a project), and each language hangs off the repos written in it (like
+// a technology). Organisations are left out.
+const STACKS: Record<string, string> = {
+  ai: "AI and LLMs",
+  ml: "Machine learning",
+  web: "Web and apps",
+  data: "Backend and data",
 };
+
+// The stacks each repository belongs to, by what the repo is, not only by
+// its languages. Repos not listed here (new ones the CI snapshot picks up)
+// are sorted by the words in their name and description, then by language.
+const REPO_STACKS: Record<string, string[]> = {
+  "sampreethavvari.github.io": ["web"],
+  "solstice-mvp": ["web"],
+  "cbct-scan-validator": ["ml"],
+  "treatment-estimator": ["web", "data"],
+  "hybridge-consultation-qa": ["ai"],
+  "hybridge-accounting-tools": ["data"],
+  "voiceagents-demo": ["ai"],
+  "hybridge-npc-coaching": ["ai"],
+  "job-pilot": ["ai", "web"],
+  "ledger-notes-verifier": ["data"],
+  "hybridge-dashboard": ["web"],
+  "hybridge-assessment": ["web", "ai"],
+  "hybridge-enterprise-search": ["ai"],
+  "jobpilot-demo": ["web"],
+  "golden-hammer-sports": ["web"],
+  previz: ["ai"],
+  "magic-hour": ["ai"],
+  "hybridge-marketing-warehouse": ["data"],
+  "personal-diary": ["web"],
+  "ai-systems-tours": ["web"],
+  "hybridge-treatment-sequence": ["data"],
+  "hybridge-cdf": ["web"],
+  "hybridge-cowork-dashboard": ["web"],
+  "hybridge-capacity-planner": ["web"],
+  "hybridge-portal": ["web"],
+  "hybridge-forms": ["web"],
+  "social-media-automation": ["ai"],
+  "hybridge-ui-lab": ["web"],
+  "hybridge-launchpad": ["web"],
+  "hybridge-website": ["web"],
+  "hybridge-lab-website": ["web"],
+  "tastemaker-api-py": ["data"],
+  "tastemaker-app": ["web"],
+  "bluetroop.com": ["web"],
+  "kandjservices-website": ["web"],
+  "llm-persuasion": ["ai"],
+  "loan-default-risk-assessment": ["ml"],
+  nlp: ["ml"],
+  bigdata: ["data", "ml"],
+  us2020electionanalysis: ["ai", "ml"],
+  dl_resnet: ["ml"],
+  resnetunder50: ["ml"],
+  testasdata: ["ml"],
+  datasciencebootcamp: ["ml"],
+  hw2: ["data"],
+  needforspeed: ["data"],
+  rtes: ["data"],
+};
+const STACK_WORDS: [string, RegExp][] = [
+  ["ai", /\b(llm|gpt|gemini|claude|rag|agents?|chat ?bot|voice|copilot|prompt|persuasion|coach)/i],
+  ["ml", /\b(model|classifier|resnet|cnn|deep learning|mlops|training|dataset|prediction|nlp|vision|notebook)/i],
+  ["web", /\b(website|site|app|dashboard|portal|frontend|ui|astro|next\.?js|react)\b/i],
+  ["data", /\b(api|backend|service|warehouse|pipeline|etl|sql|database|sync|reconcil)/i],
+];
+const LANG_STACK: Record<string, string> = {
+  python: "data", "jupyter notebook": "ml",
+  typescript: "web", javascript: "web", astro: "web", html: "web", css: "web", vue: "web", svelte: "web",
+  go: "data", java: "data", "c++": "data", c: "data", rust: "data", plpgsql: "data", sql: "data", shell: "data",
+};
+function stacksOf(name: string, description: string, primary: string): string[] {
+  const known = REPO_STACKS[name.toLowerCase()];
+  if (known) return known;
+  const text = `${name.replace(/[-_]/g, " ")} ${description}`;
+  const hit = STACK_WORDS.filter(([, re]) => re.test(text)).map(([k]) => k);
+  if (hit.length) return hit.slice(0, 2);
+  return [LANG_STACK[primary.toLowerCase()] || "data"];
+}
 
 function buildRepo(): MindGraph {
   const snap = repoGraphSnapshot as {
@@ -259,83 +328,64 @@ function buildRepo(): MindGraph {
     edges: { source: string; target: string; rel: string }[];
   };
   const nodes: MindNode[] = [];
-  const edges: MindEdge[] = snap.edges.map((e) => ({ source: e.source, target: e.target }));
+  const edges: MindEdge[] = [];
+  const keep = new Set<string>();
+  const usedStacks = new Set<string>();
 
   for (const n of snap.nodes || []) {
-    if (n.type === "repo") {
-      const d = n.data || {};
-      const langs: string[] = d.languages || [];
-      const topics: string[] = d.topics || [];
-      const lang = (d.primary_language || langs[0] || "").toLowerCase();
-      const stars = d.stars ? `${d.stars} star${d.stars === 1 ? "" : "s"} · ` : "";
-      nodes.push({
-        id: n.id,
-        type: "repo",
-        label: n.label,
-        color: LANG_TINT[lang] || NEUTRAL,
-        weight: d.private ? 3.0 : 3.6,
-        url: d.private ? undefined : d.url,
-        links: d.private || !d.url ? [] : [{ label: "Open the repository", url: d.url }],
-        blurb: d.description || "",
-        meta: `${stars}${d.private ? "private" : "public"}`,
-        chips: [...new Set([...langs, ...topics])].slice(0, 8),
-      });
-    } else if (n.type === "org") {
-      nodes.push({
-        id: n.id,
-        type: "org",
-        label: n.label,
-        color: "#F5A524",
-        weight: 5,
-        meta: "organization",
-      });
-    } else if (n.type === "language") {
-      nodes.push({
-        id: n.id,
-        type: "language",
-        label: n.label,
-        color: LANG_TINT[n.label.toLowerCase()] || TECH_TINT,
-        weight: 2.2,
-        meta: "language",
-      });
+    if (n.type !== "repo") continue;
+    const d = n.data || {};
+    const langs: string[] = d.languages || [];
+    const description: string = (d.description || "").trim();
+    // Leave out what is not work: empty repos, class placeholders, the
+    // profile readme repo.
+    if (!langs.length && !description) continue;
+    if (/created by GitHub Classroom/i.test(description)) continue;
+    if ((d.owner || "").toLowerCase() === n.label.toLowerCase()) continue;
+    keep.add(n.id);
+    const primary = d.primary_language || langs[0] || "";
+    const stars = d.stars ? `${d.stars} star${d.stars === 1 ? "" : "s"} · ` : "";
+    nodes.push({
+      id: n.id,
+      type: "repo",
+      label: n.label,
+      color: NEUTRAL,
+      weight: d.private ? 4.6 : 5.2,
+      url: d.private ? undefined : d.url,
+      links: d.private || !d.url ? [] : [{ label: "Open the repository", url: d.url }],
+      blurb: description,
+      meta: `${stars}${d.private ? "private" : "public"}`,
+      chips: langs.slice(0, 8),
+    });
+    for (const st of stacksOf(n.label, description, primary)) {
+      usedStacks.add(st);
+      edges.push({ source: `cat:${st}`, target: n.id });
     }
   }
 
-  // Tech-stack quadrants: classify each language into a stack and anchor the
-  // stack to a corner, so repos settle toward the stacks they actually use.
-  const CAT_OF: Record<string, string> = {
-    python: "aiml", "jupyter notebook": "aiml", jupyter: "aiml", cuda: "aiml",
-    typescript: "frontend", javascript: "frontend", html: "frontend", css: "frontend",
-    scss: "frontend", svelte: "frontend", vue: "frontend", astro: "frontend",
-    go: "backend", java: "backend", kotlin: "backend", "c++": "backend", "c#": "backend",
-    c: "backend", rust: "backend", ruby: "backend", php: "backend", shell: "backend",
-    dockerfile: "backend", makefile: "backend",
-    sql: "data", plpgsql: "data", tsql: "data", scala: "data", r: "data", hcl: "data",
-  };
-  const CATS: Record<string, { label: string; color: string }> = {
-    aiml: { label: "AI / ML", color: "#34D399" },
-    frontend: { label: "Frontend", color: "#22D3EE" },
-    backend: { label: "Backend", color: "#F5A524" },
-    data: { label: "Data", color: "#5B8DEF" },
-  };
-  const usedCats = new Set<string>();
-  for (const n of nodes) {
-    if (n.type !== "language") continue;
-    const cat = CAT_OF[n.label.toLowerCase()];
-    if (!cat) continue;
-    usedCats.add(cat);
-    edges.push({ source: n.id, target: `cat:${cat}` });
+  // Languages, only the ones a kept repo is written in.
+  const langNodes = new Map<string, MindNode>();
+  for (const e of snap.edges || []) {
+    if (e.rel !== "uses-language" || !keep.has(e.source)) continue;
+    const ln = (snap.nodes || []).find((x) => x.id === e.target);
+    if (!ln) continue;
+    if (!langNodes.has(ln.id)) {
+      langNodes.set(ln.id, { id: ln.id, type: "language", label: ln.label, color: TECH_TINT, weight: 2.2, meta: "language" });
+    }
+    edges.push({ source: e.source, target: ln.id });
   }
-  for (const [key, c] of Object.entries(CATS)) {
-    if (!usedCats.has(key)) continue;
-    nodes.push({ id: `cat:${key}`, type: "category", label: c.label, color: c.color, weight: 6.5, meta: "tech stack" });
+  nodes.push(...langNodes.values());
+
+  for (const [key, label] of Object.entries(STACKS)) {
+    if (!usedStacks.has(key)) continue;
+    nodes.push({ id: `cat:${key}`, type: "category", label, color: NEUTRAL, weight: 6.5, meta: "tech stack" });
   }
 
   const repoCount = nodes.filter((n) => n.type === "repo").length;
   return {
     key: "repo",
     title: "Git Mind",
-    subtitle: `${repoCount} repositories, grouped by the tech stacks they use`,
+    subtitle: `${repoCount} repositories, grouped by the tech stacks they belong to`,
     nodes,
     edges,
   };
