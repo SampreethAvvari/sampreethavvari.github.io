@@ -19,13 +19,13 @@ import { profilePageNode, faqNode } from "../utils/seo";
 const archShown = archAll.slice(0, 3);
 
 // Four numbers under the hero, each a link to where it is proven. Sources:
-// the reconciliation post; the feature requests post (FR-0004, Oct 28);
+// the reconciliation post; the CBCT post (37 days, six figure quote);
 // Doc Coach's 471 scored consults and NPC Coach's 690 graded calls
 // (BigQuery, 2026-10-29); the platform post's service count (gcloud
 // listings, 2026-10-29).
 const heroProof = [
   { value: "70 hrs", label: "a week back for the insurance team", href: "/posts/reconciliation" },
-  { value: "19 min", label: "from a staff request to the fix in production", href: "/posts/feature-requests" },
+  { value: "37 days", label: "to build our dental CT scan check in house", href: "/posts/cbct-scan-validator" },
   { value: "1,161", label: "doctor consults and patient calls graded", href: "/architecture/doc-coach" },
   { value: "45", label: "services live on Google Cloud, one engineer", href: "/posts/platform" },
 ];
@@ -169,7 +169,7 @@ const faq = [
   },
   {
     q: "What has the work changed for the business?",
-    a: "About 70 hours a week back for the insurance team, 1,161 doctor consults and patient calls graded, and a staff request live in production 19 minutes after it was filed.",
+    a: "About 70 hours a week back for the insurance team, 1,161 doctor consults and patient calls graded, and a dental CT scan check built in house in 37 days against a six figure vendor quote.",
   },
   {
     q: "What does a forward deployed engineer do?",
@@ -238,6 +238,9 @@ const sky = Array.from({ length: 6 }, (_, i) => ({
         <div class="hero-actions">
           <a href="#projects" class="btn btn-primary">
             See the projects <Icon name="arrow-down" size={15} />
+          </a>
+          <a href="/mind" class="btn btn-mind">
+            <Icon name="brain" size={15} /> Explore the Mind
           </a>
           <a href="#contact" class="btn btn-glass">
             Contact <Icon name="mail" size={15} />
@@ -727,6 +730,11 @@ const sky = Array.from({ length: 6 }, (_, i) => ({
   .hero-proof a:hover span { color: var(--ink-soft); }
   .hero-proof a:focus-visible { outline: none; box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.25); border-radius: 6px; }
   .hero-actions { margin-top: 32px; display: flex; flex-wrap: wrap; gap: 12px; }
+  /* phones: three equal lanes, no button left alone on a row */
+  @media (max-width: 520px) {
+    .hero-actions { display: grid; grid-template-columns: 1fr; gap: 10px; }
+    .hero-actions .btn { width: 100%; justify-content: center; }
+  }
   .hero-art { display: flex; justify-content: center; }
   @media (min-width: 1024px) { .hero-art { justify-content: flex-end; } }
 

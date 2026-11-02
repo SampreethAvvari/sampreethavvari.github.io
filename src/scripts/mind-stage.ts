@@ -201,6 +201,11 @@ export function mountMind() {
   let idle = 0;
   let hover: Node | null = null;
   let selected: Node | null = null;
+  // During the tour: the kinds of star a step is about (the rest dim), or an
+  // empty set to dim every star and let the axes speak.
+  let tourKinds: Set<string> | null = null;
+  let tourAxes = false; // the axes are what the step is about
+  let touring = false;
   let last = 0, raf = 0, time = 0;
 
   // The camera's own axes in world space.
@@ -498,7 +503,8 @@ export function mountMind() {
     }
     // size from importance: type weight + how connected it is
     for (const n of nodes) n.r = 1.7 + Math.sqrt(n.weight) * 1.9 + Math.sqrt(n.deg) * 1.15;
-    spread = clamp(Math.sqrt(nodes.length / 35), 1.25, 3);
+    // the git map packs more stars per stack, so it gets more room
+    spread = clamp(Math.sqrt(nodes.length / 35), 1.25, 3) * (key === "repo" ? 1.4 : 1);
     for (const n of nodes) { n.x *= spread; n.y *= spread; n.z *= spread; }
 
     // pin the quadrant anchors: disciplines (portfolio) or tech stacks (git mind)
@@ -530,6 +536,11 @@ export function mountMind() {
   function step(a: number) {
     const n = nodes.length;
     const k3 = spread * spread * spread;
+    // The git map: repos push each other harder, and a language most repos
+    // use (Python, TypeScript) pulls on each one more gently, so the repos
+    // spread out instead of collapsing onto the shared languages.
+    const git = graphKey === "repo";
+    const majorPush = git ? 12000 : 6200;
     for (let i = 0; i < n; i++) {
       const p = nodes[i];
       for (let j = i + 1; j < n; j++) {
@@ -538,7 +549,7 @@ export function mountMind() {
         let d2 = dx * dx + dy * dy + dz * dz;
         if (d2 < 0.01) { dx = Math.random() - 0.5; dy = Math.random() - 0.5; dz = Math.random() - 0.5; d2 = 0.01; }
         // projects push each other harder, so each has room around it
-        const rep = ((p.major && q.major ? 6200 : 2600) * k3 * a) / d2;
+        const rep = ((p.major && q.major ? majorPush : 2600) * k3 * a) / d2;
         const d = Math.sqrt(d2);
         const fx = (dx / d) * rep, fy = (dy / d) * rep, fz = (dz / d) * rep;
         p.vx += fx; p.vy += fy; p.vz += fz;
@@ -550,7 +561,8 @@ export function mountMind() {
       const d = Math.hypot(dx, dy, dz) || 0.01;
       // tools sit close around their project; projects keep their distance
       const ideal = (80 + (e.a.r + e.b.r) * 2) * spread * (e.major ? 1.25 : 0.72);
-      const f = (d - ideal) * 0.02 * a;
+      const hub = git && !e.major ? Math.min(1, 2.5 / Math.sqrt(Math.max(e.a.deg, e.b.deg))) : 1;
+      const f = (d - ideal) * 0.02 * a * hub;
       const fx = (dx / d) * f, fy = (dy / d) * f, fz = (dz / d) * f;
       e.a.vx += fx; e.a.vy += fy; e.a.vz += fz;
       e.b.vx -= fx; e.b.vy -= fy; e.b.vz -= fz;
@@ -572,7 +584,7 @@ export function mountMind() {
     for (const p of nodes) max = Math.max(max, Math.hypot(p.x, p.y, p.z));
     worldR = max;
     cam.focal = focalFor(W, H);
-    camTarget = { dist: worldR * 2.4 + 120, yaw: -0.5, pitch: -0.42, tx: 0, ty: 0, tz: 0 };
+    camTarget = { dist: worldR * (graphKey === "repo" ? 2.05 : 2.4) + 120, yaw: -0.5, pitch: -0.42, tx: 0, ty: 0, tz: 0 };
   }
 
   // How large the map draws. A portrait phone is narrow and tall, so the map
@@ -636,7 +648,7 @@ export function mountMind() {
       for (const ax of AXES) {
         const e = projXYZ(ax.at[0] * ext * 0.86, ax.at[1] * ext * 0.86, ax.at[2] * ext * 0.86);
         if (e.pz < NEAR) continue;
-        if (nodes.some((n) => PLANET.has(n.type) && Math.hypot(n.px - e.px, n.py - e.py) < 70)) continue;
+        if (!tourAxes && nodes.some((n) => PLANET.has(n.type) && Math.hypot(n.px - e.px, n.py - e.py) < 70)) continue;
         ctx!.fillStyle = `rgba(214,232,255,${0.95 * fade * vis})`;
         ctx!.fillText(ax.label, e.px, e.py);
       }
@@ -891,6 +903,8 @@ export function mountMind() {
     const lead = leadKind();
     const leads = (p: Node) => p.major || p.type === lead;
     const quiet = hiddenTypes.size ? 0.35 : 1;
+    // the dust and the galaxy's speckle stay well under the map's stars
+    const dustQ = quiet * (touring ? 0.15 : 0.4);
 
     for (const p of nodes) project(p);
     moveComets(dt);
@@ -900,10 +914,10 @@ export function mountMind() {
     // light adds up, so overlapping glows bloom
     ctx!.globalCompositeOperation = "lighter";
     drawFar();
-    drawDust(speed, quiet);
+    drawDust(speed, dustQ);
     ctx!.globalCompositeOperation = "source-over";
     // the axes step back while a star is open, so its names read clearly
-    if (hasQuadrants) drawAxes(showAxisLabels, (1 - out * 0.85) * (selected ? 0.35 : 1));
+    if (hasQuadrants) drawAxes(showAxisLabels, tourAxes ? 1.2 : touring ? 0.08 : (1 - out * 0.85) * (selected ? 0.35 : 1));
     ctx!.globalCompositeOperation = "lighter";
 
     // Comets behind the map's centre draw under it, the rest over it.
@@ -915,7 +929,7 @@ export function mountMind() {
 
     // zoom feel: close => big soft bubbles; far => sharp pinpoints
     const near = clamp((worldR * 3.4 - cam.dist) / (worldR * 3), 0, 1);
-    drawGalaxy(out * quiet, quiet);
+    drawGalaxy(out * dustQ, dustQ);
     // every work star lights the region around it, like a star cluster
     for (const p of nodes) {
       if (!leads(p) || p.pz < NEAR || p.reveal < 0.05) continue;
@@ -959,7 +973,8 @@ export function mountMind() {
         if (e.a.pz < NEAR || e.b.pz < NEAR) continue;
         const vis = Math.min(e.a.reveal, e.b.reveal);
         if (vis < 0.02) continue;
-        line(e.a, e.b, e.rgb, (hover ? 0.28 : 0.6) * fade * vis, 1.1);
+        const inTour = !tourKinds || (tourKinds.has(e.a.type) && tourKinds.has(e.b.type));
+        line(e.a, e.b, e.rgb, (hover ? 0.28 : 0.6) * fade * vis * (inTour ? 1 : 0.05), 1.1);
       }
     }
     if (lit && lit.pz > NEAR) {
@@ -983,12 +998,13 @@ export function mountMind() {
       const tw = reduced ? 1 : 0.8 + 0.2 * (0.62 * Math.sin(time * pace + p.tw) + 0.38 * Math.sin(time * pace * 2.3 + p.tw * 1.7));
       const dim =
         (hover && hover !== p && !hoverSet?.has(p.id)) ||
-        (selected && selected !== p && !selSet?.has(p.id) && !hover);
+        (selected && selected !== p && !selSet?.has(p.id) && !hover) ||
+        (!selected && !hover && tourKinds !== null && !tourKinds.has(p.type));
       const focus = p === hover || p === selected;
       const hotHue = p.type === "repo" || p.type === "tech" || p.type === "language";
       const baseLum = promoted ? LUM.project * (hotHue ? 0.55 : 1) : LUM[p.type] ?? 0.7;
       const lum = p === selected ? Math.min(1.45, baseLum * 1.3) : p === hover ? Math.min(1.35, baseLum * 1.15) : baseLum;
-      const op = (dim ? (selected && !hover ? 0.12 : 0.3) : 1) * fade * depthFade * lum * nearFade * p.reveal * tw;
+      const op = (dim ? (touring ? 0.05 : selected && !hover ? 0.12 : 0.3) : 1) * fade * depthFade * lum * nearFade * p.reveal * tw;
       // the white centre stays small on every work star, so colour leads
       const coreLift = hotHue ? 0.45 : p.type === "project" ? 0.55 : 1;
       const lift = p === selected ? 1.1 : p === hover ? 1.05 : 1;
@@ -1011,7 +1027,7 @@ export function mountMind() {
           font: `${focus ? 600 : 500} ${size}px Inter, -apple-system, "SF Pro Display", sans-serif`,
           size,
           a: Math.min(1, lop * Math.max(p.reveal, near1 ? 1 : 0)),
-          prio: (focus ? 1e6 : 0) + (big ? 1000 : 0) + p.ps * 100 + p.r,
+          prio: (focus ? 1e6 : 0) + (PLANET.has(p.type) ? 5000 : 0) + (big ? 1000 : 0) + p.ps * 100 + p.r,
           focus,
         });
       }
@@ -1210,7 +1226,7 @@ export function mountMind() {
   window.addEventListener("keydown", (e) => {
     if (typing() || e.metaKey || e.ctrlKey || e.altKey) return;
     const k = e.key.toLowerCase();
-    if (k === "escape") { select(null); return; }
+    if (k === "escape") { if (tourStep >= 0) endTour(); else select(null); return; }
     if (["w", "a", "s", "d", "r", "f", "arrowup", "arrowdown", "arrowleft", "arrowright", "+", "=", "-", "_"].includes(k)) {
       keys.add(k);
       wake();
@@ -1412,6 +1428,188 @@ export function mountMind() {
     autorotate = !reduced;
   });
 
+  // ---- the tour -------------------------------------------------------------
+  // A first visit walk through the map. The site is static, so "first visit"
+  // is remembered in this browser; the Tour button replays it any time.
+  const TOUR_KEY = "mind-tour-v1";
+  const tourEl = document.querySelector<HTMLElement>("[data-mind-tour]");
+  const tourOpen = document.querySelector<HTMLButtonElement>("[data-mind-tour-open]");
+  let tourStep = -1;
+  let tourWasFolded = false;
+  type TourStep = { title: string; text: string; target?: string; enter: () => void };
+  // A step either needs the panel (it points at something in it) or not;
+  // when not, the panel folds away so the map has the room.
+  const panelFor = (open: boolean) => setFolded(!open);
+  const overview = (yaw = -0.5, pitch = -0.42, zoom = 1) => {
+    select(null);
+    vel.yaw = vel.pitch = vel.tx = vel.ty = vel.tz = 0;
+    frameToFit();
+    camTarget = { ...camTarget, yaw, pitch, dist: camTarget!.dist! * zoom };
+    autorotate = false;
+  };
+  const showcase = () =>
+    nodes.filter((n) => n.type === "project" && shown(n)).sort((a, b) => b.deg - a.deg)[0] || null;
+  const STEPS: TourStep[] = [
+    {
+      title: "Welcome to the Mind",
+      text: "A star map of everything I have built. Here is how to read it.",
+      enter: () => { tourKinds = null; tourAxes = false; panelFor(false); overview(); },
+    },
+    {
+      title: "Four planets, four disciplines",
+      text: "AIE, FDE, MLE and SDE. Each project is pulled toward the ones it belongs to.",
+      enter: () => { tourKinds = new Set(["discipline"]); tourAxes = false; panelFor(false); overview(); },
+    },
+    {
+      title: "Position has meaning",
+      text: "Left to right: business to tech. Top to bottom: product to models. Depth: data to systems.",
+      enter: () => { tourKinds = new Set(); tourAxes = true; panelFor(false); overview(-0.95, -0.36, 1.3); },
+    },
+    {
+      title: "What the colours mean",
+      text: "Blue projects, green case studies, red technologies. Fly closer to see more.",
+      target: ".mind-filter",
+      enter: () => { tourKinds = new Set(["project", "post", "tech"]); tourAxes = false; panelFor(true); overview(); },
+    },
+    {
+      title: "Open any star",
+      text: "Tap a star to open its card: what it is, where to read more, what it links to.",
+      enter: () => { tourKinds = null; tourAxes = false; panelFor(false); const n = showcase(); if (n) select(n); },
+    },
+    {
+      title: "Choose what you see",
+      text: "Switch kinds on and off. The highest kind still on takes the lines.",
+      target: ".mind-filter",
+      enter: () => { tourKinds = new Set(); tourAxes = false; panelFor(true); overview(); },
+    },
+    {
+      title: "Fly around",
+      text: "Scroll or pinch to fly, drag to turn. Git mind shows my repos by tech stack.",
+      target: ".mind-modes",
+      enter: () => { tourKinds = new Set(); tourAxes = false; panelFor(true); },
+    },
+  ];
+  // The tour card moves to wherever it covers least: it tries a few spots
+  // and skips any that sit on the stars or axis names the step is about,
+  // the open panel, or a star's card.
+  function placeTour() {
+    if (!tourEl || tourEl.hidden) return;
+    const vw = window.innerWidth, vh = window.innerHeight;
+    const phoneW = vw < 641;
+    const w = phoneW ? vw - 24 : Math.min(440, vw - 32);
+    const h = tourEl.offsetHeight || 170;
+    const top0 = phoneW ? 84 : 96;
+    type R = { x: number; y: number; w: number; h: number };
+    const hit = (r: R, x: number, y: number, pad = 18) => x > r.x - pad && x < r.x + r.w + pad && y > r.y - pad && y < r.y + r.h + pad;
+    const meets = (a: R, b: R) => a.x < b.x + b.w && b.x < a.x + a.w && a.y < b.y + b.h && b.y < a.y + a.h;
+    const blocks: R[] = [];
+    if (!panel!.classList.contains("is-folded") || phoneW) {
+      const pr = panel!.getBoundingClientRect();
+      blocks.push({ x: pr.left - 12, y: pr.top - 12, w: pr.width + 24, h: pr.height + 24 });
+    }
+    for (const el of document.querySelectorAll(".chat-launcher, [data-mind-reset]")) {
+      const r = el.getBoundingClientRect();
+      if (r.width) blocks.push({ x: r.left - 12, y: r.top - 12, w: r.width + 24, h: r.height + 24 });
+    }
+    const frame = cardEl && !cardEl.hidden ? cardEl.querySelector(".mind-card-frame") : null;
+    if (frame) {
+      const cr = frame.getBoundingClientRect();
+      blocks.push({ x: cr.left - 16, y: cr.top - 16, w: cr.width + 32, h: cr.height + 32 });
+    }
+    // what this step is about, on screen
+    const pts: [number, number, number][] = [];
+    for (const p of nodes) {
+      if (p.pz < NEAR || p.reveal < 0.3) continue;
+      const lit = selected ? p === selected || !!related(selected).includes(p) : tourKinds ? tourKinds.has(p.type) : p.major;
+      if (lit) pts.push([p.px, p.py, PLANET.has(p.type) || p === selected ? 6 : 1]);
+    }
+    if (tourAxes) {
+      const ext = 640 * spread * 0.86;
+      for (const ax of AXES) {
+        const e = projXYZ(ax.at[0] * ext, ax.at[1] * ext, ax.at[2] * ext);
+        if (e.pz > NEAR) pts.push([e.px, e.py, 6]);
+      }
+    }
+    const spots: R[] = phoneW
+      ? [{ x: 12, y: top0, w, h }, { x: 12, y: vh - h - 24, w, h }]
+      : [
+          { x: (vw - w) / 2, y: vh - h - 24, w, h },
+          { x: vw - w - 24, y: vh - h - 24, w, h },
+          { x: vw - w - 24, y: top0, w, h },
+          { x: (vw - w) / 2, y: top0, w, h },
+          { x: 24, y: vh - h - 24, w, h },
+          { x: 24, y: top0, w, h },
+        ];
+    let best = spots[0], bestScore = Infinity;
+    spots.forEach((r, k) => {
+      if (r.x < 0 || r.y < 0 || r.y + r.h > vh) return;
+      let score = k * 0.5; // a small lean toward the first spots
+      for (const b of blocks) if (meets(r, b)) score += 1000;
+      for (const [x, y, wgt] of pts) if (hit(r, x, y)) score += wgt * 10;
+      if (score < bestScore) { bestScore = score; best = r; }
+    });
+    tourEl.style.width = `${best.w}px`;
+    tourEl.style.left = `${best.x}px`;
+    tourEl.style.top = `${best.y}px`;
+  }
+  function showStep(i: number) {
+    if (!tourEl) return;
+    document.querySelectorAll(".is-tour-target").forEach((el) => el.classList.remove("is-tour-target"));
+    tourStep = i;
+    const s = STEPS[i];
+    s.enter();
+    if (s.target) document.querySelector(s.target)?.classList.add("is-tour-target");
+    const last = i === STEPS.length - 1;
+    tourEl.querySelector("[data-tour-count]")!.textContent = `Space tour · ${i + 1} of ${STEPS.length}`;
+    tourEl.querySelector("[data-tour-title]")!.textContent = s.title;
+    tourEl.querySelector("[data-tour-text]")!.textContent = s.text;
+    tourEl.querySelector("[data-tour-dots]")!.innerHTML = STEPS.map((_, k) => `<i class="${k === i ? "on" : ""}"></i>`).join("");
+    (tourEl.querySelector("[data-tour-back]") as HTMLElement).hidden = i === 0;
+    (tourEl.querySelector("[data-tour-skip]") as HTMLElement).hidden = last;
+    const next = tourEl.querySelector("[data-tour-next]") as HTMLButtonElement;
+    next.textContent = i === 0 ? "Show me" : last ? "Start exploring" : "Next";
+    tourEl.classList.remove("is-step");
+    void tourEl.offsetWidth;
+    if (i > 0) tourEl.classList.add("is-step");
+    // once now, then again as the camera settles on the step
+    requestAnimationFrame(placeTour);
+    window.setTimeout(placeTour, 650);
+    window.setTimeout(placeTour, 1300);
+  }
+  function startTour() {
+    if (!tourEl) return;
+    try { localStorage.setItem(TOUR_KEY, "seen"); } catch { /* private mode: it shows again next time */ }
+    if (graphKey !== "portfolio") modeBtns.find((b) => b.dataset.mode === "portfolio")?.click();
+    tourWasFolded = panel!.classList.contains("is-folded");
+    touring = true;
+    panel!.classList.add("is-touring");
+    document.body.classList.add("mind-touring");
+    tourEl.hidden = false;
+    showStep(0);
+    (tourEl.querySelector("[data-tour-next]") as HTMLButtonElement).focus({ preventScroll: true });
+  }
+  function endTour() {
+    if (!tourEl || tourStep < 0) return;
+    tourStep = -1;
+    tourKinds = null;
+    tourAxes = false;
+    touring = false;
+    panel!.classList.remove("is-touring");
+    document.body.classList.remove("mind-touring");
+    document.querySelectorAll(".is-tour-target").forEach((el) => el.classList.remove("is-tour-target"));
+    tourEl.hidden = true;
+    setFolded(tourWasFolded);
+  }
+  tourEl?.querySelector("[data-tour-next]")?.addEventListener("click", () => {
+    if (tourStep >= STEPS.length - 1) endTour(); else showStep(tourStep + 1);
+  });
+  tourEl?.querySelector("[data-tour-back]")?.addEventListener("click", () => { if (tourStep > 0) showStep(tourStep - 1); });
+  tourEl?.querySelector("[data-tour-skip]")?.addEventListener("click", () => endTour());
+  // keep pointer and wheel on the tour card from moving the map
+  for (const ev of ["pointerdown", "wheel", "click"]) tourEl?.addEventListener(ev, (e) => e.stopPropagation());
+  tourOpen?.addEventListener("click", (e) => { e.stopPropagation(); startTour(); });
+  window.addEventListener("resize", () => placeTour());
+
   // ---- boot ---------------------------------------------------------------
   const ro = new ResizeObserver(() => resize());
   ro.observe(canvas);
@@ -1419,6 +1617,10 @@ export function mountMind() {
   loadGraph(graphKey);
   raf = requestAnimationFrame(render);
   window.addEventListener("beforeunload", () => cancelAnimationFrame(raf));
+  // first visit in this browser: the tour opens once the map has settled
+  let seen = false;
+  try { seen = localStorage.getItem(TOUR_KEY) === "seen"; } catch { seen = false; }
+  if (!seen && !new URLSearchParams(location.search).has("notour")) window.setTimeout(startTour, 1400);
 }
 
 // ---- helpers --------------------------------------------------------------
