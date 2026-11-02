@@ -84,18 +84,21 @@ const LABEL_ALWAYS = new Set(["discipline", "category", "project", "repo", "org"
 //   FDE top-left (business + delivery), AIE bottom-left (business + models),
 //   SDE top-right (tech + delivery), MLE bottom-right (tech + models).
 // A project wired to both sides settles in the middle = business + tech metrics.
-const QUAD: Record<string, [number, number]> = {
-  fde: [-1, 1],
-  aie: [-1, -1],
-  sde: [1, 1],
-  mle: [1, -1],
+// Each anchor also takes a depth, on alternate corners of a cube (a
+// tetrahedron), so the four clusters fill the cube instead of one plane and
+// still read as their quadrant from the front.
+const QUAD: Record<string, [number, number, number]> = {
+  fde: [-1, 1, 1],
+  aie: [-1, -1, -1],
+  sde: [1, 1, -1],
+  mle: [1, -1, 1],
 };
 // Git Mind quadrants: tech-stack corners (repos settle toward the stacks they use).
-const CAT_QUAD: Record<string, [number, number]> = {
-  aiml: [-1, 1], // top-left
-  frontend: [1, 1], // top-right
-  backend: [-1, -1], // bottom-left
-  data: [1, -1], // bottom-right
+const CAT_QUAD: Record<string, [number, number, number]> = {
+  aiml: [-1, 1, 1], // top-left, near
+  frontend: [1, 1, -1], // top-right, far
+  backend: [-1, -1, -1], // bottom-left, far
+  data: [1, -1, 1], // bottom-right, near
 };
 const AXES: { at: [number, number, number]; label: string }[] = [
   { at: [-1, 0, 0], label: "Business-driven" },
@@ -105,6 +108,9 @@ const AXES: { at: [number, number, number]; label: string }[] = [
 ];
 
 const clamp = (v: number, a: number, b: number) => Math.max(a, Math.min(b, v));
+// Zoomed into the cube, anything this close to the camera (world units)
+// fades out, so flying through the cloud stays clean.
+const NEAR = 60;
 const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
 
 export function mountMind() {
@@ -155,7 +161,7 @@ export function mountMind() {
         ...n,
         x: (Math.random() - 0.5) * 260,
         y: (Math.random() - 0.5) * 260,
-        z: (Math.random() - 0.5) * 160,
+        z: (Math.random() - 0.5) * 260,
         vx: 0, vy: 0, vz: 0,
         px: 0, py: 0, pz: 0, ps: 1,
         pinned: false,
@@ -185,9 +191,9 @@ export function mountMind() {
       const dm = n.id.match(/^disc:(\w+)/);
       const cm = n.id.match(/^cat:(\w+)/);
       const q = dm && QUAD[dm[1]] ? QUAD[dm[1]] : cm && CAT_QUAD[cm[1]] ? CAT_QUAD[cm[1]] : null;
-      if (q) { n.x = q[0] * Rq; n.y = q[1] * Rq; n.z = 0; n.pinned = true; }
+      if (q) { n.x = q[0] * Rq; n.y = q[1] * Rq; n.z = q[2] * Rq; n.pinned = true; }
     }
-    hasQuadrants = nodes.some((n) => n.pinned); // divider lines on both maps
+    hasQuadrants = nodes.some((n) => n.pinned); // the cube frame on both maps
     showAxisLabels = nodes.some((n) => n.id.startsWith("disc:")); // business/tech labels: portfolio only
 
     document.querySelector(".mind-root")?.setAttribute("data-graph", key);
@@ -227,11 +233,11 @@ export function mountMind() {
     }
     for (const p of nodes) {
       if (p.pinned) { p.vx = p.vy = p.vz = 0; continue; }
-      // mild pull to origin, and flatten toward the quadrant plane so the four
-      // clusters stay legible while depth still develops
+      // the same mild pull to the centre on every axis, so the cloud keeps
+      // the cube's depth instead of flattening onto one plane
       p.vx -= p.x * 0.01 * a;
       p.vy -= p.y * 0.01 * a;
-      p.vz -= p.z * 0.045 * a;
+      p.vz -= p.z * 0.01 * a;
       p.x += p.vx; p.y += p.vy; p.z += p.vz;
       p.vx *= 0.84; p.vy *= 0.84; p.vz *= 0.84;
     }
@@ -241,8 +247,14 @@ export function mountMind() {
     let max = 1;
     for (const p of nodes) max = Math.max(max, Math.hypot(p.x, p.y, p.z));
     worldR = max;
-    cam.focal = Math.min(W, H) * 0.92;
+    cam.focal = focalFor(W, H);
     camTarget = { dist: worldR * 2.5 + 120, yaw: -0.5, pitch: -0.42 };
+  }
+
+  // How large the cube draws. A portrait phone is narrow and tall, so the
+  // cube may use more of its width than a square fit allows.
+  function focalFor(w: number, h: number) {
+    return w < 600 && h > w ? w * 1.12 : Math.min(w, h) * 0.92;
   }
 
   // ---- projection ---------------------------------------------------------
@@ -261,16 +273,41 @@ export function mountMind() {
     p.px = r.px; p.py = r.py; p.pz = r.pz; p.ps = r.ps;
   }
   function drawQuadrants(showLabels: boolean) {
-    const ext = 380;
-    // the two divider lines through the origin that split the plane into quadrants
+    const ext = 300;
+    // A faint cube around the map, its nearer edges brighter so its depth
+    // reads at a glance, and the three axes through the centre.
+    const c = (x: number, y: number, z: number) => projXYZ(x * ext, y * ext, z * ext);
+    const corners: [number, number, number][] = [];
+    for (const x of [-1, 1]) for (const y of [-1, 1]) for (const z of [-1, 1]) corners.push([x, y, z]);
+    const cubeEdges: [number, number][] = [];
+    for (let i = 0; i < 8; i++) for (let j = i + 1; j < 8; j++) {
+      const d = corners[i].reduce((n, v, k) => n + (v !== corners[j][k] ? 1 : 0), 0);
+      if (d === 1) cubeEdges.push([i, j]);
+    }
+    const P = corners.map((k) => c(k[0], k[1], k[2]));
+    const zs = P.map((q) => q.pz);
+    const zMin = Math.min(...zs), zMax = Math.max(...zs);
+    const nearness = (z: number) => (zMax > zMin ? (z - zMin) / (zMax - zMin) : 0.5);
+    ctx!.lineWidth = 1;
+    for (const [i, j] of cubeEdges) {
+      const A = P[i], B = P[j];
+      if (cam.dist - A.pz < NEAR || cam.dist - B.pz < NEAR) continue;
+      const grad = ctx!.createLinearGradient(A.px, A.py, B.px, B.py);
+      grad.addColorStop(0, `rgba(245,245,247,${(0.04 + 0.1 * nearness(A.pz)) * fade})`);
+      grad.addColorStop(1, `rgba(245,245,247,${(0.04 + 0.1 * nearness(B.pz)) * fade})`);
+      ctx!.strokeStyle = grad;
+      ctx!.beginPath(); ctx!.moveTo(A.px, A.py); ctx!.lineTo(B.px, B.py); ctx!.stroke();
+    }
     const lines: [number, number, number][][] = [
-      [[-ext, 0, 0], [ext, 0, 0]],
-      [[0, -ext, 0], [0, ext, 0]],
+      [[-1, 0, 0], [1, 0, 0]],
+      [[0, -1, 0], [0, 1, 0]],
+      [[0, 0, -1], [0, 0, 1]],
     ];
     ctx!.lineWidth = 1.1;
     for (const [a, b] of lines) {
-      const A = projXYZ(a[0], a[1], a[2]);
-      const B = projXYZ(b[0], b[1], b[2]);
+      const A = c(a[0], a[1], a[2]);
+      const B = c(b[0], b[1], b[2]);
+      if (cam.dist - A.pz < NEAR || cam.dist - B.pz < NEAR) continue;
       const grad = ctx!.createLinearGradient(A.px, A.py, B.px, B.py);
       grad.addColorStop(0, "rgba(245,245,247,0)");
       grad.addColorStop(0.5, `rgba(245,245,247,${0.18 * fade})`);
@@ -284,6 +321,7 @@ export function mountMind() {
       ctx!.font = '500 12px Inter, ui-sans-serif, system-ui, sans-serif';
       for (const ax of AXES) {
         const e = projXYZ(ax.at[0] * ext, ax.at[1] * ext, ax.at[2] * ext);
+        if (cam.dist - e.pz < NEAR) continue;
         ctx!.fillStyle = `rgba(245,245,247,${0.36 * fade})`;
         ctx!.shadowColor = "rgba(0,0,0,0.8)";
         ctx!.shadowBlur = 6;
@@ -300,7 +338,7 @@ export function mountMind() {
     canvas!.width = Math.round(W * dpr);
     canvas!.height = Math.round(H * dpr);
     ctx!.setTransform(dpr, 0, 0, dpr, 0, 0);
-    cam.focal = Math.min(W, H) * 0.92;
+    cam.focal = focalFor(W, H);
   }
 
   function render(now: number) {
@@ -332,6 +370,7 @@ export function mountMind() {
 
     // edges
     for (const e of edges) {
+      if (cam.dist - e.a.pz < NEAR || cam.dist - e.b.pz < NEAR) continue;
       const focus =
         hover && (e.a === hover || e.b === hover) ? 1 :
         selected && (e.a === selected || e.b === selected) ? 0.85 : 0;
@@ -351,8 +390,12 @@ export function mountMind() {
     // stars as glass bubbles
     ctx!.textAlign = "center";
     ctx!.textBaseline = "top";
+    const labels: { text: string; x: number; y: number; font: string; size: number; a: number; prio: number; focus: boolean }[] = [];
     for (const p of order) {
       if (p.px < -120 || p.px > W + 120 || p.py < -120 || p.py > H + 120) continue;
+      const gap = cam.dist - p.pz;
+      if (gap < NEAR) continue;
+      const nearFade = clamp((gap - NEAR) / NEAR, 0, 1);
       const R = clamp(p.r * p.ps, 0.6, 140);
       const depthFade = clamp((p.ps / (cam.focal / cam.dist)) * 0.7 + 0.3, 0.25, 1.15);
       const tw = reduced ? 1 : 0.85 + Math.sin(time * 1.5 + p.tw) * 0.15;
@@ -361,21 +404,42 @@ export function mountMind() {
         (selected && selected !== p && !selSet?.has(p.id) && !hover);
       const focus = p === hover || p === selected;
       const lum = focus ? 1.15 : LUM[p.type] ?? 0.7;
-      const op = (dim ? 0.26 : 1) * fade * depthFade * lum;
+      const op = (dim ? 0.26 : 1) * fade * depthFade * lum * nearFade;
       drawBubble(p.px, p.py, R * (focus ? 1.28 : 1), p.color, op * tw, near, focus);
 
       const bright = LABEL_ALWAYS.has(p.type);
       const lop = focus ? 1 : bright ? 0.92 : labelOn * 0.7;
       if (lop > 0.05 && !(dim && !focus) && R > 1.2) {
         const size = clamp(11 + R * 0.16, 10.5, 16);
-        ctx!.font = `${focus || bright ? 600 : 500} ${size}px Inter, -apple-system, "SF Pro Display", sans-serif`;
-        ctx!.fillStyle = hexA("#f5f5f7", lop * op * 1.1);
-        ctx!.shadowColor = "rgba(0,0,0,0.9)";
-        ctx!.shadowBlur = 9;
-        ctx!.fillText(trim(p.label, focus ? 44 : 22), p.px, p.py + R + 5);
-        ctx!.shadowBlur = 0;
+        labels.push({
+          text: trim(p.label, focus ? 44 : 22),
+          x: p.px,
+          y: p.py + R + 5,
+          font: `${focus || bright ? 600 : 500} ${size}px Inter, -apple-system, "SF Pro Display", sans-serif`,
+          size,
+          a: lop * op * 1.1,
+          prio: (focus ? 1e6 : 0) + (bright ? 1000 : 0) + p.ps * 100 + p.r,
+          focus,
+        });
       }
     }
+
+    // Labels go on top, nearest and most important first; one that would
+    // sit on a label already placed waits until the view opens up.
+    labels.sort((a, b) => b.prio - a.prio);
+    const taken: [number, number, number, number][] = [];
+    ctx!.shadowColor = "rgba(0,0,0,0.9)";
+    ctx!.shadowBlur = 9;
+    for (const l of labels) {
+      ctx!.font = l.font;
+      const w = ctx!.measureText(l.text).width;
+      const box: [number, number, number, number] = [l.x - w / 2 - 3, l.y - 1, l.x + w / 2 + 3, l.y + l.size + 2];
+      if (!l.focus && taken.some((t) => box[0] < t[2] && box[2] > t[0] && box[1] < t[3] && box[3] > t[1])) continue;
+      taken.push(box);
+      ctx!.fillStyle = hexA("#f5f5f7", l.a);
+      ctx!.fillText(l.text, l.x, l.y);
+    }
+    ctx!.shadowBlur = 0;
     raf = requestAnimationFrame(render);
   }
 
@@ -439,7 +503,12 @@ export function mountMind() {
   }
 
   let dragging = false, moved = false, last = { x: 0, y: 0 };
+  // Fingers on the map. One turns it; a second means a pinch, which only
+  // zooms, so the cube holds still while it is being pinched.
+  const fingers = new Set<number>();
   canvas.addEventListener("pointerdown", (e) => {
+    fingers.add(e.pointerId);
+    if (fingers.size > 1) { dragging = false; moved = true; return; }
     dragging = true; moved = false; last = { x: e.clientX, y: e.clientY };
     canvas.setPointerCapture(e.pointerId);
     canvas.classList.add("is-panning");
@@ -461,6 +530,7 @@ export function mountMind() {
     }
   });
   const endDrag = (e: PointerEvent) => {
+    fingers.delete(e.pointerId);
     if (dragging && !moved) {
       const rect = canvas.getBoundingClientRect();
       select(pick(e.clientX - rect.left, e.clientY - rect.top));
@@ -469,11 +539,11 @@ export function mountMind() {
     idle = 0;
   };
   canvas.addEventListener("pointerup", endDrag);
-  canvas.addEventListener("pointercancel", () => { dragging = false; canvas.classList.remove("is-panning"); });
+  canvas.addEventListener("pointercancel", (e) => { fingers.delete(e.pointerId); dragging = false; canvas.classList.remove("is-panning"); });
 
   canvas.addEventListener("wheel", (e) => {
     e.preventDefault();
-    cam.dist = clamp(cam.dist * Math.exp(e.deltaY * 0.0012), worldR * 0.7, worldR * 6);
+    cam.dist = clamp(cam.dist * Math.exp(e.deltaY * 0.0012), worldR * 0.45, worldR * 6);
     camTarget = null; idle = 0; autorotate = false;
   }, { passive: false });
 
@@ -481,7 +551,7 @@ export function mountMind() {
   canvas.addEventListener("touchmove", (e) => {
     if (e.touches.length === 2) {
       const d = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
-      if (pinch) { cam.dist = clamp(cam.dist * (pinch / d), worldR * 0.7, worldR * 6); camTarget = null; }
+      if (pinch) { cam.dist = clamp(cam.dist * (pinch / d), worldR * 0.45, worldR * 6); camTarget = null; }
       pinch = d; e.preventDefault();
     }
   }, { passive: false });
