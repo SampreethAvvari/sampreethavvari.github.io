@@ -24,11 +24,13 @@ function isChromium(): boolean {
 // The lens map: each pixel says where to sample the backdrop from. Near the
 // centre it samples closer in (magnified), with a slight swirl, fading to no
 // change at the rim.
-function lensMap(size: number): string {
+// Encoded away from the page's thread where it can be: read back and encoded at once, this
+// picture stopped every desktop page's first load for hundreds of milliseconds.
+function lensMap(size: number): Promise<string> {
   const c = document.createElement("canvas");
   c.width = c.height = size;
-  const g = c.getContext("2d");
-  if (!g) return "";
+  const g = c.getContext("2d", { willReadFrequently: true });
+  if (!g) return Promise.resolve("");
   const img = g.createImageData(size, size);
   const d = img.data;
   const h = size / 2;
@@ -53,7 +55,16 @@ function lensMap(size: number): string {
     }
   }
   g.putImageData(img, 0, 0);
-  return c.toDataURL("image/png");
+  return new Promise((resolve) => {
+    const now = () => resolve(c.toDataURL("image/png"));
+    c.toBlob((blob) => {
+      if (!blob) return now();
+      const reader = new FileReader();
+      reader.onload = () => resolve(String(reader.result));
+      reader.onerror = now;
+      reader.readAsDataURL(blob);
+    }, "image/png");
+  });
 }
 
 let mounted = false;
@@ -64,8 +75,16 @@ export function mountSpaceLens() {
   const warp = isChromium();
   const size = R * 2;
 
+  const lens = keepAcrossPages(document.createElement("div"));
+  lens.className = "fx-lens";
+  lens.setAttribute("aria-hidden", "true");
+  document.body.appendChild(lens);
+
+  // The bend comes when the browser has a moment. Until the map is ready, only the ring shows.
   let disp: SVGFEDisplacementMapElement | null = null;
-  if (warp) {
+  const build = async () => {
+    const map = await lensMap(size);
+    if (!map) return;
     const svg = document.createElementNS(NS, "svg");
     svg.setAttribute("width", "0");
     svg.setAttribute("height", "0");
@@ -78,25 +97,27 @@ export function mountSpaceLens() {
     filter.setAttribute("filterUnits", "userSpaceOnUse");
     filter.setAttribute("color-interpolation-filters", "sRGB");
     const fe = document.createElementNS(NS, "feImage");
-    fe.setAttribute("href", lensMap(size));
+    fe.setAttribute("href", map);
     fe.setAttribute("x", "0"); fe.setAttribute("y", "0");
     fe.setAttribute("width", String(size)); fe.setAttribute("height", String(size));
     fe.setAttribute("result", "map");
-    disp = document.createElementNS(NS, "feDisplacementMap");
-    disp.setAttribute("in", "SourceGraphic");
-    disp.setAttribute("in2", "map");
-    disp.setAttribute("scale", "0");
-    disp.setAttribute("xChannelSelector", "R");
-    disp.setAttribute("yChannelSelector", "G");
-    filter.append(fe, disp);
+    const bend = document.createElementNS(NS, "feDisplacementMap");
+    bend.setAttribute("in", "SourceGraphic");
+    bend.setAttribute("in2", "map");
+    bend.setAttribute("scale", "0");
+    bend.setAttribute("xChannelSelector", "R");
+    bend.setAttribute("yChannelSelector", "G");
+    filter.append(fe, bend);
     svg.appendChild(filter);
     document.body.appendChild(keepAcrossPages(svg));
+    disp = bend;
+    lens.classList.add("is-warp");
+  };
+  if (warp) {
+    const idle = (window as Window & { requestIdleCallback?: (cb: () => void, o?: { timeout: number }) => number }).requestIdleCallback;
+    if (idle) idle(() => void build(), { timeout: 2500 });
+    else setTimeout(() => void build(), 400);
   }
-
-  const lens = keepAcrossPages(document.createElement("div"));
-  lens.className = `fx-lens${warp ? " is-warp" : ""}`;
-  lens.setAttribute("aria-hidden", "true");
-  document.body.appendChild(lens);
 
   let x = -999, y = -999, cx = x, cy = y, speed = 0, strength = 0, running = false, lastT = 0, lastX = 0, lastY = 0;
   const loop = (t: number) => {
