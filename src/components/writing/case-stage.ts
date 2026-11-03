@@ -109,11 +109,13 @@ function stage(root: HTMLElement): () => void {
   let current = -1;
   let lastT = 0;
   let vel = 0;
+  let travel = 1;
   const update = (force = false) => {
     const y = scrollY;
     if (!force && y === lastY) return;
     const now = performance.now();
     const dy = Number.isNaN(lastY) ? 0 : y - lastY;
+    if (dy) travel = dy > 0 ? 1 : -1;
     const dms = Math.max(1, now - lastTime);
     lastTime = now;
     pxPerMs += (Math.abs(dy) / dms - pxPerMs) * 0.35;
@@ -174,6 +176,32 @@ function stage(root: HTMLElement): () => void {
   // Where a case study sits still: early in its hold.
   const restOf = (i: number) => top + i * seg + seg * 0.1;
 
+  // A reader who stops halfway through a change would rest on half faded,
+  // blurred words, so the change finishes by itself, the way they were going.
+  let finishing = 0;
+  const stopFinishing = () => {
+    if (finishing) cancelAnimationFrame(finishing);
+    finishing = 0;
+  };
+  const finish = () => {
+    const k = Math.floor(state.t);
+    const frac = state.t - k;
+    if (finishing || frac < 0.001 || frac > 0.999) return;
+    const onward = travel > 0 ? frac > 0.15 : frac > 0.85;
+    const to = onward ? top + (k + 1.01) * seg : top + (k + HOLD - 0.01) * seg;
+    const from = scrollY;
+    const t0 = performance.now();
+    const step = (now: number) => {
+      if (signal.aborted) return;
+      const p = Math.min(1, (now - t0) / 650);
+      const e = 1 - Math.pow(1 - p, 3);
+      scrollTo({ top: from + (to - from) * e, behavior: "instant" as ScrollBehavior });
+      finishing = p < 1 ? requestAnimationFrame(step) : 0;
+    };
+    finishing = requestAnimationFrame(step);
+  };
+  for (const ev of ["wheel", "touchstart", "keydown"]) addEventListener(ev, stopFinishing, { passive: true, signal });
+
   let queued = 0;
   let settle = 0;
   const onScroll = () => {
@@ -183,6 +211,7 @@ function stage(root: HTMLElement): () => void {
       pxPerMs = 0;
       vel = 0;
       put(stageEl, "--vel", 0);
+      finish();
     }, 140);
     if (queued) return;
     queued = requestAnimationFrame(() => {
