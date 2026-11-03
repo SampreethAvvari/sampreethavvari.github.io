@@ -69,7 +69,7 @@ function SoundToggle() {
   );
 }
 
-export default function Nav({ searchItems, cv = "/resume" }) {
+export default function Nav({ cv = "/resume" }) {
   const [open, setOpen] = useState(false);
   const [active, setActive] = useState("");
   const [condensed, setCondensed] = useState(false);
@@ -147,7 +147,7 @@ export default function Nav({ searchItems, cv = "/resume" }) {
 
             <div className="nav-actions">
               <SoundToggle />
-              <Search items={searchItems} />
+              <Search />
               <a href={cv} className="btn btn-primary btn-sm nav-resume" title="Resume">
                 <TabIcon name="resume" />
                 <span className="nav-label">Resume</span>

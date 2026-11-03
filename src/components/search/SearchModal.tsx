@@ -3,10 +3,25 @@ import { useEffect, useMemo, useState } from "react";
 import Modal from "react-modal";
 import { navigate } from "astro:transitions/client";
 
+// One copy of the list for the visit. A failed fetch is forgotten, so the next
+// time search opens it tries again.
+let index: Promise<any[]> | null = null;
+const loadIndex = () =>
+  (index ??= fetch("/search-index.json")
+    .then((r) => {
+      if (!r.ok) throw new Error(String(r.status));
+      return r.json();
+    })
+    .catch(() => {
+      index = null;
+      return [];
+    }));
+
 // The search dialog. Loaded only the first time someone opens search, so the
 // index and the dialog library stay out of every page's first load.
-export default function SearchModal({ items, open, onClose }: any) {
-  const [searchResults, setSearchResults] = useState<any[]>([]);
+export default function SearchModal({ open, onClose }: any) {
+  const [items, setItems] = useState<any[]>([]);
+  const [q, setQ] = useState("");
   const [selected, setSelected] = useState(0);
 
   // The nav (and this dialog in it) persists across page changes, so the
@@ -14,16 +29,39 @@ export default function SearchModal({ items, open, onClose }: any) {
   // on every render: the <main> of the page showing now.
   const appElement = typeof document !== "undefined" ? document.querySelector("main") ?? document.body : undefined;
 
-  // Build the index once per items array, not on every keystroke render.
-  const fuse = useMemo(() => new Fuse(items ?? [], { keys: ["title", "description"] }), [items]);
+  useEffect(() => {
+    if (!open) return;
+    let live = true;
+    loadIndex().then((list) => {
+      if (live) setItems(list);
+    });
+    return () => {
+      live = false;
+    };
+  }, [open]);
 
-  const query = (q: string) => {
-    if (!q) {
-      setSearchResults([]);
-      return;
-    }
+  // Build the index once per items array, not on every keystroke render.
+  // Close matches only, anywhere in the text, and a hit in the title counts for more.
+  const fuse = useMemo(
+    () =>
+      new Fuse(items, {
+        keys: [
+          { name: "title", weight: 2 },
+          { name: "description", weight: 1 },
+        ],
+        threshold: 0.3,
+        ignoreLocation: true,
+      }),
+    [items],
+  );
+
+  // Worked out from what is typed, so words typed before the list arrives still
+  // find their results when it does.
+  const searchResults = useMemo(() => (q ? fuse.search(q) : []) as any[], [fuse, q]);
+
+  const query = (next: string) => {
     setSelected(0);
-    setSearchResults(fuse.search(q));
+    setQ(next);
   };
 
   useEffect(() => {

@@ -5,7 +5,7 @@ import { lazy, Suspense, useState } from "react";
 const loadModal = () => import("./SearchModal");
 const SearchModal = lazy(loadModal);
 
-export default function Search({ items }: any) {
+export default function Search() {
   const [open, setOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
 
@@ -30,7 +30,7 @@ export default function Search({ items }: any) {
       </button>
       {mounted && (
         <Suspense fallback={null}>
-          <SearchModal items={items} open={open} onClose={() => setOpen(false)} />
+          <SearchModal open={open} onClose={() => setOpen(false)} />
         </Suspense>
       )}
     </div>

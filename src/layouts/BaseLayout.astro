@@ -71,7 +71,6 @@ const jsonLd = graph([
   ...(crumbs?.length ? [breadcrumbNode(base, crumbs)] : []),
   ...schema,
 ]);
-import { searchItems } from "../data/searchItems";
 
 import "../styles/global.css";
 import "../styles/system.css";
@@ -528,7 +527,7 @@ const pageComets = hasOwnComets
     <!-- The chrome persists across page changes: the nav keeps its state
          and the sound toggle, an open chat stays open, the scroll gauge and
          back to top carry on. Nav reads the new path after each swap. -->
-    <Nav client:soon transition:persist="nav" searchItems={searchItems} cv={info.cv} />
+    <Nav client:soon transition:persist="nav" cv={info.cv} />
     <ScrollOrbit />
     <main class="w-full">
       <slot />
