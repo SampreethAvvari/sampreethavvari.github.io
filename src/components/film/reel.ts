@@ -224,10 +224,16 @@ onPage("film-reel", (signal) => {
     }
     const img = b.querySelector("img");
     if (!img) return;
-    const sample = () => {
+    const read = () => {
       if (signal.aborted || !img.naturalWidth) return;
       inks[i] = ink(img) ?? inks[i];
       paintInk(i);
+    };
+    // Reading a picture stops the page for a moment, so the films not on screen wait
+    // for a quiet one, a little ahead of their turn at the latest.
+    const sample = () => {
+      if (i === current || !("requestIdleCallback" in window)) read();
+      else requestIdleCallback(read, { timeout: 1500 });
     };
     if (img.complete) sample();
     else img.addEventListener("load", sample, { once: true, signal });

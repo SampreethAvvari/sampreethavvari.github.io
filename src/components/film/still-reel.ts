@@ -98,9 +98,14 @@ export class StillReel {
       c.height = 96;
       const x = c.getContext("2d", { willReadFrequently: true });
       if (!x) return;
-      // Scaled down away from the page's thread: drawn straight onto this small
-      // canvas, the full still would be decoded again here, on the main thread.
-      const small = await createImageBitmap(f.img, { resizeWidth: 24, resizeHeight: 96, resizeQuality: "medium" }).catch(() => null);
+      // Scaled down away from the page's thread, from the file: drawn onto this small
+      // canvas, or scaled from the picture itself, the full still would be worked on
+      // here, on the main thread.
+      const small = await fetch(f.img.currentSrc || f.img.src)
+        .then((r) => r.blob())
+        .then((b) => createImageBitmap(b, { resizeWidth: 24, resizeHeight: 96, resizeQuality: "medium" }))
+        .catch(() => createImageBitmap(f.img, { resizeWidth: 24, resizeHeight: 96, resizeQuality: "medium" }))
+        .catch(() => null);
       x.drawImage(small ?? f.img, 0, 0, 24, 96);
       small?.close();
       const data = x.getImageData(0, 0, 24, 96).data;
