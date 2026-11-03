@@ -9,8 +9,8 @@
 // constellation's cards open in one panel beside it.
 //
 // Sound hook (nothing here plays audio): on window,
-//   writing:hover { slug }          the pointer comes onto a post or a star
-//   writing:constellation { tag }   a constellation opens
+//   writing:hover { kind: "card", id, slug }  the pointer comes onto a card
+//   (the sky adds its own star, constellation and dive events below)
 
 import { onPage } from "../../scripts/lifecycle";
 
@@ -182,11 +182,11 @@ export function mountArchive(): void {
     section.addEventListener(
       "pointerover",
       (e) => {
-        const item = (e.target as HTMLElement).closest<HTMLElement>(".ax-slot, .ax-s, .ax-c");
+        const item = (e.target as HTMLElement).closest<HTMLElement>(".ax-slot, .ax-c");
         if (!item) return;
-        const from = (e.relatedTarget as HTMLElement | null)?.closest(".ax-slot, .ax-s, .ax-c");
+        const from = (e.relatedTarget as HTMLElement | null)?.closest(".ax-slot, .ax-c");
         if (from === item) return;
-        dispatchEvent(new CustomEvent("writing:hover", { detail: { slug: item.dataset.slug } }));
+        dispatchEvent(new CustomEvent("writing:hover", { detail: { kind: "card", id: item.dataset.slug, slug: item.dataset.slug } }));
       },
       { passive: true, signal },
     );
@@ -212,7 +212,12 @@ export function mountArchive(): void {
 // beside it (a sheet from the bottom on phones). Escape, the close button
 // or a click on empty sky goes back.
 //
-// Sound hook: writing:constellation { tag } when one opens.
+// Sound hooks (window CustomEvents; nothing here plays audio):
+//   writing:constellation { id, tag, action: "hover" | "open" | "close" }
+//   writing:hover { kind: "star", id, slug, tag, note }  a star under the
+//     pointer; note is its place in its constellation, 0 the brightest
+//   writing:hover { kind: "card", id, slug }  a card under the pointer
+//   writing:transition { kind: "dive", direction: "in" | "out", tag }
 // ---------------------------------------------------------------------------
 
 type MapHandle = {
@@ -293,6 +298,9 @@ type Star = {
   match: boolean;
   x: number;
   y: number;
+  note: number;
+  lx: number;
+  ly: number;
 };
 
 type Group = {
@@ -300,6 +308,7 @@ type Group = {
   stars: Star[];
   name: HTMLButtonElement;
   line: SVGPathElement | null;
+  draw: SVGPathElement | null;
   edges: Array<[Star, Star]>;
   x0: number;
   y0: number;
@@ -330,6 +339,9 @@ function mountMap(mapEl: HTMLElement): MapHandle {
   const pagerStatus = panel.querySelector<HTMLElement>(".ax-pager-status")!;
   const pageBtns = Array.from(panel.querySelectorAll<HTMLButtonElement>(".ax-page"));
   const closeBtn = panel.querySelector<HTMLButtonElement>(".ax-close")!;
+  const dome = mapEl.querySelector<HTMLElement>(".ax-dome")!;
+  const par = mapEl.querySelector<HTMLElement>(".ax-par")!;
+  const emit = (name: string, detail: Record<string, unknown>) => dispatchEvent(new CustomEvent(name, { detail }));
 
   const stars: Star[] = Array.from(mapEl.querySelectorAll<HTMLElement>(".ax-s")).map((el) => ({
     el,
@@ -343,12 +355,16 @@ function mountMap(mapEl: HTMLElement): MapHandle {
     match: true,
     x: 0,
     y: 0,
+    note: 0,
+    lx: 0,
+    ly: 0,
   }));
   const groups: Group[] = Array.from(mapEl.querySelectorAll<HTMLButtonElement>(".ax-name")).map((name) => ({
     tag: name.dataset.tag || "",
     stars: stars.filter((s) => s.tag === name.dataset.tag),
     name,
     line: mapEl.querySelector<SVGPathElement>(`.ax-line[data-tag="${CSS.escape(name.dataset.tag || "")}"]`),
+    draw: mapEl.querySelector<SVGPathElement>(`.ax-line-draw[data-tag="${CSS.escape(name.dataset.tag || "")}"]`),
     edges: [],
     x0: 0,
     y0: 0,
@@ -367,15 +383,27 @@ function mountMap(mapEl: HTMLElement): MapHandle {
   let phone = phoneMq.matches;
 
   // ---- The backdrop: faint stars and the Milky Way, drawn once a size ----
+  // Drawn once a size into a canvas of its own, then copied to the visible
+  // one each frame with the far parallax and any shooting star on top.
+  const bg = document.createElement("canvas");
+  let CW = 1;
+  let CH = 1;
+  let DPR = 1;
   const drawSky = () => {
     if (!canvas) return;
-    const ctx = canvas.getContext("2d");
+    DPR = Math.min(devicePixelRatio || 1, 1.5);
+    CW = canvas.clientWidth || W * 1.08;
+    CH = canvas.clientHeight || H * 1.08;
+    canvas.width = Math.round(CW * DPR);
+    canvas.height = Math.round(CH * DPR);
+    bg.width = canvas.width;
+    bg.height = canvas.height;
+    const ctx = bg.getContext("2d");
     if (!ctx) return;
-    const dpr = Math.min(devicePixelRatio || 1, 1.5);
-    canvas.width = Math.round(W * dpr);
-    canvas.height = Math.round(H * dpr);
-    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    ctx.clearRect(0, 0, W, H);
+    ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+    ctx.clearRect(0, 0, CW, CH);
+    const W = CW;
+    const H = CH;
     let seed = 7;
     const rnd = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
     // The band runs corner to corner, low left to high right.
@@ -438,6 +466,63 @@ function mountMap(mapEl: HTMLElement): MapHandle {
       ctx.beginPath();
       ctx.arc(x, y, big ? 1.1 : 0.6, 0, Math.PI * 2);
       ctx.fill();
+    }
+    ctx.globalCompositeOperation = "source-over";
+    paint(0, 0, performance.now());
+  };
+
+  // ---- The visible sky: the backdrop, shifted, and shooting stars ---------
+  type Shot = { x: number; y: number; vx: number; vy: number; life: number; max: number };
+  const shots: Shot[] = [];
+  let nextShot = performance.now() + 2500;
+  let lastPaint = performance.now();
+  const paint = (ox: number, oy: number, now: number) => {
+    const ctx = canvas?.getContext("2d");
+    if (!canvas || !ctx) return;
+    const dt = Math.min(50, now - lastPaint) / 16.67;
+    lastPaint = now;
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.drawImage(bg, Math.round(ox * DPR), Math.round(oy * DPR));
+    if (reduce) return;
+    ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+    if (now > nextShot) {
+      nextShot = now + 4000 + Math.random() * 5000;
+      const fromLeft = Math.random() < 0.5;
+      const a = (fromLeft ? 0.35 : Math.PI - 0.35) + (Math.random() - 0.5) * 0.3;
+      const sp = 9 + Math.random() * 5;
+      shots.push({
+        x: CW * (fromLeft ? 0.1 + Math.random() * 0.4 : 0.5 + Math.random() * 0.4),
+        y: CH * (0.08 + Math.random() * 0.3),
+        vx: Math.cos(a) * sp,
+        vy: Math.sin(a) * sp,
+        life: 0,
+        max: 55 + Math.random() * 20,
+      });
+    }
+    ctx.globalCompositeOperation = "lighter";
+    for (let i = shots.length - 1; i >= 0; i--) {
+      const sh = shots[i];
+      sh.life += dt;
+      sh.x += sh.vx * dt;
+      sh.y += sh.vy * dt;
+      const p = sh.life / sh.max;
+      if (p >= 1) {
+        shots.splice(i, 1);
+        continue;
+      }
+      const fade = Math.sin(p * Math.PI);
+      const tx = sh.x - sh.vx * 11;
+      const ty = sh.y - sh.vy * 11;
+      const g = ctx.createLinearGradient(tx, ty, sh.x, sh.y);
+      g.addColorStop(0, "rgba(220,230,255,0)");
+      g.addColorStop(1, `rgba(240,245,255,${(0.8 * fade).toFixed(3)})`);
+      ctx.strokeStyle = g;
+      ctx.lineWidth = 1.2;
+      ctx.beginPath();
+      ctx.moveTo(tx, ty);
+      ctx.lineTo(sh.x, sh.y);
+      ctx.stroke();
     }
     ctx.globalCompositeOperation = "source-over";
   };
@@ -514,6 +599,7 @@ function mountMap(mapEl: HTMLElement): MapHandle {
       const cos = Math.cos(rot);
       const sin = Math.sin(rot);
       it.vis.forEach((s, i) => {
+        s.note = i;
         const p = it.shape.pts[i] || [0.5 + Math.cos(i * 2.4) * 0.45 * (i / it.vis.length), 0.5 + Math.sin(i * 2.4) * 0.45 * (i / it.vis.length)];
         const lx = (p[0] - 0.5) * w;
         const ly = (p[1] - 0.5) * h;
@@ -534,12 +620,15 @@ function mountMap(mapEl: HTMLElement): MapHandle {
     laidOut = true;
   };
 
+  const place = (s: Star) => {
+    s.el.style.transform = `translate3d(${(s.x + s.lx).toFixed(1)}px, ${(s.y + s.ly).toFixed(1)}px, 0)`;
+  };
   const radius = (s: Star) =>
     impactMode ? 3 + Math.max(0, 1 - s.impact / 40) * 6 : 2.6 + Math.min(10, s.minutes) * 0.62;
 
   const write = () => {
     for (const s of stars) {
-      s.el.style.transform = `translate3d(${s.x.toFixed(1)}px, ${s.y.toFixed(1)}px, 0)`;
+      place(s);
       s.el.style.setProperty("--r", `${radius(s).toFixed(1)}px`);
       s.el.style.setProperty("--tw", `${(2.6 + hash(s.slug) * 3).toFixed(2)}s`);
       s.el.style.setProperty("--td", `${(-hash(s.slug + "d") * 4).toFixed(2)}s`);
@@ -558,21 +647,30 @@ function mountMap(mapEl: HTMLElement): MapHandle {
       const nw = g.name.offsetWidth || 100;
       const x = Math.max(8, Math.min(W - nw - 8, (g.x0 + g.x1) / 2 - nw / 2));
       g.name.style.transform = `translate3d(${x.toFixed(1)}px, ${(g.y1 + 16).toFixed(1)}px, 0)`;
-      if (g.line) {
-        g.line.setAttribute(
-          "d",
-          g.edges.map(([a, b]) => `M${a.x.toFixed(1)} ${a.y.toFixed(1)}L${b.x.toFixed(1)} ${b.y.toFixed(1)}`).join(""),
-        );
-      }
+      const d = g.edges.map(([a, b]) => `M${a.x.toFixed(1)} ${a.y.toFixed(1)}L${b.x.toFixed(1)} ${b.y.toFixed(1)}`).join("");
+      g.line?.setAttribute("d", d);
+      g.draw?.setAttribute("d", d);
     }
   };
 
   // ---- Hover --------------------------------------------------------------
 
   const groupOf = (tag: string) => groups.find((g) => g.tag === tag) || null;
+  let hotGroup: Group | null = null;
+  // One hover event per visit to a constellation, not one per star.
+  let lastHover = { tag: "", at: 0 };
   const hot = (g: Group | null) => {
+    if (g && g !== hotGroup && !openGroup) {
+      const now = performance.now();
+      if (g.tag !== lastHover.tag || now - lastHover.at > 1200) {
+        emit("writing:constellation", { id: g.tag, tag: g.tag, action: "hover" });
+      }
+      lastHover = { tag: g.tag, at: now };
+    }
+    hotGroup = g;
     for (const x of groups) {
       const on = x === g;
+      x.draw?.classList.toggle("is-on", on);
       x.line?.classList.toggle("is-hot", on);
       x.name.classList.toggle("is-hot", on);
       x.stars.forEach((s) => s.el.classList.toggle("is-hot", on));
@@ -600,6 +698,7 @@ function mountMap(mapEl: HTMLElement): MapHandle {
       const s = starOf(e.target);
       if (s && s.on) {
         showTip(s);
+        emit("writing:hover", { kind: "star", id: s.slug, slug: s.slug, tag: s.tag, note: s.note });
         if (!openGroup) hot(groupOf(s.tag));
         return;
       }
@@ -651,12 +750,6 @@ function mountMap(mapEl: HTMLElement): MapHandle {
       const c = cards.find((x) => x.dataset.slug === s.slug);
       if (c) list.appendChild(c);
     });
-    // Restart the arrival for this page.
-    list.querySelectorAll<HTMLElement>(".ax-c:not([hidden])").forEach((c) => {
-      c.style.animation = "none";
-      void c.offsetWidth;
-      c.style.animation = "";
-    });
     list.style.setProperty("--cols", String(phone ? 1 : colsFor(slice.length)));
     list.scrollTop = 0;
     pager.hidden = phone || pages <= 1;
@@ -668,9 +761,12 @@ function mountMap(mapEl: HTMLElement): MapHandle {
     panelCount.textContent = `${set.length} ${set.length === 1 ? "post" : "posts"}`;
   };
 
+  // Where the camera lands: world = translate(ox, oy) scale(k).
+  let cam = { k: 1, ox: 0, oy: 0 };
   const glideTo = (g: Group | null) => {
     if (!g) {
       world.style.transform = "";
+      cam = { k: 1, ox: 0, oy: 0 };
       return;
     }
     const gw = Math.max(60, g.x1 - g.x0);
@@ -691,7 +787,56 @@ function mountMap(mapEl: HTMLElement): MapHandle {
       tx = Math.max(room / 2 + 10, 160);
       ty = H * 0.5;
     }
-    world.style.transform = `translate3d(${(tx - cx * k).toFixed(1)}px, ${(ty - cy * k).toFixed(1)}px, 0) scale(${k.toFixed(3)})`;
+    cam = { k, ox: tx - cx * k, oy: ty - cy * k };
+    world.style.transform = `translate3d(${cam.ox.toFixed(1)}px, ${cam.oy.toFixed(1)}px, 0) scale(${k.toFixed(3)})`;
+  };
+
+  // Cards fly out of their stars: from the star's place after the dive,
+  // turned away in depth and small, to their place in the panel.
+  const starAt = (slug: string) => {
+    const st = stars.find((x) => x.slug === slug);
+    if (!st) return null;
+    const mr = mapEl.getBoundingClientRect();
+    return { x: mr.left + cam.ox + st.x * cam.k, y: mr.top + cam.oy + st.y * cam.k };
+  };
+  const flyOut = (delay: number) => {
+    if (reduce) return;
+    const shownCards = Array.from(list.querySelectorAll<HTMLElement>(".ax-c:not([hidden])"));
+    shownCards.forEach((c, i) => {
+      c.getAnimations().forEach((a) => a.cancel());
+      const a = starAt(c.dataset.slug || "");
+      const r = c.getBoundingClientRect();
+      const fx = a ? a.x - (r.left + r.width / 2) : 0;
+      const fy = a ? a.y - (r.top + r.height / 2) : 80;
+      c.animate(
+        [
+          { transform: `translate3d(${fx.toFixed(0)}px, ${fy.toFixed(0)}px, -260px) rotateX(55deg) rotateY(-28deg) scale(0.12)`, opacity: 0 },
+          { transform: `translate3d(${(fx * 0.12).toFixed(0)}px, ${(fy * 0.12).toFixed(0)}px, 40px) rotateX(-7deg) rotateY(5deg) scale(1.02)`, opacity: 1, offset: 0.72 },
+          { transform: "none", opacity: 1 },
+        ],
+        { duration: 950, delay: delay + i * 85, easing: "cubic-bezier(0.2, 0.75, 0.2, 1)", fill: "both" },
+      );
+    });
+  };
+  const flyBack = () => {
+    // On a phone the sheet slides away with its cards.
+    if (reduce || phone) return phone && !reduce ? 380 : 0;
+    const shownCards = Array.from(list.querySelectorAll<HTMLElement>(".ax-c:not([hidden])"));
+    shownCards.forEach((c, i) => {
+      c.getAnimations().forEach((a) => a.cancel());
+      const a = starAt(c.dataset.slug || "");
+      const r = c.getBoundingClientRect();
+      const fx = a ? a.x - (r.left + r.width / 2) : 0;
+      const fy = a ? a.y - (r.top + r.height / 2) : 80;
+      c.animate(
+        [
+          { transform: "none", opacity: 1 },
+          { transform: `translate3d(${fx.toFixed(0)}px, ${fy.toFixed(0)}px, -220px) rotateX(45deg) rotateY(-20deg) scale(0.12)`, opacity: 0 },
+        ],
+        { duration: 460, delay: (shownCards.length - 1 - i) * 45, easing: "cubic-bezier(0.6, 0, 0.8, 0.4)", fill: "both" },
+      );
+    });
+    return 460 + shownCards.length * 45;
   };
 
   const open = (g: Group, from?: HTMLElement) => {
@@ -710,14 +855,18 @@ function mountMap(mapEl: HTMLElement): MapHandle {
     }
     hot(g);
     panel.style.setProperty("--tint", g.name.style.getPropertyValue("--tint"));
+    panel.style.removeProperty("--drag");
     panelTitle.textContent = g.tag;
     renderPage();
     panel.hidden = false;
-    requestAnimationFrame(() => {
-      panel.classList.add("is-in");
-      glideTo(g);
-    });
-    if (!same) dispatchEvent(new CustomEvent("writing:constellation", { detail: { tag: g.tag } }));
+    if (!same) {
+      emit("writing:transition", { kind: "dive", direction: "in", tag: g.tag });
+      emit("writing:constellation", { id: g.tag, tag: g.tag, action: "open" });
+    }
+    // Cards wait for the camera to set off, then fly out of their stars.
+    glideTo(g);
+    flyOut(phone ? 120 : 260);
+    requestAnimationFrame(() => panel.classList.add("is-in"));
     returnTo = from || g.name;
     panelTitle.focus({ preventScroll: true });
     // Bring the whole sky into view on wide screens.
@@ -729,9 +878,15 @@ function mountMap(mapEl: HTMLElement): MapHandle {
   let returnTo: HTMLElement | null = null;
   const close = () => {
     if (!openGroup) return;
+    const g = openGroup;
     openGroup = null;
+    emit("writing:transition", { kind: "dive", direction: "out", tag: g.tag });
+    emit("writing:constellation", { id: g.tag, tag: g.tag, action: "close" });
+    const back = flyBack();
     mapEl.dataset.state = "sky";
-    panel.classList.remove("is-in");
+    window.setTimeout(() => {
+      if (!openGroup) panel.classList.remove("is-in");
+    }, Math.max(0, back - 250));
     for (const x of groups) {
       x.name.classList.remove("is-dim");
       x.line?.classList.remove("is-dim");
@@ -741,8 +896,10 @@ function mountMap(mapEl: HTMLElement): MapHandle {
     hot(null);
     glideTo(null);
     window.setTimeout(() => {
-      if (!openGroup) panel.hidden = true;
-    }, reduce ? 0 : 520);
+      if (openGroup) return;
+      panel.hidden = true;
+      list.querySelectorAll<HTMLElement>(".ax-c").forEach((c) => c.getAnimations().forEach((a) => a.cancel()));
+    }, reduce ? 0 : back + 200);
     returnTo?.focus({ preventScroll: true });
   };
 
@@ -770,6 +927,7 @@ function mountMap(mapEl: HTMLElement): MapHandle {
       () => {
         page += parseInt(b.dataset.dir || "1");
         renderPage();
+        flyOut(0);
       },
       { signal },
     ),
@@ -784,6 +942,155 @@ function mountMap(mapEl: HTMLElement): MapHandle {
     },
     { signal },
   );
+
+  // Cards lean toward the pointer and catch a glare.
+  list.addEventListener(
+    "pointermove",
+    (e) => {
+      if (reduce || (e as PointerEvent).pointerType === "touch") return;
+      const link = (e.target as HTMLElement).closest<HTMLElement>(".ax-c-link");
+      if (!link) return;
+      const r = link.getBoundingClientRect();
+      const u = (e.clientX - r.left) / r.width;
+      const v = (e.clientY - r.top) / r.height;
+      link.style.setProperty("--try", `${((u - 0.5) * 10).toFixed(2)}deg`);
+      link.style.setProperty("--trx", `${((0.5 - v) * 8).toFixed(2)}deg`);
+      link.style.setProperty("--gx", `${(u * 100).toFixed(1)}%`);
+      link.style.setProperty("--gy", `${(v * 100).toFixed(1)}%`);
+    },
+    { passive: true, signal },
+  );
+  list.addEventListener(
+    "pointerout",
+    (e) => {
+      const link = (e.target as HTMLElement).closest<HTMLElement>(".ax-c-link");
+      if (!link || link.contains(e.relatedTarget as Node)) return;
+      link.style.removeProperty("--try");
+      link.style.removeProperty("--trx");
+    },
+    { signal },
+  );
+
+  // Phones: drag the sheet down by its head to close it.
+  const head = panel.querySelector<HTMLElement>(".ax-panel-head");
+  let dragY: number | null = null;
+  let dragD = 0;
+  head?.addEventListener(
+    "pointerdown",
+    (e) => {
+      if (!phone || (e.target as HTMLElement).closest("button")) return;
+      dragY = e.clientY;
+      dragD = 0;
+      panel.classList.add("is-dragging");
+      head.setPointerCapture(e.pointerId);
+    },
+    { signal },
+  );
+  head?.addEventListener(
+    "pointermove",
+    (e) => {
+      if (dragY === null) return;
+      dragD = Math.max(0, e.clientY - dragY);
+      panel.style.setProperty("--drag", `${dragD}px`);
+    },
+    { signal },
+  );
+  const endDrag = () => {
+    if (dragY === null) return;
+    dragY = null;
+    panel.classList.remove("is-dragging");
+    if (dragD > 110) close();
+    else panel.style.setProperty("--drag", "0px");
+  };
+  head?.addEventListener("pointerup", endDrag, { signal });
+  head?.addEventListener("pointercancel", endDrag, { signal });
+
+  // ---- Motion: the dome tilts, the layers part, stars lean ----------------
+  let ptx = 0;
+  let pty = 0;
+  let psx = 0;
+  let psy = 0;
+  let mx = -1e4;
+  let my = -1e4;
+  mapEl.addEventListener(
+    "pointermove",
+    (e) => {
+      const r = mapEl.getBoundingClientRect();
+      mx = e.clientX - r.left;
+      my = e.clientY - r.top;
+      ptx = (mx / Math.max(1, r.width)) * 2 - 1;
+      pty = (my / Math.max(1, r.height)) * 2 - 1;
+    },
+    { passive: true, signal },
+  );
+  mapEl.addEventListener(
+    "pointerleave",
+    () => {
+      ptx = 0;
+      pty = 0;
+      mx = -1e4;
+      my = -1e4;
+    },
+    { signal },
+  );
+  let loopRaf = 0;
+  let looping = false;
+  let onScreen = false;
+  const born = performance.now();
+  const loop = (now: number) => {
+    loopRaf = requestAnimationFrame(loop);
+    const t = (now - born) / 1000;
+    const r = mapEl.getBoundingClientRect();
+    psx += (ptx - psx) * 0.05;
+    psy += (pty - psy) * 0.05;
+    const free = openGroup ? 0 : 1;
+    const sf = Math.max(-1, Math.min(1, (r.top + r.height / 2 - innerHeight / 2) / innerHeight));
+    const rx = (sf * 6 - psy * 3 + Math.sin(t * 0.11) * 0.6) * free;
+    const ry = (psx * 4 + Math.cos(t * 0.09) * 0.6) * free;
+    dome.style.setProperty("--rx", `${rx.toFixed(3)}deg`);
+    dome.style.setProperty("--ry", `${ry.toFixed(3)}deg`);
+    const px = (-psx * 16 + Math.sin(t * 0.07) * 6) * free;
+    const py = (-psy * 10 + Math.cos(t * 0.05) * 4) * free;
+    par.style.setProperty("--px", `${px.toFixed(2)}px`);
+    par.style.setProperty("--py", `${py.toFixed(2)}px`);
+    paint(-psx * 6 - CW * 0.0, -psy * 4, now);
+    // Stars near the pointer lean toward it.
+    for (const s of stars) {
+      let lx = 0;
+      let ly = 0;
+      if (!openGroup && s.on) {
+        const dx = mx - (s.x + px);
+        const dy = my - (s.y + py);
+        const d = Math.hypot(dx, dy);
+        if (d < 150 && d > 0.5) {
+          const f = Math.pow(1 - d / 150, 2) * 9;
+          lx = (dx / d) * f;
+          ly = (dy / d) * f;
+        }
+      }
+      if (Math.abs(lx - s.lx) > 0.05 || Math.abs(ly - s.ly) > 0.05) {
+        s.lx += (lx - s.lx) * 0.25;
+        s.ly += (ly - s.ly) * 0.25;
+        place(s);
+      }
+    }
+  };
+  const run = () => {
+    const want = shown && onScreen && !document.hidden && !reduce;
+    if (want && !looping) {
+      looping = true;
+      loopRaf = requestAnimationFrame(loop);
+    } else if (!want && looping) {
+      looping = false;
+      cancelAnimationFrame(loopRaf);
+    }
+  };
+  const io = new IntersectionObserver(([en]) => {
+    onScreen = en.isIntersecting;
+    run();
+  });
+  io.observe(mapEl);
+  document.addEventListener("visibilitychange", run, { signal });
 
   const ro = new ResizeObserver(() => {
     if (!shown) return;
@@ -820,15 +1127,20 @@ function mountMap(mapEl: HTMLElement): MapHandle {
         if (!shown) return;
         layout();
         mapEl.classList.add("is-live");
+        run();
       });
     },
     hide() {
       shown = false;
       close();
+      run();
     },
     stop() {
       ac.abort();
       ro.disconnect();
+      io.disconnect();
+      looping = false;
+      cancelAnimationFrame(loopRaf);
       void laidOut;
     },
   };

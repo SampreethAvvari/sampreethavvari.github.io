@@ -111,10 +111,13 @@ const comets = [
        open in one panel beside it. The list view below holds the same
        posts as plain links. -->
   <div class="ax-map" id="ax-map" role="region" aria-label="Star map of every post, one constellation per tag" data-state="sky">
+    <div class="ax-dome">
     <canvas class="ax-sky" aria-hidden="true"></canvas>
+    <div class="ax-par">
     <div class="ax-world">
       <svg class="ax-lines" aria-hidden="true">
         {tags.map(([t], gi) => <path class="ax-line" data-tag={t} d="" style={`--tint:${tint(gi)};`} />)}
+        {tags.map(([t], gi) => <path class="ax-line-draw" data-tag={t} d="" pathLength="1" style={`--tint:${tint(gi)};`} />)}
       </svg>
       <div class="ax-stars" aria-hidden="true">
         {posts.map((p) => (
@@ -141,6 +144,8 @@ const comets = [
           </button>
         ))}
       </div>
+    </div>
+    </div>
     </div>
     <p class="ax-tip" aria-hidden="true" hidden></p>
     <p class="ax-hint" aria-hidden="true">Click a constellation to open it</p>
@@ -403,15 +408,28 @@ const comets = [
     margin-top: 18px;
     overflow: hidden;
     outline: none;
+    perspective: 1500px;
+    perspective-origin: 50% 45%;
     background: linear-gradient(180deg, rgba(2, 4, 10, 0) 0%, #02040a 9%, #02040a 91%, rgba(2, 4, 10, 0) 100%);
   }
+  /* The dome: tilts a little with the pointer and the scroll. The script
+     writes --rx and --ry; the far sky and the constellations move apart. */
+  .ax-dome {
+    position: absolute;
+    inset: 0;
+    transform-style: preserve-3d;
+    transform: rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg));
+    will-change: transform;
+  }
+  .ax-par { position: absolute; inset: 0; transform: translate3d(var(--px, 0px), var(--py, 0px), 40px); will-change: transform; }
   .ax[data-view="map"] .ax-listwrap { display: none; }
 
   .ax-sky {
     position: absolute;
-    inset: 0;
-    width: 100%;
-    height: 100%;
+    left: -4%;
+    top: -4%;
+    width: 108%;
+    height: 108%;
     pointer-events: none;
     transition: transform 900ms var(--ease-glass), opacity 700ms var(--ease-glass);
     transform-origin: 50% 50%;
@@ -435,8 +453,21 @@ const comets = [
     stroke-linecap: round;
     transition: stroke 300ms var(--ease-glass), opacity 600ms var(--ease-glass);
   }
-  .ax-line.is-hot { stroke: rgba(var(--tint), 0.85); filter: drop-shadow(0 0 3px rgba(var(--tint), 0.9)); }
+  .ax-line.is-hot { stroke: rgba(var(--tint), 0.5); }
   .ax-line.is-dim { opacity: 0.18; }
+  /* A constellation that wakes draws its lines in, bright. */
+  .ax-line-draw {
+    fill: none;
+    stroke: rgba(var(--tint), 0.95);
+    stroke-width: 1.4;
+    stroke-linecap: round;
+    stroke-dasharray: 1 1;
+    stroke-dashoffset: 1;
+    filter: drop-shadow(0 0 4px rgba(var(--tint), 0.9));
+    transition: stroke-dashoffset 1100ms var(--ease-glass), opacity 400ms var(--ease-glass);
+    opacity: 0;
+  }
+  .ax-line-draw.is-on { stroke-dashoffset: 0; opacity: 1; }
 
   .ax-stars { position: absolute; inset: 0; }
   .ax-s {
@@ -466,6 +497,11 @@ const comets = [
     50% { opacity: 1; transform: scale(1.08); }
   }
   .ax-s:hover i, .ax-s.is-hot i { box-shadow: 0 0 calc(var(--r) * 3) rgba(var(--tint), 0.95); }
+  .ax-s.is-hot i { animation: ax-pulse 1.6s ease-in-out var(--td, 0s) infinite; }
+  @keyframes ax-pulse {
+    0%, 100% { opacity: 0.95; transform: scale(1.05); }
+    50% { opacity: 1; transform: scale(1.35); }
+  }
   .ax-s.is-dim { opacity: 0.22; }
   .ax-s.is-out { opacity: 0; pointer-events: none; }
   .ax-s.is-match i { box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.85), 0 0 calc(var(--r) * 3) rgba(var(--tint), 1); }
@@ -499,7 +535,8 @@ const comets = [
     text-shadow: 0 0 14px rgba(var(--tint), 0.55);
   }
   .ax-name-n { font-size: 0.6875rem; letter-spacing: 0.04em; color: rgba(245, 245, 247, 0.5); }
-  .ax-name:hover, .ax-name.is-hot { background: rgba(var(--tint), 0.08); }
+  .ax-name { translate: 0 0; transition: opacity 600ms var(--ease-glass), background-color 250ms var(--ease-glass), translate 400ms var(--ease-glass); }
+  .ax-name:hover, .ax-name.is-hot { background: rgba(var(--tint), 0.08); translate: 0 -5px; }
   .ax-name:focus-visible { outline: none; box-shadow: 0 0 0 2px rgba(var(--tint), 0.7); }
   .ax-name.is-dim { opacity: 0.2; }
   .ax-name.is-out { opacity: 0; pointer-events: none; }
@@ -552,10 +589,9 @@ const comets = [
     border: 1px solid rgba(255, 255, 255, 0.1);
     box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08), 0 40px 90px -40px rgba(0, 0, 0, 1);
     opacity: 0;
-    transform: translate3d(30px, 0, 0);
     transition: opacity 500ms var(--ease-glass), transform 600ms var(--ease-glass);
   }
-  .ax-panel.is-in { opacity: 1; transform: none; }
+  .ax-panel.is-in { opacity: 1; }
   .ax-panel-head { display: flex; align-items: flex-end; gap: 12px; }
   .ax-panel-head > div:first-child { flex: 1; min-width: 0; }
   .ax-panel-kicker { font-size: 0.6875rem; font-weight: 600; font-variant-caps: all-small-caps; letter-spacing: 0.14em; color: rgba(var(--tint, 205, 224, 255), 0.9); }
@@ -589,7 +625,7 @@ const comets = [
     overscroll-behavior: contain;
     min-height: 0;
   }
-  .ax-c { display: flex; min-width: 0; animation: ax-card-in 520ms var(--ease-glass) both; animation-delay: calc(var(--k, 0) * 60ms); }
+  .ax-c { display: flex; min-width: 0; perspective: 900px; }
   @keyframes ax-card-in {
     from { opacity: 0; transform: translate3d(0, 14px, 0); }
     to { opacity: 1; transform: none; }
@@ -604,9 +640,23 @@ const comets = [
     color: var(--ink);
     background: rgba(255, 255, 255, 0.025);
     border: 1px solid rgba(255, 255, 255, 0.08);
-    transition: transform 300ms var(--ease-glass), border-color 250ms var(--ease-glass), background-color 250ms var(--ease-glass);
+    transition: transform 180ms ease-out, border-color 250ms var(--ease-glass), background-color 250ms var(--ease-glass);
   }
-  .ax-c-link:hover, .ax-c-link:focus-visible { transform: translateY(-3px); border-color: rgba(255, 255, 255, 0.2); background: rgba(255, 255, 255, 0.045); }
+  .ax-c-link { position: relative; transform: rotateX(var(--trx, 0deg)) rotateY(var(--try, 0deg)); transform-style: preserve-3d; }
+  .ax-c-link:hover, .ax-c-link:focus-visible { border-color: rgba(255, 255, 255, 0.2); background: rgba(255, 255, 255, 0.045); }
+  .ax-c-link:focus-visible { transform: translateY(-3px); }
+  /* Glare that follows the pointer across the card. */
+  .ax-c-link::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    pointer-events: none;
+    background: radial-gradient(320px circle at var(--gx, 50%) var(--gy, 0%), rgba(255, 255, 255, 0.14), rgba(255, 255, 255, 0) 55%);
+    opacity: 0;
+    transition: opacity 300ms var(--ease-glass);
+  }
+  .ax-c-link:hover::after { opacity: 1; }
   .ax-c-link:focus-visible { outline: none; box-shadow: 0 0 0 3px rgba(var(--c-writing-rgb), 0.55); }
   .ax-c-art { position: relative; display: block; aspect-ratio: 2.7 / 1; overflow: hidden; background: #05070a; }
   .ax-c-art img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block; transition: transform 700ms var(--ease-glass); }
@@ -672,7 +722,9 @@ const comets = [
 
   /* Phones: the cards come up in a sheet from the bottom, one list. */
   @media (max-width: 899px) {
-    .ax[data-view="map"] .ax-map { height: 82svh; min-height: 560px; }
+    /* No perspective here: it would pin the fixed sheet to the map. */
+    .ax[data-view="map"] .ax-map { height: 82svh; min-height: 560px; perspective: none; }
+    .ax-dome { transform: none; }
     .ax-name-t { font-size: 0.8125rem; }
     .ax-hint { white-space: normal; text-align: center; width: 80%; }
     .ax-panel {
@@ -690,7 +742,9 @@ const comets = [
       transform: translate3d(0, 100%, 0);
       opacity: 1;
     }
-    .ax-panel.is-in { transform: none; }
+    .ax-panel.is-in { transform: translate3d(0, var(--drag, 0px), 0); }
+    .ax-panel.is-dragging { transition: none; }
+    .ax-panel-head { touch-action: none; }
     .ax-panel::before {
       content: "";
       position: absolute;
@@ -708,8 +762,9 @@ const comets = [
   }
   @media (prefers-reduced-motion: reduce) {
     .ax-s i { animation: none; }
-    .ax-world, .ax-sky, .ax-panel { transition: none; }
-    .ax-c { animation: none; }
+    .ax-world, .ax-sky, .ax-panel, .ax-line-draw, .ax-name { transition: none; }
+    .ax-s.is-hot i { animation: none; }
+    .ax-c-link { transform: none; }
   }
 
   /* ---------------- List view ---------------- */

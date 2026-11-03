@@ -12,8 +12,9 @@
 //
 // Sound hooks for the score (nothing here plays audio): on window,
 //   writing:hero        { index, slug, accent }  a case study takes over
-//   writing:transition  { from, to, duration }   a change starts; duration
-//                       is an estimate in ms from the current scroll speed
+//   writing:transition  { kind: "hero", direction: "next" | "back", from,
+//                       to, duration }  a change starts; duration is an
+//                       estimate in ms from the current scroll speed
 
 import { onPage } from "../../scripts/lifecycle";
 import { mountCaseGL, type GLHandle } from "./case-gl";
@@ -134,7 +135,7 @@ function stage(root: HTMLElement): () => void {
       const to = t > was ? was + 1 : was - 1;
       const left = seg * (1 - HOLD);
       const duration = Math.round(Math.max(250, Math.min(2500, pxPerMs > 0.05 ? left / pxPerMs : 900)));
-      if (to >= 0 && to < n) emit("writing:transition", { from: was, to, duration });
+      if (to >= 0 && to < n) emit("writing:transition", { kind: "hero", direction: to > was ? "next" : "back", from: was, to, duration });
     }
     // Speed for the colour split on the words: 0 still, 1 fast.
     vel += (Math.min(1, pxPerMs / 6) - vel) * 0.5;
