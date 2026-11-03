@@ -8,7 +8,7 @@
 // impostor line at 0.613, real lines at 0.647 and up, the bar at 0.62.
 //
 // Sound hooks:
-//   post:figure { id: "referee-line", action: "move" | "verdict:<n>" | "tried-all" | "voice-clear" }
+//   post:figure { id: "referee-line", action: "verdict:<0 to 3>" | "tried-all" | "voice-clear" }
 //   post:hover { kind: "frame", id: "<who>-<score>", note }
 
 import type { Figure } from "./index";
