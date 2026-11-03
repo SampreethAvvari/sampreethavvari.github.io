@@ -315,6 +315,8 @@ const dataJson = JSON.stringify(mindGraphs).replace(/</g, "\\u003c");
     color: var(--ink);
     text-wrap: balance;
   }
+  /* The page's script failed: the map is not coming, so it does not say it is. */
+  :global(html.no-stage) .mind-sub { visibility: hidden; }
   .mind-sub {
     margin: 12px 0 0;
     font-size: 0.875rem;
