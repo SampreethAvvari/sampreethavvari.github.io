@@ -11,7 +11,7 @@ const UNIT =
 // Money, percents, numbers with separators or decimals, and a plain number
 // followed by what it counts.
 const NUM = new RegExp(
-  `\\$\\d[\\d,]*(?:\\.\\d+)?|\\b\\d[\\d,]*(?:\\.\\d+)?\\s?%|\\b\\d{1,3}(?:,\\d{3})+(?:\\.\\d+)?\\b|\\b\\d+\\.\\d+\\b|\\b\\d+(?=\\s(?:${UNIT})\\b)`,
+  `\\$\\d[\\d,]*(?:\\.\\d+)?|(?<![\\w.,])\\d[\\d,]*(?:\\.\\d+)?\\s?%|(?<![\\w.,])\\d{1,3}(?:,\\d{3})+(?:\\.\\d+)?(?![\\w.])|(?<![\\w.,])\\d+\\.\\d+(?![\\w.])|(?<![\\w.,])\\d+(?=\\s(?:${UNIT})\\b)`,
   "g",
 );
 

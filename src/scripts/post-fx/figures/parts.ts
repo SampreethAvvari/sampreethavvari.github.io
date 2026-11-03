@@ -5,6 +5,8 @@ import { emit, h } from "../util";
 
 export function frame(root: HTMLElement, title: string, hint: string) {
   root.classList.add("pfx-fig");
+  root.setAttribute("role", "group");
+  root.setAttribute("aria-label", title);
   const head = h("div", "pfx-fig-head");
   const t = h("div", "pfx-fig-title", title);
   const hintEl = h("div", "pfx-fig-hint", hint);

@@ -384,7 +384,6 @@
 }
 .pfx-code:hover::after { opacity: 1; }
 .post-prose .pfx-code:hover pre { border-color: rgba(var(--tone-rgb), 0.38); }
-.pfx-code .line { display: inline-block; min-width: 100%; }
 .pfx-codecopy {
   position: absolute;
   top: 10px;
@@ -808,6 +807,16 @@ a.pfx-sky-star { color: var(--ink); text-decoration: underline; text-underline-o
   .pfx-cost-label { padding: 4px 2px; font-size: 0.6875rem; }
   .pfx-cost-label-v { font-size: 0.6875rem; }
   .pfx-cost-read { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+/* ---------------------------------------------------------------------------
+   Phones: a post opens on a live canvas, and blur over a moving canvas is what
+   made iPhone Safari reload the page. This sheet only loads on posts, so here
+   the bar, the buttons and the chat are solid glass.
+   --------------------------------------------------------------------------- */
+@media (max-width: 899px), (pointer: coarse) {
+  *, *::before, *::after { -webkit-backdrop-filter: none !important; backdrop-filter: none !important; }
+  .lg, .lg-thick, .nav-glass, .btn-glass, .chat-launcher, .to-top { background: #0e0f14 !important; }
 }
 
 /* ---------------------------------------------------------------------------

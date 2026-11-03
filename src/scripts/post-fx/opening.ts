@@ -84,28 +84,32 @@ export function mountOpening(signal: AbortSignal): void | (() => void) {
       const margin = phone ? 92 : Math.max(44, vh * 0.075);
       dyCopy = vh - margin - (c.y + c.h);
     }
-    // The slab takes the room above the words, so its rim never runs through
-    // the title. On a wide screen it hangs to the right, on a phone in the middle.
+    // The slab takes the room above the words and beside the back link, so its
+    // rim never runs through either. Wide screens hang it to the right, phones
+    // in the middle.
     if (art && copy) {
       const c = offsetIn(copy, stage);
+      const backEl = stage.querySelector<HTMLElement>(".post-back");
+      const back = backEl ? offsetIn(backEl, stage) : { x: 0, y: 0, w: 0, h: 0 };
       let headTop = c.y + dyCopy - liftTop;
-      const roof = phone ? 84 : 104;
       if (phone) {
-        const w = vw * 0.98;
+        const roof = back.y + back.h + 12;
+        const w = Math.max(vw * 0.72, Math.min(vw * 0.94, ((headTop - roof - 24) * 16) / 9));
         const sh = (w * 9) / 16;
-        const need = roof + sh + 34;
+        const need = roof + sh + 24;
         // A short phone: the words give way, down to where they sit settled.
         if (headTop < need) {
           dyCopy += need - headTop;
           headTop = need;
         }
-        state.from = { cx: vw / 2, cy: (roof + headTop) / 2 + 2, w, h: sh };
+        state.from = { cx: vw / 2, cy: (roof + headTop) / 2, w, h: sh };
       } else {
+        const roof = 104;
         const room = Math.max(240, headTop - roof - 34);
-        const sh = Math.min(room, vh * 0.72);
-        const w = Math.min(vw * 0.72, (sh * 16) / 9);
+        const right = Math.max(44, vw * 0.05);
+        const w = Math.min(vw * 0.72, (Math.min(room, vh * 0.72) * 16) / 9, vw - right - (back.x + back.w + 32));
         const hh = (w * 9) / 16;
-        state.from = { cx: vw - w / 2 - Math.max(44, vw * 0.05), cy: roof + room / 2, w, h: hh };
+        state.from = { cx: vw - w / 2 - right, cy: roof + room / 2, w, h: hh };
       }
     }
     // The stage is a full screen tall, and the settled head is often shorter.
