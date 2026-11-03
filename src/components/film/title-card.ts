@@ -1,7 +1,7 @@
 // A title card for a film with no footage on the site yet, drawn on one 2D
 // canvas so the reel's cut can read it like a frame of film. It is plainly
 // a card: the title set in type on a red field between letterbox bars, the
-// year above and my credits below, with an eclipse and fine dust. While it
+// year above it and my credits under it, with an eclipse and fine dust. While it
 // is on screen the field breathes slowly (the nebula drifts, the corona
 // turns, the dust twinkles); off screen it draws nothing.
 
@@ -81,7 +81,7 @@ export class TitleCard {
     if (!ctx) return;
     const { w, h } = this;
     const t = (now - this.t0) / 1000;
-    const bar = this.opts.phone ? Math.round(h * 0.07) : Math.max(Math.round(h * 0.07), Math.round((h - w / 2.39) / 2));
+    const bar = Math.round(h * 0.06);
     const fh = h - 2 * bar;
     const m = Math.min(w, fh);
 
@@ -191,15 +191,18 @@ export class TitleCard {
     ctx.fillStyle = "rgba(245,245,247,0.7)";
     ctx.fillText(this.card.year, cx, cy - (lines.length * lh) / 2 - size * 0.42);
 
-    // Letterbox bars, credits in the lower one.
+    // My credits under the title, set small and spaced like a credit line.
+    const credit = Math.max(10, Math.round(size * 0.2));
+    ctx.font = `500 ${credit}px ${font}`;
+    ctx.fillStyle = "rgba(245,245,247,0.66)";
+    if ("letterSpacing" in ctx) (ctx as CanvasRenderingContext2D & { letterSpacing?: string }).letterSpacing = `${(credit * 0.12).toFixed(1)}px`;
+    ctx.fillText(this.card.roles, cx, cy + (lines.length * lh) / 2 + size * 0.36);
+    if ("letterSpacing" in ctx) (ctx as CanvasRenderingContext2D & { letterSpacing?: string }).letterSpacing = "0px";
+
+    // Letterbox bars.
     ctx.fillStyle = "#000";
     ctx.fillRect(0, 0, w, bar);
     ctx.fillRect(0, h - bar, w, bar);
-    ctx.font = `500 ${Math.max(10, Math.round(bar * 0.2))}px ${font}`;
-    ctx.fillStyle = "rgba(245,245,247,0.6)";
-    if ("letterSpacing" in ctx) (ctx as CanvasRenderingContext2D & { letterSpacing?: string }).letterSpacing = `${Math.max(1, bar * 0.02)}px`;
-    ctx.fillText(this.card.roles, w / 2, h - bar / 2);
-    if ("letterSpacing" in ctx) (ctx as CanvasRenderingContext2D & { letterSpacing?: string }).letterSpacing = "0px";
   }
 
   play() {

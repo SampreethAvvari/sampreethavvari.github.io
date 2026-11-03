@@ -199,15 +199,25 @@ onPage("film-reel", (signal) => {
     if (i !== current) return;
     root.style.setProperty("--reel-ink", inks[i] ?? "hsl(30 30% 93%)");
   };
-  const medias = boxes.map((b, i) =>
-    makeMedia(b, phone, signal, () => {
-      // Sample once the frame has something on it.
-      requestAnimationFrame(() => {
-        inks[i] = ink(medias[i].el) ?? inks[i];
-        paintInk(i);
-      });
-    }),
-  );
+  // A film's colour comes from its poster image (a clip's first frame, or
+  // the first still): read on the CPU, so it never waits on the graphics
+  // card. A title card's colour is its own rose.
+  boxes.forEach((b, i) => {
+    if (b.classList.contains("is-card")) {
+      inks[i] = "hsl(350 72% 84%)";
+      return;
+    }
+    const img = b.querySelector("img");
+    if (!img) return;
+    const sample = () => {
+      if (signal.aborted || !img.naturalWidth) return;
+      inks[i] = ink(img) ?? inks[i];
+      paintInk(i);
+    };
+    if (img.complete) sample();
+    else img.addEventListener("load", sample, { once: true, signal });
+  });
+  const medias = boxes.map((b) => makeMedia(b, phone, signal, () => {}));
 
   const announce = (i: number) => {
     if (live) live.textContent = `${titles[i]}, film ${i + 1} of ${n}`;

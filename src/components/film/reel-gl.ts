@@ -196,8 +196,10 @@ export function createReelGL(canvas: HTMLCanvasElement, slices = 12, dprCap = 1.
 
   const fit = () => {
     const dpr = Math.min(window.devicePixelRatio || 1, dprCap);
-    const w = Math.max(1, Math.round(canvas.clientWidth * dpr));
-    const h = Math.max(1, Math.round(canvas.clientHeight * dpr));
+    // The canvas fills the screen; reading the window's size (not the
+    // canvas's) keeps a cut from forcing a layout on its first frame.
+    const w = Math.max(1, Math.round(window.innerWidth * dpr));
+    const h = Math.max(1, Math.round(window.innerHeight * dpr));
     if (canvas.width !== w || canvas.height !== h) {
       canvas.width = w;
       canvas.height = h;

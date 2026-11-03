@@ -59,17 +59,22 @@ export class StillReel {
   private load(i: number) {
     const f = this.frames[i];
     if (!f || f.img.src) return;
-    f.img.onload = () => {
-      this.measure(f);
-      f.ready = true;
-      if (i === 0) this.fit();
-      this.draw();
-      if (i === 0 && !this.first) {
-        this.first = true;
-        this.opts.onFirstFrame?.();
-      }
-    };
     f.img.src = f.img.dataset.src || "";
+    // Decode off the main thread first, so the first draw never stalls.
+    f.img
+      .decode()
+      .catch(() => new Promise<void>((done) => (f.img.complete ? done() : (f.img.onload = () => done()))))
+      .then(() => {
+        if (!f.img.naturalWidth) return;
+        this.measure(f);
+        f.ready = true;
+        if (i === 0) this.fit();
+        this.draw();
+        if (i === 0 && !this.first) {
+          this.first = true;
+          this.opts.onFirstFrame?.();
+        }
+      });
   }
 
   // Rows at the top and bottom that are true black (bars, not a night sky)
