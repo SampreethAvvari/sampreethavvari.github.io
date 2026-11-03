@@ -3,6 +3,7 @@
 // and a box of dust travels with the camera so speed has something to streak.
 
 import {
+  type Camera,
   AdditiveBlending,
   BackSide,
   BufferAttribute,
@@ -25,6 +26,7 @@ import {
   WebGLCubeRenderTarget,
   type WebGLRenderer,
 } from "three";
+import { breathe, prelink } from "../gl-warm";
 import { NOISE, rng, type Shared, type U } from "./toolkit";
 
 const NEBULA_FS = /* glsl */ `
@@ -59,7 +61,7 @@ void main() {
 }`;
 
 /** Paint the sky into a cube once. */
-export function bakeSky(renderer: WebGLRenderer, low: boolean): WebGLCubeRenderTarget {
+export async function bakeSky(renderer: WebGLRenderer, low: boolean): Promise<WebGLCubeRenderTarget> {
   const size = low ? 512 : 1024;
   const rt = new WebGLCubeRenderTarget(size, {
     type: HalfFloatType,
@@ -77,6 +79,9 @@ export function bakeSky(renderer: WebGLRenderer, low: boolean): WebGLCubeRenderT
   const mesh = new Mesh(new SphereGeometry(50, 48, 32), mat);
   scene.add(mesh);
   const cam = new CubeCamera(1, 100, rt);
+  // The nebula is a long shader: it links in the background before it is used.
+  await prelink(renderer, scene, cam.children[0] as Camera, rt);
+  await breathe();
   cam.update(renderer, scene);
   mesh.geometry.dispose();
   mat.dispose();

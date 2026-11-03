@@ -5,6 +5,8 @@
 //   const e = await mountSystem(canvas, opts);
 //   e.setScroll(g, ...); e.setPointer(...); e.drag(dx, dy); e.fly(toG); e.destroy();
 
+import { Governor } from "../gl-governor";
+import { breathe, prelink, warmAhead } from "../gl-warm";
 import {
   AdditiveBlending,
   LinearSRGBColorSpace,
@@ -120,7 +122,8 @@ export async function mountSystem(canvas: HTMLCanvasElement, o: SystemOptions): 
   const post = new Post(renderer, { low, msaa });
 
   // -------------------------------------------------------- sky
-  let skyRT: WebGLCubeRenderTarget = bakeSky(renderer, low);
+  let skyRT: WebGLCubeRenderTarget = await bakeSky(renderer, low);
+  await breathe();
   // from here on the finishing pass clears for itself, and its blur adds up
   renderer.autoClear = false;
   shared.env.value = skyRT.texture;
@@ -134,10 +137,16 @@ export async function mountSystem(canvas: HTMLCanvasElement, o: SystemOptions): 
   // -------------------------------------------------------- star, worlds, orbits
   const star = buildStar(shared);
   scene.add(star.group);
+  await breathe();
 
   const suns = ORBITS.map(() => ({ value: new Vector3(1, 0, 0) } as U<Vector3>));
-  const worlds: World[] = BUILDERS.map((b, i) => b(shared, suns[i]));
-  worlds.forEach((w) => scene.add(w.group));
+  // Built one at a time, with the page's turn between them.
+  const worlds: World[] = [];
+  for (let i = 0; i < BUILDERS.length; i++) {
+    worlds.push(BUILDERS[i](shared, suns[i]));
+    scene.add(worlds[i].group);
+    await breathe();
+  }
 
   // a soft dot marks each world from far off
   const beacons = worlds.map((_, i) => {
@@ -196,6 +205,7 @@ void main() {
   // the belt with its named bodies
   const belt = buildBelt(shared, o.bodies);
   scene.add(belt.group);
+  await breathe();
 
   // the title, lying on the system's plane
   const typeRing = buildTypeRing(shared, o.title, o.fontFamily, o.phone);
@@ -261,7 +271,8 @@ void main() {
 
   let cssW = 1;
   let cssH = 1;
-  let scale = 1;
+  // Fewer pixels when frames run slow and that helps, and back again when there is room.
+  const governor = new Governor({ steps: [1, 0.86, 0.72], apply: () => sizeNow() });
   let budget = o.tier === "high" ? 3.4e6 : o.tier === "mid" ? 2.2e6 : 1.5e6;
   const sizeNow = () => {
     const rect = canvas.getBoundingClientRect();
@@ -270,7 +281,7 @@ void main() {
     const dprCap = o.phone ? 1.5 : 2;
     let dpr = Math.min(window.devicePixelRatio || 1, dprCap);
     if (cssW * cssH * dpr * dpr > budget) dpr = Math.sqrt(budget / (cssW * cssH));
-    dpr = Math.max(0.6, dpr) * scale;
+    dpr = Math.max(0.6, dpr) * governor.scale;
     const w = Math.max(1, Math.round(cssW * dpr));
     const h = Math.max(1, Math.round(cssH * dpr));
     renderer.setPixelRatio(1);
@@ -303,7 +314,6 @@ void main() {
   let fade = 0;
   let prev = performance.now();
   let time = 0;
-  let slowT = 0;
   let dip = 0;
   let lastStage = -1;
   let hoverSlow = 1;
@@ -312,21 +322,16 @@ void main() {
     raf = requestAnimationFrame(frame);
     if (paused || lost || disposed) {
       prev = now;
+      governor.reset();
       return;
     }
-    const dt = Math.min(0.05, Math.max(0.001, (now - prev) / 1000));
+    const rawMs = now - prev;
+    const dt = Math.min(0.05, Math.max(0.001, rawMs / 1000));
     prev = now;
     time += dt;
     shared.time.value = o.reduced ? time * 0.2 : time;
 
-    // adaptive resolution: only ever a small step, never below 0.65
-    if (dt > 0.03) slowT += dt;
-    else slowT = Math.max(0, slowT - dt * 0.5);
-    if (slowT > 2.4 && scale > 0.65) {
-      scale = Math.max(0.65, scale - 0.12);
-      slowT = 0;
-      sizeNow();
-    }
+    governor.frame(rawMs, Math.abs(vel) > 0.01 || !!flight);
 
     gNow = o.reduced ? gTarget : damp(gNow, gTarget, 6.5, dt);
     const g = gNow;
@@ -579,30 +584,38 @@ void main() {
     });
   };
 
-  // compile before the first frame so nothing hitches on the way in
-  try {
-    await renderer.compileAsync(scene, camera);
-  } catch {
-    /* it will compile on first use instead */
-  }
+  // Compile before the first frame, in the background, so nothing hitches on
+  // the way in. Against the target the scene is really drawn to.
+  const warm = () => Promise.all([prelink(renderer, scene, camera, post.sceneTarget), post.warm()]);
+  await warm();
   raf = requestAnimationFrame(frame);
   o.onReady?.();
+  // Then everything not on screen yet goes to the GPU a piece at a time, so no
+  // world arrives with a stall.
+  const warmJobs = () => [star.group, ...worlds.map((w) => w.group), belt.group, typeRing.group, ...beacons];
+  let stopWarm = warmAhead(renderer, scene, camera, warmJobs());
 
   const onLost = (e: Event) => {
     e.preventDefault();
     lost = true;
+    stopWarm();
   };
-  const onRestored = () => {
-    lost = false;
+  const onRestored = async () => {
     // the baked sky is gone with the context: paint it again
     renderer.autoClear = true;
-    const fresh = bakeSky(renderer, low);
+    const fresh = await bakeSky(renderer, low);
     renderer.autoClear = false;
+    if (disposed) return;
     skyRT.dispose();
     skyRT = fresh;
     shared.env.value = fresh.texture;
     scene.background = fresh.texture;
     sizeNow();
+    // every program went too: link them again before the next frame needs them
+    await warm();
+    if (disposed) return;
+    lost = false;
+    stopWarm = warmAhead(renderer, scene, camera, warmJobs());
   };
   canvas.addEventListener("webglcontextlost", onLost);
   canvas.addEventListener("webglcontextrestored", onRestored);
@@ -721,6 +734,7 @@ void main() {
     destroy() {
       disposed = true;
       cancelAnimationFrame(raf);
+      stopWarm();
       canvas.removeEventListener("webglcontextlost", onLost);
       canvas.removeEventListener("webglcontextrestored", onRestored);
       scene.background = null;

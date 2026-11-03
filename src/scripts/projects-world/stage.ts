@@ -411,6 +411,18 @@ export function mountProjectsWorld() {
       { passive: true, signal },
     );
 
+    // The system can take a touch away (a gesture, a call). That ends it like lifting the finger.
+    addEventListener(
+      "touchcancel",
+      () => {
+        pointerDown = false;
+        if (touchMode === "turn") sys?.release();
+        touchMode = "";
+        scheduleSettle();
+      },
+      { passive: true, signal },
+    );
+
     // ---- keys: arrows scroll, page keys and space go to the next shot
     let flying = false;
     addEventListener(
@@ -644,6 +656,12 @@ export function mountProjectsWorld() {
 
     let pxS = 0;
     let pyS = 0;
+    const pointerReaders = Array.from(root.querySelectorAll<HTMLElement>(".pw-title, .pw-hero-num, .pw-kick"));
+    // What each pin last wrote: a style written only when it changed costs nothing to the page.
+    const pinWrote = pins.map(() => ({ t: "", o: "", p: "", r: null as boolean | null }));
+    const bodyWrote = bodyLinks.map(() => ({ o: "", p: "" }));
+    const starWrote = { t: "", o: "", p: "" };
+    starPin.style.setProperty("--flip", "0.5");
     const onFrame = (f: FrameInfo) => {
       if (!coarse && !reduced) {
         const tx3 = mOn ? (mx / vw) * 2 - 1 : 0;
@@ -653,8 +671,10 @@ export function mountProjectsWorld() {
         if (Math.abs(nx - pxS) + Math.abs(ny - pyS) > 0.0006) {
           pxS = nx;
           pyS = ny;
-          root.style.setProperty("--px", nx.toFixed(3));
-          root.style.setProperty("--py", ny.toFixed(3));
+          for (const el of pointerReaders) {
+            el.style.setProperty("--px", nx.toFixed(3));
+            el.style.setProperty("--py", ny.toFixed(3));
+          }
         }
       }
       // pointer, once per frame
@@ -725,20 +745,35 @@ export function mountProjectsWorld() {
         const x = phone ? lx : lx * k + rx * (1 - k);
         const y = phone ? ly : ly * k + ry * (1 - k);
         const railing = k < 0.5;
-        a.style.transform = `translate3d(${x.toFixed(1)}px, ${y.toFixed(1)}px, 0)`;
         const opac = phone ? (showPinned ? smooth(0.5, 0.9, o) : 0) : railing ? 1 : showPinned ? 1 : 0.0;
-        a.style.opacity = opac.toFixed(2);
-        a.style.pointerEvents = opac > 0.1 ? "auto" : "none";
-        a.classList.toggle("is-rail", railing && !phone);
-        a.classList.toggle("is-flip", !phone && railing);
-        a.style.setProperty("--flip", !phone && railing ? "1" : "0.5");
+        const was = pinWrote[i];
+        // A pin that does not show does not need moving.
+        if (opac > 0) {
+          const tf = `translate3d(${x.toFixed(1)}px, ${y.toFixed(1)}px, 0)`;
+          if (tf !== was.t) a.style.transform = was.t = tf;
+        }
+        const op = opac.toFixed(2);
+        if (op !== was.o) a.style.opacity = was.o = op;
+        const pe = opac > 0.1 ? "auto" : "none";
+        if (pe !== was.p) a.style.pointerEvents = was.p = pe;
+        const rail = railing && !phone;
+        if (rail !== was.r) {
+          was.r = rail;
+          a.classList.toggle("is-rail", rail);
+          a.classList.toggle("is-flip", rail);
+          a.style.setProperty("--flip", rail ? "1" : "0.5");
+        }
       });
       // the star's name sits just under it on the first screen
       const sOn = !phone && f.star[2] > 0.5 && o > 0.35;
-      starPin.style.opacity = sOn ? smooth(0.35, 0.8, o).toFixed(2) : "0";
-      starPin.style.pointerEvents = sOn ? "auto" : "none";
-      starPin.style.transform = `translate3d(${f.star[0].toFixed(1)}px, ${(f.star[1] - Math.min(f.star[3], 90) - 26).toFixed(1)}px, 0)`;
-      starPin.style.setProperty("--flip", "0.5");
+      const so = sOn ? smooth(0.35, 0.8, o).toFixed(2) : "0";
+      if (so !== starWrote.o) starPin.style.opacity = starWrote.o = so;
+      const sp = sOn ? "auto" : "none";
+      if (sp !== starWrote.p) starPin.style.pointerEvents = starWrote.p = sp;
+      if (sOn) {
+        const st = `translate3d(${f.star[0].toFixed(1)}px, ${(f.star[1] - Math.min(f.star[3], 90) - 26).toFixed(1)}px, 0)`;
+        if (st !== starWrote.t) starPin.style.transform = starWrote.t = st;
+      }
 
       // ---- the belt's bodies
       const inBelt = f.g > N - 1.15;
@@ -748,8 +783,11 @@ export function mountProjectsWorld() {
         const front = f.bodies[i * 4 + 2] > 0.5;
         const rad = f.bodies[i * 4 + 3];
         const on = inBelt && f.g < N - 0.1 && front && rad > (phone ? 44 : 58) && x > 10 && x < vw - 10 && y > 84 && y < vh - 40;
-        a.style.opacity = on ? smooth(phone ? 44 : 58, phone ? 70 : 92, rad).toFixed(2) : "0";
-        a.style.pointerEvents = on ? "auto" : "none";
+        const was = bodyWrote[i];
+        const bo = on ? smooth(phone ? 44 : 58, phone ? 70 : 92, rad).toFixed(2) : "0";
+        if (bo !== was.o) a.style.opacity = was.o = bo;
+        const bp = on ? "auto" : "none";
+        if (bp !== was.p) a.style.pointerEvents = was.p = bp;
         if (on) a.style.transform = `translate3d(${clamp(x + rad * 0.72, 12, vw - (phone ? 190 : 240)).toFixed(1)}px, ${clamp(y - 14, 84, vh - 120).toFixed(1)}px, 0)`;
       });
 
@@ -875,9 +913,12 @@ export function mountProjectsWorld() {
     let destroyed = false;
     let typeLater = 0;
     let typeLater2 = 0;
+    // The code starts down the wire now, so the wait for the scene is the wait
+    // for the network and not for an idle moment first.
+    const engine = import("./engine");
     const boot = () => {
       if (destroyed) return;
-      import("./engine")
+      engine
         .then(async ({ mountSystem }) => {
           if (destroyed) return;
           const inter = "Inter, 'Inter Fallback', Arial, sans-serif";
@@ -901,10 +942,19 @@ export function mountProjectsWorld() {
             typeLater = window.setTimeout(() => root.classList.add("type-on"), 450);
             typeLater2 = window.setTimeout(() => root.classList.add("has-type"), 1250);
           }
-          const io = new IntersectionObserver(([e]) => s.setPaused(!e.isIntersecting || document.hidden));
+          let onScreen = true;
+          const rest = () => s.setPaused(!onScreen || document.hidden);
+          const io = new IntersectionObserver(([e]) => {
+            onScreen = e.isIntersecting;
+            rest();
+          });
           io.observe(stage);
           signal.addEventListener("abort", () => io.disconnect());
-          document.addEventListener("visibilitychange", () => s.setPaused(document.hidden), { signal });
+          document.addEventListener("visibilitychange", rest, { signal });
+          // A phone can take the GPU back: the painted sky holds the screen and the
+          // words and the scroll carry on until it comes back.
+          canvas.addEventListener("webglcontextlost", () => root.classList.remove("is-3d"), { signal });
+          canvas.addEventListener("webglcontextrestored", () => root.classList.add("is-3d"), { signal });
         })
         .catch((err) => {
           // the painted sky and the HTML still show every project

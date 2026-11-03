@@ -54,6 +54,13 @@ const stageTop = (i: number) => SPANS.slice(0, i).reduce((a, b) => a + b, 0);
     (function () {
       var el = document.querySelector("[data-pw]");
       if (!el) return;
+      // Asked once a visit: making a context to ask stops the page for a moment.
+      try {
+        if (sessionStorage.getItem("gl2") === "1") {
+          el.classList.add("is-live");
+          return;
+        }
+      } catch (e) {}
       try {
         var c = document.createElement("canvas");
         var g = c.getContext("webgl2");
@@ -61,6 +68,7 @@ const stageTop = (i: number) => SPANS.slice(0, i).reduce((a, b) => a + b, 0);
           el.classList.add("is-live");
           var x = g.getExtension("WEBGL_lose_context");
           if (x) x.loseContext();
+          try { sessionStorage.setItem("gl2", "1"); } catch (e) {}
         }
       } catch (e) {}
     })();
