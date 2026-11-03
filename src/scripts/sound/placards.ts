@@ -15,14 +15,14 @@ export const PLACARDS: Record<MovementId, Placard> = {
   home: {
     number: "Overture",
     title: "The Long Flight",
-    subtitle: "Nine worlds, each with its own instruments · a landing under a red eclipse, one touch",
+    subtitle: "Nine worlds, each with its own instruments · a landing at sunset, a night sky, one touch",
     lines: [
       "A ship crosses nine worlds, one for each chapter, and every scroll is a jump to the next. Each world sounds like itself: ignition, glass that counts, machines, four voices, felt piano.",
       "The music runs at 85.7 beats a minute, so each 1.4 second jump is exactly two beats: a swell, a tape stop, a breath of silence, then the new world lands on the downbeat.",
-      "The landing comes down through a red eclipse on low strings and a heartbeat, and touches down eight beats later.",
-      "On the planet the explorer steps out under a violet galaxy: footsteps, suit servos, a wind that sings in the key.",
-      "The helmet comes off. You hear it from inside first, muffled, until the seal breaks and the world opens wide with the theme at its fullest.",
-      "Four notes, D A G E, have followed you since launch. When the hand touches the sapling they come to rest on a warm D major chord, and a shimmer stays.",
+      "The landing comes down at sunset on low strings and a heartbeat, and touches down eight beats later.",
+      "From there the sky falls to full night, and the music gets sparser and colder with it. The explorer walks down a metal ramp onto sand, in soft steps, while a wind sings in the key.",
+      "The helmet comes off. You hear it from inside first, muffled, until the seal breaks and thin, cold air opens up.",
+      "Four notes, D A G E, have followed you since launch. Under the Milky Way almost nothing plays, so when the hand touches the sapling, the D major chord is the one warm moment.",
     ],
   },
   projects: {
@@ -138,15 +138,15 @@ export const CHAPTER_LINES: string[] = [
   "03 The work · Two machines interlock, three beats against four, over a low engine that pumps in eighths.",
   "04 Four ways in · Four instruments at four corners pass one line around your head.",
   "05 Writing · The theme in full on a felt piano, with the air of paper behind it.",
-  "06 Landing · Down through the atmosphere under a red eclipse: low strings, a heartbeat, a roar of air, touchdown.",
-  "07 The exit · A violet night and a cosmic choir. First footsteps off the ramp.",
-  "08 The helmet · Heard from inside, muffled, until the seal breaks and the world opens.",
-  "09 Connect · Everything hushes for the touch.",
+  "06 Landing · Down through the atmosphere at sunset: low strings, a heartbeat, a roar of air, touchdown.",
+  "07 The exit · The last of the sun and a high choir. Soft steps down a metal ramp, then sand.",
+  "08 The helmet · Heard from inside, muffled, until the seal breaks. Dusk, thinner and colder.",
+  "09 Connect · Full night and almost nothing, until the touch.",
 ];
 
 /** The three scenes on the planet, for the "Now" line while they play. */
 export const SCENE_LINES: Record<string, string> = {
-  exit: "07 The exit · Footsteps off the ramp, the suit's servos, a wind that sings in F sharp and C sharp. Far ahead, the four notes.",
-  helmet: "08 The helmet · The seal hisses open, a first breath of open air, and the theme plays at its fullest as the sound opens wide.",
-  touch: "09 Connect · The hand meets the sapling on a warm D major ninth; the theme falls home to D, and a shimmer keeps living.",
+  exit: "07 The exit · Six soft steps on the metal ramp, four on the sand, and one of the four notes on each step on the sand. A wind sings in F sharp and C sharp.",
+  helmet: "08 The helmet · The seal hisses open, the sound opens wide, and a first breath of cold air. The four notes come from a long way off.",
+  touch: "09 Connect · Under the Milky Way the chord has had no third, until the hand meets the sapling on a warm D major ninth. The theme falls home to D.",
 };
