@@ -17,7 +17,11 @@ const {
   footerVariant = "default",
   // Optional LCP image to preload (an AVIF path). Pages pass their above-the-fold
   // hero/cover so the browser fetches it before it discovers the <img> in markup.
+  // When the <img> has a srcset the preload needs the same one, or a phone
+  // fetches the wide file here and then the right one for the <img> as well.
   preloadImage,
+  preloadSrcset,
+  preloadSizes,
   // The page's tab. Its colour marks the kicker, links and background wash.
   tone: toneProp,
   // Search and sharing: this page's share image (a path under public), its
@@ -36,6 +40,8 @@ const {
   description?: string;
   footerVariant?: string;
   preloadImage?: string;
+  preloadSrcset?: string;
+  preloadSizes?: string;
   tone?: string;
   ogImage?: string;
   ogType?: "website" | "article" | "profile";
@@ -109,8 +115,10 @@ const warpPalette =
   tone === "home" ? [...new Set([toneRgb, TONE_RGB.writing, ...Object.values(TONE_RGB)])] : [toneRgb];
 
 // Comets in the tab's colour on every page. Home and the writing index place
-// their own per section, and /mind wants a still sky.
-const hasOwnComets = pathname === "/" || pathname === "/posts" || pathname === "/mind";
+// their own per section, /mind wants a still sky, and the Projects, Work and
+// Resume worlds are opaque, so comets would only run unseen under them.
+const hasOwnComets =
+  pathname === "/" || pathname === "/posts" || pathname === "/mind" || seg === "projects" || seg === "work" || seg === "resume";
 const pageComets = hasOwnComets
   ? []
   : Array.from({ length: 8 }, (_, i) => ({
@@ -145,6 +153,9 @@ const pageComets = hasOwnComets
       @font-face { font-family: "Inter"; font-style: normal; font-weight: 100 900; font-display: swap; src: url(/fonts/inter-latin-ext.woff2) format("woff2"); unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF; }
       @font-face { font-family: "Inter"; font-style: normal; font-weight: 100 900; font-display: swap; src: url(/fonts/inter-latin.woff2) format("woff2"); unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
       @font-face { font-family: "Inter Fallback"; src: local("Arial"); size-adjust: 107.12%; ascent-override: 90.44%; descent-override: 22.52%; line-gap-override: 0%; }
+      /* Dark from the very first frame, before any stylesheet has arrived. */
+      html { background: #000; color-scheme: dark; }
+      body { margin: 0; }
     </style>
     {
       preloadImage && (
@@ -152,6 +163,8 @@ const pageComets = hasOwnComets
           rel="preload"
           as="image"
           href={preloadImage}
+          imagesrcset={preloadSrcset}
+          imagesizes={preloadSizes}
           type="image/avif"
           fetchpriority="high"
         />
@@ -228,6 +241,125 @@ const pageComets = hasOwnComets
       })();
     </script>
     <script is:inline>
+      // When a page's script does not come. A chunk that cannot load is not a
+      // crash; the 3D simply stays away and the painted sky holds. If the page's
+      // own script fails, or has not run after a long wait, the pinned stages
+      // would show their first screen and nothing else, so they go back to plain
+      // readable pages, the same ones browsers without WebGL get.
+      (function () {
+        if (window.__pageWatch) return;
+        window.__pageWatch = true;
+        var WAIT = 12000;
+        var timer = 0;
+        var root = document.documentElement;
+        function flat() {
+          clearTimeout(timer);
+          root.classList.add("no-stage");
+          var pw = document.querySelector("[data-pw]");
+          var rw = document.querySelector("[data-rw]");
+          var ww = document.querySelector("[data-ww]");
+          var wall = document.querySelector("[data-wall]");
+          if (pw) pw.classList.remove("is-live");
+          if (rw) rw.classList.remove("is-live");
+          if (ww) ww.classList.add("is-flat");
+          if (wall) {
+            wall.setAttribute("data-mode", "list");
+            root.classList.remove("wall-on");
+          }
+        }
+        function watch() {
+          clearTimeout(timer);
+          root.classList.remove("no-stage");
+          timer = setTimeout(flat, WAIT);
+        }
+        function arrived() {
+          clearTimeout(timer);
+        }
+        window.addEventListener("error", function (e) {
+          var el = e.target;
+          if (el && el.tagName === "SCRIPT" && el.type === "module") flat();
+        }, true);
+        window.addEventListener("unhandledrejection", function (e) {
+          var why = String((e.reason && e.reason.message) || e.reason || "");
+          if (/dynamically imported module|importing a module script failed|unable to preload/i.test(why)) e.preventDefault();
+        });
+        watch();
+        document.addEventListener("DOMContentLoaded", arrived, { once: true });
+        document.addEventListener("astro:after-swap", watch);
+        document.addEventListener("astro:page-load", arrived);
+      })();
+    </script>
+    <script is:inline>
+      // The stylesheets are in the body, under the loader (scripts/late-css.mjs).
+      // The router only knows stylesheets in the head, so once a page has parsed
+      // they move there, and each arriving page's move there too before the swap,
+      // with the new ones loaded first. A stylesheet that hangs holds a move back
+      // for a few seconds at most.
+      (function () {
+        if (window.__lateCss) return;
+        window.__lateCss = true;
+        var LATE = "body [data-late]";
+        // A page with a 3D world names its code in a meta tag (scripts/late-css.mjs).
+        // It starts down the wire now, at low priority so everything the page needs
+        // to read goes first, wherever it will be used. The browser keeps it, and the
+        // world does not wait for the page to finish laying out.
+        function worldCode(page) {
+          var names = page.querySelector('meta[name="world-code"]');
+          var net = navigator.connection;
+          if (!names || (net && (net.saveData || /2g/.test(net.effectiveType))) || !("WebGL2RenderingContext" in window)) return;
+          if (matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+          names.content.split(" ").forEach(function (href) {
+            fetch(href, { priority: "low" }).then(function (res) { return res.text(); }).catch(function () {});
+          });
+        }
+        var parsed = new MutationObserver(function () {
+          if (!document.body) return;
+          parsed.disconnect();
+          worldCode(document);
+        });
+        parsed.observe(document.documentElement, { childList: true });
+        function settle() {
+          document.querySelectorAll(LATE).forEach(function (el) {
+            var copy = el.cloneNode(true);
+            if (el.tagName === "LINK") {
+              copy.onload = copy.onerror = function () { el.remove(); };
+            } else {
+              el.remove();
+            }
+            document.head.appendChild(copy);
+          });
+        }
+        if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", settle, { once: true });
+        else settle();
+        document.addEventListener("astro:before-preparation", function (e) {
+          var load = e.loader;
+          e.loader = function () {
+            return Promise.resolve(load()).then(function () {
+              var next = e.newDocument;
+              if (!next || next === document) return;
+              worldCode(next);
+              var waits = [];
+              next.querySelectorAll(LATE).forEach(function (el) {
+                next.head.appendChild(el);
+                if (el.tagName !== "LINK") return;
+                var href = el.getAttribute("href");
+                if (document.querySelector('link[rel="stylesheet"][href="' + href + '"]')) return;
+                waits.push(new Promise(function (done) {
+                  var early = document.createElement("link");
+                  early.rel = "preload";
+                  early.as = "style";
+                  early.href = href;
+                  early.onload = early.onerror = done;
+                  document.head.appendChild(early);
+                }));
+              });
+              if (waits.length) return Promise.race([Promise.all(waits), new Promise(function (done) { setTimeout(done, 5000); })]);
+            });
+          };
+        }, true);
+      })();
+    </script>
+    <script is:inline>
       // The site is dark only. Set the class inline in head to avoid FOUC.
       // Runs once a visit (the same text on every page, so the router does
       // not run it again); lifecycle.ts carries the class across page swaps.
@@ -235,6 +367,9 @@ const pageComets = hasOwnComets
     </script>
     <script>
       import { onPage } from "../scripts/lifecycle";
+      import { mountPrefetch } from "../scripts/prefetch";
+
+      mountPrefetch();
 
       // A link to a file (a PDF, an image) goes straight to the browser
       // instead of being fetched by the router first and then again.
@@ -300,6 +435,10 @@ const pageComets = hasOwnComets
   >
     <!-- First in the body so it covers the very first paint. -->
     <WarpLoader palette={warpPalette} toneMap={toneMap} />
+    <!-- The build moves the page's stylesheets here (scripts/late-css.mjs), so the
+         loader above paints without waiting for them. Whatever comes after still
+         waits, the scripts included, exactly as if they were in the head. -->
+    <template data-css-here></template>
     <!-- Shared space backdrop on every page: starfield, ambient colour
          flow, and film grain. All behind the content (z -1, grain overlay). -->
     <SpaceField />
@@ -380,15 +519,19 @@ const pageComets = hasOwnComets
     <!-- The chrome persists across page changes: the nav keeps its state
          and the sound toggle, an open chat stays open, the scroll gauge and
          back to top carry on. Nav reads the new path after each swap. -->
-    <Nav client:visible transition:persist="nav" searchItems={searchItems} cv={info.cv} />
+    <Nav client:soon transition:persist="nav" searchItems={searchItems} cv={info.cv} />
     <ScrollOrbit />
     <main class="w-full">
       <slot />
     </main>
     <FooterBar variant={footerVariant} />
     <!-- In the HTML from the first paint, so the launcher arrives with the page;
-         it wakes up once the browser is idle. -->
-    <ChatWidget client:idle transition:persist="chat" />
-    <TopButton client:idle transition:persist="to-top" />
+         it wakes up once the browser has a moment. -->
+    <ChatWidget client:soon transition:persist="chat" />
+    <TopButton client:soon transition:persist="to-top" />
+    <script is:inline>
+      // The last tag of the page: lay it out now (WarpLoader).
+      document.documentElement.classList.remove("parsing");
+    </script>
   </body>
 </html>

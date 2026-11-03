@@ -32,34 +32,10 @@ const rgb = palette[0];
 const rgb2 = palette[1] ?? palette[0];
 ---
 
-<div
-  id="warp"
-  class="warp"
-  style={`--warp-rgb:${rgb};--warp-rgb2:${rgb2};`}
-  aria-hidden="true"
-  data-palette={JSON.stringify(palette)}
-  data-tones={JSON.stringify(toneMap)}
-  transition:persist="warp"
->
-  <div class="warp-sky"></div>
-  <canvas class="warp-canvas"></canvas>
-  <div class="warp-label">
-    <span class="warp-text"><span class="warp-word"><span class="warp-shine"></span></span></span>
-    <span class="warp-bar"></span>
-  </div>
-  <!-- Once a visit, the jump ends on a choice: sound or silence. -->
-  <div class="warp-gate" hidden>
-    <p class="warp-gate-kicker"><span class="warp-gate-wave" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></span>This site has a score in eight movements</p>
-    <div class="warp-gate-actions">
-      <button type="button" class="warp-gate-btn is-on" data-sound-choice="on">Enter with sound</button>
-      <button type="button" class="warp-gate-btn is-quiet" data-sound-choice="off">Without sound</button>
-    </div>
-    <p class="warp-gate-hint">Spatial sound, best on headphones · change it or read about it in the top bar</p>
-  </div>
-</div>
-<noscript><style>#warp { display: none !important; }</style></noscript>
-
-<style>
+<!-- In the page itself, not a stylesheet: the loader has to paint before any
+     stylesheet has arrived. The site's stylesheets sit right after it in the
+     body (BaseLayout, scripts/late-css.mjs). -->
+<style is:inline>
   .warp {
     position: fixed;
     inset: 0;
@@ -68,6 +44,16 @@ const rgb2 = palette[1] ?? palette[0];
     place-items: center;
   }
   .warp[hidden] { display: none; }
+  /* While the page under the loader is still parsing, the browser lays out what
+     it has so far again and again, and on a phone that is most of the wait. It
+     skips the work until the last tag has arrived (BaseLayout), or this script
+     gives up on it. */
+  html.parsing main { content-visibility: hidden; }
+  html.parsing .site-foot, html.parsing .page-comets { display: none; }
+  /* Should this file's own script never run, the loader still lets go. The
+     script cancels this as its first act. */
+  .warp:not(.is-run) { animation: warp-letgo 0.4s ease 7s forwards; }
+  @keyframes warp-letgo { to { opacity: 0; visibility: hidden; } }
   .warp-sky {
     position: absolute;
     inset: 0;
@@ -98,7 +84,7 @@ const rgb2 = palette[1] ?? palette[0];
     gap: 12px;
     width: max-content;
     max-width: calc(100vw - 32px);
-    font-family: var(--font);
+    font-family: "Inter", "Inter Fallback", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
     pointer-events: auto;
     animation: warp-gate-in 900ms cubic-bezier(0.16, 1, 0.3, 1) both;
   }
@@ -200,7 +186,7 @@ const rgb2 = palette[1] ?? palette[0];
     display: inline-flex;
     align-items: center;
     gap: 9px;
-    font-family: var(--font);
+    font-family: "Inter", "Inter Fallback", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
     font-size: 13px;
     font-weight: 500;
     letter-spacing: -0.005em;
@@ -291,6 +277,33 @@ const rgb2 = palette[1] ?? palette[0];
     .warp { display: none; }
   }
 </style>
+
+<div
+  id="warp"
+  class="warp"
+  style={`--warp-rgb:${rgb};--warp-rgb2:${rgb2};`}
+  aria-hidden="true"
+  data-palette={JSON.stringify(palette)}
+  data-tones={JSON.stringify(toneMap)}
+  transition:persist="warp"
+>
+  <div class="warp-sky"></div>
+  <canvas class="warp-canvas"></canvas>
+  <div class="warp-label">
+    <span class="warp-text"><span class="warp-word"><span class="warp-shine"></span></span></span>
+    <span class="warp-bar"></span>
+  </div>
+  <!-- Once a visit, the jump ends on a choice: sound or silence. -->
+  <div class="warp-gate" hidden>
+    <p class="warp-gate-kicker"><span class="warp-gate-wave" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></span>This site has a score in eight movements</p>
+    <div class="warp-gate-actions">
+      <button type="button" class="warp-gate-btn is-on" data-sound-choice="on">Enter with sound</button>
+      <button type="button" class="warp-gate-btn is-quiet" data-sound-choice="off">Without sound</button>
+    </div>
+    <p class="warp-gate-hint">Spatial sound, best on headphones · change it or read about it in the top bar</p>
+  </div>
+</div>
+<noscript><style>#warp { display: none !important; }</style></noscript>
 
 <script is:inline>
   // The jump itself: stars streaking toward the viewer and comets crossing.
@@ -522,6 +535,8 @@ const rgb2 = palette[1] ?? palette[0];
     // Once a visit: the loader persists across pages, and so does this.
     if (!root || window.__warpLoader) return;
     window.__warpLoader = true;
+    root.classList.add("is-run");
+    document.documentElement.classList.add("parsing");
     var palette, toneMap;
     try {
       palette = JSON.parse(root.getAttribute("data-palette") || "[]");
@@ -599,6 +614,8 @@ const rgb2 = palette[1] ?? palette[0];
     }
     tint();
     var MAX = 3500; // never hold the first page longer than this
+    // Once the page's own scripts have run, only this much longer for its images.
+    var GRACE = 500;
     var t0 = performance.now();
 
     // The sky draws in a worker when the browser can hand a canvas to one,
@@ -748,6 +765,7 @@ const rgb2 = palette[1] ?? palette[0];
       root.removeAttribute("aria-label");
     }
     function showGate() {
+      if (!gate.hidden) return;
       gate.hidden = false;
       root.classList.add("is-gate");
       root.removeAttribute("aria-hidden");
@@ -836,15 +854,31 @@ const rgb2 = palette[1] ?? palette[0];
       call("aim", [p]);
     }
 
+    // Ready: the whole page has loaded, or its scripts have run and a moment
+    // has passed, or the time is up. A slow image or a chunk that never comes
+    // holds nothing back, and the sound choice comes up in time too.
+    var isReady = false;
     function ready() {
+      if (isReady) return;
+      // A stylesheet that is still coming holds the page's body back: nothing to
+      // reveal yet, so the sky stays, up to the time it can take to give up.
+      if (!document.querySelector("main") && performance.now() - t0 < 15000) {
+        setTimeout(ready, 250);
+        return;
+      }
+      isReady = true;
+      document.documentElement.classList.remove("parsing");
       setTimeout(function () {
         if (gating) showGate();
         else leave(0);
       }, Math.max(0, MIN - (performance.now() - t0)));
     }
     if (document.readyState === "complete") ready();
-    else window.addEventListener("load", ready, { once: true });
-    setTimeout(function () { leave(0); }, MAX);
+    else {
+      window.addEventListener("load", ready, { once: true });
+      document.addEventListener("DOMContentLoaded", function () { setTimeout(ready, GRACE); }, { once: true });
+    }
+    setTimeout(ready, MAX);
 
     // Phones fire resize as the address bar comes and goes; a canvas resize
     // clears it, so only pass on a real change of size.

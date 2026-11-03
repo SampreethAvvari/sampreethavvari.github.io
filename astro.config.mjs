@@ -4,6 +4,7 @@ import react from "@astrojs/react";
 import robotsTxt from "astro-robots-txt";
 import { rehypeAccessibleEmojis } from 'rehype-accessible-emojis';
 import { readdirSync, readFileSync } from "node:fs";
+import { fileURLToPath } from "node:url";
 
 import sitemap from "@astrojs/sitemap";
 
@@ -53,10 +54,18 @@ export default defineConfig({
   },
   site: SITE,
   devToolbar: { enabled: false },
-  // Fetch a page as soon as a link is hovered or tapped, so moving between
-  // tabs feels instant on phones too.
-  prefetch: { prefetchAll: true, defaultStrategy: 'hover' },
+  // The router's own prefetch takes every link, PDFs included; the site's own
+  // takes pages only (src/scripts/prefetch.ts).
+  prefetch: false,
   integrations: [
+    {
+      name: "client-soon",
+      hooks: {
+        "astro:config:setup": ({ addClientDirective }) => {
+          addClientDirective({ name: "soon", entrypoint: fileURLToPath(new URL("./src/utils/client-soon.mjs", import.meta.url)) });
+        },
+      },
+    },
     tailwind(),
     react(),
     robotsTxt({
@@ -66,6 +75,7 @@ export default defineConfig({
       ],
     }),
     sitemap({
+      filter: (url) => !/\/(journey|ending)-lab\/?$/.test(new URL(url).pathname),
       serialize(item) {
         item.lastmod = lastmodFor(item.url);
         return item;

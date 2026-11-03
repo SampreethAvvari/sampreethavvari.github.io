@@ -35,20 +35,6 @@ html.dark body::after {
   mix-blend-mode: overlay;
 }
 
-/* IMDb pill — official IMDb gold (#F5C518) with black text. Used wherever
-   we link to IMDb so the brand reads instantly. */
-.imdb-pill {
-  background: #F5C518;
-  color: #000000;
-  border: 1px solid rgba(0, 0, 0, 0.18);
-  box-shadow: 0 6px 16px -6px rgba(245, 197, 24, 0.55);
-}
-.imdb-pill:hover {
-  background: #FFD740;
-  box-shadow: 0 10px 22px -8px rgba(245, 197, 24, 0.75);
-}
-.imdb-pill i { color: #000; }
-
 /* IMDb wordmark — small black tag with yellow "IMDb" text, the canonical
    IMDb identifier. Works inside the yellow .imdb-pill button. */
 .imdb-wordmark {
@@ -137,21 +123,6 @@ body {
   color: #fff !important;
 }
 
-.line-clamp-2 {
-  display: -webkit-box;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
-  overflow: hidden;
-}
-
-.photo-carousel-frame {
-  aspect-ratio: 16 / 9;
-  min-height: 200px;
-}
-
-/* Links and buttons no longer lift on hover site wide. Components that should
-   move (cards, primary buttons) say so in system.css. */
-
 /* But don't lift things that are inside cards already lifting themselves. */
 .no-lift a:hover,
 .no-lift button:hover,
@@ -183,20 +154,6 @@ button.no-lift:hover {
 
 .chat-attention {
   animation: chatPulse 5s ease-in-out infinite;
-}
-
-.floaty {
-  animation: floaty 6s ease-in-out infinite;
-}
-
-@keyframes floaty {
-  0%,
-  100% {
-    transform: translateY(0);
-  }
-  50% {
-    transform: translateY(-8px);
-  }
 }
 
 .chat-attention:hover {
@@ -274,131 +231,9 @@ button.no-lift:hover {
 .reveal-visible > .grid > *:nth-child(8),
 .reveal-visible > div > .grid > *:nth-child(8) { transition-delay: 0.40s; }
 
-/* Per-chapter atmospheres — each chapter gets its own faint colour tint so
-   the home page reads as a sequence of moods, not one flat dark surface.
-   All five share the same drift animation for visual coherence. */
-.writing-atmos,
-.work-atmos,
-.about-atmos,
-.filmmaking-atmos,
-.connect-atmos {
-  position: absolute;
-  inset: -5%;
-  z-index: 0;
-  pointer-events: none;
-  animation: atmosDrift 22s ease-in-out infinite;
-  will-change: transform;
-  transform: translateZ(0);
-}
-
-/* Each chapter glow takes the colour of that chapter's headline / eyebrow,
-   held at a faint single-stop bloom so the screen still reads as black/matte
-   gray and not a coloured wash. */
-
-/* 01 The work: text-secondary blue */
-.work-atmos {
-  background:
-    radial-gradient(ellipse 80% 70% at 20% 32%, rgba(91, 141, 239, 0.1) 0%, rgba(91, 141, 239, 0.0976) 7.5%, rgba(91, 141, 239, 0.0905) 15%, rgba(91, 141, 239, 0.0794) 22.5%, rgba(91, 141, 239, 0.0655) 30%, rgba(91, 141, 239, 0.05) 37.5%, rgba(91, 141, 239, 0.0345) 45%, rgba(91, 141, 239, 0.0206) 52.5%, rgba(91, 141, 239, 0.0095) 60%, rgba(91, 141, 239, 0.0024) 67.5%, rgba(91, 141, 239, 0) 75%),
-    radial-gradient(ellipse 75% 63% at 80% 68%, rgba(91, 141, 239, 0.07) 0%, rgba(91, 141, 239, 0.0683) 7.5%, rgba(91, 141, 239, 0.0633) 15%, rgba(91, 141, 239, 0.0556) 22.5%, rgba(91, 141, 239, 0.0458) 30%, rgba(91, 141, 239, 0.035) 37.5%, rgba(91, 141, 239, 0.0242) 45%, rgba(91, 141, 239, 0.0144) 52.5%, rgba(91, 141, 239, 0.0067) 60%, rgba(91, 141, 239, 0.0017) 67.5%, rgba(91, 141, 239, 0) 75%);
-}
-
-/* 02 About: text-secondary blue */
-.about-atmos {
-  background:
-    radial-gradient(ellipse 80% 70% at 22% 30%, rgba(91, 141, 239, 0.1) 0%, rgba(91, 141, 239, 0.0976) 7.5%, rgba(91, 141, 239, 0.0905) 15%, rgba(91, 141, 239, 0.0794) 22.5%, rgba(91, 141, 239, 0.0655) 30%, rgba(91, 141, 239, 0.05) 37.5%, rgba(91, 141, 239, 0.0345) 45%, rgba(91, 141, 239, 0.0206) 52.5%, rgba(91, 141, 239, 0.0095) 60%, rgba(91, 141, 239, 0.0024) 67.5%, rgba(91, 141, 239, 0) 75%),
-    radial-gradient(ellipse 75% 63% at 78% 72%, rgba(91, 141, 239, 0.07) 0%, rgba(91, 141, 239, 0.0683) 7.5%, rgba(91, 141, 239, 0.0633) 15%, rgba(91, 141, 239, 0.0556) 22.5%, rgba(91, 141, 239, 0.0458) 30%, rgba(91, 141, 239, 0.035) 37.5%, rgba(91, 141, 239, 0.0242) 45%, rgba(91, 141, 239, 0.0144) 52.5%, rgba(91, 141, 239, 0.0067) 60%, rgba(91, 141, 239, 0.0017) 67.5%, rgba(91, 141, 239, 0) 75%);
-}
-
-/* 03 Writing: text-acc-emerald */
-.writing-atmos {
-  background:
-    radial-gradient(ellipse 80% 70% at 18% 30%, rgba(52, 211, 153, 0.09) 0%, rgba(52, 211, 153, 0.0878) 7.5%, rgba(52, 211, 153, 0.0814) 15%, rgba(52, 211, 153, 0.0715) 22.5%, rgba(52, 211, 153, 0.0589) 30%, rgba(52, 211, 153, 0.045) 37.5%, rgba(52, 211, 153, 0.0311) 45%, rgba(52, 211, 153, 0.0185) 52.5%, rgba(52, 211, 153, 0.0086) 60%, rgba(52, 211, 153, 0.0022) 67.5%, rgba(52, 211, 153, 0) 75%),
-    radial-gradient(ellipse 75% 63% at 82% 72%, rgba(52, 211, 153, 0.06) 0%, rgba(52, 211, 153, 0.0585) 7.5%, rgba(52, 211, 153, 0.0543) 15%, rgba(52, 211, 153, 0.0476) 22.5%, rgba(52, 211, 153, 0.0393) 30%, rgba(52, 211, 153, 0.03) 37.5%, rgba(52, 211, 153, 0.0207) 45%, rgba(52, 211, 153, 0.0124) 52.5%, rgba(52, 211, 153, 0.0057) 60%, rgba(52, 211, 153, 0.0015) 67.5%, rgba(52, 211, 153, 0) 75%);
-}
-
-/* 04 Filmmaking: text-acc-amber */
-.filmmaking-atmos {
-  background:
-    radial-gradient(ellipse 80% 70% at 22% 30%, rgba(245, 165, 36, 0.09) 0%, rgba(245, 165, 36, 0.0878) 7.5%, rgba(245, 165, 36, 0.0814) 15%, rgba(245, 165, 36, 0.0715) 22.5%, rgba(245, 165, 36, 0.0589) 30%, rgba(245, 165, 36, 0.045) 37.5%, rgba(245, 165, 36, 0.0311) 45%, rgba(245, 165, 36, 0.0185) 52.5%, rgba(245, 165, 36, 0.0086) 60%, rgba(245, 165, 36, 0.0022) 67.5%, rgba(245, 165, 36, 0) 75%),
-    radial-gradient(ellipse 75% 63% at 80% 72%, rgba(245, 165, 36, 0.06) 0%, rgba(245, 165, 36, 0.0585) 7.5%, rgba(245, 165, 36, 0.0543) 15%, rgba(245, 165, 36, 0.0476) 22.5%, rgba(245, 165, 36, 0.0393) 30%, rgba(245, 165, 36, 0.03) 37.5%, rgba(245, 165, 36, 0.0207) 45%, rgba(245, 165, 36, 0.0124) 52.5%, rgba(245, 165, 36, 0.0057) 60%, rgba(245, 165, 36, 0.0015) 67.5%, rgba(245, 165, 36, 0) 75%);
-}
-
-/* 05 Connect: text-secondary blue */
-.connect-atmos {
-  background:
-    radial-gradient(ellipse 80% 70% at 28% 32%, rgba(91, 141, 239, 0.1) 0%, rgba(91, 141, 239, 0.0976) 7.5%, rgba(91, 141, 239, 0.0905) 15%, rgba(91, 141, 239, 0.0794) 22.5%, rgba(91, 141, 239, 0.0655) 30%, rgba(91, 141, 239, 0.05) 37.5%, rgba(91, 141, 239, 0.0345) 45%, rgba(91, 141, 239, 0.0206) 52.5%, rgba(91, 141, 239, 0.0095) 60%, rgba(91, 141, 239, 0.0024) 67.5%, rgba(91, 141, 239, 0) 75%),
-    radial-gradient(ellipse 75% 63% at 72% 70%, rgba(91, 141, 239, 0.07) 0%, rgba(91, 141, 239, 0.0683) 7.5%, rgba(91, 141, 239, 0.0633) 15%, rgba(91, 141, 239, 0.0556) 22.5%, rgba(91, 141, 239, 0.0458) 30%, rgba(91, 141, 239, 0.035) 37.5%, rgba(91, 141, 239, 0.0242) 45%, rgba(91, 141, 239, 0.0144) 52.5%, rgba(91, 141, 239, 0.0067) 60%, rgba(91, 141, 239, 0.0017) 67.5%, rgba(91, 141, 239, 0) 75%);
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .writing-atmos,
-  .work-atmos,
-  .about-atmos,
-  .filmmaking-atmos,
-  .connect-atmos { animation: none; will-change: auto; }
-}
-
-/* Highlight dots matching the post-tag tone, used on /projects Hybridge
-   deep-dive bullet lists so the dot colour syncs with that section's chip. */
-.chip-dot-blue    { background: #5B8DEF; }
-.chip-dot-cyan    { background: #22D3EE; }
-.chip-dot-violet  { background: #A78BFA; }
-.chip-dot-emerald { background: #34D399; }
-.chip-dot-amber   { background: #F5A524; }
-.chip-dot-rose    { background: #FB7185; }
-.chip-dot-slate   { background: #94A3B8; }
-.chip-dot-film    { background: #F43F5E; }
-
-/* Hero atmos. Same single-bloom treatment as the chapter atmos so the page
-   reads as one continuous dark surface instead of a coloured wash up top. */
-.hero-atmos {
-  position: absolute;
-  inset: -5%;
-  z-index: 0;
-  pointer-events: none;
-  background:
-    radial-gradient(ellipse 75% 63% at 22% 32%, rgba(91, 141, 239, 0.09) 0%, rgba(91, 141, 239, 0.0878) 7.5%, rgba(91, 141, 239, 0.0814) 15%, rgba(91, 141, 239, 0.0715) 22.5%, rgba(91, 141, 239, 0.0589) 30%, rgba(91, 141, 239, 0.045) 37.5%, rgba(91, 141, 239, 0.0311) 45%, rgba(91, 141, 239, 0.0185) 52.5%, rgba(91, 141, 239, 0.0086) 60%, rgba(91, 141, 239, 0.0022) 67.5%, rgba(91, 141, 239, 0) 75%),
-    radial-gradient(ellipse 75% 63% at 78% 72%, rgba(91, 141, 239, 0.06) 0%, rgba(91, 141, 239, 0.0585) 7.5%, rgba(91, 141, 239, 0.0543) 15%, rgba(91, 141, 239, 0.0476) 22.5%, rgba(91, 141, 239, 0.0393) 30%, rgba(91, 141, 239, 0.03) 37.5%, rgba(91, 141, 239, 0.0207) 45%, rgba(91, 141, 239, 0.0124) 52.5%, rgba(91, 141, 239, 0.0057) 60%, rgba(91, 141, 239, 0.0015) 67.5%, rgba(91, 141, 239, 0) 75%);
-  animation: atmosDrift 22s ease-in-out infinite;
-  will-change: transform;
-  transform: translateZ(0);
-}
-@media (prefers-reduced-motion: reduce) {
-  .hero-atmos { animation: none; will-change: auto; }
-}
-
-/* Email-CTA wrap. Makes the .glow-wave's behind-blob hug just the email
-   button area, not the whole containing block. */
-.email-cta-wrap {
-  display: inline-block;
-  padding: 0.5rem 1rem;
-  margin: -0.5rem -1rem;
-}
-
 /* Subtle gradient drift behind the landing hero. */
-.landing-atmos::before {
-  content: "";
-  position: absolute;
-  inset: -5%;
-  background:
-    radial-gradient(circle at 20% 30%, rgba(91, 141, 239, 0.18) 0%, rgba(91, 141, 239, 0.1756) 7.2%, rgba(91, 141, 239, 0.1628) 14.4%, rgba(91, 141, 239, 0.1429) 21.6%, rgba(91, 141, 239, 0.1178) 28.8%, rgba(91, 141, 239, 0.09) 36%, rgba(91, 141, 239, 0.0622) 43.2%, rgba(91, 141, 239, 0.0371) 50.4%, rgba(91, 141, 239, 0.0172) 57.6%, rgba(91, 141, 239, 0.0044) 64.8%, rgba(91, 141, 239, 0) 72%),
-    radial-gradient(circle at 80% 70%, rgba(245, 165, 36, 0.14) 0%, rgba(245, 165, 36, 0.1366) 7.4%, rgba(245, 165, 36, 0.1266) 14.8%, rgba(245, 165, 36, 0.1111) 22.2%, rgba(245, 165, 36, 0.0916) 29.6%, rgba(245, 165, 36, 0.07) 37%, rgba(245, 165, 36, 0.0484) 44.4%, rgba(245, 165, 36, 0.0289) 51.8%, rgba(245, 165, 36, 0.0134) 59.2%, rgba(245, 165, 36, 0.0034) 66.6%, rgba(245, 165, 36, 0) 74%),
-    radial-gradient(circle at 50% 90%, rgba(167, 139, 250, 0.16) 0%, rgba(167, 139, 250, 0.1561) 7.6%, rgba(167, 139, 250, 0.1447) 15.2%, rgba(167, 139, 250, 0.127) 22.8%, rgba(167, 139, 250, 0.1047) 30.4%, rgba(167, 139, 250, 0.08) 38%, rgba(167, 139, 250, 0.0553) 45.6%, rgba(167, 139, 250, 0.033) 53.2%, rgba(167, 139, 250, 0.0153) 60.8%, rgba(167, 139, 250, 0.0039) 68.4%, rgba(167, 139, 250, 0) 76%);
-  animation: atmosDrift 18s ease-in-out infinite;
-  z-index: 0;
-  pointer-events: none;
-  will-change: transform;
-  transform: translateZ(0);
-}
-
-@keyframes atmosDrift {
-  0%, 100% { transform: translate(0, 0) scale(1); }
-  33%      { transform: translate(2%, -2%) scale(1.03); }
-  66%      { transform: translate(-2%, 2%) scale(0.98); }
-}
 
 @media (prefers-reduced-motion: reduce) {
-  .landing-atmos::before { animation: none; will-change: auto; }
   .reveal-visible > .grid > *,
   .reveal-visible > div > .grid > * {
     transition: none;
@@ -406,212 +241,6 @@ button.no-lift:hover {
     transform: none;
   }
 }
-
-/* Cards: smoother, slightly more pronounced hover lift with shadow. */
-.card-lift {
-  transition: transform 0.35s ease, box-shadow 0.35s ease;
-}
-.card-lift:hover {
-  transform: translateY(-4px) scale(1.01);
-  box-shadow: 0 20px 40px -20px rgba(91, 141, 239, 0.35);
-}
-
-/* Skill pills — one coherent Apple-clean treatment. Soft blue glass with a
-   thin accent border. Per-class p1..p10 variants kept as no-ops so existing
-   markup doesn't blow up; they all render the same calm chip. */
-.skill-pill {
-  display: inline-flex;
-  align-items: center;
-  font-size: 0.78rem;
-  font-weight: 600;
-  padding: 0.42rem 0.9rem;
-  border-radius: 9999px;
-  letter-spacing: 0.005em;
-  white-space: nowrap;
-  background: rgba(91, 141, 239, 0.10);
-  color: theme(colors.secondary);
-  border: 1px solid rgba(91, 141, 239, 0.30);
-  transition: transform 0.25s ease, background 0.25s ease, border-color 0.25s ease;
-}
-.skill-pill:hover {
-  transform: translateY(-2px);
-  background: rgba(91, 141, 239, 0.18);
-  border-color: rgba(91, 141, 239, 0.55);
-}
-html.dark .skill-pill {
-  background: rgba(91, 141, 239, 0.14);
-  color: theme(colors.dk-secondary);
-  border-color: rgba(91, 141, 239, 0.35);
-}
-html.dark .skill-pill:hover {
-  background: rgba(91, 141, 239, 0.24);
-  border-color: rgba(91, 141, 239, 0.60);
-}
-.skill-pill.p1,
-.skill-pill.p2,
-.skill-pill.p3,
-.skill-pill.p4,
-.skill-pill.p5,
-.skill-pill.p6,
-.skill-pill.p7,
-.skill-pill.p8,
-.skill-pill.p9,
-.skill-pill.p10 { background: rgba(91, 141, 239, 0.10); }
-html.dark .skill-pill.p1,
-html.dark .skill-pill.p2,
-html.dark .skill-pill.p3,
-html.dark .skill-pill.p4,
-html.dark .skill-pill.p5,
-html.dark .skill-pill.p6,
-html.dark .skill-pill.p7,
-html.dark .skill-pill.p8,
-html.dark .skill-pill.p9,
-html.dark .skill-pill.p10 { background: rgba(91, 141, 239, 0.14); }
-
-/* Domain-coloured skill pills — blue for ML/AI, emerald for data/cloud,
-   amber for software & testing. Used in the Skills section on the home
-   About chapter. */
-.skill-pill-blue {
-  background: rgba(91, 141, 239, 0.12);
-  color: #2563EB;
-  border-color: rgba(91, 141, 239, 0.40);
-}
-html.dark .skill-pill-blue {
-  background: rgba(91, 141, 239, 0.18);
-  color: #93C5FD;
-  border-color: rgba(91, 141, 239, 0.45);
-}
-.skill-pill-blue:hover {
-  background: rgba(91, 141, 239, 0.22);
-  border-color: rgba(91, 141, 239, 0.65);
-}
-
-.skill-pill-emerald {
-  background: rgba(52, 211, 153, 0.12);
-  color: #047857;
-  border-color: rgba(52, 211, 153, 0.40);
-}
-html.dark .skill-pill-emerald {
-  background: rgba(52, 211, 153, 0.16);
-  color: #6EE7B7;
-  border-color: rgba(52, 211, 153, 0.45);
-}
-.skill-pill-emerald:hover {
-  background: rgba(52, 211, 153, 0.24);
-  border-color: rgba(52, 211, 153, 0.65);
-}
-
-.skill-pill-amber {
-  background: rgba(245, 165, 36, 0.14);
-  color: #B45309;
-  border-color: rgba(245, 165, 36, 0.40);
-}
-html.dark .skill-pill-amber {
-  background: rgba(245, 165, 36, 0.18);
-  color: #FCD34D;
-  border-color: rgba(245, 165, 36, 0.45);
-}
-.skill-pill-amber:hover {
-  background: rgba(245, 165, 36, 0.26);
-  border-color: rgba(245, 165, 36, 0.65);
-}
-
-/* Brand monogram badge — replaces the white-tile institution logos so every
-   row reads identically regardless of the source logo's contrast. */
-.brand-badge {
-  flex-shrink: 0;
-  width: 3.5rem;
-  height: 3.5rem;
-  border-radius: 1rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #FFFFFF;
-  font-weight: 800;
-  font-size: 0.95rem;
-  letter-spacing: 0.04em;
-  border: 1px solid rgba(255, 255, 255, 0.16);
-  box-shadow:
-    0 8px 22px -10px rgba(0, 0, 0, 0.55),
-    0 0 0 1px rgba(255, 255, 255, 0.06) inset;
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
-}
-.timeline-row:hover .brand-badge {
-  transform: translateY(-2px);
-  box-shadow:
-    0 14px 28px -10px rgba(0, 0, 0, 0.6),
-    0 0 0 1px rgba(255, 255, 255, 0.1) inset;
-}
-
-/* Timeline rows with institutional logos. */
-.timeline-row {
-  display: flex;
-  align-items: flex-start;
-  gap: 1.1rem;
-}
-.timeline-logo {
-  flex-shrink: 0;
-  width: 4rem;
-  height: 4rem;
-  border-radius: 1rem;
-  background: #FFFFFF;
-  border: 1px solid rgba(91, 141, 239, 0.25);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  overflow: hidden;
-  padding: 0.45rem;
-  box-shadow:
-    0 8px 24px -10px rgba(91, 141, 239, 0.55),
-    0 2px 6px rgba(0, 0, 0, 0.10),
-    0 0 0 1px rgba(91, 141, 239, 0.10) inset;
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
-}
-.timeline-row:hover .timeline-logo {
-  transform: translateY(-3px);
-  box-shadow:
-    0 14px 32px -10px rgba(91, 141, 239, 0.65),
-    0 4px 8px rgba(0, 0, 0, 0.12),
-    0 0 0 1px rgba(91, 141, 239, 0.20) inset;
-}
-html.dark .timeline-logo {
-  background: #FFFFFF;
-  border-color: rgba(91, 141, 239, 0.35);
-}
-.timeline-logo img {
-  max-width: 100%;
-  max-height: 100%;
-  object-fit: contain;
-}
-.timeline-logo.logo-placeholder {
-  background: linear-gradient(135deg, #5B8DEF, #A78BFA);
-  color: white;
-  font-weight: 700;
-  font-size: 0.85rem;
-  letter-spacing: 0.02em;
-}
-
-/* Scroll-snap chapter pages (proximity, not mandatory — never traps the user).
-   scroll-snap-type lives on the actual scrolling element (html / body), not on
-   a non-scrolling wrapper div. .snap-chapter children opt their viewports in. */
-html.snap-home {
-  scroll-snap-type: y proximity;
-}
-.snap-chapter {
-  scroll-snap-align: start;
-  scroll-snap-stop: normal;
-}
-.snap-chapters > section { /* legacy class kept for backward compat */
-  scroll-snap-align: start;
-}
-
-/* Chapter-fade. Stripped of the top/bottom radial highlights so chapter
-   transitions are pure body bg with no glow seam. Class is kept on the
-   sections so existing markup doesn't need to change. */
-.chapter-fade {
-  position: relative;
-}
-.chapter-fade > * { position: relative; z-index: 1; }
 
 /* The home page narrative chapters. Apple-style hybrid: only the hero
    (.chapter-full) is forced to fill the viewport; every other chapter is
@@ -625,10 +254,6 @@ html.snap-home {
   padding-bottom: clamp(4rem, 9vh, 7rem);
   position: relative;
   overflow: hidden;
-}
-.chapter-full {
-  min-height: 100vh;
-  min-height: 100svh;
 }
 
 
@@ -659,177 +284,6 @@ html.dark .skills-card {
   gap: 0.8rem;
   margin-bottom: 1.15rem;
 }
-.skills-card-icon {
-  width: 2.3rem;
-  height: 2.3rem;
-  border-radius: 0.72rem;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  font-size: 0.95rem;
-  color: var(--sk);
-  background: rgba(var(--sk-rgb), 0.14);
-  border: 1px solid rgba(var(--sk-rgb), 0.28);
-}
-.skills-card-label {
-  font-size: 0.68rem;
-  text-transform: uppercase;
-  letter-spacing: 0.17em;
-  font-weight: 700;
-  color: var(--sk) !important;
-  margin: 0;
-  line-height: 1.4;
-}
-.skill-chip {
-  display: inline-flex;
-  align-items: center;
-  font-size: 0.78rem;
-  font-weight: 600;
-  padding: 0.4rem 0.85rem;
-  border-radius: 9999px;
-  white-space: nowrap;
-  letter-spacing: 0.005em;
-  background: rgba(var(--sk-rgb), 0.10);
-  color: theme(colors.text);
-  transition: background 0.25s ease, transform 0.25s ease;
-}
-html.dark .skill-chip {
-  background: rgba(var(--sk-rgb), 0.14);
-  color: theme(colors.dk-text);
-}
-.skill-chip:hover {
-  background: rgba(var(--sk-rgb), 0.22);
-  transform: translateY(-1px);
-}
-
-/* Acronym badge in the skills-card header, tinted to the discipline colour
-   (replaces the old FontAwesome icon). */
-.skills-card-acronym {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 2.3rem;
-  height: 2.3rem;
-  padding: 0 0.5rem;
-  border-radius: 0.72rem;
-  flex-shrink: 0;
-  font-size: 0.7rem;
-  font-weight: 800;
-  letter-spacing: 0.08em;
-  color: var(--sk);
-  background: rgba(var(--sk-rgb), 0.14);
-  border: 1px solid rgba(var(--sk-rgb), 0.28);
-}
-
-/* Titled logo tiles: each official brand SVG sits in a light chiclet with
-   its name as a caption directly below, like a labelled icon. */
-.skill-tile-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(4.4rem, 1fr));
-  gap: 0.9rem 0.4rem;
-  justify-items: center;
-}
-.skill-tile {
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.45rem;
-  text-align: center;
-  width: 100%;
-}
-.skill-tile-name {
-  font-size: 0.66rem;
-  line-height: 1.18;
-  font-weight: 600;
-  letter-spacing: 0.01em;
-  color: theme(colors.text);
-  opacity: 0.7;
-}
-html.dark .skill-tile-name { color: theme(colors.dk-text); opacity: 0.72; }
-/* FontAwesome icon inside the white chiclet, tinted to the bucket accent. */
-.skill-logo i { color: var(--sk); font-size: 1.05rem; line-height: 1; }
-/* Hover tooltip with the project count. Never clipped (parents don't clip). */
-.skill-tip {
-  position: absolute;
-  bottom: calc(100% + 0.35rem);
-  left: 50%;
-  transform: translateX(-50%) translateY(4px);
-  white-space: nowrap;
-  padding: 0.28rem 0.55rem;
-  border-radius: 0.5rem;
-  font-size: 0.62rem;
-  font-weight: 700;
-  letter-spacing: 0.02em;
-  color: #fff;
-  background: rgba(20, 22, 28, 0.94);
-  box-shadow: 0 8px 20px -8px rgba(0, 0, 0, 0.5);
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity 0.2s ease, transform 0.2s ease;
-  z-index: 5;
-}
-.skill-tile:hover .skill-tip { opacity: 1; transform: translateX(-50%) translateY(0); }
-.skill-logo-grid {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-}
-.skill-logo {
-  width: 2.5rem;
-  height: 2.5rem;
-  border-radius: 0.7rem;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  background: rgba(255, 255, 255, 0.94);
-  border: 1px solid rgba(var(--sk-rgb), 0.22);
-  box-shadow: 0 4px 14px -9px rgba(0, 0, 0, 0.5);
-  transition: transform 0.25s ease, box-shadow 0.25s ease;
-}
-.skill-logo img {
-  width: 1.55rem;
-  height: 1.55rem;
-  object-fit: contain;
-  display: block;
-}
-.skill-logo:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 9px 20px -10px rgba(var(--sk-rgb), 0.6);
-}
-
-/* About-chapter portrait — framed editorial photo with a soft multi-colour
-   glow behind it, floating gently. Replaces the old avatar-in-a-void. */
-.about-portrait {
-  position: relative;
-  width: 100%;
-  max-width: 21rem;
-}
-.about-portrait-glow {
-  position: absolute;
-  inset: -1.6rem;
-  z-index: 0;
-  border-radius: 2.4rem;
-  background: linear-gradient(140deg, rgba(52, 211, 153, 0.42), rgba(167, 139, 250, 0.26) 50%, rgba(91, 141, 239, 0.42));
-  filter: blur(46px);
-  opacity: 0.55;
-  pointer-events: none;
-}
-.about-portrait-frame {
-  position: relative;
-  z-index: 1;
-  border-radius: 1.75rem;
-  overflow: hidden;
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  box-shadow: 0 34px 70px -34px rgba(0, 0, 0, 0.55);
-}
-.about-portrait-img {
-  display: block;
-  width: 100%;
-  aspect-ratio: 4 / 5;
-  object-fit: cover;
-}
 
 /* Section eyebrow — small uppercase tracked label with a leading dot. */
 .eyebrow {
@@ -850,14 +304,6 @@ html.dark .skill-tile-name { color: theme(colors.dk-text); opacity: 0.72; }
   display: inline-block;
   transition: box-shadow 0.6s ease, transform 0.6s ease;
 }
-/* Ignited by the scroll spine: when the comet passes a chapter's eyebrow,
-   its dot lights up like the comet just lit a lamp on its way down. */
-.eyebrow.dot-lit::before {
-  box-shadow:
-    0 0 6px currentColor,
-    0 0 16px currentColor;
-  transform: scale(1.3);
-}
 /* nav offset so anchor jumps + first chapter clear the fixed top bar */
 html { scroll-padding-top: 4.5rem; }
 
@@ -868,162 +314,15 @@ html { scroll-padding-top: 4.5rem; }
   letter-spacing: -0.03em;
   line-height: 1.02;
 }
-.display-sm {
-  font-size: clamp(2rem, 4vw, 3.5rem);
-  font-weight: 600;
-  letter-spacing: -0.025em;
-  line-height: 1.05;
-}
-
-/* Big number callouts (hero metrics on each project row). */
-.metric-number {
-  font-size: clamp(3rem, 6vw, 5rem);
-  font-weight: 700;
-  letter-spacing: -0.04em;
-  line-height: 1;
-  font-variant-numeric: tabular-nums;
-}
 
 /* Glass shimmer — a soft diagonal light passing over an element on a loop.
    Use on photos or hero text containers for that Apple "alive" feel. */
-.photo-shimmer {
-  position: relative;
-  overflow: hidden;
-}
-.photo-shimmer::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(
-    115deg,
-    transparent 0%,
-    transparent 38%,
-    rgba(255, 255, 255, 0.22) 48%,
-    rgba(255, 255, 255, 0.28) 52%,
-    transparent 62%,
-    transparent 100%
-  );
-  background-size: 280% 100%;
-  background-position: -100% 0;
-  animation: shimmerMove 6s ease-in-out infinite;
-  pointer-events: none;
-  mix-blend-mode: overlay;
-}
-@keyframes shimmerMove {
-  0%   { background-position: -100% 0; opacity: 0; }
-  30%  { opacity: 1; }
-  70%  { opacity: 1; }
-  100% { background-position: 200% 0; opacity: 0; }
-}
 
 /* Text-shimmer kept as a passthrough so existing markup doesn't break, but
    it no longer transforms the text in any way. The accent span uses its own
    colour class (text-secondary, text-acc-amber, etc.) and reads cleanly. */
 .text-shimmer { color: inherit; }
-
-/* Glow wave — a faint coloured halo that drifts left-to-right BEHIND a line
-   of text. The text itself is never masked or made transparent; the glow is
-   a separate pseudo element with z-index: -1, so the words are always solid
-   and readable. Apply to a containing block-level element (display: block /
-   inline-block) for the effect to span the full line width. */
-.glow-wave {
-  position: relative;
-  isolation: isolate;
-}
-/* Light mode glow — warm yellow into magenta. Pops on near-white bg. */
-.glow-wave::after {
-  content: "";
-  position: absolute;
-  inset: -22% -6%;
-  background: radial-gradient(
-    ellipse 32% 80% at -10% 50%,
-    rgba(245, 165, 36, 0.55) 0%,
-    rgba(232, 121, 249, 0.42) 30%,
-    rgba(232, 121, 249, 0.18) 50%,
-    transparent 70%
-  );
-  filter: blur(22px);
-  z-index: -1;
-  pointer-events: none;
-  animation: glowDrift 9s ease-in-out infinite;
-  mix-blend-mode: multiply;
-}
 /* Dark mode glow — cool blue into emerald. The current vibe the user liked. */
-html.dark .glow-wave::after {
-  background: radial-gradient(
-    ellipse 32% 80% at -10% 50%,
-    rgba(91, 141, 239, 0.60) 0%,
-    rgba(52, 211, 153, 0.42) 30%,
-    rgba(34, 211, 238, 0.22) 50%,
-    transparent 70%
-  );
-  mix-blend-mode: screen;
-}
-@keyframes glowDrift {
-  0%   { transform: translateX(-15%); opacity: 0; }
-  12%  { opacity: 1; }
-  88%  { opacity: 1; }
-  100% { transform: translateX(115%); opacity: 0; }
-}
-.glow-delay-1::after { animation-delay: 1.2s; }
-.glow-delay-2::after { animation-delay: 2.4s; }
-.glow-delay-3::after { animation-delay: 3.6s; }
-
-@media (prefers-reduced-motion: reduce) {
-  .photo-shimmer::after { animation: none; opacity: 0; }
-  .glow-wave::after { animation: none; opacity: 0; }
-}
-
-/* Underline-on-hover for sleek text links. */
-.link-underline {
-  position: relative;
-  display: inline-flex;
-  align-items: center;
-  gap: 0.4rem;
-}
-.link-underline::after {
-  content: "";
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: -2px;
-  height: 1px;
-  background: currentColor;
-  transform: scaleX(0.4);
-  transform-origin: left;
-  opacity: 0.5;
-  transition: transform 0.35s ease, opacity 0.35s ease;
-}
-.link-underline:hover::after {
-  transform: scaleX(1);
-  opacity: 1;
-}
-
-/* ───────────────────────────────────────────────────────────────────
-   POSTS INDEX — featured hero + grid
-   ─────────────────────────────────────────────────────────────────── */
-
-.featured-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.4rem;
-  font-size: 0.7rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.16em;
-  padding: 0.35rem 0.85rem;
-  border-radius: 9999px;
-  background: linear-gradient(135deg, #5B8DEF, #22D3EE);
-  color: white;
-}
-.featured-badge::before {
-  content: "";
-  width: 0.45rem;
-  height: 0.45rem;
-  border-radius: 9999px;
-  background: white;
-  box-shadow: 0 0 8px rgba(255,255,255,0.7);
-}
 
 /* Post card (grid) — colored top border + accent shadow */
 .post-card {
@@ -1054,11 +353,6 @@ html.dark .post-card {
   border-color: rgba(91,141,239,0.45);
   box-shadow: 0 24px 48px -24px var(--card-accent-a, rgba(91,141,239,0.5));
 }
-.post-card-accent-blue    { --card-accent-a: #5B8DEF; --card-accent-b: #22D3EE; }
-.post-card-accent-emerald { --card-accent-a: #34D399; --card-accent-b: #22D3EE; }
-.post-card-accent-violet  { --card-accent-a: #A78BFA; --card-accent-b: #5B8DEF; }
-.post-card-accent-amber   { --card-accent-a: #F5A524; --card-accent-b: #DC2626; }
-.post-card-accent-cyan    { --card-accent-a: #22D3EE; --card-accent-b: #5B8DEF; }
 
 
 /* Chat widget assistant-message rich content (markdown rendered via
@@ -1098,27 +392,6 @@ html.dark .chat-msg-rich a:hover { color: #22D3EE; }
   justify-content: space-between;
   margin-bottom: 0.85rem;
 }
-.dx-acronym {
-  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-  font-size: 0.72rem;
-  font-weight: 700;
-  letter-spacing: 0.22em;
-  padding: 0.28rem 0.7rem;
-  border-radius: 999px;
-  color: var(--dx);
-  background: rgba(var(--dx-rgb), 0.12);
-  border: 1px solid rgba(var(--dx-rgb), 0.3);
-}
-.dx-icon {
-  width: 2.1rem;
-  height: 2.1rem;
-  display: grid;
-  place-items: center;
-  border-radius: 0.75rem;
-  font-size: 0.95rem;
-  color: var(--dx);
-  background: rgba(var(--dx-rgb), 0.1);
-}
 .dx-name {
   font-size: 1.18rem;
   line-height: 1.2;
@@ -1128,165 +401,10 @@ html.dark .chat-msg-rich a:hover { color: #22D3EE; }
   margin-bottom: 0.45rem;
 }
 html.dark .dx-name { color: rgb(245 245 247); }
-.dx-tagline {
-  font-size: 0.82rem;
-  line-height: 1.5;
-  color: rgba(29, 29, 31, 0.62);
-  margin-bottom: 1.05rem;
-}
-html.dark .dx-tagline { color: rgba(245, 245, 247, 0.6); }
-
-.dx-previews {
-  display: flex;
-  flex-direction: column;
-  gap: 0.55rem;
-  margin-top: auto;
-  margin-bottom: 1rem;
-}
-.dx-preview-row {
-  display: flex;
-  align-items: center;
-  gap: 0.7rem;
-  padding: 0.45rem 0.55rem;
-  border-radius: 0.8rem;
-  background: rgba(var(--dx-rgb), 0.05);
-  border: 1px solid rgba(var(--dx-rgb), 0.1);
-  transition: background 0.25s ease, border-color 0.25s ease;
-}
-.dx-panel:hover .dx-preview-row {
-  background: rgba(var(--dx-rgb), 0.08);
-  border-color: rgba(var(--dx-rgb), 0.18);
-}
-.dx-thumb {
-  width: 3rem;
-  height: 2rem;
-  object-fit: cover;
-  border-radius: 0.45rem;
-  flex-shrink: 0;
-  opacity: 0.9;
-}
-.dx-preview-name {
-  font-size: 0.74rem;
-  font-weight: 600;
-  line-height: 1.3;
-  color: rgba(29, 29, 31, 0.85);
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-}
-html.dark .dx-preview-name { color: rgba(245, 245, 247, 0.85); }
-.dx-preview-kicker {
-  font-size: 0.58rem;
-  text-transform: uppercase;
-  letter-spacing: 0.16em;
-  font-weight: 700;
-  color: var(--dx);
-  margin-bottom: 0.1rem;
-}
-.dx-chip {
-  display: inline-block;
-  margin-top: 0.25rem;
-  font-size: 0.58rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.12em;
-  padding: 0.12rem 0.5rem;
-  border-radius: 999px;
-}
-.dx-chip-live {
-  color: #34D399;
-  background: rgba(52, 211, 153, 0.12);
-  border: 1px solid rgba(52, 211, 153, 0.28);
-}
-.dx-chip-soon {
-  color: #F5A524;
-  background: rgba(245, 165, 36, 0.12);
-  border: 1px solid rgba(245, 165, 36, 0.28);
-}
-.dx-chip-design {
-  color: #A78BFA;
-  background: rgba(167, 139, 250, 0.12);
-  border: 1px solid rgba(167, 139, 250, 0.28);
-}
-.dx-explore {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.45rem;
-  font-size: 0.8rem;
-  font-weight: 700;
-  color: var(--dx);
-}
 
 /* ───────────────────────────────────────────────────────────────────
    /WORK AREA — tab bar, hero, strengths, project cards.
    ─────────────────────────────────────────────────────────────────── */
-.work-tabs {
-  position: sticky;
-  top: 3.5rem; /* under the 14/16 navbar */
-  z-index: 30;
-  display: flex;
-  flex-wrap: wrap; /* wrap instead of clipping so labels never get cut off */
-  gap: 0.4rem;
-  padding: 0.5rem 0;
-  scrollbar-width: none;
-  backdrop-filter: blur(18px) saturate(150%);
-  -webkit-backdrop-filter: blur(18px) saturate(150%);
-}
-@media (min-width: 1024px) { .work-tabs { top: 4rem; } }
-.work-tabs::-webkit-scrollbar { display: none; }
-.work-tab {
-  /* Every tab wears its discipline colour at rest, so the row reads as a
-     set of clickable buttons rather than quiet labels. Active = filled. */
-  flex-shrink: 0;
-  display: inline-flex;
-  align-items: center;
-  gap: 0.6rem;
-  padding: 0.7rem 1.5rem;
-  border-radius: 999px;
-  font-size: 0.95rem;
-  font-weight: 700;
-  letter-spacing: -0.01em;
-  cursor: pointer;
-  color: var(--dx, #0066CC);
-  background: rgba(var(--dx-rgb, 0, 102, 204), 0.08);
-  border: 1.5px solid rgba(var(--dx-rgb, 0, 102, 204), 0.4);
-  box-shadow: 0 1px 10px -6px rgba(var(--dx-rgb, 0, 102, 204), 0.5),
-    inset 0 1px 0 rgba(255, 255, 255, 0.18);
-  -webkit-backdrop-filter: blur(12px) saturate(160%);
-  backdrop-filter: blur(12px) saturate(160%);
-  transition: color 0.25s ease, background 0.25s ease, border-color 0.25s ease,
-    box-shadow 0.25s ease, transform 0.25s ease;
-}
-.work-tab:hover {
-  background: rgba(var(--dx-rgb, 0, 102, 204), 0.16);
-  border-color: rgba(var(--dx-rgb, 0, 102, 204), 0.75);
-  box-shadow: 0 8px 22px -10px rgba(var(--dx-rgb, 0, 102, 204), 0.65);
-  transform: translateY(-2px);
-}
-@media (prefers-reduced-motion: reduce) {
-  .work-tab:hover { transform: none; }
-}
-.work-tab.active {
-  color: #0B0B0C;
-  background: var(--dx, #0066CC);
-  border-color: var(--dx, #0066CC);
-  box-shadow: 0 10px 26px -10px rgba(var(--dx-rgb, 0, 102, 204), 0.8);
-}
-.work-tab.active:hover { transform: none; }
-
-.work-hero-img {
-  border-radius: 1.5rem;
-  overflow: hidden;
-  position: relative;
-}
-.work-hero-img::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(180deg, transparent 55%, rgba(var(--dx-rgb), 0.18));
-  pointer-events: none;
-}
 
 .work-project-card {
   display: grid;
@@ -1307,31 +425,6 @@ html.dark .dx-preview-name { color: rgba(245, 245, 247, 0.85); }
 }
 @media (prefers-reduced-motion: reduce) {
   .work-project-card:hover { transform: none; }
-}
-.work-project-img {
-  width: 100%;
-  aspect-ratio: 3 / 2;
-  object-fit: cover;
-  border-radius: 0.9rem;
-}
-.work-highlight {
-  position: relative;
-  padding-left: 1.1rem;
-  font-size: 0.84rem;
-  line-height: 1.55;
-  color: rgba(29, 29, 31, 0.7);
-}
-html.dark .work-highlight { color: rgba(245, 245, 247, 0.68); }
-.work-highlight::before {
-  content: "";
-  position: absolute;
-  left: 0;
-  top: 0.52em;
-  width: 0.38rem;
-  height: 0.38rem;
-  border-radius: 999px;
-  background: var(--dx);
-  opacity: 0.8;
 }
 
 /* ───────────────────────────────────────────────────────────────────
@@ -1357,11 +450,6 @@ html.dark .work-highlight { color: rgba(245, 245, 247, 0.68); }
     letter-spacing: -0.025em;
     text-wrap: balance;
   }
-  .display-sm {
-    font-size: clamp(1.7rem, 7vw, 2.25rem);
-    line-height: 1.12;
-    text-wrap: balance;
-  }
   .eyebrow {
     font-size: 0.7rem;
     letter-spacing: 0.2em;
@@ -1378,38 +466,9 @@ html.dark .work-highlight { color: rgba(245, 245, 247, 0.68); }
   /* Skills bento: denser cards + chips so 36 skills aren't a scroll marathon. */
   .skills-card { padding: 1.15rem 1.15rem 1.3rem; border-radius: 1rem; }
   .skills-card-head { margin-bottom: 0.85rem; gap: 0.65rem; }
-  .skills-card-icon { width: 2rem; height: 2rem; font-size: 0.85rem; }
-  .skill-chip { font-size: 0.72rem; padding: 0.27rem 0.6rem; }
 
   /* Writing cards: a slightly shorter hero image moves a stacked column along. */
   .post-card img { height: 9.5rem !important; }
-
-  /* /work images: on a phone these stack vertically, so the mismatched
-     proportions (hero 16/9, project thumbs 3/2) read as untidy. Give them a
-     consistent, contained banner so the page feels deliberate, not blocky. */
-  .work-hero-img img { aspect-ratio: 16 / 9; height: 11rem; object-fit: cover; }
-  .work-project-img { aspect-ratio: 16 / 9; max-height: 11rem; }
-}
-
-/* ───────────────────────────────────────────────────────────────────
-   /WORK DISCIPLINE TABS — below desktop (≤ 1023 px), the full discipline
-   names overflow the row and scroll/clip off the right edge. Show the short
-   acronyms (set in WorkTabs.astro) as five equal-width segments that always
-   fit the screen — no horizontal scroll, no right-side cutoff, on phones
-   and tablets alike. Desktop (≥ 1024 px) keeps the full-name pill row.
-   ─────────────────────────────────────────────────────────────────── */
-@media (max-width: 1023px) {
-  .work-tabs { overflow-x: visible; gap: 0.35rem; }
-  .work-tab {
-    flex: 1 1 0;
-    min-width: 0;
-    justify-content: center;
-    gap: 0;
-    padding: 0.55rem 0.4rem;
-    font-size: 0.82rem;
-    letter-spacing: 0;
-  }
-  .work-tab i { display: none; }
 }
 
 /* ───────────────────────────────────────────────────────────────────
@@ -1565,34 +624,6 @@ html.dark .chat-typing { color: theme(colors.dk-text); }
   30% { transform: translateY(-3px); opacity: 0.9; }
 }
 
-/* ───────────────────────────────────────────────────────────────────
-   LIQUID-GLASS PASS — pills, tags, and image edges get the frosted-glass
-   treatment site-wide so buttons, tabs, and image borders read as one
-   cohesive material.
-   ─────────────────────────────────────────────────────────────────── */
-.skill-pill,
-.post-tag,
-.dx-chip,
-.featured-badge {
-  -webkit-backdrop-filter: blur(10px) saturate(150%);
-  backdrop-filter: blur(10px) saturate(150%);
-}
-/* A faint glass edge + top highlight on the main image frames. */
-.work-hero-img,
-.featured-post-img,
-.post-cover,
-.flip-card-front,
-.project-screen-imagewrap img {
-  border: 1px solid rgba(255, 255, 255, 0.14);
-}
-html:not(.dark) .work-hero-img,
-html:not(.dark) .featured-post-img,
-html:not(.dark) .post-cover,
-html:not(.dark) .flip-card-front,
-html:not(.dark) .project-screen-imagewrap img {
-  border-color: rgba(15, 23, 42, 0.08);
-}
-
 /* <picture> wrappers (see components/common/Picture.astro) must not generate
    a box of their own — the inner <img> keeps every layout/positioning rule it
    had as a bare <img>. display:contents makes the wrapper layout-transparent. */
@@ -1653,242 +684,11 @@ html.dark .gdock-sa {
     0 1px 0 rgba(255, 255, 255, 0.08) inset,
     0 14px 40px -22px rgba(0, 0, 0, 0.7);
 }
-.gdock {
-  position: fixed;
-  top: 14px;
-  right: 14px;
-  z-index: 60;
-  display: flex;
-  align-items: center;
-  gap: 2px;
-  max-width: calc(100vw - 28px);
-  padding: 7px 8px 7px 10px;
-  border-radius: 9999px;
-  transition:
-    right 0.55s cubic-bezier(0.3, 0.9, 0.3, 1),
-    transform 0.55s cubic-bezier(0.3, 0.9, 0.3, 1),
-    box-shadow 0.4s ease;
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.62), rgba(255, 255, 255, 0.36));
-  -webkit-backdrop-filter: blur(22px) saturate(175%);
-  backdrop-filter: blur(22px) saturate(175%);
-  border: 1px solid rgba(255, 255, 255, 0.45);
-  box-shadow:
-    0 1px 0 rgba(255, 255, 255, 0.5) inset,
-    0 14px 40px -22px rgba(15, 23, 42, 0.45);
-  overflow: hidden;
-}
-html.dark .gdock {
-  background: linear-gradient(180deg, rgba(22, 22, 28, 0.6), rgba(22, 22, 28, 0.42));
-  border-color: rgba(255, 255, 255, 0.14);
-  box-shadow:
-    0 1px 0 rgba(255, 255, 255, 0.08) inset,
-    0 14px 40px -22px rgba(0, 0, 0, 0.7);
-}
-.gdock::after {
-  content: "";
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  left: -80px;
-  width: 60px;
-  background: linear-gradient(105deg, transparent, rgba(255, 255, 255, 0.65), transparent);
-  opacity: 0.35;
-  animation: gdock-sheen 8s ease-in-out infinite;
-  pointer-events: none;
-}
-html.dark .gdock::after {
-  background: linear-gradient(105deg, transparent, rgba(255, 255, 255, 0.22), transparent);
-}
-@keyframes gdock-sheen {
-  0%, 60% { left: -80px; }
-  80%, 100% { left: 110%; }
-}
-@media (prefers-reduced-motion: reduce) {
-  .gdock::after { animation: none; }
-}
-/* Dynamic island state (all sizes): centered, compact, icons only. */
-.gdock-island {
-  right: 50%;
-  transform: translateX(50%);
-  box-shadow:
-    0 1px 0 rgba(255, 255, 255, 0.5) inset,
-    0 22px 54px -24px rgba(15, 23, 42, 0.6);
-}
-html.dark .gdock-island {
-  box-shadow:
-    0 1px 0 rgba(255, 255, 255, 0.08) inset,
-    0 22px 54px -24px rgba(0, 0, 0, 0.85);
-}
-/* Labels are collapsed by default (phones and tablets run icons only, so
-   every destination fits in one dock); desktop shows them until the dock
-   detaches into the island. */
-.gdock-label {
-  max-width: 0;
-  opacity: 0;
-  margin: 0;
-  overflow: hidden;
-  white-space: nowrap;
-  transition: max-width 0.35s ease, opacity 0.25s ease, margin 0.35s ease;
-}
-@media (min-width: 1024px) {
-  .gdock:not(.gdock-island) .gdock-label {
-    max-width: 7rem;
-    opacity: 1;
-    margin: 0 0 0 7px;
-  }
-  .gdock:not(.gdock-island) .gdock-link {
-    padding-left: 12px;
-    padding-right: 12px;
-  }
-}
-.gdock-link-icon {
-  flex: 0 0 auto;
-  opacity: 0.85;
-}
-/* Squeeze the dock a touch further on narrow phones so all seven links,
-   search, and the menu button share one row. */
-@media (max-width: 389px) {
-  .gdock { padding: 6px 6px 6px 8px; }
-  .gdock-link { padding: 7px 6px; }
-  .gdock-actions { margin-left: 2px; gap: 2px; }
-}
 /* The dock carries a Home link everywhere, so the separate SA button only
    earns its spot when there is room for it. */
 @media (max-width: 639px) {
   .gdock-sa { display: none; }
 }
-@media (prefers-reduced-motion: reduce) {
-  .gdock,
-  .gdock-label {
-    transition: none;
-  }
-}
-.gdock-links {
-  display: flex;
-  align-items: center;
-  gap: 1px;
-  list-style: none;
-  margin: 0;
-  padding: 0;
-}
-.gdock-link {
-  display: inline-flex;
-  align-items: center;
-  padding: 8px 9px;
-  border-radius: 9999px;
-  font-size: 0.8rem;
-  font-weight: 600;
-  color: rgb(29 29 31 / 0.6);
-  white-space: nowrap;
-  transition: color 0.2s ease, background 0.2s ease;
-}
-html.dark .gdock-link { color: rgb(245 245 247 / 0.6); }
-.gdock-link:hover,
-.gdock-link:focus-visible {
-  color: #1d1d1f;
-  background: rgb(29 29 31 / 0.07);
-}
-html.dark .gdock-link:hover,
-html.dark .gdock-link:focus-visible {
-  color: #f5f5f7;
-  background: rgb(245 245 247 / 0.09);
-}
-.gdock-link-active {
-  color: #1d1d1f;
-  background: rgb(29 29 31 / 0.07);
-}
-html.dark .gdock-link-active {
-  color: #f5f5f7;
-  background: rgb(245 245 247 / 0.09);
-}
-.gdock-actions {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  margin-left: 6px;
-  flex: 0 0 auto;
-}
-.gdock-actions svg { display: block; }
-/* Scale the existing 40px theme-toggle SVGs down to dock size. */
-.gdock-actions button[aria-label="Toggle dark mode"] svg {
-  width: 26px;
-  height: 26px;
-}
-.gdock-iconbtn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 34px;
-  height: 34px;
-  border-radius: 9999px;
-  color: rgb(29 29 31 / 0.65);
-  transition: color 0.2s ease, background 0.2s ease;
-}
-html.dark .gdock-iconbtn { color: rgb(245 245 247 / 0.65); }
-.gdock-iconbtn:hover,
-.gdock-iconbtn:focus-visible {
-  color: #1d1d1f;
-  background: rgb(29 29 31 / 0.07);
-}
-html.dark .gdock-iconbtn:hover,
-html.dark .gdock-iconbtn:focus-visible {
-  color: #f5f5f7;
-  background: rgb(245 245 247 / 0.09);
-}
-.gdock-cta {
-  align-items: center;
-  padding: 8px 16px;
-  margin-left: 4px;
-  border-radius: 9999px;
-  font-size: 0.78rem;
-  font-weight: 700;
-  color: #fbfbfd;
-  background: #1d1d1f;
-  white-space: nowrap;
-  transition: opacity 0.2s ease;
-}
-.gdock-cta:hover { opacity: 0.82; }
-html.dark .gdock-cta {
-  color: #000;
-  background: #f5f5f7;
-}
-/* Mobile sheet */
-.gdock-sheet {
-  position: fixed;
-  top: 66px;
-  right: 14px;
-  left: 14px;
-  z-index: 55;
-  border-radius: 20px;
-  overflow: hidden;
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.8), rgba(255, 255, 255, 0.62));
-  -webkit-backdrop-filter: blur(24px) saturate(170%);
-  backdrop-filter: blur(24px) saturate(170%);
-  border: 1px solid rgba(255, 255, 255, 0.5);
-  box-shadow: 0 24px 60px -24px rgba(15, 23, 42, 0.5);
-}
-html.dark .gdock-sheet {
-  background: linear-gradient(180deg, rgba(22, 22, 28, 0.85), rgba(22, 22, 28, 0.72));
-  border-color: rgba(255, 255, 255, 0.12);
-  box-shadow: 0 24px 60px -24px rgba(0, 0, 0, 0.8);
-}
-.gdock-sheet ul {
-  list-style: none;
-  margin: 0;
-  padding: 8px 12px;
-}
-.gdock-sheet li + li { border-top: 1px solid rgb(29 29 31 / 0.06); }
-html.dark .gdock-sheet li + li { border-top-color: rgb(245 245 247 / 0.08); }
-.gdock-sheet-link {
-  display: block;
-  padding: 13px 10px;
-  font-size: 1rem;
-  font-weight: 600;
-  color: rgb(29 29 31 / 0.65);
-}
-html.dark .gdock-sheet-link { color: rgb(245 245 247 / 0.65); }
-.gdock-sheet-link-active { color: #0066cc; }
-html.dark .gdock-sheet-link-active { color: #5b8def; }
 
 /* Search modal (glass) */
 .search-modal {

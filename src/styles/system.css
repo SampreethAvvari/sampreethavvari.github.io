@@ -969,10 +969,13 @@ html.dark .chat-send:disabled, .chat-send:disabled { opacity: 0.4; }
     box-shadow 300ms var(--ease-glass);
 }
 [data-reveal].reveal-visible { opacity: 1; transform: none; }
+/* Should the script that reveals them never come, nothing stays hidden. */
+[data-reveal]:not([data-reveal-observed]) { animation: reveal-anyway 600ms var(--ease-glass) 5s forwards; }
+@keyframes reveal-anyway { to { opacity: 1; transform: none; } }
 a.surface[data-reveal].reveal-visible:hover { transform: translateY(-3px); }
 
 @media (prefers-reduced-motion: reduce) {
-  [data-reveal] { opacity: 1; transform: none; transition: none; }
+  [data-reveal] { opacity: 1; transform: none; transition: none; animation: none !important; }
   .btn, .surface, a.surface, .surface-link, .nav-bar, .nav-tab, .chip, .tlink svg, .row-link, .surface-media img, .to-top {
     transition: none !important;
   }

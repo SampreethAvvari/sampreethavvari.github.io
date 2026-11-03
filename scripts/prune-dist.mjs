@@ -25,6 +25,10 @@ const htmlBlob = all
 
 const encodePath = (rel) => rel.split("/").map(encodeURIComponent).join("/");
 
+// Bare test pages for the journey engine and the closing film: the dev server
+// still serves them, the published site does not.
+for (const lab of ["journey-lab", "ending-lab"]) rmSync(path.join(DIST, lab), { recursive: true, force: true });
+
 let removed = 0, freed = 0;
 const kept = [];
 for (const f of all) {

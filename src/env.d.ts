@@ -9,3 +9,9 @@ interface ImportMetaEnv {
 interface ImportMeta {
   readonly env: ImportMetaEnv;
 }
+
+declare namespace astroHTML.JSX {
+  interface IntrinsicAttributes {
+    "client:soon"?: boolean;
+  }
+}

@@ -123,7 +123,6 @@ export default function Nav({ searchItems, cv = "/resume" }) {
                 width="168"
                 height="132"
                 decoding="async"
-                fetchpriority="high"
               />
               <span className="nav-name">Sampreeth Avvari</span>
             </a>
