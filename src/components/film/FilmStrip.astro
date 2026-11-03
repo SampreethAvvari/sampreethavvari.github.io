@@ -18,7 +18,7 @@ const { slugs, start = 1 } = Astro.props;
 const reel = reelItems();
 const pad = (i: number) => String(i).padStart(2, "0");
 const statusLine = (f: Film) =>
-  f.status === "dated" ? yearLabel(f) : `${yearLabel(f)} · ${f.statusNote ?? (f.status === "upcoming" ? "Upcoming" : "Released")}`;
+  f.status === "dated" ? yearLabel(f) : `${yearLabel(f)} · ${f.statusNote ?? "Upcoming"}`;
 // Where each title card's red field and eclipse sit, so no two look alike.
 const SEEDS = [
   [24, 40, 76, 58],

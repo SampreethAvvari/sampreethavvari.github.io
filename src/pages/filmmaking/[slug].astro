@@ -159,7 +159,7 @@ const base = Astro.site!.toString();
             <ul class="fp-roles">
               {film.roles.map((r) => <li>{r}</li>)}
             </ul>
-            <p class="t-meta fp-credited">Credited as Sampreeth Sharma</p>
+            {film.slug === "among-monsters" && <p class="t-meta fp-credited">Credited as Sampreeth Sharma</p>}
           </div>
           <dl class="fp-facts" data-reveal>
             {facts.map((f) => (

@@ -44,10 +44,10 @@ export type Film = {
   /** Missing while a film is still in development. */
   year?: string;
   /**
-   * upcoming: not out yet. released: an earlier year on the slate.
+   * upcoming: not out yet.
    * dated: the slate gives a year and nothing more, so the page shows only that.
    */
-  status: "upcoming" | "released" | "dated";
+  status: "upcoming" | "dated";
   /** A short line on where the film stands, in the site's own words. */
   statusNote?: string;
   /** My credits on the film, in the order the slate lists them. */
@@ -80,7 +80,7 @@ const amCredits: CreditGroup[] = [
   {
     label: "Above the line",
     people: [
-      { role: "Director · Writer", name: "Sampreeth Sharma", photo: crew("Sampreeth.JPG"), instagram: "@sampreeth.sharma" },
+      { role: "Director · Writer · Cinematographer · Editor · Background score", name: "Sampreeth Sharma", photo: crew("Sampreeth.JPG"), instagram: "@sampreeth.sharma" },
       { role: "Director of photography", name: "Isaac Chipe", photo: crew("Isaac.jpg"), instagram: "@isaacchipedop" },
       { role: "Co writer", name: "Akash Munji", photo: crew("Akash.jpg"), instagram: "@akumunji" },
     ],
@@ -125,7 +125,7 @@ export const films: Film[] = [
     logline:
       "A criminal trapped in a coward's body sets out to take revenge at any cost. Guns and drugs don't save people. The question isn't whether he breaks, it's how long he can keep going before the chaos finishes him.",
     work:
-      "I wrote, directed, edited, and scored it. We shot it across New York City in 2024 and 2025, in real living rooms and motel parking lots and the kind of streets the script kept asking for. Premieres in NYC in 2026.",
+      "I wrote, directed, shot, edited and scored it. We filmed across New York City in 2024 and 2025, in real living rooms and motel parking lots and the kind of streets the script kept asking for. Premieres in NYC in 2026.",
     poster: {
       src: "/among-monsters-poster.jpg",
       image: "/among-monsters-poster.webp",
@@ -144,24 +144,24 @@ export const films: Film[] = [
   { slug: "office-plant", title: "Office Plant", year: "2026", status: "dated", roles: ["Assistant Director", "Editor"], reel: { category: "Short", card: true } },
   { slug: "extraordinary-lives", title: "Extraordinary Lives", status: "upcoming", statusNote: "In development", roles: ["Director", "Writer"] },
   { slug: "pupa", title: "Pupa", status: "upcoming", statusNote: "In development", roles: ["Writer"] },
-  { slug: "solstice", title: "Solstice", year: "2025", status: "released", roles: ["Editor"] },
+  { slug: "solstice", title: "Solstice", year: "2025", status: "dated", roles: ["Editor"] },
   {
     slug: "swechcha",
     title: "Swechcha",
     year: "2024",
-    status: "released",
+    status: "dated",
     roles: ["Editor"],
     work: "A short film I edited and color graded in 2024.",
     // Screen grabs with the letterbox baked in.
     stills: { dir: "Swechcha", alt: (_file, i) => `Swechcha still ${i + 1}`, letterboxed: true },
     reel: { category: "Short", stills: ["1.35.07", "1.30.28", "1.29.54", "1.31.05", "1.30.48"] },
   },
-  { slug: "tiger-man", title: "Tiger Man", year: "2022", status: "released", roles: ["Director", "Writer", "Editor"], reel: { category: "Short", card: true } },
-  { slug: "strangers", title: "Strangers", year: "2019", status: "released", roles: ["Cinematographer", "Music"], reel: { category: "Short", card: true } },
+  { slug: "tiger-man", title: "Tiger Man", year: "2022", status: "dated", roles: ["Director", "Writer", "Editor"], reel: { category: "Short", card: true } },
+  { slug: "strangers", title: "Strangers", year: "2019", status: "dated", roles: ["Cinematographer", "Music"], reel: { category: "Short", card: true } },
 ];
 
 // The same films seen by the job I did on each.
-export const crafts: Array<{ title: string; image: string; films: string[] }> = [
+export const crafts: Array<{ title: string; image?: string; films: string[] }> = [
   { title: "Director", image: "/Creative%20Roles/Director.jpg", films: ["Extraordinary Lives", "Among Monsters", "Tiger Man"] },
   { title: "Writer", image: "/Creative%20Roles/Write.jpg", films: ["Extraordinary Lives", "Pupa", "Among Monsters", "Tiger Man"] },
   {
@@ -170,7 +170,8 @@ export const crafts: Array<{ title: string; image: string; films: string[] }> = 
     films: ["Among Monsters", "L'immigrata", "Office Plant", "Solstice", "Swechcha", "Tiger Man"],
   },
   { title: "Cinematographer", image: "/Creative%20Roles/Cinematographer.jpg", films: ["Among Monsters", "Strangers"] },
-  { title: "Music composer", image: "/Creative%20Roles/Music.jpg", films: ["Among Monsters", "Strangers"] },
+  { title: "Music and background score", image: "/Creative%20Roles/Music.jpg", films: ["Among Monsters", "Strangers"] },
+  { title: "Assistant Director", films: ["L'immigrata", "Office Plant"] },
 ];
 
 export const photographyUrl = "https://www.instagram.com/on.my.earth/";
@@ -182,7 +183,7 @@ export const filmByTitle = (title: string) => films.find((f) => f.title === titl
 /** The year, or "Soon" for a film still in development. */
 export const yearLabel = (f: Film) => f.year ?? "Soon";
 export const statusLabel = (f: Film) =>
-  f.status === "upcoming" ? "Upcoming" : f.status === "released" ? "Released" : (f.year ?? "");
+  f.status === "upcoming" ? "Upcoming" : (f.year ?? "");
 export const rolesLine = (f: Film) => f.roles.join(" · ");
 
 const ROLE_PROSE: Record<string, string> = { Music: "composer", "Background score": "background score composer" };
@@ -197,13 +198,9 @@ export function filmDescription(f: Film, stillCount = 0) {
   const head = f.genre
     ? `${named}, an ${f.genre.toLowerCase()}${f.shot ? ` shot in ${f.shot.place} in ${f.shot.when}` : ""}.`
     : `${named}, a film on Sampreeth Avvari's slate.`;
-  const credit = `${f.genre ? " Sampreeth Avvari's credits" : " His credits"}, as Sampreeth Sharma: ${rolesProse(f)}.`;
-  const status = f.statusNote
-    ? ` ${f.statusNote}${f.status === "upcoming" && f.year ? ` in ${f.year}` : ""}.`
-    : f.status === "released"
-      ? " Released."
-      : "";
-  const extras = [stillCount ? `${stillCount} stills` : "", f.credits ? "the full cast and crew" : ""].filter(Boolean);
+  const credit = f.genre ? ` Sampreeth Avvari's credits, as Sampreeth Sharma: ${rolesProse(f)}.` : ` Credits: ${rolesProse(f)}.`;
+  const status = f.statusNote ? ` ${f.statusNote}${f.status === "upcoming" && f.year ? ` in ${f.year}` : ""}.` : "";
+  const extras = [stillCount ? `${stillCount} stills` : "", f.credits ? "the cast and key crew" : ""].filter(Boolean);
   const tail = extras.length ? ` ${listProse(extras).replace(/^./, (c) => c.toUpperCase())}.` : "";
   let text = head + credit;
   for (const part of [status, tail]) if ((text + part).length <= 200) text += part;

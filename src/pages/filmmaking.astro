@@ -94,7 +94,7 @@ const base = Astro.site!.toString();
         <div class="fm-group-head" data-reveal>
           <div>
             <p class="t-h4">Also on the slate</p>
-            <p class="t-meta">Six films in the reel above, {rest.length} more here. Some are out, some are in the cut, some are still pages.</p>
+            <p class="t-meta">Six films in the reel above, {rest.length} more here.</p>
           </div>
           <div class="fm-strip-ctrl">
             <span class="t-meta fm-drag-hint">Drag, swipe or scroll sideways</span>
@@ -123,7 +123,7 @@ const base = Astro.site!.toString();
             </h2>
           </div>
           <a href={`${filmPath(feature.slug)}#stills`} class="tlink">
-            All {stills.length} stills, cast and crew <Icon name="arrow-right" size={14} />
+            All {stills.length} stills, cast and key crew <Icon name="arrow-right" size={14} />
           </a>
         </div>
       </div>
@@ -193,7 +193,7 @@ const base = Astro.site!.toString();
             })}
           </ul>
           <a href={`${filmPath(feature.slug)}#cast`} class="tlink fm-team-more">
-            Full cast and crew <Icon name="arrow-right" size={14} />
+            Cast and key crew <Icon name="arrow-right" size={14} />
           </a>
         </div>
       </div>
@@ -206,7 +206,7 @@ const base = Astro.site!.toString();
         <div class="sec-head" data-reveal>
           <div class="sec-head-main">
             <h2 id="crafts-title" class="t-h2">
-              Five jobs on set.
+              The jobs I do on set.
               <span class="t-tail">The same films, seen by the job I did on each.</span>
             </h2>
           </div>
@@ -214,8 +214,8 @@ const base = Astro.site!.toString();
         <ul class="crafts" data-reveal>
           {crafts.map((craft) => (
             <li class="surface craft">
-              <div class="craft-media">
-                <SmartImage src={craft.image} alt={`${craft.title} at work`} class="craft-img" loading="lazy" sizes={coverSizes(craft.image, [[1200, 224, 168], [768, 343, 257], [0, 400, 300]], 1.05)} />
+              <div class:list={["craft-media", { "is-card": !craft.image }]}>
+                {craft.image && <SmartImage src={craft.image} alt={`${craft.title} at work`} class="craft-img" loading="lazy" sizes={coverSizes(craft.image, [[1280, 198, 149], [900, 400, 300], [640, 343, 257], [0, 400, 300]], 1.05)} />}
                 <span class="craft-shade" aria-hidden="true"></span>
                 <h3 class="craft-title">{craft.title}</h3>
               </div>
@@ -474,9 +474,11 @@ const base = Astro.site!.toString();
   .crafts { list-style: none; margin: 0; padding: 0; display: grid; gap: 16px; grid-template-columns: 1fr; }
   @media (min-width: 640px) { .crafts { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
   @media (min-width: 900px) { .crafts { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
-  @media (min-width: 1100px) { .crafts { grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 18px; } }
+  @media (min-width: 1280px) { .crafts { grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 18px; } }
   .craft { overflow: hidden; display: flex; flex-direction: column; }
   .craft-media { position: relative; aspect-ratio: 4 / 3; overflow: hidden; background: #050002; }
+  /* A job with no photo of its own: the title on the film's dark, like a title card. */
+  .craft-media.is-card { background: radial-gradient(120% 100% at 22% 16%, rgba(var(--crimson), 0.2), transparent 62%), #050002; }
   .craft-media :global(picture) { display: block; width: 100%; height: 100%; }
   .craft-media :global(.craft-img) {
     display: block;
@@ -492,7 +494,7 @@ const base = Astro.site!.toString();
     inset: 0;
     background: linear-gradient(0deg, rgba(5, 0, 2, 0.88) 0%, rgba(5, 0, 2, 0.3) 45%, rgba(5, 0, 2, 0) 70%), linear-gradient(180deg, rgba(var(--blood), 0.25), rgba(var(--blood), 0));
   }
-  .craft-title { position: absolute; left: 16px; bottom: 12px; font-size: 1.125rem; font-weight: 600; letter-spacing: -0.02em; color: #fff; }
+  .craft-title { position: absolute; left: 16px; right: 12px; bottom: 12px; margin: 0; line-height: 1.2; font-size: 1.125rem; font-weight: 600; letter-spacing: -0.02em; color: #fff; }
   .craft-films { list-style: none; margin: 0; padding: 8px 8px 10px; display: grid; gap: 2px; }
   .craft-film {
     display: flex;
