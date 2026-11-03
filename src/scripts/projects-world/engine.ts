@@ -275,9 +275,9 @@ void main() {
   const governor = new Governor({ steps: [1, 0.86, 0.72], apply: () => sizeNow() });
   let budget = o.tier === "high" ? 3.4e6 : o.tier === "mid" ? 2.2e6 : 1.5e6;
   const sizeNow = () => {
-    const rect = canvas.getBoundingClientRect();
-    cssW = Math.max(1, Math.round(rect.width));
-    cssH = Math.max(1, Math.round(rect.height));
+    // By layout, not by rect: on the way in the page's blocks are still flying, scaled.
+    cssW = Math.max(1, canvas.clientWidth);
+    cssH = Math.max(1, canvas.clientHeight);
     const dprCap = o.phone ? 1.5 : 2;
     let dpr = Math.min(window.devicePixelRatio || 1, dprCap);
     if (cssW * cssH * dpr * dpr > budget) dpr = Math.sqrt(budget / (cssW * cssH));

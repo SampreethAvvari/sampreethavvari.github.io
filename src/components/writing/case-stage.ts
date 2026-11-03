@@ -465,9 +465,8 @@ function mountDust(root: HTMLElement, heroes: HTMLElement[], state: State): () =
   let h = 0;
   const size = () => {
     const dpr = Math.min(devicePixelRatio || 1, 1.5);
-    const r = canvas.getBoundingClientRect();
-    w = r.width;
-    h = r.height;
+    w = canvas.clientWidth;
+    h = canvas.clientHeight;
     canvas.width = Math.max(1, Math.round(w * dpr));
     canvas.height = Math.max(1, Math.round(h * dpr));
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);

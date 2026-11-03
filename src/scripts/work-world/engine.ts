@@ -206,9 +206,9 @@ export async function mountWorld(canvas: HTMLCanvasElement, opts: WorldOptions) 
   sizeWatch.observe(canvas);
   function resize(force = false) {
     if (!cssW || !cssH) {
-      const rect = canvas.getBoundingClientRect();
-      cssW = Math.round(rect.width);
-      cssH = Math.round(rect.height);
+      // By layout, not by rect: on the way in the page's blocks are still flying, scaled.
+      cssW = canvas.clientWidth;
+      cssH = canvas.clientHeight;
     }
     const w = Math.max(1, cssW);
     const h = Math.max(1, cssH);

@@ -529,9 +529,9 @@ export function mountCaseGL(
     return out.set(L.x - offX, L.y, L.z + dist);
   };
   const resize = () => {
-    const r = canvas.getBoundingClientRect();
-    const w = Math.max(1, r.width);
-    const h = Math.max(1, r.height);
+    // By layout, not by rect: on the way in the page's blocks are still flying, scaled.
+    const w = Math.max(1, canvas.clientWidth);
+    const h = Math.max(1, canvas.clientHeight);
     aspect = w / h;
     camera.aspect = aspect;
     camera.updateProjectionMatrix();
