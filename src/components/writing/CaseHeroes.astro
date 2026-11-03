@@ -323,8 +323,10 @@ const spelled = items.map((h) => {
     overflow: hidden;
     overflow: clip;
     vertical-align: top;
-    padding-bottom: 0.12em;
-    margin-bottom: -0.12em;
+    /* The title's tight tracking and the blur run past each word's box, so the
+       mask gets room on every side and the margins hand that room back. */
+    padding: 0.1em 0.12em 0.2em;
+    margin: -0.1em -0.12em -0.2em;
   }
   .cx-w { white-space: nowrap; }
   .cx-sum {
