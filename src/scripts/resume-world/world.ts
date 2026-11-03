@@ -785,11 +785,9 @@ export async function mountWorld(
       cellRects[i] = r ? { x: r.left + r.width / 2 - stage.left, y: r.top - stage.top } : null;
     });
     hits.endLinks.forEach((el, i) => {
-      // these sit in a stop that moves with the scroll, so take the resting spot
       const r = el.getBoundingClientRect();
-      const parent = el.parentElement?.getBoundingClientRect();
-      const bottom = parent ? H - 28 - parent.height : r.top;
-      endRects[i] = { x: r.left + r.width / 2 - stage.left, y: bottom };
+      const row = el.parentElement?.getBoundingClientRect();
+      endRects[i] = { x: r.left + r.width / 2 - stage.left, y: (row ? row.top : r.top) - stage.top };
     });
     const cellTop = Math.min(...rects.map((r) => (r ? r.top - stage.top : H * 0.86)));
     const dT = 10.5;
@@ -998,7 +996,9 @@ export async function mountWorld(
         return { e, mw, mh: mw / (mk?.aspect ?? 3), ch: card ? cw * (card.p.rect.h / card.p.rect.w) : 80 };
       });
       const top = 112;
-      const bottom = H - 96;
+      // above the PDF links and the small print, however tall they wrap
+      const endBlock = hits.endLinks[0]?.closest(".rw-end")?.getBoundingClientRect();
+      const bottom = (endBlock ? endBlock.top - stage.top : H - 96) - 6;
       const total = rows.reduce((a0, r) => a0 + r.mh + r.ch, 0);
       const gap = Math.max(4, (bottom - top - total) / (rows.length * 2 + 1));
       let y = top + gap * 0.6;
@@ -1346,7 +1346,7 @@ export async function mountWorld(
       const isChosen = i === chosen;
       const e = ease(clamp(P / 0.96));
       const out = ease(clamp(P / 0.72));
-      const endE = isWide ? ease(clamp((P - 6.3) / 0.62)) : 0;
+      const endE = isWide && H >= 620 ? ease(clamp((P - 6.3) / 0.62)) : 0;
       const gone = endE <= 0 && ((!isChosen && out >= 1) || (isChosen && P >= 0.985));
       b.mesh.visible = !gone;
 
@@ -1458,7 +1458,7 @@ export async function mountWorld(
 
       // the invisible link follows its sheet
       const hw = heroS[i];
-      placeHit(hits.sheets[i], rectCorners(vA, qA, hw, hw * PAPER_LOCAL_H), (P < 0.45 && !gone) || P > 6.85);
+      placeHit(hits.sheets[i], rectCorners(vA, qA, hw, hw * PAPER_LOCAL_H), (P < 0.45 && !gone) || (P > 6.85 && endE > 0));
 
       // a thin line ties each sheet to its label
       const line = hits.tethers[i];

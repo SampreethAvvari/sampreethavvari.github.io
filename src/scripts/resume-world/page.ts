@@ -203,8 +203,6 @@ export function startResumeWorld(visit: AbortSignal): void | (() => void) {
     vel = vel * 0.8 + ((P - prev) / dt) * 0.2;
     applyCopy(P);
     world?.frame(now, P, vel);
-    const inside = root.getBoundingClientRect().bottom > innerHeight * 0.4;
-    document.documentElement.classList.toggle("in-rw", inside);
   };
   const run = () => {
     if (raf || !onScreen || document.hidden || signal.aborted) return;
@@ -217,11 +215,9 @@ export function startResumeWorld(visit: AbortSignal): void | (() => void) {
   };
   const io = new IntersectionObserver(([e]) => {
     onScreen = e.isIntersecting;
+    document.documentElement.classList.toggle("in-rw", onScreen);
     if (onScreen) run();
-    else {
-      halt();
-      document.documentElement.classList.remove("in-rw");
-    }
+    else halt();
   });
   io.observe(root);
   document.addEventListener("visibilitychange", () => (document.hidden ? halt() : run()), on);
@@ -463,17 +459,20 @@ export function startResumeWorld(visit: AbortSignal): void | (() => void) {
   const onResize = () => {
     const w = innerWidth;
     const h = stage.offsetHeight;
+    motion.measure(); // the bar moving changes how much scroll there is
     if (w === sizedW && Math.abs(h - sizedH) < 2) return;
     const widthChanged = w !== sizedW;
     const coarse = matchMedia("(pointer: coarse)").matches;
     if (!widthChanged && coarse) return; // height only, on a phone: ignore
     sizedW = w;
     sizedH = h;
-    motion.measure();
     sizePane();
     world?.layout();
   };
   addEventListener("resize", onResize, { passive: true, ...on });
+  const rootSize = new ResizeObserver(() => motion.measure());
+  rootSize.observe(root);
+  signal.addEventListener("abort", () => rootSize.disconnect(), { once: true });
 
   // If WebGL fails after all: back to the plain document, with nothing left running.
   const toDocument = () => {

@@ -37,16 +37,20 @@ export function mountMotion(o: MotionOpts): Motion {
   const { root, stage, count, span, signal } = o;
   const LAST = count - 1;
   const on = { signal };
-  let sh = stage.offsetHeight || innerHeight;
-  let top0 = root.getBoundingClientRect().top + scrollY;
+  let top0 = 0;
+  let step = 1;
+  // The page ends with the last stop, so the stops share exactly the scroll
+  // there is: the last one sits at the very bottom, whatever the address bar does.
   const measure = () => {
-    sh = stage.offsetHeight || innerHeight;
+    const sh = stage.offsetHeight || innerHeight;
     top0 = root.getBoundingClientRect().top + scrollY;
+    const room = document.documentElement.scrollHeight - innerHeight - top0;
+    step = room > sh ? room / LAST : span * sh;
   };
-  const stepPx = () => span * sh;
-  const topFor = (i: number) => top0 + i * stepPx();
-  const progress = () => Math.max(0, Math.min(LAST, (scrollY - top0) / stepPx()));
-  const inWorld = () => scrollY <= topFor(LAST) + 2;
+  measure();
+  const stepPx = () => step;
+  const topFor = (i: number) => top0 + i * step;
+  const progress = () => Math.max(0, Math.min(LAST, (scrollY - top0) / step));
 
   let glideRaf = 0;
   let isGliding = false;
@@ -106,16 +110,12 @@ export function mountMotion(o: MotionOpts): Motion {
   const settle = () => {
     settleLater = 0;
     if (signal.aborted || isGliding || touching || fling) return;
-    if (!inWorld()) return;
     const p = progress();
     const k = Math.floor(p);
     const f = p - k;
     if (f < 0.0015 || k >= LAST) {
-      if (Math.abs(p - Math.round(p)) < 0.0015) {
-        const r = Math.round(p);
-        if (r !== at) arrive(r);
-        else if (Math.abs(scrollY - topFor(r)) > 1 && r === LAST) return;
-      }
+      const r = Math.round(p);
+      if (Math.abs(p - r) < 0.0015 && r !== at) arrive(r);
       return;
     }
     // A small push in the direction of travel is enough to go on.
@@ -256,7 +256,9 @@ export function mountMotion(o: MotionOpts): Motion {
         const dt = Math.min(32, now - prev);
         prev = now;
         v *= Math.pow(0.94, dt / 16);
-        if (Math.abs(v) < 0.12) {
+        // the page has two ends; a fling stops at them
+        const atEnd = (v > 0 && scrollY >= topFor(LAST) - 1) || (v < 0 && scrollY <= top0 + 1);
+        if (Math.abs(v) < 0.12 || atEnd) {
           fling = 0;
           armSettle(10);
           return;
@@ -281,11 +283,9 @@ export function mountMotion(o: MotionOpts): Motion {
       const down = e.key === "ArrowDown" || e.key === "PageDown" || (e.key === " " && !e.shiftKey);
       const up = e.key === "ArrowUp" || e.key === "PageUp" || (e.key === " " && e.shiftKey);
       if (!down && !up) return;
-      if (!inWorld() && !up) return;
-      if (scrollY > topFor(LAST) + 4) return;
       const here = isGliding ? at : Math.round(progress());
-      if (down && here >= LAST) return; // on to the footer, the browser's own way
-      if (up && here <= 0) return;
+      // nothing lies past either end
+      if ((down && here >= LAST) || (up && here <= 0)) return;
       e.preventDefault();
       go(here + (down ? 1 : -1));
     },
