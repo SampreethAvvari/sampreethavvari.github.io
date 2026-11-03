@@ -1,0 +1,548 @@
+/* ===========================================================================
+   /demos: the launch rail. Everything outside `html:not(.no-stage) .is-live` is
+   the plain page, which is what a visitor gets with no script, no GPU or reduced
+   motion. Rules that pin or stack anything stay inside that selector, so a page
+   whose script never ran (BaseLayout adds .no-stage) goes back to reading order.
+   One colour: the Projects blue. Status inside a mock app keeps its own meaning.
+   =========================================================================== */
+
+/* ---- The plain page -------------------------------------------------------- */
+.rl { position: relative; }
+.rl-stage { position: relative; }
+.rl-gl, .rl-shade, .rl-veil, .rl-cue, .rl-index, .rl-no { display: none; }
+
+/* The coils seen end on, for the page with no 3D: still, and only a drawing. */
+.rl-sky {
+  position: absolute;
+  inset: 0 0 auto;
+  height: min(100vh, 900px);
+  pointer-events: none;
+  background:
+    radial-gradient(38rem 30rem at 78% 30%, rgba(var(--tone-rgb), 0.16), rgba(var(--tone-rgb), 0) 70%),
+    repeating-radial-gradient(circle at 78% 30%, rgba(var(--tone-rgb), 0.2) 0 1px, rgba(var(--tone-rgb), 0) 1px 44px);
+  -webkit-mask-image: radial-gradient(44rem 34rem at 78% 30%, #000 18%, transparent 100%);
+  mask-image: radial-gradient(44rem 34rem at 78% 30%, #000 18%, transparent 100%);
+}
+
+.rl-hero { position: relative; padding-top: clamp(124px, 13vw, 168px); padding-bottom: clamp(40px, 5vw, 64px); }
+.rl-back { font-size: 0.875rem; }
+.rl-back:hover svg { transform: translateX(-3px); }
+.rl-kicker { display: flex; margin-top: 28px; }
+.rl-title { margin-top: 20px; }
+.rl-lede { margin-top: 24px; max-width: 44rem; }
+.rl-facts { margin-top: 28px; display: flex; flex-wrap: wrap; gap: 8px; }
+
+.rl-bay-one { position: relative; padding-bottom: clamp(56px, 7vw, 96px); }
+.rl-head { position: relative; }
+.rl-head .rl-in { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 12px 24px; margin-bottom: 28px; }
+
+.rl-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 16px;
+  grid-template-columns: minmax(0, 1fr);
+}
+@media (min-width: 640px) { .rl-list { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (min-width: 1024px) { .rl-list { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px; } }
+.rl-list > li { display: flex; }
+.rl-list > li > .rl-in { display: flex; width: 100%; }
+
+/* A tour or the live app as a card. */
+.rl-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  overflow: hidden;
+  border-radius: 20px;
+  border: 1px solid var(--line);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0.012) 40%),
+    var(--surface-solid);
+  color: var(--ink);
+  text-decoration: none;
+  transition: transform 300ms var(--ease-glass), border-color 200ms var(--ease-glass);
+}
+.rl-card:hover { transform: translateY(-3px); border-color: var(--line-strong); }
+.rl-card:focus-visible { outline: none; box-shadow: 0 0 0 4px rgba(var(--tone-rgb), 0.35); }
+.rl-art { display: block; aspect-ratio: 16 / 10; overflow: hidden; background: #07080b; border-bottom: 1px solid var(--line); }
+.rl-art img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.rl-art .media-fallback { display: block; height: 100%; }
+.rl-body { display: flex; flex-direction: column; flex: 1; padding: 20px 22px 22px; }
+.rl-kick { display: block; }
+.rl-name { display: block; margin-top: 8px; }
+.rl-line { display: block; margin-top: 8px; }
+.rl-metrics { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 16px; }
+.rl-metrics .badge { white-space: normal; height: auto; min-height: 22px; padding-block: 4px; line-height: 1.3; }
+.rl-foot { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: auto; padding-top: 20px; }
+.rl-go { display: inline-flex; align-items: center; gap: 8px; font-size: 0.9375rem; font-weight: 500; color: var(--tone); }
+.rl-go svg { width: 14px; height: 14px; transition: transform 250ms var(--ease-glass); }
+.rl-card:hover .rl-go svg { transform: translateX(3px); }
+.rl-badges { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
+.rl-ticks { display: inline-flex; align-items: center; gap: 8px; }
+.rl-ticks i { display: none; }
+.rl-note { margin-top: 28px; max-width: 44rem; }
+.rl-tours-end { position: relative; padding-bottom: clamp(56px, 7vw, 96px); }
+
+/* JobPilot in the plain page: a wide card, picture beside words. */
+@media (min-width: 900px) {
+  .rl-card-wide { flex-direction: row; }
+  .rl-card-wide .rl-art { flex: 7 1 0; min-width: 0; aspect-ratio: auto; min-height: 340px; border-bottom: 0; border-right: 1px solid var(--line); }
+  .rl-card-wide .rl-body { flex: 5 1 0; justify-content: center; padding: 36px; }
+}
+
+/* ---- The pinned stage ------------------------------------------------------ */
+@media (min-height: 620px) {
+  html:not(.no-stage) .rl.is-live { height: calc(150lvh + (var(--stops) - 1) * 118vh); }
+  html:not(.no-stage) .rl.is-live .rl-stage {
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    height: 100lvh;
+    overflow: hidden;
+    background: #010205;
+    isolation: isolate;
+  }
+  html:not(.no-stage) .rl.is-live .rl-sky { height: 100%; z-index: -3; }
+  /* The stage is opaque, so the page's comets would only run unseen under it. */
+  html:not(.no-stage) body:has(.rl.is-live) .page-comets { display: none; }
+  html:not(.no-stage) .rl.is-live .rl-gl {
+    display: block;
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    z-index: -2;
+    opacity: 0;
+    transition: opacity 900ms ease-out;
+  }
+  html:not(.no-stage) .rl.is-live.is-gl .rl-gl { opacity: 1; }
+  html:not(.no-stage) .rl.is-live .rl-shade {
+    display: block;
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    background:
+      linear-gradient(90deg, rgba(1, 2, 5, 0.94) 0%, rgba(1, 2, 5, 0.86) 30%, rgba(1, 2, 5, 0.5) 46%, rgba(1, 2, 5, 0) 62%),
+      linear-gradient(0deg, rgba(1, 2, 5, 0.62) 0%, rgba(1, 2, 5, 0) 34%);
+  }
+  html:not(.no-stage) .rl.is-live .rl-stage.is-hot { cursor: pointer; }
+
+  /* Each stop stacked on the one screen. The script moves its contents. */
+  html:not(.no-stage) .rl.is-live .rl-stop {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    padding: 0;
+    margin: 0;
+    pointer-events: none;
+    perspective: 1500px;
+  }
+  html:not(.no-stage) .rl.is-live .rl-list { display: block; }
+  html:not(.no-stage) .rl.is-live .rl-bay-one > .wrap,
+  html:not(.no-stage) .rl.is-live .rl-head > .wrap,
+  html:not(.no-stage) .rl.is-live .rl-tours-end > .wrap,
+  html:not(.no-stage) .rl.is-live .rl-tours { display: contents; }
+  html:not(.no-stage) .rl.is-live .rl-in {
+    display: block;
+    position: relative;
+    width: 100%;
+    max-width: calc(var(--max) + 2 * var(--gutter));
+    margin-inline: auto;
+    padding-inline: var(--gutter);
+    opacity: 0;
+  }
+  html:not(.no-stage) .rl.is-live .rl-stop[data-stop="0"] .rl-in { opacity: 1; }
+  /* Clear of the scroll gauge, which sits in the gutter on a laptop. */
+  @media (min-width: 1024px) and (max-width: 1360px) {
+    html:not(.no-stage) .rl.is-live .rl-in { padding-left: 72px; }
+  }
+
+  /* The opening: the whole rail, the title low on the left. */
+  html:not(.no-stage) .rl.is-live .rl-hero { align-items: flex-end; }
+  html:not(.no-stage) .rl.is-live .rl-hero .rl-in { padding-bottom: clamp(36px, 8vh, 84px); }
+  html:not(.no-stage) .rl.is-live .rl-title {
+    max-width: min(60vw, 15ch);
+    font-size: clamp(2.5rem, min(5.6vw, 9.4vh), 5.5rem);
+    line-height: 1;
+    letter-spacing: -0.042em;
+    text-shadow: 0 2px 30px rgba(0, 0, 0, 0.55);
+  }
+  html:not(.no-stage) .rl.is-live .rl-title .t-tail { margin-top: 6px; color: rgba(245, 245, 247, 0.46); }
+  html:not(.no-stage) .rl.is-live .rl-lede { max-width: 38rem; font-size: 1.0625rem; color: rgba(245, 245, 247, 0.72); text-shadow: 0 1px 14px rgba(0, 0, 0, 0.8); }
+  html:not(.no-stage) .rl.is-live .rl-kicker { margin-top: 18px; }
+  html:not(.no-stage) .rl.is-live .rl-back { pointer-events: auto; }
+
+  /* A capsule's stop: words on the left, the capsule itself in the 3D on the
+     right. Its picture holds that place until the 3D is up and if the GPU goes. */
+  html:not(.no-stage) .rl.is-live .rl-card {
+    display: block;
+    overflow: visible;
+    border: 0;
+    border-radius: 0;
+    background: none;
+    transition: none;
+    transform: none;
+    pointer-events: none;
+  }
+  html:not(.no-stage) .rl.is-live .rl-card:focus-visible { box-shadow: none; }
+  html:not(.no-stage) .rl.is-live .rl-card:focus-visible .rl-go { box-shadow: 0 0 0 4px rgba(var(--tone-rgb), 0.45); }
+  html:not(.no-stage) .rl.is-live .rl-art {
+    position: absolute;
+    top: 50%;
+    right: var(--gutter);
+    width: min(38vw, 600px);
+    min-height: 0;
+    aspect-ratio: 16 / 9.14;
+    border: 1px solid rgba(var(--tone-rgb), 0.45);
+    border-radius: 18px;
+    box-shadow: 0 0 60px -14px rgba(var(--tone-rgb), 0.5);
+    transform: translateY(-50%) perspective(1500px) rotateY(-14deg);
+    pointer-events: none;
+    flex: none;
+  }
+  html:not(.no-stage) .rl.is-live.is-gl .rl-art,
+  html:not(.no-stage) .rl.is-live .rl-stop:not([data-on]) .rl-art { display: none; }
+  /* Only the words take the pointer; the rest of the card's width is the capsule. */
+  html:not(.no-stage) .rl.is-live .rl-body {
+    display: block;
+    width: min(35rem, 44vw);
+    padding: 0;
+    pointer-events: none;
+  }
+  html:not(.no-stage) .rl.is-live .rl-stop[data-on] .rl-body { pointer-events: auto; }
+  html:not(.no-stage) .rl.is-live .rl-no {
+    display: block;
+    margin-bottom: 14px;
+    font-size: 0.875rem;
+    font-weight: 500;
+    font-variant-numeric: tabular-nums;
+    color: var(--ink);
+  }
+  html:not(.no-stage) .rl.is-live .rl-no span { color: var(--ink-faint); }
+  html:not(.no-stage) .rl.is-live .rl-name {
+    margin-top: 10px;
+    font-size: clamp(2.5rem, 5vw, 4.75rem);
+    line-height: 1.02;
+    letter-spacing: -0.04em;
+    font-weight: 600;
+    text-shadow: 0 2px 24px rgba(0, 0, 0, 0.6);
+  }
+  html:not(.no-stage) .rl.is-live .rl-line {
+    margin-top: 16px;
+    font-size: 1.0625rem;
+    line-height: 1.6;
+    color: rgba(245, 245, 247, 0.72);
+    text-shadow: 0 1px 14px rgba(0, 0, 0, 0.8);
+  }
+  html:not(.no-stage) .rl.is-live .rl-metrics { margin-top: 20px; }
+  html:not(.no-stage) .rl.is-live .rl-foot { justify-content: flex-start; gap: 20px; margin-top: 26px; padding-top: 0; }
+
+  /* The launch button: white, like every first action on the site. */
+  html:not(.no-stage) .rl.is-live .rl-go {
+    height: 48px;
+    padding: 0 22px;
+    border-radius: 9999px;
+    color: #000;
+    background: var(--ink);
+    transition: transform 200ms var(--ease-glass), box-shadow 250ms var(--ease-glass);
+  }
+  html:not(.no-stage) .rl.is-live .rl-card:hover .rl-go { box-shadow: 0 0 34px -4px rgba(var(--tone-rgb), 0.9); transform: translateY(-1px); }
+  html:not(.no-stage) .rl.is-live .rl-card:active .rl-go { transform: scale(0.97); }
+  /* A tour's steps as a row of charged cells. */
+  html:not(.no-stage) .rl.is-live .rl-ticks i {
+    display: inline-block;
+    width: 3px;
+    height: 14px;
+    border-radius: 2px;
+    margin-right: -5px;
+    background: var(--tone);
+    box-shadow: 0 0 8px rgba(var(--tone-rgb), 0.8);
+  }
+  html:not(.no-stage) .rl.is-live .rl-ticks i:last-of-type { margin-right: 4px; }
+
+  /* The look down the bore, and the end of the rail. */
+  html:not(.no-stage) .rl.is-live .rl-head .rl-in { display: block; margin-bottom: 0; }
+  html:not(.no-stage) .rl.is-live .rl-head h2 {
+    font-size: clamp(2.5rem, 5vw, 4.75rem);
+    line-height: 1.02;
+    letter-spacing: -0.04em;
+    text-shadow: 0 2px 24px rgba(0, 0, 0, 0.6);
+  }
+  html:not(.no-stage) .rl.is-live .rl-head .t-tail { max-width: 13ch; }
+  html:not(.no-stage) .rl.is-live .rl-head .t-meta { display: block; margin-top: 18px; }
+  html:not(.no-stage) .rl.is-live .rl-tours-end .rl-note {
+    margin: 0;
+    max-width: 18ch;
+    font-size: clamp(1.75rem, 3.2vw, 3rem);
+    line-height: 1.08;
+    letter-spacing: -0.03em;
+    font-weight: 600;
+    color: var(--ink);
+    text-shadow: 0 2px 24px rgba(0, 0, 0, 0.6);
+  }
+
+  /* The way down the rail: ticks, the current one long and named. */
+  html:not(.no-stage) .rl.is-live .rl-index {
+    display: block;
+    position: absolute;
+    top: 50%;
+    right: 18px;
+    z-index: 3;
+    transform: translateY(-50%);
+  }
+  .rl-index ol { list-style: none; margin: 0; padding: 0; display: grid; gap: 0; }
+  .rl-index a {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 10px;
+    height: 26px;
+    padding-left: 12px;
+    font-size: 0.8125rem;
+    font-weight: 500;
+    color: var(--ink-soft);
+    text-decoration: none;
+    white-space: nowrap;
+  }
+  /* The name only when asked for: the current one is large on the left already. */
+  .rl-index-name {
+    padding: 3px 8px;
+    border-radius: 8px;
+    background: rgba(5, 7, 13, 0.82);
+    opacity: 0;
+    transition: opacity 180ms var(--ease-glass);
+  }
+  .rl-index a:hover .rl-index-name, .rl-index a:focus-visible .rl-index-name { opacity: 1; }
+  .rl-index a:focus-visible { outline: none; }
+  .rl-index-tick {
+    display: block;
+    width: 22px;
+    height: 2px;
+    border-radius: 2px;
+    flex: none;
+    background: rgba(255, 255, 255, 0.22);
+    transform-origin: right;
+    transform: scaleX(calc(0.45 + var(--f, 0) * 0.55));
+    transition: background-color 180ms var(--ease-glass);
+  }
+  .rl-index a[aria-current="true"] .rl-index-tick { background: var(--tone); box-shadow: 0 0 10px rgba(var(--tone-rgb), 0.9); }
+  .rl-index a:hover .rl-index-tick, .rl-index a:focus-visible .rl-index-tick { background: var(--ink); }
+
+  html:not(.no-stage) .rl.is-live .rl-cue {
+    display: flex;
+    position: absolute;
+    bottom: 22px;
+    left: 50%;
+    z-index: 2;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    transform: translateX(-50%);
+    font-size: 0.6875rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+    pointer-events: none;
+  }
+  .rl-cue i { display: block; width: 1px; height: 28px; background: linear-gradient(180deg, rgba(255, 255, 255, 0.5), rgba(255, 255, 255, 0)); }
+  html:not(.no-stage) .rl.is-live .rl-veil {
+    display: block;
+    position: absolute;
+    inset: 0;
+    z-index: 4;
+    background: #000;
+    opacity: 0;
+    pointer-events: none;
+  }
+}
+
+/* A tall narrow screen: the capsule above, the words low under it. */
+@media (min-height: 620px) and (max-aspect-ratio: 1/1) {
+  html:not(.no-stage) .rl.is-live .rl-shade {
+    background: linear-gradient(0deg, rgba(1, 2, 5, 0.94) 0%, rgba(1, 2, 5, 0.84) 40%, rgba(1, 2, 5, 0.1) 62%, rgba(1, 2, 5, 0) 74%);
+  }
+  html:not(.no-stage) .rl.is-live .rl-stop { align-items: flex-end; }
+  /* Clear of the chat button, which floats low on the right. */
+  html:not(.no-stage) .rl.is-live .rl-in { padding-bottom: calc(100lvh - 100svh + 96px); }
+  html:not(.no-stage) .rl.is-live .rl-hero .rl-in { padding-bottom: calc(100lvh - 100svh + 96px); }
+  html:not(.no-stage) .rl.is-live .rl-title { max-width: none; font-size: clamp(2.5rem, 11.5vw, 4rem); }
+  html:not(.no-stage) .rl.is-live .rl-lede { font-size: 0.9375rem; line-height: 1.5; }
+  html:not(.no-stage) .rl.is-live .rl-facts { margin-top: 16px; }
+  html:not(.no-stage) .rl.is-live .rl-kicker { margin-top: 12px; }
+  html:not(.no-stage) .rl.is-live .rl-body { width: 100%; }
+  html:not(.no-stage) .rl.is-live .rl-name { margin-top: 6px; font-size: clamp(2rem, 9.4vw, 3.25rem); }
+  html:not(.no-stage) .rl.is-live .rl-line { margin-top: 10px; font-size: 0.9375rem; line-height: 1.5; }
+  html:not(.no-stage) .rl.is-live .rl-metrics { margin-top: 12px; }
+  html:not(.no-stage) .rl.is-live .rl-foot { margin-top: 16px; }
+  html:not(.no-stage) .rl.is-live .rl-no { margin-bottom: 8px; }
+  html:not(.no-stage) .rl.is-live .rl-go { height: 44px; padding: 0 20px; }
+  html:not(.no-stage) .rl.is-live .rl-art {
+    top: auto;
+    bottom: calc(100% + 14px);
+    left: var(--gutter);
+    right: var(--gutter);
+    width: auto;
+    transform: none;
+  }
+  html:not(.no-stage) .rl.is-live .rl-index { display: none; }
+  html:not(.no-stage) .rl.is-live .rl-cue { display: none; }
+  html:not(.no-stage) .rl.is-live .rl-head h2 { font-size: clamp(2.25rem, 10vw, 3.5rem); }
+  html:not(.no-stage) .rl.is-live .rl-tours-end .rl-note { font-size: clamp(1.75rem, 8vw, 2.75rem); padding-right: 64px; }
+}
+
+@media (min-height: 620px) and (max-height: 700px) and (max-aspect-ratio: 1/1) {
+  html:not(.no-stage) .rl.is-live .rl-in,
+  html:not(.no-stage) .rl.is-live .rl-hero .rl-in { padding-bottom: calc(100lvh - 100svh + 20px); }
+  html:not(.no-stage) .rl.is-live .rl-title { font-size: clamp(2.125rem, 10vw, 2.75rem); }
+  html:not(.no-stage) .rl.is-live .rl-lede, html:not(.no-stage) .rl.is-live .rl-line { font-size: 0.875rem; line-height: 1.45; }
+  html:not(.no-stage) .rl.is-live .rl-name { font-size: clamp(1.75rem, 8.6vw, 2.25rem); }
+  html:not(.no-stage) .rl-flight.is-live .rl-flight-hero { padding-bottom: 24px; }
+}
+
+/* ---- A tour page or JobPilot: the opening on its own capsule ---------------- */
+.rl-flight { position: relative; }
+.rl-sticky { display: none; }
+.rl-flight-hero { position: relative; overflow: clip; }
+.rl-flight-copy { position: relative; }
+/* The picture beside the words. It is the opening on the plain page, and holds
+   the capsule's place until the 3D is up. */
+.rl-slab {
+  display: block;
+  position: relative;
+  z-index: 1;
+  margin: 0 var(--gutter) 24px;
+  aspect-ratio: 16 / 9.14;
+  overflow: hidden;
+  border: 1px solid rgba(var(--tone-rgb), 0.4);
+  border-radius: 16px;
+  background: #07080b;
+  box-shadow: 0 0 60px -14px rgba(var(--tone-rgb), 0.5);
+}
+.rl-slab img { display: block; width: 100%; height: 100%; object-fit: cover; }
+@media (min-width: 1024px) {
+  .rl-flight-copy { max-width: min(52%, 40rem); margin-left: 0; }
+  .rl-slab {
+    position: absolute;
+    top: 50%;
+    right: var(--gutter);
+    width: min(38vw, 640px);
+    margin: 0;
+    border-radius: 18px;
+    transform: translateY(-50%) perspective(1500px) rotateY(-14deg);
+  }
+}
+
+@media (min-height: 620px) {
+  /* The world stays pinned one screen past the flight's content, under what comes
+     next, so it can fade out with no edge showing. */
+  html:not(.no-stage) .rl-flight.is-live { padding-bottom: 100vh; padding-bottom: 100lvh; margin-bottom: -100vh; margin-bottom: -100lvh; }
+  html:not(.no-stage) .rl-flight.is-live .rl-sticky {
+    display: block;
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    height: 100lvh;
+    margin-bottom: -100vh;
+    margin-bottom: -100lvh;
+    z-index: 0;
+    pointer-events: none;
+    overflow: hidden;
+  }
+  html:not(.no-stage) .rl-flight.is-live .rl-gl {
+    display: block;
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    opacity: 0;
+    transition: opacity 900ms ease-out;
+  }
+  html:not(.no-stage) .rl-flight.is-live.is-gl .rl-gl { opacity: 1; }
+  html:not(.no-stage) .rl-flight.is-live .rl-shade {
+    display: block;
+    position: absolute;
+    inset: 0;
+    background:
+      linear-gradient(90deg, rgba(1, 2, 5, 0.94) 0%, rgba(1, 2, 5, 0.86) 34%, rgba(1, 2, 5, 0.5) 50%, rgba(1, 2, 5, 0) 64%),
+      linear-gradient(0deg, rgba(1, 2, 5, 0.5) 0%, rgba(1, 2, 5, 0) 30%);
+    opacity: 0;
+    transition: opacity 500ms ease-out;
+  }
+  html:not(.no-stage) .rl-flight.is-live.is-gl .rl-shade { opacity: 1; }
+  html:not(.no-stage) .rl-flight.is-live .rl-flight-hero {
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    min-height: 100vh;
+    min-height: 100svh;
+    padding-top: 112px;
+    padding-bottom: clamp(32px, 7vh, 72px);
+    z-index: 1;
+  }
+  html:not(.no-stage) .rl-flight.is-live.is-gl .rl-slab { display: none; }
+  html:not(.no-stage) .rl-flight.is-live .rl-cue {
+    display: flex;
+    position: absolute;
+    bottom: 18px;
+    left: 50%;
+    z-index: 2;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    transform: translateX(-50%);
+    font-size: 0.6875rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+    pointer-events: none;
+    transition: opacity 300ms var(--ease-glass);
+  }
+  html:not(.no-stage) .rl-flight[data-past] .rl-cue { opacity: 0; }
+  html:not(.no-stage) .rl-flight.is-live .rl-flight-hero .tone-atmos { display: none; }
+  @media (min-width: 1024px) and (max-width: 1360px) {
+    html:not(.no-stage) .rl-flight.is-live .rl-flight-copy { padding-left: 32px; }
+  }
+  html:not(.no-stage) .rl-flight.is-live .rl-flight-copy > .t-title {
+    font-size: clamp(2.25rem, min(4.7vw, 7.8vh), 4.75rem);
+    line-height: 1.02;
+    letter-spacing: -0.04em;
+    text-shadow: 0 2px 28px rgba(0, 0, 0, 0.6);
+  }
+  html:not(.no-stage) .rl-flight.is-live .rl-flight-copy .t-tail { color: rgba(245, 245, 247, 0.54); }
+  html:not(.no-stage) .rl-flight.is-live .rl-flight-copy .t-lede { color: rgba(245, 245, 247, 0.78); text-shadow: 0 1px 14px rgba(0, 0, 0, 0.85); }
+  html:not(.no-stage) .rl-flight.is-live .rl-flight-after { position: relative; z-index: 1; }
+}
+/* On a tall narrow screen the words sit low and the capsule rides above them. */
+@media (min-height: 620px) and (max-aspect-ratio: 1/1) {
+  html:not(.no-stage) .rl-flight.is-live .rl-shade {
+    background: linear-gradient(0deg, rgba(1, 2, 5, 0.94) 0%, rgba(1, 2, 5, 0.82) 44%, rgba(1, 2, 5, 0.06) 62%, rgba(1, 2, 5, 0) 72%);
+  }
+  html:not(.no-stage) .rl-flight.is-live .rl-flight-hero { padding-top: 44vh; padding-top: 44svh; padding-bottom: 96px; }
+  html:not(.no-stage) .rl-flight.is-live .rl-cue { display: none; }
+  html:not(.no-stage) .rl-flight.is-live .rl-slab { position: absolute; top: 88px; left: 0; right: 0; }
+  html:not(.no-stage) .rl-flight.is-live .rl-flight-copy > .t-title { font-size: clamp(2.25rem, 9.6vw, 3.5rem); }
+  /* The chat button floats low on the right: the long words stay clear of it. */
+  html:not(.no-stage) .rl-flight.is-live .rl-flight-copy .t-lede { font-size: 0.9375rem; line-height: 1.5; padding-right: 52px; }
+}
+
+/* ---- Sections that arrive from ahead and go by the camera ------------------- */
+html.rl-depth [data-depth] {
+  opacity: calc(var(--p, 1) * (1 - var(--q, 0)));
+  transform:
+    perspective(1500px)
+    translate3d(0, calc((1 - var(--p, 1)) * 44px), calc((1 - var(--p, 1)) * -240px + var(--q, 0) * 190px))
+    rotateX(calc((1 - var(--p, 1)) * 7deg));
+  transform-origin: 50% 100%;
+}
+/* Phones: the same arrival, flat, so the page holds few layers. */
+@media (max-width: 899px), (pointer: coarse) {
+  html.rl-depth [data-depth] {
+    transform: translateY(calc((1 - var(--p, 1)) * 28px));
+  }
+}

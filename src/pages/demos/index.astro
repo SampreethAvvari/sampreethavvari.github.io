@@ -1,13 +1,19 @@
 ---
-// /demos: every live demo in one place. JobPilot is the real app; the rest
-// are guided tours that rebuild a private production system on synthetic
-// data. Part of the Projects tab, so the page wears its blue.
+// /demos: every live demo in one place, along one launch rail. JobPilot is the
+// real app; the rest are guided tours that rebuild a private production system
+// on synthetic data. Part of the Projects tab, so the page wears its blue.
+//
+// The same markup is a pinned flight down the rail and a plain page of cards:
+// see components/tours/rail.css and rail-stage.ts.
 import fs from "node:fs";
 import path from "node:path";
 import BaseLayout from "../../layouts/BaseLayout.astro";
 import Icon from "../../components/common/Icon.astro";
 import Picture from "../../components/common/Picture.astro";
 import { TOURS } from "../../data/tours";
+import { optimizedSources } from "../../utils/optimizedImage";
+import "../../components/tours/rail.css";
+import "../../styles/solid-glass.css";
 
 // A cover only renders when its file (or its .avif/.webp sibling) exists.
 const hasPublic = (p?: string) =>
@@ -36,6 +42,25 @@ const asTail = (label: string) =>
 
 const WORDS = ["Zero", "One", "Two", "Three", "Four", "Five", "Six", "Seven", "Eight", "Nine", "Ten", "Eleven", "Twelve"];
 const tourCount = WORDS[TOURS.length] ?? String(TOURS.length);
+const two = (i: number) => String(i).padStart(2, "0");
+
+// The picture on a capsule's glass: the 960 copy, which the world swaps for the
+// 640 on a touch screen. Its full size only if no copy was made.
+const texFor = (src?: string) => {
+  const o = optimizedSources(src);
+  if (!o) return "";
+  const m = o.webpSet?.match(/(\S+-960\.webp)\s/);
+  return m ? m[1] : o.webp;
+};
+
+// Stops along the rail: the whole rail, JobPilot, the look down the bore, each
+// tour, the end of the rail.
+const FIRST_TOUR = 3;
+const stops = FIRST_TOUR + TOURS.length + 1;
+const index = [
+  { go: 1, id: "demo-jobpilot", name: "JobPilot" },
+  ...TOURS.map((t, i) => ({ go: FIRST_TOUR + i, id: `demo-${t.slug}`, name: t.name })),
+];
 ---
 
 <BaseLayout
@@ -43,195 +68,153 @@ const tourCount = WORDS[TOURS.length] ?? String(TOURS.length);
   description="Interactive tours of the AI systems I built at Hybridge, rebuilt on synthetic data, plus JobPilot running live."
   tone="projects"
 >
-  <!-- Page top -->
-  <section class="page-top dx-top relative overflow-hidden">
-    <div class="tone-atmos" aria-hidden="true"></div>
-    <div class="wrap on-top">
-      <a href="/projects" class="tlink dx-back">
-        <Icon name="arrow-left" size={14} /> Projects
-      </a>
-      <p class="kicker dx-kicker">Live demos</p>
-      <h1 class="t-title dx-title">
-        Click through the systems.
-        <span class="t-tail">Real mechanics, synthetic data.</span>
-      </h1>
-      <p class="t-lede dx-lede">
-        These are guided tours of systems I built at Hybridge Implants. The production code and data
-        stay private, so every tour rebuilds the experience with synthetic data. The flows,
-        thresholds, failure stories and architecture are real. JobPilot is the exception: that one is the
-        real app.
-      </p>
-      <div class="dx-facts">
-        <span class="chip chip-live">1 live app</span>
-        <span class="chip">{TOURS.length} guided tours</span>
-      </div>
-    </div>
-  </section>
+  <section class="rl" data-rl="index" style={`--stops:${stops};`}>
+    <script is:inline>
+      (function () {
+        var el = document.currentScript && document.currentScript.parentElement;
+        if (el && "WebGL2RenderingContext" in window && !matchMedia("(prefers-reduced-motion: reduce)").matches) el.classList.add("is-live");
+      })();
+    </script>
+    <div class="rl-stage">
+      <div class="rl-sky" aria-hidden="true"></div>
+      <canvas class="rl-gl" aria-hidden="true"></canvas>
+      <div class="rl-shade" aria-hidden="true"></div>
 
-  <!-- JobPilot -->
-  <section class="dx-sec" aria-labelledby="dx-app">
-    <div class="wrap">
-      <h2 id="dx-app" class="sr-only">The live app</h2>
-      <a href="/demos/jobpilot" class="surface dx-feature" data-reveal>
-        <span class="dx-feature-media" aria-hidden="true">
-          <Picture src="/jobpilot.png" alt="" width={960} height={600} loading="eager" sizes="(min-width: 1024px) 700px, 92vw" />
-        </span>
-        <span class="dx-feature-body">
-          <span class="dx-badges">
-            <span class="badge badge-live">Live app</span>
-            <span class="badge">Open source</span>
-          </span>
-          <span class="t-h2 dx-feature-name">JobPilot.</span>
-          <span class="t-body dx-feature-line">
-            My open source job hunt autopilot. It watches 160+ company boards, scores each role against my
-            profile, and tailors a resume and cover letter per match. The demo is the real console on
-            fictional data, so click anything.
-          </span>
-          <span class="tlink dx-go">Open the demo <Icon name="arrow-right" size={14} /></span>
-        </span>
-      </a>
-    </div>
-  </section>
-
-  <!-- The tours -->
-  <section class="dx-sec" aria-labelledby="dx-tours">
-    <div class="wrap">
-      <div class="sec-head" data-reveal>
-        <div class="sec-head-main">
-          <h2 id="dx-tours" class="t-h2">
-            Guided tours.
-            <span class="t-tail">{tourCount} systems, step by step.</span>
-          </h2>
+      <!-- Page top -->
+      <header class="rl-stop rl-hero" data-stop="0">
+        <div class="rl-in wrap">
+          <a href="/projects" class="tlink rl-back">
+            <Icon name="arrow-left" size={14} /> Projects
+          </a>
+          <p class="kicker rl-kicker">Live demos</p>
+          <h1 class="t-title rl-title">
+            Click through the systems.
+            <span class="t-tail">Real mechanics, synthetic data.</span>
+          </h1>
+          <p class="t-lede rl-lede">
+            These are guided tours of systems I built at Hybridge Implants. The production code and data
+            stay private, so every tour rebuilds the experience with synthetic data. The flows,
+            thresholds, failure stories and architecture are real. JobPilot is the exception: that one is the
+            real app.
+          </p>
+          <div class="rl-facts">
+            <span class="chip chip-live">1 live app</span>
+            <span class="chip">{TOURS.length} guided tours</span>
+          </div>
         </div>
-        <span class="t-meta">{TOURS.length} tours</span>
-      </div>
+      </header>
 
-      <ul class="dx-grid">
-        {TOURS.map((t) => (
-          <li data-reveal>
-            <a href={`/demos/${t.slug}`} class="surface dx-card">
-              <span class="surface-media dx-media" aria-hidden="true">
-                {hasPublic(t.cover) ? (
-                  <Picture src={t.cover ?? ""} alt="" width={640} height={400} sizes="(min-width: 1024px) 390px, (min-width: 768px) 45vw, 92vw" />
-                ) : (
-                  <span class="media-fallback"></span>
-                )}
+      <!-- JobPilot -->
+      <section class="rl-stop rl-bay-one" id="demo-jobpilot" data-stop="1" data-tex={texFor("/jobpilot.png")} aria-labelledby="dx-app">
+        <div class="wrap">
+          <div class="rl-in">
+            <h2 id="dx-app" class="sr-only">The live app</h2>
+            <a href="/demos/jobpilot" class="rl-card rl-card-wide" data-launch>
+              <span class="rl-art" aria-hidden="true">
+                <Picture src="/jobpilot.png" alt="" width={960} height={600} sizes="(min-width: 1024px) 700px, 92vw" />
               </span>
-              <span class="dx-body">
-                <span class="t-meta">{t.kicker}</span>
-                <span class="t-h3 dx-name">{t.name}</span>
-                <span class="t-small dx-line">{firstSentence(t.pitch)}</span>
-                <span class="dx-metrics">
-                  {t.metrics.slice(0, 2).map((m) => (
-                    <span class="badge">
-                      {m.value} · {asTail(m.label)}
-                    </span>
-                  ))}
+              <span class="rl-body">
+                <span class="rl-badges">
+                  <span class="badge badge-live">Live app</span>
+                  <span class="badge">Open source</span>
                 </span>
-                <span class="dx-foot">
-                  <span class="tlink">Take the tour <Icon name="arrow-right" size={14} /></span>
-                  <span class="t-meta">{t.steps.length} steps</span>
+                <span class="t-h2 rl-name">JobPilot.</span>
+                <span class="t-body rl-line">
+                  My open source job hunt autopilot. It watches 160+ company boards, scores each role against my
+                  profile, and tailors a resume and cover letter per match. The demo is the real console on
+                  fictional data, so click anything.
+                </span>
+                <span class="rl-foot">
+                  <span class="rl-go">Open the demo <Icon name="arrow-right" size={14} /></span>
                 </span>
               </span>
             </a>
-          </li>
-        ))}
-      </ul>
+          </div>
+        </div>
+      </section>
 
-      <p class="t-meta dx-note">
-        Every tour uses synthetic data.
-      </p>
+      <!-- The tours -->
+      <section class="rl-tours" aria-labelledby="dx-tours">
+        <div class="wrap">
+          <header class="rl-stop rl-head" data-stop="2" data-lookahead>
+            <div class="rl-in">
+              <div class="sec-head-main">
+                <h2 id="dx-tours" class="t-h2">
+                  Guided tours.
+                  <span class="t-tail">{tourCount} systems, step by step.</span>
+                </h2>
+              </div>
+              <span class="t-meta">{TOURS.length} tours</span>
+            </div>
+          </header>
+
+          <ul class="rl-list">
+            {TOURS.map((t, i) => (
+              <li class="rl-stop rl-bay" id={`demo-${t.slug}`} data-stop={FIRST_TOUR + i} data-tex={texFor(t.cover)}>
+                <div class="rl-in">
+                  <a href={`/demos/${t.slug}`} class="rl-card" data-launch>
+                    <span class="rl-art" aria-hidden="true">
+                      {hasPublic(t.cover) ? (
+                        <Picture src={t.cover ?? ""} alt="" width={640} height={400} sizes="(min-width: 1024px) 390px, (min-width: 768px) 45vw, 92vw" />
+                      ) : (
+                        <span class="media-fallback"></span>
+                      )}
+                    </span>
+                    <span class="rl-body">
+                      <span class="rl-no" aria-hidden="true">{two(i + 1)}<span> / {two(TOURS.length)}</span></span>
+                      <span class="t-meta rl-kick">{t.kicker}</span>
+                      <span class="t-h3 rl-name">{t.name}</span>
+                      <span class="t-small rl-line">{firstSentence(t.pitch)}</span>
+                      <span class="rl-metrics">
+                        {t.metrics.slice(0, 2).map((m) => (
+                          <span class="badge">
+                            {m.value} · {asTail(m.label)}
+                          </span>
+                        ))}
+                      </span>
+                      <span class="rl-foot">
+                        <span class="rl-go">Take the tour <Icon name="arrow-right" size={14} /></span>
+                        <span class="t-meta rl-ticks">
+                          {t.steps.map(() => <i aria-hidden="true"></i>)}
+                          {t.steps.length} steps
+                        </span>
+                      </span>
+                    </span>
+                  </a>
+                </div>
+              </li>
+            ))}
+          </ul>
+
+          <div class="rl-stop rl-tours-end" data-stop={stops - 1}>
+            <div class="rl-in">
+              <p class="t-meta rl-note">
+                Every tour uses synthetic data.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <nav class="rl-index" aria-label="The demos on this page">
+        <ol>
+          {index.map((x) => (
+            <li>
+              <a href={`#${x.id}`} data-go={x.go} data-id={x.id}>
+                <span class="rl-index-name">{x.name}</span>
+                <span class="rl-index-tick" aria-hidden="true"></span>
+              </a>
+            </li>
+          ))}
+        </ol>
+      </nav>
+      <div class="rl-cue" aria-hidden="true"><span>Scroll</span><i></i></div>
+      <div class="rl-veil" aria-hidden="true"></div>
     </div>
   </section>
 </BaseLayout>
 
-<style>
-  /* Page top */
-  .dx-top { padding-bottom: clamp(40px, 5vw, 64px); }
-  .dx-back { font-size: 0.875rem; }
-  .dx-back:hover :global(svg) { transform: translateX(-3px); }
-  .dx-kicker { display: flex; margin-top: 28px; }
-  .dx-title { margin-top: 20px; }
-  .dx-lede { margin-top: 24px; max-width: 44rem; }
-  .dx-facts { margin-top: 28px; display: flex; flex-wrap: wrap; gap: 8px; }
-
-  .dx-sec { position: relative; padding-bottom: clamp(56px, 7vw, 96px); }
-
-  /* JobPilot, the one live app: a wide card. */
-  .dx-feature {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr);
-    overflow: hidden;
-  }
-  @media (min-width: 900px) {
-    .dx-feature { grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); }
-  }
-  .dx-feature-media {
-    display: block;
-    overflow: hidden;
-    background: #07080b;
-    border-bottom: 1px solid var(--line);
-    aspect-ratio: 16 / 10;
-  }
-  @media (min-width: 900px) {
-    .dx-feature-media { border-bottom: 0; border-right: 1px solid var(--line); aspect-ratio: auto; min-height: 340px; }
-  }
-  .dx-feature-media :global(img) {
-    display: block;
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    transition: transform 600ms var(--ease-glass);
-  }
-  .dx-feature:hover .dx-feature-media :global(img) { transform: scale(1.03); }
-  .dx-feature-body {
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    gap: 16px;
-    padding: 24px;
-  }
-  @media (min-width: 640px) { .dx-feature-body { padding: 36px; } }
-  .dx-badges { display: flex; flex-wrap: wrap; gap: 8px; }
-  .dx-feature-name { display: block; }
-  .dx-feature-line { display: block; max-width: 34rem; }
-  .dx-go { margin-top: 4px; }
-
-  /* Tour cards */
-  .dx-grid {
-    list-style: none;
-    margin: 0;
-    padding: 0;
-    display: grid;
-    gap: 16px;
-    grid-template-columns: minmax(0, 1fr);
-  }
-  @media (min-width: 640px) { .dx-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
-  @media (min-width: 1024px) { .dx-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px; } }
-  .dx-grid > li { display: flex; }
-  .dx-card { display: flex; flex-direction: column; width: 100%; }
-  .dx-media { aspect-ratio: 16 / 10; }
-  .dx-media :global(.media-fallback) { display: block; }
-  .dx-body { display: flex; flex-direction: column; flex: 1; padding: 20px 22px 22px; }
-  .dx-name { display: block; margin-top: 8px; }
-  .dx-line {
-    display: -webkit-box;
-    margin-top: 8px;
-    -webkit-box-orient: vertical;
-    -webkit-line-clamp: 3;
-    overflow: hidden;
-  }
-  .dx-metrics { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 16px; }
-  .dx-metrics :global(.badge) { white-space: normal; height: auto; min-height: 22px; padding-block: 4px; line-height: 1.3; }
-  .dx-foot {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 12px;
-    margin-top: auto;
-    padding-top: 20px;
-  }
-  .dx-card:hover .dx-foot .tlink { text-decoration: underline; text-underline-offset: 4px; text-decoration-thickness: 1px; }
-  .dx-card:hover .dx-foot :global(svg) { transform: translateX(3px); }
-  .dx-note { margin-top: 28px; max-width: 44rem; }
-</style>
+<script>
+  import { mountRailIndex } from "../../components/tours/rail-stage";
+  mountRailIndex();
+</script>

@@ -1,6 +1,7 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Search from "../search/Search";
 import SoundPlacard from "../../scripts/sound/Placard.jsx";
+import "./nav-menu.css";
 
 // One colour per tab. The coloured icon beside each label is the legend for
 // the whole site: the same colour marks that tab's page, its kicker and links.
@@ -38,6 +39,12 @@ function TabIcon({ name }) {
 // Pages that belong to a tab without being its index.
 const ALIAS = { gallery: "filmmaking", demos: "projects", teaching: "posts" };
 
+// The room with no tab of its own. The menu carries it at every width, in the
+// colour of the tab it belongs to, with the first words of its page.
+const ROOMS = [
+  { name: "Live demos", href: "/demos", seg: "demos", tone: "projects", hint: "Click through the systems.", glyph: "M10 8.5v7l6-3.5-6-3.5ZM12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18Z" },
+];
+
 // The resume link comes in as a prop: importing the whole site data file here
 // would ship all of it to the browser with the nav.
 // Sound on or off, and the "i" that explains the music. The engine
@@ -72,7 +79,10 @@ function SoundToggle() {
 export default function Nav({ cv = "/resume" }) {
   const [open, setOpen] = useState(false);
   const [active, setActive] = useState("");
+  const [here, setHere] = useState("");
   const [condensed, setCondensed] = useState(false);
+  const menuBtn = useRef(null);
+  const sheet = useRef(null);
 
   // The nav persists across page changes (transition:persist in
   // BaseLayout), so after each swap it reads the new path, closes the menu
@@ -81,15 +91,22 @@ export default function Nav({ cv = "/resume" }) {
     const read = () => {
       const seg = (window.location.pathname || "/").split("/").filter(Boolean)[0] || "";
       setActive(ALIAS[seg] || seg);
+      setHere(seg);
     };
     const onSwap = () => {
       read();
       setOpen(false);
       setCondensed(window.scrollY > 8);
     };
+    // Leaving: the sheet goes as the loader comes up, not after it.
+    const onLeave = () => setOpen(false);
     read();
     document.addEventListener("astro:after-swap", onSwap);
-    return () => document.removeEventListener("astro:after-swap", onSwap);
+    document.addEventListener("astro:before-preparation", onLeave);
+    return () => {
+      document.removeEventListener("astro:after-swap", onSwap);
+      document.removeEventListener("astro:before-preparation", onLeave);
+    };
   }, []);
 
   useEffect(() => {
@@ -99,13 +116,43 @@ export default function Nav({ cv = "/resume" }) {
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
+  // While the sheet is open: focus moves into it and stays there, arrows walk
+  // its links, Escape hands focus back to the button, and a click anywhere else
+  // closes it and still does what that click was for.
   useEffect(() => {
     if (!open) return;
-    const onKey = (e) => e.key === "Escape" && setOpen(false);
+    const links = () => Array.from(sheet.current?.querySelectorAll("a") ?? []).filter((a) => a.offsetParent !== null);
+    links()[0]?.focus({ preventScroll: true });
+    const onKey = (e) => {
+      if (e.key === "Escape") {
+        e.preventDefault();
+        setOpen(false);
+        menuBtn.current?.focus({ preventScroll: true });
+        return;
+      }
+      const all = links();
+      if (!all.length) return;
+      const at = all.indexOf(document.activeElement);
+      if (e.key === "Tab" || e.key === "ArrowDown" || e.key === "ArrowUp") {
+        e.preventDefault();
+        const back = e.key === "ArrowUp" || (e.key === "Tab" && e.shiftKey);
+        all[(at + (back ? -1 : 1) + all.length) % all.length].focus({ preventScroll: true });
+      } else if (e.key === "Home" || e.key === "End") {
+        e.preventDefault();
+        all[e.key === "Home" ? 0 : all.length - 1].focus({ preventScroll: true });
+      }
+    };
+    const onDown = (e) => {
+      if (sheet.current?.contains(e.target) || menuBtn.current?.contains(e.target)) return;
+      setOpen(false);
+    };
     window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
+    window.addEventListener("pointerdown", onDown, true);
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      window.removeEventListener("pointerdown", onDown, true);
+    };
   }, [open]);
-
 
   return (
     <>
@@ -154,42 +201,67 @@ export default function Nav({ cv = "/resume" }) {
               </a>
               <button
                 type="button"
-                className="nav-icon nav-menu-btn"
+                ref={menuBtn}
+                className={`nav-icon nav-menu-btn${open ? " is-open" : ""}`}
                 onClick={() => setOpen(!open)}
                 aria-label={open ? "Close menu" : "Open menu"}
                 aria-expanded={open}
+                aria-haspopup="dialog"
+                title={open ? undefined : "Live demos and more"}
               >
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" aria-hidden="true">
-                  {open ? <path d="M18 6 6 18M6 6l12 12" /> : <path d="M4 8h16M4 16h16" />}
+                <svg className="nav-menu-glyph" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  {open ? (
+                    <path d="M18 6 6 18M6 6l12 12" />
+                  ) : (
+                    <>
+                      <path className="nav-menu-bars" d="M4 8h16M4 16h16" />
+                      <path className="nav-menu-grid" d="M5 5h5v5H5zM14 5h5v5h-5zM5 14h5v5H5zM14 14h5v5h-5z" />
+                    </>
+                  )}
                 </svg>
               </button>
             </div>
-          </div>
 
-          {open && (
-            <div className="nav-sheet lg lg-thick" role="dialog" aria-label="Menu">
-              <a href="/" className={active === "" ? "is-active" : ""}>
-                Home
-              </a>
-              {TABS.map((t) => (
-                <a
-                  key={t.match}
-                  href={t.href}
-                  data-tone={t.tone}
-                  className={active === t.match ? "is-active" : ""}
-                >
-                  <TabIcon name={t.match} />
-                  {t.name}
-                  <span className="t-meta">{t.hint}</span>
+            {open && (
+              <div className="nav-sheet lg lg-thick" role="dialog" aria-label="Menu" ref={sheet} onClick={(e) => e.target.closest("a") && setOpen(false)}>
+                <a href="/" className={`nav-sheet-tab ${active === "" ? "is-active" : ""}`}>
+                  Home
                 </a>
-              ))}
-              <hr />
-              <a href="/demos">Live demos</a>
-              <a href="/gallery">Gallery</a>
-              <a href="/#ch-connect">Contact</a>
-              <a href={cv}>Resume</a>
-            </div>
-          )}
+                {TABS.map((t) => (
+                  <a
+                    key={t.match}
+                    href={t.href}
+                    data-tone={t.tone}
+                    className={`nav-sheet-tab ${active === t.match ? "is-active" : ""}`}
+                  >
+                    <TabIcon name={t.match} />
+                    {t.name}
+                    <span className="t-meta">{t.hint}</span>
+                  </a>
+                ))}
+                <hr className="nav-sheet-tab" />
+                {ROOMS.map((r) => (
+                  <a
+                    key={r.seg}
+                    href={r.href}
+                    data-tone={r.tone}
+                    className={`nav-sheet-room ${here === r.seg ? "is-active" : ""}`}
+                    aria-current={here === r.seg ? "page" : undefined}
+                  >
+                    <svg className="nav-icon-glyph" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                      <path d={r.glyph} />
+                    </svg>
+                    <span className="nav-sheet-room-text">
+                      {r.name}
+                      <span className="t-meta">{r.hint}</span>
+                    </span>
+                  </a>
+                ))}
+                <a href="/#ch-connect" className="nav-sheet-plain">Contact</a>
+                <a href={cv} className="nav-sheet-tab">Resume</a>
+              </div>
+            )}
+          </div>
         </div>
       </header>
     </>

@@ -1,12 +1,13 @@
 /* ===========================================================================
-   Guided system tours (/demos). The player's controls are clear glass, the
-   mock screens and the architecture are solid surfaces, and the only accent
-   is the page's tab colour (var(--tone), the Projects blue). Status inside a
-   mock app keeps its own meaning: green ok, amber check, red wrong.
+   The tour console (/demos/<slug>). An instrument in the same world as the
+   rail: a sequencer of numbered stops with a light that runs along it, a bezel
+   with registration corners around the mock screen, and one accent, the page's
+   tab colour (var(--tone), the Projects blue). Status inside a mock app keeps
+   its own meaning: green ok, amber check, red wrong.
    =========================================================================== */
 
 /* ---------------------------------------------------------------------------
-   The player
+   The console
    --------------------------------------------------------------------------- */
 .tp {
   display: grid;
@@ -16,25 +17,61 @@
 }
 @media (min-width: 1024px) {
   .tp {
+    position: relative;
     grid-template-columns: minmax(0, 21rem) minmax(0, 1fr);
     grid-template-rows: auto 1fr;
     grid-template-areas: "steps stage" "controls stage";
-    gap: 20px 28px;
+    gap: 20px 24px;
     align-items: start;
+    padding: 16px;
+    border-radius: 28px;
+    border: 1px solid var(--line-strong);
+    background:
+      linear-gradient(180deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.008) 22%),
+      rgba(5, 7, 13, 0.8);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.1),
+      0 50px 110px -46px rgba(var(--tone-rgb), 0.5),
+      0 30px 60px -30px rgba(0, 0, 0, 0.9);
   }
 }
 
-/* The step list: one glass control. A row of numbers on phones, a column of
-   titled steps on wide screens. */
+/* The sequencer: one glass control. A row of numbers on phones, a column of
+   titled stops on wide screens, a track behind and a light running along it. */
 .tp-steps {
   grid-area: steps;
+  position: relative;
   display: flex;
   gap: 2px;
   padding: 4px;
   border-radius: 9999px;
 }
+.tp-track {
+  position: absolute;
+  left: 24px;
+  right: 24px;
+  top: 50%;
+  height: 2px;
+  margin-top: -1px;
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.1);
+  pointer-events: none;
+}
+/* Positions come from the rail's own box, which is the track's parent. */
+.tp-comet {
+  position: absolute;
+  top: 1px;
+  left: calc(var(--cx, 24px) - 24px);
+  width: 20px;
+  height: 20px;
+  margin: -10px 0 0 -10px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(var(--tone-rgb), 0.85), rgba(var(--tone-rgb), 0) 68%);
+  transition: left 420ms var(--ease-glass), top 420ms var(--ease-glass);
+}
 .tp-step {
   position: relative;
+  z-index: 1;
   flex: 1 1 0;
   display: flex;
   align-items: center;
@@ -52,21 +89,9 @@
   cursor: pointer;
   transition: background-color 150ms var(--ease-glass), color 150ms var(--ease-glass), box-shadow 200ms var(--ease-glass);
 }
-.tp-step:hover { color: var(--ink); background: var(--wash-strong); }
+.tp-step:hover { color: var(--ink); }
+.tp-step:hover .tp-step-title { color: var(--ink); }
 .tp-step:focus-visible { outline: none; box-shadow: 0 0 0 2px rgba(var(--tone-rgb), 0.7); }
-.tp-step.is-on {
-  color: var(--ink);
-  background: rgba(255, 255, 255, 0.11);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.22),
-    inset 0 -1px 0 rgba(0, 0, 0, 0.2),
-    0 2px 8px -2px rgba(0, 0, 0, 0.6);
-}
-.tp-step.is-on:focus-visible {
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.22),
-    0 0 0 2px rgba(var(--tone-rgb), 0.7);
-}
 .tp-num {
   display: inline-grid;
   place-items: center;
@@ -78,14 +103,16 @@
   font-weight: 600;
   font-variant-numeric: tabular-nums;
   color: var(--ink-faint);
-  background: var(--wash-strong);
-  transition: background-color 150ms var(--ease-glass), color 150ms var(--ease-glass);
+  background: #101218;
+  box-shadow: inset 0 0 0 1px var(--line-strong);
+  transition: background-color 200ms var(--ease-glass), color 200ms var(--ease-glass), box-shadow 250ms var(--ease-glass);
 }
 .tp-step:hover .tp-num { color: var(--ink); }
+.tp-step.is-past .tp-num { color: var(--tone); box-shadow: inset 0 0 0 1px rgba(var(--tone-rgb), 0.55); }
 .tp-step.is-on .tp-num {
   color: #000;
   background: var(--tone);
-  box-shadow: 0 0 12px rgba(var(--tone-rgb), 0.55);
+  box-shadow: 0 0 14px rgba(var(--tone-rgb), 0.75);
 }
 .tp-step-text { display: none; min-width: 0; }
 .tp-step-title {
@@ -94,54 +121,152 @@
   font-weight: 500;
   line-height: 1.35;
   letter-spacing: -0.008em;
+  transition: color 150ms var(--ease-glass);
 }
+.tp-step.is-on .tp-step-title { color: var(--ink); }
 .tp-step-body {
   display: block;
   margin-top: 6px;
   font-size: 0.8125rem;
   line-height: 1.6;
   color: var(--ink-soft);
+  animation: tp-body 320ms var(--ease-glass) both;
 }
+@keyframes tp-body { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: none; } }
 
 @media (min-width: 1024px) {
   .tp-steps {
     flex-direction: column;
     gap: 2px;
-    padding: 6px;
-    border-radius: 22px;
+    padding: 8px 6px;
+    border-radius: 20px;
+  }
+  .tp-track {
+    left: 23px;
+    right: auto;
+    top: 24px;
+    bottom: 24px;
+    width: 2px;
+    height: auto;
+    margin: 0 0 0 -1px;
+  }
+  .tp-comet {
+    top: calc(var(--cy, 24px) - 24px);
+    left: 1px;
+    width: 34px;
+    height: 34px;
+    margin: -17px 0 0 -17px;
   }
   .tp-step {
     flex: none;
     align-items: flex-start;
     justify-content: flex-start;
     height: auto;
-    padding: 11px 14px 11px 12px;
-    border-radius: 16px;
+    padding: 10px 14px 10px 5px;
+    border-radius: 14px;
   }
+  .tp-step:hover { background: var(--wash); }
   .tp-step-text { display: block; padding-top: 2px; }
+  /* Unseen, on the same grid cell as the steps: every title and the longest
+     words, which is as tall as the list ever gets. */
+  .tp-steps { display: grid; grid-template-columns: minmax(0, 1fr); align-content: start; }
+  .tp-steps-in { grid-area: 1 / 1; display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+  .tp-sizer {
+    display: grid;
+    grid-area: 1 / 1;
+    gap: 2px;
+    padding: 0 14px 0 41px;
+    visibility: hidden;
+    pointer-events: none;
+  }
+  .tp-sizer-title { display: block; padding: 12px 0; font-size: 0.9375rem; font-weight: 500; line-height: 1.35; letter-spacing: -0.008em; }
+  .tp-sizer-body { display: block; margin-top: -6px; font-size: 0.8125rem; line-height: 1.6; }
+}
+@media (max-width: 1023px) {
+  .tp-sizer { display: none; }
+  .tp-steps-in { display: contents; }
 }
 
 /* The stage: the current step in words (phones only; wide screens show it in
-   the list) and the mock screen. */
-.tp-stage { grid-area: stage; min-width: 0; scroll-margin-top: 96px; }
+   the list) and the bezel. */
+.tp-stage { grid-area: stage; min-width: 0; scroll-margin-top: 96px; perspective: 1500px; }
 .tp-now { margin-bottom: 16px; }
 .tp-now-title { margin-top: 6px; }
 .tp-now-body { margin-top: 6px; }
+.tp-bezel { position: relative; }
 @media (min-width: 1024px) {
   .tp-now { display: none; }
-  /* The window stands as tall as the step list beside it, so a short
-     screen does not leave a hole and a step change does not jump. */
+  /* The window stands as tall as the list beside it, so a short screen does not
+     leave a hole and a step change does not jump. */
   .tp-stage { align-self: stretch; display: flex; flex-direction: column; }
+  .tp-bezel {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    transform: rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg));
+    transform-style: preserve-3d;
+  }
   .tp-screen { flex: 1; display: flex; flex-direction: column; }
-  .tp-screen > .ms { flex: 1; }
+  .tp-screen > .ms { flex: 1; display: flex; flex-direction: column; }
+  /* A short screen sits in the middle of its glass; a terminal fills it. */
+  .tp-screen > .ms > .ms-body { flex: 1; display: flex; flex-direction: column; justify-content: center; }
+  .tp-screen > .ms > .ms-body > * { width: 100%; }
+  .tp-screen .ms-term { flex: 1; }
 }
-.tp-screen { animation: tp-in 280ms var(--ease-glass); }
+/* A soft light on the glass that follows the pointer. */
+@media (hover: hover) and (pointer: fine) {
+  .tp-bezel::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    border-radius: 20px;
+    pointer-events: none;
+    background: radial-gradient(460px 340px at var(--mx, 50%) var(--my, 0%), rgba(var(--tone-rgb), 0.09), rgba(var(--tone-rgb), 0) 72%);
+  }
+}
+/* Registration corners, sitting just off the glass. */
+.tp-corner { position: absolute; z-index: 2; width: 14px; height: 14px; pointer-events: none; }
+.tp-corner-tl { top: -5px; left: -5px; border-top: 1.5px solid rgba(var(--tone-rgb), 0.8); border-left: 1.5px solid rgba(var(--tone-rgb), 0.8); border-top-left-radius: 6px; }
+.tp-corner-tr { top: -5px; right: -5px; border-top: 1.5px solid rgba(var(--tone-rgb), 0.8); border-right: 1.5px solid rgba(var(--tone-rgb), 0.8); border-top-right-radius: 6px; }
+.tp-corner-bl { bottom: -5px; left: -5px; border-bottom: 1.5px solid rgba(var(--tone-rgb), 0.8); border-left: 1.5px solid rgba(var(--tone-rgb), 0.8); border-bottom-left-radius: 6px; }
+.tp-corner-br { bottom: -5px; right: -5px; border-bottom: 1.5px solid rgba(var(--tone-rgb), 0.8); border-right: 1.5px solid rgba(var(--tone-rgb), 0.8); border-bottom-right-radius: 6px; }
+
+/* A new screen comes up from behind; going back, it comes from in front. */
+.tp-screen { position: relative; animation: tp-in 460ms var(--ease-glass) both; }
+.tp-screen.is-back { animation-name: tp-back; }
 @keyframes tp-in {
-  from { opacity: 0; transform: translateY(6px); }
+  from { opacity: 0; transform: translate3d(0, 0, -150px) rotateX(3deg); }
   to { opacity: 1; transform: none; }
 }
+@keyframes tp-back {
+  from { opacity: 0; transform: translate3d(0, 0, 110px); }
+  to { opacity: 1; transform: none; }
+}
+/* The light that crosses a new screen. Up, going back. */
+.tp-scan {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: 96px;
+  z-index: 2;
+  pointer-events: none;
+  border-bottom: 1px solid rgba(var(--tone-rgb), 0.9);
+  background: linear-gradient(180deg, rgba(var(--tone-rgb), 0), rgba(var(--tone-rgb), 0.16));
+  border-radius: 20px;
+  opacity: 0;
+  animation: tp-scan 760ms cubic-bezier(0.3, 0.6, 0.3, 1) both;
+}
+.tp-screen.is-back .tp-scan { animation-direction: reverse; }
+@keyframes tp-scan {
+  0% { opacity: 0; top: 0; }
+  12% { opacity: 1; }
+  88% { opacity: 1; }
+  100% { opacity: 0; top: calc(100% - 96px); }
+}
 
-/* Progress and the two actions. */
+/* Progress and the actions. */
 .tp-controls { grid-area: controls; display: grid; gap: 14px; }
 .tp-progress {
   display: flex;
@@ -150,18 +275,49 @@
   border-radius: 9999px;
 }
 .tp-seg {
+  position: relative;
   flex: 1 1 0;
   height: 4px;
+  overflow: hidden;
   border-radius: 9999px;
   background: rgba(255, 255, 255, 0.12);
   transition: background-color 250ms var(--ease-glass), box-shadow 250ms var(--ease-glass);
 }
 .tp-seg.is-done { background: var(--tone); box-shadow: 0 0 8px rgba(var(--tone-rgb), 0.5); }
-.tp-nav { display: flex; align-items: center; justify-content: flex-end; gap: 8px; }
+.tp-seg.is-run::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: var(--tone);
+  transform-origin: left;
+  animation: tp-dwell var(--dwell, 8s) linear both;
+}
+@keyframes tp-dwell { from { transform: scaleX(0); } to { transform: none; } }
+/* On a phone they sit to the left, clear of the chat button. */
+.tp-nav { display: flex; align-items: center; justify-content: flex-start; gap: 8px; }
+@media (min-width: 1024px) { .tp-nav { justify-content: flex-end; } }
 .tp-count { display: none; margin-right: auto; }
 @media (min-width: 1024px) {
   .tp-count { display: inline; }
 }
+.tp-run {
+  display: inline-grid;
+  place-items: center;
+  flex: none;
+  width: 36px;
+  height: 36px;
+  border: 0;
+  border-radius: 9999px;
+  color: var(--ink);
+  background: var(--wash-strong);
+  box-shadow: inset 0 0 0 1px var(--line-strong);
+  cursor: pointer;
+  transition: background-color 150ms var(--ease-glass), box-shadow 200ms var(--ease-glass);
+}
+.tp-run:hover { background: rgba(255, 255, 255, 0.12); }
+.tp-run:focus-visible { outline: none; box-shadow: 0 0 0 3px rgba(var(--tone-rgb), 0.6); }
+.tp-run.is-on { color: var(--tone); box-shadow: inset 0 0 0 1px rgba(var(--tone-rgb), 0.7), 0 0 16px rgba(var(--tone-rgb), 0.4); }
 .tp-nav .btn:disabled { opacity: 0.35; cursor: default; transform: none; }
 .tp-nav .btn:disabled:hover { transform: none; }
 
@@ -189,8 +345,22 @@
   color: var(--ink-soft);
 }
 .ms-synth { flex: none; }
-.ms-body { padding: 16px; container-type: inline-size; }
+.ms-body {
+  padding: 16px;
+  container-type: inline-size;
+  /* The glass of the screen: a fine dot grid, lit from the top. */
+  background:
+    radial-gradient(90% 60% at 50% 0%, rgba(var(--tone-rgb), 0.05), rgba(var(--tone-rgb), 0) 70%),
+    radial-gradient(circle, rgba(255, 255, 255, 0.05) 1px, transparent 1.2px) 0 0 / 18px 18px;
+}
 @media (min-width: 640px) { .ms-body { padding: 20px; } }
+
+/* Parts of a screen come up one after another, as if the app were running. */
+.ms-rise { animation: ms-rise 420ms var(--ease-glass) both; animation-delay: calc(var(--i, 0) * 60ms + 150ms); }
+@keyframes ms-rise {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: none; }
+}
 
 .ms-stack { display: grid; gap: 10px; }
 .ms-row { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
@@ -248,7 +418,16 @@
   background: rgba(255, 255, 255, 0.08);
 }
 .ms-track-lg { height: 6px; max-width: 24rem; margin: 14px auto 0; }
-.ms-fill { display: block; height: 100%; border-radius: inherit; background: var(--tone); }
+.ms-fill {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--tone);
+  transform-origin: left;
+  animation: ms-fill 820ms var(--ease-glass) both;
+  animation-delay: calc(var(--i, 0) * 60ms + 240ms);
+}
+@keyframes ms-fill { from { transform: scaleX(0); } to { transform: none; } }
 .ms-fill.ms-good { background: #4ade80; }
 .ms-fill.ms-warn { background: #fbbf24; }
 .ms-fill.ms-bad { background: #f87171; }
@@ -335,7 +514,7 @@
 .ms-bar-head { font-size: 0.8125rem; line-height: 1.45; color: var(--ink-soft); }
 .ms-bars .ms-track { margin-top: 6px; height: 6px; }
 
-/* Terminal: the one place type stays monospace. */
+/* Terminal: the one place type stays monospace. Lines print one at a time. */
 .ms-term {
   padding: 14px 16px;
   border-radius: 12px;
@@ -348,10 +527,18 @@
 }
 .ms-term-cmd { color: var(--ink); }
 .ms-term-sign { color: var(--tone); margin-right: 0.6ch; }
+.ms-print {
+  animation: ms-print 460ms steps(26) both;
+  animation-delay: calc(var(--i, 0) * 230ms + 180ms);
+}
+@keyframes ms-print {
+  from { clip-path: inset(0 100% 0 0); }
+  to { clip-path: inset(0 0 0 0); }
+}
 
 /* Chat */
 .ms-chat { gap: 8px; }
-.ms-msg { display: flex; justify-content: flex-start; }
+.ms-msg { display: flex; justify-content: flex-start; animation-delay: calc(var(--i, 0) * 240ms + 150ms); }
 .ms-msg-user { justify-content: flex-end; }
 .ms-bubble {
   max-width: 85%;
@@ -374,7 +561,8 @@
 }
 
 /* ---------------------------------------------------------------------------
-   Architecture: numbered lanes, left to right.
+   Architecture: numbered lanes, left to right, wired together. --p (0 to 1, as
+   the section comes up) lights them in order, and scrolling back turns them off.
    --------------------------------------------------------------------------- */
 .ar {
   list-style: none;
@@ -412,22 +600,33 @@
   line-height: 1.5;
   color: var(--ink-soft);
 }
-/* A quiet chevron between lanes where they sit in one row. */
+/* Where they sit in one row, a wire from each to the next, carrying a charge. */
 @media (min-width: 1024px) {
   .ar-lane:not(:last-child)::after {
     content: "";
     position: absolute;
-    top: 28px;
-    right: -15px;
-    width: 8px;
-    height: 8px;
-    border-top: 1.5px solid var(--ink-ghost);
-    border-right: 1.5px solid var(--ink-ghost);
-    transform: rotate(45deg);
+    top: 31px;
+    left: 100%;
+    width: 21px;
+    height: 2px;
+    background: rgba(255, 255, 255, 0.14);
+    box-shadow: 0 0 calc(var(--on, 1) * 10px) rgba(var(--tone-rgb), calc(var(--on, 1) * 0.9));
   }
+}
+html.rl-depth .ar-lane {
+  --on: clamp(0, calc(var(--lit, 1) * var(--n-lanes, 4) - var(--i, 0)), 1);
+  border-color: rgba(var(--tone-rgb), calc(var(--on) * 0.42));
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.06),
+    0 0 calc(var(--on) * 34px) calc(var(--on) * -14px) rgba(var(--tone-rgb), 0.9);
+}
+html.rl-depth .ar-lane .ar-num {
+  background: rgba(var(--tone-rgb), calc(0.12 + var(--on) * 0.82));
+  color: color-mix(in srgb, var(--tone), #000 calc(var(--on) * 100%));
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .tp-screen { animation: none; }
-  .tp-step, .tp-num, .tp-seg { transition: none; }
+  .tp-screen, .tp-step-body, .ms-rise, .ms-fill, .ms-print, .tp-seg.is-run::after { animation: none; }
+  .tp-scan { display: none; }
+  .tp-step, .tp-num, .tp-seg, .tp-comet { transition: none; }
 }

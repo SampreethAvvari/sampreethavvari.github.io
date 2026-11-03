@@ -1,15 +1,21 @@
 ---
-// /demos/<slug>, one guided tour per system: the page top, the player, the
-// problem and its numbers, the architecture, where it landed, and the
-// neighbouring demos. These belong to the Projects tab, so they wear its blue.
+// /demos/<slug>, one guided tour per system: its capsule on the rail and the page
+// top, the console, the problem and its numbers, the architecture, where it
+// landed, and the neighbouring demos. These belong to the Projects tab, so they
+// wear its blue. With no script, no GPU or reduced motion this is a plain page,
+// with the capsule's picture standing beside the words.
 import fs from "node:fs";
 import path from "node:path";
 import BaseLayout from "../../layouts/BaseLayout.astro";
 import Icon from "../../components/common/Icon.astro";
+import Picture from "../../components/common/Picture.astro";
 import TourPlayer from "../../components/tours/TourPlayer";
 import Arch from "../../components/tours/Arch";
 import { TOURS } from "../../data/tours";
 import type { Tour } from "../../data/tours";
+import { optimizedSources, roomySizes } from "../../utils/optimizedImage";
+import "../../components/tours/rail.css";
+import "../../styles/solid-glass.css";
 
 export function getStaticPaths() {
   return TOURS.map((tour, idx) => ({ params: { slug: tour.slug }, props: { tour, idx } }));
@@ -29,57 +35,94 @@ const post =
     ? tour.post
     : null;
 
+// A cover only renders when its file (or its .avif/.webp sibling) exists.
+const hasPublic = (p?: string) =>
+  !!p &&
+  [p, p.replace(/\.(png|jpe?g)$/i, ".avif"), p.replace(/\.(png|jpe?g)$/i, ".webp")].some((f) =>
+    fs.existsSync(path.join(process.cwd(), "public", f)),
+  );
+
 const WORDS = ["zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten"];
 const stepWord = WORDS[tour.steps.length] ?? String(tour.steps.length);
+
+// The cover opens the page, so the browser fetches it ahead of finding the <img>.
+// The canvas then reuses that same file for the capsule's glass.
+const SLAB_SIZES = "(min-width: 1024px) 640px, 60vw";
+const cover = optimizedSources(tour.cover);
 ---
 
 <BaseLayout
   title={`${tour.name} demo · Sampreeth Avvari`}
   description={tour.pitch}
   tone="projects"
+  preloadImage={cover?.avif}
+  preloadSrcset={cover?.avifSet}
+  preloadSizes={cover?.avifSet ? roomySizes(SLAB_SIZES) : undefined}
 >
-  <!-- Page top -->
-  <section class="page-top dm-top relative overflow-hidden">
-    <div class="tone-atmos" aria-hidden="true"></div>
-    <div class="wrap on-top">
-      <a href="/projects" class="tlink dm-back">
-        <Icon name="arrow-left" size={14} /> Projects
-      </a>
-      <p class="kicker dm-kicker">Live demo</p>
-      <h1 class="t-title dm-title">
-        {tour.name}.
-        <span class="t-tail">{tour.tail}</span>
-      </h1>
-      <p class="t-lede dm-lede">{tour.pitch}</p>
-      <div class="dm-facts">
-        <span class="badge">{tour.kicker}</span>
-        <span class="t-meta">{tour.steps.length} steps · synthetic data</span>
-      </div>
+  <div class="rl-flight" data-rl="flight">
+    <script is:inline>
+      (function () {
+        var el = document.currentScript && document.currentScript.parentElement;
+        if (el && "WebGL2RenderingContext" in window && !matchMedia("(prefers-reduced-motion: reduce)").matches) el.classList.add("is-live");
+      })();
+    </script>
+    <div class="rl-sticky" aria-hidden="true">
+      <canvas class="rl-gl"></canvas>
+      <div class="rl-shade"></div>
     </div>
-  </section>
 
-  <!-- The tour -->
-  <section class="dm-player" aria-labelledby="dm-walk">
-    <div class="wrap">
-      <h2 id="dm-walk" class="sr-only">Walk through it, {stepWord} steps</h2>
-      <TourPlayer client:load tour={tour} />
-      <p class="t-meta dm-note">
-        Every name, transcript and document in this tour is synthetic, and so are the numbers on the sample screens.
-        The numbers under The problem and Where it landed are real. The production system and its data stay private.
-      </p>
-    </div>
-  </section>
+    <!-- Page top -->
+    <section class="page-top dm-top rl-flight-hero" data-flight-hero>
+      <div class="tone-atmos" aria-hidden="true"></div>
+      {hasPublic(tour.cover) && (
+        <div class="rl-slab" aria-hidden="true">
+          <Picture src={tour.cover ?? ""} alt="" width={960} height={549} loading="eager" sizes={SLAB_SIZES} />
+        </div>
+      )}
+      <div class="wrap on-top">
+        <div class="rl-flight-copy">
+          <a href="/projects" class="tlink dm-back">
+            <Icon name="arrow-left" size={14} /> Projects
+          </a>
+          <p class="kicker dm-kicker">Live demo</p>
+          <h1 class="t-title dm-title">
+            {tour.name}.
+            <span class="t-tail">{tour.tail}</span>
+          </h1>
+          <p class="t-lede dm-lede">{tour.pitch}</p>
+          <div class="dm-facts">
+            <span class="badge">{tour.kicker}</span>
+            <span class="t-meta">{tour.steps.length} steps · synthetic data</span>
+          </div>
+        </div>
+      </div>
+      <div class="rl-cue" aria-hidden="true"><span>Scroll</span><i></i></div>
+    </section>
+
+    <!-- The tour -->
+    <section class="dm-player rl-flight-after" aria-labelledby="dm-walk">
+      <div class="wrap" data-depth>
+        <h2 id="dm-walk" class="sr-only">Walk through it, {stepWord} steps</h2>
+        <TourPlayer client:load tour={tour} />
+        <p class="t-meta dm-note">
+          Every name, transcript and document in this tour is synthetic, and so are the numbers on the sample screens.
+          The numbers under The problem and Where it landed are real. The production system and its data stay private.
+        </p>
+      </div>
+    </section>
+  </div>
 
   <!-- The problem and its numbers -->
-  <section class="dm-sec" aria-labelledby="dm-problem">
+  <section class="dm-sec" aria-labelledby="dm-problem" data-depth>
     <div class="wrap">
-      <div class="dm-split" data-reveal>
+      <div class="dm-split">
         <h2 id="dm-problem" class="t-h2">The problem.</h2>
         <p class="dm-prose">{tour.problem}</p>
       </div>
       <ul class="dm-stats">
         {tour.metrics.map((m) => (
-          <li class="surface surface-pad dm-stat" data-reveal>
+          <li class="surface surface-pad dm-stat" data-tilt="3">
+            <span class="dm-scale" aria-hidden="true"></span>
             <span class="t-meta">{m.label}</span>
             <span class="dm-stat-num">{m.value}</span>
             {m.sub && <span class="dm-stat-sub">{m.sub}</span>}
@@ -90,9 +133,9 @@ const stepWord = WORDS[tour.steps.length] ?? String(tour.steps.length);
   </section>
 
   <!-- Architecture -->
-  <section class="dm-sec" aria-labelledby="dm-arch">
+  <section class="dm-sec" aria-labelledby="dm-arch" data-depth data-lanes style={`--n-lanes:${tour.architecture.length};`}>
     <div class="wrap">
-      <div class="sec-head" data-reveal>
+      <div class="sec-head">
         <div class="sec-head-main">
           <h2 id="dm-arch" class="t-h2">How it fits together.</h2>
         </div>
@@ -103,9 +146,9 @@ const stepWord = WORDS[tour.steps.length] ?? String(tour.steps.length);
   </section>
 
   <!-- Where it landed -->
-  <section class="dm-sec" aria-labelledby="dm-landed">
+  <section class="dm-sec" aria-labelledby="dm-landed" data-depth>
     <div class="wrap">
-      <div class="dm-split" data-reveal>
+      <div class="dm-split">
         <h2 id="dm-landed" class="t-h2">Where it landed.</h2>
         <div>
           <p class="dm-prose">{tour.outcome}</p>
@@ -139,26 +182,45 @@ const stepWord = WORDS[tour.steps.length] ?? String(tour.steps.length);
     </div>
   </section>
 
-  <!-- Previous and next -->
-  <section class="dm-sec dm-pn-sec">
+  <!-- Previous and next: the capsules either side of this one. -->
+  <section class="dm-sec dm-pn-sec" data-depth>
     <div class="wrap">
       <nav class="dm-pn" aria-label="More demos">
-        <a href={`/demos/${prev.slug}`} class="surface surface-pad dm-pn-link">
-          <span class="t-meta dm-pn-dir">
-            <span class="dm-pn-back"><Icon name="arrow-right" size={14} /></span> Previous demo
+        <a href={`/demos/${prev.slug}`} class="surface dm-pn-link">
+          {hasPublic(prev.cover) && (
+            <span class="dm-pn-art" aria-hidden="true">
+              <Picture src={prev.cover ?? ""} alt="" width={640} height={366} sizes="(min-width: 640px) 45vw, 92vw" />
+            </span>
+          )}
+          <span class="dm-pn-text">
+            <span class="t-meta dm-pn-dir">
+              <span class="dm-pn-back"><Icon name="arrow-right" size={14} /></span> Previous demo
+            </span>
+            <span class="t-h4">{prev.name}</span>
           </span>
-          <span class="t-h4">{prev.name}</span>
         </a>
-        <a href={`/demos/${next.slug}`} class="surface surface-pad dm-pn-link dm-pn-next">
-          <span class="t-meta dm-pn-dir">
-            Next demo <Icon name="arrow-right" size={14} />
+        <a href={`/demos/${next.slug}`} class="surface dm-pn-link dm-pn-next">
+          {hasPublic(next.cover) && (
+            <span class="dm-pn-art" aria-hidden="true">
+              <Picture src={next.cover ?? ""} alt="" width={640} height={366} sizes="(min-width: 640px) 45vw, 92vw" />
+            </span>
+          )}
+          <span class="dm-pn-text">
+            <span class="t-meta dm-pn-dir">
+              Next demo <Icon name="arrow-right" size={14} />
+            </span>
+            <span class="t-h4">{next.name}</span>
           </span>
-          <span class="t-h4">{next.name}</span>
         </a>
       </nav>
     </div>
   </section>
 </BaseLayout>
+
+<script>
+  import { mountRailFlight } from "../../components/tours/rail-stage";
+  mountRailFlight();
+</script>
 
 <style>
   /* Page top */
@@ -171,7 +233,7 @@ const stepWord = WORDS[tour.steps.length] ?? String(tour.steps.length);
   .dm-facts { margin-top: 24px; display: flex; flex-wrap: wrap; align-items: center; gap: 10px 12px; }
 
   /* The tour */
-  .dm-player { position: relative; padding-bottom: clamp(56px, 7vw, 96px); }
+  .dm-player { position: relative; padding-bottom: clamp(56px, 7vw, 96px); padding-top: clamp(16px, 4vh, 56px); }
   .dm-note { margin-top: 20px; max-width: 44rem; }
 
   /* Sections after the tour share one rhythm. */
@@ -191,7 +253,7 @@ const stepWord = WORDS[tour.steps.length] ?? String(tour.steps.length);
   }
   @media (min-width: 1024px) { .dm-prose { font-size: 1.0625rem; } }
 
-  /* The numbers */
+  /* The numbers: readouts, each under a short engraved scale. */
   .dm-stats {
     list-style: none;
     margin: clamp(32px, 4vw, 48px) 0 0;
@@ -202,12 +264,34 @@ const stepWord = WORDS[tour.steps.length] ?? String(tour.steps.length);
   }
   @media (min-width: 560px) { .dm-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
   @media (min-width: 1024px) { .dm-stats { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 20px; } }
-  .dm-stat { display: flex; flex-direction: column; }
+  .dm-stat { display: flex; flex-direction: column; overflow: hidden; }
+  /* They lean to the pointer, and the light on them follows it. */
+  @media (hover: hover) and (pointer: fine) {
+    .dm-stat { transform: perspective(900px) rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg)); }
+    .dm-stat::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      opacity: 0;
+      background: radial-gradient(240px 180px at var(--mx, 50%) var(--my, 0%), rgba(var(--tone-rgb), 0.14), rgba(var(--tone-rgb), 0) 72%);
+      transition: opacity 250ms var(--ease-glass);
+    }
+    .dm-stat:hover::after { opacity: 1; }
+  }
+  .dm-scale {
+    display: block;
+    height: 7px;
+    margin-bottom: 16px;
+    background: repeating-linear-gradient(90deg, rgba(var(--tone-rgb), 0.7) 0 1px, transparent 1px 9px);
+    -webkit-mask-image: linear-gradient(90deg, #000, transparent 72%);
+    mask-image: linear-gradient(90deg, #000, transparent 72%);
+  }
   .dm-stat-num {
     margin-top: 12px;
-    font-size: clamp(1.5rem, 2.2vw, 1.875rem);
-    line-height: 1.1;
-    letter-spacing: -0.03em;
+    font-size: clamp(1.625rem, 2.5vw, 2.25rem);
+    line-height: 1.08;
+    letter-spacing: -0.032em;
     font-weight: 600;
     font-variant-numeric: tabular-nums;
     color: var(--ink);
@@ -225,8 +309,13 @@ const stepWord = WORDS[tour.steps.length] ?? String(tour.steps.length);
   /* Previous and next */
   .dm-pn { display: grid; grid-template-columns: minmax(0, 1fr); gap: 16px; }
   @media (min-width: 640px) { .dm-pn { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; } }
-  .dm-pn-link { display: flex; flex-direction: column; gap: 8px; }
-  .dm-pn-next { align-items: flex-end; text-align: right; }
+  .dm-pn-link { position: relative; display: block; overflow: hidden; }
+  .dm-pn-art { position: absolute; inset: 0; display: block; opacity: 0.78; transition: opacity 300ms var(--ease-glass), transform 700ms var(--ease-glass); }
+  .dm-pn-art :global(img) { display: block; width: 100%; height: 100%; object-fit: cover; }
+  .dm-pn-link:hover .dm-pn-art { opacity: 1; transform: scale(1.03); }
+  .dm-pn-art::after { content: ""; position: absolute; inset: 0; background: linear-gradient(0deg, rgba(5, 7, 13, 0.92) 6%, rgba(5, 7, 13, 0) 62%); }
+  .dm-pn-text { position: relative; display: flex; flex-direction: column; justify-content: flex-end; gap: 8px; min-height: clamp(180px, 20vw, 260px); padding: 22px 24px; }
+  .dm-pn-next .dm-pn-text { align-items: flex-end; text-align: right; }
   .dm-pn-dir { display: inline-flex; align-items: center; gap: 6px; }
   .dm-pn-back { display: inline-flex; transform: rotate(180deg); }
 </style>
