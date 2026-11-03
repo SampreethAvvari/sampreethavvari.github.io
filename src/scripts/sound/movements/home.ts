@@ -175,7 +175,7 @@ export class Home extends Movement {
   private skies: PannerNode[] = [];
   private skyBuses: GainNode[] = [];
   private sky = 0;
-  private wordPan!: PannerNode;
+  private wordPan!: StereoPannerNode;
   private wordBus!: GainNode;
   private pending: AudioScheduledSourceNode[] = [];
   // the jump: the whole movement runs through a tape stage
@@ -202,9 +202,11 @@ export class Home extends Movement {
   private world: Pad | null = null;
   private glassS!: Sampler;
   private igniteLow!: BiquadFilterNode;
+  private paperBand!: BiquadFilterNode;
+  private extra: AudioBufferSourceNode | null = null;
 
   protected room(): RoomSpec {
-    return { rt60: 3.2, length: 3.2, predelay: 0.03, early: 6, earlyLevel: 0.3, hi: 5200, lo: 1100, damp: 0.8, lowCut: 80, bloom: 0.05, width: 1 };
+    return { rt60: 2.8, length: 2.6, predelay: 0.03, early: 6, earlyLevel: 0.3, hi: 5200, lo: 1100, damp: 0.8, lowCut: 80, bloom: 0.05, width: 1 };
   }
 
   private section(i: number): Section {
@@ -225,7 +227,7 @@ export class Home extends Movement {
     L("pad", 0, this.bed);
     // stars streaming past: chord tones up high, louder the faster you go
     this.vchoir = new Pad(this, this.air, {
-      wave: this.st.wave("air"), voices: this.phone ? 2 : 3, lo: 72, hi: 86, detune: 7, cutoff: 4000, level: 0, mode: "glide", glide: 1.5,
+      wave: this.st.wave("air"), voices: 2, lo: 72, hi: 86, detune: 7, cutoff: 4000, level: 0, mode: "glide", glide: 1.5,
     });
     this.pads.push(this.vchoir);
 
@@ -278,11 +280,11 @@ export class Home extends Movement {
       this.skyBuses.push(g);
     }
     // the words read left to right
-    this.wordPan = this.panner();
+    this.wordPan = this.own(this.ac.createStereoPanner());
+    kr(this.wordPan.pan);
     this.wordBus = this.gain(1, this.wordPan);
     this.wordPan.connect(this.dry);
     this.wordPan.connect(this.gain(0.35, this.verbIn));
-    this.setPos(this.wordPan, 0, 0.1, -1.2);
 
     // the tape stage: out -> delay (bent for a tape stop) -> low pass -> gain
     const ac = this.ac;
@@ -300,30 +302,18 @@ export class Home extends Movement {
     this.direct = this.gain(1, this.st.bus);
 
     // launch: ignition, a low rumble that opens as the fifth rises
-    {
-      const src = this.src(ac.createBufferSource());
-      src.buffer = this.st.noise;
-      src.loop = true;
-      this.igniteLow = this.own(ac.createBiquadFilter());
-      this.igniteLow.type = "lowpass";
-      this.igniteLow.frequency.value = 160;
-      this.igniteLow.Q.value = 1.1;
-      kr(this.igniteLow.frequency);
-      src.connect(this.igniteLow).connect(this.gain(dbg(-23), L("ignite", 0.25)));
-      src.start(t, 1.3);
-    }
+    this.igniteLow = this.own(ac.createBiquadFilter());
+    this.igniteLow.type = "lowpass";
+    this.igniteLow.frequency.value = 160;
+    this.igniteLow.Q.value = 1.1;
+    kr(this.igniteLow.frequency);
+    this.igniteLow.connect(this.gain(dbg(-23), L("ignite", 0.25)));
     // writing: the air of paper, very low
-    {
-      const src = this.src(ac.createBufferSource());
-      src.buffer = this.st.noise;
-      src.loop = true;
-      const band = this.own(ac.createBiquadFilter());
-      band.type = "bandpass";
-      band.frequency.value = 1600;
-      band.Q.value = 0.6;
-      src.connect(band).connect(this.gain(dbg(-44), L("paper", 0.6, this.air)));
-      src.start(t, 3.1);
-    }
+    this.paperBand = this.own(ac.createBiquadFilter());
+    this.paperBand.type = "bandpass";
+    this.paperBand.frequency.value = 1600;
+    this.paperBand.Q.value = 0.6;
+    this.paperBand.connect(this.gain(dbg(-44), L("paper", 0.6, this.air)));
     this.setWorld(0, t);
 
     this.mix(0, t);
@@ -374,6 +364,13 @@ export class Home extends Movement {
     this.direct?.gain.setTargetAtTime(0, t, 0.3);
   }
 
+  dispose() {
+    try { this.extra?.stop(); } catch { /* not started */ }
+    this.extra?.disconnect();
+    this.extra = null;
+    super.dispose();
+  }
+
   /** A world's bed arrives at a time; the one before fades out under it. */
   private setWorld(i: number, at: number) {
     const b = BEDS[i];
@@ -390,6 +387,21 @@ export class Home extends Movement {
     }
     this.pads.unshift(p);
     this.world = p;
+    // a world's own noise runs only while that world plays
+    if (this.extra) {
+      const x = this.extra;
+      x.stop(at + 3);
+      x.onended = () => x.disconnect();
+      this.extra = null;
+    }
+    if (i === 0 || i === 4) {
+      const src = this.ac.createBufferSource();
+      src.buffer = this.st.noise;
+      src.loop = true;
+      src.connect(i === 0 ? this.igniteLow : this.paperBand);
+      src.start(Math.max(this.ac.currentTime, at - 0.5), i === 0 ? 1.3 : 3.1);
+      this.extra = src;
+    }
     if (i === 0) {
       // ignition: the open fifth starts an octave down and rises; the rumble opens with it
       p.set([nm("D1"), nm("A1")], at);
@@ -744,7 +756,7 @@ export class Home extends Movement {
 
   /** Arrival: the new world's chord, struck on the downbeat. */
   private land(c: Chord, A: number, amt: number, drum: boolean) {
-    const hit = dbg(-15) * amt;
+    const hit = dbg(-17) * amt;
     tonesIn(c, 67, 86).slice(0, 3).forEach((m, i) => this.star.play(m, A + i * 0.012, hit * (i ? 0.7 : 1), this.dry));
     if (drum) this.frame.play(nm("D3"), A, hit, this.dry);
     thud(this, this.dry, A, 120, 55, 0.35, hit * 0.8);
@@ -820,9 +832,14 @@ export class Home extends Movement {
     helmet.connect(lp).connect(res).connect(this.dry);
     res.connect(this.gain(0.06, this.verbIn));
     const breath = new Breath(this, helmet, 480);
-    // the first breath of open air plays outside the muffle
-    const open = this.gain(0.9, this.direct);
-    const air = new Breath(this, open, 620);
+    // the first breath of open air plays outside the muffle, soft and warm
+    const open = this.gain(0.5);
+    const warm = this.own(ac.createBiquadFilter());
+    warm.type = "lowpass";
+    warm.frequency.value = 1500;
+    warm.Q.value = 0.5;
+    open.connect(warm).connect(this.direct);
+    const air = new Breath(this, open, 560);
     const steps = this.gain(1, this.dry);
     steps.connect(this.gain(0.25, this.verbIn));
     // the theme comes from ahead, where the sapling is
@@ -943,7 +960,7 @@ export class Home extends Movement {
     this.tap.play(nm("A4"), t, dbg(-26), this.direct);
     e.helmet.gain.setTargetAtTime(0, t, 0.15);
     // the first breath of open air: long, slow, close
-    e.air.breathe(t + 0.45, 2.2, 3.2, 0.55);
+    e.air.breathe(t + 0.45, 2.2, 3.2, 0.3);
     e.sing.gain.setTargetAtTime(dbg(-30), t + 0.5, 1.2);
   }
 
@@ -1027,13 +1044,13 @@ export class Home extends Movement {
     this.holdHarmony = true;
     this.harmony(TOUCH, t);
     // struck, rolled from the bottom
-    ns("D2 A2 F#3 C#4 E4 A4").forEach((m, i) => this.keys.play(m, t + i * 0.028, dbg(i < 2 ? -21 : -23), g));
+    ns("D2 A2 F#3 C#4 E4 A4").forEach((m, i) => this.keys.play(m, t + i * 0.028, dbg(i < 2 ? -23 : -25), g));
     // warm strings swell under it and hold
     ([[nm("D3"), -27], [nm("A3"), -29], [nm("F#4"), -30]] as [number, number][]).forEach(([m, lv]) =>
       lead(this, g, m, t + 0.05, 9, dbg(lv), { wave: this.st.wave("bowed"), attack: 1.4, release: 4, cutoff: 1500, vib: 5, vibRate: 4.4, detune: 6 }),
     );
     // a light opens above
-    ns("A5 D6 F#6").forEach((m, i) => this.starAt(m, t + 0.18 + i * 0.09, dbg(-24) * (i === 2 ? 0.8 : 1)));
+    ns("A5 D6 F#6").forEach((m, i) => this.starAt(m, t + 0.18 + i * 0.09, dbg(-26) * (i === 2 ? 0.8 : 1)));
     // and the theme, at last, comes to rest: F sharp falls to D
     this.keys.play(nm("F#5"), t + 1.4, dbg(-23), g);
     this.keys.play(nm("D5"), t + 2.1, dbg(-22), g);
@@ -1087,12 +1104,10 @@ export class Home extends Movement {
     const n = words.length;
     const end = base + ws * (n - 1);
     // the reading position: left to right across the phrase
-    const p = this.wordPan;
-    if (p.positionX) {
-      p.positionX.cancelScheduledValues(now);
-      p.positionX.setValueAtTime(-1.1, base - 0.01);
-      p.positionX.linearRampToValueAtTime(1.1, Math.max(base + 0.05, end));
-    }
+    const pan = this.wordPan.pan;
+    pan.cancelScheduledValues(now);
+    pan.setValueAtTime(-0.75, base - 0.01);
+    pan.linearRampToValueAtTime(0.75, Math.max(base + 0.05, end));
     let idx = Math.floor(tones.length / 2) - 1 + (letters(words[0]) % 3);
     words.forEach((w, i) => {
       if (i > 0) idx += (letters(w) % 5) - 2;

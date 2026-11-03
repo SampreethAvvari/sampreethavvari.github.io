@@ -1225,8 +1225,8 @@ void main() {
   float edge = 1.0 - smoothstep(0.0, 0.02, min(min(e.x + step(0.49, abs(vObj.x)), e.y + step(0.49, abs(vObj.y))), e.z + step(0.49, abs(vObj.z))));
   // Thin layered bands, like the edges of pages, caught by the light.
   float bands = smoothstep(0.86, 1.0, sin(vObj.y * 70.0 + vSeed * 30.0)) * 0.5 + smoothstep(0.97, 1.0, sin(vObj.y * 23.0 + vSeed * 9.0));
-  vec3 deep = vec3(0.004, 0.018, 0.014);
-  vec3 col = deep + uColor * (fres * 1.3 + bands * (0.12 + vHover * 1.4) + sheen * 0.25) + uColor * edge * (0.7 + vHover * 2.5) + vec3(1.0, 0.98, 0.92) * glint * 2.6;
+  vec3 deep = vec3(0.002, 0.008, 0.007);
+  vec3 col = deep + uColor * (fres * 0.5 + bands * (0.05 + vHover * 1.2) + sheen * 0.08) + uColor * edge * (0.45 + vHover * 2.5) + vec3(1.0, 0.98, 0.92) * glint * 2.2;
   gl_FragColor = vec4(col * uFade, 1.0);
 }
 `;
@@ -1318,7 +1318,7 @@ function writing(i: number, color: Color, ctx: Ctx): Piece {
     new ShaderMaterial({
       vertexShader: RIBBON_VS,
       fragmentShader: RIBBON_FS,
-      uniforms: { uColor: { value: color.clone().lerp(new Color(1, 1, 1), 0.25).multiplyScalar(1.7) }, uTime: { value: 0 }, uFade: fade },
+      uniforms: { uColor: { value: color.clone().lerp(new Color(1, 1, 1), 0.2).multiplyScalar(0.9) }, uTime: { value: 0 }, uFade: fade },
       side: DoubleSide,
     }),
   );
@@ -1335,7 +1335,7 @@ function writing(i: number, color: Color, ctx: Ctx): Piece {
     }
     const curve = new CatmullRomCurve3(pts);
     const SAMPLES = low ? 80 : 160;
-    const width = 1.2 + r() * 1.6;
+    const width = 0.45 + r() * 0.8;
     const pos: number[] = [];
     const uvs: number[] = [];
     const nrm: number[] = [];
@@ -1418,9 +1418,9 @@ function dune(x: number, z: number) {
   const n1 = fbm2(x * 0.006, z * 0.006);
   const w = x * 0.03 + z * 0.011 + n1 * 6;
   const crest = Math.pow(0.5 + 0.5 * Math.sin(w), 2.4);
-  let h = crest * (2.2 + 6 * n1) + fbm2(x * 0.035, z * 0.035) * 1.1;
+  let h = crest * (3.5 + 9 * n1) + fbm2(x * 0.035, z * 0.035) * 1.6;
   const r = Math.hypot(x, z);
-  h *= smooth(9, 42, r);
+  h *= smooth(6, 30, r);
   return h;
 }
 
@@ -1478,8 +1478,8 @@ function landingWorld(i: number, color: Color, ctx: Ctx): Piece {
   tg.rotateX(-Math.PI / 2);
   const tp = tg.getAttribute("position") as BufferAttribute;
   const tc = new Float32Array(tp.count * 3);
-  const crest = new Color(0.62, 0.36, 0.18);
-  const trough = new Color(0.2, 0.1, 0.055);
+  const crest = new Color(0.5, 0.26, 0.13);
+  const trough = new Color(0.12, 0.05, 0.03);
   const cc = new Color();
   for (let k = 0; k < tp.count; k++) {
     const x = tp.getX(k);
@@ -1487,7 +1487,7 @@ function landingWorld(i: number, color: Color, ctx: Ctx): Piece {
     const h = ground(x, z);
     tp.setY(k, h);
     const d = dune(x, z);
-    cc.copy(trough).lerp(crest, Math.min(1, 0.35 + d / 7) * (0.85 + 0.3 * noise2(x * 0.2, z * 0.2)));
+    cc.copy(trough).lerp(crest, Math.min(1, 0.2 + d / 9) * (0.8 + 0.4 * noise2(x * 0.2, z * 0.2)));
     tc.set([cc.r, cc.g, cc.b], k * 3);
   }
   tg.setAttribute("color", new BufferAttribute(tc, 3));
@@ -1517,8 +1517,8 @@ function landingWorld(i: number, color: Color, ctx: Ctx): Piece {
     pods.push(new SphereGeometry(s, 10, 8).scale(1, 1.4, 1).translate(Math.cos(a) * 0.35, y, Math.sin(a) * 0.35).toNonIndexed());
   const podB = mergeGeometries(pods, false)!;
   const barkMat = standard(0x1c120c, 0.1, 0.85);
-  const crownMat = standard(0x14261f, 0.05, 0.7);
-  crownMat.emissive = new Color(0.0, 0.035, 0.03);
+  const crownMat = standard(0x10201b, 0.05, 0.75);
+  crownMat.emissive = new Color(0.0, 0.02, 0.018);
   const podMat = standard(0x0d2a28, 0.1, 0.4);
   podMat.emissive = new Color(0.05, 0.35, 0.3);
   const TN = low ? 26 : 70;
@@ -1537,7 +1537,8 @@ function landingWorld(i: number, color: Color, ctx: Ctx): Piece {
   const plantPos: Vector3[] = [];
   const spot = (minR: number) => {
     for (;;) {
-      const a = r() * Math.PI * 2;
+      // Most trees stand ahead of the closing shot, toward the eclipse.
+      const a = r() < 0.7 ? Math.PI * 1.15 + r() * Math.PI * 0.7 : r() * Math.PI * 2;
       const rad = minR + Math.pow(r(), 0.8) * 340;
       const x = Math.cos(a) * rad;
       const z = Math.sin(a) * rad;

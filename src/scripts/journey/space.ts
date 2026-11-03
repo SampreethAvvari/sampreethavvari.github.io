@@ -496,7 +496,7 @@ export function buildSpace(path: FlightPath, chapters: Chapter[], low: boolean, 
     // Warp streaks only during a jump, and never with reduced motion.
     const warp = s.reduced ? 0 : s.warp;
     streaks.visible = warp > 0.01;
-    streakMat.uniforms.uAlpha.value = Math.min(1, warp * 1.6) * 2.2;
+    streakMat.uniforms.uAlpha.value = Math.min(1, warp * 1.6) * 1.2;
     streakMat.uniforms.uLen.value = 10 + warp * 420;
     streakMat.uniforms.uDir.value.copy(s.fwd).multiplyScalar(s.speed >= 0 ? 1 : -1);
     streakMat.uniforms.uColor.value.copy(s.color);

@@ -197,14 +197,29 @@ export abstract class Movement {
       }
     } else p.setPosition(x, y, z);
   }
-  /** A source fixed at a point around the listener (metres; -z is ahead). */
+  /**
+   * A source fixed at a point around the listener (metres; -z is ahead).
+   * With HRTF it gets a real 3D panner (behind, above); otherwise a cheap
+   * stereo pan and the same distance loss, which is all a fixed side point needs.
+   */
   point(x: number, y: number, z: number, send = 0.3, level = 1, hrtf = false): GainNode {
-    const p = this.panner(hrtf);
-    this.setPos(p, x, y, z);
     const g = this.gain(level);
-    g.connect(p);
-    p.connect(this.dry);
-    if (send > 0) p.connect(this.gain(send, this.verbIn));
+    let out: AudioNode;
+    if (hrtf && this.hrtf > 0) {
+      const p = this.panner(true);
+      this.setPos(p, x, y, z);
+      g.connect(p);
+      out = p;
+    } else {
+      const d = Math.max(1, Math.hypot(x, y, z));
+      const sp = this.own(this.ac.createStereoPanner());
+      sp.pan.value = Math.max(-1, Math.min(1, x / Math.max(1, Math.hypot(x, z))));
+      g.gain.value = level / (1 + 0.7 * (d - 1));
+      g.connect(sp);
+      out = sp;
+    }
+    out.connect(this.dry);
+    if (send > 0) out.connect(this.gain(send, this.verbIn));
     return g;
   }
   /** A source that circles the listener: radius, seconds a lap, height, phase. */

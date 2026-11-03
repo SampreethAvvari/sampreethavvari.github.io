@@ -45,7 +45,7 @@ export class Mind extends Movement {
   private window = new Float32Array(64);
 
   protected room(): RoomSpec {
-    return { rt60: 4.8, length: 4.6, predelay: 0.04, early: 0, earlyLevel: 0, hi: 7000, lo: 1600, damp: 1.5, lowCut: 120, bloom: 0.3, width: 1 };
+    return { rt60: 4.2, length: 3.8, predelay: 0.04, early: 0, earlyLevel: 0, hi: 7000, lo: 1600, damp: 1.5, lowCut: 120, bloom: 0.3, width: 1 };
   }
 
   private sphere(): [number, number, number] {

@@ -1,26 +1,30 @@
 ---
-// The closing film: the landed ship, the walk through the desert forest, the
-// kneel, and the hand that touches the small plant. Frames live in
-// public/story/ending and are drawn by scripts/journey/ending.ts.
+// The closing film in three scenes: "exit" (first steps down the ramp at
+// night), "helmet" (the helmet comes off at sunset) and "touch" (a hand meets
+// a small plant and it answers with light). Frames live in public/story and
+// are drawn by scripts/journey/ending.ts.
 //
 // Two ways to place it:
 //   drive="host"   only the canvas. The host mounts the player with
-//                  mountEnding() and calls setProgress(0..1) itself.
-//   drive="scroll" a tall section with a pinned canvas. The film follows the
-//                  page scroll through the section on its own. Anything in
-//                  the slot sits on top of the film; the section carries
-//                  --ending-p (0..1), data-beat (0..3) and data-words
-//                  ("1" once the hand has touched the plant) for it.
+//                  mountEnding(), picks a scene with setScene() and moves it
+//                  with setProgress(0..1), in real time over duration(scene)
+//                  seconds or by scroll.
+//   drive="scroll" a tall section with a pinned canvas. The scenes follow
+//                  the page scroll one after another. Anything in the slot
+//                  sits on top of the film; the section carries --ending-p
+//                  (0..1 within the scene), data-scene, data-beat and
+//                  data-words ("1" on the frames left free for the closing
+//                  words). The player is on the section as `endingPlayer`.
 interface Props {
   manifest?: string;
   drive?: "host" | "scroll";
-  /** Screens of scroll for the whole film when drive="scroll". */
+  /** Scenes in order, for drive="scroll". */
+  scenes?: ("exit" | "helmet" | "touch")[];
+  /** Screens of scroll per scene, for drive="scroll". */
   screens?: number;
-  /** Progress from which the closing words may show. */
-  wordsAt?: number;
   class?: string;
 }
-const { manifest = "/story/ending/manifest.json", drive = "scroll", screens = 3, wordsAt = 0.8, class: cls } = Astro.props;
+const { manifest = "/story/manifest.json", drive = "scroll", scenes = ["exit", "helmet", "touch"], screens = 2, class: cls } = Astro.props;
 ---
 
 {drive === "host" ? (
@@ -30,10 +34,11 @@ const { manifest = "/story/ending/manifest.json", drive = "scroll", screens = 3,
     class:list={["ending-seq", cls]}
     data-ending-seq
     data-manifest={manifest}
-    data-words-at={wordsAt}
+    data-scenes={scenes.join(",")}
+    data-scene={scenes[0]}
     data-beat="0"
     data-words="0"
-    style={`--screens:${screens};--ending-p:0;`}
+    style={`--runs:${scenes.length * screens};--ending-p:0;`}
   >
     <div class="ending-stage">
       <canvas class="ending-canvas" aria-hidden="true"></canvas>
@@ -43,14 +48,14 @@ const { manifest = "/story/ending/manifest.json", drive = "scroll", screens = 3,
 )}
 
 <style>
-  .ending-seq { position: relative; height: calc((var(--screens) + 1) * 100svh); }
+  .ending-seq { position: relative; height: calc((var(--runs) + 1) * 100svh); }
   .ending-stage { position: sticky; top: 0; height: 100svh; overflow: hidden; background: #030305; isolation: isolate; }
   .ending-canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; pointer-events: none; }
   .ending-over { position: absolute; inset: 0; z-index: 1; }
 </style>
 
 <script>
-  import { mountEnding, type Ending } from "../../scripts/journey/ending";
+  import { mountEnding, type Ending, type SceneId } from "../../scripts/journey/ending";
 
   const phoneQuery = "(max-width: 767px), (pointer: coarse)";
   const mounted: { player: Ending; off: () => void }[] = [];
@@ -61,42 +66,55 @@ const { manifest = "/story/ending/manifest.json", drive = "scroll", screens = 3,
       sec.dataset.mounted = "1";
       const canvas = sec.querySelector<HTMLCanvasElement>(".ending-canvas");
       if (!canvas) return;
-      const wordsAt = Number(sec.dataset.wordsAt || 0.8);
+      const list = (sec.dataset.scenes || "exit,helmet,touch").split(",") as SceneId[];
       const player = mountEnding(canvas, {
-        manifestUrl: sec.dataset.manifest || "/story/ending/manifest.json",
+        manifestUrl: sec.dataset.manifest || "/story/manifest.json",
         phone: matchMedia(phoneQuery).matches,
       });
+      (sec as any).endingPlayer = player;
 
       let ticking = false;
+      let started = false;
       const update = () => {
         ticking = false;
         const r = sec.getBoundingClientRect();
-        const run = Math.max(1, sec.offsetHeight - innerHeight);
-        const p = Math.min(1, Math.max(0, -r.top / run));
         const near = r.bottom > -innerHeight && r.top < innerHeight * 2;
         player.setPaused(!near);
+        if (sec.dataset.hold === "1") return; // something else is driving the film
+        const run = Math.max(1, sec.offsetHeight - innerHeight);
+        const all = Math.min(1, Math.max(0, -r.top / run)) * list.length;
+        const k = Math.min(list.length - 1, Math.floor(all));
+        const p = Math.min(1, all - k);
+        // data-scene is the truth: whoever drove the film last may have changed it
+        if (!started || list[k] !== sec.dataset.scene) {
+          started = true;
+          player.setScene(list[k]);
+          sec.dataset.scene = list[k];
+        }
         player.setProgress(p);
         sec.style.setProperty("--ending-p", p.toFixed(4));
-        sec.dataset.words = p >= wordsAt ? "1" : "0";
       };
       const onScroll = () => {
         if (!ticking) { ticking = true; requestAnimationFrame(update); }
       };
-      const onBeat = (e: Event) => {
-        const d = (e as CustomEvent<{ beat: number }>).detail;
-        if (d && typeof d.beat === "number") sec.dataset.beat = String(d.beat);
+      const onFrame = (e: Event) => {
+        const d = (e as CustomEvent<{ scene: string; beat: number; words?: boolean }>).detail;
+        if (!d) return;
+        sec.dataset.beat = String(d.beat);
+        sec.dataset.words = d.words ? "1" : "0";
       };
       addEventListener("scroll", onScroll, { passive: true });
       addEventListener("resize", onScroll);
-      addEventListener("journey:ending", onBeat);
+      addEventListener("journey:ending", onFrame);
       update();
       mounted.push({
         player,
         off: () => {
           removeEventListener("scroll", onScroll);
           removeEventListener("resize", onScroll);
-          removeEventListener("journey:ending", onBeat);
+          removeEventListener("journey:ending", onFrame);
           delete sec.dataset.mounted;
+          delete (sec as any).endingPlayer;
         },
       });
     });

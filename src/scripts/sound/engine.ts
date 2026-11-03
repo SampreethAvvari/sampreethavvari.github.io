@@ -75,10 +75,17 @@ function ensureContext(): boolean {
   if (ctx) return true;
   const AC = window.AudioContext || (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
   if (!AC) return false;
+  // Everything in the score lives below about 9 kHz, so the context runs at
+  // a lower rate than the device: a third less work for every node on a
+  // laptop, half on a phone. Browsers that refuse get their own rate.
   try {
-    ctx = new AC({ latencyHint: "balanced" });
+    ctx = new AC({ latencyHint: "balanced", sampleRate: phone ? 24000 : 32000 });
   } catch {
-    return false;
+    try {
+      ctx = new AC({ latencyHint: "balanced" });
+    } catch {
+      return false;
+    }
   }
   return true;
 }

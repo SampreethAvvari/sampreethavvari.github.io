@@ -209,7 +209,8 @@ function stage(root: HTMLElement): () => void {
       if (!hero) return;
       const i = heroes.indexOf(hero);
       if (i < 0 || Math.abs(state.t - i) < 0.01) return;
-      scrollTo({ top: restOf(i), behavior: "instant" as ScrollBehavior });
+      // After the browser's own scroll to the focused element.
+      requestAnimationFrame(() => scrollTo({ top: restOf(i), behavior: "instant" as ScrollBehavior }));
     },
     { signal },
   );

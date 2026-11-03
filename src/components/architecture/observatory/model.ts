@@ -32,6 +32,8 @@ export type Card = {
   tail: string;
   status: string;
   running: boolean;
+  /** Not running at all: paused, offline, retired or never deployed. */
+  retired: boolean;
   parts: number;
   mine: number;
   fails: number;
@@ -51,6 +53,7 @@ export function toCard(a: Architecture): Card {
     tail: a.tail,
     status: a.statusNote ?? (running ? "In production" : "Preview"),
     running,
+    retired: !running && /not running|offline|paused|not deployed|retired/i.test(a.statusNote ?? ""),
     parts: parts.length,
     mine: parts.filter((p) => p.owner === "mine").length,
     fails: a.breaks.length,

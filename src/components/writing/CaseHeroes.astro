@@ -289,11 +289,13 @@ const spelled = items.map((h) => {
   }
   .cx-no { color: var(--ink); font-weight: 600; letter-spacing: 0.02em; }
   .cx-of { color: rgba(245, 245, 247, 0.4); font-weight: 500; }
+  /* Colour on this page means the writing tab; the post's own light stays
+     in the art. */
   .cx-tag {
     display: inline-flex;
     align-items: center;
     gap: 8px;
-    color: rgb(var(--a));
+    color: rgba(245, 245, 247, 0.85);
     font-weight: 500;
   }
   .cx-tag::before {
@@ -301,8 +303,8 @@ const spelled = items.map((h) => {
     width: 6px;
     height: 6px;
     border-radius: 9999px;
-    background: rgb(var(--a));
-    box-shadow: 0 0 12px rgba(var(--a), 0.8);
+    background: var(--c-writing);
+    box-shadow: 0 0 12px rgba(var(--c-writing-rgb), 0.8);
   }
   .cx-title {
     margin-top: 14px;

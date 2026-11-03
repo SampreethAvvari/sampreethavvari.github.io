@@ -53,6 +53,12 @@ const TONE_RGB: Record<string, string> = {
 };
 const WRITING_RGB = "52,211,153";
 
+// Tags as this page shows them. A tag that shares its name with a tab of
+// the site reads as that tab, so it gets a plain name here. The posts'
+// frontmatter is unchanged.
+const TAG_LABEL: Record<string, string> = { Architecture: "Systems" };
+const tagLabel = (t?: string) => (t ? TAG_LABEL[t] || t : "Notes");
+
 // The hero art lives in public/writing/<slug>-<width>.avif and .webp. A
 // post without it falls back to its own cover.
 const artFor = (slug: string) => {
@@ -85,7 +91,7 @@ const heroes: CaseHero[] = FEATURED.flatMap((f) => {
       date: formatPostDate(fm.date),
       isoDate: fm.date,
       minutes: readingTime(post.rawContent()),
-      tag: fm.tag,
+      tag: tagLabel(fm.tag),
       rgb: TONE_RGB[fm.tone] || WRITING_RGB,
       art: artFor(f.slug),
       cover: hasPublic(fm.img_path) ? fm.img_path : undefined,
@@ -116,7 +122,7 @@ const posts: ArchivePost[] = allPosts.map((post) => {
     dx: disciplinesFor[slug] || [],
     impact: impactRank(slug),
     featured: featuredSlugs.has(slug),
-    tag: fm.tag || "Notes",
+    tag: tagLabel(fm.tag),
     year: String(fm.date).slice(0, 4),
     thumb: thumbFor(fm.img_path),
   };

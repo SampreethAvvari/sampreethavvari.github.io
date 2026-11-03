@@ -186,7 +186,7 @@ void main() {
     col += uFlareColor * uFlare.z * (streak + hair + glow + ghosts);
   }
 
-  col += uFlashColor * uFlash * 7.0;
+  col += uFlashColor * uFlash * 3.2;
   col = aces(col * uExposure);
   col *= 1.0 - uDip;
   vec2 vc = (vUv - 0.5) * vec2(1.0, 0.9);

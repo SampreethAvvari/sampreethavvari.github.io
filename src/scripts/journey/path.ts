@@ -157,10 +157,10 @@ export interface Landing {
 // from i + JUMP_A to i + JUMP_B and crosses over (flash, new world) at
 // i + CROSS, the middle of a glide from one rest point to the next. The last
 // world has no jump; its landing runs from LAND_START to LAND_END past it.
-export const REST = 0.35;
-export const JUMP_A = 0.62;
-export const JUMP_B = 1.08;
-export const CROSS = 0.85;
+export const REST = 0.3;
+export const JUMP_A = 0.57;
+export const JUMP_B = 1.03;
+export const CROSS = 0.8;
 const LAND_START = CROSS - 1 + 0.02;
 const LAND_END = 0.3;
 const IN_A = JUMP_B - 1; // where travel inside a world starts

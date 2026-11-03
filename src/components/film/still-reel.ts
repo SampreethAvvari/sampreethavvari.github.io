@@ -15,8 +15,8 @@ const HOLD = 5.2; // seconds each still leads
 const DISSOLVE = 1.3; // seconds of overlap into the next one
 // Directions the picture drifts, one per still, so no two moves repeat.
 const DRIFTS: Array<[number, number]> = [
-  [1, 0.35],
-  [-1, -0.2],
+  [-1, 0.35],
+  [1, -0.2],
   [0.6, -0.5],
   [-0.7, 0.45],
   [0.9, -0.1],
@@ -36,7 +36,7 @@ export class StillReel {
   constructor(
     readonly canvas: HTMLCanvasElement,
     urls: string[],
-    private opts: { phone: boolean; dprCap: number; onFirstFrame?: () => void; onEnd?: () => void },
+    private opts: { phone: boolean; dprCap: number; loop?: boolean; onFirstFrame?: () => void; onEnd?: () => void },
   ) {
     this.ctx = canvas.getContext("2d", { alpha: false });
     this.frames = urls.map((src) => {
@@ -119,9 +119,9 @@ export class StillReel {
     this.h = h;
   }
 
-  // Letterbox: a 2.39 picture on wide screens, slim bars on phones.
+  // Letterbox: slim bars, so the picture stays nearly full bleed.
   private bar() {
-    return this.opts.phone ? Math.round(this.h * 0.055) : Math.max(0, Math.round((this.h - this.w / 2.39) / 2));
+    return Math.round(this.h * 0.045);
   }
 
   private paint(f: Frame | undefined, local: number, slot: number, alpha: number) {
@@ -132,10 +132,9 @@ export class StillReel {
     const ih = img.naturalHeight;
     const cy0 = f.y0 * ih;
     const ch = (f.y1 - f.y0) * ih;
-    // The picture fills the space between the bars on wide screens, and the
-    // whole screen on phones (where it pans across its width).
+    // The picture fills the screen; on phones it pans across its width.
     const bw = this.w;
-    const bh = this.opts.phone ? this.h : this.h - 2 * this.bar();
+    const bh = this.h;
     const t = Math.max(0, Math.min(1, local));
     const e = t * t * (3 - 2 * t) * 0.6 + t * 0.4;
     const zoom = (this.opts.phone ? 1.02 : 1.03) + 0.09 * e;
@@ -181,7 +180,8 @@ export class StillReel {
     this.draw();
   }
 
-  /** Play from where it stands at normal speed, stopping at the end. */
+  /** Play from where it stands at normal speed; at the end it stops, or
+   *  starts over when it loops. */
   play() {
     if (this.playing) return;
     this.playing = true;
@@ -190,6 +190,7 @@ export class StillReel {
       if (!this.playing) return;
       this.elapsed += Math.max(0, Math.min(0.1, (now - this.last) / 1000));
       this.last = now;
+      if (this.elapsed >= this.duration && this.opts.loop) this.elapsed -= this.duration;
       if (this.elapsed >= this.duration) {
         this.elapsed = this.duration;
         this.draw();

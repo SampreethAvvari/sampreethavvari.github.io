@@ -8,6 +8,13 @@
 import SmartImage from "../common/SmartImage.astro";
 import { films, filmPath, filmStills, reelItems, yearLabel, rolesLine, type Film } from "../../data/films";
 
+interface Props {
+  /** Which films, in slate order (all of them when left out). */
+  slugs?: string[];
+  /** The first frame number on the strip. */
+  start?: number;
+}
+const { slugs, start = 1 } = Astro.props;
 const reel = reelItems();
 const pad = (i: number) => String(i).padStart(2, "0");
 const statusLine = (f: Film) =>
@@ -25,7 +32,7 @@ const SEEDS = [
   [72, 44, 24, 56],
 ];
 
-const items = films.map((f, i) => {
+const items = films.filter((f) => !slugs || slugs.includes(f.slug)).map((f, i) => {
   const r = reel.find((x) => x.slug === f.slug);
   const stills = filmStills(f);
   // The preview: the reel's own frames when the film is in the reel, else
@@ -35,7 +42,7 @@ const items = films.map((f, i) => {
   return {
     f,
     i,
-    seed: SEEDS[i % SEEDS.length],
+    seed: SEEDS[(start - 1 + i) % SEEDS.length],
     previews,
     clip: r?.kind === "video" ? (r.mp4Phone ?? r.mp4) : undefined,
     still,
@@ -44,7 +51,7 @@ const items = films.map((f, i) => {
 ---
 
 <div class="fs" data-filmstrip>
-  <ol class="fs-track" data-fs-track aria-label="The slate, newest first">
+  <ol class="fs-track" data-fs-track aria-label="More from the slate" start={start}>
     {items.map(({ f, i, seed, previews, clip, still }) => (
       <li class="fs-item">
         <a
@@ -56,7 +63,7 @@ const items = films.map((f, i) => {
           draggable="false"
         >
           <span class="fs-edge" aria-hidden="true">
-            <span class="fs-no">{pad(i + 1)}</span>
+            <span class="fs-no">{pad(start + i)}</span>
             <span class="fs-tri">▸</span>
             <span class="fs-print">{f.title} · {yearLabel(f)}</span>
           </span>

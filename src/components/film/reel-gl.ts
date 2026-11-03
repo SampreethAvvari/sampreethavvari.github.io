@@ -1,10 +1,11 @@
 // The reel's cut from one film to the next: one small WebGL shader and two
 // textures. The outgoing frame is uploaded once and held; the incoming clip
 // is uploaded each frame while the cut runs, so one video decodes at a time.
-// The screen is split into vertical slices that each start at their own
-// moment; in each slice the next film slides in from below (or above, going
-// back), the colour channels part for a moment, and a soft wave bends the
-// picture along the seam. Nothing draws between cuts.
+// The screen is split into tall vertical slices that move nearly together:
+// in each the next film rises in (or drops in, going back) while the one on
+// screen leaves the other way, the picture stretches briefly along the
+// motion, and the colour channels part at the slice edges. Nothing draws
+// between cuts.
 
 export type TexSource = HTMLVideoElement | HTMLCanvasElement | HTMLImageElement;
 
@@ -36,35 +37,49 @@ vec2 cover(vec2 uv, vec2 size) {
   return (uv - 0.5) * s + 0.5;
 }
 
-float rnd(float x) { return fract(sin(x * 91.345) * 47453.5453); }
-
-vec3 split(sampler2D t, vec2 uv, vec2 size, float amt) {
-  float r = texture2D(t, cover(uv + vec2(amt, 0.0), size)).r;
+// Each channel a little apart along the motion: the colour fringe.
+vec3 split(sampler2D t, vec2 uv, vec2 size, vec2 amt) {
+  float r = texture2D(t, cover(uv + amt, size)).r;
   float g = texture2D(t, cover(uv, size)).g;
-  float b = texture2D(t, cover(uv - vec2(amt, 0.0), size)).b;
+  float b = texture2D(t, cover(uv - amt, size)).b;
   return vec3(r, g, b);
 }
 
 void main() {
   vec2 uv = vUv;
-  float slice = floor(uv.x * uSlices);
-  float delay = rnd(slice + 1.0) * 0.42;
-  float p = clamp((uP - delay) / 0.58, 0.0, 1.0);
-  p = p * p * (3.0 - 2.0 * p);
+  float k = floor(uv.x * uSlices);
+  float sx = fract(uv.x * uSlices);
+  // Tall slices, nearly together: the middle ones lead by a hair.
+  float lead = abs(k + 0.5 - uSlices * 0.5) / uSlices * 0.12;
+  float p = clamp((uP - lead) / 0.88, 0.0, 1.0);
+  p = p < 0.5 ? 4.0 * p * p * p : 1.0 - pow(-2.0 * p + 2.0, 3.0) / 2.0;
   float energy = sin(3.14159 * p);
-  float wave = sin(uv.y * 8.0 + uTime * 2.6 + slice * 1.7) * 0.014 * energy;
-  float amt = 0.009 * energy;
-  float edge = uDir > 0.0 ? p : 1.0 - p;
-  bool next = uDir > 0.0 ? uv.y < edge : uv.y > edge;
+  // Neighbouring slices run against each other, so the cut reads as slices.
+  float alt = mod(k, 2.0) < 1.0 ? 1.0 : -1.0;
+  float dir = uDir * mix(1.0, alt, 0.35);
+  // A brief stretch along the motion while the slices travel.
+  float stretch = 1.0 + 0.28 * energy;
+  // The colour fringe is strongest at the edges of each slice.
+  float edge = 1.0 - smoothstep(0.0, 0.22, min(sx, 1.0 - sx));
+  vec2 amt = vec2(0.004 * energy * edge, 0.016 * energy * (0.35 + 0.65 * edge) * sign(dir));
+  // The incoming frame rises into its slice as the outgoing one leaves the
+  // other way.
+  float seam = dir > 0.0 ? p : 1.0 - p;
+  bool next = dir > 0.0 ? uv.y < seam : uv.y > seam;
   vec3 col;
   if (next) {
-    col = split(uTo, uv + vec2(wave, uDir * (1.0 - p) * 0.28), uToSize, amt);
+    float y = (uv.y + dir * (1.0 - p) - 0.5) / stretch + 0.5;
+    col = split(uTo, vec2(uv.x, y), uToSize, amt);
   } else {
-    col = split(uFrom, uv + vec2(wave, -uDir * p * 0.28), uFromSize, -amt);
+    float y = (uv.y - dir * p - 0.5) / stretch + 0.5;
+    col = split(uFrom, vec2(uv.x, y), uFromSize, -amt);
   }
-  float seam = smoothstep(0.014, 0.0, abs(uv.y - edge)) * energy;
-  col += vec3(1.0, 0.3, 0.4) * seam * 0.85;
-  col *= 1.0 - 0.18 * sin(3.14159 * clamp(uP, 0.0, 1.0));
+  // A thin light on the seam and a hairline between slices while they move.
+  float line = smoothstep(0.006, 0.0, abs(uv.y - seam)) * energy;
+  col += vec3(1.0, 0.85, 0.88) * line * 0.5;
+  float dpx = min(sx, 1.0 - sx) * uRes.x / uSlices;
+  float gap = 1.0 - smoothstep(0.0, 1.5, dpx);
+  col *= 1.0 - 0.55 * gap * energy;
   gl_FragColor = vec4(col, 1.0);
 }`;
 

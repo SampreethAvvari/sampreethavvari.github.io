@@ -9,6 +9,7 @@ const chapters = [
   { id: "film", color: "#F43F5E" },
   { id: "mind", color: "#A78BFA" },
   { id: "contact", color: "#F5A524" },
+  { id: "connect", color: "#5B8DEF" },
 ];
 ---
 <html lang="en">
@@ -20,7 +21,7 @@ const chapters = [
     <style>
       html, body { margin: 0; background: #020309; color: #fff; font-family: system-ui, sans-serif; }
       #journey { position: fixed; inset: 0; width: 100vw; height: 100lvh; display: block; }
-      main { height: 900vh; }
+      main { height: 1000vh; }
       #copy { position: fixed; max-width: 34vw; z-index: 2; pointer-events: none; transition: opacity .3s; }
       #copy h2 { font-size: clamp(28px, 4.4vw, 60px); margin: 0; font-weight: 600; letter-spacing: -0.02em; text-shadow: 0 2px 24px rgba(0,0,0,.6); }
       #copy p { margin: 10px 0 0; opacity: .7; font-size: 15px; line-height: 1.5; }
@@ -84,15 +85,15 @@ const chapters = [
         });
         w.__journey = j;
         const place = (p: number) => {
-          const world = Math.max(0, Math.min(max - 1, Math.floor(p + 0.15)));
+          const world = Math.max(0, Math.min(max - 1, Math.floor(p + 0.2)));
           const f = engine.CHAPTER_FRAMING[world];
           copy.querySelector("h2")!.textContent = w.__chapters[world].id;
           copy.style.left = f.side === "left" ? "6vw" : "auto";
           copy.style.right = f.side === "right" ? "6vw" : "auto";
           copy.style.top = f.v === "top" ? "12vh" : "auto";
           copy.style.bottom = f.v === "bottom" ? "12vh" : "auto";
-          const jump = engine.jumpState(p, max);
-          copy.style.opacity = jump ? String(Math.abs(jump.amount - 0.5) * 2) : String(1 - engine.landed(p, max));
+          const jump = engine.jumpState(p);
+          copy.style.opacity = jump ? String(Math.abs(jump.amount - 0.5) * 2) : "1";
         };
         const set = (p: number) => {
           current = p;

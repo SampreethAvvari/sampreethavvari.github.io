@@ -1,0 +1,71 @@
+{
+  "version": 2,
+  "digits": 3,
+  "formats": [
+    "avif",
+    "webp"
+  ],
+  "scenes": [
+    {
+      "id": "exit",
+      "title": "First steps",
+      "frames": 192,
+      "fps": 24,
+      "duration": 8,
+      "key": 70,
+      "keyLabel": "first boot on the ground",
+      "beats": [
+        {
+          "id": "ramp",
+          "start": 0
+        },
+        {
+          "id": "step",
+          "start": 70
+        },
+        {
+          "id": "walk",
+          "start": 96
+        }
+      ],
+      "desktop": {
+        "dir": "exit/desktop",
+        "width": 1600,
+        "height": 900,
+        "focus": [
+          [
+            0,
+            0.6
+          ],
+          [
+            80,
+            0.53
+          ],
+          [
+            144,
+            0.45
+          ],
+          [
+            191,
+            0.45
+          ]
+        ]
+      },
+      "phone": {
+        "dir": "exit/phone",
+        "width": 900,
+        "height": 1200
+      },
+      "bytes": {
+        "desktop": {
+          "avif": 8463845,
+          "webp": 11450262
+        },
+        "phone": {
+          "avif": 4338377,
+          "webp": 7370828
+        }
+      }
+    }
+  ]
+}

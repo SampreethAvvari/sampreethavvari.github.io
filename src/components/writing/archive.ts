@@ -231,7 +231,7 @@ type Node = {
 };
 
 const GOLDEN = Math.PI * (3 - Math.sqrt(5));
-const GAP = 12;
+const GAP = 10;
 
 function mountMap(mapEl: HTMLElement, setTag: (t: string) => void): MapHandle {
   const ac = new AbortController();
@@ -259,7 +259,7 @@ function mountMap(mapEl: HTMLElement, setTag: (t: string) => void): MapHandle {
   const byTag = <T extends Element>(sel: string) =>
     new Map(Array.from(mapEl.querySelectorAll<T>(sel)).map((e) => [(e as unknown as HTMLElement).dataset.tag || "", e]));
   const glows = byTag<HTMLElement>(".ax-glow");
-  const lines = byTag<SVGPolylineElement>(".ax-line");
+  const lines = byTag<SVGPathElement>(".ax-line");
   const names = byTag<HTMLElement>(".ax-name");
   const nameW = new Map<string, number>();
 
@@ -269,6 +269,7 @@ function mountMap(mapEl: HTMLElement, setTag: (t: string) => void): MapHandle {
   let panX = 0;
   let panY = 0;
   let impactMode = false;
+  let fit = 1;
   let shown = false;
   let onScreen = false;
   let bloomed = false;
@@ -286,9 +287,12 @@ function mountMap(mapEl: HTMLElement, setTag: (t: string) => void): MapHandle {
     names.forEach((el, t) => nameW.set(t, el.offsetWidth || 90));
   };
 
-  // Places in the world: the largest tag in the middle when it holds a
-  // good share, the rest on an ellipse around it; inside a tag, a sunflower
-  // spiral from the newest post outward.
+  // Places in the world. Each tag gets a circle sized to its posts; the
+  // circles are packed from the middle outward, largest first, inside the
+  // view. Inside a circle the posts sit on a sunflower spiral, newest in
+  // the middle. Then the links of each constellation: every post joins its
+  // nearest neighbour already in the figure (a spanning tree).
+  const links = new Map<string, Array<[Node, Node]>>();
   const layout = () => {
     const on = nodes.filter((n) => n.on);
     const groups = new Map<string, Node[]>();
@@ -297,44 +301,88 @@ function mountMap(mapEl: HTMLElement, setTag: (t: string) => void): MapHandle {
       groups.get(n.tag)!.push(n);
     }
     const list = [...groups.entries()].sort((a, b) => b[1].length - a[1].length || a[0].localeCompare(b[0]));
-    const total = on.length || 1;
-    const centers = new Map<string, [number, number]>();
-    if (list.length === 1) centers.set(list[0][0], [0, 0]);
-    else if (list.length) {
-      const middle = list[0][1].length / total >= 0.3;
-      const ring = middle ? list.slice(1) : list;
-      if (middle) centers.set(list[0][0], [0, 8]);
-      const rx = W * (middle ? 0.35 : 0.27);
-      const ry = H * (middle ? 0.3 : 0.24);
-      ring.forEach(([t], k) => {
-        const a = -2.5 + (k * Math.PI * 2) / ring.length;
-        centers.set(t, [Math.cos(a) * rx, Math.sin(a) * ry]);
-      });
-    }
-    const sp = Math.max(52, Math.min(70, W / 22));
+    // Bounds of the usable sky, around the centre of the map: clear of the
+    // bar at the top, the hint at the bottom and the zoom on the right.
+    const bx = W / 2 - 80;
+    const byTop = H / 2 - 120;
+    const byBot = H / 2 - 80;
+    const baseW = nodes[0]?.w || 100;
+    const baseH = nodes[0]?.h || 96;
+    // Cards take the size the sky allows: smaller with every post shown,
+    // larger when a filter leaves a few.
+    const avail = 2 * bx * (byTop + byBot);
+    fit = Math.max(0.72, Math.min(1.45, Math.sqrt((avail * 0.38) / (Math.max(1, on.length) * (baseW + 14) * (baseH + 14)))));
+    const cw = baseW * fit + 14;
+    const ch = baseH * fit + 14;
+    const sp = Math.sqrt((cw * ch) / Math.PI);
+    const ax = bx / ((byTop + byBot) / 2);
+    const placed: Array<{ x: number; y: number; r: number }> = [];
     for (const [t, g] of list) {
+      const r = Math.sqrt((g.length * cw * ch) / Math.PI) * 1.12 + 12;
+      let best: { x: number; y: number } | null = null;
+      let fallback = { x: 0, y: 0, over: Infinity };
+      for (let rr = 0; rr < Math.max(W, H) && !best; rr += 10) {
+        const tries = rr === 0 ? 1 : Math.max(10, Math.round(rr / 7));
+        for (let k = 0; k < tries; k++) {
+          const a = (k / tries) * Math.PI * 2 + rr * 0.017;
+          const x = Math.cos(a) * rr * ax;
+          const y = Math.sin(a) * rr;
+          if (!placed.every((p) => Math.hypot(p.x - x, p.y - y) >= p.r + r + 44)) continue;
+          const over =
+            Math.max(0, -bx - (x - r)) + Math.max(0, x + r - bx) + Math.max(0, -byTop - (y - r)) + Math.max(0, y + r - byBot);
+          if (over === 0) {
+            best = { x, y };
+            break;
+          }
+          if (over < fallback.over) fallback = { x, y, over };
+        }
+      }
+      const c = best || { x: fallback.x, y: fallback.y };
+      placed.push({ ...c, r });
       g.sort((a, b) => b.date - a.date);
-      const [cx, cy] = centers.get(t)!;
       g.forEach((n, j) => {
-        const r = sp * Math.sqrt(j);
+        const rad = sp * Math.sqrt(j) * 1.04;
         const a = j * GOLDEN;
-        n.wx = cx + Math.cos(a) * r * 1.3;
-        n.wy = cy + Math.sin(a) * r * 0.95;
+        n.wx = c.x + Math.cos(a) * rad * Math.sqrt(cw / ch);
+        n.wy = c.y + Math.sin(a) * rad * Math.sqrt(ch / cw);
       });
+      const tree: Array<[Node, Node]> = [];
+      const inTree = [g[0]];
+      const rest = g.slice(1);
+      while (rest.length) {
+        let bi = 0;
+        let bj = 0;
+        let bd = Infinity;
+        rest.forEach((a, i) =>
+          inTree.forEach((b, j) => {
+            const d = Math.hypot(a.wx - b.wx, a.wy - b.wy);
+            if (d < bd) {
+              bd = d;
+              bi = i;
+              bj = j;
+            }
+          }),
+        );
+        tree.push([rest[bi], inTree[bj]]);
+        inTree.push(rest.splice(bi, 1)[0]);
+      }
+      links.set(t, tree);
     }
     // Cards that leave drift outward from where they are.
     for (const n of nodes) {
       if (n.on) continue;
-      n.wx = (n.x - W / 2 - panX) / zoom * 1.25;
-      n.wy = (n.y - H / 2 - panY) / zoom * 1.25;
+      n.wx = ((n.x - W / 2 - panX) / zoom) * 1.25;
+      n.wy = ((n.y - H / 2 - panY) / zoom) * 1.25;
     }
   };
 
   const sizeOf = (n: Node) => {
-    const base = Math.max(0.72, Math.min(1.35, 0.9 + (zoom - 1) * 0.45));
+    const base = fit * Math.max(0.75, Math.min(1.5, 1 + (zoom - 1) * 0.55));
     let s = base;
     if (impactMode) s *= n.impact < 6 ? 1.3 : n.impact < 14 ? 1.1 : 0.88;
     if (!n.on) s *= 0.5;
+    // An open card reads at its own size.
+    if (n.open) s = Math.min(1.08, Math.max(0.95, s));
     return s;
   };
 
@@ -374,9 +422,11 @@ function mountMap(mapEl: HTMLElement, setTag: (t: string) => void): MapHandle {
       const name = names.get(t);
       if (name) name.style.transform = `translate3d(${(sx / g.length - nw / 2).toFixed(1)}px, ${(y0 - 36).toFixed(1)}px, 0)`;
       const line = lines.get(t);
-      if (line && g.length > 1) {
-        const pts = [...g].sort((a, b) => b.date - a.date).map((n) => `${n.x.toFixed(1)},${n.y.toFixed(1)}`).join(" ");
-        line.setAttribute("points", pts);
+      const tree = links.get(t);
+      if (line && tree && g.length > 1) {
+        let d = "";
+        for (const [a, b] of tree) d += `M${a.x.toFixed(1)} ${a.y.toFixed(1)}L${b.x.toFixed(1)} ${b.y.toFixed(1)}`;
+        line.setAttribute("d", d);
       }
     });
   };
@@ -384,7 +434,7 @@ function mountMap(mapEl: HTMLElement, setTag: (t: string) => void): MapHandle {
   // One physics step: springs toward targets, then the cards push apart.
   const step = () => {
     const cx = W / 2;
-    const cy = H / 2 + 16;
+    const cy = H / 2;
     let energy = 0;
     for (const n of nodes) {
       const tx = cx + n.wx * zoom + panX;
@@ -406,9 +456,11 @@ function mountMap(mapEl: HTMLElement, setTag: (t: string) => void): MapHandle {
           const b = act[j];
           const dx = b.x - a.x;
           const dy = b.y - a.y;
-          const ox = (a.w * a.s + b.w * b.s) / 2 + GAP - Math.abs(dx);
+          // Wider gaps between constellations than inside one.
+          const gap = a.tag === b.tag ? GAP : GAP * 4.4;
+          const ox = (a.w * a.s + b.w * b.s) / 2 + gap - Math.abs(dx);
           if (ox <= 0) continue;
-          const oy = (a.h * a.s + b.h * b.s) / 2 + GAP - Math.abs(dy);
+          const oy = (a.h * a.s + b.h * b.s) / 2 + gap - Math.abs(dy);
           if (oy <= 0) continue;
           // An open card holds its place; the others make room.
           const wa = a.open ? 0 : b.open ? 1 : 0.5;
@@ -654,7 +706,7 @@ function mountMap(mapEl: HTMLElement, setTag: (t: string) => void): MapHandle {
   const zoomAt = (factor: number, px: number, py: number) => {
     const z = Math.max(0.6, Math.min(2.2, zoom * factor));
     const cx = W / 2;
-    const cy = H / 2 + 16;
+    const cy = H / 2;
     const wx = (px - cx - panX) / zoom;
     const wy = (py - cy - panY) / zoom;
     zoom = z;

@@ -1,0 +1,127 @@
+---
+// Bare test page for the closing film. Not linked anywhere; delete before merge.
+// Scroll scrubs the three scenes one after another. The buttons play a scene
+// in real time, the way the home page will. ?clean=1 hides the controls.
+import EndingSequence from "../components/journey/EndingSequence.astro";
+---
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex" />
+    <title>Ending lab</title>
+    <style>
+      html, body { margin: 0; background: #030305; color: #f3efe8; font-family: system-ui, sans-serif; }
+      .intro { height: 100svh; display: grid; place-items: center; text-align: center; padding: 0 16px; box-sizing: border-box; }
+      .intro h1 { font-size: clamp(28px, 5vw, 56px); font-weight: 600; letter-spacing: -0.02em; margin: 0; }
+      .intro p { opacity: 0.6; margin: 10px 0 0; font-size: 15px; }
+      .outro { height: 60svh; display: grid; place-items: center; opacity: 0.5; font-size: 14px; }
+      #hud {
+        position: fixed; top: 10px; right: 10px; z-index: 5; font: 12px/1.5 ui-monospace, monospace;
+        background: rgba(0, 0, 0, 0.55); padding: 6px 10px; border-radius: 8px; white-space: pre;
+      }
+      #play { position: fixed; left: 10px; bottom: 10px; z-index: 5; display: flex; gap: 6px; flex-wrap: wrap; }
+      #play button {
+        font: 13px system-ui, sans-serif; color: #f3efe8; background: rgba(20, 20, 24, 0.7); border: 1px solid rgba(255, 255, 255, 0.18);
+        border-radius: 999px; padding: 6px 12px; cursor: pointer;
+      }
+      body.clean #hud, body.clean #play { display: none; }
+
+      /* stand in for the lead's closing words, to check the room the frames leave */
+      .words {
+        position: absolute; left: 6vw; top: 0; bottom: 0; width: min(36vw, 520px); display: flex; flex-direction: column; justify-content: center;
+        opacity: 0; transform: translateY(10px); transition: opacity 0.6s ease, transform 0.6s ease; pointer-events: none;
+      }
+      .words h2 { font-size: clamp(34px, 4.6vw, 72px); font-weight: 600; letter-spacing: -0.03em; line-height: 1.02; margin: 0; }
+      .words p { margin: 14px 0 0; font-size: 15px; opacity: 0.7; }
+      .words .chips { display: flex; gap: 8px; margin-top: 18px; flex-wrap: wrap; }
+      .words .chips span { border: 1px solid rgba(245, 165, 36, 0.6); color: #f5a524; border-radius: 999px; padding: 6px 14px; font-size: 13px; }
+      [data-scene="touch"][data-words="1"] .words { opacity: 1; transform: none; }
+      .tag { position: absolute; left: 16px; top: 14px; font: 12px ui-monospace, monospace; opacity: 0.55; letter-spacing: 0.08em; text-transform: uppercase; }
+      @media (max-width: 767px) {
+        .words { left: 16px; right: 16px; width: auto; top: 9vh; bottom: auto; justify-content: flex-start; }
+        .words h2 { font-size: 40px; }
+      }
+    </style>
+  </head>
+  <body>
+    <section class="intro">
+      <div>
+        <h1>Ending lab</h1>
+        <p>Scroll to scrub the three scenes. The buttons play one in real time.</p>
+      </div>
+    </section>
+
+    <EndingSequence drive="scroll" screens={2}>
+      <p class="tag" aria-hidden="true">lab</p>
+      <div class="words">
+        <h2>Connect with me</h2>
+        <p>The contact links sit here.</p>
+        <div class="chips"><span>Email</span><span>Profile</span><span>Code</span></div>
+      </div>
+    </EndingSequence>
+
+    <section class="outro">end of the film</section>
+
+    <div id="hud">loading</div>
+    <div id="play">
+      <button type="button" data-play="exit">Play exit</button>
+      <button type="button" data-play="helmet">Play helmet</button>
+      <button type="button" data-play="touch">Play touch</button>
+    </div>
+
+    <script>
+      import type { Ending, SceneId } from "../scripts/journey/ending";
+
+      if (new URLSearchParams(location.search).get("clean") === "1") document.body.classList.add("clean");
+      const sec = document.querySelector<HTMLElement>("[data-ending-seq]")!;
+      const hud = document.getElementById("hud")!;
+      const player = () => (sec as any).endingPlayer as Ending | undefined;
+      const ids: SceneId[] = ["exit", "helmet", "touch"];
+      let last: any = {};
+
+      addEventListener("journey:ending", (e) => { last = (e as CustomEvent).detail; });
+      const paint = () => {
+        const p = player();
+        if (p) {
+          const ready = ids.map((s) => `${s} ${p.ready(s) ? "ready" : "..."} ${p.duration(s).toFixed(2)}s`).join("\n");
+          hud.textContent =
+            `scene ${last.scene ?? "-"}  frame ${last.frame ?? "-"}\n` +
+            `progress ${(last.progress ?? 0).toFixed(3)}  beat ${last.beat ?? "-"}\n` +
+            `key ${last.key ? "yes" : "no"}  words ${last.words ? "yes" : "no"}\n` + ready;
+        }
+        requestAnimationFrame(paint);
+      };
+      requestAnimationFrame(paint);
+
+      // real time playback, the way the home page drives it
+      let playing = 0;
+      const release = () => { if (sec.dataset.hold === "1") { sec.dataset.hold = "0"; cancelAnimationFrame(playing); dispatchEvent(new Event("scroll")); } };
+      document.querySelectorAll<HTMLButtonElement>("[data-play]").forEach((b) => {
+        b.addEventListener("click", () => {
+          const p = player();
+          if (!p) return;
+          const id = b.dataset.play as SceneId;
+          const top = sec.offsetTop + innerHeight * 0.05 + ids.indexOf(id) * ((sec.offsetHeight - innerHeight) / ids.length);
+          scrollTo({ top, behavior: "instant" as ScrollBehavior });
+          requestAnimationFrame(() => {
+            sec.dataset.hold = "1";
+            sec.dataset.scene = id;
+            p.setScene(id);
+            p.setProgress(0);
+            const dur = p.duration(id) * 1000;
+            const t0 = performance.now();
+            const step = (t: number) => {
+              const k = Math.min(1, (t - t0) / Math.max(1, dur));
+              p.setProgress(k);
+              if (k < 1) playing = requestAnimationFrame(step);
+            };
+            playing = requestAnimationFrame(step);
+          });
+        });
+      });
+      addEventListener("wheel", release, { passive: true });
+      addEventListener("touchstart", release, { passive: true });
+    </script>
+  </body>
+</html>

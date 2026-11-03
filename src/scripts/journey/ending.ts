@@ -13,9 +13,10 @@
 // frames. Grain, a vignette and a soft scrim for the closing words are drawn
 // on top.
 //
-// Fires `journey:ending` on window with { scene, progress, beat, frame } as
-// the shown frame moves, so the score can follow the steps, the breath and
-// the touch.
+// Fires `journey:ending` on window with { scene, progress, beat, frame, key,
+// words } as the shown frame moves, so the score can follow the steps, the
+// breath and the touch. `key` turns true at the scene's key moment, `words`
+// on the frames left free for the closing words.
 
 export type SceneId = "exit" | "helmet" | "touch";
 
@@ -440,6 +441,13 @@ export function mountEnding(canvas: HTMLCanvasElement, opts: EndingOptions): End
     decode(s, i0);
     decode(s, i1);
     for (let k = 2; k <= 4; k++) decode(s, i0 + k * dir);
+    if (s.state[i0] !== 2) {
+      // not here yet: stand in with the closest frame that has arrived, earlier first
+      for (let k = 1; k < n; k++) {
+        if (i0 - k >= 0 && s.state[i0 - k] === 2) { decode(s, i0 - k); break; }
+        if (i0 + k < n && s.state[i0 + k] === 2) { decode(s, i0 + k); break; }
+      }
+    }
 
     const baseIdx = decoded.has(keyOf(sid, i0)) ? i0 : nearestDecoded(sid, shown);
     if (baseIdx < 0) return; // nothing of this scene yet: keep what is on the canvas
@@ -501,7 +509,9 @@ export function mountEnding(canvas: HTMLCanvasElement, opts: EndingOptions): End
     if (!force && Math.abs(p - lastSent) < 0.001 && beat === lastBeat) return;
     lastSent = p;
     lastBeat = beat;
-    window.dispatchEvent(new CustomEvent("journey:ending", { detail: { scene: s.info.id, progress: p, beat, frame: Math.round(shown) } }));
+    const frame = Math.round(shown);
+    const words = !!s.info.words && frame >= s.info.words.from;
+    window.dispatchEvent(new CustomEvent("journey:ending", { detail: { scene: s.info.id, progress: p, beat, frame, key: frame >= s.info.key, words } }));
   }
 
   function loop(t: number) {

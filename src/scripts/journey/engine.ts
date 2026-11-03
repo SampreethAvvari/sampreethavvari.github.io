@@ -3,9 +3,9 @@
 // scrolled and where the pointer is; the engine owns its loop, its sizing and
 // every GPU resource it creates.
 //
-// Progress runs 0 .. chapters.length. Chapter i rests at i + 0.35. The jump
-// to world i+1 runs from i + 0.62 to i + 1.08 and crosses over (flash, new
-// world) at i + 0.85, the middle of a glide between two rest points.
+// Progress runs 0 .. chapters.length. Chapter i rests at i + 0.3. The jump
+// to world i+1 runs from i + 0.57 to i + 1.03 and crosses over (flash, new
+// world) at i + 0.8, the middle of a glide between two rest points.
 //
 // The 3D carries the chapters up to the one with id "film" (the landing
 // world). As that world appears, the lander undocks, comes down through the
@@ -44,7 +44,7 @@ import {
   type Texture,
   type WebGLRenderTarget,
 } from "three";
-import { approachU, CROSS, FlightPath, JUMP_A, JUMP_B, jumpAt, landedAt, landingPhase, travel, worldAt } from "./path";
+import { approachU, CROSS, FlightPath, JUMP_A, JUMP_B, jumpAt, landedAt, landingPhase, REST, travel, worldAt } from "./path";
 import { Post, type PostFrame } from "./post";
 import { buildShip, type ShipInput } from "./ship";
 import { compositeTextures, foilNormal, solarTexture } from "./skin";
@@ -116,7 +116,7 @@ export function landed(progress: number, landWorld = LAND_WORLD): number {
 }
 
 /** Progress at which each chapter sits at rest. */
-export const REST_POINTS = (chapters = 9) => Array.from({ length: chapters }, (_, i) => i + 0.35);
+export const REST_POINTS = (chapters = 9) => Array.from({ length: chapters }, (_, i) => i + REST);
 
 // ------------------------------------------------------------------ shots
 
@@ -173,6 +173,7 @@ const _a = new Vector3();
 const _b = new Vector3();
 const _landerPos = new Vector3();
 const _yAxis = new Vector3(0, 1, 0);
+const _evening = new Color(1.0, 0.62, 0.42);
 
 function clamp(x: number, a: number, b: number) {
   return x < a ? a : x > b ? b : x;
@@ -360,6 +361,8 @@ export function mountJourney(canvas: HTMLCanvasElement, opts: JourneyOptions): J
   let heading = 1;
   let turn = 0;
   let turnV = 0;
+  let camTurn = 0;
+  let camTurnV = 0;
   let ptrOn = 0;
   const ptr: PointerRay = { o: new Vector3(), d: new Vector3(0, 0, -1), on: 0 };
   const shipIn: ShipInput = { time: 0, dt: 0, speed: 0, boost: 0, color: _color, reduced, gear: 0, brake: 0, idle: 0, detach: 0, heading: 1, heat: 0, landed: 0 };
@@ -396,7 +399,7 @@ export function mountJourney(canvas: HTMLCanvasElement, opts: JourneyOptions): J
     const i = Math.floor(x);
     const f = x - i;
     const e = 0.04;
-    const at = (k: number) => chapters[clamp(k, 0, N - 1)].color;
+    const at = (k: number) => chapters[clamp(k, 0, W - 1)].color;
     if (f < e) return out.copy(at(i - 1)).lerp(at(i), smooth(-e, e, f));
     if (f > 1 - e) return out.copy(at(i)).lerp(at(i + 1), smooth(1 - e, 1 + e, f));
     return out.copy(at(i));
@@ -487,6 +490,13 @@ export function mountJourney(canvas: HTMLCanvasElement, opts: JourneyOptions): J
       turn = clamp(turn + turnV * dt, -0.05, 1.05);
     }
     const turnAng = Math.PI * turn;
+    // The camera follows the turn a beat later, so the ship is seen swinging round.
+    if (reduced) camTurn = turn;
+    else {
+      const cw = 2.0;
+      camTurnV += (cw * cw * (turn - camTurn) - 2 * cw * camTurnV) * dt;
+      camTurn += camTurnV * dt;
+    }
     const turnRoll = Math.sin(Math.PI * clamp(turn, 0, 1)) * 0.55 * (heading < 0 ? 1 : -1);
 
     // Rig on the path.
@@ -582,7 +592,7 @@ export function mountJourney(canvas: HTMLCanvasElement, opts: JourneyOptions): J
     dist *= 1 + drift * 0.04 * Math.sin(time * 0.13);
     const driftAz = drift * (9 * Math.sin(time * 0.09) + 4 * Math.sin(time * 0.23 + 2));
     const driftEl = drift * 3 * Math.sin(time * 0.11 + 1);
-    const az = ((S.az + 180 * turn + driftAz + (reduced ? 0 : px * 4)) * Math.PI) / 180;
+    const az = ((S.az + 180 * camTurn + driftAz + (reduced ? 0 : px * 4)) * Math.PI) / 180;
     const el = ((S.el + driftEl + (reduced ? 0 : -py * 3)) * Math.PI) / 180;
     _camDir.set(Math.sin(az) * Math.cos(el), Math.sin(el), Math.cos(az) * Math.cos(el)).applyQuaternion(_rigQuat);
     camera.position.copy(_target).addScaledVector(_camDir, dist);
@@ -607,7 +617,7 @@ export function mountJourney(canvas: HTMLCanvasElement, opts: JourneyOptions): J
       _look
         .copy(landing.touch)
         .addScaledVector(landing.right, lerp(-1.6, -4.8, k))
-        .addScaledVector(landing.up, lerp(-19, 4.6, k))
+        .addScaledVector(landing.up, lerp(-11, 4.6, k))
         .addScaledVector(landing.fwd, 40);
       _v.copy(_target).lerp(_look, cb);
       camera.lookAt(_v);
@@ -640,6 +650,9 @@ export function mountJourney(canvas: HTMLCanvasElement, opts: JourneyOptions): J
       _key.lerp(_v, smooth(0, 0.5, L)).normalize();
     }
     key.position.copy(_target).addScaledVector(_key, 30);
+    // Evening on the landing world: a lower, warmer sun.
+    key.intensity = lerp(3.2, 2.1, smooth(0, 0.6, L));
+    key.color.setRGB(1, 0.957, 0.91).lerp(_evening, smooth(0, 0.6, L));
     key.target.position.copy(_target);
     key.target.updateMatrixWorld();
     _v.subVectors(_target, camera.position).normalize().addScaledVector(_up, 0.35);
@@ -716,7 +729,7 @@ export function mountJourney(canvas: HTMLCanvasElement, opts: JourneyOptions): J
     pf.ship.radius = sRad;
     // The jump: split and bend the image and flash at the crossover. Reduced
     // motion gets a quick dip through dark instead.
-    const cross = ja > 0 ? Math.exp(-Math.pow((ja - 0.5) / 0.16, 2)) : 0;
+    const cross = ja > 0 ? Math.exp(-Math.pow((ja - 0.5) / 0.07, 2)) : 0;
     pf.jump = reduced ? 0 : bell;
     pf.flash = reduced ? 0 : cross;
     pf.dip = reduced && ja > 0 ? 0.92 * Math.exp(-Math.pow((ja - 0.5) / 0.2, 2)) : 0;
@@ -781,10 +794,6 @@ export function mountJourney(canvas: HTMLCanvasElement, opts: JourneyOptions): J
     start();
   };
   renderer.compileAsync(scene, camera).then(afterCompile, afterCompile);
-
-  // DEBUG_HOOK_START
-  (window as unknown as { __jdbg: unknown }).__jdbg = { scene, ship, rig, space, camera, post };
-  // DEBUG_HOOK_END
 
   const onLost = (e: Event) => {
     e.preventDefault();

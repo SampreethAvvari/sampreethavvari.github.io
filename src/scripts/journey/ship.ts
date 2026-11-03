@@ -337,7 +337,7 @@ export function buildShip(opts: ShipBuildOptions): Ship {
   lp.comp.push(boxUV(body(LANDER, LZ0, LZ1, low ? 6 : 10), 2.2));
   lp.carbon.push(plate(LANDER, LZ0, LZ1, { t0: 0.02, t1: 0.98, s0: 2.5, s1: 5.5, offset: 0.006, thick: 0.04 }, 6));
   lp.glass.push(plate(LANDER, LZ0, LZ1, { t0: 0.03, t1: 0.2, s0: 6.6, s1: 9.4, offset: 0.006, thick: 0.02 }, 4));
-  lp.silver.push(boxUV(plate(LANDER, LZ0, LZ1, { t0: 0.45, t1: 0.85, s0: 7.2, s1: 8.8, offset: 0.006, thick: 0.04 }, 4), 0.9));
+  lp.carbon.push(plate(LANDER, LZ0, LZ1, { t0: 0.45, t1: 0.85, s0: 7.2, s1: 8.8, offset: 0.006, thick: 0.04 }, 4));
   // Side engine pods with a bell each at the back.
   for (const sx of [1, -1]) {
     lp.comp.push(boxUV(new BoxGeometry(0.42, 0.42, 2.4).translate(sx * 0.98, -0.05, 0.45), 2.2));
@@ -447,7 +447,7 @@ export function buildShip(opts: ShipBuildOptions): Ship {
   const landerGlows = new GlowBatch(16);
   const navL = landerGlows.add(-1.2, 0.1, 0.2, 0.16, 1, 0.15, 0.2, 1);
   const navR = landerGlows.add(1.2, 0.1, 0.2, 0.16, 0.25, 1, 0.4, 1);
-  const lBeacon = landerGlows.add(0, 0.72, 0.6, 0.18, 1, 1, 1, 0);
+  const lBeacon = landerGlows.add(0, 0.72, 0.6, 0.14, 1, 0.3, 0.25, 0);
   const lEngine = [-0.98, 0.98].map((x) => landerGlows.add(x, -0.05, 2.25, 0.36, 0.6, 0.8, 1, 0.4));
   const brakeGlow = brakeNozzles.map((n) => landerGlows.add(n.o.x, n.o.y - 0.08, n.o.z, 0.36, 1, 0.9, 0.8, 0));
   // Warm floodlights under the nose and in the doorway.
@@ -611,10 +611,10 @@ export function buildShip(opts: ShipBuildOptions): Ship {
     const re = rampOpen * rampOpen * (3 - 2 * rampOpen);
     rampPivot.rotation.x = re * RAMP_OPEN;
     landerGlows.setIntensity(door, re * 2.4);
-    for (const i of flood) landerGlows.setIntensity(i, 0.6 + 1.6 * Math.max(s.gear, re));
+    for (const i of flood) landerGlows.setIntensity(i, 0.5 + 1.1 * Math.max(s.gear, re));
     landerGlows.setIntensity(navL, 1.6);
     landerGlows.setIntensity(navR, 1.6);
-    landerGlows.setIntensity(lBeacon, detach > 0.01 ? Math.pow(Math.max(0, Math.sin(time * 2.8)), 10) * 3.5 : 0);
+    landerGlows.setIntensity(lBeacon, detach > 0.01 ? Math.pow(Math.max(0, Math.sin(time * 2.8)), 10) * 2.2 : 0);
     const lHot = detach * (1 - idle);
     for (const i of lEngine) {
       landerGlows.setColor(i, engineCol.r, engineCol.g, engineCol.b);

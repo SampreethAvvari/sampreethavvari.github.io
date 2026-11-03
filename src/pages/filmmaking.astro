@@ -31,9 +31,11 @@ const { imdb, screenplay, playlist } = feature.links!;
 const stills = filmStills(feature);
 const keyCreators = feature.credits?.find((g) => g.label === "Above the line")?.people ?? [];
 
-// The reel at the top: one film per screen, its clip or its stills.
+// The reel at the top: one film per screen, its clip, its stills or its
+// title card. The rest of the slate follows on a strip below it.
 const reel = reelItems();
-const reelPreload = reel[0]?.poster.replace(/\.(jpe?g|webp|png)$/i, ".avif");
+const rest = films.filter((f) => !reel.some((r) => r.slug === f.slug)).map((f) => f.slug);
+const reelPreload = reel[0]?.poster?.replace(/\.(jpe?g|webp|png)$/i, ".avif");
 
 const instagramUrl = (handle?: string) => (handle ? `https://instagram.com/${handle.replace(/^@/, "")}` : "");
 const initials = (name: string) =>
@@ -90,8 +92,8 @@ const base = Astro.site!.toString();
         </div>
         <div class="fm-group-head" data-reveal>
           <div>
-            <p class="t-h4">Nine films, in order</p>
-            <p class="t-meta">Some are out, some are in the cut, some are still pages.</p>
+            <p class="t-h4">Also on the slate</p>
+            <p class="t-meta">Six films in the reel above, {rest.length} more here. Some are out, some are in the cut, some are still pages.</p>
           </div>
           <div class="fm-strip-ctrl">
             <span class="t-meta fm-drag-hint">Drag, swipe or scroll sideways</span>
@@ -105,7 +107,7 @@ const base = Astro.site!.toString();
         </div>
       </div>
       <div class="on-top">
-        <FilmStrip />
+        <FilmStrip slugs={rest} start={reel.length + 1} />
       </div>
     </section>
 

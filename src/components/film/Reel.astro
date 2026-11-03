@@ -1,8 +1,10 @@
 ---
-// The reel at the top of /filmmaking: one film per screen. The markup is a
-// stack of full screen panels, which is also what shows without script;
-// reel.ts turns it into a pinned stage on mouse screens and a snapping
-// stack on phones. Each panel's text is the film's own facts.
+// The reel at the top of /filmmaking: one film per screen, full bleed, one
+// gesture per film (reel.ts). Over the frame, quietly: the counter at the
+// left edge, the category and title left of centre, the year at the right
+// edge, a New York clock and "(Scroll to explore)" along the bottom.
+// Without script it shows the first film, still. Every word is the film's
+// own fact from src/data/films.ts.
 import SmartImage from "../common/SmartImage.astro";
 import type { ReelItem } from "../../data/films";
 
@@ -14,6 +16,7 @@ interface Props {
 const { items, after } = Astro.props;
 const n = items.length;
 const pad = (i: number) => String(i).padStart(2, "0");
+const first = items[0];
 ---
 
 {n > 0 && (
@@ -22,17 +25,12 @@ const pad = (i: number) => String(i).padStart(2, "0");
     <a href={after} class="reel-skip">Skip the reel</a>
     <div class="reel-stage" data-reel-stage>
       {items.map((it, i) => (
-        <article
-          class:list={["reel-panel", i === 0 && "is-active"]}
-          data-reel-panel
-          data-i={i}
-          data-href={it.href}
-          data-audio={it.audio}
-          id={i === 0 ? it.slug : undefined}
-          aria-roledescription="slide"
-          aria-label={`${i + 1} of ${n}: ${it.title}`}
+        <div
+          class:list={["reel-media", i === 0 && "is-active", it.kind !== "video" && "is-drawn", it.kind === "card" && "is-card"]}
+          data-reel-media
+          aria-hidden="true"
         >
-          <div class:list={["reel-media", it.kind === "stills" && "is-stills"]} aria-hidden="true">
+          {it.poster && (
             <SmartImage
               src={it.poster}
               alt=""
@@ -40,47 +38,62 @@ const pad = (i: number) => String(i).padStart(2, "0");
               loading={i === 0 ? "eager" : "lazy"}
               fetchpriority={i === 0 ? "high" : undefined}
             />
-            {it.kind === "video" ? (
-              <video
-                class="reel-video"
-                data-reel-video
-                data-src={it.mp4}
-                data-src-phone={it.mp4Phone}
-                muted
-                loop
-                playsinline
-                preload="none"
-                disablepictureinpicture
-              />
-            ) : (
-              <canvas class="reel-still" data-reel-stills data-stills={JSON.stringify(it.frames)} />
-            )}
-          </div>
-          <span class="reel-shade" aria-hidden="true"></span>
-          <div class="reel-ui">
-            <p class="reel-count" aria-hidden="true">
-              {pad(i + 1)} · {pad(n)}
-            </p>
-            <div class="reel-name">
-              <p class="reel-cat">{it.category}</p>
-              <h2 class="reel-title"><span>{it.title}</span></h2>
-            </div>
-            <p class="reel-year">{it.year}</p>
-            <p class="reel-hint" aria-hidden="true">(Scroll to explore)</p>
-            <a href={it.href} class="reel-go">
-              Watch <span class="sr-only">{it.title}</span>
-            </a>
-            <button type="button" class="reel-pause" data-reel-pause aria-pressed="false" aria-label="Pause the reel">
-              <svg class="i-pause" width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="6" y="5" width="4" height="14" rx="1" /><rect x="14" y="5" width="4" height="14" rx="1" /></svg>
-              <svg class="i-play" width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5.5v13a1 1 0 0 0 1.5.86l10.5-6.5a1 1 0 0 0 0-1.72L9.5 4.64A1 1 0 0 0 8 5.5Z" /></svg>
-            </button>
-          </div>
-        </article>
+          )}
+          {it.kind === "video" ? (
+            <video
+              class="reel-frame"
+              data-reel-video
+              data-src={it.mp4}
+              data-src-phone={it.mp4Phone}
+              muted
+              loop
+              playsinline
+              preload="none"
+              autoplay={i === 0}
+              disablepictureinpicture
+            />
+          ) : it.kind === "stills" ? (
+            <canvas class="reel-frame" data-reel-frame data-stills={JSON.stringify(it.frames)} />
+          ) : (
+            <canvas class="reel-frame" data-reel-frame data-title={it.title} data-year={it.year} data-roles={it.roles} />
+          )}
+        </div>
       ))}
       <canvas class="reel-gl" data-reel-gl aria-hidden="true"></canvas>
-      <a href={items[0].href} class="reel-watch" data-reel-watch>
-        <span class="reel-watch-dot" aria-hidden="true"></span>
-        Watch <span class="sr-only" data-reel-watch-name>{items[0].title}</span>
+      <span class="reel-shade" aria-hidden="true"></span>
+
+      {items.map((it, i) => (
+        <article
+          class:list={["reel-ui", i === 0 && "is-active"]}
+          data-reel-ui
+          data-href={it.href}
+          data-audio={it.audio}
+          id={i === 0 ? it.slug : undefined}
+          aria-roledescription="slide"
+          aria-label={`${i + 1} of ${n}: ${it.title}`}
+        >
+          <p class="reel-count"><span class="sr-only">Film </span>{pad(i + 1)} · {pad(n)}</p>
+          <div class="reel-name">
+            <p class="reel-cat">{it.category}</p>
+            <h2 class="reel-title"><a href={it.href}>{it.title}</a></h2>
+          </div>
+          <p class="reel-year">{it.year}</p>
+        </article>
+      ))}
+
+      <div class="reel-foot">
+        <div class="reel-foot-l">
+          <p class="reel-clock"><span>New York</span> <span class="reel-time" data-reel-clock></span></p>
+          <button type="button" class="reel-pause" data-reel-pause aria-pressed="false" aria-label="Pause the reel">
+          <svg class="i-pause" width="12" height="12" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="6" y="5" width="4" height="14" rx="1" /><rect x="14" y="5" width="4" height="14" rx="1" /></svg>
+          <svg class="i-play" width="12" height="12" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5.5v13a1 1 0 0 0 1.5.86l10.5-6.5a1 1 0 0 0 0-1.72L9.5 4.64A1 1 0 0 0 8 5.5Z" /></svg>
+          </button>
+        </div>
+        <p class="reel-hint" aria-hidden="true">(Scroll to explore)</p>
+      </div>
+
+      <a href={first.href} class="reel-watch" data-reel-watch>
+        <span class="reel-watch-sq" aria-hidden="true"></span>Watch<span class="sr-only"> <span data-reel-watch-name>{first.title}</span></span>
       </a>
       <p class="sr-only" aria-live="polite" data-reel-live></p>
     </div>
@@ -92,24 +105,31 @@ const pad = (i: number) => String(i).padStart(2, "0");
 </script>
 
 <style>
-  /* The stack (no script, and phones): one full screen panel per film. */
-  .reel { position: relative; background: #000; }
-  .reel-stage { position: relative; isolation: isolate; }
-  .reel-panel {
+  .reel { position: relative; background: #000; --reel-ink: hsl(30 30% 93%); }
+  /* With script: one screen per film, the stage pinned through them all. */
+  .reel.is-live { height: calc(var(--n) * 100vh); }
+  @supports (height: 100svh) { .reel.is-live { height: calc(var(--n) * 100svh); } }
+  .reel-stage {
     position: relative;
     height: 100vh;
     height: 100svh;
     overflow: hidden;
-    scroll-snap-align: start;
-    scroll-snap-stop: always;
+    isolation: isolate;
+    cursor: pointer;
+    -webkit-user-select: none;
+    user-select: none;
   }
-  .reel-media { position: absolute; inset: 0; z-index: 1; background: #050002; }
+  .reel.is-live .reel-stage { position: sticky; top: 0; }
+
+  /* The frames. Only the film on screen (and the one leaving) is visible. */
+  .reel-media { position: absolute; inset: 0; visibility: hidden; background: #050002; }
+  .reel-media.is-active { visibility: visible; z-index: 1; }
+  .reel-media.is-leaving { visibility: visible; z-index: 0; }
   .reel-media :global(picture) { position: absolute; inset: 0; }
   .reel-media :global(.reel-poster) { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
-  /* Stills with bars baked in: past the bars on a tall screen. */
   .reel-media :global(.reel-poster.is-boxed) { transform: scale(1.34); }
-  .reel-video,
-  .reel-still {
+  @media (min-width: 768px) { .reel-media :global(.reel-poster.is-boxed) { transform: scale(1.3); } }
+  .reel-frame {
     position: absolute;
     inset: 0;
     width: 100%;
@@ -117,26 +137,31 @@ const pad = (i: number) => String(i).padStart(2, "0");
     object-fit: cover;
     display: block;
     opacity: 0;
-    transition: opacity 700ms var(--ease-glass);
+    transition: opacity 600ms var(--ease-glass);
   }
-  .reel-media.is-playing .reel-video,
-  .reel-media.is-playing .reel-still { opacity: 1; }
-  /* Letterbox for a stills reel, the same bars the canvas draws, so the
-     first paint already looks like the film. */
-  .reel-media.is-stills::before,
-  .reel-media.is-stills::after {
+  .reel-media.is-playing .reel-frame { opacity: 1; }
+  .reel-media.is-card .reel-frame { transition: none; }
+  /* Letterbox bars over the stills poster, the same the canvas draws, so
+     the first paint already looks like the film. */
+  .reel-media.is-drawn::before,
+  .reel-media.is-drawn::after {
     content: "";
     position: absolute;
     left: 0;
     right: 0;
     z-index: 1;
-    height: 5.5%;
+    height: 4.5%;
     background: #000;
   }
-  .reel-media.is-stills::before { top: 0; }
-  .reel-media.is-stills::after { bottom: 0; }
+  .reel-media.is-drawn::before { top: 0; }
+  .reel-media.is-drawn::after { bottom: 0; }
+  .reel-gl { position: absolute; inset: 0; z-index: 2; width: 100%; height: 100%; opacity: 0; pointer-events: none; }
+  .reel-gl.is-on { opacity: 1; }
+  .reel.is-fade .reel-media.is-active { animation: reel-in 600ms var(--ease-glass) both; }
+  .reel.is-fade.is-still .reel-media.is-active { animation-duration: 200ms; }
+  @keyframes reel-in { from { opacity: 0; } to { opacity: 1; } }
 
-  /* Legibility: dark where the words sit, plus a fine moving grain. */
+  /* A light shade where the words sit, and a fine moving grain. */
   .reel-shade {
     position: absolute;
     inset: 0;
@@ -144,15 +169,16 @@ const pad = (i: number) => String(i).padStart(2, "0");
     pointer-events: none;
     overflow: hidden;
     background:
-      linear-gradient(90deg, rgba(0, 0, 0, 0.62) 0%, rgba(0, 0, 0, 0.36) 28%, rgba(0, 0, 0, 0) 58%),
-      linear-gradient(0deg, rgba(0, 0, 0, 0.7) 0%, rgba(0, 0, 0, 0) 32%),
-      linear-gradient(180deg, rgba(0, 0, 0, 0.5) 0%, rgba(0, 0, 0, 0) 22%);
+      radial-gradient(60% 32% at 30% 50%, rgba(0, 0, 0, 0.42), rgba(0, 0, 0, 0.18) 55%, rgba(0, 0, 0, 0) 100%),
+      linear-gradient(90deg, rgba(0, 0, 0, 0.3) 0%, rgba(0, 0, 0, 0) 22%, rgba(0, 0, 0, 0) 80%, rgba(0, 0, 0, 0.3) 100%),
+      linear-gradient(0deg, rgba(0, 0, 0, 0.42) 0%, rgba(0, 0, 0, 0) 18%),
+      linear-gradient(180deg, rgba(0, 0, 0, 0.36) 0%, rgba(0, 0, 0, 0) 16%);
   }
   .reel-shade::after {
     content: "";
     position: absolute;
     inset: -50%;
-    opacity: 0.11;
+    opacity: 0.1;
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23g)'/%3E%3C/svg%3E");
     animation: reel-grain 0.9s steps(6) infinite;
   }
@@ -165,93 +191,101 @@ const pad = (i: number) => String(i).padStart(2, "0");
     100% { transform: translate(-4%, -5%); }
   }
 
-  /* The words over the picture. */
-  .reel-ui { position: absolute; inset: 0; z-index: 4; pointer-events: none; color: #fff; }
-  .reel-ui a, .reel-ui button { pointer-events: auto; }
+  /* The words: small, refined, in the frame's own colour. */
+  .reel-ui { position: absolute; inset: 0; z-index: 4; pointer-events: none; visibility: hidden; color: var(--reel-ink); }
+  .reel-ui.is-active, .reel-ui.is-leaving { visibility: visible; }
+  .reel-ui > *, .reel-foot > * { text-shadow: 0 1px 2px rgba(0, 0, 0, 0.45), 0 1px 16px rgba(0, 0, 0, 0.55); }
   .reel-count,
   .reel-year {
     position: absolute;
     top: 50%;
     margin: 0;
-    font-size: 0.875rem;
+    font-size: 0.8125rem;
     font-weight: 500;
-    letter-spacing: 0.04em;
+    letter-spacing: 0.02em;
     font-variant-numeric: tabular-nums;
-    color: rgba(255, 255, 255, 0.82);
-    text-shadow: 0 1px 12px rgba(0, 0, 0, 0.6);
     transform: translateY(-50%);
   }
   /* Clear of the page's scroll gauge on the left edge. */
   .reel-count { left: max(var(--gutter), 76px); }
   .reel-year { right: var(--gutter); }
-  .reel-name {
+  .reel-name { position: absolute; top: 50%; left: 25%; right: 30%; transform: translateY(-50%); }
+  .reel-cat { margin: 0; font-size: 0.875rem; font-weight: 500; letter-spacing: -0.005em; }
+  .reel-title { margin: 2px 0 0; overflow: hidden; font-size: clamp(1.375rem, 1.75vw, 1.75rem); font-weight: 600; line-height: 1.12; letter-spacing: -0.025em; }
+  .reel-title a { display: inline-block; color: inherit; text-decoration: none; pointer-events: auto; }
+  .reel-title a:focus-visible { outline: none; text-decoration: underline; text-underline-offset: 4px; }
+  .reel-ui { transition: color 700ms var(--ease-glass); }
+  .reel-title a,
+  .reel-cat,
+  .reel-count,
+  .reel-year { transition: transform 800ms var(--ease-glass), opacity 500ms var(--ease-glass); }
+  .reel-ui:not(.is-active) .reel-title a { transform: translateY(110%); }
+  .reel-ui:not(.is-active) .reel-cat,
+  .reel-ui:not(.is-active) .reel-count,
+  .reel-ui:not(.is-active) .reel-year { opacity: 0; }
+  .reel-ui.is-active .reel-title a { transition-delay: 120ms; }
+  .reel-ui.is-active .reel-cat { transition-delay: 60ms; }
+  .reel-ui.is-leaving { opacity: 0; transition: opacity 240ms var(--ease-glass); }
+
+  .reel-foot {
     position: absolute;
-    top: 50%;
-    left: max(calc(var(--gutter) + 132px), 16vw);
-    right: calc(var(--gutter) + 64px);
-    transform: translateY(-50%);
-  }
-  .reel-cat { margin: 0 0 10px; font-size: 0.9375rem; font-weight: 500; color: #ff8a9e; text-shadow: 0 1px 12px rgba(0, 0, 0, 0.6); }
-  .reel-title {
-    margin: 0;
-    overflow: hidden;
-    padding-bottom: 0.06em;
-    font-size: clamp(3rem, 7.4vw, 7.5rem);
-    font-weight: 600;
-    line-height: 0.94;
-    letter-spacing: -0.05em;
-    color: #fff;
-    text-wrap: balance;
-  }
-  .reel-title > span { display: block; text-shadow: 0 2px 40px rgba(0, 0, 0, 0.45); }
-  .reel-hint {
-    position: absolute;
-    left: 50%;
-    bottom: 26px;
-    margin: 0;
-    transform: translateX(-50%);
-    font-size: 0.8125rem;
-    color: rgba(255, 255, 255, 0.68);
-    white-space: nowrap;
-  }
-  .reel-go {
-    position: absolute;
-    left: var(--gutter);
-    bottom: 76px;
-    display: none;
-    align-items: center;
-    height: 44px;
-    padding: 0 22px;
-    border-radius: 9999px;
-    font-size: 0.8125rem;
-    font-weight: 600;
-    letter-spacing: 0.14em;
-    text-transform: uppercase;
-    text-decoration: none;
-    color: #000;
-    background: #fff;
-  }
-  .reel-go:focus-visible { outline: none; box-shadow: 0 0 0 3px rgba(244, 63, 94, 0.8); }
-  .reel-pause {
-    position: absolute;
+    left: max(var(--gutter), 76px);
     right: var(--gutter);
     bottom: 18px;
+    z-index: 5;
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    align-items: center;
+    font-size: 0.75rem;
+    color: rgba(255, 255, 255, 0.72);
+    pointer-events: none;
+  }
+  .reel-foot-l { display: flex; align-items: center; gap: 12px; }
+  .reel-clock { margin: 0; font-variant-numeric: tabular-nums; letter-spacing: 0.02em; white-space: nowrap; }
+  .reel-time { color: rgba(255, 255, 255, 0.9); margin-left: 6px; }
+  .reel-hint { margin: 0; white-space: nowrap; }
+  .reel-pause {
     display: inline-grid;
     place-items: center;
-    width: 44px;
-    height: 44px;
+    width: 28px;
+    height: 28px;
     border-radius: 9999px;
     color: #fff;
-    background: rgba(12, 6, 8, 0.72);
-    border: 1px solid rgba(255, 255, 255, 0.18);
+    background: rgba(12, 6, 8, 0.6);
+    border: 1px solid rgba(255, 255, 255, 0.16);
     cursor: pointer;
-    transition: border-color 150ms var(--ease-glass);
+    pointer-events: auto;
   }
-  .reel-pause:hover { border-color: rgba(255, 255, 255, 0.4); }
   .reel-pause:focus-visible { outline: none; box-shadow: 0 0 0 3px rgba(244, 63, 94, 0.8); }
   .reel-pause .i-play { display: none; }
   .reel-pause.is-paused .i-play { display: block; }
   .reel-pause.is-paused .i-pause { display: none; }
+
+  /* Watch: a small square and a word beside the pointer. */
+  .reel-watch {
+    position: absolute;
+    left: 0;
+    top: 0;
+    z-index: 6;
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    padding: 4px 6px;
+    font-size: 0.6875rem;
+    font-weight: 600;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    text-decoration: none;
+    color: #fff;
+    text-shadow: 0 1px 10px rgba(0, 0, 0, 0.6);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 250ms var(--ease-glass);
+    will-change: transform;
+  }
+  .reel-watch-sq { width: 9px; height: 9px; border-radius: 1px; background: var(--reel-ink); box-shadow: 0 0 10px rgba(0, 0, 0, 0.4); }
+  .reel.is-hover .reel-watch { opacity: 1; }
+  .reel-watch:focus-visible { opacity: 1; outline: none; box-shadow: 0 0 0 2px rgba(244, 63, 94, 0.8); border-radius: 4px; pointer-events: auto; }
 
   .reel-skip {
     position: absolute;
@@ -270,117 +304,36 @@ const pad = (i: number) => String(i).padStart(2, "0");
   }
   .reel-skip:focus-visible { transform: none; opacity: 1; outline: none; box-shadow: 0 0 0 3px rgba(244, 63, 94, 0.8); }
 
-  .reel-gl, .reel-watch { display: none; }
-
-  /* The stage: mouse and trackpad screens, once reel.ts runs. The section
-     is one screen tall per film; the stage stays pinned while the page
-     scrolls through it, and lets go after the last film. */
-  .reel.is-stage { height: calc(var(--n) * 100vh); }
-  .reel.is-stage .reel-stage { position: sticky; top: 0; height: 100vh; overflow: hidden; cursor: pointer; }
-  .reel.is-stage .reel-panel { position: absolute; inset: 0; height: auto; visibility: hidden; scroll-snap-align: none; }
-  .reel.is-stage .reel-panel.is-active,
-  .reel.is-stage .reel-panel.is-leaving { visibility: visible; }
-  .reel.is-stage .reel-panel.is-active .reel-media { z-index: 1; }
-  .reel.is-stage .reel-panel.is-leaving .reel-media { z-index: 0; }
-  .reel.is-stage .reel-gl {
-    display: block;
-    position: absolute;
-    inset: 0;
-    z-index: 2;
-    width: 100%;
-    height: 100%;
-    opacity: 0;
-    pointer-events: none;
-  }
-  .reel.is-stage .reel-gl.is-on { opacity: 1; }
-
-  /* Titles rise into place for the film that arrives. */
-  .reel.is-stage .reel-title > span,
-  .reel.is-stage .reel-cat,
-  .reel.is-stage .reel-count,
-  .reel.is-stage .reel-year {
-    transition: transform 900ms var(--ease-glass), opacity 600ms var(--ease-glass);
-  }
-  .reel.is-stage .reel-panel:not(.is-active) .reel-title > span { transform: translateY(105%); }
-  .reel.is-stage .reel-panel:not(.is-active) .reel-cat { opacity: 0; transform: translateY(12px); }
-  .reel.is-stage .reel-panel:not(.is-active) .reel-count,
-  .reel.is-stage .reel-panel:not(.is-active) .reel-year { opacity: 0; }
-  .reel.is-stage .reel-panel.is-active .reel-cat { transition-delay: 120ms; }
-  .reel.is-stage .reel-panel.is-active .reel-title > span { transition-delay: 60ms; }
-  .reel.is-stage .reel-panel.is-leaving .reel-ui { opacity: 0; transition: opacity 260ms var(--ease-glass); }
-
-  /* Crossfade between films when the shader is not used. */
-  .reel.is-fade .reel-panel.is-active .reel-media { animation: reel-in 600ms var(--ease-glass) both; }
-  .reel.is-fade.is-still .reel-panel.is-active .reel-media { animation-duration: 200ms; }
-  @keyframes reel-in { from { opacity: 0; } to { opacity: 1; } }
-
-  /* Watch: a small pill that follows the pointer over the picture. */
-  .reel.is-stage .reel-watch {
-    display: inline-flex;
-    position: absolute;
-    left: 0;
-    top: 0;
-    z-index: 5;
-    align-items: center;
-    gap: 8px;
-    height: 34px;
-    padding: 0 14px 0 12px;
-    border-radius: 9999px;
-    font-size: 0.75rem;
-    font-weight: 600;
-    letter-spacing: 0.16em;
-    text-transform: uppercase;
-    text-decoration: none;
-    color: #fff;
-    background: rgba(8, 3, 5, 0.66);
-    border: 1px solid rgba(255, 255, 255, 0.22);
-    will-change: transform;
-  }
-  .reel-watch-dot { width: 7px; height: 7px; border-radius: 2px; background: #f43f5e; box-shadow: 0 0 10px rgba(244, 63, 94, 0.9); }
-  .reel.is-stage .reel-watch:hover { border-color: rgba(255, 255, 255, 0.5); }
-  .reel.is-stage .reel-watch:focus-visible { outline: none; box-shadow: 0 0 0 3px rgba(244, 63, 94, 0.8); }
-
-  /* Phones and tablets: the stack, snapping one film per screen. */
-  @media (max-width: 767px), (hover: none) and (pointer: coarse) {
-    .reel-count, .reel-year { top: 92px; transform: none; }
+  /* Phones: the same line across the middle, closer to the edges. */
+  @media (max-width: 767px) {
     .reel-count { left: var(--gutter); }
-    .reel-name { top: auto; left: var(--gutter); right: var(--gutter); bottom: 136px; transform: none; }
-    .reel-title { font-size: clamp(2.75rem, 13vw, 4.5rem); }
-    .reel-go { display: inline-flex; }
-    .reel-pause { right: auto; left: calc(var(--gutter) + 124px); bottom: 76px; }
-    .reel-hint { bottom: 24px; }
-    .reel-shade {
-      background:
-        linear-gradient(0deg, rgba(0, 0, 0, 0.82) 0%, rgba(0, 0, 0, 0.45) 30%, rgba(0, 0, 0, 0) 58%),
-        linear-gradient(180deg, rgba(0, 0, 0, 0.55) 0%, rgba(0, 0, 0, 0) 22%);
-    }
+    .reel-name { left: 22%; right: 18%; }
+    .reel-title { font-size: 1.25rem; }
+    .reel-cat { font-size: 0.8125rem; }
+    .reel-foot { left: var(--gutter); bottom: 16px; grid-template-columns: auto 1fr; gap: 12px; }
+    .reel-hint { justify-self: end; }
+    .reel-watch { display: none; }
   }
-  @media (min-width: 768px) {
-    .reel-media :global(.reel-poster.is-boxed) { transform: scale(1.06); }
-  }
-  .reel.is-stage .reel-media.is-stills::before,
-  .reel.is-stage .reel-media.is-stills::after { height: max(0px, calc((100vh - 100vw / 2.39) / 2)); }
 
   /* While the reel is on a phone, nothing blurs over the moving picture:
      the floating glass turns solid. */
-  :global(html.fm-reel-snap) { scroll-snap-type: y proximity; scroll-padding-top: 0; }
-  :global(html.fm-reel-snap) :global(.lg),
-  :global(html.fm-reel-snap) :global(.lg-thick),
-  :global(html.fm-reel-snap) :global(.nav-glass),
-  :global(html.fm-reel-snap) :global(.to-top),
-  :global(html.fm-reel-snap) :global(.chat-launcher),
-  :global(html.fm-reel-snap) :global(.chat-nudge),
-  :global(html.fm-reel-snap) :global(.btn-glass),
-  :global(html.fm-reel-snap) :global(.social) {
+  :global(html.fm-reel-solid) :global(.lg),
+  :global(html.fm-reel-solid) :global(.lg-thick),
+  :global(html.fm-reel-solid) :global(.nav-glass),
+  :global(html.fm-reel-solid) :global(.to-top),
+  :global(html.fm-reel-solid) :global(.chat-launcher),
+  :global(html.fm-reel-solid) :global(.chat-nudge),
+  :global(html.fm-reel-solid) :global(.btn-glass),
+  :global(html.fm-reel-solid) :global(.social) {
     -webkit-backdrop-filter: none !important;
     backdrop-filter: none !important;
   }
-  :global(html.fm-reel-snap) :global(.nav-glass) { background: rgba(8, 4, 6, 0.9) !important; }
-  :global(html.fm-reel-snap) :global(.to-top),
-  :global(html.fm-reel-snap) :global(.chat-launcher) { background: rgba(12, 6, 8, 0.92) !important; }
+  :global(html.fm-reel-solid) :global(.nav-glass) { background: rgba(8, 4, 6, 0.9) !important; }
+  :global(html.fm-reel-solid) :global(.to-top),
+  :global(html.fm-reel-solid) :global(.chat-launcher) { background: rgba(12, 6, 8, 0.92) !important; }
 
   @media (prefers-reduced-motion: reduce) {
     .reel-shade::after { animation: none; }
-    .reel-video, .reel-still, .reel-title > span, .reel-cat, .reel-count, .reel-year { transition: none !important; }
+    .reel-frame, .reel-ui, .reel-title a, .reel-cat, .reel-count, .reel-year, .reel-watch { transition: none !important; }
   }
 </style>

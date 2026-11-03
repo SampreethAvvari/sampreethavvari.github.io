@@ -1323,3 +1323,32 @@ html.has-fx-cursor, html.has-fx-cursor * { cursor: none !important; }
   transition: opacity 0.2s ease;
 }
 .fx-cursor-dot.is-text::before { opacity: 0; }
+
+/* Phones: six tab icons, the sound pair, search and the menu all fit one bar.
+   Resume lives in the menu sheet here. */
+@media (max-width: 520px) {
+  .nav-bar { gap: 2px; padding: 0 6px; }
+  .nav-actions { gap: 0; }
+  .nav-tab { width: 30px; height: 32px; }
+  .nav-resume { display: none; }
+  .nav-actions .nav-icon { width: 32px; height: 32px; }
+  .nav-sound { width: 28px; }
+  .nav-info { width: 24px; }
+}
+@media (max-width: 520px) {
+  .nav-brand { padding-right: 0; gap: 0; }
+  .nav-brand .nav-mark, .nav-brand img, .nav-brand svg { width: 40px !important; height: auto !important; }
+  .nav-tabs { gap: 0; }
+  .nav-tab { width: 29px; }
+  .nav-sound-pair { gap: 0; }
+}
+@media (max-width: 380px) {
+  .nav-tab { width: 27px; }
+  .nav-info { display: none !important; }
+  .nav-brand .nav-mark, .nav-brand img, .nav-brand svg { width: 34px !important; }
+}
+@media (max-width: 330px) {
+  .nav-tab { width: 25px; }
+  .nav-actions .nav-icon { width: 28px; }
+  .nav-sound { width: 26px; }
+}

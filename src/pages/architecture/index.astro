@@ -1,12 +1,11 @@
 ---
-// Every architecture drawing on the site, as an observatory: each system is
-// a world in one galaxy, its real parts in orbit, and the scroll flies from
-// world to world. Under the 3D sits the plain list of every system, in the
-// same order, with filters for the four kinds of work. Each world opens its
-// drawing at /architecture/<slug>.
+// Every architecture drawing on the site, as an endless wall of glass cards
+// on a gently curved surface: drag or scroll to move it, a card opens its
+// drawing at /architecture/<slug>. Under the wall sits the plain list of
+// every system as real links, with the same filters (the List view).
 import BaseLayout from "../../layouts/BaseLayout.astro";
 import NextStep from "../../components/common/NextStep.astro";
-import Observatory from "../../components/architecture/observatory/Observatory.astro";
+import GlassWall from "../../components/architecture/observatory/GlassWall.astro";
 import { architectures } from "../../data/architecture";
 import { itemListNode } from "../../utils/seo";
 
@@ -27,6 +26,7 @@ const listSchema = [
   schema={listSchema}
   crumbs={[{ name: "Home", path: "/" }, { name: "Architecture", path: "/architecture" }]}
 >
-  <Observatory />
-  <NextStep next={{ href: "/posts", label: "Read the writing" }} />
+  <GlassWall>
+    <NextStep next={{ href: "/posts", label: "Read the writing" }} />
+  </GlassWall>
 </BaseLayout>

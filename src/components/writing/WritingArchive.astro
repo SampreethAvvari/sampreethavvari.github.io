@@ -111,11 +111,11 @@ const comets = [
           <stop offset="1" stop-color={`rgb(${WRITING_RGB})`} stop-opacity="0.15" />
         </linearGradient>
       </defs>
-      {tags.map(([t]) => <polyline class="ax-line" data-tag={t} points="" />)}
+      {tags.map(([t]) => <path class="ax-line" data-tag={t} d="" />)}
     </svg>
     <div class="ax-names">
       {tags.map(([t, c]) => (
-        <button type="button" class="ax-name" data-tag={t} aria-label={`Show only ${t}, ${c} posts`}>
+        <button type="button" class="ax-name" data-tag={t} aria-label={`Zoom in on ${t}, ${c} posts`}>
           <span class="ax-name-dot" aria-hidden="true"></span>{t}<span class="ax-name-n">{c}</span>
         </button>
       ))}
@@ -134,6 +134,7 @@ const comets = [
           data-q={`${p.title} ${p.description} ${p.tag}`.toLowerCase()}
         >
           <a class="ax-node" href={p.url}>
+            <span class="ax-node-dot" aria-hidden="true"></span>
             <span class="ax-node-art" aria-hidden="true">
               {p.thumb ? (
                 <picture>
@@ -166,7 +167,8 @@ const comets = [
       <button type="button" class="lg ax-zbtn" data-zoom="out" aria-label="Zoom out">&minus;</button>
       <button type="button" class="lg ax-zbtn ax-zfit" data-zoom="fit" aria-label="Show the whole map">Fit</button>
     </div>
-    <p class="ax-hint" aria-hidden="true">Drag to move · ctrl and scroll to zoom · click a tag to see only it</p>
+    <button type="button" class="lg ax-back" hidden>Back to the whole map</button>
+    <p class="ax-hint" aria-hidden="true">Click a constellation's name to zoom in · ctrl and scroll to zoom</p>
   </div>
 
   <!-- List view: the same posts as a grid. -->
@@ -269,6 +271,8 @@ const comets = [
     transform: translateX(-50%);
     pointer-events: none;
     overflow: hidden;
+    -webkit-mask-image: linear-gradient(180deg, #000 55%, transparent 100%);
+    mask-image: linear-gradient(180deg, #000 55%, transparent 100%);
   }
   .ax-planet {
     position: absolute;
@@ -373,8 +377,7 @@ const comets = [
     cursor: grab;
     touch-action: pan-y;
     outline: none;
-    background:
-      radial-gradient(60% 50% at 50% 50%, rgba(var(--c-writing-rgb), 0.06), rgba(0, 0, 0, 0) 70%);
+    background: radial-gradient(42% 38% at 50% 55%, rgba(var(--c-writing-rgb), 0.07), rgba(var(--c-writing-rgb), 0) 100%);
   }
   .ax[data-view="map"] .ax-map.is-dragging { cursor: grabbing; }
   .ax[data-view="map"] .ax-listwrap { display: none; }
@@ -384,9 +387,10 @@ const comets = [
   .ax-line {
     fill: none;
     stroke: url(#ax-line-g);
-    stroke: rgba(var(--c-writing-rgb), 0.38);
+    stroke: rgba(var(--c-writing-rgb), 0.5);
     stroke-width: 1;
-    stroke-dasharray: 2 5;
+    stroke-dasharray: none;
+    stroke-linecap: round;
     transition: opacity 500ms var(--ease-glass);
     filter: drop-shadow(0 0 4px rgba(var(--c-writing-rgb), 0.7));
   }
@@ -404,7 +408,8 @@ const comets = [
     will-change: transform;
   }
   .ax-glow.is-off { opacity: 0; }
-  .ax-names { pointer-events: none; }
+  .ax-names { pointer-events: none; z-index: 3; }
+  .ax-stars { z-index: 2; }
   .ax-name {
     position: absolute;
     left: 0;
@@ -451,8 +456,8 @@ const comets = [
     --py: 0;
     display: flex;
     flex-direction: column;
-    width: 132px;
-    border-radius: 14px;
+    width: 104px;
+    border-radius: 12px;
     overflow: hidden;
     text-decoration: none;
     color: var(--ink);
@@ -528,9 +533,9 @@ const comets = [
     background: rgb(var(--c-writing-rgb));
     box-shadow: 0 0 12px rgba(var(--c-writing-rgb), 0.8);
   }
-  .ax-node-body { display: flex; flex-direction: column; gap: 6px; padding: 8px 9px 9px; }
+  .ax-node-body { display: flex; flex-direction: column; gap: 4px; padding: 6px 7px 7px; }
   .ax-node-title {
-    font-size: 0.71875rem;
+    font-size: 0.65625rem;
     line-height: 1.28;
     font-weight: 600;
     letter-spacing: -0.005em;
@@ -539,7 +544,7 @@ const comets = [
     -webkit-line-clamp: 2;
     overflow: hidden;
   }
-  .ax-node-meta { display: flex; align-items: center; gap: 6px; font-size: 0.625rem; color: rgba(245, 245, 247, 0.55); font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .ax-node-meta { display: flex; align-items: center; gap: 5px; font-size: 0.5625rem; color: rgba(245, 245, 247, 0.55); font-variant-numeric: tabular-nums; white-space: nowrap; }
   .ax-node-desc { display: none; font-size: 0.8125rem; line-height: 1.5; color: var(--ink-soft); }
   .ax-star.is-open .ax-node-body { padding: 12px 14px 14px; gap: 8px; }
   .ax-star.is-open .ax-node-title { font-size: 1rem; line-height: 1.25; -webkit-line-clamp: 3; }
@@ -755,7 +760,7 @@ const comets = [
   @media (max-width: 899px) {
     .ax-search { max-width: none; flex-basis: 100%; }
     .ax-hint { display: none; }
-    .ax-node { width: 120px; }
+    .ax-node { width: 100px; }
     .ax-star.is-open .ax-node { width: 250px; }
   }
   @media (prefers-reduced-motion: reduce) {

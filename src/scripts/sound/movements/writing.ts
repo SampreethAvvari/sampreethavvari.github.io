@@ -149,7 +149,6 @@ export class Writing extends Movement {
 
   protected step(pos: number, t: number) {
     const L = this.S.layers;
-    const r = this.rng;
     // the left hand: bass and a tenth, sometimes rolled
     if (L.left && pos === 0) {
       const b = this.bassM + 12;
@@ -185,7 +184,6 @@ export class Writing extends Movement {
       const m = pos === 0 ? nm("D6") : nm("G5");
       lead(this, this.signal, m, t, pos === 0 ? 0.6 : 1.3, dbg(-20), { wave: this.st.wave("air"), attack: 0.25, release: 1.2, cutoff: 3000 });
     }
-    void r;
   }
 
   heroFocus(d: { index?: number; slug: string; accent?: string }) {

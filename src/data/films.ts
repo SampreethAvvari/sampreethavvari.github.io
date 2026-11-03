@@ -33,6 +33,8 @@ export type Still = { src: string; alt: string };
  */
 export type VideoReel = { category: string; mp4: string; mp4Phone?: string; poster: string; audio?: string };
 export type StillsReel = { category: string; stills: string[] };
+/** No footage yet: the reel shows a designed title card until a clip arrives. */
+export type CardReel = { category: string; card: true };
 
 export type Film = {
   slug: string;
@@ -57,7 +59,7 @@ export type Film = {
   stills?: { dir: string; alt: (file: string, index: number) => string; letterboxed?: boolean };
   links?: { imdb?: string; screenplay?: string; playlist?: string };
   credits?: CreditGroup[];
-  reel?: VideoReel | StillsReel;
+  reel?: VideoReel | StillsReel | CardReel;
 };
 
 // Among Monsters stills. Filenames carry the edit's clip numbers
@@ -136,8 +138,8 @@ export const films: Film[] = [
     },
     credits: amCredits,
   },
-  { slug: "l-immigrata", title: "L'immigrata", year: "2026", status: "dated", roles: ["Assistant Director", "Editor"] },
-  { slug: "office-plant", title: "Office Plant", year: "2026", status: "dated", roles: ["Assistant Director", "Editor"] },
+  { slug: "l-immigrata", title: "L'immigrata", year: "2026", status: "dated", roles: ["Assistant Director", "Editor"], reel: { category: "Film", card: true } },
+  { slug: "office-plant", title: "Office Plant", year: "2026", status: "dated", roles: ["Assistant Director", "Editor"], reel: { category: "Film", card: true } },
   { slug: "extraordinary-lives", title: "Extraordinary Lives", status: "upcoming", statusNote: "In development", roles: ["Director", "Writer"] },
   { slug: "pupa", title: "Pupa", status: "upcoming", statusNote: "In development", roles: ["Writer"] },
   { slug: "solstice", title: "Solstice", year: "2025", status: "released", roles: ["Editor"] },
@@ -152,8 +154,8 @@ export const films: Film[] = [
     stills: { dir: "Swechcha", alt: (_file, i) => `Swechcha still ${i + 1}`, letterboxed: true },
     reel: { category: "Short", stills: ["1.35.07", "1.30.28", "1.29.54", "1.31.05", "1.30.48"] },
   },
-  { slug: "tiger-man", title: "Tiger Man", year: "2022", status: "released", roles: ["Director", "Writer", "Editor"] },
-  { slug: "strangers", title: "Strangers", year: "2019", status: "released", roles: ["Cinematographer", "Music"] },
+  { slug: "tiger-man", title: "Tiger Man", year: "2022", status: "released", roles: ["Director", "Writer", "Editor"], reel: { category: "Film", card: true } },
+  { slug: "strangers", title: "Strangers", year: "2019", status: "released", roles: ["Cinematographer", "Music"], reel: { category: "Film", card: true } },
 ];
 
 // The same films seen by the job I did on each.
@@ -229,6 +231,10 @@ export function neighbours(slug: string) {
   return { prev: films[(i - 1 + n) % n], next: films[(i + 1) % n] };
 }
 
+/** The reel's running order, the owner's choice. Films not named here
+ *  follow in slate order if they gain a reel entry. */
+export const REEL_ORDER = ["among-monsters", "swechcha", "l-immigrata", "office-plant", "tiger-man", "strangers"];
+
 /** One screen of the reel, resolved at build time. */
 export type ReelItem = {
   slug: string;
@@ -236,9 +242,10 @@ export type ReelItem = {
   year: string;
   category: string;
   href: string;
-  kind: "video" | "stills";
-  /** The image under the media: the first paint, and what shows without script. */
-  poster: string;
+  kind: "video" | "stills" | "card";
+  /** The image under the media (the first paint, and what shows without
+   *  script). A title card has none; it is drawn. */
+  poster?: string;
   /** The poster has letterbox bars baked in. */
   posterBoxed: boolean;
   mp4?: string;
@@ -246,15 +253,22 @@ export type ReelItem = {
   audio?: string;
   /** The stills a stills reel moves through, as WebP for the canvas. */
   frames?: string[];
+  /** My credits on it, for the title card's lower bar. */
+  roles: string;
 };
 
 const PUBLIC_DIR = path.join(process.cwd(), "public");
 const onDisk = (url: string) => fs.existsSync(path.join(PUBLIC_DIR, decodeURIComponent(url).replace(/^\//, "")));
 
-/** The films in the reel: those with a reel entry, in slate order, Among Monsters first. */
+/** The films in the reel, in REEL_ORDER. A clip in public/films/<slug>/
+ *  wins over stills, and stills win over a title card. */
 export function reelItems(): ReelItem[] {
   const items: ReelItem[] = [];
-  for (const f of films) {
+  const order = (slug: string) => {
+    const i = REEL_ORDER.indexOf(slug);
+    return i < 0 ? REEL_ORDER.length + films.findIndex((f) => f.slug === slug) : i;
+  };
+  for (const f of [...films].sort((a, b) => order(a.slug) - order(b.slug))) {
     const r = f.reel;
     if (!r) continue;
     const dir = `/films/${f.slug}`;
@@ -265,10 +279,17 @@ export function reelItems(): ReelItem[] {
         ? r.stills.map((key) => stills.find((s) => decodeURIComponent(s.src).includes(key))).filter((s): s is Still => !!s)
         : [];
     const mp4 = ("mp4" in r && r.mp4) || found("reel-1080.mp4");
-    const base = { slug: f.slug, title: f.title, year: yearLabel(f), category: r.category, href: filmPath(f.slug) };
+    const base = {
+      slug: f.slug,
+      title: f.title,
+      year: yearLabel(f),
+      category: r.category,
+      href: filmPath(f.slug),
+      roles: rolesLine(f),
+      audio: ("audio" in r && r.audio) || found("audio.m4a"),
+    };
     if (mp4) {
-      const poster = ("poster" in r && r.poster) || found("poster.jpg") || picked[0]?.src || stills[0]?.src;
-      if (!poster) continue;
+      const poster = ("poster" in r && r.poster) || found("poster.jpg") || picked[0]?.src;
       items.push({
         ...base,
         kind: "video",
@@ -276,18 +297,12 @@ export function reelItems(): ReelItem[] {
         posterBoxed: !found("poster.jpg") && !!f.stills?.letterboxed,
         mp4,
         mp4Phone: ("mp4Phone" in r && r.mp4Phone) || found("reel-720.mp4"),
-        audio: ("audio" in r && r.audio) || found("audio.m4a"),
       });
     } else if (picked.length) {
-      items.push({
-        ...base,
-        kind: "stills",
-        poster: picked[0].src,
-        posterBoxed: true,
-        frames: picked.map((s) => s.src.replace(/\.avif$/i, ".webp")),
-        audio: found("audio.m4a"),
-      });
+      items.push({ ...base, kind: "stills", poster: picked[0].src, posterBoxed: true, frames: picked.map((s) => s.src.replace(/\.avif$/i, ".webp")) });
+    } else {
+      items.push({ ...base, kind: "card", posterBoxed: false });
     }
   }
-  return items.sort((a, b) => Number(b.slug === "among-monsters") - Number(a.slug === "among-monsters"));
+  return items;
 }
