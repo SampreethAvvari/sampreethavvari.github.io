@@ -7,6 +7,8 @@ import { disciplines } from "../data/disciplines";
 import { teaching } from "../data/teaching";
 import Journey from "../components/journey/Journey.astro";
 import { profilePageNode, faqNode } from "../utils/seo";
+import { readPosts } from "../utils/postFiles";
+import { optimizedSources } from "../utils/optimizedImage";
 // Four numbers under the hero, each a link to where it is proven. Sources:
 // the reconciliation post; the capacity planner post (planned from daily);
 // Doc Coach's 471 scored consults and NPC Coach's 690 graded calls
@@ -18,7 +20,7 @@ const heroProof = [
   { value: "1,161", label: "doctor consults and patient calls graded", href: "/architecture/doc-coach" },
   { value: "45", label: "services live on Google Cloud, one engineer", href: "/posts/platform" },
 ];
-const allPosts = await Astro.glob("../pages/posts/*.md");
+const allPosts = readPosts();
 const latestPosts = allPosts
   .sort(
     (a, b) =>
@@ -149,7 +151,8 @@ const artFor = (src: string | undefined, alt: string) => {
   if (!src) return undefined;
   const base = src.replace(/\.(png|jpe?g|webp|avif)$/i, "");
   const has = (ext: string) => fs.existsSync(path.join(process.cwd(), "public", decodeURI(base) + ext));
-  const art = { avif: has(".avif") ? `${base}.avif` : undefined, webp: has(".webp") ? `${base}.webp` : has(".png") ? `${base}.png` : undefined, alt };
+  const copies = optimizedSources(src);
+  const art = { avifSet: copies?.avifSet, webpSet: copies?.webpSet, avif: has(".avif") ? `${base}.avif` : undefined, webp: has(".webp") ? `${base}.webp` : has(".png") ? `${base}.png` : undefined, alt };
   return art.avif || art.webp ? art : undefined;
 };
 
@@ -163,7 +166,7 @@ const guides = [...teaching]
   .slice(0, 2);
 ---
 
-<BaseLayout title="Sampreeth Avvari" preloadImage="/pic.avif" schema={homeSchema} footerVariant="minimal">
+<BaseLayout title="Sampreeth Avvari" schema={homeSchema} footerVariant="minimal">
   <!-- The landing page is one flight in eight chapters. Everything the old
        sections said lives in the chapters, and the quick answers sit on the
        last one, so the structured data matches what the page shows. -->

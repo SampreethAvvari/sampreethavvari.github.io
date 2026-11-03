@@ -17,7 +17,7 @@ const guards = arch ? arch.guards.length : 0;
   arch && (
     <a href={`/architecture/${arch.slug}`} target="_blank" rel="noopener" class="arch-card" data-tone="architecture">
       <span class="arch-card-art">
-        <Picture src={`/arch/${arch.slug}.png`} alt="" width={1200} height={675} loading="eager" />
+        <Picture src={`/arch/${arch.slug}.png`} alt="" width={1200} height={675} loading="eager" sizes="(min-width: 1024px) 500px, 92vw" />
         <span class="arch-card-scan" aria-hidden="true"></span>
       </span>
       <span class="arch-card-text">

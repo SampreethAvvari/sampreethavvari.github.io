@@ -53,7 +53,7 @@ const STAR_PARTS = [
           <article id={c.id} class="ac" data-group={c.group} data-live={c.status.live ? "1" : "0"} data-q={q}>
             <div class="ac-art">
               {c.cover ? (
-                <Picture src={c.cover} alt={c.alt} width={640} height={400} style={c.imageStyle} />
+                <Picture src={c.cover} alt={c.alt} width={640} height={400} style={c.imageStyle} sizes="(min-width: 1024px) 480px, 92vw" />
               ) : (
                 <div class="ac-fallback" aria-hidden="true"><span>{c.title}</span></div>
               )}

@@ -44,8 +44,9 @@ export class StillReel {
       img.dataset.src = src;
       return { img, y0: 0, y1: 1, ready: false };
     });
-    // Five or so stills: they all load now, so no dissolve waits on one.
-    this.frames.forEach((_, i) => this.load(i));
+    // Five or so stills: the first now, the rest as soon as it is up, so no
+    // dissolve waits on one and they do not hold up the frame on screen.
+    this.load(0);
   }
 
   /** Seconds, as if it were a clip. */
@@ -59,14 +60,25 @@ export class StillReel {
   private load(i: number) {
     const f = this.frames[i];
     if (!f || f.img.src) return;
-    f.img.src = f.img.dataset.src || "";
+    // The AVIF the page's poster already fetched, where the browser can show
+    // it, so the first still is not downloaded twice; the WebP where it cannot.
+    const webp = f.img.dataset.src || "";
+    f.img.src = webp.replace(/\.webp$/i, ".avif");
+    const decoded = () =>
+      f.img
+        .decode()
+        .catch(() => new Promise<void>((done) => (f.img.complete ? done() : (f.img.onload = () => done()))));
     // Decode off the main thread first, so the first draw never stalls.
-    f.img
-      .decode()
-      .catch(() => new Promise<void>((done) => (f.img.complete ? done() : (f.img.onload = () => done()))))
+    decoded()
       .then(() => {
+        if (f.img.naturalWidth || !webp.endsWith(".webp")) return;
+        f.img.src = webp;
+        return decoded();
+      })
+      .then(async () => {
+        if (i === 0) for (let k = 1; k < this.frames.length; k++) this.load(k);
         if (!f.img.naturalWidth) return;
-        this.measure(f);
+        await this.measure(f);
         f.ready = true;
         if (i === 0) this.fit();
         this.draw();
@@ -79,14 +91,18 @@ export class StillReel {
 
   // Rows at the top and bottom that are true black (bars, not a night sky)
   // are cut away. Baked bars here are never more than a fifth of the frame.
-  private measure(f: Frame) {
+  private async measure(f: Frame) {
     try {
       const c = document.createElement("canvas");
       c.width = 24;
       c.height = 96;
       const x = c.getContext("2d", { willReadFrequently: true });
       if (!x) return;
-      x.drawImage(f.img, 0, 0, 24, 96);
+      // Scaled down away from the page's thread: drawn straight onto this small
+      // canvas, the full still would be decoded again here, on the main thread.
+      const small = await createImageBitmap(f.img, { resizeWidth: 24, resizeHeight: 96, resizeQuality: "medium" }).catch(() => null);
+      x.drawImage(small ?? f.img, 0, 0, 24, 96);
+      small?.close();
       const data = x.getImageData(0, 0, 24, 96).data;
       const dark = (row: number) => {
         let sum = 0;

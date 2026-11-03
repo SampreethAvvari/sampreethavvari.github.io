@@ -30,6 +30,15 @@ const data = JSON.stringify(cards).replace(/</g, "\\u003c");
 ---
 
 <section class="gw" data-wall data-mode="wall" aria-labelledby="gw-title">
+  <script is:inline>
+    // The page does not scroll under the wall. Set before the first layout, so a
+    // phone never starts it zoomed out around the list and then jumps.
+    (function () {
+      var list = false;
+      try { list = sessionStorage.getItem("arch-view") === "list"; } catch (e) {}
+      if (!list && "WebGL2RenderingContext" in window) document.documentElement.classList.add("wall-on");
+    })();
+  </script>
   <div
     class="gw-stage"
     data-wall-stage
@@ -87,7 +96,7 @@ const data = JSON.stringify(cards).replace(/</g, "\\u003c");
           <li class="gl-item" data-slug={c.slug} data-disciplines={c.disciplines.join(" ")} data-kind={c.kind}>
             <a href={`/architecture/${c.slug}`} class="gl-card">
               <span class="gl-art">
-                <Picture src={`/arch/${c.slug}.png`} alt="" width={1200} height={686} />
+                <Picture src={`/arch/${c.slug}.png`} alt="" width={1200} height={686} sizes="(min-width: 1024px) 470px, (min-width: 768px) 350px, 92vw" />
               </span>
               <span class="gl-body">
                 <span class="gl-top">

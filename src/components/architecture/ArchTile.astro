@@ -26,7 +26,7 @@ const liveSvg = featured
   data-disciplines={arch.disciplines.join(" ")}
 >
   <span class="tile-art">
-    <Picture src={`/arch/${arch.slug}.png`} alt="" width={1200} height={675} />
+    <Picture src={`/arch/${arch.slug}.png`} alt="" width={1200} height={675} sizes="(min-width: 1024px) 470px, (min-width: 768px) 350px, 92vw" />
     <span class="tile-kind">{arch.kind === "service" ? "Shared service" : "System"}</span>
   </span>
   <span class="tile-body">

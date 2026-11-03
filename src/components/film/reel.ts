@@ -231,14 +231,21 @@ onPage("film-reel", (signal) => {
   syncPause();
 
   // One clip decodes: the current one. The next is fetched and held, the
-  // one before stays ready for going back, the rest let go.
-  const keep = (i: number) =>
+  // one before stays ready for going back, the rest let go. Nothing is fetched
+  // ahead until the film on screen is showing and the page has room for it.
+  let settled = false;
+  const held = new Set<Media>();
+  const keep = (i: number) => {
+    held.clear();
     medias.forEach((m, k) => {
       if (k === i) return;
       m.pause();
-      if (k === i + 1 || k === i - 1) m.prime();
-      else m.unload();
+      if (k === i + 1 || k === i - 1) {
+        if (settled) m.prime();
+        else held.add(m);
+      } else m.unload();
     });
+  };
   const resume = () => {
     const m = medias[current];
     m.prime();
@@ -618,6 +625,19 @@ onPage("film-reel", (signal) => {
   current = indexAt();
   setActive(current);
   keep(current);
+  // The film on screen is up (or has had its time): now the ones either side.
+  waitFor(() => medias[current].ready(), 6000, signal).then(() => {
+    if (signal.aborted) return;
+    const release = () => {
+      if (signal.aborted) return;
+      settled = true;
+      held.forEach((m) => m.prime());
+      held.clear();
+    };
+    const rest = (window as Window & { requestIdleCallback?: (cb: () => void, o?: { timeout: number }) => number }).requestIdleCallback;
+    if (rest) rest(release, { timeout: 2000 });
+    else setTimeout(release, 500);
+  });
   resume();
   announce(current);
 

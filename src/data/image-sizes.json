@@ -1,0 +1,1241 @@
+{
+ "/Creative Roles/Cinematographer": {
+  "w": 2560,
+  "h": 1215,
+  "sizes": [
+   320,
+   640,
+   960,
+   1440
+  ]
+ },
+ "/Creative Roles/Director": {
+  "w": 1535,
+  "h": 955,
+  "sizes": [
+   320,
+   640,
+   960
+  ]
+ },
+ "/Creative Roles/Editor": {
+  "w": 2477,
+  "h": 1673,
+  "sizes": [
+   320,
+   640,
+   960,
+   1440
+  ]
+ },
+ "/Creative Roles/Music": {
+  "w": 1017,
+  "h": 576,
+  "sizes": [
+   320,
+   640
+  ]
+ },
+ "/Creative Roles/Write": {
+  "w": 2560,
+  "h": 1765,
+  "sizes": [
+   320,
+   640,
+   960,
+   1440
+  ]
+ },
+ "/Crew Photos/Akash": {
+  "w": 2560,
+  "h": 3413,
+  "sizes": [
+   320,
+   640,
+   960,
+   1440
+  ]
+ },
+ "/Crew Photos/Alex": {
+  "w": 1008,
+  "h": 1000,
+  "sizes": [
+   320,
+   640
+  ]
+ },
+ "/Crew Photos/Asli": {
+  "w": 2560,
+  "h": 1440,
+  "sizes": [
+   320,
+   640,
+   960,
+   1440
+  ]
+ },
+ "/Crew Photos/Evan": {
+  "w": 2560,
+  "h": 1440,
+  "sizes": [
+   320,
+   640,
+   960,
+   1440
+  ]
+ },
+ "/Crew Photos/Isaac": {
+  "w": 2560,
+  "h": 3008,
+  "sizes": [
+   320,
+   640,
+   960,
+   1440
+  ]
+ },
+ "/Crew Photos/Jordyn": {
+  "w": 1300,
+  "h": 1586,
+  "sizes": [
+   320,
+   640,
+   960
+  ]
+ },
+ "/Crew Photos/Kendall": {
+  "w": 1154,
+  "h": 1196,
+  "sizes": [
+   320,
+   640,
+   960
+  ]
+ },
+ "/Crew Photos/Lazaro": {
+  "w": 2560,
+  "h": 1440,
+  "sizes": [
+   320,
+   640,
+   960,
+   1440
+  ]
+ },
+ "/Crew Photos/Luke": {
+  "w": 1280,
+  "h": 1203,
+  "sizes": [
+   320,
+   640,
+   960
+  ]
+ },
+ "/Crew Photos/Max": {
+  "w": 1194,
+  "h": 1172,
+  "sizes": [
+   320,
+   640,
+   960
+  ]
+ },
+ "/Crew Photos/Sam Velletri": {
+  "w": 2560,
+  "h": 1440,
+  "sizes": [
+   320,
+   640,
+   960,
+   1440
+  ]
+ },
+ "/Crew Photos/Sampreeth": {
+  "w": 2560,
+  "h": 3413,
+  "sizes": [
+   320,
+   640,
+   960,
+   1440
+  ]
+ },
+ "/Crew Photos/Tom Velletri": {
+  "w": 1600,
+  "h": 1191,
+  "sizes": [
+   320,
+   640,
+   960
+  ]
+ },
+ "/I'll Hold Up Spotify Poster": {
+  "w": 1600,
+  "h": 1600,
+  "sizes": [
+   320,
+   640,
+   960
+  ]
+ },
+ "/Photo Gallery/Carl 1_1.90.1": {
+  "w": 2560,
+  "h": 1440,
+  "sizes": [
+   320,
+   640,
+   960,
+   1440
+  ]
+ },
+ "/Photo Gallery/Cental Park 3_1.107.1": {
+  "w": 2560,
+  "h": 1440,
+  "sizes": [
+   320,
+   640,
+   960,
+   1440
+  ]
+ },
+ "/Photo Gallery/Central Park 2_1.39.1": {
+  "w": 2560,
+  "h": 1440,
+  "sizes": [
+   320,
+   640,
+   960,
+   1440
+  ]
+ },
+ "/Photo Gallery/Central Park 4_1.76.1": {
+  "w": 2560,
+  "h": 1440,
+  "sizes": [
+   320,
+   640,
+   960,
+   1440
+  ]
+ },
+ "/Photo Gallery/Central Park_1.38.1": {
+  "w": 2560,
+  "h": 1440,
+  "sizes": [
+   320,
+   640,
+   960,
+   1440
+  ]
+ },
+ "/Photo Gallery/Chess Piece_1.22.1": {
+  "w": 2560,
+  "h": 1440,
+  "sizes": [
+   320,
+   640,
+   960,
+   1440
+  ]
+ },
+ "/Photo Gallery/Climax_2.5.1": {
+  "w": 2560,
+  "h": 1440,
+  "sizes": [
+   320,
+   640,
+   960,
+   1440
+  ]
+ },
+ "/Photo Gallery/Dumb_1.88.1": {
+  "w": 2560,
+  "h": 1440,
+  "sizes": [
+   320,
+   640,
+   960,
+   1440
+  ]
+ },
+ "/Photo Gallery/Evan 1_1.80.1": {
+  "w": 2560,
+  "h": 1440,
+  "sizes": [
+   320,
+   640,
+   960,
+   1440
+  ]
+ },
+ "/Photo Gallery/Heroine 1_1.19.1": {
+  "w": 2560,
+  "h": 1440,
+  "sizes": [
+   320,
+   640,
+   960,
+   1440
+  ]
+ },
+ "/Photo Gallery/In Bag_1.72.1": {
+  "w": 2560,
+  "h": 1440,
+  "sizes": [
+   320,
+   640,
+   960,
+   1440
+  ]
+ },
+ "/Photo Gallery/Kevin 2_1.97.1": {
+  "w": 2560,
+  "h": 1440,
+  "sizes": [
+   320,
+   640,
+   960,
+   1440
+  ]
+ },
+ "/Photo Gallery/Kevin_1.63.1": {
+  "w": 2560,
+  "h": 1440,
+  "sizes": [
+   320,
+   640,
+   960,
+   1440
+  ]
+ },
+ "/Photo Gallery/Lazaro 1_1.81.1": {
+  "w": 2560,
+  "h": 1440,
+  "sizes": [
+   320,
+   640,
+   960,
+   1440
+  ]
+ },
+ "/Photo Gallery/Montage 2_1.56.1": {
+  "w": 2560,
+  "h": 1440,
+  "sizes": [
+   320,
+   640,
+   960,
+   1440
+  ]
+ },
+ "/Photo Gallery/On laptop_1.69.1": {
+  "w": 2560,
+  "h": 1440,
+  "sizes": [
+   320,
+   640,
+   960,
+   1440
+  ]
+ },
+ "/Photo Gallery/Smoking_2.14.1": {
+  "w": 2560,
+  "h": 1440,
+  "sizes": [
+   320,
+   640,
+   960,
+   1440
+  ]
+ },
+ "/Photo Gallery/Swechcha/Screenshot 2026-02-09 at 1.29.54 PM": {
+  "w": 2560,
+  "h": 1600,
+  "sizes": [
+   320,
+   640,
+   960,
+   1440
+  ]
+ },
+ "/Photo Gallery/Swechcha/Screenshot 2026-02-09 at 1.30.28 PM": {
+  "w": 2560,
+  "h": 1600,
+  "sizes": [
+   320,
+   640,
+   960,
+   1440
+  ]
+ },
+ "/Photo Gallery/Swechcha/Screenshot 2026-02-09 at 1.30.48 PM": {
+  "w": 2560,
+  "h": 1600,
+  "sizes": [
+   320,
+   640,
+   960,
+   1440
+  ]
+ },
+ "/Photo Gallery/Swechcha/Screenshot 2026-02-09 at 1.31.05 PM": {
+  "w": 2560,
+  "h": 1600,
+  "sizes": [
+   320,
+   640,
+   960,
+   1440
+  ]
+ },
+ "/Photo Gallery/Swechcha/Screenshot 2026-02-09 at 1.35.07 PM": {
+  "w": 2560,
+  "h": 1600,
+  "sizes": [
+   320,
+   640,
+   960,
+   1440
+  ]
+ },
+ "/Photo Gallery/Swechcha/Screenshot 2026-02-09 at 1.36.30 PM": {
+  "w": 2560,
+  "h": 1600,
+  "sizes": [
+   320,
+   640,
+   960,
+   1440
+  ]
+ },
+ "/Photo Gallery/Untitled_1.23.1": {
+  "w": 2560,
+  "h": 1440,
+  "sizes": [
+   320,
+   640,
+   960,
+   1440
+  ]
+ },
+ "/accounting-automation": {
+  "w": 1600,
+  "h": 900,
+  "sizes": [
+   320,
+   640,
+   960
+  ]
+ },
+ "/among-monsters-poster": {
+  "w": 1600,
+  "h": 900,
+  "sizes": [
+   320,
+   640,
+   960
+  ]
+ },
+ "/arch/accounting-automation": {
+  "w": 1200,
+  "h": 686,
+  "sizes": [
+   320,
+   640
+  ]
+ },
+ "/arch/capacity-planner": {
+  "w": 1200,
+  "h": 686,
+  "sizes": [
+   320,
+   640
+  ]
+ },
+ "/arch/cbct-scan-validator": {
+  "w": 1200,
+  "h": 686,
+  "sizes": [
+   320,
+   640
+  ]
+ },
+ "/arch/cdf-diagnostic-filter": {
+  "w": 1200,
+  "h": 686,
+  "sizes": [
+   320,
+   640
+  ]
+ },
+ "/arch/cdf-registry": {
+  "w": 1200,
+  "h": 686,
+  "sizes": [
+   320,
+   640
+  ]
+ },
+ "/arch/cowork-dashboard": {
+  "w": 1200,
+  "h": 686,
+  "sizes": [
+   320,
+   640
+  ]
+ },
+ "/arch/daily-sales-report": {
+  "w": 1200,
+  "h": 686,
+  "sizes": [
+   320,
+   640
+  ]
+ },
+ "/arch/data-connector": {
+  "w": 1200,
+  "h": 686,
+  "sizes": [
+   320,
+   640
+  ]
+ },
+ "/arch/denticon-sync": {
+  "w": 1200,
+  "h": 686,
+  "sizes": [
+   320,
+   640
+  ]
+ },
+ "/arch/doc-coach": {
+  "w": 1200,
+  "h": 686,
+  "sizes": [
+   320,
+   640
+  ]
+ },
+ "/arch/doctor-portal": {
+  "w": 1200,
+  "h": 686,
+  "sizes": [
+   320,
+   640
+  ]
+ },
+ "/arch/enterprise-search": {
+  "w": 1200,
+  "h": 686,
+  "sizes": [
+   320,
+   640
+  ]
+ },
+ "/arch/fake-news-sentiment": {
+  "w": 1200,
+  "h": 686,
+  "sizes": [
+   320,
+   640
+  ]
+ },
+ "/arch/feature-requests": {
+  "w": 1200,
+  "h": 686,
+  "sizes": [
+   320,
+   640
+  ]
+ },
+ "/arch/hybridge-forms": {
+  "w": 1200,
+  "h": 686,
+  "sizes": [
+   320,
+   640
+  ]
+ },
+ "/arch/hybridge-lab": {
+  "w": 1200,
+  "h": 686,
+  "sizes": [
+   320,
+   640
+  ]
+ },
+ "/arch/hybridge-website": {
+  "w": 1200,
+  "h": 686,
+  "sizes": [
+   320,
+   640
+  ]
+ },
+ "/arch/jobpilot": {
+  "w": 1200,
+  "h": 686,
+  "sizes": [
+   320,
+   640
+  ]
+ },
+ "/arch/launchpad": {
+  "w": 1200,
+  "h": 686,
+  "sizes": [
+   320,
+   640
+  ]
+ },
+ "/arch/llama-rlhf": {
+  "w": 1200,
+  "h": 686,
+  "sizes": [
+   320,
+   640
+  ]
+ },
+ "/arch/loan-radar-mlops": {
+  "w": 1200,
+  "h": 686,
+  "sizes": [
+   320,
+   640
+  ]
+ },
+ "/arch/magic-hour": {
+  "w": 1200,
+  "h": 686,
+  "sizes": [
+   320,
+   640
+  ]
+ },
+ "/arch/marketing-warehouse": {
+  "w": 1200,
+  "h": 686,
+  "sizes": [
+   320,
+   640
+  ]
+ },
+ "/arch/npc-coach": {
+  "w": 1200,
+  "h": 686,
+  "sizes": [
+   320,
+   640
+  ]
+ },
+ "/arch/patient-dashboard": {
+  "w": 1200,
+  "h": 686,
+  "sizes": [
+   320,
+   640
+  ]
+ },
+ "/arch/pdf-renderer": {
+  "w": 1200,
+  "h": 686,
+  "sizes": [
+   320,
+   640
+  ]
+ },
+ "/arch/platform": {
+  "w": 1200,
+  "h": 686,
+  "sizes": [
+   320,
+   640
+  ]
+ },
+ "/arch/reconciliation": {
+  "w": 1200,
+  "h": 686,
+  "sizes": [
+   320,
+   640
+  ]
+ },
+ "/arch/recsys-spark-bigdata": {
+  "w": 1200,
+  "h": 686,
+  "sizes": [
+   320,
+   640
+  ]
+ },
+ "/arch/resnet-under-5m": {
+  "w": 1200,
+  "h": 686,
+  "sizes": [
+   320,
+   640
+  ]
+ },
+ "/arch/treatment-estimator": {
+  "w": 1200,
+  "h": 686,
+  "sizes": [
+   320,
+   640
+  ]
+ },
+ "/arch/treatment-sequence": {
+  "w": 1200,
+  "h": 686,
+  "sizes": [
+   320,
+   640
+  ]
+ },
+ "/buffer_overflow": {
+  "w": 1500,
+  "h": 500,
+  "sizes": [
+   320,
+   640,
+   960
+  ]
+ },
+ "/capacity-planner": {
+  "w": 1344,
+  "h": 768,
+  "sizes": [
+   320,
+   640,
+   960
+  ]
+ },
+ "/case-intake": {
+  "w": 1344,
+  "h": 768,
+  "sizes": [
+   320,
+   640,
+   960
+  ]
+ },
+ "/cbct-validator": {
+  "w": 1344,
+  "h": 768,
+  "sizes": [
+   320,
+   640,
+   960
+  ]
+ },
+ "/cdf-diagnostic-filter": {
+  "w": 1344,
+  "h": 768,
+  "sizes": [
+   320,
+   640,
+   960
+  ]
+ },
+ "/cdf-registry": {
+  "w": 1600,
+  "h": 900,
+  "sizes": [
+   320,
+   640
+  ]
+ },
+ "/comics": {
+  "w": 1500,
+  "h": 500,
+  "sizes": [
+   320,
+   640,
+   960
+  ]
+ },
+ "/cowork-dashboard": {
+  "w": 1344,
+  "h": 768,
+  "sizes": [
+   320,
+   640,
+   960
+  ]
+ },
+ "/customer-segmentation": {
+  "w": 1344,
+  "h": 768,
+  "sizes": [
+   320,
+   640,
+   960
+  ]
+ },
+ "/daily-sales-report": {
+  "w": 1344,
+  "h": 768,
+  "sizes": [
+   320,
+   640,
+   960
+  ]
+ },
+ "/data-connector": {
+  "w": 1600,
+  "h": 900,
+  "sizes": [
+   320,
+   640
+  ]
+ },
+ "/denticon-sync": {
+  "w": 1600,
+  "h": 900,
+  "sizes": [
+   320,
+   640
+  ]
+ },
+ "/discipline-aie": {
+  "w": 1344,
+  "h": 768,
+  "sizes": [
+   320,
+   640,
+   960
+  ]
+ },
+ "/discipline-fde": {
+  "w": 1344,
+  "h": 768,
+  "sizes": [
+   320,
+   640,
+   960
+  ]
+ },
+ "/discipline-mle": {
+  "w": 1344,
+  "h": 768,
+  "sizes": [
+   320,
+   640,
+   960
+  ]
+ },
+ "/discipline-sde": {
+  "w": 1344,
+  "h": 768,
+  "sizes": [
+   320,
+   640,
+   960
+  ]
+ },
+ "/doc-coach": {
+  "w": 1600,
+  "h": 900,
+  "sizes": [
+   320,
+   640,
+   960
+  ]
+ },
+ "/doctor-portal": {
+  "w": 1600,
+  "h": 914,
+  "sizes": [
+   320,
+   640,
+   960
+  ]
+ },
+ "/doctor-report-cards": {
+  "w": 1344,
+  "h": 768,
+  "sizes": [
+   320,
+   640,
+   960
+  ]
+ },
+ "/enterprise-data": {
+  "w": 1600,
+  "h": 900,
+  "sizes": [
+   320,
+   640,
+   960
+  ]
+ },
+ "/enterprise-search": {
+  "w": 1344,
+  "h": 768,
+  "sizes": [
+   320,
+   640,
+   960
+  ]
+ },
+ "/fake-news": {
+  "w": 1600,
+  "h": 791,
+  "sizes": [
+   320,
+   640,
+   960
+  ]
+ },
+ "/feature-requests": {
+  "w": 1600,
+  "h": 914,
+  "sizes": [
+   320,
+   640
+  ]
+ },
+ "/film-and-engineering": {
+  "w": 1344,
+  "h": 768,
+  "sizes": [
+   320,
+   640,
+   960
+  ]
+ },
+ "/forward-deployed-engineer": {
+  "w": 1600,
+  "h": 900,
+  "sizes": [
+   320,
+   640
+  ]
+ },
+ "/heap_exploit": {
+  "w": 1500,
+  "h": 500,
+  "sizes": [
+   320,
+   640,
+   960
+  ]
+ },
+ "/hero-nebula-dark": {
+  "w": 1344,
+  "h": 768,
+  "sizes": [
+   320,
+   640,
+   960
+  ]
+ },
+ "/hero-nebula-light": {
+  "w": 1344,
+  "h": 768,
+  "sizes": [
+   320,
+   640,
+   960
+  ]
+ },
+ "/hybridge-forms": {
+  "w": 1344,
+  "h": 768,
+  "sizes": [
+   320,
+   640,
+   960
+  ]
+ },
+ "/hybridge-websites": {
+  "w": 1600,
+  "h": 914,
+  "sizes": [
+   320,
+   640
+  ]
+ },
+ "/jobpilot": {
+  "w": 1344,
+  "h": 768,
+  "sizes": [
+   320,
+   640,
+   960
+  ]
+ },
+ "/jobpilot-flagship": {
+  "w": 1344,
+  "h": 768,
+  "sizes": [
+   320,
+   640,
+   960
+  ]
+ },
+ "/jobpilot-judge": {
+  "w": 1344,
+  "h": 768,
+  "sizes": [
+   320,
+   640,
+   960
+  ]
+ },
+ "/launchpad": {
+  "w": 1600,
+  "h": 914,
+  "sizes": [
+   320,
+   640,
+   960
+  ]
+ },
+ "/llm-persuasion": {
+  "w": 1600,
+  "h": 900,
+  "sizes": [
+   320,
+   640,
+   960
+  ]
+ },
+ "/loan-radar": {
+  "w": 1344,
+  "h": 768,
+  "sizes": [
+   320,
+   640,
+   960
+  ]
+ },
+ "/magic-hour": {
+  "w": 1344,
+  "h": 768,
+  "sizes": [
+   320,
+   640,
+   960
+  ]
+ },
+ "/marketing-warehouse": {
+  "w": 1344,
+  "h": 768,
+  "sizes": [
+   320,
+   640,
+   960
+  ]
+ },
+ "/npc-coach": {
+  "w": 1344,
+  "h": 768,
+  "sizes": [
+   320,
+   640,
+   960
+  ]
+ },
+ "/npc-coach-architecture": {
+  "w": 1344,
+  "h": 768,
+  "sizes": [
+   320,
+   640,
+   960
+  ]
+ },
+ "/npc-coach-bugs": {
+  "w": 1344,
+  "h": 768,
+  "sizes": [
+   320,
+   640,
+   960
+  ]
+ },
+ "/npc-coach-dashboard": {
+  "w": 1344,
+  "h": 768,
+  "sizes": [
+   320,
+   640,
+   960
+  ]
+ },
+ "/npc-coach-scoring": {
+  "w": 1344,
+  "h": 768,
+  "sizes": [
+   320,
+   640,
+   960
+  ]
+ },
+ "/optimal-living-systems": {
+  "w": 1600,
+  "h": 900,
+  "sizes": [
+   320,
+   640,
+   960
+  ]
+ },
+ "/paper": {
+  "w": 1500,
+  "h": 500,
+  "sizes": [
+   320,
+   640,
+   960
+  ]
+ },
+ "/patient-dashboard": {
+  "w": 1344,
+  "h": 768,
+  "sizes": [
+   320,
+   640,
+   960
+  ]
+ },
+ "/pdf-renderer": {
+  "w": 1600,
+  "h": 914,
+  "sizes": [
+   320,
+   640
+  ]
+ },
+ "/pic": {
+  "w": 720,
+  "h": 540,
+  "sizes": [
+   320
+  ]
+ },
+ "/pipeline-ghosting": {
+  "w": 1344,
+  "h": 768,
+  "sizes": [
+   320,
+   640,
+   960
+  ]
+ },
+ "/platform": {
+  "w": 1600,
+  "h": 900,
+  "sizes": [
+   320,
+   640,
+   960
+  ]
+ },
+ "/poster 1": {
+  "w": 1080,
+  "h": 1350,
+  "sizes": [
+   320,
+   640
+  ]
+ },
+ "/reconciliation": {
+  "w": 1344,
+  "h": 768,
+  "sizes": [
+   320,
+   640,
+   960
+  ]
+ },
+ "/resnet-compact": {
+  "w": 1344,
+  "h": 768,
+  "sizes": [
+   320,
+   640,
+   960
+  ]
+ },
+ "/simpsons": {
+  "w": 1500,
+  "h": 500,
+  "sizes": [
+   320,
+   640,
+   960
+  ]
+ },
+ "/skateboard": {
+  "w": 1500,
+  "h": 500,
+  "sizes": [
+   320,
+   640,
+   960
+  ]
+ },
+ "/teaching/ai-engineers-handbook": {
+  "w": 1200,
+  "h": 750,
+  "sizes": [
+   320,
+   640,
+   960
+  ]
+ },
+ "/teaching/the-rag-compass": {
+  "w": 1344,
+  "h": 768,
+  "sizes": [
+   320,
+   640,
+   960
+  ]
+ },
+ "/treatment-estimator": {
+  "w": 1344,
+  "h": 768,
+  "sizes": [
+   320,
+   640,
+   960
+  ]
+ },
+ "/treatment-sequence": {
+  "w": 1344,
+  "h": 768,
+  "sizes": [
+   320,
+   640,
+   960
+  ]
+ },
+ "/what-it-costs": {
+  "w": 1600,
+  "h": 900,
+  "sizes": [
+   320,
+   640
+  ]
+ },
+ "/writing/guides/ai-engineers-handbook": {
+  "w": 1100,
+  "h": 688,
+  "sizes": [
+   320,
+   640
+  ]
+ },
+ "/writing/guides/the-rag-compass": {
+  "w": 1100,
+  "h": 629,
+  "sizes": [
+   320,
+   640,
+   960
+  ]
+ }
+}

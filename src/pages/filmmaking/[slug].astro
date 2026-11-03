@@ -20,6 +20,7 @@ import {
   type Film,
 } from "../../data/films";
 import { filmNode } from "../../utils/seo";
+import { coverSizes } from "../../utils/optimizedImage";
 
 export function getStaticPaths() {
   return films.map((film) => ({ params: { slug: film.slug }, props: { film } }));
@@ -244,7 +245,7 @@ const base = Astro.site!.toString();
                   data-caption={film.title}
                   aria-label={`View still ${i + 1} of ${stills.length} from ${film.title}`}
                 >
-                  <SmartImage src={item.src} alt={item.alt} class="fp-still-img" loading="lazy" />
+                  <SmartImage src={item.src} alt={item.alt} class="fp-still-img" loading="lazy" sizes="(min-width: 1024px) 400px, (min-width: 768px) 350px, 50vw" />
                 </button>
               </li>
             ))}
@@ -294,6 +295,7 @@ const base = Astro.site!.toString();
                               class="person-img"
                               style={person.imageStyle}
                               loading="lazy"
+                              sizes={coverSizes(person.photo, [[1200, 183, 228], [768, 224, 279], [0, 200, 250]], 1.5)}
                             />
                           ) : (
                             <div class="person-ph" aria-hidden="true">

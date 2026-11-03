@@ -18,6 +18,9 @@ type Props = {
   loading?: "eager" | "lazy";
   fetchpriority?: "high" | "low" | "auto";
   decoding?: "async" | "sync" | "auto";
+  // How wide it is shown. With it, the browser picks the smallest copy that is
+  // still sharp on this screen (scripts/make-sized-images.mjs).
+  sizes?: string;
   [key: string]: unknown;
 };
 
@@ -30,22 +33,26 @@ const {
   loading = "lazy",
   fetchpriority,
   decoding = "async",
+  sizes,
   ...rest
 } = Astro.props as Props;
 
 const opt = optimizedSources(src);
+const avifSet = (sizes && opt?.avifSet) || opt?.avif;
+const webpSet = (sizes && opt?.webpSet) || opt?.webp;
+const sourceSizes = sizes && opt?.avifSet ? sizes : undefined;
 ---
 
 {
   opt ? (
     <picture>
-      <source srcset={opt.avif} type="image/avif" />
-      <source srcset={opt.webp} type="image/webp" />
+      <source srcset={avifSet} sizes={sourceSizes} type="image/avif" />
+      <source srcset={webpSet} sizes={sourceSizes} type="image/webp" />
       <img
         src={opt.webp}
         alt={alt}
-        width={width}
-        height={height}
+        width={width ?? opt.width}
+        height={height ?? opt.height}
         class={className}
         loading={loading}
         fetchpriority={fetchpriority}

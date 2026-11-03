@@ -74,7 +74,7 @@ const tourCount = WORDS[TOURS.length] ?? String(TOURS.length);
       <h2 id="dx-app" class="sr-only">The live app</h2>
       <a href="/demos/jobpilot" class="surface dx-feature" data-reveal>
         <span class="dx-feature-media" aria-hidden="true">
-          <Picture src="/jobpilot.png" alt="" width={960} height={600} loading="eager" />
+          <Picture src="/jobpilot.png" alt="" width={960} height={600} loading="eager" sizes="(min-width: 1024px) 700px, 92vw" />
         </span>
         <span class="dx-feature-body">
           <span class="dx-badges">
@@ -112,7 +112,7 @@ const tourCount = WORDS[TOURS.length] ?? String(TOURS.length);
             <a href={`/demos/${t.slug}`} class="surface dx-card">
               <span class="surface-media dx-media" aria-hidden="true">
                 {hasPublic(t.cover) ? (
-                  <Picture src={t.cover ?? ""} alt="" width={640} height={400} />
+                  <Picture src={t.cover ?? ""} alt="" width={640} height={400} sizes="(min-width: 1024px) 390px, (min-width: 768px) 45vw, 92vw" />
                 ) : (
                   <span class="media-fallback"></span>
                 )}
