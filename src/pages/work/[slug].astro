@@ -130,7 +130,7 @@ const resume = RESUME[d.slug];
           {g.map((p, k) => (
             <article class="ww-card" data-note={gi * 3 + k} data-id={`card-${gi * 3 + k}`}>
               <span class="ww-card-art" aria-hidden="true">
-                {hasPublic(p.img) ? <Picture src={p.img ?? ""} alt="" width={640} height={360} sizes="(min-width: 1024px) 430px, 310px" /> : <span class="ww-card-fallback">{p.name}</span>}
+                {hasPublic(p.img) ? <Picture src={p.img ?? ""} alt="" width={640} height={360} sizes="(min-width: 1024px) 480px, 310px" /> : <span class="ww-card-fallback">{p.name}</span>}
               </span>
               <div class="ww-card-body">
                 <span class:list={["ww-badge", { "is-live": isLive(p.status) }]}>{p.status}</span>

@@ -37,11 +37,36 @@ export function optimizedSources(src: string | undefined): {
   if (!fs.existsSync(onDisk(avif))) return null;
   const entry = SIZED[decodeURIComponent(base)];
   if (!entry) return { avif, webp };
+  // A copy that would be no smaller than the full file was never made. The full
+  // file then takes its place on the ladder (each step is half as wide again), so
+  // the browser moves up to it where it would have moved up to that copy, and not
+  // only at the file's true width, by which point a card has been showing a copy
+  // far narrower than it is drawn. Only the browser's choice reads this number.
+  const top = entry.sizes[entry.sizes.length - 1];
+  const fullW = Math.min(entry.w, Math.round(top * 1.5));
   const set = (ext: string, full: string) =>
     entry.sizes.length
-      ? [...entry.sizes.map((w) => `${encodePath(`/sized${decodeURIComponent(base)}-${w}${ext}`)} ${w}w`), `${full} ${entry.w}w`].join(", ")
+      ? [...entry.sizes.map((w) => `${encodePath(`/sized${decodeURIComponent(base)}-${w}${ext}`)} ${w}w`), `${full} ${fullW}w`].join(", ")
       : undefined;
   return { avif, webp, avifSet: set(".avif", avif), webpSet: set(".webp", webp), width: entry.w, height: entry.h };
+}
+
+/**
+ * The sizes value to hand the browser. Between two copies it keeps the smaller
+ * until the space is well past it, so a card on a 2x screen can land on a copy a
+ * fifth narrower than it is drawn. A quarter more room on anything with a
+ * min-width rule keeps desktop and tablet pictures sharp. The last, phone value
+ * is left alone: at 3x a small shortfall does not show, and phones pay for bytes.
+ */
+export function roomySizes(sizes: string): string {
+  return sizes
+    .split(",")
+    .map((part) => {
+      const s = part.trim();
+      if (!s.startsWith("(min-width")) return s;
+      return s.replace(/([\d.]+)(px|vw)$/, (_, n, unit) => `${Math.ceil(Number(n) * 1.25)}${unit}`);
+    })
+    .join(", ");
 }
 
 /**

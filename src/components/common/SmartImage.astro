@@ -1,6 +1,6 @@
 ---
 import { Image } from "astro:assets";
-import { optimizedSources } from "../../utils/optimizedImage";
+import { optimizedSources, roomySizes } from "../../utils/optimizedImage";
 
 type Props = {
   src: string | ImageMetadata;
@@ -35,7 +35,7 @@ const isImported = typeof src === "object";
 const opt = !isImported ? optimizedSources(src as string) : null;
 const avifSet = (sizes && opt?.avifSet) || opt?.avif;
 const webpSet = (sizes && opt?.webpSet) || opt?.webp;
-const sourceSizes = sizes && opt?.avifSet ? sizes : undefined;
+const sourceSizes = sizes && opt?.avifSet ? roomySizes(sizes) : undefined;
 ---
 
 {

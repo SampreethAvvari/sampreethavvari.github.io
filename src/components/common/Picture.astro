@@ -7,7 +7,7 @@
 // wrapper produces no box and the <img> behaves exactly as it did before.
 // Every passed attribute (class, style, data-parallax, sizes, ...) is
 // forwarded to the <img>, so existing CSS/JS that targets it keeps working.
-import { optimizedSources } from "../../utils/optimizedImage";
+import { optimizedSources, roomySizes } from "../../utils/optimizedImage";
 
 type Props = {
   src: string;
@@ -40,7 +40,7 @@ const {
 const opt = optimizedSources(src);
 const avifSet = (sizes && opt?.avifSet) || opt?.avif;
 const webpSet = (sizes && opt?.webpSet) || opt?.webp;
-const sourceSizes = sizes && opt?.avifSet ? sizes : undefined;
+const sourceSizes = sizes && opt?.avifSet ? roomySizes(sizes) : undefined;
 ---
 
 {
