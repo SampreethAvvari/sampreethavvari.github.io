@@ -162,6 +162,12 @@ const ink = (() => {
   };
 })();
 
+// A move back or forward returns to where the reader was, wherever the link said.
+let traversing = false;
+document.addEventListener("astro:before-preparation", (e) => {
+  traversing = (e as Event & { navigationType?: string }).navigationType === "traverse";
+});
+
 onPage("film-reel", (signal) => {
   const root = document.querySelector<HTMLElement>("[data-reel]");
   const stage = root?.querySelector<HTMLElement>("[data-reel-stage]");
@@ -186,6 +192,14 @@ onPage("film-reel", (signal) => {
   const sound = new FilmSound(uis.map((u) => u.dataset.audio || undefined));
 
   root.classList.add("is-live");
+  // The page was put in place while the reel was one screen tall, so a link to the
+  // slate or a move back to below the reel ended up too high. The reel has its full
+  // height now, so go there again.
+  if (location.hash && !traversing) {
+    document.getElementById(decodeURIComponent(location.hash.slice(1)))?.scrollIntoView({ block: "start", behavior: "instant" as ScrollBehavior });
+  } else if (history.state?.scrollY > scrollY) {
+    scrollTo({ top: history.state.scrollY, behavior: "instant" as ScrollBehavior });
+  }
   if (reduce) root.classList.add("is-still");
   if (phone) html.classList.add("fm-reel-solid");
 
