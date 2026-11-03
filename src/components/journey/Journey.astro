@@ -6,6 +6,7 @@
 // sky in the chapter's colour stands in. All copy is real HTML, so it reads
 // and indexes without the scene.
 import Icon from "../common/Icon.astro";
+import { restAt, TOTAL_SCREENS, yOf } from "../../scripts/journey/plan";
 
 // How wide a chapter's small cards show their pictures, at any screen.
 const THUMB = "280px";
@@ -43,25 +44,16 @@ const chapters = [
   { id: "contact", name: "What's next", color: "#F5A524", rgb: "245,165,36" },
   { id: "connect", name: "Connect", color: "#86EFAC", rgb: "134,239,172" },
 ];
-// The last three chapters are filmed scenes on the planet's surface.
-// They play inside the live 3D world (scripts/journey/surface.ts), so no flat film covers it.
+// The chapters from the landing on happen on the planet's surface, inside the live 3D world
+// (scripts/journey/surface.ts), and the scroll plays them (scripts/journey/plan.ts).
 const SCENES: Record<string, string> = {};
 const N = chapters.length;
 const pad = (n: number) => String(n).padStart(2, "0");
 const words = (s: string) => s.split(" ");
 const year = new Date().getFullYear();
-// Scroll per chapter, in screens: most of it is spent inside the world, the
-// last part is the jump to the next one.
-const SPAN = 3;
-// Where each chapter rests when the scroll settles (fraction of its span).
-const REST = 0.3;
-// Where a jump lands in a free world (the first ones scroll freely, the
-// landing and the filmed ones are one step each).
-const ARRIVE = 0.04;
-const STEP_FROM = chapters.findIndex((c) => c.id === "film");
-const anchorAt = (i: number) => (i === 0 ? 0 : i === N - 1 ? i : STEP_FROM >= 0 && i >= STEP_FROM ? i + REST : i + ARRIVE);
-// The filmed chapters are steps, so no closing film after the flight.
-const ENDING = 0;
+// Scroll per chapter, in screens, is in scripts/journey/plan.ts: three a chapter through the
+// flight, and from the landing on as many as each scene needs, since the scroll plays it.
+const anchorAt = (i: number) => yOf(restAt(i));
 ---
 
 <section
@@ -69,10 +61,7 @@ const ENDING = 0;
   class="journey"
   data-journey
   data-chapters={JSON.stringify(chapters.map(({ id, color }) => ({ id, color, scene: SCENES[id] ?? null })))}
-  data-rest={REST}
-  data-span={SPAN}
-  data-ending={ENDING}
-  style={`--n:${N};--span:${SPAN};--ending:${ENDING};--jc:${chapters[0].rgb};`}
+  style={`--screens:${TOTAL_SCREENS};--jc:${chapters[0].rgb};`}
   aria-label="Sampreeth Avvari, in nine chapters"
 >
   <div class="journey-stage">
@@ -254,13 +243,13 @@ const ENDING = 0;
   </div>
 
   <!-- one anchor per chapter, a screen apart, for links and the index -->
-  {chapters.map((c, i) => <span class="journey-anchor" id={`ch-${c.id}`} style={`top:calc(${anchorAt(i) * SPAN} * 100svh)`}></span>)}
+  {chapters.map((c, i) => <span class="journey-anchor" id={`ch-${c.id}`} style={`top:calc(${anchorAt(i)} * 100svh)`}></span>)}
 </section>
 
 
 <style>
-  /* every chapter gets SPAN screens; the last one ends where the page ends */
-  .journey { position: relative; height: calc(((var(--n) - 1) * var(--span) + var(--ending) + 1) * 100svh); }
+  /* the whole journey's scroll, and the screen it ends on */
+  .journey { position: relative; height: calc((var(--screens) + 1) * 100svh); }
   .journey-ending { position: absolute; inset: 0; width: 100%; height: 100%; display: block; pointer-events: none; opacity: 0; transition: opacity 0.9s ease; }
   .journey.show-film .journey-ending { opacity: 1; }
   .journey:not(.has-ending) .journey-ending { display: none; }
@@ -623,8 +612,9 @@ const ENDING = 0;
 
 <script>
   import { hasWebGL2 } from "../../scripts/gl-probe";
+  import { arriveAt, inJumpGap, pOf, restAt, RESTS, SCENE, settleAt, TOTAL_SCREENS, travelEnd, worldAt, yOf } from "../../scripts/journey/plan";
   type Chapter = { id: string; color: string; scene: string | null };
-  type Journey = { setScroll(p: number, v: number): void; setPointer(x: number, y: number): void; setPaused(p: boolean): void; destroy(): void };
+  type Journey = { setScroll(p: number, v: number): void; setPointer(x: number, y: number): void; setDirection(d: number): void; interact(kind: "hover" | "press" | "drag" | "release", x: number, y: number): void; setPaused(p: boolean): void; destroy(): void };
   type Ending = { setScene(id: string): void; setProgress(p: number): void; setPaused(b: boolean): void; destroy(): void; duration?(id: string): number; ready?(id: string): boolean };
   type Framing = { side: "left" | "right"; v: "top" | "bottom" };
   // The engine module may also export CHAPTER_FRAMING (where the words sit per
@@ -642,9 +632,6 @@ const ENDING = 0;
     const chapters: Chapter[] = JSON.parse(root.dataset.chapters || "[]");
     const N = chapters.length;
     const LAST = N - 1;
-    const SPAN = Number(root.dataset.span || 1.7); // screens per world
-    const ENDING = Number(root.dataset.ending || 3); // screens for the closing film
-    const REST = Number(root.dataset.rest || 0.3); // where a world rests within its span
     const GLIDE = 1400; // every move between worlds takes exactly this long
     const panes = Array.from(root.querySelectorAll<HTMLElement>("[data-jc]"));
     const now = root.querySelector<HTMLElement>("[data-j-now]");
@@ -672,30 +659,18 @@ const ENDING = 0;
     const sceneLength = (id: string) => (player?.duration?.(id) ?? 8);
     let framing: Framing[] = [];
 
-    // ---- geometry: the flight is LAST * SPAN screens, the closing film ENDING screens after it
-    const flightPx = () => LAST * SPAN * innerHeight;
+    // ---- geometry: the journey is TOTAL_SCREENS screens of scroll. A screen is what the page's own
+    // height says it is, so the address bar coming and going on a phone cannot shift a chapter.
+    const stage = root.querySelector<HTMLElement>(".journey-stage");
+    const screenPx = () => Math.max(1, root.offsetHeight - (stage?.offsetHeight ?? innerHeight)) / TOTAL_SCREENS;
     let rootBottom = 0;
     const measure = () => {
       const r = root.getBoundingClientRect();
       rootBottom = r.bottom;
       const y = Math.max(0, -r.top);
-      return { p: Math.min(LAST, (y / Math.max(1, flightPx())) * LAST), e: 0 };
+      return { p: Math.min(LAST, pOf(y / screenPx())), e: 0 };
     };
-    // A free world scrolls from arriveAt to travelEnd under the reader's own hand;
-    // past its end the jump to the next world runs by itself. The landing and the
-    // filmed worlds are one step each (their arrive and end are the same point).
-    const TRAVEL_END = 0.55, ARRIVE = 0.04;
-    const stepFrom = (() => { const k = chapters.findIndex((c) => c.id === "film"); return k < 0 ? N : k; })();
-    const isStep = (i: number) => i >= stepFrom;
-    const arriveAt = (i: number) => (i <= 0 ? 0 : i >= LAST ? LAST : isStep(i) ? i + REST : i + ARRIVE);
-    const travelEnd = (i: number) => (i >= LAST ? LAST : isStep(i) ? i + REST : i + TRAVEL_END);
-    const topFor = (p: number) => root.offsetTop + (p / LAST) * flightPx();
-    const EPS = 0.006;
-    // the world whose stretch holds p, or -1 between worlds
-    const worldAt = (p: number) => {
-      for (let i = 0; i <= LAST; i++) if (p >= arriveAt(i) - EPS && p <= travelEnd(i) + EPS) return i;
-      return -1;
-    };
+    const topFor = (p: number) => root.offsetTop + yOf(p) * screenPx();
     // the world just behind a point between worlds
     const behind = (p: number) => { let k = 0; for (let i = 0; i <= LAST; i++) if (travelEnd(i) <= p) k = i; return k; };
 
@@ -749,34 +724,70 @@ const ENDING = 0;
       window.dispatchEvent(new CustomEvent("journey:words", { detail: { index: i, id: chapters[i].id, words: said, items, wordStagger: 0.07, itemStagger: 0.08, delay: 0.18 } }));
     };
 
-    // ---- moving: free inside a world, a jump of fixed tempo between worlds
-    let gliding = false, quietUntil = 0, lastInput = 0, lastDir = 1, gapLater = 0, fling = 0;
+    // ---- moving: free everywhere except the jumps between the flight's worlds, which run at a fixed tempo
+    let gliding = false, quietUntil = 0, quietCap = 0, lastInput = 0, lastDir = 1, gapLater = 0, fling = 0;
+    // A soft settle after the scroll stops: the visitor's direction is not changed by it, and any input cancels it.
+    let settling = 0, settleLater = 0, settleEnd = 0, touching = false, storyDir = 1, dirFrom = 0, scrubGlide = false;
+    const stopSettle = () => { clearTimeout(settleLater); if (settling) cancelAnimationFrame(settling); settling = 0; };
+    const settleTo = (target: number) => {
+      const from = scrollY, to = topFor(target);
+      const span = Math.abs(to - from);
+      if (span < 3 || reduced) return;
+      const dur = Math.min(760, 260 + span * 1.5);
+      const t0 = performance.now();
+      let set = from;
+      const frame = (t: number) => {
+        if (visit.signal.aborted) return;
+        // Something else moved the page (a scrollbar, a link): it is theirs.
+        if (Math.abs(scrollY - set) > 3) { settling = 0; settleEnd = t; return; }
+        const k = Math.min(1, (t - t0) / dur);
+        const e = 1 - Math.pow(1 - k, 2.6);
+        set = from + (to - from) * e;
+        scrollTo({ top: set, behavior: "instant" as ScrollBehavior });
+        settling = k < 1 ? requestAnimationFrame(frame) : 0;
+        if (!settling) settleEnd = performance.now();
+      };
+      settling = requestAnimationFrame(frame);
+    };
+    const armSettle = () => {
+      clearTimeout(settleLater);
+      // Only after the visitor's own wheel, finger or keys: never against a scrollbar drag or a restore.
+      if (performance.now() - lastInput > 1600) return;
+      settleLater = window.setTimeout(() => {
+        if (gliding || touching || settling || fling) return;
+        const p = measure().p;
+        if (p < SCENE.landA) return;
+        const to = settleAt(p, lastDir);
+        if (to !== null) settleTo(to);
+      }, 170);
+    };
     const coarse = matchMedia("(pointer: coarse)").matches;
     const ease = (t: number) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
     const stopFling = () => { if (fling) cancelAnimationFrame(fling); fling = 0; };
-    const glide = (top: number, dur = GLIDE) => {
+    const glide = (top: number, dur = GLIDE, scrub = false) => {
       const from = scrollY, to = Math.round(top);
       if (Math.abs(to - from) < 2) return;
+      stopSettle();
       if (reduced) { scrollTo({ top: to, behavior: "instant" as ScrollBehavior }); quietUntil = performance.now() + 200; return; }
       gliding = true;
-      root.classList.add("is-jumping");
+      scrubGlide = scrub;
+      if (!scrub) root.classList.add("is-jumping");
       const t0 = performance.now();
       const frame = (t: number) => {
         if (visit.signal.aborted) return;
         const k = Math.min(1, (t - t0) / dur);
         scrollTo({ top: from + (to - from) * ease(k), behavior: "instant" as ScrollBehavior });
         if (k < 1) requestAnimationFrame(frame);
-        else { gliding = false; root.classList.remove("is-jumping"); quietUntil = performance.now() + 180; onScroll(); }
+        else { gliding = false; scrubGlide = false; root.classList.remove("is-jumping"); quietUntil = performance.now() + 180; quietCap = performance.now() + 520; onScroll(); }
       };
       requestAnimationFrame(frame);
     };
     // the world the reader is in (or the one just behind them between worlds)
     const here = () => (active >= 0 ? active : behind(progress));
-    const stepHere = () => isStep(here());
     // go to world j, landing at `at` (its start by default, its end when coming back)
     const go = (j: number, at?: number) => {
       j = Math.max(0, Math.min(LAST, j));
-      const target = at ?? arriveAt(j);
+      const target = at ?? restAt(j);
       const i = here();
       stopFling();
       if (Math.abs(progress - target) < 0.004) { show(j); return false; }
@@ -786,6 +797,17 @@ const ENDING = 0;
       return true;
     };
     const step = (dir: number) => {
+      // On the planet a page key goes to the next place a scene comes to rest, at a pace that plays it.
+      if (progress >= SCENE.landA - 0.01) {
+        const next = dir > 0 ? RESTS.find((r) => r > progress + 0.012) : [...RESTS].reverse().find((r) => r < progress - 0.012);
+        if (next !== undefined) {
+          stopFling();
+          const dist = Math.abs(yOf(next) - yOf(progress));
+          glide(topFor(next), Math.min(3200, 900 + dist * 520), true);
+          return;
+        }
+        if (dir > 0) return;
+      }
       const i = here();
       const j = Math.max(0, Math.min(LAST, i + dir));
       if (j !== i) go(j, dir < 0 ? travelEnd(j) : arriveAt(j));
@@ -797,7 +819,7 @@ const ENDING = 0;
       const act = () => {
         if (gliding) return;
         const p = measure().p;
-        if (worldAt(p) >= 0) return;
+        if (!inJumpGap(p)) return;
         const k = behind(p);
         let dir = fresh ? lastDir : 0;
         if (!dir) dir = p - travelEnd(k) < arriveAt(k + 1) - p ? -1 : 1;
@@ -808,27 +830,36 @@ const ENDING = 0;
       else gapLater = window.setTimeout(act, 220); // a scrollbar drag or a restore: wait for it to stop
     };
 
-    // wheel: the page scrolls itself inside a free world; the landing and the films take one notch each
-    let wheelAcc = 0, lastWheel = 0;
+    // wheel: the page scrolls itself; the only thing it never does is argue with a jump in progress
     addEventListener("wheel", (e) => {
       if (e.ctrlKey) return; // pinch zoom stays the browser's
       const t = performance.now();
-      if (gliding || t < quietUntil) { e.preventDefault(); quietUntil = Math.max(quietUntil, t + 140); return; } // trackpad momentum
+      // Trackpad momentum after a jump is swallowed, but a wheel still spinning is never held for long.
+      if (gliding || t < quietUntil) { e.preventDefault(); if (gliding) quietCap = t + 520; quietUntil = Math.min(quietCap, Math.max(quietUntil, t + 140)); return; }
+      stopSettle();
       const dy = e.deltaMode === 1 ? e.deltaY * 32 : e.deltaY;
-      if (!stepHere()) { if (dy) { lastInput = t; lastDir = dy > 0 ? 1 : -1; } return; }
-      e.preventDefault();
-      if (t - lastWheel > 220) wheelAcc = 0;
-      lastWheel = t;
-      wheelAcc += dy;
-      if (Math.abs(wheelAcc) > 24) { step(wheelAcc > 0 ? 1 : -1); wheelAcc = 0; }
+      if (dy) { lastInput = t; lastDir = dy > 0 ? 1 : -1; }
     }, { passive: false, ...sig });
 
     // touch: the finger moves the world directly and a fling slows like the page would,
     // so a jump never fights the phone's own momentum
     let touchY = 0, touchX = 0, touchT = 0, touchFree = false, touchV = 0, touchLastY = 0, touchLastT = 0;
     let scroller: HTMLElement | null = null, decided = false;
+    // A touch is a scroll the moment it moves. A tap, or a hold that stays still, is the scene's.
+    let touchHold = 0, touchPressing = false, touchMoved = false, touchOnScene = false, touchNX = 0, touchNY = 0;
+    const endTouchPress = () => { clearTimeout(touchHold); if (touchPressing) journey?.interact("release", touchNX, touchNY); touchPressing = false; };
     addEventListener("touchstart", (e) => {
       stopFling();
+      stopSettle();
+      touching = true;
+      touchMoved = false;
+      touchOnScene = e.touches.length === 1 && overScene(e.target);
+      if (touchOnScene) {
+        touchNX = (e.touches[0].clientX / innerWidth) * 2 - 1;
+        touchNY = (e.touches[0].clientY / innerHeight) * 2 - 1;
+        clearTimeout(touchHold);
+        touchHold = window.setTimeout(() => { if (!touchMoved && touching) { touchPressing = true; journey?.interact("press", touchNX, touchNY); } }, 200);
+      }
       touchY = touchLastY = e.touches[0].clientY; touchX = e.touches[0].clientX; touchT = touchLastT = performance.now(); touchV = 0;
       // a touch inside an answer list or a card row may belong to that scroller: the first move decides
       scroller = (e.target as Element | null)?.closest?.<HTMLElement>(".jc-faq dl, .jc-cards") ?? null;
@@ -844,7 +875,14 @@ const ENDING = 0;
       }
       if (touchFree) return;
       if (e.cancelable) e.preventDefault();
-      if (gliding || stepHere()) return;
+      if (!touchMoved && Math.hypot(e.touches[0].clientX - touchX, e.touches[0].clientY - touchY) > 10) {
+        touchMoved = true;
+        endTouchPress();
+        // The finger has moved: from here it is a scroll, and starts from where it is now.
+        touchLastY = e.touches[0].clientY;
+        touchLastT = performance.now();
+      }
+      if (gliding || !touchMoved) return;
       const y = e.touches[0].clientY, t = performance.now();
       const dy = touchLastY - y;
       touchV = touchV * 0.3 + (dy / Math.max(1, t - touchLastT)) * 0.7;
@@ -853,21 +891,24 @@ const ENDING = 0;
       scrollBy({ top: dy, behavior: "instant" as ScrollBehavior });
     }, { passive: false, ...sig });
     addEventListener("touchend", (e) => {
+      touching = false;
+      if (!touchMoved && touchOnScene && !touchPressing && performance.now() - touchT < 200) {
+        // A tap: a press and its release.
+        clearTimeout(touchHold);
+        journey?.interact("press", touchNX, touchNY);
+        journey?.interact("release", touchNX, touchNY);
+      }
+      endTouchPress();
       if (touchFree || gliding) return;
       const t = performance.now();
-      if (stepHere()) {
-        const dy = touchY - (e.changedTouches[0]?.clientY ?? touchY);
-        if (Math.abs(dy) > 36 && t - touchT < 900) step(dy > 0 ? 1 : -1);
-        return;
-      }
       let v = t - touchLastT > 90 ? 0 : touchV; // px per ms
-      if (Math.abs(v) < 0.05) return;
+      if (Math.abs(v) < 0.05) { armSettle(); return; }
       let prev = t;
       const run = (now: number) => {
         if (gliding || visit.signal.aborted) { fling = 0; return; }
         const dt = Math.min(32, now - prev); prev = now;
         v *= Math.pow(0.95, dt / 16);
-        if (Math.abs(v) < 0.02) { fling = 0; return; }
+        if (Math.abs(v) < 0.02) { fling = 0; armSettle(); return; }
         lastInput = now; lastDir = v > 0 ? 1 : -1;
         scrollBy({ top: v * dt, behavior: "instant" as ScrollBehavior });
         fling = requestAnimationFrame(run);
@@ -875,7 +916,9 @@ const ENDING = 0;
       fling = requestAnimationFrame(run);
     }, { passive: true, ...sig });
 
-    // keys: arrows scroll a free world, page keys and space move a whole world
+    addEventListener("touchcancel", () => { touching = false; endTouchPress(); }, { passive: true, ...sig });
+
+    // keys: arrows scroll, page keys and space move to the next world or the next place a scene rests
     addEventListener("keydown", (e) => {
       const tgt = e.target as HTMLElement | null;
       if (tgt?.closest?.("input, textarea, select, [contenteditable=true]") || e.metaKey || e.ctrlKey || e.altKey) return;
@@ -883,7 +926,8 @@ const ENDING = 0;
       const up = e.key === "ArrowUp" || e.key === "PageUp" || (e.key === " " && e.shiftKey);
       if (!down && !up) return;
       if (gliding) { e.preventDefault(); return; }
-      if (stepHere() || !e.key.startsWith("Arrow")) { e.preventDefault(); step(down ? 1 : -1); return; }
+      stopSettle();
+      if (!e.key.startsWith("Arrow")) { e.preventDefault(); step(down ? 1 : -1); return; }
       lastInput = performance.now(); lastDir = down ? 1 : -1;
     }, sig);
 
@@ -895,8 +939,20 @@ const ENDING = 0;
       progress = m.p; ending = m.e;
       const dt = Math.max(16, t - lastT) / 1000;
       velocity = velocity * 0.6 + ((progress - lastP) / dt) * 0.4;
+      // Which way the visitor is going. A settle is not theirs, so it never turns anyone round, and a
+      // finger trembling at rest is not a change of mind: it takes a few pixels the other way.
+      const y = scrollY;
+      if (settling || t - settleEnd < 140) dirFrom = y;
+      else {
+        const moved = y - dirFrom;
+        if (moved * storyDir >= 0) dirFrom = y;
+        else if (Math.abs(moved) > 8) { storyDir = -storyDir; dirFrom = y; journey?.setDirection(storyDir); }
+      }
       lastP = progress; lastT = t;
-      if (!gliding) { const w = worldAt(progress); if (w >= 0) show(w); else resolveGap(); }
+      // Between the human chapters the words step back for the picture. With no picture, they stay.
+      const between = () => (root.classList.contains("is-3d") ? -1 : behind(progress));
+      if (!gliding) { const w = worldAt(progress); if (w >= 0) show(w); else if (inJumpGap(progress)) resolveGap(); else show(between()); }
+      else if (scrubGlide) { const w = worldAt(progress); show(w >= 0 ? w : between()); }
       const f = progress / LAST;
       if (fill) fill.style.transform = `scaleY(${f})`;
       if (label) label.style.top = `${f * 100}%`;
@@ -907,7 +963,10 @@ const ENDING = 0;
       if (firstScene >= 0 && progress > firstScene - 1.6) bootEnding();
       window.dispatchEvent(new CustomEvent("journey:progress", { detail: { progress, velocity, count: N } }));
     };
-    function onScroll() { if (!ticking) { ticking = true; requestAnimationFrame(update); } }
+    function onScroll() {
+      if (!ticking) { ticking = true; requestAnimationFrame(update); }
+      if (!settling && !gliding && !touching && !fling) armSettle();
+    }
     addEventListener("scroll", onScroll, { passive: true, ...sig });
     addEventListener("resize", onScroll, { passive: true, ...sig });
     update();
@@ -919,7 +978,7 @@ const ENDING = 0;
     // keyboard focus landing in a hidden world brings that world up
     panes.forEach((p, k) => p.addEventListener("focusin", () => {
       if (k === active) return;
-      scrollTo({ top: topFor(arriveAt(k)), behavior: "auto" });
+      scrollTo({ top: topFor(restAt(k)), behavior: "auto" });
     }, sig));
 
     // cards lean toward the pointer and catch a glare
@@ -936,10 +995,35 @@ const ENDING = 0;
       card.addEventListener("pointerleave", () => { card.style.setProperty("--rx", "0deg"); card.style.setProperty("--ry", "0deg"); }, sig);
     });
 
-    // the pointer steers the ship
+    // the pointer steers the ship, and on the planet the people in the scene answer it
+    const onPlanet = () => progress >= SCENE.landA - 0.01;
+    /** Is this the scene itself, and not something on top of it that is there to be used? */
+    function overScene(t: EventTarget | null) {
+      const el = t as Element | null;
+      if (!el?.closest || !onPlanet()) return false;
+      if (el.closest("a, button, summary, input, textarea, select, label, details, [role=button], nav")) return false;
+      return !!el.closest(".journey-stage") && !(el.closest(".jc") && !el.matches(".jc"));
+    }
+    let pressing = false;
     addEventListener("pointermove", (e) => {
-      journey?.setPointer((e.clientX / innerWidth) * 2 - 1, (e.clientY / innerHeight) * 2 - 1);
+      const nx = (e.clientX / innerWidth) * 2 - 1, ny = (e.clientY / innerHeight) * 2 - 1;
+      // A finger on the planet is a scroll, or a press on its own terms: it steers nothing.
+      if (e.pointerType === "touch" && onPlanet()) return;
+      journey?.setPointer(nx, ny);
+      if (e.pointerType === "mouse" && onPlanet()) journey?.interact(pressing ? "drag" : "hover", nx, ny);
     }, { passive: true, ...sig });
+    addEventListener("pointerdown", (e) => {
+      if (e.pointerType !== "mouse" || e.button !== 0 || !overScene(e.target)) return;
+      pressing = true;
+      journey?.interact("press", (e.clientX / innerWidth) * 2 - 1, (e.clientY / innerHeight) * 2 - 1);
+    }, { passive: true, ...sig });
+    const letGo = (e: PointerEvent) => {
+      if (!pressing) return;
+      pressing = false;
+      journey?.interact("release", (e.clientX / innerWidth) * 2 - 1, (e.clientY / innerHeight) * 2 - 1);
+    };
+    addEventListener("pointerup", letGo, { passive: true, ...sig });
+    addEventListener("pointercancel", letGo, { passive: true, ...sig });
 
     // ---- the 3D flight: after first paint, only where WebGL works, paused off screen
     const canvas = root.querySelector<HTMLCanvasElement>(".journey-canvas");
@@ -978,6 +1062,7 @@ const ENDING = 0;
           panes.forEach((p, k) => { p.dataset.side = plan[k]?.side ?? "left"; p.dataset.v = plan[k]?.v ?? "bottom"; });
           if (active >= 0) place(active);
         }
+        journey.setDirection(storyDir);
         journey.setScroll(progress, 0);
         if (!canvas.getContext("webgl2")?.isContextLost()) root.classList.add("is-3d");
         const io = new IntersectionObserver(([e]) => { onScreen = e.isIntersecting; rest(); });
@@ -1042,6 +1127,8 @@ const ENDING = 0;
       visit.abort();
       clearTimeout(gapLater);
       stopFling();
+      stopSettle();
+      clearTimeout(touchHold);
       clearTimeout(wordsLater);
       cancelAnimationFrame(sceneRaf);
       journey?.destroy();

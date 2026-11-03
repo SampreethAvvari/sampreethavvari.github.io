@@ -63,7 +63,7 @@ export interface PieceFrame {
   p: number;
   camera: Camera;
   ptr: PointerRay;
-  /** Landing phase 0..1 (touchdown at 0.84), driven by the engine's clock. */
+  /** Landing phase 0..1 (touchdown at 0.84), read from the scroll. */
   land: number;
   /** Surface progress: 0 landed, 1 first steps, 2 helmet, 3 touch. */
   s: number;
@@ -72,6 +72,10 @@ export interface PieceFrame {
   reduced: boolean;
   width: number;
   height: number;
+  /** The way the visitor is going, 1 or -1, its blend (0 on, 1 back), and chapters per second. */
+  dir: number;
+  back: number;
+  v: number;
 }
 
 export interface Piece {
@@ -1488,7 +1492,6 @@ function landingWorld(i: number, color: Color, ctx: Ctx): Piece {
   site.add(dust);
 
   const haze = { color: new Color(0.17, 0.06, 0.035), density: 0.0011 };
-  let settle = 0;
   const flare = { pos: new Vector3(), color: new Color(1.0, 0.42, 0.14), strength: 0.1 };
 
   return {
@@ -1501,17 +1504,21 @@ function landingWorld(i: number, color: Color, ctx: Ctx): Piece {
     haze,
     surface,
     cover: 1,
-    update({ time, dt, land, s, camera, pxScale, dpr, reduced, width, height }) {
+    update({ time, dt, p, land, s, camera, pxScale, dpr, reduced, width, height, dir, back, v }) {
       const L = land;
       cloudFade.value = fade.value * (1 - smooth(0.8, 1.0, L));
       clouds.visible = cloudFade.value > 0.002;
       dustMat.uniforms.uTime.value = time;
-      if (L >= 1) settle += dt;
-      else settle = 0;
-      dustMat.uniforms.uSpread.value = smooth(0.55, 1.0, L) * (1 + settle * 0.015);
-      const settling = L >= 1 ? 0.14 + 0.5 * Math.exp(-settle / 5) : 0;
-      dustMat.uniforms.uAmt.value = Math.max(smooth(0.55, 0.74, L) * (1 - smooth(0.9, 1.0, L)) * 1.6, settling) * (1 - smooth(1.2, 1.7, s));
-      surface.update({ time, dt, camera: camera as PerspectiveCamera, cover: fade.value, s, pxScale, dpr, reduced, land: L, width, height });
+      // Coming down it billows out as he nears the ground, and thins as it settles. Going up the engines
+      // relight and blow it out from under him, harder the further he climbs: it never gathers back in.
+      const down = smooth(0.55, 1.0, L);
+      const up = 1 - smooth(0.42, 0.96, L);
+      const settling = smooth(0.97, 1.0, L) * (0.14 + 0.5 * (1 - smooth(5.3, 5.62, p)));
+      const amtDown = Math.max(smooth(0.55, 0.74, L) * (1 - smooth(0.9, 1.0, L)) * 1.6, settling);
+      const amtUp = Math.max(smooth(0.98, 0.88, L) * smooth(0.3, 0.62, L) * 2.0, settling);
+      dustMat.uniforms.uSpread.value = down + (up - down) * back;
+      dustMat.uniforms.uAmt.value = (amtDown + (amtUp - amtDown) * back) * (1 - smooth(1.2, 1.7, s));
+      surface.update({ time, dt, camera: camera as PerspectiveCamera, cover: fade.value, s, pxScale, dpr, reduced, land: L, width, height, p, dir, back, v });
       haze.color.copy(surface.hazeColor);
       flare.pos.copy(surface.sunWorld).multiplyScalar(5200).add(l.pad);
       flare.strength = 0.1 * (1 - smooth(1.2, 1.8, s));

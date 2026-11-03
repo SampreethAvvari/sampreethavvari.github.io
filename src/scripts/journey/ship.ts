@@ -62,6 +62,10 @@ export interface ShipInput {
   heat: number;
   /** 1 once the lander has settled. */
   landed: number;
+  /** How far the ramp is open, 0 to 1. */
+  ramp: number;
+  /** He is in the doorway: the light behind him flares. */
+  glare: number;
 }
 
 export interface Ship {
@@ -561,7 +565,6 @@ export function buildShip(opts: ShipBuildOptions): Ship {
   ])
     landerGlows.add(gx, gy, gz, gs, gr, gg, gb, 0.9);
   lander.add(landerGlows.mesh);
-  let rampOpen = 0;
 
   // ================================================================ exhaust
   const rcsU = new Float32Array(8);
@@ -713,14 +716,13 @@ export function buildShip(opts: ShipBuildOptions): Ship {
     heatMat.uniforms.uHeat.value = s.heat;
     heatMat.uniforms.uTime.value = time;
     heatShell.visible = s.heat > 0.01;
-    const rampTo = s.landed > 0.99 && !s.reduced ? 1 : s.landed > 0.99 ? 1 : 0;
-    rampOpen += (rampTo - rampOpen) * Math.min(1, dt * (rampTo > rampOpen ? 0.9 : 3));
-    const re = rampOpen * rampOpen * (3 - 2 * rampOpen);
+    // How far the ramp is open is a position in the story.
+    const re = s.ramp * s.ramp * (3 - 2 * s.ramp);
     rampPivot.rotation.x = re * RAMP_OPEN;
     rampPivot.scale.y = RAMP_CLOSED + (1 - RAMP_CLOSED) * re;
     doorPanel.visible = re > 0.01;
     doorMat.uniforms.uOpen.value = re;
-    landerGlows.setIntensity(door, re * 0.22);
+    landerGlows.setIntensity(door, re * (0.22 + s.glare * 0.95));
     for (const i of flood) landerGlows.setIntensity(i, 0.5 + 1.1 * Math.max(s.gear, re));
     landerGlows.setIntensity(navL, 1.6);
     landerGlows.setIntensity(navR, 1.6);

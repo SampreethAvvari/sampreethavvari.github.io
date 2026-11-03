@@ -8,11 +8,11 @@
 // world) at i + 0.8, the middle of a glide between two rest points.
 //
 // The 3D carries the chapters up to the one with id "film" (the landing
-// world). When the page arrives at that world's rest point and holds, the
-// lander undocks and comes down in real time: touchdown exactly TOUCHDOWN_S
-// seconds after arrival, then it settles and holds. Leaving forward before
-// it finishes snaps it to landed; leaving backward (past the jump's
-// crossover) snaps it back to the dock. Chapters after it hold the landed shot.
+// world). From there on nothing runs on a clock: the landing, the walk, the
+// helmet and the touch are read from the scroll (plan.ts), and the way the
+// visitor is going picks which version of each plays. Coming down, the lander
+// follows its long approach and brakes. Going back up, the engines relight, it
+// lifts straight off and climbs back to the dock.
 //
 // Usage:
 //   const { mountJourney } = await import("./journey/engine");
@@ -49,6 +49,7 @@ import {
 import { Governor } from "../gl-governor";
 import { breathe, prelink, quietShaderChecks, warmAhead } from "../gl-warm";
 import { approachU, CROSS, FlightPath, JUMP_A, JUMP_B, jumpAt, REST, travel, worldAt } from "./path";
+import { landAt, rampAt, surfaceAt } from "./plan";
 import { Post, type PostFrame } from "./post";
 import { buildShip, type ShipInput } from "./ship";
 import { compositeTextures, foilNormal, solarTexture } from "./skin";
@@ -77,6 +78,10 @@ export interface Journey {
   setScroll(progress: number, velocity: number): void;
   /** -1..1 each. nx: left to right. ny: top to bottom (DOM direction). */
   setPointer(nx: number, ny: number): void;
+  /** Which way the visitor is going, 1 or -1: the page knows, since it knows what was theirs and what was a settle. */
+  setDirection(dir: number): void;
+  /** The visitor, on the scene. nx, ny as in setPointer. */
+  interact(kind: "hover" | "press" | "drag" | "release", nx: number, ny: number): void;
   /** Stop rendering entirely while paused. */
   setPaused(paused: boolean): void;
   /** 0 until the lander touches down, then 1. */
@@ -117,21 +122,9 @@ export function jumpState(progress: number, landWorld = LAND_WORLD): { from: num
   return jumpAt(progress, landWorld + 1);
 }
 
-/** Seconds from arriving at the landing world's rest point to touchdown (eight beats at 85.7 bpm). */
-export const TOUCHDOWN_S = 5.6;
-
-// The live landing state of the mounted engine, so landed() can answer.
-let liveLanded = 0;
-
-/**
- * 0 until the lander touches down, then 1. Before the landing world it is 0
- * and past its rest point it is 1; at the rest point it follows the real
- * time descent of the mounted engine (Journey.landedNow says the same).
- */
-export function landed(progress: number, landWorld = LAND_WORLD): number {
-  if (progress < landWorld - 1 + CROSS) return 0;
-  if (progress > landWorld + REST + 0.05) return 1;
-  return liveLanded;
+/** 0 until the lander touches down, then 1: the scroll decides. */
+export function landed(progress: number): number {
+  return landAt(progress) >= 0.84 ? 1 : 0;
 }
 
 /** Progress at which each chapter sits at rest. */
@@ -373,15 +366,6 @@ export async function mountJourney(canvas: HTMLCanvasElement, opts: JourneyOptio
   const surface = space.surface;
   const sshot: SurfaceShot = { pos: new Vector3(), look: new Vector3(), fov: 42, parallax: 0 };
   await breathe();
-  // Progress at which each chapter from the landing on comes to rest. The
-  // surface progress s counts them: 0 landed, 1 first steps, 2 helmet, 3 touch.
-  const restKnots: number[] = [];
-  for (let i = landWorld; i < N; i++) restKnots.push(i === N - 1 && i > landWorld ? i : i + REST);
-  const surfaceAt = (pp: number) => {
-    if (pp <= restKnots[0]) return 0;
-    for (let i = 1; i < restKnots.length; i++) if (pp <= restKnots[i]) return i - 1 + (pp - restKnots[i - 1]) / (restKnots[i] - restKnots[i - 1]);
-    return restKnots.length - 1;
-  };
   fill.position.copy(landing.up);
 
   // Multisampling only where the pixel ratio is too low to hide jagged edges.
@@ -425,11 +409,10 @@ export async function mountJourney(canvas: HTMLCanvasElement, opts: JourneyOptio
   let aspect = 1;
   let portrait = false;
   let firstFrame = false;
-  let prevL = 0;
-  let bounceT = -1;
-  // Landing state: 0 docked, 1 coming down, 2 landed.
-  let landState = 0;
-  let landStart = 0;
+  // Which way the visitor is going on the planet, and the blend that turns on it: 0 going on, 1 coming back.
+  let storyDir = 1;
+  let back = 0;
+  let backV = 0;
   // Heading: +1 flying forward along the path, -1 after turning back. It
   // flips on the direction of a jump, and the turn plays out over a second.
   let heading = 1;
@@ -443,7 +426,9 @@ export async function mountJourney(canvas: HTMLCanvasElement, opts: JourneyOptio
   let warmedAhead = false;
   let stopWarm: (() => void) | null = null;
   const ptr: PointerRay = { o: new Vector3(), d: new Vector3(0, 0, -1), on: 0 };
-  const shipIn: ShipInput = { time: 0, dt: 0, speed: 0, boost: 0, color: _color, reduced, gear: 0, brake: 0, idle: 0, detach: 0, heading: 1, heat: 0, landed: 0 };
+  const pressRay: PointerRay = { o: new Vector3(), d: new Vector3(0, 0, -1), on: 1 };
+  let devView: Vector3 | null = null;
+  const shipIn: ShipInput = { time: 0, dt: 0, speed: 0, boost: 0, color: _color, reduced, gear: 0, brake: 0, idle: 0, detach: 0, heading: 1, heat: 0, landed: 0, ramp: 0, glare: 0 };
   const screen: ShipScreen = { x: 0.7, y: 0.5, r: 0.2, jump: null };
 
   // Fewer pixels when frames run slow and that helps, and back again when there is room.
@@ -587,12 +572,23 @@ export async function mountJourney(canvas: HTMLCanvasElement, opts: JourneyOptio
     }
     const turnRoll = Math.sin(Math.PI * clamp(turn, 0, 1)) * 0.55 * (heading < 0 ? 1 : -1);
 
+    // The way the visitor is going: one blend the whole planet turns on. It is the only thing
+    // here that remembers anything, and it settles in about a second.
+    const backTo = storyDir < 0 ? 1 : 0;
+    if (reduced) back = backTo;
+    else {
+      const bw = 5.2;
+      backV += (bw * bw * (backTo - back) - 2 * bw * backV) * dt;
+      back = clamp(back + backV * dt, 0, 1);
+      if (back <= 0 || back >= 1) backV = 0;
+    }
+
     // Rig on the path.
     path.frame(q, _rigPos, _rigQuat, _right, _up, _fwd);
     const bend = path.bend(q, _right);
     // Once he is on the ground the big ship climbs back to orbit and out of the sky.
-    const sNow = landState === 2 ? surfaceAt(p) : 0;
-    shipLift = damp(shipLift, sNow > 0.02 ? 1800 : 0, sNow > 0.02 ? 0.5 : 4, dt);
+    const sNow = surfaceAt(p);
+    shipLift = 1800 * smooth(landWorld + 0.34, landWorld + 0.9, p);
     rig.position.copy(_rigPos).addScaledVector(landing.up, shipLift);
     rig.quaternion.copy(_rigQuat);
     rig.visible = shipLift < 1500;
@@ -612,53 +608,47 @@ export async function mountJourney(canvas: HTMLCanvasElement, opts: JourneyOptio
     }
     rig.updateMatrixWorld();
 
-    // Landing in the last world: the lander undocks and comes down onto the pad.
-    // The landing runs on the clock once the page holds at the rest point.
-    const restP = landWorld + REST;
-    if (p < landWorld - 1 + CROSS) landState = 0; // back past the crossover: docked again
-    else if (targetP > restP + 0.05 || p > restP + 0.05) landState = 2; // moving on: landed
-    else if (landState === 0 && Math.abs(targetP - restP) < 0.0015) {
-      landState = reduced ? 2 : 1;
-      landStart = performance.now();
-    }
-    let L = 0;
-    if (landState === 1) {
-      L = clamp((performance.now() - landStart) / 1000 / (TOUCHDOWN_S / 0.84), 0, 1);
-      if (L >= 1) landState = 2;
-    } else if (landState === 2) L = 1;
-    liveLanded = L >= 0.84 ? 1 : 0;
+    // Landing in the last world: the lander undocks and comes down onto the pad, or, coming back,
+    // lifts off it and climbs to the dock. The scroll says how far along; the way the visitor is going
+    // says which flight. They meet at both ends, so a change of mind mid air is a burn, never a jump.
+    const L = landAt(p);
     _dockPos.setFromMatrixPosition(ship.dock).applyMatrix4(sr.matrixWorld);
     _dockQuat.setFromRotationMatrix(sr.matrixWorld);
     if (L > 0) {
       const u = approachU(L);
-      // A cubic from the dock, down and out to the side, then in to the pad from ahead.
+      const iu = 1 - u;
+      // Coming down: a cubic from the dock, down and out to the side, then in to the pad from ahead.
       _a.copy(_dockPos).addScaledVector(landing.up, -16).addScaledVector(landing.right, -18);
       _b.copy(landing.touch).addScaledVector(landing.up, 22).addScaledVector(landing.fwd, 26);
-      const iu = 1 - u;
       _landerPos
         .copy(_dockPos)
         .multiplyScalar(iu * iu * iu)
         .addScaledVector(_a, 3 * iu * iu * u)
         .addScaledVector(_b, 3 * iu * u * u)
         .addScaledVector(landing.touch, u * u * u);
+      if (back > 0.001) {
+        // Going up: straight off the pad, then round the other way to the dock.
+        _a.copy(_dockPos).addScaledVector(landing.up, -26).addScaledVector(landing.right, 12);
+        _b.copy(landing.touch).addScaledVector(landing.up, 26);
+        _v.copy(_dockPos)
+          .multiplyScalar(iu * iu * iu)
+          .addScaledVector(_a, 3 * iu * iu * u)
+          .addScaledVector(_b, 3 * iu * u * u)
+          .addScaledVector(landing.touch, u * u * u);
+        _landerPos.lerp(_v, back);
+      }
       _q.copy(_dockQuat).slerp(landing.quat, smooth(0.04, 0.6, L));
     } else {
       _landerPos.copy(_dockPos);
       _q.copy(_dockQuat);
     }
-    if (L >= 0.84 && prevL < 0.84 && !reduced) bounceT = 0;
-    if (L < 0.8) bounceT = -1;
-    prevL = L;
-    let bounce = 0;
-    if (bounceT >= 0) {
-      bounceT += dt;
-      bounce = -0.12 * Math.sin(bounceT * 10) * Math.exp(-bounceT * 4);
-      if (bounceT > 2.5) bounceT = -1;
-    }
+    // The legs take it at touchdown, by how far past it the scroll is. Going up there is no bounce.
+    const pastTouch = (L - 0.84) / 0.16;
+    const bounce = L > 0.84 && !reduced ? -0.12 * Math.sin(pastTouch * 13) * Math.exp(-pastTouch * 5) * (1 - back) : 0;
     ship.lander.position.copy(_landerPos).addScaledVector(landing.up, bounce);
     ship.lander.quaternion.copy(_q);
-    // Nose up a touch while braking.
-    ship.lander.rotateX(0.16 * Math.sin(Math.PI * clamp((L - 0.3) / 0.55, 0, 1)));
+    // Nose up a touch while braking, and more as it climbs.
+    ship.lander.rotateX(lerp(0.16 * Math.sin(Math.PI * clamp((L - 0.3) / 0.55, 0, 1)), 0.3 * Math.sin(Math.PI * clamp((L - 0.12) / 0.72, 0, 1)), back));
 
     shipIn.time = time;
     shipIn.dt = dt;
@@ -666,12 +656,17 @@ export async function mountJourney(canvas: HTMLCanvasElement, opts: JourneyOptio
     shipIn.boost = boost;
     shipIn.color = _color;
     shipIn.gear = smooth(0.4, 0.72, L);
-    shipIn.brake = smooth(0.32, 0.5, L) * (1 - smooth(0.8, 0.9, L));
-    shipIn.idle = smooth(0.86, 1, L);
+    // Coming down the jets brake it; going back up they relight just before it lifts and hold until the dock.
+    const brakeDown = smooth(0.32, 0.5, L) * (1 - smooth(0.8, 0.9, L));
+    const brakeUp = smooth(0.985, 0.88, L) * smooth(0.06, 0.2, L);
+    shipIn.brake = lerp(brakeDown, brakeUp, back);
+    shipIn.idle = smooth(0.86, 1, L) * (1 - back * smooth(0.985, 0.9, L));
     shipIn.detach = smooth(0, 0.1, L);
     shipIn.heading = Math.cos(turnAng);
-    shipIn.heat = smooth(0.08, 0.25, L) * (1 - smooth(0.42, 0.6, L));
+    shipIn.heat = smooth(0.08, 0.25, L) * (1 - smooth(0.42, 0.6, L)) * (1 - back);
     shipIn.landed = smooth(0.84, 0.98, L);
+    shipIn.ramp = rampAt(p);
+    shipIn.glare = smooth(landWorld + 0.5, landWorld + 0.53, p) * (1 - smooth(landWorld + 0.56, landWorld + 0.6, p));
     ship.update(shipIn);
 
     // ---- Camera: the chapter's shot around the ship, eased into the landing shot.
@@ -757,6 +752,15 @@ export async function mountJourney(canvas: HTMLCanvasElement, opts: JourneyOptio
       camera.rotateY(Math.sin(time * 53 + 1) * sh);
       camera.rotateZ(Math.sin(time * 47 + 2) * sh * 1.5);
     }
+    // Development only: look at him from a chosen side, to check a pose from angles the story never shows.
+    if (import.meta.env.DEV && devView && surface) {
+      surface.figureAt(_a);
+      _a.addScaledVector(landing.up, 0.1);
+      camera.position.copy(_a).add(_b.copy(devView).applyQuaternion(landing.quat));
+      camera.up.copy(landing.up);
+      camera.lookAt(_a);
+      fov = 22;
+    }
     if (Math.abs(camera.fov - fov) > 0.01) {
       camera.fov = fov;
       camera.updateProjectionMatrix();
@@ -771,7 +775,7 @@ export async function mountJourney(canvas: HTMLCanvasElement, opts: JourneyOptio
     const groundK = surface ? space.cover : 0;
     if (surface && groundK > 0) {
       // Held just above the horizon so the light still rakes the sand once the disc is going down.
-      _sunKey.copy(surface.sunWorld);
+      _sunKey.copy(surface.keyWorld);
       const lift = 0.085 - _sunKey.dot(landing.up);
       if (lift > 0) _sunKey.addScaledVector(landing.up, lift);
       _key.lerp(_v.copy(_sunKey).normalize(), groundK).normalize();
@@ -827,7 +831,7 @@ export async function mountJourney(canvas: HTMLCanvasElement, opts: JourneyOptio
     ptr.d.set(ptx, -pty, 0.5).unproject(camera).sub(camera.position).normalize();
     ptr.on = ptrOn * (1 - bell);
 
-    space.update({ p, q, time, dt, speed, boost, color: _color, camera, fwd: _fwd, reduced, pxScale, dpr, warp: reduced ? 0 : bell, ptr, heading: Math.cos(turnAng), land: L, s: sNow, width, height });
+    space.update({ p, q, time, dt, speed, boost, color: _color, camera, fwd: _fwd, reduced, pxScale, dpr, warp: reduced ? 0 : bell, ptr, heading: Math.cos(turnAng), land: L, s: sNow, width, height, dir: storyDir, back, v });
     const fog = scene.fog as FogExp2;
     fog.color.setRGB(0.012, 0.014, 0.03).lerp(_color, 0.04).lerp(space.haze.color, space.haze.weight);
     fog.density = lerp(0.0008, space.haze.density, space.haze.weight);
@@ -1018,6 +1022,10 @@ export async function mountJourney(canvas: HTMLCanvasElement, opts: JourneyOptio
     for (const pc of space.pieces) {
       if (!pc.group.visible) hidden.push(pc.group);
       pc.group.visible = true;
+      for (const part of pc.surface?.warmParts ?? []) {
+        if (!part.visible) hidden.push(part);
+        part.visible = true;
+      }
     }
     const afterCompile = () => {
       for (const g of hidden) g.visible = false;
@@ -1054,6 +1062,34 @@ export async function mountJourney(canvas: HTMLCanvasElement, opts: JourneyOptio
   };
   canvas.addEventListener("webglcontextlost", onLost);
   canvas.addEventListener("webglcontextrestored", onRestored);
+  if (import.meta.env.DEV) {
+    (window as unknown as { __journey?: unknown }).__journey = {
+      settle() {
+        p = targetP;
+        v = 0;
+        back = storyDir < 0 ? 1 : 0;
+        backV = 0;
+      },
+      state: () => ({ p, targetP, v, back, storyDir, s: surfaceAt(p), L: landAt(p), ramp: rampAt(p), ...(surface?.debug() as object) }),
+      lander: () => ship.lander.position.toArray(),
+      hands: () => surface?.arms(),
+      sky: (a?: number) => {
+        if (a !== undefined) surface?.setSky(a);
+        return surface?.skyNow();
+      },
+      size() {
+        surface?.figureAt(_a);
+        const d = _a.distanceTo(camera.position);
+        // On screen height of a figure his height, at that distance, through this lens.
+        const hPx = canvas.clientHeight;
+        return { d, fov: camera.fov, px: (0.78 / (2 * d * Math.tan((camera.fov * Math.PI) / 360))) * hPx, cam: camera.position.toArray() };
+      },
+      view(o: [number, number, number] | null) {
+        devView = o ? new Vector3(o[0], o[1], o[2]) : null;
+      },
+      camera: () => camera.position.toArray(),
+    };
+  }
   // Gone while it was being built: nothing to warm until it comes back.
   if (renderer.getContext().isContextLost()) lost = true;
   else warm();
@@ -1081,8 +1117,19 @@ export async function mountJourney(canvas: HTMLCanvasElement, opts: JourneyOptio
         lensY = 0.5 - pty * 0.5;
       }
     },
+    setDirection(dir: number) {
+      storyDir = dir < 0 ? -1 : 1;
+    },
+    interact(kind, nx, ny) {
+      if (!surface || disposed || !Number.isFinite(nx) || !Number.isFinite(ny)) return;
+      const x = clamp(nx, -1, 1);
+      const y = clamp(ny, -1, 1);
+      pressRay.o.copy(camera.position);
+      pressRay.d.set(x, -y, 0.5).unproject(camera).sub(camera.position).normalize();
+      surface.interact(kind, x, y, pressRay);
+    },
     landedNow() {
-      return landState === 2 || (landState === 1 && liveLanded === 1) ? 1 : 0;
+      return landAt(p) >= 0.84 ? 1 : 0;
     },
     setPaused(next: boolean) {
       if (paused === next) return;

@@ -17,10 +17,13 @@ import {
   DataTexture,
   DoubleSide,
   Group,
+  IcosahedronGeometry,
   InstancedBufferAttribute,
   InstancedBufferGeometry,
   LinearFilter,
   LinearMipmapLinearFilter,
+  Matrix3,
+  Matrix4,
   Mesh,
   MeshStandardMaterial,
   NormalBlending,
@@ -43,8 +46,10 @@ import {
 } from "three";
 import type { Landing } from "./path";
 import { breathe } from "../gl-warm";
-import { buildFigure, FIGURE_H } from "./figure";
-import { PlateBank, type PlateMeta } from "./plates";
+import { buildFigure, PLAIN_FACE, type FigureFrame } from "./figure";
+import { LAST, SCENE } from "./plan";
+import { PlateBank } from "./plates";
+import type { PointerRay } from "./pieces";
 import { rng } from "./textures";
 
 const clamp = (x: number, a: number, b: number) => (x < a ? a : x > b ? b : x);
@@ -347,6 +352,10 @@ const SKY_UNIFORMS = /* glsl */ `
   uniform vec3 uTop;
   uniform vec3 uSunCol;
   uniform float uBandW;
+  uniform float uAirglow;
+  uniform vec2 uRiseDir;
+  uniform float uRise;
+  uniform vec3 uRiseCol;
 `;
 
 /** The sky's colour in direction d, shared with the ground so the two meet at the horizon. */
@@ -361,6 +370,9 @@ const SKY_FN = /* glsl */ `
     c = mix(c, uTop, smoothstep(0.12, 0.7, y));
     // A thin band of haze lying on the horizon.
     c = mix(c, hor * vec3(0.92, 0.82, 0.7), exp(-y * 46.0) * 0.55);
+    // At night a soft airglow lies low down, and the galaxy lights the horizon ahead of its rising.
+    c += vec3(0.0075, 0.0165, 0.0115) * exp(-y * 15.0) * uAirglow;
+    c += uRiseCol * exp(-y * 10.0) * pow(max(dot(hd, uRiseDir), 0.0), 5.0) * uRise;
     float mu = clamp(dot(d, uSun), 0.0, 1.0);
     c += uSunCol * (0.12 * pow(mu, 6.0) + 0.3 * pow(mu, 48.0) + 0.55 * pow(mu, 420.0));
     return c;
@@ -437,6 +449,7 @@ const DOME_VS = /* glsl */ `
 const DOME_FS = (layers: number) => /* glsl */ `
   #define STAR_LAYERS ${layers}
   #define DUST_LAYERS ${layers >= 4 ? 3 : 2}
+  #define DETAIL ${layers >= 4 ? 1 : 0}
   ${SKY_UNIFORMS}
   uniform float uCover;
   uniform float uStars;
@@ -453,6 +466,9 @@ const DOME_FS = (layers: number) => /* glsl */ `
   uniform vec3 uGalN;
   uniform vec3 uGalA;
   uniform vec3 uGalB;
+  uniform mat3 uSkyRot;
+  uniform vec3 uShift;
+  uniform float uTwinkle;
   varying vec3 vDir;
   ${SKY_FN}
   float hash13(vec3 p) {
@@ -502,61 +518,96 @@ const DOME_FS = (layers: number) => /* glsl */ `
     // And in the corner behind the chapter list.
     if (uTall < 0.5) copyDim *= 1.0 - 0.6 * smoothstep(0.76, 0.9, scr.x) * smoothstep(0.42, 0.62, scr.y);
     float bandK = 0.0;
+    // Everything fixed to the stars turns with the planet. The ground, drawn after, hides what has gone under it.
+    vec3 sd = uSkyRot * d;
+    float pxD = length(fwidth(d));
     if (uMilky > 0.001 && d.y > -0.05) {
-      float g = dot(d, uGalN);
-      float lon = atan(dot(d, uGalA), dot(d, uGalB));
+      float g = dot(sd, uGalN);
+      float lon = atan(dot(sd, uGalA), dot(sd, uGalB));
       vec2 wp = vec2(lon * 2.0, g * 5.0);
       float w1 = vnoise(wp + 11.0) - 0.5;
       float w2 = vnoise(wp * 2.3 + 4.0) - 0.5;
       float gg = g + w1 * 0.018 + w2 * 0.006;
       float core = exp(-lon * lon / 0.45);
+      // It thins out around the far side of the sky, so that it can truly set.
+      float reach = exp(-lon * lon / 1.2);
       float body = exp(-gg * gg / (0.016 + 0.032 * core));
-      float halo = exp(-g * g / 0.2);
-      // Gentle dust along the centre line: mottled and soft, nothing long or streaked.
-      vec2 lp = vec2(lon * 15.0 + w2 * 3.0, gg * 26.0 + w1 * 2.5);
-      float lanes = vnoise(lp) * 0.42 + vnoise(lp * 2.3 + 3.7) * 0.28 + vnoise(lp * 5.1 + 1.3) * 0.18 + vnoise(lp * 10.7 + 8.1) * 0.12;
-      float lane = smoothstep(0.43, 0.72, lanes) * exp(-gg * gg / 0.006);
+      float halo = exp(-g * g / 0.2) * reach;
+      float bulge = exp(-lon * lon / 0.16 - gg * gg / 0.013);
+      // Dust along the centre line: mottled and soft, branching and fraying, nothing long or streaked.
+      vec2 lp = vec2(lon * 17.0 + w2 * 3.0, gg * 27.0 + w1 * 2.5);
+      vec2 lw = vec2(vnoise(lp * 0.55 + 17.0), vnoise(lp * 0.55 + 43.0)) - 0.5;
+      vec2 lq = lp + lw * 1.5;
+      float n1 = vnoise(lq);
+      float n2 = vnoise(lq * 2.07 + 3.7);
+      float n3 = vnoise(lq * 4.3 + 1.3);
+      #if DETAIL
+      float lanes = n1 * 0.46 + n2 * 0.26 + n3 * 0.15 + vnoise(lq * 8.9 + 8.1) * 0.08 + vnoise(lq * 18.1 + 5.3) * 0.05;
+      #else
+      float lanes = n1 * 0.52 + n2 * 0.3 + n3 * 0.18;
+      #endif
+      float thread = 1.0 - abs(2.0 * n2 - 1.0);
+      float lane = clamp(smoothstep(0.42, 0.66, lanes) * exp(-gg * gg / (0.0048 + 0.007 * core)) * (0.75 + 0.5 * thread), 0.0, 1.0);
+      // Light reddens where it comes through the edge of the dust.
+      float rimDust = smoothstep(0.3, 0.5, lanes) * (1.0 - smoothstep(0.5, 0.66, lanes)) * exp(-gg * gg / 0.012);
       // Soft mottling of stars too small to see one by one.
       float cloud = vnoise(vec2(lon * 24.0, g * 36.0) + 5.0) * 0.5 + vnoise(vec2(lon * 55.0, g * 80.0) + 2.0) * 0.3 + vnoise(vec2(lon * 120.0, g * 170.0) + 9.0) * 0.2;
-      float dens = (body * 0.55 + body * body * 0.45) * (0.42 + 0.95 * core) * (0.76 + 0.48 * cloud);
-      float glow = (dens + halo * 0.05) * (1.0 - lane * 0.5);
-      vec3 mw = mix(vec3(0.34, 0.46, 0.98), vec3(1.0, 0.76, 0.5), core * smoothstep(0.02, 0.8, body));
+      float dens = (body * 0.55 + body * body * 0.45) * (0.42 * reach + 0.95 * core) * (0.72 + 0.56 * cloud);
+      float glow = (dens + halo * 0.05 + bulge * 0.62) * (1.0 - lane * 0.8);
+      // Cool at the edges, warm toward the core, a soft gold at its heart.
+      vec3 mw = mix(vec3(0.32, 0.45, 1.0), vec3(1.0, 0.68, 0.38), core * smoothstep(0.08, 0.9, body));
+      mw = mix(mw, vec3(1.0, 0.74, 0.42), bulge);
       float tint = vnoise(vec2(lon * 9.0, g * 26.0) + 21.0);
-      mw = mix(mw, vec3(0.95, 0.5, 0.56), smoothstep(0.6, 0.86, tint) * 0.3 * body);
-      float above = smoothstep(-0.02, 0.1, d.y);
-      c += mw * glow * 0.125 * uMilky * above * copyDim;
+      mw = mix(mw, vec3(0.95, 0.44, 0.5), smoothstep(0.58, 0.86, tint) * 0.36 * body);
+      mw = mix(mw, vec3(0.6, 0.74, 1.0), smoothstep(0.14, 0.42, 0.5 - abs(tint - 0.5)) * 0.14 * body * (1.0 - core));
+      mw *= mix(vec3(1.0), vec3(1.08, 0.76, 0.56), rimDust * 0.5);
+      // It runs right down to the land, dimmed by the air it comes through low down.
+      float above = smoothstep(-0.008, 0.03, d.y) * (0.5 + 0.5 * smoothstep(0.0, 0.2, d.y));
+      // Dark and calm: on a tall screen the lens sees less sky at once, so it holds back a little more.
+      c += mw * glow * (uTall > 0.5 ? 0.082 : 0.112) * uMilky * above * copyDim;
+      #if DETAIL
+      // Small pink knots of gas along the band.
+      float knot = smoothstep(0.7, 0.92, vnoise(vec2(lon * 46.0, g * 130.0) + 7.0));
+      c += vec3(0.9, 0.36, 0.42) * knot * knot * body * (1.0 - lane) * 0.014 * uMilky * above * copyDim;
+      #endif
       // Star dust: thousands of tiny points, thickest in the band, thinner in the lanes.
-      float dustK = clamp(dens * 1.3 + halo * 0.06, 0.0, 1.0) * (1.0 - lane * 0.5);
+      float dustK = clamp(dens * 1.3 + halo * 0.06, 0.0, 1.0) * (1.0 - lane * 0.7);
       for (int k = 0; k < DUST_LAYERS; k++) {
         float scale = 1000.0 + float(k) * 640.0;
-        vec3 did = floor(d * scale);
+        vec3 did = floor(sd * scale);
         float dh = hash13(did + float(k) * 41.0);
-        if (dh > 0.9965 - dustK * 0.075) {
+        if (dh > 0.9965 - dustK * 0.085) {
           float pw2 = hash13(did + 7.7);
-          vec3 qq = fract(d * scale) - 0.5;
-          float dot2 = smoothstep(0.62, 0.1, length(qq));
-          c += mix(vec3(0.74, 0.8, 1.0), vec3(1.0, 0.88, 0.72), hash13(did + 3.3)) * dot2 * (0.007 + pw2 * pw2 * pw2 * pw2 * 0.5) * uMilky * above * copyDim;
+          vec3 qq = fract(sd * scale) - 0.5;
+          // Never finer than a pixel, so a slow turn does not make them crawl.
+          float rr = max(0.5, pxD * scale * 0.75);
+          float dot2 = smoothstep(rr, rr * 0.16, length(qq)) * min(1.0, 0.25 / (rr * rr));
+          c += mix(vec3(0.74, 0.8, 1.0), vec3(1.0, 0.86, 0.68), hash13(did + 3.3)) * dot2 * (0.007 + pw2 * pw2 * pw2 * pw2 * 0.5) * uMilky * above * copyDim;
         }
       }
-      bandK = clamp(body * (1.0 - lane * 0.9) + halo * 0.15, 0.0, 1.0) * uMilky;
+      bandK = clamp(body * (1.0 - lane * 0.9) * (0.4 + 0.6 * reach) + halo * 0.15, 0.0, 1.0) * uMilky;
     }
     // Stars: the first ones through the upper sky, then all of them, thick along the band.
     if (uStars > 0.001 && yy > 0.004) {
       float fade = smoothstep(0.004, 0.09, yy) * mix(smoothstep(0.1, 0.5, yy), 1.0, smoothstep(0.5, 1.0, uStars));
+      // They twinkle only low down, where there is air to look through.
+      float airy = exp(-yy * 9.0) * uTwinkle;
       for (int i = 0; i < STAR_LAYERS; i++) {
         float fi = float(i);
         float dens = 150.0 + fi * 140.0;
-        vec3 sd = d * dens;
-        vec3 id = floor(sd);
+        // The nearest of them shift a little against the rest as the pointer moves: there is depth up there.
+        vec3 sdn = uSkyRot * normalize(d + uShift * (1.0 - fi * 0.3));
+        vec3 sdv = sdn * dens;
+        vec3 id = floor(sdv);
         float h = hash13(id + fi * 17.0);
         float thr = 0.989 - fi * 0.003 - bandK * 0.012;
         if (h > thr) {
-          vec3 q = fract(sd) - 0.5;
+          vec3 q = fract(sdv) - 0.5;
           vec3 off = vec3(hash13(id + 3.1), hash13(id + 5.7), hash13(id + 9.3)) - 0.5;
-          float sz = 0.34 - fi * 0.04;
+          float sz = max(0.34 - fi * 0.04, pxD * dens * 1.1);
           float st = smoothstep(sz, 0.0, length(q - off * 0.3));
           float pw = (h - thr) / (1.0 - thr);
-          float tw = 0.8 + 0.2 * sin(uTime * (1.0 + h * 4.0) + h * 60.0);
+          float tw = mix(1.0, 0.5 + 0.5 * sin(uTime * (1.5 + h * 5.0) + h * 60.0), airy);
           vec3 tintS = mix(vec3(0.74, 0.82, 1.0), vec3(1.0, 0.82, 0.62), hash13(id + 13.7));
           c += tintS * st * st * tw * (0.06 + pw * pw * 1.5) * uStars * fade * (fi > 1.5 ? 0.6 : 1.0) * mix(1.0, copyDim, smoothstep(0.5, 1.0, uStars));
         }
@@ -714,9 +765,6 @@ const WIDE_POS = new Vector3(0, 0, -94); // height comes from the ground below
 const WIDE_YAW = (-8 * Math.PI) / 180;
 const WIDE_PITCH = (6.4 * Math.PI) / 180;
 const MOON_ANCHOR = new Vector3(0, 0, -80);
-/** The ramp in the first steps: where he starts from, how far it drops, and his distance from the camera at the start. */
-/** One source pixel of the helmet plate, in units: he is the same height everywhere. */
-const HELMET_PU = FIGURE_H / 660;
 /** One source pixel of the hand plate: a macro frame about 23 cm tall. */
 const HAND_PU = 0.0002;
 /** The closing camera: its height over the sand and its distance from the sapling. */
@@ -737,8 +785,9 @@ const ARM_L = [1465, 120];
 const ARM_R = [1615, 365];
 const ARM_DIR = [0.7, -0.714];
 const ARM_LEN = 2600;
-/** Seconds for the hand to come down to the leaf. */
-const HAND_REACH = 3;
+/** Where the hand starts from out of frame, and the way it leaves: right and up from the fingertip, in units, then how far the wrist swings. */
+const HAND_IN = [0.34, 0.22];
+const HAND_OUT = [0.25, 0.34, -0.62];
 
 const CARD_VS = /* glsl */ `
   varying vec2 vUv;
@@ -1016,16 +1065,27 @@ export interface SurfaceInput {
   /** Drawing buffer size. */
   width: number;
   height: number;
+  /** The journey's progress, which decides every pose. */
+  p: number;
+  /** The way the visitor is going, 1 or -1, and the blend that turns on it: 0 going on, 1 coming back. */
+  dir: number;
+  back: number;
+  /** Chapters per second, signed. */
+  v: number;
 }
 
 export interface Surface {
   group: Group;
+  /** Hidden until the story needs them, and worth linking ahead with everything else. */
+  warmParts: Group[] | Mesh[] | (Group | Mesh)[];
   /** Made ahead of when the story needs them, so they can go to the GPU ahead too. */
   lateTextures: Texture[];
   /** 1 to 0 as the ground goes out of focus in the closeup: softens the moons. */
   setSoft(v: number): void;
   /** Unit vector toward the sun, in world space. */
   sunWorld: Vector3;
+  /** Where the ground's light comes from now: the sun, then at night the galaxy, wherever it has turned to. */
+  keyWorld: Vector3;
   sunColor: Color;
   /** How the sky should light the craft. */
   skyLight: Color;
@@ -1040,6 +1100,16 @@ export interface Surface {
   /** Where the camera should be at surface progress s, in world space. */
   shot(s: number, portrait: boolean, out: SurfaceShot): SurfaceShot;
   update(f: SurfaceInput): void;
+  /** The visitor, on the scene: x and y from -1 to 1, and the pointer's ray in world space. */
+  interact(kind: "hover" | "press" | "drag" | "release", x: number, y: number, ray: PointerRay): void;
+  /** For checks in development: where his feet are and which are down. */
+  debug(): unknown;
+  /** Where he is, in world space. */
+  figureAt(out: Vector3): Vector3;
+  arms(): unknown;
+  /** For checks in development: force the sky's turn, and read it. */
+  setSky(a: number): void;
+  skyNow(): unknown;
 }
 
 // The two slowest pictures to compute, made ahead of the rest with the page's
@@ -1075,6 +1145,10 @@ export function buildSurface(o: { low: boolean; landing: Landing; cloudTex: Text
     uTop: { value: new Color() },
     uSunCol: { value: new Color() },
     uBandW: { value: 0.16 },
+    uAirglow: { value: 0 },
+    uRiseDir: { value: new Vector2(0, -1) },
+    uRise: { value: 0 },
+    uRiseCol: { value: new Color(0.058, 0.044, 0.036) },
   };
   const cover = { value: 0 };
   const camSite = { value: new Vector3() };
@@ -1128,6 +1202,9 @@ export function buildSurface(o: { low: boolean; landing: Landing; cloudTex: Text
       uGalN: { value: galN },
       uGalA: { value: galA },
       uGalB: { value: galB },
+      uSkyRot: { value: new Matrix3() },
+      uShift: { value: new Vector3() },
+      uTwinkle: { value: 1 },
     },
     side: 1, // back side
     transparent: true,
@@ -1606,9 +1683,10 @@ export function buildSurface(o: { low: boolean; landing: Landing; cloudTex: Text
   const touchLook = touchPos.clone().add(site(Math.sin(closeYaw) * Math.cos(closePitch), Math.sin(closePitch), -Math.cos(closeYaw) * Math.cos(closePitch)).multiplyScalar(2));
   const fly = new CatmullRomCurve3([EXIT_POS, site(0.6, 4.4, 17), site(0.8, 9.5, 2), site(0.4, 8, -30), site(0.1, 3.2, -62), widePos], false, "centripetal");
   const flyLook = new CatmullRomCurve3([EXIT_LOOK, site(-5, 0, -40), site(-1, -4, -70), site(-2, 2, -100), wideLook.clone().add(site(0, 0, -6)), wideLook], false, "centripetal");
-  // A long low run toward him, up and over his shoulder, then down to the sand in front of him.
-  const approach = new CatmullRomCurve3([widePos, site(-0.5, standY + 1.5, -104), site(-0.95, standY + 2.5, -121), site(-1.02, standY + 1.25, -124.9), site(-1.05, sapY + 0.3, -126.1), touchPos], false, "centripetal");
-  const approachLook = new CatmullRomCurve3([wideLook, site(-1.4, standY + 3.0, -142), site(-1.6, standY + 0.9, -134), site(-1.5, sapY + 0.4, -129), touchLook.clone().add(site(0, 0.02, 0.2)), touchLook], false, "centripetal");
+  // A long low run toward him, staying off to his left and well back while he walks and kneels,
+  // past him and down to the sand in front of the sapling, with him going out of frame on the right.
+  const approach = new CatmullRomCurve3([widePos, site(-0.5, standY + 0.45, -104), site(-1.1, standY + 0.55, -113), site(-1.9, standY + 0.75, -120.5), site(-1.8, sapY + 0.42, -124.9), touchPos], false, "centripetal");
+  const approachLook = new CatmullRomCurve3([wideLook, site(-7.5, standY + 5.8, -170), site(-4.5, standY + 3.5, -158), site(-2.2, standY + 2.0, -141), site(-2.3, sapY + 0.62, -130.9), touchLook], false, "centripetal");
   const landedLook = site(-7.8, l.stand + 3.6, -40);
   const landedPos = site(-3, l.stand + 1.7, 14.5);
 
@@ -1890,6 +1968,139 @@ export function buildSurface(o: { low: boolean; landing: Landing; cloudTex: Text
   beam.visible = false;
   group.add(beam);
 
+  // Small stones on the sand around the sapling: real shapes, so the lamp lights one side of each,
+  // and each lays its own little shadow along the lamp's rays.
+  const STONES = low ? 60 : 180;
+  const stoneBase = new IcosahedronGeometry(1, low ? 0 : 1);
+  {
+    const pa = stoneBase.getAttribute("position") as BufferAttribute;
+    for (let k = 0; k < pa.count; k++) {
+      const x = pa.getX(k);
+      const y = pa.getY(k);
+      const z = pa.getZ(k);
+      const nudge = 0.72 + 0.56 * hash2(x * 3.1 + z * 1.7, y * 2.3 + 0.5);
+      pa.setXYZ(k, x * nudge, y * nudge, z * nudge);
+    }
+    stoneBase.computeVertexNormals();
+  }
+  const stoneAt = new Float32Array(STONES * 4); // x, y, z, radius
+  const stoneShape = new Float32Array(STONES * 3); // yaw, squash, tone
+  {
+    let k = 0;
+    let tries = 0;
+    while (k < STONES && tries < STONES * 8) {
+      tries++;
+      const a = r() * Math.PI * 2;
+      const rad = 0.035 + Math.pow(r(), 0.65) * 0.74;
+      const x = SAP.x + Math.cos(a) * rad;
+      const z = SAP.z + Math.sin(a) * rad;
+      // Clear of the lens.
+      if (Math.hypot(x - SAP.x, z - (SAP.z + CLOSE_D)) < 0.26) continue;
+      const big = r();
+      const size = 0.0005 + big * big * big * 0.0021;
+      stoneAt.set([x, groundHeight(x, z) + size * 0.22, z, size], k * 4);
+      stoneShape.set([r() * 6.28, 0.5 + r() * 0.45, r()], k * 3);
+      k++;
+    }
+  }
+  const makeStones = (mat: ShaderMaterial, order: number) => {
+    const g = new InstancedBufferGeometry();
+    g.setAttribute("position", stoneBase.getAttribute("position"));
+    g.setAttribute("normal", stoneBase.getAttribute("normal"));
+    g.setAttribute("aAt", new InstancedBufferAttribute(stoneAt, 4));
+    g.setAttribute("aShape", new InstancedBufferAttribute(stoneShape, 3));
+    g.instanceCount = STONES;
+    const m = new Mesh(g, mat);
+    m.frustumCulled = false;
+    m.renderOrder = order;
+    m.visible = false;
+    group.add(m);
+    return m;
+  };
+  const STONE_PLACE = /* glsl */ `
+    attribute vec4 aAt;
+    attribute vec3 aShape;
+    vec3 stoneSpot(vec3 q) {
+      float c = cos(aShape.x);
+      float s = sin(aShape.x);
+      vec3 r = vec3(c * q.x - s * q.z, q.y * aShape.y, s * q.x + c * q.z);
+      return aAt.xyz + r * aAt.w;
+    }
+  `;
+  const stoneU = { uSkyDir: { value: new Vector3(0, 1, 0) } };
+  const stones = makeStones(
+    new ShaderMaterial({
+      vertexShader: /* glsl */ `
+        ${STONE_PLACE}
+        uniform vec3 uLampSite;
+        varying vec3 vN;
+        varying vec3 vL;
+        varying float vTone;
+        void main() {
+          vec3 p = stoneSpot(position);
+          float c = cos(aShape.x);
+          float s = sin(aShape.x);
+          vN = normalize(vec3(c * normal.x - s * normal.z, normal.y / aShape.y, s * normal.x + c * normal.z));
+          vL = uLampSite - p;
+          vTone = aShape.z;
+          gl_Position = projectionMatrix * modelViewMatrix * vec4(p, 1.0);
+        }`,
+      fragmentShader: /* glsl */ `
+        uniform vec3 uLampCol;
+        uniform vec3 uAmb;
+        uniform vec3 uKey;
+        uniform vec3 uSkyDir;
+        varying vec3 vN;
+        varying vec3 vL;
+        varying float vTone;
+        void main() {
+          vec3 n = normalize(vN);
+          float d2 = dot(vL, vL);
+          float dist = sqrt(d2);
+          float ndl = max(dot(n, vL / max(dist, 1e-4)), 0.0);
+          // The same small light as the sand, by the same falloff.
+          float e = 0.0085 * ndl / (d2 + 0.0016) * (1.0 - smoothstep(0.7, 1.26, dist));
+          vec3 alb = mix(vec3(0.3, 0.25, 0.2), vec3(0.62, 0.53, 0.43), vTone);
+          float sky = max(dot(n, uSkyDir), 0.0) * 0.7 + 0.3 * max(n.y, 0.0);
+          gl_FragColor = vec4(alb * (uLampCol * e * 1.3 + uAmb * (0.3 + 0.5 * max(n.y, 0.0)) + uKey * sky * 1.6), 1.0);
+        }`,
+      uniforms: { uLampCol: shared.uLampCol, uLampSite: sandU.uLampSite, uAmb: sapU.uAmb, uKey: sapU.uKey, uSkyDir: stoneU.uSkyDir },
+      fog: false,
+    }),
+    2,
+  );
+  const stoneShadow = makeStones(
+    new ShaderMaterial({
+      vertexShader: /* glsl */ `
+        ${STONE_PLACE}
+        uniform vec3 uLampSite;
+        varying float vA;
+        void main() {
+          vec3 p = stoneSpot(position);
+          float ground = aAt.y - aAt.w * 0.22;
+          float over = (uLampSite.y - ground) / max(uLampSite.y - p.y, 1e-4);
+          vec3 g = uLampSite + (p - uLampSite) * over;
+          g.y = ground + 0.0003;
+          vA = 1.0 - smoothstep(0.45, 1.05, length(g - uLampSite));
+          gl_Position = projectionMatrix * modelViewMatrix * vec4(g, 1.0);
+        }`,
+      fragmentShader: /* glsl */ `
+        uniform vec3 uLampCol;
+        varying float vA;
+        void main() {
+          gl_FragColor = vec4(0.0, 0.0, 0.0, 0.62 * vA * min(uLampCol.r * 3.0, 1.0));
+        }`,
+      uniforms: { uLampSite: sandU.uLampSite, uLampCol: shared.uLampCol },
+      transparent: true,
+      depthWrite: false,
+      fog: false,
+      polygonOffset: true,
+      polygonOffsetFactor: -2,
+      polygonOffsetUnits: -2,
+    }),
+    -45,
+  );
+
   // The small lamp on his wrist: a small glint, and the light it throws.
   const lampGlow = new Mesh(
     new PlaneGeometry(1, 1),
@@ -1935,6 +2146,7 @@ export function buildSurface(o: { low: boolean; landing: Landing; cloudTex: Text
     armG.setAttribute("uv", new BufferAttribute(new Float32Array([0, 0, 0, 1, 1, 0, 1, 1]), 2));
     armG.setIndex([0, 1, 2, 1, 3, 2]);
   }
+  const sleeveRim = new Color(0.012, 0.016, 0.03);
   const sleeve = new Mesh(
     armG,
     new ShaderMaterial({
@@ -1942,6 +2154,7 @@ export function buildSurface(o: { low: boolean; landing: Landing; cloudTex: Text
       fragmentShader: /* glsl */ `
         uniform vec3 uColor;
         uniform vec3 uRim;
+        uniform vec3 uLamp;
         varying vec2 vUv;
         void main() {
           float across = abs(vUv.y - 0.5) * 2.0;
@@ -1950,9 +2163,18 @@ export function buildSurface(o: { low: boolean; landing: Landing; cloudTex: Text
           float a = smoothstep(1.0, 1.0 - soft, across);
           // A faint cool line of starlight along its upper edge.
           float rim = smoothstep(0.03, 0.12, vUv.y) * smoothstep(0.26, 0.12, vUv.y) * (1.0 - 0.7 * smoothstep(0.0, 0.5, vUv.x));
-          gl_FragColor = vec4(uColor + uRim * rim, a);
+          // Suit cloth: a round sleeve in soft folds with a seam down it, and the wrist lamp spilling up it, fading with distance.
+          float x = vUv.x;
+          float form = 1.0 - across * across;
+          float folds = 0.5 + 0.5 * sin(x * 58.0 + sin(x * 17.0 + vUv.y * 4.0) * 2.8 + vUv.y * 5.0);
+          folds = folds * folds * (1.0 - smoothstep(0.1, 0.45, x));
+          float seam = smoothstep(0.05, 0.0, abs(vUv.y - 0.34)) * (1.0 - smoothstep(0.1, 0.5, x));
+          float spill = exp(-x * 22.0) * (0.35 + 0.65 * form);
+          vec3 cloth = uColor * (0.7 + 0.6 * form + 0.9 * folds - 0.5 * seam);
+          cloth += uLamp * spill * (0.01 + 0.03 * folds + 0.008 * form);
+          gl_FragColor = vec4(cloth + uRim * rim, a);
         }`,
-      uniforms: { uColor: { value: new Color(0.0052, 0.0056, 0.0078) }, uRim: { value: new Color(0.012, 0.016, 0.03) } },
+      uniforms: { uColor: { value: new Color(0.0052, 0.0056, 0.0078) }, uRim: { value: new Color(0.012, 0.016, 0.03) }, uLamp: shared.uLampCol },
       transparent: true,
       depthWrite: false,
       fog: false,
@@ -1964,102 +2186,288 @@ export function buildSurface(o: { low: boolean; landing: Landing; cloudTex: Text
   sleeve.visible = false;
   group.add(sleeve);
 
-  // The first steps are a real figure in the world, on the real ramp and sand.
-  const figure = buildFigure(low, !low, (x, z) => groundHeight(x, z));
+  // He is one real figure in the world, on the real ramp and sand, from the hatch to the sapling.
+  // He kneels just to the right of where the closing shot looks, which is where the arm comes from.
+  const KNEEL = { x: STAND.x + 0.62, z: STAND.z - 3 + 0.05 };
+  const figure = buildFigure(low, !low, (x, z) => groundHeight(x, z), { standX: STAND.x, standZ: STAND.z, kneelX: KNEEL.x, kneelZ: KNEEL.z });
   group.add(figure.group);
+  const fig: FigureFrame = {
+    walk: 0,
+    t: 0,
+    back: 0,
+    turnBy: Math.PI,
+    helm: 0,
+    helmBack: 0,
+    kneel: 0,
+    reach: 0,
+    reachAt: new Vector3(),
+    lookAt: new Vector3(),
+    lookW: 0,
+    time: 0,
+    dt: 0,
+    reduced: false,
+    rim: new Color(),
+    gust: 0,
+    lampCol: new Color(0, 0, 0),
+    lampView: new Vector3(),
+  };
 
-  // ------------------------------------------------------------ the three performances
-  type Stage = { perf: string; idle: string; state: number; t: number; dur: number; scene: "exit" | "helmet" | "touch"; beats: number[]; sent: number };
-  const stages: Stage[] = [
-    { perf: "", idle: "", state: 0, t: 0, dur: figure.duration, scene: "exit", beats: [0, figure.rampEndP, 1], sent: -1 },
-    { perf: "helmetP", idle: "helmetI", state: 0, t: 0, dur: 8, scene: "helmet", beats: [0, 0.42, 0.56, 0.68], sent: -1 },
-    { perf: "handR", idle: "handR", state: 0, t: 0, dur: 8, scene: "touch", beats: [0, 0.03, HAND_REACH / 8, 0.6], sent: -1 },
-  ];
-  const zone = (s: number) => (s < 1.5 ? 0 : s < 2.72 ? 1 : 2);
-  let curZone = -1;
-  let settled = 0;
-  let touch = 0;
-  let touched = false;
-
-  function stepStages(s: number, dt: number, reduced: boolean) {
-    stages.forEach((st, k) => {
-      const at = k + 1;
-      if (reduced) {
-        // A still world: he has already done it, and stands there.
-        st.state = s >= at - 0.5 ? 2 : 0;
-        st.t = 0;
-        return;
-      }
-      if (s < at - 0.25 && st.state !== 0) {
-        st.state = 0;
-        st.t = 0;
-        st.sent = -1;
-      } else if (st.state === 0 && Math.abs(s - at) < 0.012 && (k > 0 || settled > 4)) {
-        // He waits for the ramp to be down.
-        st.state = 1;
-        st.t = 0;
-      } else if (st.state === 1 && s > at + 0.12) {
-        st.state = 2;
-        st.t = 0;
-      }
-      if (st.state === 1) {
-        st.t += dt;
-        const p = Math.min(1, st.t / st.dur);
-        let beat = 0;
-        st.beats.forEach((b, i) => {
-          if (p >= b) beat = i;
-        });
-        if (Math.abs(p - st.sent) > 0.01 || p >= 1) {
-          st.sent = p;
-          window.dispatchEvent(new CustomEvent("journey:ending", { detail: { scene: st.scene, progress: p, beat } }));
-        }
-        if (st.t >= st.dur) {
-          st.state = 2;
-          st.t = 0;
-        }
-      } else if (st.state === 2) {
-        st.t += dt;
-      }
-    });
+  // ------------------------------------------------------------ dust that things kick up
+  // A press on the sand, a boot coming down. A small pool that stays allocated; the shader
+  // works out each puff's age, so nothing is written per frame.
+  const PUFFS = 6;
+  const PER = low ? 3 : 4;
+  const puffG = new InstancedBufferGeometry();
+  puffG.setAttribute("position", new BufferAttribute(new Float32Array([-1, -1, 0, 1, -1, 0, 1, 1, 0, -1, 1, 0]), 3));
+  puffG.setIndex([0, 1, 2, 0, 2, 3]);
+  const puffA = new Float32Array(PUFFS * PER * 4); // x, y, z, born
+  const puffB = new Float32Array(PUFFS * PER * 4); // size, strength, angle, speed
+  for (let k = 0; k < PUFFS * PER; k++) puffA[k * 4 + 3] = -100;
+  const puffAttrA = new InstancedBufferAttribute(puffA, 4);
+  const puffAttrB = new InstancedBufferAttribute(puffB, 4);
+  puffG.setAttribute("aA", puffAttrA);
+  puffG.setAttribute("aB", puffAttrB);
+  puffG.instanceCount = PUFFS * PER;
+  const puffMat = new ShaderMaterial({
+    vertexShader: /* glsl */ `
+      attribute vec4 aA;
+      attribute vec4 aB;
+      uniform float uNow;
+      uniform vec3 uWind;
+      varying vec2 vUv;
+      varying float vA;
+      void main() {
+        float age = clamp((uNow - aA.w) / (1.5 + aB.w), 0.0, 1.0);
+        float k = 1.0 - pow(1.0 - age, 2.4);
+        vec3 c = aA.xyz + vec3(cos(aB.z), 0.0, sin(aB.z)) * aB.x * (0.5 + aB.w) * k + vec3(0.0, aB.x * (0.25 + 0.5 * aB.w) * k, 0.0) + uWind * aB.x * age * 0.7;
+        vec4 mv = modelViewMatrix * vec4(c, 1.0);
+        mv.xy += position.xy * aB.x * (0.28 + 0.62 * k);
+        gl_Position = projectionMatrix * mv;
+        vUv = position.xy * 0.5 + 0.5;
+        vA = aB.y * smoothstep(0.0, 0.05, age) * pow(1.0 - age, 1.5) * step(age, 0.999);
+      }`,
+    fragmentShader: /* glsl */ `
+      uniform sampler2D tCloud;
+      uniform vec3 uColor;
+      varying vec2 vUv;
+      varying float vA;
+      void main() {
+        float a = texture2D(tCloud, vUv).a * vA;
+        gl_FragColor = vec4(uColor * a, a);
+      }`,
+    uniforms: { uNow: { value: 0 }, uWind: { value: WIND }, tCloud: { value: o.cloudTex }, uColor: { value: new Color(0.6, 0.3, 0.14) } },
+    transparent: true,
+    depthWrite: false,
+    premultipliedAlpha: true,
+    side: DoubleSide,
+    fog: false,
+  });
+  const puffs = new Mesh(puffG, puffMat);
+  puffs.frustumCulled = false;
+  puffs.renderOrder = 6;
+  puffs.visible = false;
+  group.add(puffs);
+  let puffNext = 0;
+  let puffUntil = -1;
+  function kick(x: number, y: number, z: number, size: number, strength: number) {
+    const now = windTime.value;
+    const base = puffNext * PER;
+    puffNext = (puffNext + 1) % PUFFS;
+    for (let k = 0; k < PER; k++) {
+      const i = (base + k) * 4;
+      puffA[i] = x;
+      puffA[i + 1] = y + size * 0.05;
+      puffA[i + 2] = z;
+      puffA[i + 3] = now + k * 0.03;
+      puffB[i] = size * (0.8 + 0.5 * hash2(now, k));
+      puffB[i + 1] = strength * (0.6 + 0.4 * hash2(k, now));
+      puffB[i + 2] = hash2(now * 3.1, k + 2) * Math.PI * 2;
+      puffB[i + 3] = 0.2 + hash2(k + 5, now * 1.7) * 0.8;
+    }
+    puffAttrA.needsUpdate = true;
+    puffAttrB.needsUpdate = true;
+    puffUntil = now + 3;
   }
 
+  // ------------------------------------------------------------ the visitor
+  // On the plain and at the ramp his head follows the pointer. In the last chapter the wrist lamp
+  // does, so the real shadows of the sapling and the hand swing. A press on the sand kicks dust and
+  // he glances at it. A press near the sapling brings the finger to it. None of it is needed.
+  let lookHold = 0;
+  let lookK = 0;
+  let lampWantX = 0;
+  let lampWantY = 0;
+  let lampHold = 0;
+  let lampX = 0;
+  let lampY = 0;
+  let held = false;
+  let heldSap = false;
+  let heldId = "sand";
+  let pressK = 0;
+  let hoverSent = 0;
+  let lastHX = 0;
+  let lastHY = 0;
+  let nowP = 0;
+  let nowS = 0;
+  const siteO = new Vector3();
+  const siteD = new Vector3();
+  const hit = new Vector3();
+  const sendInteract = (id: string, kind: string, x: number, y: number, strength: number) =>
+    window.dispatchEvent(new CustomEvent("journey:interact", { detail: { id, kind, x: clamp(x, -1, 1), y: clamp(y, -1, 1), strength: clamp(strength, 0, 1) } }));
+
+  /** Where the ray meets the ground in site space, or false. */
+  function groundHit(out: Vector3) {
+    if (siteD.y > -0.001) return false;
+    let t = (groundHeight(siteO.x, siteO.z) - siteO.y) / siteD.y;
+    for (let k = 0; k < 3; k++) {
+      out.copy(siteO).addScaledVector(siteD, t);
+      t = (groundHeight(out.x, out.z) - siteO.y) / siteD.y;
+      if (t < 0 || t > 600) return false;
+    }
+    out.copy(siteO).addScaledVector(siteD, t);
+    return true;
+  }
+
+  function interact(kind: "hover" | "press" | "drag" | "release", x: number, y: number, ray: PointerRay) {
+    if (nowP < SCENE.landA) return;
+    siteO.copy(ray.o).sub(l.pad).applyQuaternion(inv);
+    siteD.copy(ray.d).applyQuaternion(inv);
+    const close = nowS > 2.8;
+    if (kind === "release") {
+      if (held) sendInteract(heldId, "release", x, y, pressK);
+      held = false;
+      heldSap = false;
+      return;
+    }
+    if (close) {
+      lampWantX = x;
+      lampWantY = y;
+      lampHold = kind === "hover" ? 8 : 2.5;
+    } else if (figure.group.visible) {
+      // What he looks at: the point the pointer is over, as far off as he is.
+      const pp = figure.pelvis.position;
+      fig.lookAt.copy(siteO).addScaledVector(siteD, siteO.distanceTo(pp));
+      lookHold = kind === "hover" ? 5 : 3;
+    }
+    if (kind === "press") {
+      held = true;
+      pressK = 0;
+      if (close) {
+        // The tip of the plant, as seen along the ray.
+        tmpV.copy(TOUCH_AT).sub(siteO);
+        const along = tmpV.dot(siteD);
+        const off = Math.sqrt(Math.max(tmpV.lengthSq() - along * along, 0)) / Math.max(along, 1e-3);
+        heldSap = along > 0 && off < 0.085;
+      }
+      heldId = heldSap ? "sapling" : close ? "lamp" : "sky";
+      if (heldSap) sendInteract("sapling", "press", x, y, 0.5);
+      else if (groundHit(hit)) {
+        heldId = "sand";
+        const dist = siteO.distanceTo(hit);
+        kick(hit.x, hit.y, hit.z, clamp(dist * 0.11, 0.05, 2.6), 0.85);
+        if (figure.group.visible && !close) {
+          fig.lookAt.copy(hit);
+          lookHold = 3;
+        }
+        sendInteract("sand", "press", x, y, 0.6);
+      } else sendInteract(heldId, "press", x, y, 0.2);
+      return;
+    }
+    // Hover and drag: only when something is listening, and not more than the eye can use.
+    const now = performance.now();
+    if (now - hoverSent < 66 && kind === "hover") return;
+    const moved = Math.hypot(x - lastHX, y - lastHY);
+    lastHX = x;
+    lastHY = y;
+    hoverSent = now;
+    if (close || figure.group.visible) sendInteract(close ? "lamp" : "figure", kind, x, y, clamp(moved * 6, 0, 1));
+  }
+
+  // ------------------------------------------------------------ the sound's contract
+  // journey:ending, on every change of progress, both ways: { scene, progress, beat, direction, velocity }.
+  // velocity is the scene's own progress per second, signed.
+  // land: the whole descent and the ramp opening; beats 0 undock, 1 braking, 2 touchdown, 3 ramp opening.
+  // exit: progress is distance walked, as ever; beats 0 start, 1 off the ramp, 2 stopped.
+  // helmet: beats 0 start, 1 seal, 2 lifts, 3 clear.
+  // touch: beats 0 start, 1 the hand on its way, 2 the finger meets the sapling, 3 after.
+  const landSpan = SCENE.rampB - SCENE.landA;
+  const landP = (L: number) => (L * (SCENE.landB - SCENE.landA)) / landSpan;
+  const SEND = [
+    { scene: "land", beats: [0, landP(0.32), landP(0.84), (SCENE.rampA - SCENE.landA) / landSpan], a: SCENE.landA, b: SCENE.rampB, sent: -1 },
+    { scene: "exit", beats: [0, figure.rampEndP, 1], a: SCENE.walkA, b: SCENE.walkB, sent: -1 },
+    { scene: "helmet", beats: [0, 0.42, 0.56, 0.68], a: SCENE.helmA, b: SCENE.helmB, sent: -1 },
+    { scene: "touch", beats: [0, 0.03, 0.375, 0.6], a: SCENE.touchA, b: LAST, sent: -1 },
+  ];
+  /** The touch runs on two rates, so that the finger meets the sapling at beat two. */
+  const touchProgress = (p: number) => (p < SCENE.contact ? 0.375 * clamp((p - SCENE.touchA) / (SCENE.contact - SCENE.touchA), 0, 1) : 0.375 + 0.625 * clamp((p - SCENE.contact) / (LAST - SCENE.contact), 0, 1));
+  let sentFirst = false;
+  function sendScenes(f: SurfaceInput, contactNow: boolean, wasContact: boolean) {
+    for (let k = 0; k < SEND.length; k++) {
+      const c = SEND[k];
+      const pr = k === 3 ? touchProgress(f.p) : clamp((f.p - c.a) / (c.b - c.a), 0, 1);
+      if (!sentFirst) {
+        c.sent = pr;
+        continue;
+      }
+      const edge = k === 3 && contactNow !== wasContact;
+      if (Math.abs(pr - c.sent) < 0.0004 && !edge) continue;
+      c.sent = pr;
+      let beat = 0;
+      for (let i = 0; i < c.beats.length; i++) if (pr >= c.beats[i]) beat = i;
+      if (k === 3 && contactNow) beat = Math.max(beat, 2);
+      const rate = k === 3 ? (f.p < SCENE.contact ? 0.375 / (SCENE.contact - SCENE.touchA) : 0.625 / (LAST - SCENE.contact)) : 1 / (c.b - c.a);
+      window.dispatchEvent(new CustomEvent("journey:ending", { detail: { scene: c.scene, progress: pr, beat, direction: f.dir, velocity: f.v * rate } }));
+    }
+    sentFirst = true;
+  }
+
+  // ------------------------------------------------------------ the hand on the leaf
   const _right = new Vector3();
   const _p = new Vector3();
   const tmpV = new Vector3();
   const tmpV2 = new Vector3();
-  const anchorW = new Vector3();
-
   const ledAt = new Vector3();
-  let lampOn = 0;
+  const plateLamp = new Vector3();
   /** The source pixel the card was anchored by, last time it was placed. */
   const cardAt = [0, 0];
+  let contactWas = false;
+  let touch = 0;
+  let sapX = 0;
+  let sapY_ = 0;
+  let sapVX = 0;
+  let sapVY = 0;
+  let lastStep = -1;
+  let lastWalk = -1;
+  let stepGap = 0;
 
-  /** The idle loop takes over once its first frames are in; the frame it shows is asked for here. */
-  function idleOn(st: Stage) {
-    if (st.state !== 2) return false;
-    const m = bank.meta(st.idle);
-    if (!m) return false;
-    bank.texture(st.idle, Math.floor(st.t * m.fps));
-    return bank.has(st.idle);
-  }
+  /** Median of the lowest point over the plate: where the fingertip comes to rest. */
+  let fingerRest: number[] | null = null;
+  const footRest = () => {
+    if (fingerRest) return fingerRest;
+    const m = bank.meta("handR");
+    if (!m) return null;
+    const list = m.foot.slice(Math.floor(m.foot.length * 0.6));
+    const xs = list.map((v) => v[0]).sort((a, b) => a - b);
+    const ys = list.map((v) => v[1]).sort((a, b) => a - b);
+    fingerRest = [xs[xs.length >> 1], ys[ys.length >> 1]];
+    return fingerRest;
+  };
 
-  function placeCard(st: Stage, anchor: Vector3, ax: number, ay: number, pu: number, offR: number, offU: number) {
-    // Which frame: a performance plays through, then the idle loop runs for ever.
-    const useIdle = idleOn(st);
-    const id = useIdle ? st.idle : st.perf;
-    const m = bank.meta(id);
+  /** The hand plate, placed so that one source pixel sits at the fingertip's point, tilted about it, moved off by offR and offU. */
+  function placeHand(reduced: boolean, anchor: Vector3, ax: number, ay: number, pu: number, offR: number, offU: number, rz: number) {
+    const m = bank.meta("handR");
     card.mesh.visible = card.depth.visible = false;
     if (!m) return null;
-    let f = st.state === 0 ? 0 : st.state === 1 ? Math.floor(st.t * m.fps) : useIdle ? Math.floor(st.t * m.fps) : m.frames - 1;
-    if (m.pingpong) {
+    let frame = 0;
+    if (!reduced) {
       const span = 2 * (m.frames - 1);
       const q = Math.floor(windTime.value * m.fps) % span;
-      f = q < m.frames ? q : span - q;
+      frame = q < m.frames ? q : span - q;
     }
-    const tex = bank.texture(id, Math.min(f, m.loop ? f : m.frames - 1));
+    const tex = bank.texture("handR", frame);
     if (!tex) return null;
-    // Whatever the clip's camera did, this frame is held to one size on one ground point.
-    const shownF = bank.shown(id);
+    // Whatever the clip's camera did, this frame is held to one size on one point.
+    const shownF = bank.shown("handR");
     const lock = m.stab && shownF >= 0 ? m.stab[shownF] : null;
     if (lock) {
       pu *= lock[0];
@@ -2067,8 +2475,8 @@ export function buildSurface(o: { low: boolean; landing: Landing; cloudTex: Text
       ay = lock[2];
     }
     card.tMap.value = tex;
-    shared.uBlur.value = st.scene === "touch" ? 0.008 : 0;
-    shared.uEdge.value = st.scene === "touch" ? 1 : 0;
+    shared.uBlur.value = 0.008;
+    shared.uEdge.value = 1;
     cardAt[0] = ax;
     cardAt[1] = ay;
     shared.uFocus.value.set((ax - m.box[0]) / (m.box[2] - m.box[0]), (ay - m.box[1]) / (m.box[3] - m.box[1]));
@@ -2080,7 +2488,6 @@ export function buildSurface(o: { low: boolean; landing: Landing; cloudTex: Text
     _right.set(Math.cos(yaw), 0, -Math.sin(yaw));
     const cx = (x0 + x1) * 0.5;
     const cy = (y0 + y1) * 0.5;
-    const rz = st.scene === "touch" ? HAND_TILT : 0;
     const cz = Math.cos(rz);
     const sz = Math.sin(rz);
     const dx = (cx - ax) * pu;
@@ -2094,26 +2501,54 @@ export function buildSurface(o: { low: boolean; landing: Landing; cloudTex: Text
       o.scale.set(w, h, 1);
       o.visible = true;
     }
-    if (st.scene === "touch") {
-      sandU.tHand.value = tex;
-      sandU.uHandOn.value = 1;
-      sandU.uHandC.value.copy(_p);
-      sandU.uHandR.value.copy(_right).multiplyScalar(cz).add(tmpV.set(0, sz, 0)).multiplyScalar(1 / w);
-      sandU.uHandU.value.copy(_right).multiplyScalar(-sz).add(tmpV.set(0, cz, 0)).multiplyScalar(1 / h);
-      sandU.uHandN.value.set(Math.sin(yaw), 0, Math.cos(yaw));
-      sandU.uHandK.value.set(1 / w, 1 / h);
-    }
+    sandU.tHand.value = tex;
+    sandU.uHandOn.value = 1;
+    sandU.uHandC.value.copy(_p);
+    sandU.uHandR.value.copy(_right).multiplyScalar(cz).add(tmpV.set(0, sz, 0)).multiplyScalar(1 / w);
+    sandU.uHandU.value.copy(_right).multiplyScalar(-sz).add(tmpV.set(0, cz, 0)).multiplyScalar(1 / h);
+    sandU.uHandN.value.set(Math.sin(yaw), 0, Math.cos(yaw));
+    sandU.uHandK.value.set(1 / w, 1 / h);
     return m;
   }
 
-  // Median of the lowest point over the end of a performance: where the feet or fingertip come to rest.
-  const footRest = (id: string) => {
-    const m = bank.meta(id);
-    if (!m) return null;
-    const list = m.foot.slice(Math.floor(m.foot.length * 0.6));
-    const xs = list.map((v) => v[0]).sort((a, b) => a - b);
-    const ys = list.map((v) => v[1]).sort((a, b) => a - b);
-    return [xs[xs.length >> 1], ys[ys.length >> 1]];
+  // ------------------------------------------------------------ the planet turns
+  // At the last chapter the night sky goes round one tilted axis. The pole stands low behind the viewer, so
+  // what is ahead wheels round a point just under the horizon in front: the band moves left to right, sinks
+  // behind the land inside the frame, goes under it, and comes up again on the left, in the frame too.
+  // The turn runs on the wall clock, so a tab left alone finds it further along. It only runs at the
+  // last chapter and keeps its angle if the visitor scrolls away and comes back.
+  const SKY_TURN_MS = 9 * 60 * 1000;
+  const POLE = new Vector3(0.06, 0.17, 0.98).normalize();
+  let skyTurn = 0;
+  let skyWall = 0;
+  let skyUp = 1;
+  let skyChecked = 0;
+  let skySent = 0;
+  const skyQ = new Quaternion();
+  const skyQinv = new Quaternion();
+  const skyM4 = new Matrix4();
+  const coreNow = new Vector3();
+  const keyWorld = new Vector3();
+  const skyProbe = new Vector3();
+  // Where the band's light is along its circle, to weigh how much of it is above the land.
+  const PROBES = 36;
+  const probeDir: Vector3[] = [];
+  const probeW: number[] = [];
+  let probeSum = 0;
+  for (let k = 0; k < PROBES; k++) {
+    const lon = -Math.PI + ((k + 0.5) / PROBES) * Math.PI * 2;
+    probeDir.push(galB.clone().multiplyScalar(Math.cos(lon)).addScaledVector(galA, Math.sin(lon)));
+    const w = 0.42 * Math.exp((-lon * lon) / 1.2) + 0.95 * Math.exp((-lon * lon) / 0.45);
+    probeW.push(w);
+    probeSum += w;
+  }
+  const skyUpNow = () => {
+    let sum = 0;
+    for (let k = 0; k < PROBES; k++) {
+      skyProbe.copy(probeDir[k]).applyQuaternion(skyQinv);
+      sum += probeW[k] * smooth(-0.01, 0.06, skyProbe.y);
+    }
+    return sum / probeSum;
   };
 
   // ------------------------------------------------------------ time passing: sunset to full night
@@ -2203,6 +2638,55 @@ export function buildSurface(o: { low: boolean; landing: Landing; cloudTex: Text
     blend(s, SKY.key, sunColor);
     blend(s, SKY.fill, skyLight);
     blend(s, SKY.bounce, groundLight);
+
+    // The planet turns, and the land takes its light from what is really up there. The lamp is not part of this.
+    const nightK = smooth(2.6, 3, s);
+    const wall = Date.now();
+    if (f.reduced) skyTurn = 0;
+    else if (skyWall) skyTurn = (skyTurn + ((wall - skyWall) / SKY_TURN_MS) * smooth(SCENE.touchA + 0.04, SCENE.camDown, f.p)) % 1;
+    skyWall = wall;
+    skyQ.setFromAxisAngle(POLE, skyTurn * Math.PI * 2);
+    domeMat.uniforms.uSkyRot.value.setFromMatrix4(skyM4.makeRotationFromQuaternion(skyQ));
+    skyQinv.copy(skyQ).invert();
+    coreNow.copy(galCore).applyQuaternion(skyQinv);
+    if (wall - skyChecked > 120 || wall < skyChecked) {
+      skyChecked = wall;
+      skyUp = skyUpNow();
+      if (wall - skySent > 240 && smooth(SCENE.touchA + 0.04, SCENE.camDown, f.p) > 0.01 && !f.reduced) {
+        skySent = wall;
+        window.dispatchEvent(new CustomEvent("journey:sky", { detail: { angle: skyTurn, up: skyUp } }));
+      }
+    }
+    const glowK = smooth(0.03, 0.62, skyUp);
+    const lightK = lerp(1, lerp(0.42, 1.12, glowK), nightK);
+    const coolR = lerp(1, lerp(0.72, 1, glowK), nightK);
+    const coolB = lerp(1, lerp(1.5, 1, glowK), nightK);
+    const skyK = lerp(1, lerp(0.66, 1.04, glowK), nightK);
+    skyU.uHorSun.value.multiplyScalar(skyK);
+    skyU.uHorAway.value.multiplyScalar(skyK);
+    skyU.uMid.value.multiplyScalar(skyK);
+    skyU.uTop.value.multiplyScalar(skyK);
+    sunColor.multiplyScalar(lightK);
+    sunColor.r *= coolR;
+    sunColor.b *= coolB;
+    skyLight.multiplyScalar(lightK);
+    skyLight.r *= coolR;
+    skyLight.b *= coolB;
+    groundLight.multiplyScalar(lightK);
+    // Airglow low down, and before the band rises, or just after it sets, the horizon there lifts a little.
+    const coreEl = Math.asin(clamp(coreNow.y, -1, 1));
+    const coreLen = Math.max(Math.hypot(coreNow.x, coreNow.z), 1e-3);
+    skyU.uAirglow.value = nightK;
+    skyU.uRiseDir.value.set(coreNow.x / coreLen, coreNow.z / coreLen);
+    skyU.uRise.value = nightK * smooth(-0.62, -0.1, coreEl) * (1 - smooth(0.02, 0.26, coreEl));
+    keyWorld.copy(sunWorld).lerp(tmpV.copy(coreNow).applyQuaternion(l.quat), nightK).normalize();
+    stoneU.uSkyDir.value.copy(coreNow);
+    stones.visible = stoneShadow.visible = s > 2.55;
+    // The nearest stars shift a touch with the pointer: depth against the band behind them.
+    domeMat.uniforms.uShift.value.set(lampX * 0.0028 * nightK, -lampY * 0.0018 * nightK, 0);
+    domeMat.uniforms.uTwinkle.value = f.reduced ? 0 : 1;
+    sapU.uCool.value.setRGB(0.0035, 0.0045, 0.009).multiplyScalar(lerp(0.5, 1.15, glowK));
+
     hazeColor.copy(skyU.uHorSun.value).lerp(skyU.uMid.value, 0.5).multiplyScalar(0.8);
     const night = smooth(1.15, 3, s);
     sandU.uNight.value = night;
@@ -2239,28 +2723,14 @@ export function buildSurface(o: { low: boolean; landing: Landing; cloudTex: Text
     contact.visible = blobMat.uniforms.uStrength.value > 0.002;
     blobMat.uniforms.uColor.value.copy(sunColor).multiplyScalar(0.006);
 
-    // ---- plates: fetch what the story needs next
-    bank.begin();
-    const z = zone(s);
-    if (z !== curZone) {
-      curZone = z;
-      bank.prefer(z < 2 ? ["helmetP", "helmetI", "handR"] : ["handR", "helmetI", "helmetP"]);
-    }
-    settled = f.land >= 1 ? settled + dt : 0;
-    stepStages(s, dt, f.reduced);
-    {
-      const st = stages[0];
-      const out = st.state !== 0 && s > 0.25 && s < 1.46;
-      figure.group.visible = out;
-      if (out) figure.update(st.state === 1 ? st.t : figure.duration + st.t, time, f.reduced, c1.copy(skyU.uHorSun.value).multiplyScalar(0.5));
-    }
-
     // ---- relight for the hour
     blend(s, SKY.plateShadow, shared.uShadow.value);
     blend(s, SKY.plateHigh, shared.uHigh.value);
     shared.uGain.value = blend1(s, PLATE_GAIN);
     shared.uKeep.value = blend1(s, PLATE_KEEP);
     blend(s, SKY.plateRim, shared.uRim.value);
+    shared.uRim.value.multiplyScalar(lightK);
+    (sleeve.material as ShaderMaterial).uniforms.uRim.value.copy(sleeveRim).multiplyScalar(lerp(0.4, 1.15, glowK));
     shared.uFall.value = lerp(1, 0.22, smooth(2.6, 3, s));
 
     // The close sand and the lamp's shadow are only made when the story gets near them.
@@ -2274,50 +2744,81 @@ export function buildSurface(o: { low: boolean; landing: Landing; cloudTex: Text
     }
     sandU.uHandOn.value = 0;
 
-    // ---- which performance is on stage, and where
-    let m: PlateMeta | null = null;
-    let shadowAt: Vector3 | null = null;
-    let shadowLen = 0;
-    const camZ = camSite.value.z;
-    const zStand = STAND.z;
-    if (bank.ready && s >= 1.46 && s < 2.8 && camZ > zStand - 0.2) {
-      const rest = footRest("helmetP");
+    // ---- the scenes, read from where the scroll is and which way it is going
+    const S = SCENE;
+    const p = f.p;
+    const B = f.back;
+    nowP = p;
+    nowS = s;
+    const nearLander = s < 1.46;
+    const onShow = nearLander ? p > S.walkA - 0.002 : p < S.camDown + 0.012;
+    figure.group.visible = onShow;
+
+    // How he stands to the visitor, a moment at a time.
+    lookHold = Math.max(0, lookHold - dt);
+    lampHold = Math.max(0, lampHold - dt);
+    lookK += ((lookHold > 0 ? 1 : 0) - lookK) * (1 - Math.exp(-dt * 3));
+    if (held) pressK = Math.min(1, pressK + dt * 2.6);
+    else pressK = Math.max(0, pressK - dt * 2.2);
+    const gust = Math.pow(0.5 + 0.5 * Math.sin(windTime.value * 0.37 + 1.3) * Math.sin(windTime.value * 0.83), 2);
+
+    // ---- the lamp comes on as the night does
+    const lampOn = smooth(S.lampA, S.lampB, p);
+
+    // ---- the hand comes down to the leaf, and leaves it its own way
+    if (s > 1.2) bank.begin();
+    if (bank.ready) bank.prefer(["handR"]);
+    const reachBy = clamp((p - S.reachA) / (S.contact - S.reachA), 0, 1);
+    const pressReach = heldSap && reachBy > 0.15 ? pressK : 0;
+    const reachNow = Math.max(reachBy, pressReach);
+    const contactNow = reachNow >= 0.999;
+    const eReach = 1 - Math.pow(1 - reachNow, 2.2);
+    const handK = smooth(S.reachA, S.reachA + 0.06, p);
+    let handOn = false;
+    const offR = lerp(HAND_IN[0], HAND_OUT[0], B) * (1 - eReach);
+    let offU = lerp(HAND_IN[1], HAND_OUT[1], B) * (1 - eReach);
+    // The lamp goes where the visitor is, a little: the hand turns on its fingertip.
+    const wantLX = lampHold > 0 ? lampWantX : Math.sin(windTime.value * 0.17) * 0.12;
+    const wantLY = lampHold > 0 ? lampWantY : Math.sin(windTime.value * 0.11 + 1.0) * 0.12;
+    const lampRate = 1 - Math.exp(-dt * (lampHold > 0 ? 3.2 : 0.9));
+    lampX = f.reduced ? 0 : lampX + (wantLX - lampX) * lampRate;
+    lampY = f.reduced ? 0 : lampY + (wantLY - lampY) * lampRate;
+    const swingK = smooth(0.7, 1, reachNow);
+    const rz = HAND_TILT + B * HAND_OUT[2] * (1 - eReach) - lampX * 0.2 * swingK;
+    offU -= (contactNow ? 0.0012 : 0) * pressK * (heldSap ? 1 : 0);
+    sandU.uHandOn.value = 0;
+    if (bank.ready && p > S.reachA - 0.004) {
+      const rest = footRest();
       if (rest) {
-        anchorW.set(STAND.x, groundHeight(STAND.x, STAND.z), STAND.z);
-        m = placeCard(stages[1], anchorW, rest[0], rest[1], HELMET_PU, 0, 0);
+        const m = placeHand(f.reduced, TOUCH_AT, rest[0], rest[1], HAND_PU, offR, offU, rz);
         if (m) {
-          shadowAt = tmpV2.copy(anchorW);
-          shadowLen = 8;
-        }
-      }
-    } else if (bank.ready && s >= 2.72) {
-      const rest = footRest("handR");
-      if (rest) {
-        const st = stages[2];
-        // The arm comes in along its own line, and the finger comes to rest on the leaf.
-        const reach = st.state === 0 ? 0 : st.state === 1 ? clamp(st.t / HAND_REACH, 0, 1) : 1;
-        const e = 1 - Math.pow(1 - reach, 3);
-        const arrive = smooth(2.72, 3, s);
-        m = placeCard(st, TOUCH_AT, rest[0], rest[1], HAND_PU, (1 - e) * 0.085 + (1 - arrive) * 0.03, (1 - e) * 0.05 + (1 - arrive) * 0.03);
-        // The leaf is under the fingertip: it follows it, and gives a little when it presses.
-        if (m && m.stab) {
-          const at0 = Math.max(bank.shown(m.id), 0);
+          handOn = true;
+          const cz = Math.cos(rz);
+          const sz = Math.sin(rz);
+          const yaw = card.mesh.rotation.y;
+          // The leaf is under the fingertip: it goes where it goes, and gives a little when it presses.
+          const at0 = Math.max(bank.shown("handR"), 0);
           const tx = (m.foot[at0][0] - cardAt[0]) * HAND_PU;
           const ty = (cardAt[1] - m.foot[at0][1]) * HAND_PU;
-          const ct = Math.cos(HAND_TILT);
-          const st0 = Math.sin(HAND_TILT);
-          const on = smooth(0.82, 1, reach);
-          sapU.uPress.value.set((tx * ct - ty * st0) * on, (tx * st0 + ty * ct - 0.0011) * on);
-        } else {
-          sapU.uPress.value.set(0, 0);
-        }
-        // Where the plate's sleeve leaves off, the dark arm carries on, behind it.
-        const offR = (1 - e) * 0.085 + (1 - arrive) * 0.03;
-        const offU = (1 - e) * 0.05 + (1 - arrive) * 0.03;
-        const cz = Math.cos(HAND_TILT);
-        const sz = Math.sin(HAND_TILT);
-        if (m) {
-          const yaw = card.mesh.rotation.y;
+          const on = smooth(0.86, 1, reachNow);
+          const pressWantX = (tx * cz - ty * sz) * on;
+          const pressWantY = (tx * sz + ty * cz - 0.0011 - 0.0012 * pressK * (heldSap ? 1 : 0)) * on;
+          if (f.reduced) {
+            sapX = pressWantX;
+            sapY_ = pressWantY;
+            sapVX = sapVY = 0;
+          } else {
+            // It springs back: a stiff little stem, under-damped.
+            const w = 26;
+            const zeta = 0.17;
+            const h = Math.min(dt, 1 / 30);
+            sapVX += (w * w * (pressWantX - sapX) - 2 * zeta * w * sapVX) * h;
+            sapVY += (w * w * (pressWantY - sapY_) - 2 * zeta * w * sapVY) * h;
+            sapX += sapVX * h;
+            sapY_ += sapVY * h;
+          }
+          sapU.uPress.value.set(sapX, sapY_);
+          // Where the plate's sleeve leaves off, the dark arm carries on, behind it.
           const ox = -cardAt[0] * HAND_PU;
           const oy = cardAt[1] * HAND_PU;
           sleeve.position
@@ -2325,86 +2826,165 @@ export function buildSurface(o: { low: boolean; landing: Landing; cloudTex: Text
             .addScaledVector(_right, ox * cz - oy * sz + offR)
             .add(tmpV.set(0, ox * sz + oy * cz + offU, 0))
             .addScaledVector(tmpV.set(Math.sin(yaw), 0, Math.cos(yaw)), -0.001);
-          sleeve.rotation.set(0, yaw, HAND_TILT);
+          sleeve.rotation.set(0, yaw, rz);
           sleeve.scale.set(HAND_PU, HAND_PU, 1);
           sleeve.visible = true;
-        }
-        if (reach >= 1 && !touched) {
-          touched = true;
-          touch = 1;
-        }
-        if (st.state === 0) touched = false;
-        // The wrist lamp, one light in the scene: found on the plate frame by frame, turned with the hand.
-        lampOn += ((m ? 1 : 0) - lampOn) * Math.min(1, dt * 2.5);
-        const lampK = smooth(2.72, 3, s) * (f.reduced ? (m ? 1 : 0) : lampOn);
-        if (m) {
-          const at = bank.shown(m.id);
-          const led = (m.lamp && m.lamp[at >= 0 ? at : 0]) || WRIST_LED;
+          // The wrist lamp, one light in the scene: found on the plate frame by frame, turned with the hand.
+          const led = (m.lamp && m.lamp[at0]) || WRIST_LED;
           const lx = (led[0] - cardAt[0]) * HAND_PU;
           const ly = (cardAt[1] - led[1]) * HAND_PU;
           ledAt.copy(TOUCH_AT).addScaledVector(_right, lx * cz - ly * sz + offR).add(tmpV.set(0, lx * sz + ly * cz + offU, 0));
-          lampGlow.material.uniforms.uCenter.value.copy(ledAt);
-          lampGlow.material.uniforms.uColor.value.setRGB(0.66, 0.62, 0.54).multiplyScalar(lampK);
-          lampGlow.visible = lampK > 0.01;
           // A little toward the camera along the same line of sight: on the plate's lamp, and off the plane of the hand.
+          // The visitor moves it along that line too, so it stays on the wrist while the shadows swing.
           tmpV.copy(ledAt).sub(camSite.value);
-          sandU.uLampSite.value.copy(camSite.value).addScaledVector(tmpV, 1 - LAMP_FRONT / Math.max(tmpV.length(), 0.05));
-          sandU.uLampDir.value.copy(TOUCH_AT).sub(sandU.uLampSite.value).normalize();
-          shared.uLampWorld.value.copy(ledAt).applyMatrix4(group.matrixWorld);
-          shared.uLampDir.value.copy(sandU.uLampDir.value).transformDirection(group.matrixWorld);
+          plateLamp.copy(camSite.value).addScaledVector(tmpV, 1 - (LAMP_FRONT + lampY * 0.04 * swingK) / Math.max(tmpV.length(), 0.05));
         }
-        // An LED, steady but for the least flutter of its driver.
-        const flutter = f.reduced ? 1 : 1 + 0.012 * Math.sin(time * 29.3) + 0.009 * Math.sin(time * 47.7 + 1.3) - 0.05 * Math.pow(Math.max(0, Math.sin(time * 1.7 + 2 * Math.sin(time * 0.43))), 40);
-        const pool = lampK * flutter;
-        shared.uLampCol.value.setRGB(1.0 * pool, 0.93 * pool, 0.82 * pool);
-        beam.visible = lampK > 0.01;
       }
     }
-    if (!m) {
+    if (!handOn) {
       card.mesh.visible = card.depth.visible = false;
+      sleeve.visible = false;
+      sapU.uPress.value.set(0, 0);
     }
-    if (!m || s < 2.72) sleeve.visible = false;
-    if (s < 2.72) {
-      shared.uLampCol.value.setRGB(0, 0, 0);
+    if (contactNow !== contactWas) {
+      if (contactNow) touch = 1;
+      else touch = Math.max(touch, 0.5);
+    }
+
+    // ---- him
+    if (onShow) {
+      if (nearLander) {
+        fig.walk = 0;
+        fig.t = clamp((p - S.walkA) / (S.walkB - S.walkA), 0, 1) * figure.duration;
+        fig.back = B;
+        fig.turnBy = Math.PI;
+        fig.helm = 0;
+        fig.helmBack = 0;
+        fig.kneel = 0;
+        fig.reach = 0;
+      } else {
+        const h = clamp((p - S.helmA) / (S.helmB - S.helmA), 0, 1);
+        const tn = clamp((p - S.nearWalkA) / (S.nearWalkB - S.nearWalkA), 0, 1);
+        fig.walk = 1;
+        fig.t = tn * figure.durationOn;
+        fig.helm = h;
+        fig.helmBack = B;
+        // Coming back he walks facing the way he goes, stops, faces the light again for the helmet,
+        // and last of all turns toward the lander.
+        fig.back = B * (p < S.nearWalkA ? 1 - smooth(0, 0.16, h) : smooth(0, 0.3, tn));
+        // At the end of the helmet he turns all the way to face the lander; walking back he turns right round.
+        fig.turnBy = p < S.nearWalkA ? -PLAIN_FACE : Math.PI;
+        fig.kneel = smooth(S.nearWalkB, S.kneelB, p);
+        fig.reach = smooth(S.kneelB - 0.03, S.nearB + 0.03, p);
+        fig.reachAt.set(SAP.x + 0.2, SAP.y + 0.06, SAP.z + 0.02);
+      }
+      fig.time = time;
+      fig.dt = dt;
+      fig.reduced = f.reduced;
+      fig.gust = gust;
+      fig.lookW = lookK * (nearLander ? 0.35 + 0.65 * smooth(0.5, 0.75, fig.t / figure.duration) : 1) * (1 - fig.kneel);
+      fig.rim.copy(skyU.uHorSun.value).multiplyScalar(nearLander ? 0.5 : 0.3).add(c1.copy(skyU.uMid.value).multiplyScalar(0.14));
+      figure.update(fig);
+      // A boot coming down on the sand raises a little dust, whichever way he is going.
+      stepGap += dt;
+      const w = figure.walks[fig.walk];
+      let idx = 0;
+      while (idx < w.steps && fig.t >= w.T[idx + 1]) idx++;
+      if (lastWalk === fig.walk && idx !== lastStep && !f.reduced && stepGap > 0.14) {
+        const onSand = fig.walk === 1 || idx >= 6;
+        if (onSand) {
+          const foot = figure.feet[idx % 2 === 0 ? 1 : 0];
+          kick(foot.x, foot.y, foot.z, 0.2, 0.32);
+          stepGap = 0;
+        }
+      }
+      lastStep = idx;
+      lastWalk = fig.walk;
+    }
+
+    // ---- the one light of the last chapter: on his wrist while he is far, on the plate's wrist when the plate comes in
+    const flutter = f.reduced ? 1 : 1 + 0.012 * Math.sin(time * 29.3) + 0.009 * Math.sin(time * 47.7 + 1.3) - 0.05 * Math.pow(Math.max(0, Math.sin(time * 1.7 + 2 * Math.sin(time * 0.43))), 40);
+    const pool = lampOn * flutter;
+    shared.uLampCol.value.setRGB(1.0 * pool, 0.93 * pool, 0.82 * pool);
+    if (lampOn > 0.001) {
+      const useHand = handOn ? handK : 0;
+      const lampSite = sandU.uLampSite.value;
+      if (onShow && useHand < 1) lampSite.copy(figure.wrist);
+      if (handOn) lampSite.lerp(plateLamp, onShow ? useHand : 1);
+      sandU.uLampDir.value.copy(TOUCH_AT).sub(lampSite).normalize();
+      shared.uLampWorld.value.copy(handOn ? ledAt : lampSite).applyMatrix4(group.matrixWorld);
+      shared.uLampDir.value.copy(sandU.uLampDir.value).transformDirection(group.matrixWorld);
+      lampGlow.material.uniforms.uCenter.value.copy(handOn ? ledAt : lampSite);
+      lampGlow.material.uniforms.uColor.value.setRGB(0.66, 0.62, 0.54).multiplyScalar(lampOn * (handOn ? handK : 0));
+      lampGlow.visible = handOn && handK > 0.01;
+      beam.visible = s > 2.6;
+      // The same light on his suit.
+      fig.lampCol.copy(shared.uLampCol.value);
+      tmpV2.copy(lampSite).applyMatrix4(group.matrixWorld).applyMatrix4(camera.matrixWorldInverse);
+      fig.lampView.copy(tmpV2);
+    } else {
       lampGlow.visible = false;
       beam.visible = false;
-      lampOn = 0;
+      fig.lampCol.setRGB(0, 0, 0);
     }
     sandU.uLampCol.value.copy(shared.uLampCol.value);
 
-    // His shadow, away from the sun, and gone when the sun is.
+    // His long shadow, away from the sun, and gone when the sun is.
     const sunK = blend1(s, SUN_K);
-    if (shadowAt) {
+    if (onShow && !nearLander && s < 2.7) {
       const yaw = Math.atan2(-sun.x, -sun.z);
-      shadowMesh.position.copy(shadowAt);
+      const at = figure.pelvis.position;
+      shadowMesh.position.set(at.x, groundHeight(at.x, at.z), at.z);
       shadowMesh.rotation.set(0, yaw, 0);
-      shadowMesh.scale.set(0.9, 1, shadowLen);
-      shadowMat.uniforms.uStrength.value = 0.62 * Math.max(sunK, 0.3);
+      shadowMesh.scale.set(0.9, 1, 8);
+      shadowMat.uniforms.uStrength.value = 0.62 * Math.max(sunK, 0.3) * (1 - smooth(2.3, 2.7, s));
       shadowMesh.visible = true;
     } else {
       shadowMesh.visible = false;
     }
 
+    // ---- what the wind and the visitor kick up
+    puffMat.uniforms.uNow.value = windTime.value;
+    puffs.visible = windTime.value < puffUntil;
+    if (puffs.visible) puffMat.uniforms.uColor.value.copy(dustCol).multiplyScalar(1.5).add(c2.copy(shared.uLampCol.value).multiplyScalar(s > 2.6 ? 0.1 : 0));
+
     // ---- the sapling
     sapling.visible = s > 2.45;
     touch = Math.max(0, touch - dt * 0.6);
-    sapU.uTouch.value = touch;
+    sapU.uTouch.value = f.reduced ? 0 : touch;
     sapU.uAmb.value.copy(skyLight).multiplyScalar(0.6);
     sapU.uKey.value.copy(sunColor).multiplyScalar(0.2);
+
+    sendScenes(f, contactNow, contactWas);
+    contactWas = contactNow;
   }
 
   return {
     group,
+    warmParts: [figure.group, puffs, stones, stoneShadow],
     setSoft(v: number) {
       moonSoft.value = v;
     },
     sunWorld,
+    keyWorld,
     sunColor,
     skyLight,
     groundLight,
     hazeColor,
     shot,
     update,
+    interact,
+    arms: () => figure.armsNow(),
+    setSky(a: number) {
+      skyTurn = a;
+    },
+    skyNow: () => ({ angle: skyTurn, up: skyUp, coreEl: Math.asin(clamp(coreNow.y, -1, 1)) }),
+    figureAt(out: Vector3) {
+      return out.copy(figure.pelvis.position).applyMatrix4(group.matrixWorld);
+    },
+    debug() {
+      return { feet: figure.feet.map((v) => ({ ...v })), lift: [...figure.lift], visible: figure.group.visible, sapPress: [sapX, sapY_], contact: contactWas, kneel: fig.kneel, back: fig.back, helm: fig.helm, t: fig.t, walk: fig.walk, wrist: figure.wrist.toArray(), lamp: sandU.uLampSite.value.toArray() };
+    },
     focusWorld,
     lateTextures: [grain],
     lampPass(r: WebGLRenderer) {
@@ -2422,6 +3002,13 @@ export function buildSurface(o: { low: boolean; landing: Landing; cloudTex: Text
     dispose() {
       bank.destroy();
       figure.dispose();
+      puffG.dispose();
+      puffMat.dispose();
+      stoneBase.dispose();
+      stones.geometry.dispose();
+      stoneShadow.geometry.dispose();
+      (stones.material as ShaderMaterial).dispose();
+      (stoneShadow.material as ShaderMaterial).dispose();
       grain.dispose();
       sapRT?.dispose();
       sapShadowMat.dispose();
