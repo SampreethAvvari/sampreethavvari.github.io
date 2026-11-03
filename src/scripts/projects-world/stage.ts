@@ -913,6 +913,36 @@ export function mountProjectsWorld() {
     let destroyed = false;
     let typeLater = 0;
     let typeLater2 = 0;
+    // A phone can take the GPU back at any time, the build included: the painted
+    // sky holds the screen, the title goes back to words, and the words and the
+    // scroll carry on until it comes back.
+    let gone = false;
+    const showWorld = () => {
+      root.classList.add("is-3d");
+      if (phone) return;
+      clearTimeout(typeLater);
+      clearTimeout(typeLater2);
+      typeLater = window.setTimeout(() => root.classList.add("type-on"), 450);
+      typeLater2 = window.setTimeout(() => root.classList.add("has-type"), 1250);
+    };
+    canvas.addEventListener(
+      "webglcontextlost",
+      () => {
+        gone = true;
+        clearTimeout(typeLater);
+        clearTimeout(typeLater2);
+        root.classList.remove("is-3d", "type-on", "has-type");
+      },
+      { signal },
+    );
+    canvas.addEventListener(
+      "webglcontextrestored",
+      () => {
+        gone = false;
+        if (sys) showWorld();
+      },
+      { signal },
+    );
     // The code starts down the wire now, so the wait for the scene is the wait
     // for the network and not for an idle moment first.
     const engine = import("./engine");
@@ -937,11 +967,7 @@ export function mountProjectsWorld() {
           }
           sys = s;
           update();
-          root.classList.add("is-3d");
-          if (!phone) {
-            typeLater = window.setTimeout(() => root.classList.add("type-on"), 450);
-            typeLater2 = window.setTimeout(() => root.classList.add("has-type"), 1250);
-          }
+          if (!gone) showWorld();
           let onScreen = true;
           const rest = () => s.setPaused(!onScreen || document.hidden);
           const io = new IntersectionObserver(([e]) => {
@@ -951,14 +977,12 @@ export function mountProjectsWorld() {
           io.observe(stage);
           signal.addEventListener("abort", () => io.disconnect());
           document.addEventListener("visibilitychange", rest, { signal });
-          // A phone can take the GPU back: the painted sky holds the screen and the
-          // words and the scroll carry on until it comes back.
-          canvas.addEventListener("webglcontextlost", () => root.classList.remove("is-3d"), { signal });
-          canvas.addEventListener("webglcontextrestored", () => root.classList.add("is-3d"), { signal });
         })
         .catch((err) => {
           // the painted sky and the HTML still show every project
           console.warn(err);
+          // The GPU went while it was being built: build it again when it returns.
+          if (gone) canvas.addEventListener("webglcontextrestored", boot, { once: true, signal });
         });
     };
     const idle = (window as Window & { requestIdleCallback?: (cb: () => void, o?: { timeout: number }) => number }).requestIdleCallback;

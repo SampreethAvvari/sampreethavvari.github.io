@@ -1028,7 +1028,6 @@ export async function mountJourney(canvas: HTMLCanvasElement, opts: JourneyOptio
     // Against the target the scene is really drawn to: the shaders differ by what they output to.
     Promise.all([prelink(renderer, scene, camera, post.sceneTarget), post.warm()]).then(afterCompile, afterCompile);
   };
-  warm();
 
   const onLost = (e: Event) => {
     e.preventDefault();
@@ -1055,6 +1054,9 @@ export async function mountJourney(canvas: HTMLCanvasElement, opts: JourneyOptio
   };
   canvas.addEventListener("webglcontextlost", onLost);
   canvas.addEventListener("webglcontextrestored", onRestored);
+  // Gone while it was being built: nothing to warm until it comes back.
+  if (renderer.getContext().isContextLost()) lost = true;
+  else warm();
 
   return {
     setScroll(progress: number, _velocity: number) {

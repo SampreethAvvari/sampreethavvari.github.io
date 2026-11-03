@@ -332,6 +332,16 @@ export async function mountWorld(
     renderer.dispose();
     return null;
   }
+  // The GPU can go at any moment. During the build it is only noted: the page
+  // gets no world back and shows the document.
+  let building = true;
+  let goneWhileBuilding = false;
+  const lost = (e: Event) => {
+    e.preventDefault();
+    if (building) goneWhileBuilding = true;
+    else events.onLost?.();
+  };
+  canvas.addEventListener("webglcontextlost", lost);
   quietShaderChecks(renderer);
   renderer.outputColorSpace = LinearSRGBColorSpace;
   renderer.setClearColor(0x000000, 0);
@@ -1897,15 +1907,10 @@ export async function mountWorld(
   // ------------------------------------------------------------- compile
   // Warm the shaders before the first visible frame, in the background, so nothing hitches.
   await Promise.all([prelink(renderer, scene, camera, finish.scene), finish.warm()]);
-
-  const lost = (e: Event) => {
-    e.preventDefault();
-    events.onLost?.();
-  };
-  canvas.addEventListener("webglcontextlost", lost);
+  building = false;
 
   let dead = false;
-  return {
+  const world: World = {
     frame(now, p, v) {
       if (!dead) frame(now, p, v);
     },
@@ -1995,4 +2000,9 @@ export async function mountWorld(
       renderer.forceContextLoss();
     },
   };
+  if (goneWhileBuilding) {
+    world.destroy();
+    return null;
+  }
+  return world;
 }

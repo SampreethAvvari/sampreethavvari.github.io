@@ -400,7 +400,7 @@ export function mountCaseGL(
   };
   const tryReady = () => {
     // The first slab goes up as soon as the shaders are warm: it is what takes over from the picture.
-    if (readyFired || !warmed || !slabs[0].mat.uniforms.uHasTex.value) return;
+    if (readyFired || lost || !warmed || !slabs[0].mat.uniforms.uHasTex.value) return;
     readyFired = true;
     // Draw once with the art, then let the page swap the layers.
     draw(performance.now());
@@ -736,8 +736,10 @@ export function mountCaseGL(
     lost = false;
     prelink(renderer, scene, camera, null).then(() => {
       if (disposed || lost) return;
-      draw(performance.now());
-      onReady();
+      if (readyFired) {
+        draw(performance.now());
+        onReady();
+      } else tryReady();
       if (onScreen) start();
     });
   };

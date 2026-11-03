@@ -109,6 +109,23 @@ export async function mountSystem(canvas: HTMLCanvasElement, o: SystemOptions): 
   renderer.setClearColor(0x000000, 1);
   renderer.debug.checkShaderErrors = false;
 
+  // The GPU can go at any moment, the build included. If it comes back before the
+  // world is finished, that is remembered and dealt with at the end of the build.
+  let lost = false;
+  let stopWarm = () => {};
+  let owed = false;
+  let restore: () => void = () => {
+    owed = true;
+  };
+  const onLost = (e: Event) => {
+    e.preventDefault();
+    lost = true;
+    stopWarm();
+  };
+  const onRestored = () => restore();
+  canvas.addEventListener("webglcontextlost", onLost);
+  canvas.addEventListener("webglcontextrestored", onRestored);
+
   const shared: Shared = {
     time: { value: 0 },
     env: { value: null as Texture | null },
@@ -310,7 +327,6 @@ void main() {
   let raf = 0;
   let paused = false;
   let disposed = false;
-  let lost = false;
   let fade = 0;
   let prev = performance.now();
   let time = 0;
@@ -593,14 +609,9 @@ void main() {
   // Then everything not on screen yet goes to the GPU a piece at a time, so no
   // world arrives with a stall.
   const warmJobs = () => [star.group, ...worlds.map((w) => w.group), belt.group, typeRing.group, ...beacons];
-  let stopWarm = warmAhead(renderer, scene, camera, warmJobs());
+  if (!lost) stopWarm = warmAhead(renderer, scene, camera, warmJobs());
 
-  const onLost = (e: Event) => {
-    e.preventDefault();
-    lost = true;
-    stopWarm();
-  };
-  const onRestored = async () => {
+  restore = async () => {
     // the baked sky is gone with the context: paint it again
     renderer.autoClear = true;
     const fresh = await bakeSky(renderer, low);
@@ -617,8 +628,7 @@ void main() {
     lost = false;
     stopWarm = warmAhead(renderer, scene, camera, warmJobs());
   };
-  canvas.addEventListener("webglcontextlost", onLost);
-  canvas.addEventListener("webglcontextrestored", onRestored);
+  if (owed) restore();
 
   const sys: System = {
     setScroll(g, velocity) {

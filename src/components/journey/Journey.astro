@@ -979,7 +979,7 @@ const ENDING = 0;
           if (active >= 0) place(active);
         }
         journey.setScroll(progress, 0);
-        root.classList.add("is-3d");
+        if (!canvas.getContext("webgl2")?.isContextLost()) root.classList.add("is-3d");
         const io = new IntersectionObserver(([e]) => { onScreen = e.isIntersecting; rest(); });
         io.observe(root);
         visit.signal.addEventListener("abort", () => io.disconnect());
@@ -988,7 +988,10 @@ const ENDING = 0;
         // screen and the words and the scroll carry on until it comes back.
         canvas.addEventListener("webglcontextlost", () => root.classList.remove("is-3d"), sig);
         canvas.addEventListener("webglcontextrestored", () => root.classList.add("is-3d"), sig);
-      }).catch(() => { /* the painted sky stays */ });
+      }).catch(() => {
+        // The painted sky stays. If the GPU went while this was being built, build it again when it returns.
+        if (canvas.getContext("webgl2")?.isContextLost()) canvas.addEventListener("webglcontextrestored", boot, { once: true, ...sig });
+      });
       if ("requestIdleCallback" in window) (window as any).requestIdleCallback(boot, { timeout: 1500 });
       else setTimeout(boot, 600);
     }
