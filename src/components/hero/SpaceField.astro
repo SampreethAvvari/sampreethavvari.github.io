@@ -73,15 +73,20 @@
       return { w: Math.floor(cv.clientWidth * dpr), h: Math.floor(cv.clientHeight * dpr), dpr };
     };
     const on = () => document.documentElement.classList.add("spacefield-on");
+    // Without the GPU the page's painted sky shows again.
+    const off = () => document.documentElement.classList.remove("spacefield-on");
 
     // Keep the sky told: scroll, colour changes, the loader's hand over,
     // size and visibility. `send` is wired to the worker or to this thread.
     let send: (m: Record<string, unknown>) => void = () => {};
+    let told: boolean | null = null;
     const update = (part: Partial<SkyInput>) => {
       Object.assign(input, part);
-      send({ type: "input", input: part });
+      // A sky at rest is told everything at once when it wakes.
+      if (!told) send({ type: "input", input: part });
     };
-    window.addEventListener("scroll", () => update({ scrollY: window.scrollY }), { passive: true });
+    // Nothing to tell a sky at rest: it hears where the page is when it wakes.
+    window.addEventListener("scroll", () => { if (!told) update({ scrollY: window.scrollY }); }, { passive: true });
     if (ambientEl) new MutationObserver(() => update(colours())).observe(ambientEl, { attributes: true, attributeFilter: ["style"] });
     // The loader hands over on the first page and again after every move to
     // another page. Each arrival coasts the camera forward; the coast of the
@@ -126,15 +131,18 @@
       { passive: true },
     );
     // Rest while the tab is hidden, or while an opaque world covers this sky
-    // (the home flight, the Projects system, the Work station): two scenes
-    // drawing at once would only cost phones their frame rate.
-    const COVERED = ["in-journey", "in-pw", "in-ww"];
-    let told: boolean | null = null;
+    // (the home flight, the Projects system, the Work station, the Writing
+    // heroes): two scenes drawing at once would only cost phones their frame rate.
+    const COVERED = ["in-journey", "in-pw", "in-ww", "in-cx"];
     const tellHidden = () => {
       const root = document.documentElement.classList;
       const hide = document.hidden || COVERED.some((c) => root.contains(c));
       if (hide === told) return;
       told = hide;
+      if (!hide) {
+        input.scrollY = window.scrollY;
+        send({ type: "input", input });
+      }
       send({ type: "hidden", hidden: hide });
     };
     document.addEventListener("visibilitychange", tellHidden);
@@ -144,14 +152,37 @@
     // shaders keeps the browser's graphics process busy, and that process
     // also puts the page on screen.
     const later = (window as Window & { requestIdleCallback?: (cb: () => void, o?: { timeout: number }) => number }).requestIdleCallback;
-    const afterPaint = (cb: () => void) => (later ? later(cb, { timeout: 600 }) : setTimeout(cb, 120));
+    const soon = (cb: () => void) => (later ? later(cb, { timeout: 600 }) : setTimeout(cb, 120));
+    // Behind a world that is starting up, nobody can see the sky yet and its
+    // shaders would only queue with the world's. It starts when it comes into
+    // view, or a few seconds on, so it is ready before anyone scrolls that far.
+    const covered = () => COVERED.some((c) => document.documentElement.classList.contains(c));
+    const clear = (cb: () => void) => {
+      if (!covered()) return cb();
+      const go = () => {
+        clearTimeout(wait);
+        watch.disconnect();
+        cb();
+      };
+      const watch = new MutationObserver(() => {
+        if (!covered()) go();
+      });
+      watch.observe(document.documentElement, { attributes: true, attributeFilter: ["class"] });
+      const wait = setTimeout(go, 6000);
+    };
+    const afterPaint = (cb: () => void) => {
+      const next = () => soon(() => clear(cb));
+      if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", next, { once: true });
+      else next();
+    };
 
     if ("transferControlToOffscreen" in cv && typeof Worker !== "undefined") {
       afterPaint(() => {
         const off = cv.transferControlToOffscreen();
         const worker = new SkyWorker();
         worker.onmessage = (e: MessageEvent<{ type: string }>) => {
-          if (e.data.type === "ready") on();
+          if (e.data.type === "ready" || e.data.type === "restored") on();
+          else if (e.data.type === "lost") off();
           else if (e.data.type === "fail") worker.terminate();
         };
         send = (m) => worker.postMessage(m);
@@ -166,6 +197,7 @@
     const start = () => {
       const sky = createSky(cv, isMobile);
       if (!sky) return;
+      sky.watchLoss((lost) => (lost ? off() : on()));
       let hidden = document.hidden;
       const resize = () => {
         const s = size();

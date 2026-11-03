@@ -177,10 +177,15 @@ export function createReelGL(canvas: HTMLCanvasElement, slices = 12, dprCap = 1.
   let raf = 0;
   // Frames slower than this, on average over a cut, retire the shader.
   const SLOW_MS = 40;
+  let inFlight: (() => void) | null = null;
   canvas.addEventListener("webglcontextlost", (e) => {
     e.preventDefault();
     ok = false;
     cancelAnimationFrame(raf);
+    // A cut caught halfway still has to finish, or the reel waits for it forever.
+    const finish = inFlight;
+    inFlight = null;
+    finish?.();
   });
 
   const upload = (tex: WebGLTexture | null, unit: number, src: TexSource) => {
@@ -217,12 +222,16 @@ export function createReelGL(canvas: HTMLCanvasElement, slices = 12, dprCap = 1.
       if (!ok) return done();
       fit();
       if (!upload(texFrom, 0, from) || !upload(texTo, 1, to)) return done();
+      inFlight = done;
       gl.uniform2f(uFromSize, ...dims(from));
       gl.uniform1f(uDir, dir);
       let t0 = 0;
       let frames = 0;
       const frame = (now: number) => {
-        if (!ok) return done();
+        if (!ok) {
+          inFlight = null;
+          return done();
+        }
         if (!t0) t0 = now;
         frames++;
         const p = Math.min(1, (now - t0) / ms);
@@ -235,6 +244,7 @@ export function createReelGL(canvas: HTMLCanvasElement, slices = 12, dprCap = 1.
         if (p < 1) raf = requestAnimationFrame(frame);
         else {
           if ((now - t0) / Math.max(1, frames - 1) > SLOW_MS) ok = false;
+          inFlight = null;
           done();
         }
       };

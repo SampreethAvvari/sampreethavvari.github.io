@@ -11,6 +11,8 @@
 export type SkyInput = { scrollY: number; th1: number[]; th2: number[]; arrivedAt: number | null; travel?: number };
 
 export type Sky = {
+  /** Told when the GPU is taken away (true) and given back (false). The sky rebuilds itself. */
+  watchLoss(cb: (lost: boolean) => void): void;
   /** Calls back once the shaders are linked (true) or failed (false). */
   whenReady: (cb: (ok: boolean) => void, later: (cb: () => void) => void) => void;
   resize: (width: number, height: number, dpr: number) => void;
@@ -134,8 +136,8 @@ export function createSky(canvas: HTMLCanvasElement | OffscreenCanvas, isMobile:
     gl.linkProgram(p);
     return p;
   };
-  const starBuilt = build(STAR_VS, STAR_FS);
-  const nebBuilt = isMobile ? null : build(NEB_VS, NEB_FS);
+  let starBuilt = build(STAR_VS, STAR_FS);
+  let nebBuilt = isMobile ? null : build(NEB_VS, NEB_FS);
   const building = [starBuilt, nebBuilt].filter((p): p is WebGLProgram => !!p);
 
   let starPr: WebGLProgram | null = null;
@@ -189,7 +191,28 @@ export function createSky(canvas: HTMLCanvasElement | OffscreenCanvas, isMobile:
   let vel = 0;
   const t0 = epochNow();
 
+  // The GPU can be taken away at any time. Nothing here depends on what was on
+  // it, so when it comes back the sky just builds itself again.
+  let lossWatcher: ((lost: boolean) => void) | null = null;
+  const target = canvas as unknown as EventTarget;
+  target.addEventListener("webglcontextlost", (e) => {
+    e.preventDefault();
+    starPr = null;
+    nebPr = null;
+    lossWatcher?.(true);
+  });
+  target.addEventListener("webglcontextrestored", () => {
+    starBuilt = build(STAR_VS, STAR_FS);
+    nebBuilt = isMobile ? null : build(NEB_VS, NEB_FS);
+    if (!setup()) return;
+    gl.viewport(0, 0, canvas.width, canvas.height);
+    lossWatcher?.(false);
+  });
+
   return {
+    watchLoss(cb) {
+      lossWatcher = cb;
+    },
     whenReady(cb, later) {
       const wait = () => {
         if (par && !building.every((p) => gl.getProgramParameter(p, par.COMPLETION_STATUS_KHR))) {

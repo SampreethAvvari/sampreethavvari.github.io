@@ -193,6 +193,8 @@ export function initAmbient(stops: Array<[string, string]>, sectionIds?: string[
   // Not on <html>: a custom property that changes there makes the browser
   // restyle every element on the page, on every scroll frame.
   const targets = [el, ...ambTargets()];
+  let lastA1 = "";
+  let lastA2 = "";
   const setAt = (i: number, f: number) => {
     // Smootherstep: each section's colour holds while its section is in
     // view, then hands over to the next one gently, with no corner.
@@ -201,14 +203,21 @@ export function initAmbient(stops: Array<[string, string]>, sectionIds?: string[
       a.map((v, k) => Math.round(v + (b[k] - v) * e)).join(",");
     const a1 = mix(cols[i][0], cols[i + 1][0]);
     const a2 = mix(cols[i][1], cols[i + 1][1]);
+    // The field is a full screen gradient: painted again only when its colour really changes.
+    if (a1 === lastA1 && a2 === lastA2) return;
+    lastA1 = a1;
+    lastA2 = a2;
     for (const t of targets) {
       t.style.setProperty("--amb1", a1);
       t.style.setProperty("--amb2", a2);
     }
   };
 
+  const root = document.documentElement.classList;
   const apply = () => {
     raf = 0;
+    // Nothing shows it while an opaque world covers the page.
+    if (root.contains("in-journey") || root.contains("in-pw") || root.contains("in-ww")) return;
     if (centers) {
       const y = window.scrollY + window.innerHeight / 2;
       if (y <= centers[0]) return setAt(0, 0);

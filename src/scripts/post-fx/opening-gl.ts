@@ -8,6 +8,8 @@
 // visible change. The page measures both rectangles in pixels and this file
 // solves for the slab that covers them, so the landing is exact at any size.
 
+import { Governor } from "../gl-governor";
+import { quietShaderChecks } from "../gl-warm";
 import {
   AdditiveBlending,
   BufferAttribute,
@@ -189,6 +191,7 @@ export function mountOpeningGL(
   seed: number,
   state: OpeningState,
   onReady: () => void,
+  onLost: () => void,
 ): OpeningGL | null {
   const coarse = matchMedia("(pointer: coarse)").matches;
   const cores = navigator.hardwareConcurrency || 4;
@@ -207,10 +210,18 @@ export function mountOpeningGL(
   } catch {
     return null;
   }
+  quietShaderChecks(renderer);
   renderer.outputColorSpace = LinearSRGBColorSpace;
   renderer.setClearColor(0x000000, 0);
-  let dpr = Math.min(devicePixelRatio || 1, 1.5);
+  const baseDpr = Math.min(devicePixelRatio || 1, 1.5);
+  let dpr = baseDpr;
   renderer.setPixelRatio(dpr);
+  // A phone can take the GPU back: the page's own picture takes over again.
+  const lostContext = (e: Event) => {
+    e.preventDefault();
+    onLost();
+  };
+  canvas.addEventListener("webglcontextlost", lostContext);
 
   const scene = new Scene();
   const camera = new PerspectiveCamera(FOV, 16 / 9, 0.1, 400);
@@ -404,12 +415,19 @@ export function mountOpeningGL(
 
   const born = performance.now();
   let lastNow = born;
-  let slow = 0;
-  let sampled = 0;
-  let steps = 0;
+  // Fewer pixels when frames run slow and that helps, and back again when there is room.
+  const governor = new Governor({
+    steps: [1, 0.85, 0.72],
+    apply: (scale) => {
+      dpr = Math.max(0.8, baseDpr * scale);
+      renderer.setPixelRatio(dpr);
+      dustU.uDpr.value = dpr;
+      resize();
+    },
+  });
 
   function draw(now: number) {
-    const dtMs = Math.min(64, now - lastNow);
+    const prevNow = lastNow;
     lastNow = now;
     const time = (now - born) / 1000;
     const e = state.e;
@@ -449,22 +467,7 @@ export function mountOpeningGL(
 
     renderer.render(scene, camera);
 
-    if (sampled < 200 && steps < 2) {
-      sampled++;
-      if (dtMs > 28) slow++;
-      if (sampled === 100 || sampled === 200) {
-        if (slow > 35) {
-          steps++;
-          dpr = Math.max(0.8, dpr * 0.75);
-          renderer.setPixelRatio(dpr);
-          dustU.uDpr.value = dpr;
-          resize();
-          pointGeo.setDrawRange(0, Math.floor(count * 0.6));
-          lineGeo.setDrawRange(0, Math.floor(count * 0.6) * 2);
-        }
-        slow = 0;
-      }
-    }
+    governor.frame(now - prevNow, state.speed > 0.02);
   }
 
   return {
@@ -472,6 +475,7 @@ export function mountOpeningGL(
     resize,
     stop() {
       disposed = true;
+      canvas.removeEventListener("webglcontextlost", lostContext);
       texture?.dispose();
       slabMat.dispose();
       slabGeo.dispose();

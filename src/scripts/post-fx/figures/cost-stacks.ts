@@ -599,6 +599,8 @@ const render: Figure = ({ root, signal, still }) => {
   whileVisible(stage, place, signal);
   // One frame now, so the first look is never empty.
   place(performance.now());
+  // A phone can take the GPU back. When it returns, everything uploads again by itself.
+  canvas.addEventListener("webglcontextlost", (e) => e.preventDefault(), { signal });
 
   return () => {
     ro.disconnect();

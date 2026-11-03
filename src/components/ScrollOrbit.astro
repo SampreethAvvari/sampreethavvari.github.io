@@ -155,9 +155,6 @@ const ticks = Array.from({ length: 11 }, (_, i) => i);
     const frame = () => {
       raf = 0;
       if (!shows.matches) {
-        // Hidden: keep the scroll position current so the tail does not
-        // jump when the window grows wide enough to show the gauge.
-        last = window.scrollY;
         speed = 0;
         return;
       }
@@ -195,9 +192,14 @@ const ticks = Array.from({ length: 11 }, (_, i) => i);
     const wake = () => {
       if (!raf) raf = requestAnimationFrame(frame);
     };
-    window.addEventListener("scroll", wake, { passive: true });
-    window.addEventListener("resize", wake, { passive: true });
-    shows.addEventListener?.("change", wake);
+    // On phones nothing is listening: reading the scroll here would only force the page to lay out.
+    window.addEventListener("scroll", () => { if (shows.matches) wake(); }, { passive: true });
+    window.addEventListener("resize", () => { if (shows.matches) wake(); }, { passive: true });
+    shows.addEventListener?.("change", () => {
+      // Shown again: from where the page is now, so the tail does not jump.
+      last = window.scrollY;
+      wake();
+    });
     if ("ResizeObserver" in window) {
       const ro = new ResizeObserver(wake);
       let body = document.body;

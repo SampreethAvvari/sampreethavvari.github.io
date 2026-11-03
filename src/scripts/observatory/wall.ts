@@ -327,16 +327,20 @@ export function mountWall(signal: AbortSignal): void | (() => void) {
   try {
     if (sessionStorage.getItem("arch-view") === "list") mode = "list";
   } catch {}
-  const setMode = (m: "wall" | "list", focusList = false) => {
+  // The script came so late the plain list has already taken over.
+  if (document.documentElement.classList.contains("no-stage")) mode = "list";
+  const setMode = (m: "wall" | "list", focusList = false, remember = true) => {
     if (!gl) m = "list";
     mode = m;
     root.dataset.mode = m;
     document.documentElement.classList.toggle("wall-on", m === "wall");
     modeBtn?.setAttribute("aria-pressed", String(m === "list"));
     if (modeLabel) modeLabel.textContent = m === "list" ? "Wall view" : "List view";
-    try {
-      sessionStorage.setItem("arch-view", m);
-    } catch {}
+    if (remember) {
+      try {
+        sessionStorage.setItem("arch-view", m);
+      } catch {}
+    }
     if (m === "wall") {
       scrollTo(0, 0);
       kick();
@@ -632,12 +636,18 @@ export function mountWall(signal: AbortSignal): void | (() => void) {
     orderLoad.forEach((k, n) => {
       const img = new Image();
       img.decoding = "async";
-      img.src = `/arch/${cards[k].slug}.webp`;
       images[k] = img;
       const done = () => {
         if (signal.aborted) return;
         drawCell(k);
       };
+      // A copy the size of the card's cell, and the full file if that cannot load.
+      img.onerror = () => {
+        img.onerror = null;
+        img.src = `/arch/${cards[k].slug}.webp`;
+        img.decode().then(done, () => {});
+      };
+      img.src = `/sized/arch/${cards[k].slug}-${low ? 640 : 960}.avif`;
       setTimeout(() => img.decode().then(done, () => {}), Math.min(n * 25, 400));
     });
   });
@@ -1251,7 +1261,8 @@ export function mountWall(signal: AbortSignal): void | (() => void) {
     e.preventDefault();
     cancelAnimationFrame(raf);
     raf = 0;
-    setMode("list");
+    // The list holds every card; the next visit gets the wall again.
+    setMode("list", false, false);
   };
   canvas.addEventListener("webglcontextlost", onLost, on);
 

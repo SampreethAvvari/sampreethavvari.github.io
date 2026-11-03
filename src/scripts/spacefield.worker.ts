@@ -42,6 +42,7 @@ scope.onmessage = (e) => {
   if (m.type === "init") {
     sky = createSky(m.canvas, m.isMobile);
     if (!sky) return scope.postMessage({ type: "fail" });
+    sky.watchLoss((lost) => scope.postMessage({ type: lost ? "lost" : "restored" }));
     Object.assign(input, m.input);
     sky.resize(m.w, m.h, m.dpr);
     sky.whenReady((ok) => {

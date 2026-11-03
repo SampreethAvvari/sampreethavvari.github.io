@@ -266,8 +266,9 @@ export function mountOpening(signal: AbortSignal): void | (() => void) {
     const big = open.dataset.art;
     const ext = img?.currentSrc?.endsWith(".avif") ? "avif" : "webp";
     const url = big ? `${big}-${isTouch() ? 1280 : 2560}.${ext}` : img?.currentSrc || img?.src;
-    const { mountOpeningGL } = await import("./opening-gl");
-    if (signal.aborted) return;
+    const loaded = await import("./opening-gl").catch(() => null);
+    if (!loaded || signal.aborted) return; // the page's picture stays
+    const { mountOpeningGL } = loaded;
     gl = mountOpeningGL(canvas, url, rgb, (slug.length % 13) / 13, state, () => {
       if (signal.aborted) return;
       glReady = true;
@@ -282,6 +283,16 @@ export function mountOpening(signal: AbortSignal): void | (() => void) {
       onPageArt = false;
       syncHandoff();
       wake();
+    }, () => {
+      // The GPU went away: back to the page's own picture, which never left the layout.
+      glReady = false;
+      clearTimeout(handTimer);
+      const dead = gl;
+      gl = null;
+      dead?.stop();
+      canvas.classList.remove("is-up", "is-rest");
+      art?.classList.remove("is-handed");
+      place();
     });
   }
   const w = window as Window & {

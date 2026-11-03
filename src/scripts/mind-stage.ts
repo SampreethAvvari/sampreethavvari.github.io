@@ -463,7 +463,7 @@ export function mountMind(): (() => void) | undefined {
     let tint = -1;
     for (let i = 0; i < disk.length; i += 5) {
       const x0 = disk[i], z0 = disk[i + 2];
-      const q = projXYZ(x0 * ct - z0 * st, disk[i + 1], x0 * st + z0 * ct);
+      const q = projFast(x0 * ct - z0 * st, disk[i + 1], x0 * st + z0 * ct);
       if (q.pz < NEAR || q.px < -4 || q.px > W + 4 || q.py < -4 || q.py > H + 4) continue;
       const t = disk[i + 4];
       if (t !== tint) { tint = t; ctx!.fillStyle = DISK_TINTS[t]; }
@@ -621,6 +621,24 @@ export function mountMind(): (() => void) | undefined {
     const s = cam.focal / Math.max(depth, 1);
     return { px: W / 2 + x1 * s, py: H / 2 - y2 * s, pz: depth, ps: s };
   }
+  // The same, written into one shared object: for the loops over thousands of
+  // stars, where a new object each time keeps the garbage collector busy. The
+  // result only lasts until the next call.
+  const fastQ = { px: 0, py: 0, pz: 0, ps: 1 };
+  function projFast(x: number, y: number, z: number) {
+    x -= cam.tx; y -= cam.ty; z -= cam.tz;
+    const x1 = x * cy + z * sy;
+    const z1 = -x * sy + z * cy;
+    const y2 = y * cp - z1 * sp;
+    const z2 = y * sp + z1 * cp;
+    const depth = cam.dist - z2;
+    const s = cam.focal / Math.max(depth, 1);
+    fastQ.px = W / 2 + x1 * s;
+    fastQ.py = H / 2 - y2 * s;
+    fastQ.pz = depth;
+    fastQ.ps = s;
+    return fastQ;
+  }
   function project(p: Node) {
     const r = projXYZ(p.x, p.y, p.z);
     p.px = r.px; p.py = r.py; p.pz = r.pz; p.ps = r.ps;
@@ -717,7 +735,7 @@ export function mountMind(): (() => void) | undefined {
       x = ((((x + half) % (2 * half)) + 2 * half) % (2 * half)) - half;
       y = ((((y + half) % (2 * half)) + 2 * half) % (2 * half)) - half;
       z = ((((z + half) % (2 * half)) + 2 * half) % (2 * half)) - half;
-      const q = projXYZ(x + cam.tx, y + cam.ty, z + cam.tz);
+      const q = projFast(x + cam.tx, y + cam.ty, z + cam.tz);
       if (q.pz < NEAR || q.px < -20 || q.px > W + 20 || q.py < -20 || q.py > H + 20) { d.sx = NaN; continue; }
       const near = clamp(1 - q.pz / fog, 0, 1);
       const tw = reduced ? 1 : 0.7 + Math.sin(time * 1.4 + d.tw) * 0.3;
