@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "astro dev",
     "start": "astro dev",
-    "build": "node scripts/gen-repo-graph.mjs && astro build && node scripts/purge-css.mjs && node scripts/prune-dist.mjs && node scripts/late-css.mjs && node scripts/csp.mjs",
+    "build": "node scripts/gen-repo-graph.mjs && astro build && node scripts/purge-css.mjs && node scripts/prune-dist.mjs && node scripts/preload-chunks.mjs && node scripts/late-css.mjs && node scripts/csp.mjs",
     "preview": "astro preview",
     "astro": "astro",
     "ingest": "node scripts/ingest-embeddings.mjs --append",
