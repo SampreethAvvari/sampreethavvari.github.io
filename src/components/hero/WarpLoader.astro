@@ -46,9 +46,10 @@ const rgb2 = palette[1] ?? palette[0];
   .warp[hidden] { display: none; }
   /* While the page under the loader is still parsing, the browser lays out what
      it has so far again and again, and on a phone that is most of the wait. It
-     skips the work until the last tag has arrived (BaseLayout), or this script
-     gives up on it. */
-  html.parsing main { content-visibility: hidden; }
+     skips the work until the last tag has arrived and Inter with it, so nothing is
+     laid out in the stand-in face only to be laid out again (BaseLayout), or until
+     the page's scripts are about to run, or this script gives up on it. */
+  html.parsing main, html.parsing header.nav, html.parsing .chat-launcher { content-visibility: hidden; }
   html.parsing .site-foot, html.parsing .page-comets { display: none; }
   /* Should this file's own script never run, the loader still lets go. The
      script cancels this as its first act. */

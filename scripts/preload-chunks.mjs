@@ -57,6 +57,11 @@ function closure(names, seen = new Set()) {
 }
 
 const ENTRY = /<script\b[^>]*\btype="module"[^>]*\bsrc="\/_astro\/([^"]+)"[^>]*>/g;
+// The page is held back from layout until Inter is here (BaseLayout), but its scripts
+// measure it, so it must be laid out by the time they run. The first import of each page's
+// script, which runs once everything that script needs has arrived and before any of it.
+const LET_GO = "let-go.js";
+const allEntries = new Set();
 let pages = 0;
 let early = 0;
 let world = 0;
@@ -94,9 +99,16 @@ for (const file of walk(DIST).filter((f) => f.endsWith(".html"))) {
     ...later.filter((n) => !already(n)).map((n) => `<link rel="preload" as="script" crossorigin href="/_astro/${n}" fetchpriority="low"${when} />`),
   ];
   if (!tags.length) continue;
-  writeFileSync(file, html.slice(0, end) + tags.join("") + html.slice(end));
+  entries.forEach((n) => allEntries.add(n));
+  writeFileSync(file, html.slice(0, end) + `<link rel="modulepreload" href="/_astro/${LET_GO}" />` + tags.join("") + html.slice(end));
   pages++;
   early += tags.length - later.length;
   world += later.length;
+}
+writeFileSync(path.join(ASTRO, LET_GO), 'document.documentElement.classList.remove("parsing");\n');
+for (const n of allEntries) {
+  const f = path.join(ASTRO, n);
+  const text = readFileSync(f, "utf8");
+  if (!text.startsWith(`import"./${LET_GO}"`)) writeFileSync(f, `import"./${LET_GO}";\n` + text);
 }
 console.log(`preload-chunks: ${pages} pages, ${early} shared chunks and ${world} world chunks named early`);

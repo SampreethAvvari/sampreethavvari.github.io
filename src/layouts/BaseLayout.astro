@@ -518,8 +518,16 @@ const pageComets = hasOwnComets
     <ChatWidget client:soon transition:persist="chat" />
     <TopButton client:soon transition:persist="to-top" />
     <script is:inline>
-      // The last tag of the page: lay it out now (WarpLoader).
-      document.documentElement.classList.remove("parsing");
+      // The last tag of the page: lay it out as soon as Inter is here too (WarpLoader).
+      // Laid out in the stand-in face, the whole page would be laid out again when Inter
+      // comes. The page's own scripts do not wait for this: a line the build puts just
+      // ahead of them lets go first (scripts/preload-chunks.mjs).
+      (function () {
+        var root = document.documentElement.classList;
+        function go() { root.remove("parsing"); }
+        if (document.fonts && document.fonts.load && root.contains("parsing")) document.fonts.load('400 16px "Inter"').then(go, go);
+        else go();
+      })();
     </script>
   </body>
 </html>
