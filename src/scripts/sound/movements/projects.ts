@@ -53,7 +53,7 @@ export class Projects extends Movement {
     const r = this.rng;
     this.sections = [
       { bars: 4, prog: A, per: 2, layers: { fire: 1, pad: 0.75, sparks: 0.3 } },
-      { bars: 8, prog: A, per: 2, layers: { fire: 1, pad: 1, hands: 0.65, sparks: 0.5, bass: 0.7 } },
+      { bars: 8, prog: A, per: 2, layers: { fire: 1, pad: 1, hands: 0.65, strings: 1, sparks: 0.5, bass: 0.7 } },
       { bars: 8, prog: B, per: 2, layers: { fire: 1, pad: 0.9, hands: 0.85, strings: 1, bass: 1, sparks: 0.4 } },
       { bars: 8, prog: A, per: 2, layers: { fire: 1, pad: 1, hands: 1, strings: 1, high: 0.8, bass: 1, sparks: 0.6 } },
       { bars: 4, prog: C, per: 2, layers: { fire: 1, pad: 0.6, strings: 0.75, sparks: 0.9 } },
@@ -61,14 +61,14 @@ export class Projects extends Movement {
 
     // the fire: a low drone on A and E that flickers, never changes chord
     const fire = new Pad(this, this.layer("fire", 0, this.bed), {
-      wave: this.st.wave("organ"), voices: 2, lo: 40, hi: 60, detune: 6, cutoff: 900, q: 0.7, level: 0.09, mode: "glide", lfo: 0.13,
+      wave: this.st.wave("organ"), voices: 2, lo: 40, hi: 60, detune: 6, cutoff: 900, q: 0.7, level: 0.07, mode: "glide", lfo: 0.13,
     });
     fire.set([nm("A2"), nm("E3")], t);
     // the held chord
     this.pads.push(new Pad(this, this.layer("pad", 0, this.bed), {
-      wave: this.st.wave("warm"), voices: this.phone ? 3 : 4, lo: 55, hi: 76, detune: 7, cutoff: 1500, level: 0.17, mode: "swap", xfade: 2.6, lfo: 0.06,
+      wave: this.st.wave("warm"), voices: this.phone ? 3 : 4, lo: 55, hi: 76, detune: 7, cutoff: 1500, level: 0.1, mode: "swap", xfade: 2.6, lfo: 0.06,
     }));
-    this.bass = new Mono(this, this.layer("bass", 0.15), { wave: this.st.wave("warm"), cutoff: 900, level: 0.22, sub: 0.3, lo: 33, hi: 50 });
+    this.bass = new Mono(this, this.layer("bass", 0.15), { wave: this.st.wave("warm"), cutoff: 900, level: 0.15, sub: 0.3, lo: 33, hi: 50 });
 
     // hands on the left, strings on the right, sparks circling above
     this.handsL = this.layer("hands", 0, this.point(-0.9, -0.3, -1.2, 0.35));
@@ -118,8 +118,8 @@ export class Projects extends Movement {
         let m = deg(nm("A3"), SCALE.dorian, line[k]);
         if (k === 0) m = snap(m, this.chord.pcs);
         const v = (k === 0 ? 1 : 0.72) * (0.9 + 0.1 * r());
-        this.gut.play(m, this.hum(t, 10), dbg(-12) * v, this.strR);
-        if (L.high) this.gut.play(m + 12, this.hum(t + this.stepDur, 10), dbg(-20) * v, this.strL);
+        this.gut.play(m, this.hum(t, 10), dbg(-15) * v, this.strR);
+        if (L.high) this.gut.play(m + 12, this.hum(t + this.stepDur, 10), dbg(-23) * v, this.strL);
       }
     }
     if (L.sparks && r() < 0.035 * L.sparks) {

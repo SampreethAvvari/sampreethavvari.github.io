@@ -67,9 +67,9 @@ export class Work extends Movement {
       { bars: 4, prog: A, layers: { pad: 0.85, aie: 1, mle: 1 } },
     ];
     this.pads.push(new Pad(this, this.layer("pad", 0, this.bed), {
-      wave: this.st.wave("warm"), voices: this.phone ? 3 : 4, lo: 53, hi: 72, detune: 6, cutoff: 1700, level: 0.17, mode: "swap", xfade: 1.6, lfo: 0.07,
+      wave: this.st.wave("warm"), voices: this.phone ? 3 : 4, lo: 53, hi: 72, detune: 6, cutoff: 1700, level: 0.12, mode: "swap", xfade: 1.6, lfo: 0.07,
     }));
-    this.bass = new Mono(this, this.layer("bass", 0.12), { wave: this.st.wave("warm"), cutoff: 1000, level: 0.22, sub: 0.3, lo: 36, hi: 50 });
+    this.bass = new Mono(this, this.layer("bass", 0.12), { wave: this.st.wave("warm"), cutoff: 1000, level: 0.13, sub: 0.3, lo: 36, hi: 50 });
 
     const marimba = new Sampler(this, (sr, f) => modal(sr, f, 1.2, MODES.marimba, r), 18, 8, "line");
     const nylon = new Sampler(this, (sr, f) => pluck(sr, f, 1.6, { bright: 0.45, t60: 1.3, pick: 0.13 }, r), 18, 8, "line");
@@ -158,7 +158,7 @@ export class Work extends Movement {
     // the counter line: the pad's top voice, sung softly, on the half bars
     if (L.counter && (pos === 0 || pos === 8)) {
       const top = this.voicing[this.voicing.length - 1] + 12;
-      lead(this, this.layers.counter, top, t, this.stepDur * 7, dbg(-24), { wave: this.st.wave("air"), attack: 0.4, release: 0.8, cutoff: 2200, vib: 6, vibRate: 4.8 });
+      lead(this, this.layers.counter, top, t, this.stepDur * 7, dbg(-29), { wave: this.st.wave("air"), attack: 0.4, release: 0.8, cutoff: 2200, vib: 6, vibRate: 4.8 });
     }
   }
 

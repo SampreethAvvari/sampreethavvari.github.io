@@ -55,7 +55,10 @@ export class Sampler {
    */
   play(midi: number, t: number, gain: number, dest: AudioNode, o?: { dur?: number; rate?: number; rev?: boolean; fade?: number; force?: boolean }): AudioBufferSourceNode | null {
     if (this.active >= this.poly || gain <= 0.00001) return null;
-    if (this.key && !o?.force && !this.m.allow(this.key)) return null;
+    if (this.key && !o?.force) {
+      if (!this.m.allow(this.key)) return null;
+      gain *= this.m.themeLevel();
+    }
     const ac = this.m.ac;
     const buf = this.buffer(midi, !!o?.rev);
     const src = ac.createBufferSource();
@@ -347,7 +350,10 @@ export interface LeadOpts {
 
 /** A live note with its own envelope and a vibrato that arrives late. */
 export function lead(m: Movement, dest: AudioNode, midi: number, t: number, dur: number, vel: number, o: LeadOpts) {
-  if (o.key && !m.allow(o.key)) return;
+  if (o.key) {
+    if (!m.allow(o.key)) return;
+    vel *= m.themeLevel();
+  }
   const ac = m.ac;
   const end = t + dur + o.release * 4;
   const f = ac.createBiquadFilter();

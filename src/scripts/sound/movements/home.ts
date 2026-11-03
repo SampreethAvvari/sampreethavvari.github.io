@@ -56,9 +56,9 @@ const MIX: Record<string, number[]> = {
   breath: [1, 0, 0, 0, 0, 0, 0, 0, 0],
   heart: [1, 0, 0, 0, 0, 0.85, 0, 0, 0],
   ignite: [1, 0, 0, 0, 0, 0, 0, 0, 0],
-  drone: [1, 0.5, 0.7, 0.4, 0.4, 1, 0.5, 0.6, 0.45],
+  drone: [1, 0.5, 0.7, 0.4, 0.4, 0.6, 0.5, 0.6, 0.45],
   pad: [1, 1, 1, 1, 1, 1, 1, 1, 0.8],
-  bass: [0, 0.4, 1, 0.9, 0.6, 0.9, 0.3, 0.8, 0.3],
+  bass: [0, 0.4, 0.7, 0.9, 0.6, 0.9, 0.3, 0.8, 0.3],
   tally: [0, 1, 0, 0, 0, 0, 0, 0, 0],
   tallyR: [0, 1, 0, 0, 0, 0, 0, 0, 0],
   hands: [0, 0, 1, 0, 0, 0, 0, 0, 0],
@@ -77,22 +77,25 @@ const BEDS: (Omit<PadOpts, "wave"> & { wave: string })[] = [
   // launch: an organ's open fifth, rising an octave at ignition
   { wave: "organ", voices: 2, lo: 38, hi: 57, detune: 5, cutoff: 900, level: 0.17, mode: "glide", glide: 3.5, lfo: 0.08 },
   // proof: thin glass, high and narrow
-  { wave: "glass", voices: 3, lo: 67, hi: 86, detune: 3, cutoff: 4200, level: 0.1, mode: "swap", xfade: 1.6, lfo: 0.11 },
+  { wave: "glass", voices: 3, lo: 67, hi: 86, detune: 3, cutoff: 4200, level: 0.08, mode: "swap", xfade: 1.6, lfo: 0.11 },
   // projects: a low warm engine that pumps in eighths
-  { wave: "warm", voices: 3, lo: 45, hi: 64, detune: 6, cutoff: 1100, level: 0.19, mode: "swap", xfade: 1.2, lfo: BEAT * 2, lfoDepth: 0.5 },
+  { wave: "warm", voices: 3, lo: 45, hi: 64, detune: 6, cutoff: 1100, level: 0.13, mode: "swap", xfade: 1.2, lfo: BEAT * 2, lfoDepth: 0.5 },
   // disciplines: an open reed chord in the middle, wide
   { wave: "reed", voices: 4, lo: 55, hi: 74, detune: 9, cutoff: 1900, level: 0.13, mode: "swap", xfade: 2, lfo: 0.06 },
   // writing: soft air, dark and close
   { wave: "air", voices: 4, lo: 55, hi: 72, detune: 4, cutoff: 1300, level: 0.16, mode: "swap", xfade: 2.6, lfo: 0.05 },
   // film, the landing: low bowed strings, very dark
-  { wave: "bowed", voices: 4, lo: 41, hi: 62, detune: 10, cutoff: 650, level: 0.18, mode: "swap", xfade: 3, lfo: 0.04 },
+  { wave: "bowed", voices: 4, lo: 41, hi: 62, detune: 10, cutoff: 650, level: 0.13, mode: "swap", xfade: 3, lfo: 0.04 },
   // mind, the exit: a cosmic choir, high and very wide, sliding between chords
-  { wave: "choir", voices: 5, lo: 60, hi: 84, detune: 14, cutoff: 2600, level: 0.15, mode: "glide", glide: 4, lfo: 0.035 },
+  { wave: "choir", voices: 5, lo: 60, hi: 84, detune: 14, cutoff: 2600, level: 0.11, mode: "glide", glide: 4, lfo: 0.035 },
   // contact, the helmet: a full warm choir, open and wide
   { wave: "choir", voices: 5, lo: 50, hi: 79, detune: 10, cutoff: 2400, level: 0.16, mode: "swap", xfade: 2.8, lfo: 0.045 },
   // connect, the touch: a thin breath of air, nearly nothing, so the chord can bloom
   { wave: "air", voices: 3, lo: 57, hi: 76, detune: 5, cutoff: 1500, level: 0.11, mode: "swap", xfade: 3, lfo: 0.04 },
 ];
+// how far each world's theme sits under its written level. Most take the full
+// 5 dB; those that already sit low keep their level so they stay recognisable
+const THEME_TRIM = [0, -5, 0, -5, -5, 0, 0, -5, 0].map(dbg);
 const BRIGHT = [1300, 1800, 2300, 3000, 2500, 1100, 3400, 3200, 2600];
 const WET = [0.8, 0.8, 0.7, 0.75, 0.85, 1.05, 1.3, 1.05, 1.25];
 
@@ -241,7 +244,7 @@ export class Home extends Movement {
     L("theme", 0, this.point(-0.3, 0.05, -1.1, 0.45));
     L("strings", 0, this.point(-1.0, -0.1, -1.3, 0.5));
     L("toll", 0, this.point(2.2, 0.6, 3.8, 0.9));
-    this.buses.far = this.gain(0, this.point(0.4, 0.6, 5.5, 0.9));
+    this.buses.far = this.gain(0, this.point(0.4, 0.5, 3, 0.9));
 
     this.pluckS = new Sampler(this, (sr, f) => pluck(sr, f, 1.8, { bright: 0.45, t60: 1.5, pick: 0.16 }, r), 22, 10, "melody");
     this.frame = new Sampler(this, (sr, f) => modal(sr, f, 0.6, MODES.frame, r), 4, 6, "rhythm");
@@ -366,6 +369,10 @@ export class Home extends Movement {
     this.direct?.gain.setTargetAtTime(0, t, 0.3);
   }
 
+  themeLevel(): number {
+    return THEME_TRIM[this.ch] ?? THEME_TRIM[1];
+  }
+
   /** The helmet world plays its theme whole: that is the moment it is at its fullest. */
   allow(key: string): boolean {
     return CHAPTERS[this.ch].id === "contact" || super.allow(key);
@@ -487,8 +494,8 @@ export class Home extends Movement {
     }
     // projects: interlocking machines, three against four, one each side
     if (c.hands > 0.02) {
-      if (pos % 3 === 0) this.frame.play(pos === 0 ? nm("D3") : nm("A2"), this.hum(t, 3), dbg(-15) * (pos === 0 ? 1 : 0.8), this.buses.hands);
-      if (pos % 4 === 2) this.stone.play(nm("A5"), this.hum(t, 3), dbg(-21), this.buses.handsR);
+      if (pos % 3 === 0) this.frame.play(pos === 0 ? nm("D3") : nm("A2"), this.hum(t, 3), dbg(-13) * (pos === 0 ? 1 : 0.8), this.buses.hands);
+      if (pos % 4 === 2) this.stone.play(nm("A5"), this.hum(t, 3), dbg(-18), this.buses.handsR);
       if (pos % 4 === 1) this.tap.play(nm("E6"), t, dbg(-31) * (0.8 + 0.2 * r()), this.buses.handsR);
     }
     // the quartet: one line passed around four corners
@@ -507,10 +514,10 @@ export class Home extends Movement {
       const bar = Math.max(0, this.chBar) % th.bars;
       for (const [b, s, n, v] of th.ev) {
         if (b !== bar || s !== pos) continue;
-        if (id === "launch") this.pluckS.play(nm(n), this.hum(t, 15), dbg(-16) * v, this.buses.far);
+        if (id === "launch") this.pluckS.play(nm(n), this.hum(t, 15), dbg(-8) * v, this.buses.far);
         else this.keys.play(nm(n), this.hum(t, 14), dbg(-13) * v, this.buses.theme);
         if (id === "contact" && c.strings > 0.02) {
-          lead(this, this.buses.strings, nm(n) - 12, t, this.stepDur * 5, dbg(-21) * v, { wave: this.st.wave("bowed"), attack: 0.35, release: 1.2, cutoff: 1300, vib: 7, vibRate: 4.8, detune: 7 });
+          lead(this, this.buses.strings, nm(n) - 12, t, this.stepDur * 5, dbg(-21) * v, { wave: this.st.wave("bowed"), attack: 0.35, release: 1.2, cutoff: 1300, vib: 7, vibRate: 4.8, detune: 7, key: "melody" });
         }
       }
       // the left hand under the theme

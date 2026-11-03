@@ -102,6 +102,10 @@ export class Writing extends Movement {
   protected bright = 2300;
   protected wet = 0.85;
   protected trim = 0.78;
+  /** Its sentences are already written 5 dB lower. */
+  themeLevel(): number {
+    return 1;
+  }
   protected tapLo = 67;
   protected tapHi = 84;
   protected grainLo = 79;

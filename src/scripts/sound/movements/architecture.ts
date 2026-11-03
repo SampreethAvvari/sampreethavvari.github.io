@@ -46,6 +46,11 @@ export class Architecture extends Movement {
   private sig: { motif: number[]; rhythm: number[]; voice: Sampler; lift: number; since: number } | null = null;
   private flowI = 0;
 
+  /** Its line already sits low against the pad. */
+  themeLevel(): number {
+    return 1;
+  }
+
   protected room(): RoomSpec {
     return { rt60: 2.0, length: 2.3, predelay: 0.018, early: 12, earlyLevel: 0.6, hi: 7500, lo: 2000, damp: 0.6, lowCut: 120, bloom: 0, width: 1 };
   }
@@ -54,14 +59,14 @@ export class Architecture extends Movement {
     const r = this.rng;
     this.sections = [
       { bars: 4, prog: A, per: 2, layers: { grid: 0.8, bass: 0.6 } },
-      { bars: 8, prog: A, per: 2, layers: { grid: 1, bass: 1, pen: 0.75, echo: 0.6 } },
+      { bars: 8, prog: A, per: 2, layers: { grid: 1, bass: 1, pen: 1, all: 1, echo: 0.6 } },
       { bars: 8, prog: B, per: 2, layers: { grid: 1, bass: 1, pen: 1, all: 1, echo: 1 } },
       { bars: 8, prog: A, per: 2, layers: { grid: 1, bass: 1, pen: 1, all: 1, echo: 0.8, beam: 1, ruler: 1 } },
       { bars: 4, prog: B, per: 2, layers: { grid: 0.8, beam: 1, echo: 0.5 } },
     ];
 
     this.pads.push(new Pad(this, this.layer("grid", 0, this.bed), {
-      wave: this.st.wave("glass"), voices: 4, lo: 52, hi: 77, detune: 5, cutoff: 2600, level: 0.2, mode: "glide", glide: 1.4, lfo: 0.05,
+      wave: this.st.wave("glass"), voices: 4, lo: 52, hi: 77, detune: 5, cutoff: 2600, level: 0.14, mode: "glide", glide: 1.4, lfo: 0.05,
     }));
     this.bass = new Mono(this, this.layer("bass", 0.1), { wave: this.st.wave("air"), cutoff: 800, level: 0.24, sub: 0.3, lo: 36, hi: 52 });
 

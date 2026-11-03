@@ -85,7 +85,7 @@ export class Film extends Movement {
     this.prog = this.S.prog === B ? "B" : this.S.prog === C ? "C" : "A";
     // the lament: one long bowed note per chord, on the bass
     if (this.lv("cello")) {
-      lead(this, this.cello, this.bassM, t, this.stepDur * this.spb - 0.25, dbg(-17), {
+      lead(this, this.cello, this.bassM, t, this.stepDur * this.spb - 0.25, dbg(-22), {
         wave: this.st.wave("bowed"), attack: 0.9, release: 1.6, cutoff: 950, vib: 9, vibRate: 4.6, detune: 8,
       });
     }

@@ -45,6 +45,11 @@ export class Mind extends Movement {
   private shepBus!: GainNode;
   private window = new Float32Array(64);
 
+  /** Stars are written for the far distance they ring at. */
+  themeLevel(): number {
+    return 1;
+  }
+
   protected room(): RoomSpec {
     return { rt60: 4.2, length: 3.8, predelay: 0.04, early: 0, earlyLevel: 0, hi: 7000, lo: 1600, damp: 1.5, lowCut: 120, bloom: 0.3, width: 1 };
   }
@@ -58,15 +63,15 @@ export class Mind extends Movement {
     const r = this.rng;
     this.sections = [
       { bars: 2, prog: A, per: 2, layers: { choir: 0.8, deep: 0.6, shepard: 0.5 } },
-      { bars: 8, prog: A, per: 2, layers: { choir: 1, deep: 1, stars: 1, shepard: 0.6 } },
+      { bars: 8, prog: A, per: 2, layers: { choir: 1, deep: 1, stars: 1, motif: 1, shepard: 0.6 } },
       { bars: 8, prog: B, per: 2, layers: { choir: 1, deep: 1, stars: 1, lines: 1, shepard: 0.8 } },
       { bars: 8, prog: A, per: 2, layers: { choir: 1, deep: 0.8, stars: 0.7, lines: 0.6, motif: 1, shepard: 1 } },
       { bars: 4, prog: B, per: 2, layers: { choir: 0.8, stars: 0.4, shepard: 1 } },
     ];
     this.pads.push(new Pad(this, this.layer("choir", 0, this.bed), {
-      wave: this.st.wave("choir"), voices: this.phone ? 3 : 5, lo: 54, hi: 79, detune: 10, cutoff: 2000, level: 0.16, mode: "glide", glide: 4.5, lfo: 0.035,
+      wave: this.st.wave("choir"), voices: this.phone ? 3 : 5, lo: 54, hi: 79, detune: 10, cutoff: 2000, level: 0.09, mode: "glide", glide: 4.5, lfo: 0.035,
     }));
-    this.deep = new Mono(this, this.layer("deep", 0.2), { wave: this.st.wave("organ"), cutoff: 600, level: 0.07, sub: 0.25, lo: 35, hi: 47 });
+    this.deep = new Mono(this, this.layer("deep", 0.2), { wave: this.st.wave("organ"), cutoff: 600, level: 0.05, sub: 0.25, lo: 35, hi: 47 });
 
     // a pool of places in the sky; each new star takes the next one
     const n = this.phone ? 2 : 4;
@@ -155,7 +160,7 @@ export class Mind extends Movement {
     }
     // the theme as a constellation: four stars, one per beat
     if (L.motif && this.secBar % 4 === 1) {
-      MOTIF.forEach((name, i) => this.starAt(nm(name), t + i * (60 / this.bpm), dbg(-17) * L.motif));
+      MOTIF.forEach((name, i) => this.starAt(nm(name), t + i * (60 / this.bpm), dbg(-12) * L.motif));
     }
   }
 
@@ -172,7 +177,7 @@ export class Mind extends Movement {
     const L = this.S.layers;
     if (L.stars && this.rng() < 0.2 * L.stars) {
       const tones = tonesIn(this.chord, 74, 91);
-      if (tones.length) this.starAt(this.pick(tones), this.hum(t, 120), dbg(-18) * L.stars * (0.5 + 0.5 * this.rng()));
+      if (tones.length) this.starAt(this.pick(tones), this.hum(t, 120), dbg(-11) * L.stars * (0.5 + 0.5 * this.rng()));
     }
   }
 

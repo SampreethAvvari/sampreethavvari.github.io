@@ -21,6 +21,8 @@ import { room, type RoomSpec, mulberry, type Rng, dbg, kr, BELLS, bell, MODES, m
 import { type Chord, voice, tonesIn, common } from "./theory";
 import { Sampler, Pad, Mono, glint } from "./instruments";
 
+const THEME_LEVEL = dbg(-5);
+
 export interface Section {
   bars: number;
   prog: Chord[];
@@ -415,6 +417,14 @@ export abstract class Movement {
       if (c !== this.chord) this.harmony(c, t);
     }
     this.onBar(t);
+  }
+
+  /**
+   * How loud themes sit against their written level: 5 dB under, so touch
+   * sounds stay in front. A world whose theme already sits low overrides this.
+   */
+  themeLevel(): number {
+    return THEME_LEVEL;
   }
 
   /** Far away, now and then, a high bell from the chord: the distant shimmer. */

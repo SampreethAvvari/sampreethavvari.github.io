@@ -992,7 +992,8 @@ const ENDING = 0;
     // ---- leaving the page: stop the scene, the film and every listener added above
     document.addEventListener("astro:before-swap", () => {
       visit.abort();
-      clearTimeout(idle);
+      clearTimeout(gapLater);
+      stopFling();
       clearTimeout(wordsLater);
       cancelAnimationFrame(sceneRaf);
       journey?.destroy();
