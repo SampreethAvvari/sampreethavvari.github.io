@@ -5,15 +5,14 @@
 // first) leaves out the six case studies, which are on the page above. The
 // map always holds every post that matches.
 //
-// The map lays every constellation out so nothing overlaps, then springs
-// each card to its place, so a filter, a zoom or an opened card moves
-// everything smoothly. It sleeps when nothing moves and off screen.
+// The sky shows every post as a star in its tag's constellation; a
+// constellation's cards open in one panel beside it.
 //
 // Sound hook (nothing here plays audio): on window,
-//   writing:hover { slug }   the pointer comes onto a post
+//   writing:hover { slug }          the pointer comes onto a post or a star
+//   writing:constellation { tag }   a constellation opens
 
 import { onPage } from "../../scripts/lifecycle";
-import { navigate } from "astro:transitions/client";
 
 type Filters = { kind: string; year: string; tag: string; q: string; sort: string };
 
@@ -33,11 +32,17 @@ export function mountArchive(): void {
     const qInput = document.getElementById("ax-q") as HTMLInputElement | null;
     const f: Filters = { kind: "all", year: "all", tag: "all", q: "", sort: "date" };
 
-    const matches = (el: HTMLElement) => {
+    // Filters hide posts; the search also hides them in the list, and on
+    // the sky it lights the stars that match.
+    const passFilters = (el: HTMLElement) => {
       const dx = (el.dataset.dx || "").split(" ").filter(Boolean);
       if (f.kind !== "all" && !dx.includes(f.kind)) return false;
       if (f.year !== "all" && el.dataset.year !== f.year) return false;
       if (f.tag !== "all" && el.dataset.tag !== f.tag) return false;
+      return true;
+    };
+    const matches = (el: HTMLElement) => {
+      if (!passFilters(el)) return false;
       if (f.q) {
         const hay = el.dataset.q || "";
         if (!f.q.split(/\s+/).every((w) => hay.includes(w))) return false;
@@ -89,7 +94,7 @@ export function mountArchive(): void {
 
       if (empty) empty.hidden = matching > 0;
       if (count) count.textContent = matching === 1 ? "1 post" : `${matching} posts`;
-      map?.update(matches, f.sort === "impact");
+      map?.update(passFilters, f.q, f.sort === "impact");
     };
 
     // Controls
@@ -141,7 +146,7 @@ export function mountArchive(): void {
       press(viewBtns, (b) => b.dataset.view === v);
       if (v === "map") {
         map ??= mountMap(mapEl);
-        map.update(matches, f.sort === "impact");
+        map.update(passFilters, f.q, f.sort === "impact");
         map.show();
       } else {
         map?.hide();
@@ -177,9 +182,9 @@ export function mountArchive(): void {
     section.addEventListener(
       "pointerover",
       (e) => {
-        const item = (e.target as HTMLElement).closest<HTMLElement>(".ax-slot, .ax-star");
+        const item = (e.target as HTMLElement).closest<HTMLElement>(".ax-slot, .ax-s, .ax-c");
         if (!item) return;
-        const from = (e.relatedTarget as HTMLElement | null)?.closest(".ax-slot, .ax-star");
+        const from = (e.relatedTarget as HTMLElement | null)?.closest(".ax-slot, .ax-s, .ax-c");
         if (from === item) return;
         dispatchEvent(new CustomEvent("writing:hover", { detail: { slug: item.dataset.slug } }));
       },
@@ -196,755 +201,635 @@ export function mountArchive(): void {
 }
 
 // ---------------------------------------------------------------------------
-// The map
+// The sky
 //
-// Three zoom levels:
-//   stars  every post a glowing star, only the constellation names
-//   cards  the default: every constellation, compact cards, full titles
-//   focus  one constellation as full cards with art and summary; the map
-//          grows to fit them and the page scrolls through it
-// In "cards" each tag is a small masonry of cards under its name. The
-// constellations are packed onto shelves, the column counts chosen so the
-// whole map fits the view at the largest size, centred. Phones get one
-// constellation per screen, swiped sideways.
+// Every tag is a constellation drawn on the shape of a real one (Scorpius
+// for the largest, the Big Dipper, Orion, Cassiopeia, Crux, Lyra, Cygnus,
+// Triangulum), its posts the stars, sized by reading time (or by impact
+// when that order is on). The constellations are packed across the sky
+// with room for their names. Clicking a name or a star glides the camera
+// to that constellation, dims the rest, and opens its cards in one panel
+// beside it (a sheet from the bottom on phones). Escape, the close button
+// or a click on empty sky goes back.
+//
+// Sound hook: writing:constellation { tag } when one opens.
 // ---------------------------------------------------------------------------
 
 type MapHandle = {
-  update: (matches: (el: HTMLElement) => boolean, impact: boolean) => void;
+  update: (pass: (el: HTMLElement) => boolean, query: string, impact: boolean) => void;
   show: () => void;
   hide: () => void;
   stop: () => void;
 };
 
-type Mode = "stars" | "cards" | "focus";
+type Shape = { pts: Array<[number, number]>; edges: Array<[number, number]>; aspect: number };
 
-type Node = {
-  el: HTMLElement;
-  link: HTMLAnchorElement;
-  slug: string;
-  tag: string;
-  date: number;
-  impact: number;
-  on: boolean;
-  open: boolean;
-  x: number;
-  y: number;
-  vx: number;
-  vy: number;
-  s: number;
-  tx: number;
-  ty: number;
-  ts: number;
-  // Where an open card sits, and the size of the card at its level.
-  ox: number;
-  oy: number;
-  w: number;
-  h: number;
+// Points in a unit box, ordered so any first few still make a shape.
+const SHAPES: Record<string, Shape> = {
+  scorpius: {
+    aspect: 0.95,
+    pts: [[0.1, 0.08], [0.18, 0.2], [0.04, 0.3], [0.26, 0.3], [0.34, 0.38], [0.4, 0.47], [0.43, 0.57], [0.45, 0.67], [0.48, 0.77], [0.54, 0.85], [0.62, 0.91], [0.72, 0.93], [0.8, 0.88], [0.86, 0.8], [0.82, 0.71], [0.22, 0.09]],
+    edges: [[0, 1], [2, 1], [1, 3], [3, 4], [4, 5], [5, 6], [6, 7], [7, 8], [8, 9], [9, 10], [10, 11], [11, 12], [12, 13], [13, 14], [15, 3]],
+  },
+  orion: {
+    aspect: 0.8,
+    pts: [[0.2, 0.12], [0.78, 0.18], [0.42, 0.5], [0.5, 0.52], [0.58, 0.54], [0.26, 0.95], [0.8, 0.9], [0.5, 0.0], [0.5, 0.7], [0.94, 0.32]],
+    edges: [[0, 2], [1, 4], [2, 3], [3, 4], [2, 5], [4, 6], [0, 7], [7, 1], [3, 8], [1, 9]],
+  },
+  dipper: {
+    aspect: 1.7,
+    pts: [[0.92, 0.28], [0.88, 0.66], [0.58, 0.72], [0.54, 0.4], [0.37, 0.28], [0.2, 0.2], [0.03, 0.32]],
+    edges: [[0, 1], [1, 2], [2, 3], [3, 0], [3, 4], [4, 5], [5, 6]],
+  },
+  cygnus: {
+    aspect: 1.0,
+    pts: [[0.5, 0.0], [0.5, 0.38], [0.5, 1.0], [0.06, 0.22], [0.94, 0.5], [0.5, 0.68]],
+    edges: [[0, 1], [1, 5], [5, 2], [3, 1], [1, 4]],
+  },
+  cassiopeia: {
+    aspect: 1.7,
+    pts: [[0.0, 0.3], [0.25, 0.82], [0.5, 0.42], [0.75, 0.92], [1.0, 0.22]],
+    edges: [[0, 1], [1, 2], [2, 3], [3, 4]],
+  },
+  crux: {
+    aspect: 0.8,
+    pts: [[0.5, 0.0], [0.5, 1.0], [0.1, 0.42], [0.9, 0.56]],
+    edges: [[0, 1], [2, 3]],
+  },
+  lyra: {
+    aspect: 0.75,
+    pts: [[0.18, 0.0], [0.4, 0.32], [0.78, 0.42], [0.64, 0.94], [0.28, 0.82]],
+    edges: [[0, 1], [1, 2], [2, 3], [3, 4], [4, 1]],
+  },
+  triangulum: {
+    aspect: 1.25,
+    pts: [[0.0, 0.78], [0.55, 0.0], [1.0, 0.64]],
+    edges: [[0, 1], [1, 2], [2, 0]],
+  },
+  single: { aspect: 1, pts: [[0.5, 0.5]], edges: [] },
 };
 
-type Box = { tag: string; nodes: Node[]; w: number; h: number; pos: Map<Node, [number, number]> };
+const shapeFor = (n: number, k: number): Shape => {
+  if (n >= 11) return SHAPES.scorpius;
+  if (n >= 8) return SHAPES.orion;
+  if (n === 7) return SHAPES.dipper;
+  if (n === 6) return SHAPES.cygnus;
+  if (n === 5) return SHAPES.cassiopeia;
+  if (n === 4) return k % 2 ? SHAPES.lyra : SHAPES.crux;
+  if (n === 3) return SHAPES.triangulum;
+  if (n === 2) return SHAPES.lyra;
+  return SHAPES.single;
+};
 
-const CARD_W = 196;
-const OPEN_W = 300;
-const GAP = 12; // between cards
-const GROUP_GAP = 44; // between constellations
-const LABEL_H = 36; // a name and the space under it
-const STAR = 14;
+type Star = {
+  el: HTMLElement;
+  slug: string;
+  tag: string;
+  title: string;
+  minutes: number;
+  impact: number;
+  date: number;
+  on: boolean;
+  match: boolean;
+  x: number;
+  y: number;
+};
+
+type Group = {
+  tag: string;
+  stars: Star[];
+  name: HTMLButtonElement;
+  line: SVGPathElement | null;
+  edges: Array<[Star, Star]>;
+  x0: number;
+  y0: number;
+  x1: number;
+  y1: number;
+};
+
+const hash = (s: string) => {
+  let h = 2166136261;
+  for (let i = 0; i < s.length; i++) h = Math.imul(h ^ s.charCodeAt(i), 16777619);
+  return ((h >>> 0) % 10000) / 10000;
+};
 
 function mountMap(mapEl: HTMLElement): MapHandle {
   const ac = new AbortController();
   const signal = ac.signal;
   const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
   const phoneMq = matchMedia("(max-width: 899px)");
-  const nodes: Node[] = Array.from(mapEl.querySelectorAll<HTMLElement>(".ax-star")).map((el) => ({
+  const world = mapEl.querySelector<HTMLElement>(".ax-world")!;
+  const canvas = mapEl.querySelector<HTMLCanvasElement>(".ax-sky");
+  const tip = mapEl.querySelector<HTMLElement>(".ax-tip")!;
+  const panel = mapEl.querySelector<HTMLElement>(".ax-panel")!;
+  const panelTitle = panel.querySelector<HTMLElement>(".ax-panel-title")!;
+  const panelCount = panel.querySelector<HTMLElement>(".ax-panel-count")!;
+  const list = panel.querySelector<HTMLElement>(".ax-cards")!;
+  const cards = Array.from(list.querySelectorAll<HTMLElement>(".ax-c"));
+  const pager = panel.querySelector<HTMLElement>(".ax-pager")!;
+  const pagerStatus = panel.querySelector<HTMLElement>(".ax-pager-status")!;
+  const pageBtns = Array.from(panel.querySelectorAll<HTMLButtonElement>(".ax-page"));
+  const closeBtn = panel.querySelector<HTMLButtonElement>(".ax-close")!;
+
+  const stars: Star[] = Array.from(mapEl.querySelectorAll<HTMLElement>(".ax-s")).map((el) => ({
     el,
-    link: el.querySelector<HTMLAnchorElement>(".ax-node")!,
     slug: el.dataset.slug || "",
     tag: el.dataset.tag || "",
-    date: parseInt(el.dataset.date || "0"),
+    title: el.dataset.title || "",
+    minutes: parseInt(el.dataset.minutes || "5"),
     impact: parseInt(el.dataset.impact || "500"),
+    date: parseInt(el.dataset.date || "0"),
     on: true,
-    open: false,
+    match: true,
     x: 0,
     y: 0,
-    vx: 0,
-    vy: 0,
-    s: 1,
-    tx: 0,
-    ty: 0,
-    ts: 1,
-    ox: 0,
-    oy: 0,
-    w: CARD_W,
-    h: 80,
   }));
-  const byTag = <T extends Element>(sel: string) =>
-    new Map(Array.from(mapEl.querySelectorAll<T>(sel)).map((e) => [(e as unknown as HTMLElement).dataset.tag || "", e]));
-  const glows = byTag<HTMLElement>(".ax-glow");
-  const lines = byTag<SVGPathElement>(".ax-line");
-  const names = byTag<HTMLElement>(".ax-name");
-  const starsLayer = mapEl.querySelector<HTMLElement>(".ax-stars")!;
-  const namesLayer = mapEl.querySelector<HTMLElement>(".ax-names")!;
-  const back = mapEl.querySelector<HTMLButtonElement>(".ax-back");
+  const groups: Group[] = Array.from(mapEl.querySelectorAll<HTMLButtonElement>(".ax-name")).map((name) => ({
+    tag: name.dataset.tag || "",
+    stars: stars.filter((s) => s.tag === name.dataset.tag),
+    name,
+    line: mapEl.querySelector<SVGPathElement>(`.ax-line[data-tag="${CSS.escape(name.dataset.tag || "")}"]`),
+    edges: [],
+    x0: 0,
+    y0: 0,
+    x1: 0,
+    y1: 0,
+  }));
 
-  let mode: Mode = "cards";
-  let focusTag = "";
-  let impactOrder = false;
-  let phone = phoneMq.matches;
   let W = 1;
   let H = 1;
-  let scale = 1;
+  let impactMode = false;
+  let query = "";
   let shown = false;
-  let onScreen = false;
-  let bloomed = false;
-  let raf = 0;
-  let awake = 0;
-  const trees = new Map<string, Array<[Node, Node]>>();
-  let openNode: Node | null = null;
+  let laidOut = false;
+  let openGroup: Group | null = null;
+  let page = 0;
+  let phone = phoneMq.matches;
 
-  const margins = () => (phone ? { top: 16, bottom: 16, left: 16, right: 16 } : { top: 96, bottom: 44, left: 84, right: 84 });
-  const visible = (n: Node) => n.on && (mode !== "focus" || n.tag === focusTag);
-  const order = (g: Node[]) =>
-    g.sort((a, b) => (impactOrder ? a.impact - b.impact || b.date - a.date : b.date - a.date));
-
-  const groupsOf = (list: Node[]) => {
-    const m = new Map<string, Node[]>();
-    for (const n of list) {
-      if (!m.has(n.tag)) m.set(n.tag, []);
-      m.get(n.tag)!.push(n);
+  // ---- The backdrop: faint stars and the Milky Way, drawn once a size ----
+  const drawSky = () => {
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+    const dpr = Math.min(devicePixelRatio || 1, 1.5);
+    canvas.width = Math.round(W * dpr);
+    canvas.height = Math.round(H * dpr);
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.clearRect(0, 0, W, H);
+    let seed = 7;
+    const rnd = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
+    // The band runs corner to corner, low left to high right.
+    const ax = -W * 0.05;
+    const ay = H * 0.92;
+    const bx = W * 1.05;
+    const by = H * 0.08;
+    const len = Math.hypot(bx - ax, by - ay);
+    const ux = (bx - ax) / len;
+    const uy = (by - ay) / len;
+    const nx = -uy;
+    const ny = ux;
+    ctx.globalCompositeOperation = "lighter";
+    for (let i = 0; i < 26; i++) {
+      const t = rnd();
+      const off = (rnd() - 0.5) * H * 0.16;
+      const x = ax + ux * len * t + nx * off;
+      const y = ay + uy * len * t + ny * off;
+      const r = H * (0.12 + rnd() * 0.16);
+      const g = ctx.createRadialGradient(x, y, 0, x, y, r);
+      const warm = rnd() < 0.4;
+      g.addColorStop(0, warm ? "rgba(255,226,196,0.05)" : "rgba(190,205,255,0.055)");
+      g.addColorStop(1, "rgba(0,0,0,0)");
+      ctx.fillStyle = g;
+      ctx.fillRect(x - r, y - r, r * 2, r * 2);
     }
-    return [...m.entries()]
-      .map(([tag, g]) => ({ tag, nodes: order(g) }))
-      .sort((a, b) => b.nodes.length - a.nodes.length || a.tag.localeCompare(b.tag));
-  };
-
-  // Masonry: each card goes to the shortest column, in order; alternate
-  // columns start a little lower so a constellation does not read as a grid.
-  const masonry = (g: Node[], cols: number, cw: number, gap: number, stagger: number) => {
-    const colH = Array.from({ length: cols }, (_, k) => (cols > 1 && k % 2 ? stagger : 0));
-    const pos = new Map<Node, [number, number]>();
-    for (const n of g) {
-      let k = 0;
-      for (let j = 1; j < cols; j++) if (colH[j] < colH[k] - 0.5) k = j;
-      pos.set(n, [k * (cw + gap), colH[k]]);
-      colH[k] += n.h + gap;
+    // Dust: many tiny points packed along the band.
+    for (let i = 0; i < Math.round((W * H) / 900); i++) {
+      const t = rnd();
+      const off = (rnd() + rnd() + rnd() - 1.5) * H * 0.14;
+      const x = ax + ux * len * t + nx * off;
+      const y = ay + uy * len * t + ny * off;
+      const a = 0.05 + rnd() * 0.22;
+      ctx.fillStyle = `rgba(225,232,255,${a.toFixed(3)})`;
+      const s = rnd() < 0.92 ? 0.7 : 1.3;
+      ctx.fillRect(x, y, s, s);
     }
-    return { pos, w: cols * cw + (cols - 1) * gap, h: Math.max(...colH) - gap };
-  };
-
-  const setLod = (lod: string) => {
-    if (mapEl.dataset.lod !== lod) mapEl.dataset.lod = lod;
-  };
-  const measure = () => {
-    for (const n of nodes) {
-      if (n.open) n.el.classList.remove("is-open");
+    // A dark lane down the middle of the band.
+    ctx.globalCompositeOperation = "source-over";
+    for (let i = 0; i < 14; i++) {
+      const t = 0.1 + rnd() * 0.8;
+      const off = (rnd() - 0.5) * H * 0.04;
+      const x = ax + ux * len * t + nx * off;
+      const y = ay + uy * len * t + ny * off;
+      const r = H * (0.05 + rnd() * 0.06);
+      const g = ctx.createRadialGradient(x, y, 0, x, y, r);
+      g.addColorStop(0, "rgba(2,4,10,0.45)");
+      g.addColorStop(1, "rgba(2,4,10,0)");
+      ctx.fillStyle = g;
+      ctx.fillRect(x - r, y - r, r * 2, r * 2);
     }
-    for (const n of nodes) {
-      n.w = n.link.offsetWidth || n.w;
-      n.h = n.link.offsetHeight || n.h;
+    // Faint stars over the whole sky.
+    ctx.globalCompositeOperation = "lighter";
+    for (let i = 0; i < Math.round((W * H) / 2600); i++) {
+      const x = rnd() * W;
+      const y = rnd() * H;
+      const big = rnd() < 0.06;
+      const a = big ? 0.5 + rnd() * 0.4 : 0.12 + rnd() * 0.35;
+      ctx.fillStyle = `rgba(235,240,255,${a.toFixed(3)})`;
+      ctx.beginPath();
+      ctx.arc(x, y, big ? 1.1 : 0.6, 0, Math.PI * 2);
+      ctx.fill();
     }
-    for (const n of nodes) if (n.open) n.el.classList.add("is-open");
+    ctx.globalCompositeOperation = "source-over";
   };
 
-  // Spanning tree inside a constellation, on target centres: each post
-  // joins its nearest neighbour already in the figure.
-  const treeOf = (g: Node[], cx: (n: Node) => number, cy: (n: Node) => number) => {
-    const tree: Array<[Node, Node]> = [];
-    if (g.length < 2) return tree;
-    const inT = [g[0]];
-    const rest = g.slice(1);
-    while (rest.length) {
-      let bi = 0;
-      let bj = 0;
-      let bd = Infinity;
-      rest.forEach((a, i) =>
-        inT.forEach((b, j) => {
-          const d = Math.hypot(cx(a) - cx(b), cy(a) - cy(b));
-          if (d < bd) {
-            bd = d;
-            bi = i;
-            bj = j;
-          }
-        }),
-      );
-      tree.push([rest[bi], inT[bj]]);
-      inT.push(rest.splice(bi, 1)[0]);
-    }
-    return tree;
-  };
-
-  const placeName = (tag: string, x: number, y: number) => {
-    const el = names.get(tag);
-    if (el) el.style.transform = `translate3d(${x.toFixed(1)}px, ${y.toFixed(1)}px, 0)`;
-  };
-  const placeGlow = (tag: string, x: number, y: number, w: number, h: number) => {
-    const el = glows.get(tag);
-    if (!el) return;
-    const size = Math.max(w, h) * 1.35 + 160;
-    el.style.transform = `translate3d(${(x + w / 2 - size / 2).toFixed(1)}px, ${(y + h / 2 - size / 2).toFixed(1)}px, 0) scale(${(size / 10).toFixed(2)})`;
-  };
-
-  // ---- Layouts -------------------------------------------------------------
-
-  const layoutCards = (asStars: boolean) => {
-    mapEl.style.removeProperty("height");
-    starsLayer.style.removeProperty("width");
-    namesLayer.style.removeProperty("width");
-    mapEl.style.setProperty("--cw", `${CARD_W}px`);
-    setLod("cards");
-    W = mapEl.clientWidth || 1;
-    H = mapEl.clientHeight || 1;
-    measure();
-    const m = margins();
-    const availW = W - m.left - m.right;
-    const availH = H - m.top - m.bottom;
-    const groups = groupsOf(nodes.filter((n) => n.on));
-
-    // Every column count worth trying for each constellation.
-    const options = groups.map((g) => {
-      const max = Math.min(g.nodes.length, 6);
-      const opts: Box[] = [];
-      for (let c = 1; c <= max; c++) {
-        const mm = masonry(g.nodes, c, CARD_W, GAP, 14);
-        opts.push({ tag: g.tag, nodes: g.nodes, w: mm.w, h: mm.h + LABEL_H, pos: mm.pos });
-      }
-      return opts;
-    });
-
-    type Shelf = { boxes: Box[]; w: number; h: number };
-    const pack = (boxes: Box[], limit: number) => {
-      const shelves: Shelf[] = [];
-      for (const b of [...boxes].sort((a, c) => c.h - a.h)) {
-        let shelf = shelves.find((s) => s.w + GROUP_GAP + b.w <= limit);
-        if (!shelf) shelves.push((shelf = { boxes: [], w: -GROUP_GAP, h: 0 }));
-        shelf.boxes.push(b);
-        shelf.w += GROUP_GAP + b.w;
-        shelf.h = Math.max(shelf.h, b.h);
-      }
-      const w = Math.max(...shelves.map((s) => s.w));
-      const h = shelves.reduce((t, s) => t + s.h, 0) + GROUP_GAP * (shelves.length - 1);
-      return { shelves, w, h };
-    };
-
-    let best: { shelves: Shelf[]; w: number; h: number; s: number; aspect: number } | null = null;
-    const pick: Box[] = [];
-    const limits = [0.7, 0.8, 0.9, 1, 1.1, 1.25, 1.4].map((k) => availW * k);
-    const walk = (i: number) => {
-      if (i === options.length) {
-        for (const limit of limits) {
-          const p = pack(pick, limit);
-          const s = Math.min(availW / p.w, availH / p.h, 1.18);
-          const aspect = Math.abs(Math.log((p.w / p.h) / (availW / availH)));
-          if (!best || s > best.s + 0.005 || (Math.abs(s - best.s) <= 0.005 && aspect < best.aspect)) {
-            best = { ...p, s, aspect };
-          }
-        }
-        return;
-      }
-      for (const o of options[i]) {
-        pick[i] = o;
-        walk(i + 1);
-      }
-    };
-    if (options.length) walk(0);
-    const plan = best as { shelves: Shelf[]; w: number; h: number; s: number } | null;
-    trees.clear();
-    if (!plan) return;
-    scale = plan.s;
-    const ox = m.left + (availW - plan.w * scale) / 2;
-    const oy = m.top + (availH - plan.h * scale) / 2;
-    const centre = { x: ox + (plan.w * scale) / 2, y: oy + (plan.h * scale) / 2 };
-    const squeeze = 0.58;
-    let y = 0;
-    for (const shelf of plan.shelves) {
-      let x = (plan.w - shelf.w) / 2;
-      for (const b of shelf.boxes) {
-        const gy = y + (shelf.h - b.h) / 2;
-        const sx = (v: number) => ox + v * scale;
-        const sy = (v: number) => oy + v * scale;
-        if (asStars) {
-          // Each card's centre, pulled toward the middle of the map.
-          let x0 = Infinity;
-          let y0 = Infinity;
-          let x1 = -Infinity;
-          let y1 = -Infinity;
-          for (const n of b.nodes) {
-            const [px, py] = b.pos.get(n)!;
-            const cx = centre.x + (sx(x + px + n.w / 2) - centre.x) * squeeze;
-            const cy = centre.y + (sy(gy + LABEL_H + py + n.h / 2) - centre.y) * squeeze;
-            n.tx = cx - STAR / 2;
-            n.ty = cy - STAR / 2;
-            n.ts = 1;
-            x0 = Math.min(x0, cx);
-            y0 = Math.min(y0, cy);
-            x1 = Math.max(x1, cx);
-            y1 = Math.max(y1, cy);
-          }
-          placeName(b.tag, x0 - 10, y0 - 40);
-          placeGlow(b.tag, x0, y0, x1 - x0, y1 - y0);
-          trees.set(b.tag, treeOf(b.nodes, (n) => n.tx + STAR / 2, (n) => n.ty + STAR / 2));
-        } else {
-          for (const n of b.nodes) {
-            const [px, py] = b.pos.get(n)!;
-            n.tx = sx(x + px);
-            n.ty = sy(gy + LABEL_H + py);
-            n.ts = scale;
-          }
-          placeName(b.tag, sx(x), sy(gy));
-          placeGlow(b.tag, sx(x), sy(gy + LABEL_H), b.w * scale, (b.h - LABEL_H) * scale);
-          trees.set(
-            b.tag,
-            treeOf(b.nodes, (n) => n.tx + (n.w * scale) / 2, (n) => n.ty + (n.h * scale) / 2),
-          );
-        }
-        x += b.w + GROUP_GAP;
-      }
-      y += shelf.h + GROUP_GAP;
-    }
-    if (asStars) setLod("stars");
-  };
-
-  const layoutFocus = () => {
-    const m = margins();
-    starsLayer.style.removeProperty("width");
-    namesLayer.style.removeProperty("width");
-    W = mapEl.clientWidth || 1;
-    const availW = W - m.left - m.right;
-    const cols = Math.max(1, Math.min(4, Math.floor((availW + 20) / (300 + 20))));
-    const fw = Math.min(340, Math.floor((availW - (cols - 1) * 20) / cols));
-    mapEl.style.setProperty("--fw", `${fw}px`);
-    setLod("full");
-    measure();
-    const g = order(nodes.filter((n) => n.on && n.tag === focusTag));
-    const mm = masonry(g, Math.min(cols, Math.max(1, g.length)), fw, 20, 0);
-    const ox = m.left + (availW - mm.w) / 2;
-    const oy = m.top + 64;
-    for (const n of g) {
-      const [px, py] = mm.pos.get(n)!;
-      n.tx = ox + px;
-      n.ty = oy + py;
-      n.ts = 1;
-    }
-    placeName(focusTag, ox, m.top + 10);
-    placeGlow(focusTag, ox, oy, mm.w, Math.min(mm.h, 900));
-    trees.clear();
-    H = oy + mm.h + 80;
-    mapEl.style.height = `${Math.max(H, innerHeight)}px`;
-    scale = 1;
-  };
-
-  // Phones: one constellation per screen width, its cards in one column.
-  const layoutPhone = () => {
-    W = mapEl.clientWidth || 1;
-    const cw = W - 32;
-    mapEl.style.setProperty("--cw", `${cw}px`);
-    setLod("cards");
-    measure();
-    const groups = groupsOf(nodes.filter((n) => n.on));
-    let tallest = 0;
-    groups.forEach((g, k) => {
-      const x0 = k * W + 16;
-      placeName(g.tag, x0, 16);
-      let y = 60;
-      for (const n of g.nodes) {
-        n.tx = x0;
-        n.ty = y;
-        n.ts = 1;
-        y += n.h + 10;
-      }
-      tallest = Math.max(tallest, y + 16);
-    });
-    const total = `${Math.max(1, groups.length) * W}px`;
-    starsLayer.style.width = total;
-    namesLayer.style.width = total;
-    mapEl.style.height = `${tallest}px`;
-    H = tallest;
-    trees.clear();
-    scale = 1;
-  };
+  // ---- Layout -------------------------------------------------------------
 
   const layout = () => {
-    closeOpen();
     phone = phoneMq.matches;
-    if (phone) layoutPhone();
-    else if (mode === "focus") layoutFocus();
-    else layoutCards(mode === "stars");
-    mapEl.dataset.mode = phone ? "cards" : mode;
-    if (back) back.hidden = mode !== "focus" || phone;
-    for (const n of nodes) {
-      const v = visible(n);
-      n.el.classList.toggle("is-out", !v);
-      n.link.tabIndex = v ? 0 : -1;
-      if (v) n.el.removeAttribute("aria-hidden");
-      else n.el.setAttribute("aria-hidden", "true");
+    W = mapEl.clientWidth || 1;
+    H = mapEl.clientHeight || 1;
+    const m = phone ? { t: 84, b: 64, l: 18, r: 18 } : { t: 110, b: 64, l: 90, r: 90 };
+    const availW = W - m.l - m.r;
+    const availH = H - m.t - m.b;
+    const base = phone ? Math.min(W * 0.1, 46) : Math.min(availW / 15, availH / 9.5, 86);
+    const live = groups.filter((g) => g.stars.some((s) => s.on));
+    // Sizes first, then pack: largest first, on a spiral from the middle.
+    type Item = { g: Group; shape: Shape; w: number; h: number; r: number; x: number; y: number; vis: Star[] };
+    let k4 = 0;
+    const items: Item[] = live
+      .map((g) => {
+        const vis = g.stars.filter((s) => s.on).sort((a, b) => a.impact - b.impact || b.date - a.date);
+        const n = vis.length;
+        const shape = shapeFor(n, n === 4 ? k4++ : 0);
+        const size = n === 1 ? 0 : base * Math.sqrt(n) * 0.95;
+        const w = n === 1 ? 0 : size * Math.sqrt(shape.aspect);
+        const h = n === 1 ? 0 : size / Math.sqrt(shape.aspect);
+        const nameW = g.name.offsetWidth || 110;
+        const r = Math.max(Math.hypot(w, h) / 2, nameW / 2) + 30;
+        return { g, shape, w, h, r, x: 0, y: 0, vis };
+      })
+      .sort((a, b) => b.r - a.r);
+    const ratio = availW / availH;
+    const placed: Item[] = [];
+    for (const it of items) {
+      let best: { x: number; y: number } | null = null;
+      for (let rr = 0; rr < 4000 && !best; rr += 8) {
+        const tries = rr === 0 ? 1 : Math.max(12, Math.round(rr / 6));
+        const turn = hash(it.g.tag) * Math.PI * 2;
+        for (let j = 0; j < tries; j++) {
+          const a = turn + (j / tries) * Math.PI * 2;
+          const x = Math.cos(a) * rr * Math.sqrt(ratio);
+          const y = Math.sin(a) * rr / Math.sqrt(ratio);
+          if (placed.every((p) => Math.hypot(p.x - x, p.y - y) >= p.r + it.r + 8)) {
+            best = { x, y };
+            break;
+          }
+        }
+      }
+      it.x = best?.x || 0;
+      it.y = best?.y || 0;
+      placed.push(it);
     }
-    const vis = new Set(nodes.filter(visible).map((n) => n.tag));
-    names.forEach((el, t) => el.classList.toggle("is-off", !vis.has(t)));
-    glows.forEach((el, t) => el.classList.toggle("is-off", !vis.has(t) || phone));
-    lines.forEach((el, t) => el.classList.toggle("is-off", !trees.has(t) || (trees.get(t)?.length || 0) === 0));
-    names.forEach((el, t) => {
-      const c = nodes.filter((n) => n.on && n.tag === t).length;
-      el.setAttribute("aria-label", mode === "focus" && t === focusTag ? `Back to the whole map` : `Zoom in on ${t}, ${c} posts`);
-      const num = el.querySelector(".ax-name-n");
-      if (num) num.textContent = String(c);
-    });
-    wake();
+    // Spread the packed figure to fill the sky, centred.
+    let bx0 = Infinity, by0 = Infinity, bx1 = -Infinity, by1 = -Infinity;
+    for (const p of placed) {
+      bx0 = Math.min(bx0, p.x - p.r);
+      by0 = Math.min(by0, p.y - p.r);
+      bx1 = Math.max(bx1, p.x + p.r);
+      by1 = Math.max(by1, p.y + p.r);
+    }
+    const spreadX = Math.max(1, availW / Math.max(1, bx1 - bx0));
+    const spreadY = Math.max(1, availH / Math.max(1, by1 - by0));
+    const shrink = Math.min(1, availW / Math.max(1, bx1 - bx0), availH / Math.max(1, by1 - by0));
+    const cxW = m.l + availW / 2;
+    const cyW = m.t + availH / 2;
+    const midX = (bx0 + bx1) / 2;
+    const midY = (by0 + by1) / 2;
+    for (const it of placed) {
+      const cx = cxW + (it.x - midX) * Math.min(spreadX, 1.6) * shrink;
+      const cy = cyW + (it.y - midY) * Math.min(spreadY, 1.6) * shrink;
+      const w = it.w * shrink;
+      const h = it.h * shrink;
+      const rot = (hash(it.g.tag + "r") - 0.5) * 0.6;
+      const cos = Math.cos(rot);
+      const sin = Math.sin(rot);
+      it.vis.forEach((s, i) => {
+        const p = it.shape.pts[i] || [0.5 + Math.cos(i * 2.4) * 0.45 * (i / it.vis.length), 0.5 + Math.sin(i * 2.4) * 0.45 * (i / it.vis.length)];
+        const lx = (p[0] - 0.5) * w;
+        const ly = (p[1] - 0.5) * h;
+        s.x = cx + lx * cos - ly * sin;
+        s.y = cy - 14 + lx * sin + ly * cos;
+      });
+      const g = it.g;
+      g.edges = it.shape.edges
+        .filter(([a, b]) => a < it.vis.length && b < it.vis.length)
+        .map(([a, b]) => [it.vis[a], it.vis[b]] as [Star, Star]);
+      g.x0 = Math.min(...it.vis.map((s) => s.x));
+      g.x1 = Math.max(...it.vis.map((s) => s.x));
+      g.y0 = Math.min(...it.vis.map((s) => s.y));
+      g.y1 = Math.max(...it.vis.map((s) => s.y));
+    }
+    write();
+    drawSky();
+    laidOut = true;
   };
 
-  // ---- Motion --------------------------------------------------------------
+  const radius = (s: Star) =>
+    impactMode ? 3 + Math.max(0, 1 - s.impact / 40) * 6 : 2.6 + Math.min(10, s.minutes) * 0.62;
 
-  const step = () => {
-    let energy = 0;
-    for (const n of nodes) {
-      const tx = n.open ? n.ox : n.tx;
-      const ty = n.open ? n.oy : n.ty;
-      const ts = n.open ? Math.max(1, n.ts) : n.ts;
-      n.vx = (n.vx + (tx - n.x) * 0.09) * 0.74;
-      n.vy = (n.vy + (ty - n.y) * 0.09) * 0.74;
-      n.x += n.vx;
-      n.y += n.vy;
-      n.s += (ts - n.s) * 0.2;
-      energy += Math.abs(n.vx) + Math.abs(n.vy) + Math.abs(ts - n.s) * 30;
-    }
-    return energy;
-  };
-  const sizeNow = (n: Node) => (mapEl.dataset.lod === "stars" && !n.open ? [STAR, STAR] : [n.w, n.h]);
   const write = () => {
-    for (const n of nodes) {
-      n.el.style.transform = `translate3d(${n.x.toFixed(1)}px, ${n.y.toFixed(1)}px, 0) scale(${n.s.toFixed(3)})`;
+    for (const s of stars) {
+      s.el.style.transform = `translate3d(${s.x.toFixed(1)}px, ${s.y.toFixed(1)}px, 0)`;
+      s.el.style.setProperty("--r", `${radius(s).toFixed(1)}px`);
+      s.el.style.setProperty("--tw", `${(2.6 + hash(s.slug) * 3).toFixed(2)}s`);
+      s.el.style.setProperty("--td", `${(-hash(s.slug + "d") * 4).toFixed(2)}s`);
+      s.el.classList.toggle("is-out", !s.on);
+      s.el.classList.toggle("is-match", !!query && s.on && s.match);
+      s.el.classList.toggle("is-faint", !!query && s.on && !s.match);
     }
-    trees.forEach((tree, t) => {
-      const line = lines.get(t);
-      if (!line) return;
-      let d = "";
-      for (const [a, b] of tree) {
-        const [aw, ah] = sizeNow(a);
-        const [bw, bh] = sizeNow(b);
-        const ax = a.x + (aw * a.s) / 2;
-        const ay = a.y + (ah * a.s) / 2;
-        const bx = b.x + (bw * b.s) / 2;
-        const by = b.y + (bh * b.s) / 2;
-        d += `M${ax.toFixed(1)} ${ay.toFixed(1)}L${bx.toFixed(1)} ${by.toFixed(1)}`;
+    for (const g of groups) {
+      const n = g.stars.filter((s) => s.on).length;
+      g.name.classList.toggle("is-out", n === 0);
+      const num = g.name.querySelector(".ax-name-n");
+      if (num) num.textContent = `${n} ${n === 1 ? "post" : "posts"}`;
+      g.name.setAttribute("aria-label", `${g.tag}, ${n} ${n === 1 ? "post" : "posts"}. Open this constellation`);
+      if (n === 0) continue;
+      // The name sits under its stars.
+      const nw = g.name.offsetWidth || 100;
+      const x = Math.max(8, Math.min(W - nw - 8, (g.x0 + g.x1) / 2 - nw / 2));
+      g.name.style.transform = `translate3d(${x.toFixed(1)}px, ${(g.y1 + 16).toFixed(1)}px, 0)`;
+      if (g.line) {
+        g.line.setAttribute(
+          "d",
+          g.edges.map(([a, b]) => `M${a.x.toFixed(1)} ${a.y.toFixed(1)}L${b.x.toFixed(1)} ${b.y.toFixed(1)}`).join(""),
+        );
       }
-      line.setAttribute("d", d);
-    });
-  };
-  const frame = () => {
-    raf = 0;
-    if (!shown || !onScreen) return;
-    const energy = step();
-    write();
-    if (energy > 0.3) awake = 20;
-    if (--awake > 0) raf = requestAnimationFrame(frame);
-  };
-  const wake = () => {
-    if (reduce || !bloomed) {
-      for (const n of nodes) {
-        n.x = n.open ? n.ox : n.tx;
-        n.y = n.open ? n.oy : n.ty;
-        n.s = n.open ? Math.max(1, n.ts) : n.ts;
-        n.vx = n.vy = 0;
-      }
-      write();
-      if (reduce || !bloomed) return;
     }
-    awake = 40;
-    if (!raf && shown && onScreen) raf = requestAnimationFrame(frame);
   };
 
-  const bloom = () => {
-    if (bloomed) return;
-    layout();
-    bloomed = true;
-    mapEl.classList.add("is-live");
-    if (reduce) return;
-    // Everything starts at the middle and opens out into constellations.
-    for (const n of nodes) {
-      n.x = W / 2 - (n.w * 0.3) / 2 + (Math.random() - 0.5) * 60;
-      n.y = H / 2 - (n.h * 0.3) / 2 + (Math.random() - 0.5) * 40;
-      n.s = 0.3;
+  // ---- Hover --------------------------------------------------------------
+
+  const groupOf = (tag: string) => groups.find((g) => g.tag === tag) || null;
+  const hot = (g: Group | null) => {
+    for (const x of groups) {
+      const on = x === g;
+      x.line?.classList.toggle("is-hot", on);
+      x.name.classList.toggle("is-hot", on);
+      x.stars.forEach((s) => s.el.classList.toggle("is-hot", on));
     }
-    write();
-    wake();
   };
-
-  // ---- Open a card ---------------------------------------------------------
-
-  const dim = (tag: string | null) => {
-    for (const n of nodes) n.el.classList.toggle("is-dim", !!tag && n.tag !== tag && !n.open);
-    names.forEach((el, t) => el.classList.toggle("is-dim", !!tag && t !== tag));
-    glows.forEach((el, t) => el.classList.toggle("is-dim", !!tag && t !== tag));
-    lines.forEach((el, t) => {
-      el.classList.toggle("is-hot", !!tag && t === tag);
-      el.classList.toggle("is-dim", !!tag && t !== tag);
-    });
+  const showTip = (s: Star) => {
+    tip.textContent = s.title;
+    tip.hidden = false;
+    const r = s.el.getBoundingClientRect();
+    const mr = mapEl.getBoundingClientRect();
+    const tw = tip.offsetWidth;
+    const th = tip.offsetHeight;
+    const x = Math.max(8, Math.min(W - tw - 8, r.left - mr.left + r.width / 2 - tw / 2));
+    const y = r.top - mr.top - th - 6 < 8 ? r.bottom - mr.top + 6 : r.top - mr.top - th - 6;
+    tip.style.transform = `translate3d(${x.toFixed(1)}px, ${y.toFixed(1)}px, 0)`;
   };
-  function closeOpen() {
-    if (!openNode) return;
-    const n = openNode;
-    openNode = null;
-    n.open = false;
-    n.el.classList.remove("is-open");
-    n.link.style.removeProperty("--px");
-    n.link.style.removeProperty("--py");
-    dim(null);
-    wake();
-  }
-  const open = (n: Node) => {
-    if (phone || mode === "focus" || openNode === n) return;
-    closeOpen();
-    openNode = n;
-    n.open = true;
-    n.el.classList.add("is-open");
-    mapEl.style.setProperty("--fw", `${OPEN_W}px`);
-    const ow = n.link.offsetWidth;
-    const oh = n.link.offsetHeight;
-    const s = Math.max(1, n.ts);
-    const [cw, ch] = mode === "stars" ? [STAR, STAR] : [n.w * n.ts, n.h * n.ts];
-    // Grow from the card's centre, kept inside the map.
-    n.ox = Math.max(10, Math.min(W - ow * s - 10, n.tx + cw / 2 - (ow * s) / 2));
-    n.oy = Math.max(10, Math.min(H - oh * s - 10, n.ty + ch / 2 - (oh * s) / 3));
-    dim(n.tag);
-    wake();
-  };
-
-  const nodeOf = (el: EventTarget | null) => {
-    const star = (el as HTMLElement | null)?.closest?.(".ax-star");
-    return star ? nodes.find((n) => n.el === star) : undefined;
+  const starOf = (t: EventTarget | null) => {
+    const el = (t as HTMLElement | null)?.closest?.(".ax-s");
+    return el ? stars.find((s) => s.el === el) || null : null;
   };
   mapEl.addEventListener(
     "pointerover",
     (e) => {
       if ((e as PointerEvent).pointerType === "touch") return;
-      const n = nodeOf(e.target);
-      if (n && visible(n)) open(n);
+      const s = starOf(e.target);
+      if (s && s.on) {
+        showTip(s);
+        if (!openGroup) hot(groupOf(s.tag));
+        return;
+      }
+      const name = (e.target as HTMLElement).closest<HTMLElement>(".ax-name");
+      if (name && !openGroup) hot(groupOf(name.dataset.tag || ""));
     },
     { signal },
   );
   mapEl.addEventListener(
     "pointerout",
     (e) => {
-      const n = nodeOf(e.target);
-      if (!n || n !== openNode) return;
-      if (nodeOf(e.relatedTarget) === n) return;
-      if (document.activeElement === n.link) return;
-      closeOpen();
-    },
-    { signal },
-  );
-  mapEl.addEventListener(
-    "pointermove",
-    (e) => {
-      const n = nodeOf(e.target);
-      if (!n || !n.open) return;
-      const r = n.link.getBoundingClientRect();
-      n.link.style.setProperty("--px", (((e.clientX - r.left) / r.width) * 2 - 1).toFixed(3));
-      n.link.style.setProperty("--py", (((e.clientY - r.top) / r.height) * 2 - 1).toFixed(3));
-    },
-    { passive: true, signal },
-  );
-  mapEl.addEventListener(
-    "focusin",
-    (e) => {
-      const n = nodeOf(e.target);
-      if (n) open(n);
-    },
-    { signal },
-  );
-  mapEl.addEventListener(
-    "focusout",
-    (e) => {
-      const n = nodeOf(e.target);
-      if (n && n === openNode && nodeOf(e.relatedTarget) !== n) closeOpen();
+      const from = starOf(e.target) || (e.target as HTMLElement).closest?.(".ax-name");
+      if (!from) return;
+      const to = e.relatedTarget as HTMLElement | null;
+      if (to && (to === from || (from as HTMLElement).contains?.(to))) return;
+      tip.hidden = true;
+      if (!openGroup) hot(null);
     },
     { signal },
   );
 
-  // A click flies into the card, then the post opens.
+  // ---- Open a constellation -----------------------------------------------
+
+  const visibleCards = (g: Group) => {
+    let set = g.stars.filter((s) => s.on && (!query || s.match));
+    if (!set.length) set = g.stars.filter((s) => s.on);
+    set.sort((a, b) => (impactMode ? a.impact - b.impact : b.date - a.date));
+    return set;
+  };
+  const PAGE = 6;
+  const colsFor = (n: number) => (n <= 1 ? 1 : n === 2 || n === 4 ? 2 : 3);
+  const renderPage = () => {
+    if (!openGroup) return;
+    const set = visibleCards(openGroup);
+    const pages = phone ? 1 : Math.max(1, Math.ceil(set.length / PAGE));
+    page = Math.max(0, Math.min(page, pages - 1));
+    const slice = phone ? set : set.slice(page * PAGE, page * PAGE + PAGE);
+    const want = new Map(slice.map((s, i) => [s.slug, i]));
+    for (const c of cards) {
+      const i = want.get(c.dataset.slug || "");
+      c.hidden = i === undefined;
+      if (i !== undefined) {
+        c.style.setProperty("--k", String(i));
+        list.appendChild(c);
+      }
+    }
+    // Keep the order of the slice.
+    slice.forEach((s) => {
+      const c = cards.find((x) => x.dataset.slug === s.slug);
+      if (c) list.appendChild(c);
+    });
+    // Restart the arrival for this page.
+    list.querySelectorAll<HTMLElement>(".ax-c:not([hidden])").forEach((c) => {
+      c.style.animation = "none";
+      void c.offsetWidth;
+      c.style.animation = "";
+    });
+    list.style.setProperty("--cols", String(phone ? 1 : colsFor(slice.length)));
+    list.scrollTop = 0;
+    pager.hidden = phone || pages <= 1;
+    const from = page * PAGE + 1;
+    const to = page * PAGE + slice.length;
+    pagerStatus.textContent = pages > 1 ? `${from} to ${to} of ${set.length}` : "";
+    pageBtns[0].disabled = page === 0;
+    pageBtns[1].disabled = page >= pages - 1;
+    panelCount.textContent = `${set.length} ${set.length === 1 ? "post" : "posts"}`;
+  };
+
+  const glideTo = (g: Group | null) => {
+    if (!g) {
+      world.style.transform = "";
+      return;
+    }
+    const gw = Math.max(60, g.x1 - g.x0);
+    const gh = Math.max(60, g.y1 - g.y0 + 50);
+    const cx = (g.x0 + g.x1) / 2;
+    const cy = (g.y0 + g.y1) / 2 + 20;
+    let k: number;
+    let tx: number;
+    let ty: number;
+    if (phone) {
+      k = Math.min(1.8, (W * 0.7) / gw, (H * 0.26) / gh);
+      tx = W / 2;
+      ty = H * 0.22;
+    } else {
+      const panelW = panel.offsetWidth || W * 0.6;
+      const room = W - panelW - 60;
+      k = Math.max(1, Math.min(1.7, (room * 0.7) / gw, (H * 0.55) / gh));
+      tx = Math.max(room / 2 + 10, 160);
+      ty = H * 0.5;
+    }
+    world.style.transform = `translate3d(${(tx - cx * k).toFixed(1)}px, ${(ty - cy * k).toFixed(1)}px, 0) scale(${k.toFixed(3)})`;
+  };
+
+  const open = (g: Group, from?: HTMLElement) => {
+    if (!g.stars.some((s) => s.on)) return;
+    const same = openGroup === g;
+    openGroup = g;
+    page = 0;
+    mapEl.dataset.state = "open";
+    tip.hidden = true;
+    for (const x of groups) {
+      const dimmed = x !== g;
+      x.name.classList.toggle("is-dim", dimmed);
+      x.line?.classList.toggle("is-dim", dimmed);
+      x.stars.forEach((s) => s.el.classList.toggle("is-dim", dimmed));
+      x.name.setAttribute("aria-expanded", x === g ? "true" : "false");
+    }
+    hot(g);
+    panel.style.setProperty("--tint", g.name.style.getPropertyValue("--tint"));
+    panelTitle.textContent = g.tag;
+    renderPage();
+    panel.hidden = false;
+    requestAnimationFrame(() => {
+      panel.classList.add("is-in");
+      glideTo(g);
+    });
+    if (!same) dispatchEvent(new CustomEvent("writing:constellation", { detail: { tag: g.tag } }));
+    returnTo = from || g.name;
+    panelTitle.focus({ preventScroll: true });
+    // Bring the whole sky into view on wide screens.
+    const r = mapEl.getBoundingClientRect();
+    if (!phone && (r.top < -40 || r.bottom > innerHeight + 40)) {
+      scrollTo({ top: r.top + scrollY - 10, behavior: reduce ? "auto" : "smooth" });
+    }
+  };
+  let returnTo: HTMLElement | null = null;
+  const close = () => {
+    if (!openGroup) return;
+    openGroup = null;
+    mapEl.dataset.state = "sky";
+    panel.classList.remove("is-in");
+    for (const x of groups) {
+      x.name.classList.remove("is-dim");
+      x.line?.classList.remove("is-dim");
+      x.stars.forEach((s) => s.el.classList.remove("is-dim"));
+      x.name.setAttribute("aria-expanded", "false");
+    }
+    hot(null);
+    glideTo(null);
+    window.setTimeout(() => {
+      if (!openGroup) panel.hidden = true;
+    }, reduce ? 0 : 520);
+    returnTo?.focus({ preventScroll: true });
+  };
+
+  groups.forEach((g) => g.name.addEventListener("click", () => (openGroup === g ? close() : open(g, g.name)), { signal }));
   mapEl.addEventListener(
     "click",
     (e) => {
-      const link = (e.target as HTMLElement).closest<HTMLAnchorElement>(".ax-node");
-      if (!link) return;
-      if (reduce || phone || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return;
-      e.preventDefault();
-      const art = link.querySelector<HTMLElement>(".ax-node-art");
-      const img = link.querySelector<HTMLImageElement>("img");
-      const box = art && art.offsetWidth ? art : link;
-      const r = box.getBoundingClientRect();
-      const fly = document.createElement("div");
-      fly.className = "ax-fly";
-      Object.assign(fly.style, { left: `${r.left}px`, top: `${r.top}px`, width: `${r.width}px`, height: `${r.height}px` });
-      if (img?.currentSrc) fly.style.backgroundImage = `url("${img.currentSrc}")`;
-      document.body.appendChild(fly);
-      const s = Math.max(innerWidth / r.width, innerHeight / r.height);
-      const dx = innerWidth / 2 - (r.left + r.width / 2);
-      const dy = innerHeight / 2 - (r.top + r.height / 2);
-      const anim = fly.animate(
-        [
-          { transform: "translate(0, 0) scale(1)", borderRadius: "12px" },
-          { transform: `translate(${dx}px, ${dy}px) scale(${s})`, borderRadius: "0px" },
-        ],
-        { duration: 520, easing: "cubic-bezier(0.7, 0, 0.2, 1)", fill: "forwards" },
-      );
-      mapEl.animate([{ opacity: 1 }, { opacity: 0.25 }], { duration: 520, easing: "ease-in" });
-      const href = link.href;
-      anim.onfinish = () => {
-        navigate(href);
-        setTimeout(() => fly.remove(), 900);
-      };
+      const t = e.target as HTMLElement;
+      if (t.closest(".ax-panel, .ax-name")) return;
+      const s = starOf(t);
+      if (s && s.on) {
+        const g = groupOf(s.tag);
+        if (g) open(g);
+        return;
+      }
+      // Empty sky goes back.
+      close();
     },
     { signal },
   );
-
-  // ---- Zoom ----------------------------------------------------------------
-
-  const setMode = (m: Mode, tag = "") => {
-    if (phone) return;
-    const was = mode;
-    mode = m;
-    focusTag = m === "focus" ? tag : "";
-    layout();
-    if (m === "focus" || was === "focus") {
-      const top = mapEl.getBoundingClientRect().top + scrollY - 12;
-      scrollTo({ top, behavior: reduce ? "auto" : "smooth" });
-    }
-  };
-  const nearestTag = (px: number, py: number) => {
-    let best = "";
-    let bd = Infinity;
-    for (const n of nodes) {
-      if (!n.on) continue;
-      const d = Math.hypot(n.tx - px, n.ty - py);
-      if (d < bd) {
-        bd = d;
-        best = n.tag;
-      }
-    }
-    return best;
-  };
-  const zoomIn = (px = W / 2, py = H / 2) => {
-    if (mode === "stars") setMode("cards");
-    else if (mode === "cards") setMode("focus", nearestTag(px, py));
-  };
-  const zoomOut = () => {
-    if (mode === "focus") setMode("cards");
-    else if (mode === "cards") setMode("stars");
-  };
-  names.forEach((el, t) =>
-    el.addEventListener(
-      "click",
-      () => {
-        if (phone) return;
-        if (mode === "focus" && focusTag === t) setMode("cards");
-        else setMode("focus", t);
-      },
-      { signal },
-    ),
-  );
-  back?.addEventListener("click", () => setMode("cards"), { signal });
-  mapEl.querySelectorAll<HTMLElement>(".ax-zbtn").forEach((b) =>
+  closeBtn.addEventListener("click", close, { signal });
+  pageBtns.forEach((b) =>
     b.addEventListener(
       "click",
       () => {
-        const z = b.dataset.zoom;
-        if (z === "fit") setMode("cards");
-        else if (z === "in") zoomIn();
-        else zoomOut();
+        page += parseInt(b.dataset.dir || "1");
+        renderPage();
       },
       { signal },
     ),
   );
-  let wheelAcc = 0;
-  let wheelAt = 0;
-  mapEl.addEventListener(
-    "wheel",
-    (e) => {
-      if (!e.ctrlKey && !e.metaKey) return;
-      e.preventDefault();
-      const now = performance.now();
-      if (now - wheelAt < 450) return;
-      wheelAcc += e.deltaY;
-      if (Math.abs(wheelAcc) < 40) return;
-      const r = mapEl.getBoundingClientRect();
-      if (wheelAcc < 0) zoomIn(e.clientX - r.left, e.clientY - r.top);
-      else zoomOut();
-      wheelAcc = 0;
-      wheelAt = now;
-    },
-    { passive: false, signal },
-  );
-  mapEl.addEventListener(
+  addEventListener(
     "keydown",
     (e) => {
-      if (e.key === "+" || e.key === "=") zoomIn();
-      else if (e.key === "-") zoomOut();
-      else if (e.key === "Escape") {
-        if (openNode) closeOpen();
-        else if (mode === "focus") setMode("cards");
+      if (e.key === "Escape" && openGroup) {
+        e.preventDefault();
+        close();
       }
     },
     { signal },
   );
 
-  const io = new IntersectionObserver(
-    ([en]) => {
-      onScreen = en.isIntersecting;
-      if (onScreen && shown) {
-        if (!bloomed) bloom();
-        else wake();
-      }
-    },
-    { rootMargin: "0px 0px -15% 0px" },
-  );
-  io.observe(mapEl);
-  let lastW = 0;
   const ro = new ResizeObserver(() => {
-    if (!shown || !bloomed) return;
-    const w = mapEl.clientWidth;
-    // Heights this script sets do not count; a new width does.
-    if (w === lastW && mode !== "cards" && mode !== "stars") return;
-    if (w === lastW && Math.abs(mapEl.clientHeight - H) < 2) return;
-    lastW = w;
+    if (!shown) return;
+    if (Math.abs(mapEl.clientWidth - W) < 1 && Math.abs(mapEl.clientHeight - H) < 1) return;
     layout();
+    if (openGroup) {
+      renderPage();
+      glideTo(openGroup);
+    }
   });
   ro.observe(mapEl);
-  const onPhone = () => {
-    if (mode === "focus" || mode === "stars") mode = "cards";
-    if (shown && bloomed) layout();
-  };
-  phoneMq.addEventListener("change", onPhone, { signal });
 
   return {
-    update(matches, impact) {
-      impactOrder = impact;
-      for (const n of nodes) n.on = matches(n.el);
-      if (mode === "focus" && !nodes.some((n) => n.on && n.tag === focusTag)) mode = "cards";
-      if (shown && bloomed) layout();
+    update(pass, q, impact) {
+      impactMode = impact;
+      query = q;
+      for (const s of stars) {
+        s.on = pass(s.el);
+        s.match = !q || q.split(/\s+/).every((w) => (s.el.dataset.q || "").includes(w));
+      }
+      if (!shown) return;
+      layout();
+      if (openGroup) {
+        if (!openGroup.stars.some((s) => s.on)) close();
+        else {
+          renderPage();
+          glideTo(openGroup);
+        }
+      }
     },
     show() {
       shown = true;
       requestAnimationFrame(() => {
         if (!shown) return;
-        lastW = mapEl.clientWidth;
-        if (onScreen) {
-          if (!bloomed) bloom();
-          else layout();
-        }
+        layout();
+        mapEl.classList.add("is-live");
       });
     },
     hide() {
       shown = false;
-      closeOpen();
-      cancelAnimationFrame(raf);
-      raf = 0;
+      close();
     },
     stop() {
       ac.abort();
-      io.disconnect();
       ro.disconnect();
-      cancelAnimationFrame(raf);
-      document.querySelectorAll(".ax-fly").forEach((el) => el.remove());
+      void laidOut;
     },
   };
 }
