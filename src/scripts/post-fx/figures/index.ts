@@ -43,6 +43,9 @@ export function mountFigures(signal: AbortSignal): void | (() => void) {
         else stops.push(stop);
       }
       slot.classList.add("is-up");
+      // The handle invites a drag until the reader has touched the figure.
+      slot.addEventListener("pointerdown", () => slot.classList.add("is-touched"), { once: true, signal });
+      slot.addEventListener("keydown", () => slot.classList.add("is-touched"), { once: true, signal });
     } catch (err) {
       console.error(err);
     }

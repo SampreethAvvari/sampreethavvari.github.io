@@ -811,14 +811,34 @@ a.pfx-sky-star { color: var(--ink); text-decoration: underline; text-underline-o
 }
 
 /* ---------------------------------------------------------------------------
-   Print: the article and nothing else.
+   Print: the article and nothing else, in black on white. The script leaves
+   transforms and a margin on the head, so those are undone here too.
    --------------------------------------------------------------------------- */
 @media print {
-  .pfx-veil, .pfx-gl, .pfx-scrim, .pfx-cue, .pfx-dock, .pfx-sheet, .pfx-sheet-scrim,
-  .pfx-link, .pfx-view, .pfx-codecopy, .pfx-slot, .pfx-sky, .pfx-rail, .post-toc-wrap, .post-progress { display: none !important; }
-  .pfx-stage { position: static !important; min-height: 0 !important; }
+  html, body, main, .post { background: #fff !important; color: #000 !important; }
+  body > *:not(main) { display: none !important; }
+  .pfx-veil, .pfx-gl, .pfx-scrim, .pfx-cue, .pfx-link, .pfx-view, .pfx-codecopy, .pfx-slot, .pfx-sky, .pfx-rail,
+  .post-toc-wrap, .post-progress, .post-back, .post-next, .tone-atmos { display: none !important; }
+  .pfx-stage { position: static !important; min-height: 0 !important; overflow: visible !important; }
+  .pfx-open { margin: 0 !important; }
   .pfx-open::after { display: none !important; }
-  .pfx-art.post-cover-frame { width: 60% !important; }
+  .pfx-settled { padding-top: 0 !important; }
+  .pfx-art, .pfx-copy, .pfx-copy * { transform: none !important; visibility: visible !important; animation: none !important; }
+  .pfx-art.post-cover-frame { width: 60% !important; box-shadow: none !important; }
   .post-grid.has-toc { grid-template-columns: minmax(0, 1fr) !important; }
-  .post-prose { max-width: none; color: #000; }
+  .post-prose { max-width: none; }
+  .post *, .post a { color: #000 !important; text-shadow: none !important; box-shadow: none !important; text-decoration-color: #777 !important; }
+  .post .surface, .post-stat, .post-facts, .post-table, .post-prose .aside, .post-prose .stat-callout, .arch-card {
+    background: #fff !important;
+    border-color: #bbb !important;
+  }
+  .post-stat::before, .post-prose .stat-callout::before { background: #000 !important; }
+  .post-prose thead th { background: #f2f2f2 !important; }
+  .post-prose th, .post-prose td { border-color: #ccc !important; }
+  .post-prose pre { background: #f6f6f6 !important; border-color: #ccc !important; padding-right: 20px !important; white-space: pre-wrap; }
+  .post-prose pre code { width: auto; white-space: pre-wrap; }
+  .post-prose pre, .post-prose table, .post-stat, .post-facts { break-inside: avoid; }
+  .post-prose h2, .post-prose h3 { break-after: avoid; }
+  .post-prose .egg { text-decoration: none; }
+  .post-prose .egg::after { display: none; }
 }

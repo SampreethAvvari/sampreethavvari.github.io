@@ -543,3 +543,26 @@
 }
 
 .pfx-zp-runtip[hidden], .pfx-day-tip[hidden], .pfx-gate-tip[hidden], .pfx-cost-tip[hidden] { display: none; }
+
+/* What can be dragged gives a small nudge until the reader has touched it. */
+@media (prefers-reduced-motion: no-preference) {
+  .pfx-slot:not(.is-touched) .pfx-ref-grip { animation: pfx-nudge-x 3.6s ease-in-out 1.2s infinite; }
+  .pfx-slot:not(.is-touched) .pfx-zp-star svg { animation: pfx-nudge-y 3.6s ease-in-out 1.2s infinite; }
+  .pfx-slot:not(.is-touched) .pfx-day-handle { animation: pfx-nudge-glow 3.6s ease-in-out 1.2s infinite; }
+}
+@keyframes pfx-nudge-x {
+  0%, 74%, 100% { transform: none; }
+  80% { transform: translateX(-5px); }
+  88% { transform: translateX(5px); }
+  94% { transform: none; }
+}
+@keyframes pfx-nudge-y {
+  0%, 74%, 100% { transform: none; }
+  82% { transform: translateY(-7px) scale(1.12); }
+  92% { transform: none; }
+}
+@keyframes pfx-nudge-glow {
+  0%, 74%, 100% { transform: none; }
+  84% { transform: scale(1.25); }
+  94% { transform: none; }
+}
