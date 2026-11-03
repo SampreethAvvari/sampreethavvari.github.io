@@ -842,6 +842,9 @@ const rgb2 = palette[1] ?? palette[0];
       setTimeout(function () { leave(id); }, 6000);
     }
 
+    // The move cannot happen (offline, no copy of the page): back to this page.
+    window.addEventListener("warp:stay", function () { leave(trip); });
+
     // The arriving page names its own palette; home's is every tab.
     function aim(next) {
       var el = next && next.getElementById("warp");

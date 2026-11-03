@@ -333,8 +333,17 @@ const pageComets = hasOwnComets
         else settle();
         document.addEventListener("astro:before-preparation", function (e) {
           var load = e.loader;
+          // Offline, a link the browser has no copy of would leave this page for
+          // the browser's error page. Stay here instead, and let the loader go.
+          var open = navigator.onLine || e.navigationType === "traverse"
+            ? Promise.resolve(true)
+            : fetch(e.to.href, { cache: "only-if-cached", mode: "same-origin" }).then(function (res) { return res.ok; }, function () { return false; });
           e.loader = function () {
-            return Promise.resolve(load()).then(function () {
+            return open.then(function (ok) {
+              if (ok) return load();
+              window.dispatchEvent(new Event("warp:stay"));
+              return new Promise(function () {});
+            }).then(function () {
               var next = e.newDocument;
               if (!next || next === document) return;
               worldCode(next);
