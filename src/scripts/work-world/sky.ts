@@ -2,7 +2,9 @@
 // is drawn once into a cube map, so it costs almost nothing per frame, and
 // the same cube lights the hull through its reflections.
 
+import { breathe, prelink } from "../gl-warm";
 import {
+  type Camera,
   AdditiveBlending,
   BackSide,
   BufferAttribute,
@@ -110,7 +112,7 @@ void main() {
   gl_FragColor = vec4(c * uPower * edge, 1.0);
 }`;
 
-export function buildSky(renderer: WebGLRenderer, opts: { low: boolean; hdr: boolean }) {
+export async function buildSky(renderer: WebGLRenderer, opts: { low: boolean; hdr: boolean }) {
   // Bake the nebula.
   const bake = new Scene();
   const bakeMat = new ShaderMaterial({ vertexShader: SKY_VS, fragmentShader: NEBULA, side: BackSide, depthTest: false, depthWrite: false, uniforms: { uSun: { value: SUN_DIR } } });
@@ -123,7 +125,12 @@ export function buildSky(renderer: WebGLRenderer, opts: { low: boolean; hdr: boo
     magFilter: LinearFilter,
   });
   const cubeCam = new CubeCamera(0.1, 100, target);
+  // The nebula is a long shader: it links in the background before it is used,
+  // because asking for it any earlier stops the page until the GPU is done.
+  await prelink(renderer, bake, cubeCam.children[0] as Camera, target);
+  await breathe();
   cubeCam.update(renderer, bake);
+  await breathe();
 
   const dome = new Mesh(
     new SphereGeometry(10, 32, 16),

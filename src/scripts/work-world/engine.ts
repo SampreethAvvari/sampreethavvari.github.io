@@ -4,6 +4,8 @@
 // /work and /work/<slug>, so flying into a bay never drops a frame. Everything
 // it makes is released by destroy().
 
+import { Governor } from "../gl-governor";
+import { breathe, prelink, quietShaderChecks, warmAhead } from "../gl-warm";
 import {
   Color,
   DirectionalLight,
@@ -52,9 +54,10 @@ type PageMode = { kind: "index" } | { kind: "bay"; id: BayId; stops: number };
 
 const IDX = (id: BayId) => BAY_IDS.indexOf(id);
 
-export function mountWorld(canvas: HTMLCanvasElement, opts: WorldOptions) {
+export async function mountWorld(canvas: HTMLCanvasElement, opts: WorldOptions) {
   const { low, reduced } = opts;
   const renderer = new WebGLRenderer({ canvas, antialias: false, powerPreference: "high-performance", stencil: false, alpha: false });
+  quietShaderChecks(renderer);
   renderer.outputColorSpace = LinearSRGBColorSpace;
   renderer.toneMapping = NoToneMapping;
   renderer.autoClear = false;
@@ -71,18 +74,24 @@ export function mountWorld(canvas: HTMLCanvasElement, opts: WorldOptions) {
   const camera = new PerspectiveCamera(40, 1, 1, 26000);
   camera.matrixAutoUpdate = true;
 
-  const sky = buildSky(renderer, { low, hdr });
+  // Built in steps, with the page's turn between them, so a scroll that starts
+  // while the world loads is never held up.
+  await breathe();
+  const sky = await buildSky(renderer, { low, hdr });
   scene.add(sky.dome, sky.stars, sky.corona);
   scene.environment = sky.env;
   scene.environmentIntensity = 0.85;
 
   const station = buildStation({ low });
   scene.add(station.root);
+  await breathe();
   const baysKit = buildBays({ low });
   baysKit.bays.forEach((b) => station.ring.add(b.group));
+  await breathe();
 
   const trail = buildTrail({ low, font: "Inter, Arial, sans-serif" });
   scene.add(trail.group);
+  await breathe();
 
   // Light: the star, a little bounce, and three lamps the active bay borrows.
   const sun = new DirectionalLight(new Color(1, 0.72, 0.44), 5.6);
@@ -184,11 +193,25 @@ export function mountWorld(canvas: HTMLCanvasElement, opts: WorldOptions) {
   const raycaster = new Raycaster();
 
   const sizeState = { w: 0, h: 0, dpr: 1, scale: 1 };
+  let stopWarm: (() => void) | null = null;
   const maxDpr = low ? 1.5 : Math.min(2, devicePixelRatio || 1);
+  // The canvas's size comes from an observer: reading it here, every frame, made
+  // the browser lay out the page just before the frame's own writes.
+  let cssW = 0;
+  let cssH = 0;
+  const sizeWatch = new ResizeObserver(([e]) => {
+    cssW = Math.round(e.contentRect.width);
+    cssH = Math.round(e.contentRect.height);
+  });
+  sizeWatch.observe(canvas);
   function resize(force = false) {
-    const rect = canvas.getBoundingClientRect();
-    const w = Math.max(1, Math.round(rect.width));
-    const h = Math.max(1, Math.round(rect.height));
+    if (!cssW || !cssH) {
+      const rect = canvas.getBoundingClientRect();
+      cssW = Math.round(rect.width);
+      cssH = Math.round(rect.height);
+    }
+    const w = Math.max(1, cssW);
+    const h = Math.max(1, cssH);
     // Phones fire resize as the address bar moves; only a change of width, or a
     // large change of height, is a real one.
     if (!force && w === sizeState.w && Math.abs(h - sizeState.h) < 120) return;
@@ -208,27 +231,15 @@ export function mountWorld(canvas: HTMLCanvasElement, opts: WorldOptions) {
     }
   }
 
-  // Quality scales with what the machine can hold, and only ever steps down
-  // the pixel count, never the picture's parts.
-  let slowFrames = 0;
-  let countFrames = 0;
-  let frameAccum = 0;
-  function adapt(ms: number) {
-    if (low) return;
-    frameAccum += ms;
-    countFrames++;
-    if (countFrames < 45) return;
-    const avg = frameAccum / countFrames;
-    countFrames = 0;
-    frameAccum = 0;
-    if (avg > 26) slowFrames++;
-    else slowFrames = 0;
-    if (slowFrames >= 2 && sizeState.scale > 0.6) {
-      sizeState.scale = Math.max(0.6, sizeState.scale * 0.85);
-      slowFrames = 0;
+  // Fewer pixels when frames run slow and that helps, and back again when there
+  // is room. Never the picture's parts.
+  const governor = new Governor({
+    steps: low ? [1, 0.88, 0.78] : [1, 0.85, 0.72, 0.6],
+    apply: (scale) => {
+      sizeState.scale = scale;
       resize(true);
-    }
-  }
+    },
+  });
 
   function poseFor(o: Pose) {
     track.at(qs, o);
@@ -281,8 +292,8 @@ export function mountWorld(canvas: HTMLCanvasElement, opts: WorldOptions) {
       return;
     }
     const dtMs = clamp(now - last, 0, 100);
+    governor.frame(now - last, Math.abs(vel) > 0.02 || !!flight);
     last = now;
-    adapt(dtMs);
     const dt = dtMs / 1000;
     time += dt;
     resize();
@@ -717,15 +728,21 @@ export function mountWorld(canvas: HTMLCanvasElement, opts: WorldOptions) {
       const go = () => {
         compiling = false;
         if (dead || raf) return;
-        trail.textures.forEach((t) => renderer.initTexture(t));
         last = performance.now();
+        governor.reset();
         raf = requestAnimationFrame(frame);
+        // Everything not on screen yet goes to the GPU a piece at a time, so no
+        // bay or stretch of the trail arrives with a stall.
+        if (!stopWarm) stopWarm = warmAhead(renderer, scene, camera, [station.root, ...baysKit.bays.map((b) => b.group), trail.group], trail.textures);
       };
-      Promise.race([renderer.compileAsync(scene, camera), new Promise((r) => setTimeout(r, 6000))]).then(go, go);
+      // Against the target the scene is really drawn to: the shaders differ by what they output to.
+      Promise.race([Promise.all([prelink(renderer, scene, camera, post.sceneTarget), post.warm()]), new Promise((r) => setTimeout(r, 6000))]).then(go, go);
     },
     destroy() {
       dead = true;
       cancelAnimationFrame(raf);
+      stopWarm?.();
+      sizeWatch.disconnect();
       listeners.clear();
       station.dispose();
       baysKit.dispose();
@@ -742,6 +759,6 @@ export function mountWorld(canvas: HTMLCanvasElement, opts: WorldOptions) {
     return flight ? 0 : pose.r;
   }
 }
-export type World = ReturnType<typeof mountWorld>;
+export type World = Awaited<ReturnType<typeof mountWorld>>;
 export { mountPanels } from "./panels";
 export { newPose } from "./shots";

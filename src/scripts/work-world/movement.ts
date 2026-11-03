@@ -146,13 +146,18 @@ export function mountMovement(o: MovementOptions) {
     }
   };
 
+  // Once the world has gone (a phone took the GPU back) the page is a plain page
+  // and all of this stands aside, so the browser's own scrolling takes over.
+  let off = false;
+
   addEventListener("scroll", () => {
+    if (off) return;
     report();
     if (!gliding) wake();
   }, { passive: true, ...sig });
 
   addEventListener("wheel", (e) => {
-    if (e.ctrlKey) return;
+    if (e.ctrlKey || off) return;
     const dy = e.deltaMode === 1 ? e.deltaY * 32 : e.deltaY;
     if (!dy) return;
     // A wheel over a panel's inner list scrolls that list first.
@@ -177,7 +182,7 @@ export function mountMovement(o: MovementOptions) {
   let free = false;
   let sideways = false;
   addEventListener("touchstart", (e) => {
-    if (e.touches.length > 1) return;
+    if (e.touches.length > 1 || off) return;
     stopFling();
     cancelGlide();
     clearTimeout(idle);
@@ -194,7 +199,7 @@ export function mountMovement(o: MovementOptions) {
     sideways = false;
   }, { passive: true, ...sig });
   addEventListener("touchmove", (e) => {
-    if (!owned || e.touches.length > 1) return;
+    if (!owned || e.touches.length > 1 || off) return;
     const t = e.touches[0];
     if (!decided) {
       decided = true;
@@ -225,8 +230,14 @@ export function mountMovement(o: MovementOptions) {
     }
     push(delta);
   }, { passive: false, ...sig });
+  // The system can take a touch away (a gesture, a call): the magnet still finds a stop.
+  addEventListener("touchcancel", () => {
+    if (!owned || off) return;
+    owned = false;
+    wake(60);
+  }, { passive: true, ...sig });
   addEventListener("touchend", () => {
-    if (!owned || free) return;
+    if (!owned || free || off) return;
     owned = false;
     const now = performance.now();
     let vel = now - lastT > 90 ? 0 : v;
@@ -256,7 +267,7 @@ export function mountMovement(o: MovementOptions) {
   // ---- keys: page keys and space move a whole stop, arrows too on this stage
   addEventListener("keydown", (e) => {
     const tgt = e.target as HTMLElement | null;
-    if (tgt?.closest?.("input, textarea, select, [contenteditable=true]") || e.metaKey || e.ctrlKey || e.altKey) return;
+    if (tgt?.closest?.("input, textarea, select, [contenteditable=true]") || e.metaKey || e.ctrlKey || e.altKey || off) return;
     if (!inStage()) return;
     if (e.key === "Home" || e.key === "End") {
       if (tgt?.closest?.("[data-ww-scroll]")) return;
@@ -286,6 +297,7 @@ export function mountMovement(o: MovementOptions) {
   // address bar folds, and 100svh does not.
   let lastW = innerWidth;
   addEventListener("resize", () => {
+    if (off) return;
     const h = stage.offsetHeight || innerHeight;
     if (innerWidth === lastW && Math.abs(h - H) < 2) return;
     const q = qNow();
@@ -298,6 +310,13 @@ export function mountMovement(o: MovementOptions) {
   report();
   return {
     q: qNow,
+    /** Stand aside for good: the page has become a plain page. */
+    stop() {
+      off = true;
+      cancelGlide();
+      stopFling();
+      clearTimeout(idle);
+    },
     go: (i: number, ms?: number) => glide(clamp(i, 0, count - 1), ms),
     jump(i: number) {
       cancelGlide();

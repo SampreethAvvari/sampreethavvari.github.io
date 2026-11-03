@@ -17,6 +17,7 @@ import { navigate } from "astro:transitions/client";
 import { onPage } from "../lifecycle";
 import { mountMovement, type Movement } from "./movement";
 import { emit } from "./math";
+import { hasWebGL2 } from "../gl-probe";
 import type { Panels } from "./panels";
 import type { BayId } from "./bays";
 import type { Hit, World } from "./engine";
@@ -72,10 +73,16 @@ async function bootWorld(canvas: HTMLCanvasElement, low: boolean, reduced: boole
   }
   if (booting) return booting;
   booting = (async () => {
+    const code = import("./engine");
     await Promise.race([document.fonts?.load?.("700 100px Inter") ?? Promise.resolve(), new Promise((r) => setTimeout(r, 900))]);
-    const engine = await import("./engine");
+    const engine = await code;
     mod = engine;
-    const w = engine.mountWorld(canvas, { low, reduced, still: reduced });
+    const w = await engine.mountWorld(canvas, { low, reduced, still: reduced });
+    // Left the page while it was being built.
+    if (!canvas.isConnected) {
+      w.destroy();
+      return null;
+    }
     world = w;
     worldCanvas = canvas;
     return w;
@@ -83,18 +90,6 @@ async function bootWorld(canvas: HTMLCanvasElement, low: boolean, reduced: boole
     booting = null;
   });
   return booting;
-}
-
-function hasGL() {
-  try {
-    const c = document.createElement("canvas");
-    const gl = c.getContext("webgl2");
-    const ok = !!gl;
-    gl?.getExtension("WEBGL_lose_context")?.loseContext();
-    return ok;
-  } catch {
-    return false;
-  }
 }
 
 onPage("work-world", (signal) => {
@@ -124,9 +119,10 @@ onPage("work-world", (signal) => {
   const span = Number(root.dataset.span || 1.9);
   const ids = panels.map((p) => p.dataset.id || p.id || `stop-${p.dataset.stop}`);
 
-  const gl = hasGL();
-  // Reduced motion and no WebGL share the flat page.
-  if (!gl || reduced) {
+  const gl = hasWebGL2();
+  // Reduced motion and no WebGL share the flat page, and so does a page whose
+  // script came so late the plain page has already taken over.
+  if (!gl || reduced || document.documentElement.classList.contains("no-stage")) {
     root.classList.add("is-flat");
     document.documentElement.classList.remove("ww-flying");
     if (gl && reduced) {
@@ -599,10 +595,15 @@ onPage("work-world", (signal) => {
     signal.addEventListener("abort", () => io.disconnect());
     // A phone can take the GPU back. The words are all still there, as a page.
     canvas.addEventListener("webglcontextlost", () => {
+      const at = active;
       wd.setPaused(true);
+      movement.stop();
+      canvas.style.display = "none";
       root.classList.remove("is-3d");
       root.classList.add("is-flat");
-      movement.jump(0);
+      document.documentElement.classList.remove("ww-flying");
+      // The reader stays with the words they were reading.
+      (panels[at] ?? panels[0])?.scrollIntoView({ block: "start", behavior: "instant" as ScrollBehavior });
     }, sig);
     if (import.meta.env.DEV) {
       (window as W).__ww = { world: wd, movement, q: () => qShown, go: (i: number) => { movement.jump(i); wd.setScroll(i, true); wd.snap(); wd.renderOnce(); } };
@@ -610,6 +611,8 @@ onPage("work-world", (signal) => {
   };
 
   plainPanels(q);
+  // The code starts down the wire now; the world starts when there is a moment.
+  if (!world) import("./engine").catch(() => {});
   const boot = () => {
     bootWorld(canvas, low, false)
       .then((wd) => {

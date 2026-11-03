@@ -4,6 +4,7 @@
 // throw real shafts; one final shader adds the anamorphic streak, the fly
 // through warp, colour fringing, the amber grade, vignette and grain.
 
+import { prelinkPasses } from "../gl-warm";
 import {
   AddEquation,
   BufferAttribute,
@@ -267,6 +268,23 @@ export class Post {
     this.rays.setSize(Math.max(1, Math.round(w / this.raysDiv)), Math.max(1, Math.round(h / this.raysDiv)));
     this.final.uniforms.uAspect.value = w / Math.max(1, h);
     this.raysMat.uniforms.uAspect.value = w / Math.max(1, h);
+  }
+
+  /** Where the scene is drawn. Shaders are warmed against this. */
+  get sceneTarget() {
+    return this.scene;
+  }
+
+  /** Link the passes in the background, so the first frame finds them ready. */
+  warm() {
+    const m0 = this.mips[0];
+    return prelinkPasses(this.renderer, this.quad, this.cam, [
+      [this.prefilter, m0],
+      [this.down, m0],
+      [this.up, m0],
+      [this.raysMat, this.rays],
+      [this.final, null],
+    ]);
   }
 
   private pass(mat: ShaderMaterial, target: WebGLRenderTarget | null) {
