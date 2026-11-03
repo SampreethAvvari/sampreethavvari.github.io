@@ -51,6 +51,7 @@ import { LAST, SCENE } from "./plan";
 import { PlateBank } from "./plates";
 import type { PointerRay } from "./pieces";
 import { rng } from "./textures";
+import { loopCount } from "../gl-loop";
 
 const clamp = (x: number, a: number, b: number) => (x < a ? a : x > b ? b : x);
 const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
@@ -572,7 +573,7 @@ const DOME_FS = (layers: number) => /* glsl */ `
       #endif
       // Star dust: thousands of tiny points, thickest in the band, thinner in the lanes.
       float dustK = clamp(dens * 1.3 + halo * 0.06, 0.0, 1.0) * (1.0 - lane * 0.7);
-      for (int k = 0; k < DUST_LAYERS; k++) {
+      for (int k = 0; k < ${loopCount("DUST_LAYERS")}; k++) {
         float scale = 1000.0 + float(k) * 640.0;
         vec3 did = floor(sd * scale);
         float dh = hash13(did + float(k) * 41.0);
@@ -592,7 +593,7 @@ const DOME_FS = (layers: number) => /* glsl */ `
       float fade = smoothstep(0.004, 0.09, yy) * mix(smoothstep(0.1, 0.5, yy), 1.0, smoothstep(0.5, 1.0, uStars));
       // They twinkle only low down, where there is air to look through.
       float airy = exp(-yy * 9.0) * uTwinkle;
-      for (int i = 0; i < STAR_LAYERS; i++) {
+      for (int i = 0; i < ${loopCount("STAR_LAYERS")}; i++) {
         float fi = float(i);
         float dens = 150.0 + fi * 140.0;
         // The nearest of them shift a little against the rest as the pointer moves: there is depth up there.

@@ -28,6 +28,7 @@ import {
   type WebGLRenderer,
 } from "three";
 import { rng } from "./util";
+import { loopCount } from "../gl-loop";
 
 /** Where the star is, as a unit direction from anywhere in the world. */
 export const SUN_DIR = new Vector3(-0.3, 0.2, -1).normalize();
@@ -42,7 +43,7 @@ float vnoise(vec3 p) {
   return mix(mix(mix(hash13(i), hash13(i + vec3(1,0,0)), f.x), mix(hash13(i + vec3(0,1,0)), hash13(i + vec3(1,1,0)), f.x), f.y),
              mix(mix(hash13(i + vec3(0,0,1)), hash13(i + vec3(1,0,1)), f.x), mix(hash13(i + vec3(0,1,1)), hash13(i + vec3(1,1,1)), f.x), f.y), f.z);
 }
-float fbm(vec3 p) { float s = 0.0, a = 0.5; for (int i = 0; i < 7; i++) { s += a * vnoise(p); p = p * 2.03 + vec3(17.1, 9.2, 3.7); a *= 0.5; } return s; }
+float fbm(vec3 p) { float s = 0.0, a = 0.5; for (int i = 0; i < ${loopCount(7)}; i++) { s += a * vnoise(p); p = p * 2.03 + vec3(17.1, 9.2, 3.7); a *= 0.5; } return s; }
 void main() {
   vec3 d = normalize(vDir);
   // Fold the noise twice, so the dust curls instead of blotching.

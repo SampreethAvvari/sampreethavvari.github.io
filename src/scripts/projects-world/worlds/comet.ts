@@ -8,7 +8,7 @@
 // it), and 11 small dishes further out are the eleven sources.
 
 import { Group, Mesh, Vector3 } from "three";
-import { assemble, cone, cyl, damp, fibSphere, glow, ico, instanced, mat, placeAlong, pointCloud, pointsMaterial, rng, surface, tor, type Part, type WorldBuilder, NOISE } from "../toolkit";
+import { assemble, cone, cyl, damp, fibSphere, glow, ico, instanced, mat, placeAlong, pointCloud, pointsMaterial, rng, surface, tor, type Part, type WorldBuilder, NOISE_VS } from "../toolkit";
 
 const NUC = 5;
 
@@ -28,7 +28,7 @@ export const buildComet: WorldBuilder = (shared, sun) => {
     metal: 0.1,
     rough: 0.86,
     flat: true,
-    head: NOISE,
+    head: NOISE_VS,
     vertex: /* glsl */ `
     vec3 dir = normalize(p);
     float big = fbm3(dir * 1.7 + 3.0);

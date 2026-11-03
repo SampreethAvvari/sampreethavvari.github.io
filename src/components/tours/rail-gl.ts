@@ -41,6 +41,7 @@ import {
 } from "three";
 import { Governor } from "../../scripts/gl-governor";
 import { breathe, decodedTexture, prelink, quietShaderChecks } from "../../scripts/gl-warm";
+import { loopCount } from "../../scripts/gl-loop";
 
 export type RailState = {
   /** Which stop the camera is at, continuous. */
@@ -304,7 +305,7 @@ float noise(vec2 p) {
 }
 float fbm(vec2 p) {
   float v = 0.0; float a = 0.5;
-  for (int i = 0; i < OCTAVES; i++) { v += a * noise(p); p = p * 2.03 + vec2(1.7, 9.2); a *= 0.5; }
+  for (int i = 0; i < ${loopCount("OCTAVES")}; i++) { v += a * noise(p); p = p * 2.03 + vec2(1.7, 9.2); a *= 0.5; }
   return v;
 }
 void main() {

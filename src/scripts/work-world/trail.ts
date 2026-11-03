@@ -40,6 +40,7 @@ import {
 } from "three";
 import { SUN_DIR } from "./sky";
 import { DEG, TAU, box, clamp, lerp, merge, place, rng, smooth } from "./util";
+import { loopCount } from "../gl-loop";
 
 export const NOW_YEAR = 2026.85;
 export const PER_YEAR = 1100;
@@ -68,7 +69,7 @@ float vnoise(vec3 p) {
   return mix(mix(mix(hash13(i), hash13(i + vec3(1,0,0)), f.x), mix(hash13(i + vec3(0,1,0)), hash13(i + vec3(1,1,0)), f.x), f.y),
              mix(mix(hash13(i + vec3(0,0,1)), hash13(i + vec3(1,0,1)), f.x), mix(hash13(i + vec3(0,1,1)), hash13(i + vec3(1,1,1)), f.x), f.y), f.z);
 }
-float fbm(vec3 p) { float s = 0.0, a = 0.5; for (int i = 0; i < OCT; i++) { s += a * vnoise(p); p = p * 2.03 + vec3(17.1, 9.2, 3.7); a *= 0.5; } return s; }
+float fbm(vec3 p) { float s = 0.0, a = 0.5; for (int i = 0; i < ${loopCount("OCT")}; i++) { s += a * vnoise(p); p = p * 2.03 + vec3(17.1, 9.2, 3.7); a *= 0.5; } return s; }
 `;
 
 const BODY_VS = /* glsl */ `
@@ -97,7 +98,7 @@ function buildMoon(low: boolean) {
         vec3 g = p * scale;
         vec3 i = floor(g);
         float h = 0.0;
-        for (int x = -1; x <= 1; x++) for (int y = -1; y <= 1; y++) for (int z = -1; z <= 1; z++) {
+        for (int x = -1; x <= ${loopCount(1)}; x++) for (int y = -1; y <= ${loopCount(1)}; y++) for (int z = -1; z <= ${loopCount(1)}; z++) {
           vec3 c = i + vec3(float(x), float(y), float(z));
           vec3 o = hash33(c);
           float r = 0.16 + 0.3 * o.x * o.x;

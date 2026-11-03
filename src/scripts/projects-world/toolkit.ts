@@ -34,6 +34,7 @@ import {
   type Texture,
 } from "three";
 import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js";
+import { loopCount } from "../gl-loop";
 
 export type U<T = any> = { value: T };
 
@@ -59,7 +60,7 @@ export function rng(seed: number) {
   };
 }
 
-export const NOISE = /* glsl */ `
+const noiseWith = (count: (n: number) => string) => /* glsl */ `
 float hash11(float p) { p = fract(p * 0.1031); p *= p + 33.33; p *= p + p; return fract(p); }
 float hash12(vec2 p) { vec3 p3 = fract(vec3(p.xyx) * 0.1031); p3 += dot(p3, p3.yzx + 33.33); return fract((p3.x + p3.y) * p3.z); }
 float hash13(vec3 p3) { p3 = fract(p3 * 0.1031); p3 += dot(p3, p3.zyx + 31.32); return fract((p3.x + p3.y) * p3.z); }
@@ -75,16 +76,19 @@ float vnoise(vec3 p) {
 float fbm3(vec3 p) {
   float s = 0.0;
   float a = 0.5;
-  for (int i = 0; i < 3; i++) { s += a * vnoise(p); p = p * 2.03 + vec3(17.1, 9.2, 3.7); a *= 0.5; }
+  for (int i = 0; i < ${count(3)}; i++) { s += a * vnoise(p); p = p * 2.03 + vec3(17.1, 9.2, 3.7); a *= 0.5; }
   return s;
 }
 float fbm5(vec3 p) {
   float s = 0.0;
   float a = 0.5;
-  for (int i = 0; i < 5; i++) { s += a * vnoise(p); p = p * 2.03 + vec3(17.1, 9.2, 3.7); a *= 0.5; }
+  for (int i = 0; i < ${count(5)}; i++) { s += a * vnoise(p); p = p * 2.03 + vec3(17.1, 9.2, 3.7); a *= 0.5; }
   return s;
 }
 `;
+export const NOISE = noiseWith(loopCount);
+/** For a vertex shader, which has no fragment depth to count on, and whose noise is light anyway. */
+export const NOISE_VS = noiseWith(String);
 
 export interface SurfaceOpts {
   color?: string | Color;

@@ -1,3 +1,4 @@
+import { loopCount } from "../gl-loop";
 // Shared shader snippets. Kept as plain strings so every material that needs
 // noise pulls in the same small functions.
 
@@ -23,7 +24,7 @@ float vnoise(vec3 p) {
 float fbm(vec3 p) {
   float s = 0.0;
   float a = 0.5;
-  for (int i = 0; i < OCTAVES; i++) {
+  for (int i = 0; i < ${loopCount("OCTAVES")}; i++) {
     s += a * vnoise(p);
     p = p * 2.03 + vec3(17.1, 9.2, 3.7);
     a *= 0.5;
