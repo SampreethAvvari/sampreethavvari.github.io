@@ -104,13 +104,13 @@ export function indexKeys(curveAt: (u: number) => Vector3, uAtZ: (z: number) => 
   {
     const phi = STATION_PHI[1] * DEG;
     const m = bayToWorld(phi, V(0, 0, 0));
-    const cam = m.clone().addScaledVector(SUN_DIR, wide ? -280 : -390);
+    const cam = m.clone().addScaledVector(SUN_DIR, wide ? -470 : -620);
     cam.x += wide ? 6 : 2;
     cam.y += wide ? -14 : -30;
     const look = m.clone().addScaledVector(SUN_DIR, 26);
     look.x += wide ? -28 : 0;
     look.y += wide ? 14 : 34;
-    k.push({ p: cam, l: look, r: wide ? -6 : -3, f: wide ? 36 : 46, a: ringFor(1, phi), up: bayUp(phi), u: 1, sun: 1, sky: 1, stop: 2 });
+    k.push({ p: cam, l: look, r: wide ? -6 : -3, f: wide ? 30 : 40, a: ringFor(1, phi), up: bayUp(phi), u: 1, sun: 1, sky: 1, stop: 2 });
   }
   P({ p: V(120, -420, 240), l: V(10, -220, 20), r: 10, f: 42, a: ringFor(1, STATION_PHI[1] * DEG) + 52 * DEG });
 
@@ -259,7 +259,7 @@ export const INTERIOR: Record<BayId, LocalShot[]> = {
     { p: [12, 2, -150], l: [-8, -2, -228], r: -3, f: 42 },
     { p: [-10, -4, -172], l: [0, 2, -240], r: 2, f: 46 },
     { p: [6, 12, -188], l: [-2, -6, -240], r: -3, f: 48 },
-    { p: [0, 0, -204], l: [0, 0, -240], r: 0, f: 40 },
+    { p: [-6, -8, -150], l: [4, 4, -240], r: 1, f: 44 },
   ],
   fde: [
     { p: [8, 2, -32], l: [-6, -6, 140], r: 2, f: 50 },
@@ -279,7 +279,7 @@ export const INTERIOR: Record<BayId, LocalShot[]> = {
     { p: [8, 8, -118], l: [-4, -4, -196], r: -14, f: 50 },
     { p: [-7, -9, -146], l: [2, 2, -218], r: 16, f: 46 },
     { p: [4, 8, -176], l: [0, 0, -224], r: -6, f: 46 },
-    { p: [0, 0, -190], l: [0, 0, -228], r: 0, f: 42 },
+    { p: [0, 0, -168], l: [0, 0, -228], r: 0, f: 46 },
   ],
   sde: [
     { p: [-10, 6, -8], l: [4, -2, -120], r: 2, f: 50 },
@@ -289,7 +289,7 @@ export const INTERIOR: Record<BayId, LocalShot[]> = {
     { p: [6, 8, -134], l: [18, -2, -190], r: 3, f: 46 },
     { p: [-8, -4, -162], l: [0, 2, -230], r: -2, f: 48 },
     { p: [4, 10, -178], l: [0, 0, -230], r: 2, f: 44 },
-    { p: [0, 0, -196], l: [0, 0, -230], r: 0, f: 38 },
+    { p: [2, -8, -158], l: [0, 2, -232], r: 0, f: 40 },
   ],
 };
 

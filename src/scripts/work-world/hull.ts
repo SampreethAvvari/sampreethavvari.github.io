@@ -15,6 +15,8 @@ export interface HullOptions {
   plate?: number;
   /** Window bands, as a fraction of plates that glow. 0 for none. */
   windows?: number;
+  /** Size of a window, 1 for the ring's. */
+  windowScale?: number;
   /** Radius the polar plates are measured at. */
   r0?: number;
   /** Holes cut in the front and back faces: angle, radius, half width, half height. */
@@ -30,6 +32,7 @@ varying vec3 vLN;
 uniform float uTime;
 uniform float uPlate;
 uniform float uWindows;
+uniform float uWinScale;
 uniform float uR0;
 float hh(vec2 p) { vec3 p3 = fract(vec3(p.xyx) * 0.1031); p3 += dot(p3, p3.yzx + 33.33); return fract((p3.x + p3.y) * p3.z); }
 vec3 hullBump(vec3 N, float h, float amt) {
@@ -54,6 +57,7 @@ export function hullMaterial(o: HullOptions) {
     uTime: { value: 0 },
     uPlate: { value: o.plate ?? 26 },
     uWindows: { value: o.windows ?? 0 },
+    uWinScale: { value: o.windowScale ?? 1 },
     uR0: { value: o.r0 ?? 270 },
   };
   if (o.livery) {
@@ -172,13 +176,13 @@ float hullH; vec3 hullE; float hullR; float hullM;`,
     hullE = vec3(0.0);
 #ifdef HULL_WINDOWS
     // Rows of windows, some lit. From far away they melt into a warm grain.
-    vec2 ws = vec2(1.1, 1.5);
+    vec2 ws = vec2(1.1, 1.5) * uWinScale;
     float bands = 0.0;
 #ifdef HULL_POLAR
     if (front) bands = step(mod(uv.y + 6.0, 11.0), 1.5);
     else bands = step(mod(uv.y + 40.0, 9.0), 1.5);
 #else
-    bands = step(mod(uv.y + 20.0, 7.0), 1.5);
+    bands = step(mod(uv.y + 20.0, 7.0 * uWinScale), 1.5 * uWinScale);
 #endif
     vec2 wq = uv / ws;
     vec2 wid = floor(wq);

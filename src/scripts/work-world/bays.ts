@@ -80,7 +80,8 @@ export interface Bay {
   hit: Mesh;
   parts: BayPart[];
   lights: BayLight[];
-  update(time: number, dt: number, open: number, power: number): void;
+  /** inside: the camera is in the hall, so the haze in the mouth stays out of the way. */
+  update(time: number, dt: number, open: number, power: number, inside: boolean): void;
   dispose(): void;
 }
 
@@ -213,10 +214,10 @@ function buildAie(kit: Kit, index: number): Bay {
   // Light strips, three high on each wall.
   const strips: BufferGeometry[] = [];
   for (const y of [-12, 0, 12]) {
-    strips.push(box(0.4, 0.4, HALL - 10, -W / 2 + 1.7, y, -HALL / 2));
-    strips.push(box(0.4, 0.4, HALL - 10, W / 2 - 1.7, y, -HALL / 2));
+    strips.push(box(0.12, 0.12, HALL - 10, -W / 2 + 1.7, y, -HALL / 2));
+    strips.push(box(0.12, 0.12, HALL - 10, W / 2 - 1.7, y, -HALL / 2));
   }
-  strips.push(box(1.2, 0.2, HALL - 8, 0, -H / 2 + 0.9, -HALL / 2));
+  strips.push(box(0.5, 0.1, HALL - 8, 0, -H / 2 + 0.9, -HALL / 2));
   const stripsMat = kit.add(lightMat(4)) as MeshBasicMaterial;
   inside.add(new Mesh(merge(strips), stripsMat));
 
@@ -233,29 +234,33 @@ function buildAie(kit: Kit, index: number): Bay {
     vertexShader: /* glsl */ `
       attribute vec4 aS; // x, row, length seed, speed seed
       uniform float uTime; uniform float uPower;
-      varying float vB; varying vec2 vUv;
+      varying float vB; varying vec2 vUv; varying float vNear;
       void main() {
         const float LEN = ${(HALL - 34).toFixed(1)};
         float z = -mod(aS.z * LEN + uTime * (6.0 + aS.w * 5.0), LEN) - 8.0;
         float k = smoothstep(120.0, 170.0, -z);
         float row = floor(aS.y * 26.0);
         float y = -15.0 + row * 1.16;
-        float free = (aS.x - 0.5) * 30.0;
+        float free = (aS.x - 0.5) * 34.0;
         // Into columns: the structure emerges as the lines near the schema.
         float col = floor(aS.x * 8.0);
         float fixedX = -14.0 + col * 4.0;
         float x = mix(free, fixedX, k);
-        float w = mix(2.0 + aS.w * 9.0, 3.2, k);
-        vec3 p = vec3(position.x * w + x, position.y * mix(0.26, 0.42, k) + y, z);
-        vB = (0.25 + 1.6 * k) * uPower * (0.5 + 0.5 * sin(aS.z * 91.0 + uTime * 0.6)) + 0.04 * uPower;
+        float w = mix(1.6 + aS.w * 7.0, 3.2, k);
+        // Keep an aisle clear down the middle until the lines fall into columns.
+        x += sign(free) * 7.0 * (1.0 - k) * (1.0 - smoothstep(0.0, 8.0, abs(free)));
+        vec3 p = vec3(position.x * w + x, position.y * mix(0.07, 0.2, k) + y, z);
+        vB = (0.24 + 0.9 * k) * uPower * (0.45 + 0.55 * sin(aS.z * 91.0 + uTime * 0.6)) + 0.02 * uPower;
         vUv = uv;
-        gl_Position = projectionMatrix * modelViewMatrix * vec4(p, 1.0);
+        vec4 mv = modelViewMatrix * vec4(p, 1.0);
+        vNear = smoothstep(5.0, 34.0, -mv.z);
+        gl_Position = projectionMatrix * mv;
       }`,
     fragmentShader: /* glsl */ `
-      varying float vB; varying vec2 vUv;
+      varying float vB; varying vec2 vUv; varying float vNear;
       void main() {
         float e = smoothstep(0.0, 0.12, vUv.x) * smoothstep(1.0, 0.88, vUv.x);
-        gl_FragColor = vec4(vec3(1.0, 0.68, 0.32) * vB * e * 3.2, 1.0);
+        gl_FragColor = vec4(vec3(1.0, 0.68, 0.32) * vB * e * vNear * 2.2, 1.0);
       }`,
   }), COUNT);
   inst.frustumCulled = false;
@@ -286,7 +291,7 @@ function buildAie(kit: Kit, index: number): Bay {
         float frame = m * (0.1 + 0.05 * h(id));
         vec3 base = vec3(1.0, 0.62, 0.26);
         float hot = step(0.0, uHot.x) * step(abs(id.y - uHot.y), 0.5) * uHot.z;
-        vec3 c = base * (frame * 0.7 + m * lit * (0.55 + 0.55 * h(id + 3.0)) * 3.6 + m * hot * 4.0);
+        vec3 c = base * (frame * 0.5 + m * lit * (0.55 + 0.55 * h(id + 3.0)) * 0.95 + m * hot * 2.4);
         gl_FragColor = vec4(c * uPower + vec3(0.012, 0.008, 0.004), 1.0);
       }`,
   });
@@ -299,7 +304,7 @@ function buildAie(kit: Kit, index: number): Bay {
   const blade = new Mesh(new PlaneGeometry(W, H), bladeMat);
   blade.renderOrder = 6;
   inside.add(blade);
-  const bladeEdge = new Mesh(merge([box(W, 0.18, 0.18, 0, H / 2 - 0.4, 0), box(W, 0.18, 0.18, 0, -H / 2 + 0.4, 0), box(0.18, H, 0.18, W / 2 - 0.4, 0, 0), box(0.18, H, 0.18, -W / 2 + 0.4, 0, 0)]), kit.add(lightMat(9)));
+  const bladeEdge = new Mesh(merge([box(W, 0.18, 0.18, 0, H / 2 - 0.4, 0), box(W, 0.18, 0.18, 0, -H / 2 + 0.4, 0), box(0.18, H, 0.18, W / 2 - 0.4, 0, 0), box(0.18, H, 0.18, -W / 2 + 0.4, 0, 0)]), kit.add(lightMat(2.6)));
   inside.add(bladeEdge);
 
   // Slatted doors.
@@ -331,9 +336,9 @@ function buildAie(kit: Kit, index: number): Bay {
     inside,
     hit,
     lights: [
-      { p: [0, 12, -46], i: 420, d: 90 },
-      { p: [0, 10, -130], i: 560, d: 110 },
-      { p: [0, 6, -212], i: 620, d: 90 },
+      { p: [0, 14, -46], i: 170, d: 80 },
+      { p: [0, 12, -130], i: 230, d: 90 },
+      { p: [0, 6, -212], i: 300, d: 80 },
     ],
     parts: [
       {
@@ -348,16 +353,17 @@ function buildAie(kit: Kit, index: number): Bay {
         },
       },
     ],
-    update(t, _dt, open, power) {
+    update(t, _dt, open, power, within) {
+      glow.group.visible = !within;
       streamMat.uniforms.uTime.value = t;
       streamMat.uniforms.uPower.value = power;
       schemaMat.uniforms.uTime.value = t;
       schemaMat.uniforms.uPower.value = power;
-      stripsMat.color.copy(WARM).multiplyScalar(0.2 + power * 1.8);
+      stripsMat.color.copy(WARM).multiplyScalar(0.2 + power * 1.0);
       const z = -8 - ((t * 0.09) % 1) * (HALL - 40);
       blade.position.z = z;
       bladeEdge.position.z = z;
-      (bladeMat.uniforms.uK as { value: number }).value = 0.28 * power;
+      (bladeMat.uniforms.uK as { value: number }).value = 0.035 * power;
       glow.mat.uniforms.uK.value = open * (0.02 + 0.07 * power);
       for (let i = 0; i < SL; i++) {
         // Slats tip open from the top down, one after another.
@@ -453,7 +459,7 @@ function buildFde(kit: Kit, index: number): Bay {
   });
   const head = new Mesh(merge([box(6, 5, 8, 0, 0, 4), cyl(1.6, 2.4, 3, 8, 0, 0, 9.2), box(14, 0.6, 2, 0, 0, 3)]), kit.trim);
   boomGroup.add(head);
-  const headLight = new Mesh(new BoxGeometry(2, 1, 0.4), kit.add(lightMat(12)));
+  const headLight = new Mesh(new BoxGeometry(2, 1, 0.4), kit.add(lightMat(5)));
   head.add(headLight);
   headLight.position.set(0, 0, 8.3);
 
@@ -464,7 +470,7 @@ function buildFde(kit: Kit, index: number): Bay {
     [58, 30, 274, 1],
     [14, -30, 366, 1.55], // the lab, bigger
   ];
-  const podMat = hullMaterial({ mode: "box", color: 0x8d8579, plate: 4, windows: 0.65 });
+  const podMat = hullMaterial({ mode: "box", color: 0x8d8579, plate: 5, windows: 0.42, windowScale: 0.34 });
   kit.uniforms.push(podMat.uniforms as any);
   kit.add(podMat.mat);
   const pods = podAt.map(([x, y, z, sc], i) => {
@@ -481,7 +487,7 @@ function buildFde(kit: Kit, index: number): Bay {
       const fin = new Mesh(merge([box(0.5, 22, 7, 0, 0, -2), box(22, 0.5, 7, 0, 0, -2)]), kit.trim);
       pod.add(fin);
     }
-    const lamp = new Mesh(new BoxGeometry(3.8, 0.5, 0.3), kit.add(lightMat(10)));
+    const lamp = new Mesh(new BoxGeometry(3.8, 0.5, 0.3), kit.add(lightMat(5)));
     lamp.position.set(0, 0, 10.1);
     pod.add(lamp);
     group.add(pod);
@@ -495,7 +501,7 @@ function buildFde(kit: Kit, index: number): Bay {
   const tetherMesh = new Mesh(merge(tethers), kit.add(lightMat(1.6)));
   group.add(tetherMesh);
   const pulseN = kit.low ? 12 : 24;
-  const pulses = new InstancedMesh(new BoxGeometry(0.5, 0.5, 2.8), kit.add(lightMat(26)), pulseN);
+  const pulses = new InstancedMesh(new BoxGeometry(0.34, 0.34, 2.4), kit.add(lightMat(4.4)), pulseN);
   pulses.frustumCulled = false;
   pulses.instanceMatrix.setUsage(DynamicDrawUsage);
   group.add(pulses);
@@ -532,8 +538,9 @@ function buildFde(kit: Kit, index: number): Bay {
       { p: [0, 10, 170], i: 1200, d: 200 },
       { p: [0, 10, 300], i: 1800, d: 260 },
     ],
-    update(t, _dt, open, power) {
-      stripsMat.color.copy(WARM).multiplyScalar(0.3 + power * 2.8);
+    update(t, _dt, open, power, within) {
+      glow.group.visible = !within;
+      stripsMat.color.copy(WARM).multiplyScalar(0.3 + power * 1.2);
       topHinge.rotation.x = -open * 105 * DEG;
       botHinge.rotation.x = open * 105 * DEG;
       const e = smooth(open * 1.2 - 0.1);
@@ -582,7 +589,7 @@ function buildMle(kit: Kit, index: number): Bay {
   const lip = new Mesh(new TorusGeometry(TR + 1.6, 0.9, 10, seg), kit.steel);
   lip.position.z = 3.8;
   group.add(lip);
-  const lampsMat = kit.add(lightMat(6));
+  const lampsMat = kit.add(lightMat(3));
   const lamps: BufferGeometry[] = [];
   for (let i = 0; i < 28; i++) {
     const a = (i / 28) * TAU;
@@ -602,7 +609,7 @@ function buildMle(kit: Kit, index: number): Bay {
   const stripGeo: BufferGeometry[] = [];
   for (let i = 0; i < 12; i++) {
     const a = (i / 12) * TAU + 0.13;
-    stripGeo.push(box(0.26, 0.26, HALL - 8, Math.cos(a) * (TR - 0.6), Math.sin(a) * (TR - 0.6), -HALL / 2));
+    stripGeo.push(box(0.1, 0.1, HALL - 8, Math.cos(a) * (TR - 0.6), Math.sin(a) * (TR - 0.6), -HALL / 2));
   }
   const stripsMat = kit.add(lightMat(3)) as MeshBasicMaterial;
   inside.add(new Mesh(merge(stripGeo), stripsMat));
@@ -633,10 +640,10 @@ function buildMle(kit: Kit, index: number): Bay {
     ]), kit.trim);
     body.castShadow = true;
     g.add(body);
-    const emitter = new Mesh(new BoxGeometry(2.2, 0.6, 2.2), kit.add(lightMat(26)));
+    const emitter = new Mesh(new BoxGeometry(2.2, 0.6, 2.2), kit.add(lightMat(7)));
     emitter.position.set(0, TR - 8.6, 0);
     g.add(emitter);
-    const det = new Mesh(new BoxGeometry(11, 0.5, 2), kit.add(lightMat(5)));
+    const det = new Mesh(new BoxGeometry(11, 0.5, 2), kit.add(lightMat(1.8)));
     det.position.set(0, -(TR - 7.4), 0);
     g.add(det);
     const fg = new BufferGeometry();
@@ -683,7 +690,7 @@ function buildMle(kit: Kit, index: number): Bay {
       void main() {
         float plane = mod(uTime * 2.6, 26.0) - 13.0;
         float hit = exp(-pow((position.y - plane * 0.6) * 1.4, 2.0));
-        vB = aS * (0.16 + hit * 2.6) * uPower;
+        vB = aS * (0.07 + hit * 0.9) * uPower;
         vec4 mv = modelViewMatrix * vec4(position, 1.0);
         gl_Position = projectionMatrix * mv;
         gl_PointSize = uPx * clamp(70.0 / -mv.z, 1.0, 4.0);
@@ -712,7 +719,7 @@ function buildMle(kit: Kit, index: number): Bay {
   const glass = new Mesh(new PlaneGeometry(30, 24), new MeshStandardMaterial({ color: 0xffffff, roughness: 0.04, metalness: 1, transparent: true, opacity: 0.12 }));
   glass.position.z = 6;
   vault.add(glass);
-  const frameG = new Mesh(merge([box(30, 0.4, 0.4, 0, 12, 6), box(30, 0.4, 0.4, 0, -12, 6), box(0.4, 24, 0.4, -15, 0, 6), box(0.4, 24, 0.4, 15, 0, 6)]), kit.add(lightMat(7)));
+  const frameG = new Mesh(merge([box(30, 0.4, 0.4, 0, 12, 6), box(30, 0.4, 0.4, 0, -12, 6), box(0.4, 24, 0.4, -15, 0, 6), box(0.4, 24, 0.4, 15, 0, 6)]), kit.add(lightMat(2.8)));
   vault.add(frameG);
   const cubeHit = new Mesh(new PlaneGeometry(24, 19), new MeshBasicMaterial({ visible: false }));
   cubeHit.position.z = 7;
@@ -777,12 +784,13 @@ function buildMle(kit: Kit, index: number): Bay {
         },
       },
     ],
-    update(t, _dt, open, power) {
+    update(t, _dt, open, power, within) {
+      glow.group.visible = !within;
       gantries.forEach((g, i) => (g.rotation.z = t * (i % 2 ? -0.42 : 0.3) * (0.3 + power * 1.2) + i));
       cloudMat.uniforms.uTime.value = t;
       cloudMat.uniforms.uPower.value = power;
-      fanMat.uniforms.uK.value = 0.24 * power;
-      stripsMat.color.copy(WARM).multiplyScalar(0.2 + power * 1.5);
+      fanMat.uniforms.uK.value = 0.05 * power;
+      stripsMat.color.copy(WARM).multiplyScalar(0.2 + power * 1.0);
       cubeMat.emissiveIntensity = 0.1 + 0.3 * power;
       glow.mat.uniforms.uK.value = open * (0.02 + 0.05 * power);
       const e = smooth(open);
@@ -868,7 +876,7 @@ function buildSde(kit: Kit, index: number): Bay {
   const strips: BufferGeometry[] = [];
   for (const x of [-16, -6, 6, 16]) strips.push(box(0.6, 0.2, HALL - 8, x, H / 2 - 3.6, -HALL / 2));
   for (const x of [-20, 20]) strips.push(box(0.3, 0.14, HALL - 8, x, -H / 2 + 1, -HALL / 2));
-  const stripsMat = kit.add(lightMat(5, new Color(1, 0.78, 0.5))) as MeshBasicMaterial;
+  const stripsMat = kit.add(lightMat(2.4, new Color(1, 0.78, 0.5))) as MeshBasicMaterial;
   inside.add(new Mesh(merge(strips), stripsMat));
 
   // Ledger stacks: slabs on both sides. New ones arrive on top and none ever
@@ -886,7 +894,7 @@ function buildSde(kit: Kit, index: number): Bay {
   const slabX = (side: number) => side * (W / 2 - 8.6);
   for (const side of [-1, 1]) {
     for (let c2 = 0; c2 < columns; c2++) {
-      const z = -30 - c2 * 34;
+      const z = -52 - c2 * 34;
       for (let r2 = 0; r2 < stackRows; r2++) {
         const jx = (R() - 0.5) * 0.36;
         const jz = (R() - 0.5) * 0.6;
@@ -924,7 +932,7 @@ function buildSde(kit: Kit, index: number): Bay {
         float wave = exp(-abs(cyc - seq) * 60.0);
         float m = smoothstep(0.08, 0.14, f.x) * smoothstep(0.92, 0.86, f.x) * smoothstep(0.1, 0.16, f.y) * smoothstep(0.9, 0.84, f.y);
         float hot = uHot.z * step(abs(id.x - uHot.x), 0.5) * step(abs(id.y - uHot.y), 0.5);
-        vec3 c = vec3(1.0, 0.66, 0.3) * m * (0.05 + lit * (0.7 + 0.25 * h(id)) * 1.5 + wave * 6.0 + hot * 5.0);
+        vec3 c = vec3(1.0, 0.6, 0.2) * m * (0.05 + lit * (0.7 + 0.25 * h(id)) * 0.95 + wave * 2.6 + hot * 2.6);
         gl_FragColor = vec4(c * uPower + vec3(0.008, 0.005, 0.003), 1.0);
       }`,
   });
@@ -953,9 +961,9 @@ function buildSde(kit: Kit, index: number): Bay {
     inside,
     hit,
     lights: [
-      { p: [0, 12, -32], i: 520, d: 90, c: [1, 0.78, 0.52] },
-      { p: [0, 12, -110], i: 620, d: 110, c: [1, 0.78, 0.52] },
-      { p: [0, 12, -200], i: 620, d: 100, c: [1, 0.78, 0.52] },
+      { p: [0, 14, -32], i: 260, d: 80, c: [1, 0.78, 0.52] },
+      { p: [0, 14, -110], i: 320, d: 90, c: [1, 0.78, 0.52] },
+      { p: [0, 14, -200], i: 320, d: 90, c: [1, 0.78, 0.52] },
     ],
     parts: [
       {
@@ -971,10 +979,11 @@ function buildSde(kit: Kit, index: number): Bay {
         },
       },
     ],
-    update(t, _dt, open, power) {
+    update(t, _dt, open, power, within) {
+      glow.group.visible = !within;
       wallMat.uniforms.uTime.value = t;
       wallMat.uniforms.uPower.value = power;
-      stripsMat.color.setRGB(1, 0.78, 0.5).multiplyScalar(0.3 + power * 2.2);
+      stripsMat.color.setRGB(1, 0.78, 0.5).multiplyScalar(0.3 + power * 1.4);
       const e = smooth(open);
       left.position.x = -e * (MOUTH_W - 1);
       right.position.x = e * (MOUTH_W - 1);
@@ -984,7 +993,7 @@ function buildSde(kit: Kit, index: number): Bay {
       const cycle = (t / 11) % 1;
       const col = Math.floor(t / 11) % columns;
       const side = Math.floor(t / 11) % 2 ? 1 : -1;
-      const z = -30 - col * 34;
+      const z = -52 - col * 34;
       crane.position.z = lerp(crane.position.z, z, 0.04);
       const top = -H / 2 + 1.2 + stackRows * 1.06;
       slabNew.position.set(slabX(side), lerp(H / 2 - 12, top, smooth(cycle * 1.6)), z);
@@ -1000,10 +1009,10 @@ function buildSde(kit: Kit, index: number): Bay {
 
 export function buildBays(opts: { low: boolean }) {
   const made: Material[] = [];
-  const wall = hullMaterial({ mode: "box", color: 0x57534b, plate: 14, rough: 0.6, metal: 0.8 });
-  const trim = hullMaterial({ mode: "box", color: 0x7b756a, plate: 9, rough: 0.48, metal: 0.92 });
-  const steel = new MeshStandardMaterial({ color: 0x8a8378, roughness: 0.38, metalness: 0.96 });
-  const dark = new MeshStandardMaterial({ color: 0x1c1a17, roughness: 0.7, metalness: 0.7 });
+  const wall = hullMaterial({ mode: "box", color: 0x4a4741, plate: 14, rough: 0.74, metal: 0.55, envIntensity: 0.3 });
+  const trim = hullMaterial({ mode: "box", color: 0x6e695f, plate: 9, rough: 0.6, metal: 0.8, envIntensity: 0.4 });
+  const steel = new MeshStandardMaterial({ color: 0x8a8378, roughness: 0.38, metalness: 0.96, envMapIntensity: 0.7 });
+  const dark = new MeshStandardMaterial({ color: 0x1c1a17, roughness: 0.7, metalness: 0.7, envMapIntensity: 0.5 });
   const uniforms: { uTime: { value: number } }[] = [wall.uniforms as any, trim.uniforms as any];
   const kit: Kit = {
     low: opts.low,

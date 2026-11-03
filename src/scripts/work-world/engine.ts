@@ -143,6 +143,7 @@ export function mountWorld(canvas: HTMLCanvasElement, opts: WorldOptions) {
   let flash = 0;
   let extraWarp = 0;
   let irisOpen = 0;
+  let insideK = 0;
 
   // Bay state.
   const open = [0, 0, 0, 0];
@@ -387,7 +388,7 @@ export function mountWorld(canvas: HTMLCanvasElement, opts: WorldOptions) {
       const phi = phiForBay(i, ringNow);
       const near = i === focus || (flight?.bay === i) || (onIndex && Math.abs(phi - STATION_PHI[0] * DEG) < 1.2 && qs < 1.5);
       bay.inside.visible = stationOn && (near || (onIndex && open[i] > 0.02));
-      bay.update(time, dt, open[i], power[i]);
+      bay.update(time, dt, open[i], power[i], page.kind === "bay" && !flight && IDX(page.id) === i);
     }
     baysKit.tick(time);
     station.setTime(time);
@@ -415,8 +416,13 @@ export function mountWorld(canvas: HTMLCanvasElement, opts: WorldOptions) {
       }
     }
 
+    // Indoors, only the bay's own lamps count. The dock has no walls.
+    const indoors = page.kind === "bay" && page.id !== "fde" ? 1 : 0;
+    insideK = damp(insideK, indoors, 2.2, dt);
+    bounce.intensity = 0.95 * (1 - insideK * 0.92);
+    sun.intensity = 5.6 * (1 - insideK * 0.97);
     // The star comes up as the page opens.
-    const rise = reduced ? 1 : smooth(time / 3.4);
+    const rise = reduced ? 1 : smooth(time / 2.8);
     sky.update(camera.position, time, pose.sun * (0.55 + 0.45 * rise), pose.sky * (0.3 + 0.7 * rise), sizeState.dpr);
 
     // Shadows only change when the ring does.
@@ -435,8 +441,8 @@ export function mountWorld(canvas: HTMLCanvasElement, opts: WorldOptions) {
     const sunVis = inFront ? 1 - smooth((off - 1.1) / 0.9) : 0;
     sunFrame.set(sx, sy, sunVis * pose.sun);
 
-    fade = damp(fade, 1, reduced ? 40 : 1.6, dt);
-    intro = damp(intro, 1, 0.5, dt);
+    fade = damp(fade, 1, reduced ? 40 : 3.2, dt);
+    intro = smooth(time / 2.6);
     flash = damp(flash, 0, 5, dt);
     const speed = Math.abs(vel);
     const warp = reduced ? 0 : clamp(speed * 0.5 * (trailOn ? 1.6 : 0.5) + extraWarp, 0, 1.1);
@@ -448,7 +454,7 @@ export function mountWorld(canvas: HTMLCanvasElement, opts: WorldOptions) {
       flash,
       sun: sunFrame,
       rays: sunVis * (0.34 + 0.66 * pose.sun) * 0.5 * (0.1 + 0.9 * rise),
-      exposure: 1 + (1 - intro) * -0.4,
+      exposure: reduced ? 1 : 0.62 + 0.38 * intro,
     });
     listeners.forEach((cb) => cb({ camera, q: qs, vel, flying }));
   }

@@ -39,6 +39,7 @@ let booting: Promise<World | null> | null = null;
 let worldCanvas: HTMLCanvasElement | null = null;
 let keepWorld = false;
 let cameFrom: string | null = null;
+let lastPath: string | null = null;
 let flyingOut = false;
 let mod: typeof import("./engine") | null = null;
 
@@ -49,8 +50,9 @@ document.addEventListener(
   "astro:before-preparation",
   (e) => {
     const ev = e as Event & { to: URL; from: URL };
-    keepWorld = !!world && isWork(ev.to.pathname) && isWork(location.pathname);
-    cameFrom = location.pathname;
+    const from = lastPath ?? ev.from.pathname;
+    keepWorld = !!world && isWork(ev.to.pathname) && isWork(from);
+    cameFrom = from;
     if (keepWorld) {
       document.documentElement.classList.add("ww-flying");
       e.stopImmediatePropagation();
@@ -94,6 +96,7 @@ function hasGL() {
 
 onPage("work-world", (signal) => {
   const root = document.querySelector<HTMLElement>("[data-ww]");
+  lastPath = location.pathname;
   if (!root) {
     if (world && !keepWorld) {
       world.destroy();
@@ -302,7 +305,8 @@ onPage("work-world", (signal) => {
       pendingPick = true;
       requestAnimationFrame(() => {
         pendingPick = false;
-        if (signal.aborted || !w || w.flying()) return;
+        if (signal.aborted || !w) return;
+        if (w.flying()) return onPick(null);
         const over = document.elementFromPoint(e.clientX, e.clientY);
         // Words and cards on top win; only the open stage reaches the world.
         if (over && !stage.contains(over)) return onPick(null);
@@ -431,7 +435,7 @@ onPage("work-world", (signal) => {
     const box = p.querySelector<HTMLElement>(".ww-box");
     if (bay >= 0 && box) {
       box.addEventListener("pointerenter", (e) => {
-        if (e.pointerType === "touch") return;
+        if (e.pointerType === "touch" || w?.flying()) return;
         panelBay = bay;
         emit("work:bay", { id: BAYS[bay], action: "hover" });
         updateBays();

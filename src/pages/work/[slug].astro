@@ -97,7 +97,7 @@ const resume = RESUME[d.slug];
 
     <!-- How I work -->
     <section class="ww-panel at-r" data-stop="1" data-id="how" data-shade="" data-depth="30" id="how">
-      <div class="ww-box" style="max-width:440px">
+      <div class="ww-box is-glass" style="max-width:440px">
         <p class="ww-eye"><b>How I work</b></p>
         <ul class="ww-points">
           {d.points.map((pt, k) => (
@@ -109,7 +109,7 @@ const resume = RESUME[d.slug];
 
     <!-- What I bring -->
     <section class="ww-panel at-tl" data-stop="2" data-id="bring" data-shade="tl" data-depth="26" id="bring">
-      <div class="ww-box" style="max-width:640px">
+      <div class="ww-box is-glass" style="width:min(640px,100%);max-width:640px">
         <p class="ww-eye"><b>What I bring</b></p>
         {bringTail && <p class="ww-line">{bringTail}</p>}
         <ul class="ww-plates">
@@ -169,7 +169,7 @@ const resume = RESUME[d.slug];
     <section class="ww-panel at-c" data-stop={stops - 1} data-id="exit" data-shade="all" data-depth="20" id="exit">
       <div class="ww-box" style="justify-items:center;text-align:center;max-width:640px">
         <p class="ww-eye"><b>End of the bay</b></p>
-        <h2 class="ww-h2">Next doors.</h2>
+        <h2 class="ww-h2">Where next.</h2>
         <nav class="ww-doors" aria-label="Other bays">
           <a href={`/work/${prev.slug}`} class="ww-door" data-note={0} data-id={`door-${prev.slug}`}>
             <small>Previous bay</small><b>{prev.name}</b>
@@ -193,7 +193,7 @@ const resume = RESUME[d.slug];
         <li><a href="#bring" data-ww-go="2">What I bring</a></li>
         {groups.map((_, gi) => <li><a href={`#work-${gi + 1}`} data-ww-go={3 + gi}>Projects {gi + 1}</a></li>)}
         <li><a href="#writing" data-ww-go={3 + groups.length}>Writing</a></li>
-        <li><a href="#exit" data-ww-go={stops - 1}>Next doors</a></li>
+        <li><a href="#exit" data-ww-go={stops - 1}>Where next</a></li>
       </ol>
     </nav>
   </WorldStage>

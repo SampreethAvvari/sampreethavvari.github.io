@@ -138,22 +138,22 @@ void main() {
   // The anamorphic streak from the star.
   if (uSun.z > 0.001) {
     vec2 fd = (vUv - uSun.xy) * vec2(uAspect, 1.0);
-    float streak = exp(-abs(fd.y) * 120.0) * exp(-abs(fd.x) * 1.15) * 0.42;
-    float hair = exp(-abs(fd.y) * 700.0) * exp(-abs(fd.x) * 0.5) * 0.3;
+    float streak = exp(-abs(fd.y) * 130.0) * exp(-abs(fd.x) * 1.5) * 0.3;
+    float hair = exp(-abs(fd.y) * 800.0) * exp(-abs(fd.x) * 0.8) * 0.2;
     col += vec3(1.0, 0.62, 0.28) * uSun.z * (streak + hair);
   }
   col += vec3(1.0, 0.72, 0.42) * uFlash * 3.0;
   // Filmic, but holding on to the hue, so bright amber stays amber instead of
   // washing out to grey and white.
   vec3 expo = max(col * uExposure, vec3(0.0));
-  vec3 filmic = min(aces(expo) / 0.82, vec3(1.0));
+  vec3 filmic = aces(expo);
   float lum0 = dot(expo, vec3(0.2126, 0.7152, 0.0722));
   float lum1 = dot(filmic, vec3(0.2126, 0.7152, 0.0722));
   vec3 kept = min(expo * (lum1 / max(lum0, 1e-4)), vec3(1.0));
   col = mix(mix(filmic, kept, 0.62), filmic, smoothstep(0.5, 2.6, lum0));
   // Warm the floor of the picture a touch, so black stays amber.
   col += uLift * (1.0 - smoothstep(0.0, 0.24, dot(col, vec3(0.33))));
-  float vig = smoothstep(0.86, 0.2, length(cd * vec2(1.0, 0.92)));
+  float vig = 1.0 - smoothstep(0.2, 0.86, length(cd * vec2(1.0, 0.92)));
   col *= mix(1.0 - uVignette, 1.0, vig);
   col = toSrgb(col);
   col += (hash12(gl_FragCoord.xy + fract(uTime * 7.13) * vec2(113.0, 71.0)) - 0.5) * uGrain;
