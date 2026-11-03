@@ -59,6 +59,8 @@ export function mountOpening(signal: AbortSignal): void | (() => void) {
   let dyCopy = 0;
   let liftTop = 0;
   let glReady = false;
+  let glWanted = false;
+  let handTimer = 0;
   let gl: OpeningGL | null = null;
 
   const measure = () => {
@@ -71,16 +73,6 @@ export function mountOpening(signal: AbortSignal): void | (() => void) {
       const hh = (a.w * 9) / 16;
       state.to = { cx: a.x + a.w / 2, cy: a.y + hh / 2, w: a.w, h: hh };
       state.radius = parseFloat(getComputedStyle(art).borderTopLeftRadius) || 20;
-      // Where the slab hangs in space.
-      if (phone) {
-        const w = vw * 0.98;
-        const sh = (w * 9) / 16;
-        state.from = { cx: vw / 2, cy: Math.max(state.to.cy, 84 + sh / 2) + 2, w, h: sh };
-      } else {
-        const w = Math.min(vw * 0.66, (vh * 0.68 * 16) / 9);
-        const sh = (w * 9) / 16;
-        state.from = { cx: vw - w / 2 - Math.max(40, vw * 0.045), cy: Math.max(76 + sh / 2, vh * 0.43), w, h: sh };
-      }
     }
     if (copy && h1) {
       const c = offsetIn(copy, stage);
@@ -88,17 +80,40 @@ export function mountOpening(signal: AbortSignal): void | (() => void) {
       // The title is larger in space. Its lines stay the same; it only scales.
       kH1 = phone ? 1.06 : Math.max(1, Math.min(1.5, (vw * 0.6) / Math.max(320, h1.offsetWidth)));
       liftTop = th * (kH1 - 1);
-      const copyBottom = c.y + c.h;
-      const margin = phone ? 28 : Math.max(44, vh * 0.075);
-      dyCopy = vh - margin - copyBottom;
-      // On a phone the slab hangs in the middle of the room above the words.
-      if (phone && state.from.h > 1) {
-        const headTop = c.y + dyCopy - liftTop;
-        const room = Math.max(headTop, 84 + state.from.h + 28);
-        state.from.cy = (84 + room) / 2 + 8;
-        const slabBottom = state.from.cy + state.from.h / 2 + 14;
-        if (headTop < slabBottom) dyCopy += slabBottom - headTop;
+      // Clear of the chat button on a phone, which floats low on the right.
+      const margin = phone ? 92 : Math.max(44, vh * 0.075);
+      dyCopy = vh - margin - (c.y + c.h);
+    }
+    // The slab takes the room above the words, so its rim never runs through
+    // the title. On a wide screen it hangs to the right, on a phone in the middle.
+    if (art && copy) {
+      const c = offsetIn(copy, stage);
+      let headTop = c.y + dyCopy - liftTop;
+      const roof = phone ? 84 : 104;
+      if (phone) {
+        const w = vw * 0.98;
+        const sh = (w * 9) / 16;
+        const need = roof + sh + 34;
+        // A short phone: the words give way, down to where they sit settled.
+        if (headTop < need) {
+          dyCopy += need - headTop;
+          headTop = need;
+        }
+        state.from = { cx: vw / 2, cy: (roof + headTop) / 2 + 2, w, h: sh };
+      } else {
+        const room = Math.max(240, headTop - roof - 34);
+        const sh = Math.min(room, vh * 0.72);
+        const w = Math.min(vw * 0.72, (sh * 16) / 9);
+        const hh = (w * 9) / 16;
+        state.from = { cx: vw - w / 2 - Math.max(44, vw * 0.05), cy: roof + room / 2, w, h: hh };
       }
+    }
+    // The stage is a full screen tall, and the settled head is often shorter.
+    // What follows comes up under the empty part, so no dead space opens up.
+    const settled = stage.querySelector<HTMLElement>(".pfx-settled");
+    if (settled) {
+      const blank = Math.max(0, stage.offsetHeight - (settled.offsetTop + settled.offsetHeight));
+      open.style.marginBottom = `${-blank}px`;
     }
     gl?.resize();
     apply();
@@ -131,6 +146,10 @@ export function mountOpening(signal: AbortSignal): void | (() => void) {
     place();
     syncHandoff();
     wake();
+    if (glWanted && state.e < 0.999) {
+      glWanted = false;
+      startGL();
+    }
   };
 
   // ---- The hand over between the canvas and the page -----------------------
@@ -232,8 +251,13 @@ export function mountOpening(signal: AbortSignal): void | (() => void) {
 
   // ---- Three only now, when the page is up ---------------------------------
   let idle = 0;
-  const startGL = async () => {
+  async function startGL() {
     if (signal.aborted || !canvas) return;
+    // Already deep in the article: wait until the reader comes back up.
+    if (state.e >= 0.999) {
+      glWanted = true;
+      return;
+    }
     const img = art?.querySelector<HTMLImageElement>("img");
     const big = open.dataset.art;
     const ext = img?.currentSrc?.endsWith(".avif") ? "avif" : "webp";
@@ -245,13 +269,17 @@ export function mountOpening(signal: AbortSignal): void | (() => void) {
       glReady = true;
       sweepFrom = (performance.now() - sweepAt) / 1000;
       canvas.classList.add("is-up");
-      art?.classList.add("is-handed");
-      if (art) art.style.transform = "";
+      // The page's picture stays until the canvas has faded in over it.
+      handTimer = window.setTimeout(() => {
+        if (signal.aborted || !art) return;
+        art.style.transform = "";
+        if (!onPageArt) art.classList.add("is-handed");
+      }, 540);
       onPageArt = false;
       syncHandoff();
       wake();
     });
-  };
+  }
   const w = window as Window & {
     requestIdleCallback?: (cb: () => void, o?: { timeout: number }) => number;
     cancelIdleCallback?: (h: number) => void;
@@ -265,7 +293,9 @@ export function mountOpening(signal: AbortSignal): void | (() => void) {
     io.disconnect();
     w.cancelIdleCallback?.(idle);
     clearTimeout(idle);
+    clearTimeout(handTimer);
     gl?.stop();
     gl = null;
+    open.style.marginBottom = "";
   };
 }

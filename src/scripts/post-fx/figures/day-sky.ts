@@ -48,7 +48,7 @@ const GROUPS = [
 const LABEL_AT: Array<[number, number]> = [
   [0.15, 0.255], [0.5, 0.2], [0.85, 0.2],
   [0.13, 0.565], [0.5, 0.685], [0.875, 0.565],
-  [0.15, 0.965], [0.5, 0.965], [0.86, 0.965],
+  [0.15, 0.962], [0.5, 0.962], [0.86, 0.962],
 ];
 
 const m = (h: number, min = 0) => h * 60 + min;
@@ -156,6 +156,19 @@ const render: Figure = ({ root, signal, still }) => {
     signal,
   );
   head.append(seg.el);
+
+  const legend = h("div", "pfx-day-legend");
+  [
+    ["warm", "Always on"],
+    ["run", "Runs all day"],
+    ["fire", "Fires on the clock"],
+    ["wait", "Waits to be called"],
+  ].forEach(([k, label]) => {
+    const it = h("span", "pfx-day-key");
+    it.append(h("i", `is-${k}`), h("span", undefined, label));
+    legend.append(it);
+  });
+  head.append(legend);
 
   const sky = h("div", "pfx-day-sky");
   const bg = h("canvas", "pfx-day-bg");
@@ -344,15 +357,19 @@ const render: Figure = ({ root, signal, still }) => {
   // ---- Dragging, keys, play -----------------------------------------------------
   const fromX = (x: number) => {
     const r = track.getBoundingClientRect();
-    let v = clamp((x - r.left) / r.width) * 1439;
+    const v = clamp((x - r.left) / r.width) * 1439;
     const pxPerMin = r.width / 1440;
+    // The nearest job within reach, so a job's minute is easy to land on.
+    let best = v;
+    let bestD = 7;
     for (const a of times) {
-      if (Math.abs(a - v) * pxPerMin < 7) {
-        v = a;
-        break;
+      const d = Math.abs(a - v) * pxPerMin;
+      if (d < bestD) {
+        bestD = d;
+        best = a;
       }
     }
-    return v;
+    return best;
   };
   let dragging = false;
   let playing = false;
@@ -397,6 +414,10 @@ const render: Figure = ({ root, signal, still }) => {
       } else if (e.key === "ArrowLeft" || e.key === "ArrowDown") {
         const prev = [...times].reverse().find((a) => a < t);
         t = prev ?? times[times.length - 1];
+      } else if (e.key === "Home") {
+        t = 0;
+      } else if (e.key === "End") {
+        t = 1439;
       } else if (e.key === " ") {
         setPlaying(!playing);
       } else return;

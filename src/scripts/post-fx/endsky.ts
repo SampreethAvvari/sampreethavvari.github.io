@@ -95,6 +95,21 @@ export function mountEndSky(signal: AbortSignal): void | (() => void) {
   ro.observe(section);
   paint();
 
+  // The card's picture is ready before the reader gets there.
+  const near = new IntersectionObserver(
+    ([e]) => {
+      if (!e.isIntersecting) return;
+      section.querySelectorAll<HTMLImageElement>(".pfx-sky-card img").forEach((i) => (i.loading = "eager"));
+      links.forEach((a) => {
+        if (a.dataset.thumb) new Image().src = `${a.dataset.thumb}.avif`;
+      });
+      near.disconnect();
+    },
+    { rootMargin: "1400px 0px" },
+  );
+  near.observe(section);
+  signal.addEventListener("abort", () => near.disconnect());
+
   // The lines draw the first time the sky comes up.
   const seenIo = new IntersectionObserver(
     ([e]) => {

@@ -85,7 +85,7 @@ const stars = sorted.map((p, i) => {
     meta: `${formatPostDate(fm.date)} · ${readingTime(p.rawContent())} min read`,
     thumb: hasPublic(fm.img_path) ? thumbFor(fm.img_path) : undefined,
     rgb: TONE_RGB[fm.tone] || "52,211,153",
-    r: +(2.6 + Math.min(10, readingTime(p.rawContent())) * 0.62).toFixed(1),
+    r: +(3.6 + Math.min(10, readingTime(p.rawContent())) * 0.82).toFixed(1),
     here: s === slug,
     x: +fit(raw[i][0], x0, x1).toFixed(2),
     y: +fit(raw[i][1], y0, y1).toFixed(2),

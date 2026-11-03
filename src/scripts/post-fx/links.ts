@@ -42,6 +42,18 @@ export function mountLinkCards(signal: AbortSignal): void | (() => void) {
   let hideT = 0;
   let current: HTMLAnchorElement | null = null;
 
+  // The small pictures are fetched when the browser is idle, so a card never
+  // opens on an empty frame.
+  const warm = () => {
+    if (signal.aborted) return;
+    Object.values(data).forEach((d) => {
+      if (d.img) new Image().src = `${d.img.replace(/\.(png|jpe?g|webp|avif)$/i, "")}.avif`;
+    });
+  };
+  const w = window as Window & { requestIdleCallback?: (cb: () => void, o?: { timeout: number }) => number };
+  if (w.requestIdleCallback) w.requestIdleCallback(warm, { timeout: 2500 });
+  else window.setTimeout(warm, 800);
+
   const keyOf = (a: HTMLAnchorElement) => {
     const p = a.getAttribute("href") || "";
     return p.replace(/#.*$/, "").replace(/\/$/, "");

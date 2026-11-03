@@ -171,6 +171,7 @@ const render: Figure = ({ root, signal, still }) => {
     pos.rerankX = W * 0.73;
     pos.modelX = W * 0.9;
     pos.midY = H * 0.54;
+    nodeEls.gate.textContent = W < 520 ? "Permission filter" : "Permission filter, inside the SQL";
     nodeEls.gate.style.left = `${(pos.gateX / W) * 100}%`;
     nodeEls.search.style.left = `${(pos.searchX / W) * 100}%`;
     nodeEls.rerank.style.left = `${(pos.rerankX / W) * 100}%`;

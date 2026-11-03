@@ -15,17 +15,17 @@ import type { Figure } from "./index";
 import { clamp, emit, h, noteOf } from "../util";
 import { fig, frame } from "./parts";
 
-type Mark = { who: string; score: number; real: boolean; stack?: number };
+type Mark = { who: string; score: number; real: boolean; stack?: number; side?: "left" | "right" };
 
 const FRAMES: Mark[] = [
   { who: "Maya", score: 0.39, real: true, stack: 0 },
   { who: "Maya", score: 0.39, real: true, stack: 1 },
-  { who: "Ravi", score: 0.48, real: false },
+  { who: "Ravi", score: 0.48, real: false, stack: 1 },
   { who: "Maya", score: 0.51, real: true },
 ];
 const VOICE: Mark[] = [
-  { who: "Best impostor", score: 0.613, real: false },
-  { who: "Real lines", score: 0.647, real: true },
+  { who: "Best impostor", score: 0.613, real: false, side: "left" },
+  { who: "Real lines", score: 0.647, real: true, side: "right" },
 ];
 
 function track(
@@ -59,6 +59,10 @@ function track(
     const c = h("div", `pfx-ref-card ${m.real ? "is-real" : "is-other"}`);
     c.style.left = `${pct(m.score)}%`;
     if (m.stack) c.classList.add("is-up");
+    if (m.side) c.classList.add(`is-${m.side}`);
+    const tick = h("i", "pfx-ref-mark");
+    tick.style.left = `${pct(m.score)}%`;
+    rail.append(tick);
     const face = h("span", "pfx-ref-who", m.who);
     const num = h("b", "pfx-ref-num", m.score.toFixed(opts.digits));
     c.append(face, num);

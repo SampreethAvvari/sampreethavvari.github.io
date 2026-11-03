@@ -65,7 +65,11 @@ const postCrumbs = [
 // The drawing behind this post, if it has one, for the step at the end.
 const archForPost = architecture ? architectureBySlug[architecture] : undefined;
 // Preload the cover (the LCP element on a post page) as AVIF.
-const coverPreload = hasCover ? img_path.replace(/\.(png|jpe?g)$/i, ".avif") : undefined;
+const coverPreload = fs.existsSync(path.join(process.cwd(), "public", `writing/${slug}-1280.avif`))
+  ? `/writing/${slug}-1280.avif`
+  : hasCover
+    ? img_path.replace(/\.(png|jpe?g)$/i, ".avif")
+    : undefined;
 
 // Long titles step down a size so they settle in three lines or fewer.
 const titleClass = title && title.length > 64 ? "post-title post-title-long" : "post-title";
@@ -92,6 +96,11 @@ const artBase = fs.existsSync(path.join(process.cwd(), "public", `writing/${slug
 // What the small cards on this post's links show, for the links it really has.
 const raw = self ? self.rawContent() : "";
 const firstSentence = (d: string) => (d.match(/^.*?[.!?](?=\s|$)/) || [d])[0];
+const thumbOf = (img?: string) => {
+  if (!img || !hasPublic(img)) return undefined;
+  const name = img.replace(/^.*\//, "").replace(/\.(png|jpe?g|webp|avif)$/i, "");
+  return fs.existsSync(path.join(process.cwd(), "public", `writing/thumbs/${name}.avif`)) ? `/writing/thumbs/${name}` : img;
+};
 const linkCards: Record<string, { t: string; d: string; img?: string; k: string }> = {};
 for (const m of raw.matchAll(/(?:\]\(|href=")(\/(?:posts|architecture)\/[a-z0-9-]+)/g)) {
   const href = m[1];
@@ -103,7 +112,7 @@ for (const m of raw.matchAll(/(?:\]\(|href=")(\/(?:posts|architecture)\/[a-z0-9-
     linkCards[href] = {
       t: p.frontmatter.title,
       d: firstSentence(p.frontmatter.description || ""),
-      img: hasPublic(p.frontmatter.img_path) ? p.frontmatter.img_path : undefined,
+      img: thumbOf(p.frontmatter.img_path),
       k: "Post",
     };
   } else {
@@ -134,14 +143,13 @@ const fxData = JSON.stringify({ links: linkCards }).replace(/</g, "\\u003c");
   <!-- While reading, the sky goes quiet behind the words. -->
   <div class="pfx-veil" id="pfx-veil" aria-hidden="true"></div>
 
-  <article class="post">
+  <article class="post" style={`--art:${artRgb};`}>
     <header
       class="post-head pfx-open"
       id="pfx-open"
       data-slug={slug}
       data-rgb={artRgb}
       data-art={artBase}
-      style={`--art:${artRgb};`}
     >
       <!-- The settled layout below is the real one. With a script the art and
            the title start out in space and scroll into these places. -->
@@ -157,14 +165,22 @@ const fxData = JSON.stringify({ links: linkCards }).replace(/</g, "\\u003c");
           {
             hasCover && (
               <figure class="post-cover-frame pfx-art" data-zoom={artBase || "1"}>
-                <Picture
-                  src={img_path}
-                  alt={img_alt || title}
-                  width={1200}
-                  height={675}
-                  loading="eager"
-                  fetchpriority="high"
-                />
+                {artBase ? (
+                  <picture>
+                    <source srcset={`${artBase}-1280.avif`} type="image/avif" />
+                    <source srcset={`${artBase}-1280.webp`} type="image/webp" />
+                    <img src={`${artBase}-1280.webp`} alt={img_alt || title} width="1280" height="720" loading="eager" fetchpriority="high" decoding="async" />
+                  </picture>
+                ) : (
+                  <Picture
+                    src={img_path}
+                    alt={img_alt || title}
+                    width={1200}
+                    height={675}
+                    loading="eager"
+                    fetchpriority="high"
+                  />
+                )}
               </figure>
             )
           }

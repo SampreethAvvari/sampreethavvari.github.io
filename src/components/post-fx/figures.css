@@ -6,15 +6,15 @@
   [data-post-fig="referee-line"] { height: 690px; }
   [data-post-fig="minhash"] { height: 668px; }
   [data-post-fig="zero-params"] { height: 524px; }
-  [data-post-fig="day-sky"] { height: 776px; }
+  [data-post-fig="day-sky"] { height: 800px; }
   [data-post-fig="permission-gate"] { height: 664px; }
 }
 @media screen and (scripting: enabled) and (max-width: 639px) {
   [data-post-fig="referee-line"] { height: 730px; }
   [data-post-fig="minhash"] { height: 1068px; }
   [data-post-fig="zero-params"] { height: 800px; }
-  [data-post-fig="day-sky"] { height: 904px; }
-  [data-post-fig="permission-gate"] { height: 812px; }
+  [data-post-fig="day-sky"] { height: 948px; }
+  [data-post-fig="permission-gate"] { height: 836px; }
 }
 
 /* ---- Try to be the referee ------------------------------------------------- */
@@ -107,6 +107,9 @@
   pointer-events: auto;
 }
 .pfx-ref-card.is-up { bottom: 66px; }
+.pfx-ref-card.is-left { margin-left: -64px; }
+.pfx-ref-card.is-right { margin-left: 0; }
+.pfx-ref-mark { position: absolute; bottom: 0; width: 1px; height: 10px; background: rgba(255, 255, 255, 0.4); }
 .pfx-ref-who { display: block; font-size: 0.6875rem; line-height: 1.2; color: var(--ink-soft); }
 .pfx-ref-num { display: block; font-size: 0.8125rem; line-height: 1.25; font-weight: 600; font-variant-numeric: tabular-nums; color: var(--ink); }
 .pfx-ref-card.is-other { border-style: dashed; }
@@ -336,9 +339,16 @@
 .pfx-day-bg { position: absolute; inset: 0; width: 100%; height: 100%; }
 .pfx-day-lines { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
 .pfx-day-lines line { stroke: rgba(205, 224, 255, 0.1); stroke-width: 1; }
+.pfx-day-legend { display: flex; flex-wrap: wrap; gap: 4px 14px; margin-top: 8px; }
+.pfx-day-key { display: inline-flex; align-items: center; gap: 6px; font-size: 0.75rem; color: var(--ink-soft); }
+.pfx-day-key i { display: block; width: 7px; height: 7px; border-radius: 50%; }
+.pfx-day-key i.is-warm { background: #ffe9c2; box-shadow: 0 0 8px 1px rgba(255, 214, 150, 0.85); }
+.pfx-day-key i.is-run { background: #d3e2ff; box-shadow: 0 0 8px 1px rgba(125, 170, 255, 0.95); }
+.pfx-day-key i.is-fire { background: #fff; box-shadow: 0 0 8px 3px rgba(125, 170, 255, 1); }
+.pfx-day-key i.is-wait { background: rgba(205, 224, 255, 0.42); }
 .pfx-day-group {
   position: absolute;
-  transform: translateX(-50%);
+  transform: translate(-50%, -50%);
   max-width: 30%;
   font-size: 0.6875rem;
   font-weight: 500;
@@ -510,8 +520,9 @@
   .pfx-gate-stage { height: 280px; }
   .pfx-seg.is-cards { grid-template-columns: minmax(0, 1fr); }
   .pfx-seg.is-cards .pfx-seg-b { min-height: 38px; }
-  .pfx-gate-node { max-width: 74px; font-size: 0.625rem; }
-  .pfx-gate-node.is-gate { max-width: 86px; }
+  .pfx-gate-node { max-width: 58px; font-size: 0.625rem; }
+  .pfx-gate-node.is-gate { max-width: 58px; }
+  .pfx-gate-node.is-docs { max-width: 90px; }
 }
 
 /* Small screens: the figures' parts stack. */
