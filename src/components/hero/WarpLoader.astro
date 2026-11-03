@@ -1,20 +1,26 @@
 ---
 // Page loader: a jump to light speed. Stars stream out from the center like
 // the scroll warp in SpaceField, comets in the tab's colour cut across, and a
-// small "loading" sits in the middle. It covers the first paint of every page
-// and comes back up when an internal link is clicked, so moving between pages
-// reads as one trip.
+// small "loading" sits in the middle. It covers the first paint of a visit
+// and comes back up for every move to another page (Astro's client side
+// router), so moving between pages reads as one trip.
 //
 // Arrival: the streaks slow back into points and the loader drops behind the
 // page, so the stars you flew through become the sky, while SpaceField coasts
 // out of its own warp. The page itself flies in from deep space toward the
 // viewer. Plain 2D canvas and inline script, so it runs before the rest of
-// the body has parsed. Under reduced motion it is a quick fade.
+// the body has parsed. Under reduced motion it is a quick fade on the first
+// page and stays down after that.
 //
-// Between tabs the colour travels too. A click starts the stars, comets and
+// The loader persists across navigation (transition:persist) and its script
+// runs once a visit: it is the same text on every page, so the router does
+// not run it again, and it checks a flag besides. Each page's palette rides
+// on data attributes, read when that page arrives.
+//
+// Between tabs the colour travels too. Leaving starts the stars, comets and
 // glow blending toward the next tab's colour and leaves a note of where the
-// blend began; the next page reads it and finishes the same blend on the same
-// clock, and its sky and accents follow (src/scripts/toneTween.ts).
+// blend began; the next page finishes the same blend on the same clock, and
+// its sky and accents follow (src/scripts/toneTween.ts).
 interface Props {
   // "r,g,b" strings. The first is the tab's colour; home passes every tab.
   palette: string[];
@@ -26,12 +32,29 @@ const rgb = palette[0];
 const rgb2 = palette[1] ?? palette[0];
 ---
 
-<div id="warp" class="warp" style={`--warp-rgb:${rgb};--warp-rgb2:${rgb2};`} aria-hidden="true">
+<div
+  id="warp"
+  class="warp"
+  style={`--warp-rgb:${rgb};--warp-rgb2:${rgb2};`}
+  aria-hidden="true"
+  data-palette={JSON.stringify(palette)}
+  data-tones={JSON.stringify(toneMap)}
+  transition:persist="warp"
+>
   <div class="warp-sky"></div>
   <canvas class="warp-canvas"></canvas>
   <div class="warp-label">
     <span class="warp-text"><span class="warp-word"><span class="warp-shine"></span></span></span>
     <span class="warp-bar"></span>
+  </div>
+  <!-- Once a visit, the jump ends on a choice: sound or silence. -->
+  <div class="warp-gate" hidden>
+    <p class="warp-gate-kicker"><span class="warp-gate-wave" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></span>This site has a score</p>
+    <div class="warp-gate-actions">
+      <button type="button" class="warp-gate-btn is-on" data-sound-choice="on">Enter with sound</button>
+      <button type="button" class="warp-gate-btn is-quiet" data-sound-choice="off">Without sound</button>
+    </div>
+    <p class="warp-gate-hint">Headphones help · switch it any time from the top bar</p>
   </div>
 </div>
 <noscript><style>#warp { display: none !important; }</style></noscript>
@@ -63,6 +86,85 @@ const rgb2 = palette[1] ?? palette[0];
     /* The slowed stars hang on as the sky for a moment before handing over. */
     transition: opacity 1.5s ease 0.45s;
   }
+
+  /* The sound choice: one quiet line, two small pills, a whisper of a hint. */
+  .warp-gate {
+    position: absolute;
+    left: 50%;
+    top: calc(50% + 40px);
+    transform: translateX(-50%);
+    display: grid;
+    justify-items: center;
+    gap: 12px;
+    width: max-content;
+    max-width: calc(100vw - 32px);
+    font-family: var(--font);
+    pointer-events: auto;
+    animation: warp-gate-in 900ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+  .warp-gate[hidden] { display: none; }
+  .warp.is-gate .warp-label { opacity: 0; transform: translateY(-6px); }
+  .warp-gate-kicker {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    margin: 0;
+    font-size: 10.5px;
+    font-weight: 500;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: rgba(255, 255, 255, 0.5);
+  }
+  .warp-gate-wave { display: inline-flex; align-items: center; gap: 1.5px; height: 10px; }
+  .warp-gate-wave i {
+    width: 1.5px;
+    height: 100%;
+    border-radius: 2px;
+    background: rgb(var(--warp-rgb));
+    transform-origin: center;
+    animation: warp-gate-bar 1.2s ease-in-out infinite;
+  }
+  .warp-gate-wave i:nth-child(2) { animation-delay: -0.2s; }
+  .warp-gate-wave i:nth-child(3) { animation-delay: -0.45s; }
+  .warp-gate-wave i:nth-child(4) { animation-delay: -0.7s; }
+  .warp-gate-wave i:nth-child(5) { animation-delay: -0.9s; }
+  .warp-gate-actions { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 6px; }
+  .warp-gate-btn {
+    position: relative;
+    height: 32px;
+    padding: 0 15px;
+    border-radius: 9999px;
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    font: inherit;
+    font-size: 12.5px;
+    font-weight: 500;
+    letter-spacing: -0.005em;
+    color: rgba(255, 255, 255, 0.9);
+    background: rgba(255, 255, 255, 0.04);
+    cursor: pointer;
+    transition: transform 160ms cubic-bezier(0.2, 0.8, 0.2, 1), background-color 200ms ease, border-color 200ms ease, box-shadow 240ms ease, color 200ms ease;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .warp-gate-btn:hover { border-color: rgba(255, 255, 255, 0.32); background: rgba(255, 255, 255, 0.08); }
+  .warp-gate-btn:active { transform: scale(0.95); transition-duration: 80ms; }
+  .warp-gate-btn.is-on {
+    color: #05070c;
+    border-color: transparent;
+    background: linear-gradient(180deg, #fff, rgba(var(--warp-rgb), 0.92));
+    box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.4) inset, 0 6px 22px -8px rgba(var(--warp-rgb), 0.95);
+  }
+  .warp-gate-btn.is-on:hover { box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.5) inset, 0 8px 28px -6px rgba(var(--warp-rgb), 1); }
+  .warp-gate-btn.is-quiet { border-color: transparent; background: transparent; color: rgba(255, 255, 255, 0.55); }
+  .warp-gate-btn.is-quiet:hover { color: #fff; background: rgba(255, 255, 255, 0.06); }
+  .warp-gate-btn:focus-visible { outline: 1.5px solid rgb(var(--warp-rgb)); outline-offset: 3px; }
+  /* the pressed pill gives a short light pulse before the jump */
+  .warp-gate-btn.is-picked { animation: warp-gate-pick 420ms cubic-bezier(0.16, 1, 0.3, 1); }
+  .warp-gate-hint { margin: 0; font-size: 10.5px; color: rgba(255, 255, 255, 0.32); letter-spacing: 0.01em; }
+  .warp.is-done .warp-gate { opacity: 0; transform: translate(-50%, -6px); transition: opacity 0.35s ease, transform 0.35s ease; pointer-events: none; }
+  @keyframes warp-gate-in { from { opacity: 0; transform: translate(-50%, 8px); filter: blur(6px); } to { opacity: 1; transform: translate(-50%, 0); filter: none; } }
+  @keyframes warp-gate-bar { 0%, 100% { transform: scaleY(0.3); } 50% { transform: scaleY(1); } }
+  @keyframes warp-gate-pick { 0% { box-shadow: 0 0 0 0 rgba(var(--warp-rgb), 0.7); } 100% { box-shadow: 0 0 0 14px rgba(var(--warp-rgb), 0); } }
+  @media (prefers-reduced-motion: reduce) { .warp-gate, .warp-gate-wave i, .warp-gate-btn.is-picked { animation: none; } }
 
   /* Arrival: behind the page, the backdrop goes and the stars settle out. */
   .warp.is-done { z-index: -1; pointer-events: none; }
@@ -190,7 +292,7 @@ const rgb2 = palette[1] ?? palette[0];
   }
 </style>
 
-<script is:inline define:vars={{ palette, toneMap }}>
+<script is:inline>
   // The jump itself: stars streaking toward the viewer and comets crossing.
   // Self contained, so it can run in a worker on an OffscreenCanvas, where a
   // phone busy laying out the page underneath cannot stall it, or on the
@@ -385,6 +487,12 @@ const rgb2 = palette[1] ?? palette[0];
         vTarget = 1.1;
         start();
       },
+      // The next page has arrived: the blend, on the same clock, now ends on
+      // that page's whole palette.
+      aim: function (to) {
+        toPal = to;
+        blending = true;
+      },
       stop: function () {
         caf(loop);
         loop = 0;
@@ -411,7 +519,18 @@ const rgb2 = palette[1] ?? palette[0];
 
   (function () {
     var root = document.getElementById("warp");
-    if (!root) return;
+    // Once a visit: the loader persists across pages, and so does this.
+    if (!root || window.__warpLoader) return;
+    window.__warpLoader = true;
+    var palette, toneMap;
+    try {
+      palette = JSON.parse(root.getAttribute("data-palette") || "[]");
+      toneMap = JSON.parse(root.getAttribute("data-tones") || "{}");
+    } catch (e) {
+      palette = [];
+      toneMap = {};
+    }
+    if (!palette.length) palette = ["91,141,239"];
     var canvas = root.querySelector("canvas");
     var reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     var mobile = window.matchMedia("(max-width: 767px)").matches;
@@ -431,6 +550,9 @@ const rgb2 = palette[1] ?? palette[0];
       sessionStorage.setItem("warp-seen", "1");
     } catch (e) {}
     var MIN = reduce ? 0 : first ? 1500 : 800;
+    // Moving between pages, the jump holds at least this long, the same as a
+    // later page used to hold after loading.
+    var HOLD = 800;
 
     // The colour handoff. `base` is where the colours started, `toPal` where
     // they are heading, `mixed` what is drawn now. Stars and comets keep an
@@ -438,6 +560,8 @@ const rgb2 = palette[1] ?? palette[0];
     // stars and the label follow the same blend here, on the same clock.
     var BLEND = 1400;
     var base = palette, toPal = palette, mixed = palette.slice(), blendAt = 0, blending = false;
+    // A note from a full page load that started the blend (a page the router
+    // could not take, or a reload mid trip).
     try {
       var note = JSON.parse(sessionStorage.getItem("warp-from") || "null");
       sessionStorage.removeItem("warp-from");
@@ -461,19 +585,28 @@ const rgb2 = palette[1] ?? palette[0];
       root.style.setProperty("--warp-rgb2", mixed[1 % mixed.length]);
       if (t >= 1) blending = false;
     }
+    var tinting = false;
     function tint() {
+      tinting = false;
       blendNow();
-      if (blending) requestAnimationFrame(tint);
+      if (blending) {
+        tinting = true;
+        requestAnimationFrame(tint);
+      }
+    }
+    function tintOn() {
+      if (!tinting) tint();
     }
     tint();
-    var MAX = 3500; // never hold the page longer than this
+    var MAX = 3500; // never hold the first page longer than this
     var t0 = performance.now();
 
     // The sky draws in a worker when the browser can hand a canvas to one,
     // and on this thread otherwise. `call` reaches it either way.
     var sky = null, worker = null, running = false, leaving = false;
-    // Bumped on every link click, so timers from an earlier trip are ignored.
-    var trip = 0;
+    // Bumped on every trip to another page, so timers from an earlier trip
+    // are ignored. `away` is set while a trip waits for its page.
+    var trip = 0, away = false, enteredAt = 0;
     function call(name, args) {
       if (worker) worker.postMessage({ type: name, args: args });
       else if (sky) sky[name].apply(null, args || []);
@@ -590,9 +723,54 @@ const rgb2 = palette[1] ?? palette[0];
       });
     }
 
+    // Once a visit the jump ends on the sound choice and waits for it.
+    var gate = root.querySelector(".warp-gate");
+    var gating = false;
+    try { gating = first && !sessionStorage.getItem("sound-asked") && !!gate; } catch (e) { gating = false; }
+    function choose(v) {
+      try {
+        sessionStorage.setItem("sound-asked", "1");
+        localStorage.setItem("sound", v ? "on" : "off");
+      } catch (e) {}
+      // still inside the click, so the page's sound may start right away
+      window.dispatchEvent(new CustomEvent("sound:set", { detail: v }));
+      gating = false;
+      root.setAttribute("aria-hidden", "true");
+      leave(0);
+    }
+    // The choice has faded out with the loader; it never comes back up on
+    // a later trip.
+    function closeGate() {
+      if (!gate || gate.hidden) return;
+      gate.hidden = true;
+      root.classList.remove("is-gate");
+      root.removeAttribute("role");
+      root.removeAttribute("aria-label");
+    }
+    function showGate() {
+      gate.hidden = false;
+      root.classList.add("is-gate");
+      root.removeAttribute("aria-hidden");
+      root.setAttribute("role", "dialog");
+      root.setAttribute("aria-label", "Sound");
+      gate.querySelectorAll("[data-sound-choice]").forEach(function (b) {
+        b.addEventListener("click", function () {
+          b.classList.add("is-picked");
+          choose(b.getAttribute("data-sound-choice") === "on");
+        });
+      });
+      var first_btn = gate.querySelector(".is-on");
+      if (first_btn) first_btn.focus({ preventScroll: true });
+      document.addEventListener("keydown", function esc(e) {
+        if (e.key === "Escape" && gating) { document.removeEventListener("keydown", esc); choose(false); }
+      });
+    }
+
     function leave(id) {
+      if (gating) return;
       if (leaving || id !== trip) return;
       leaving = true;
+      away = false;
       // The jump ends: the streaks shrink back to points and stay as the sky.
       call("leave");
       root.classList.remove("is-quick");
@@ -603,17 +781,20 @@ const rgb2 = palette[1] ?? palette[0];
       setTimeout(function () {
         if (!leaving) return;
         root.hidden = true;
+        closeGate();
         call("stop");
         running = false;
       }, 2100);
     }
 
     // Leaving for another page: the warp comes back up and holds until the
-    // next page paints its own.
+    // next page is in and its scripts have started.
     function enter(url) {
       var id = ++trip;
-      // Start blending toward the next tab now, and leave a note so the next
-      // page carries on from here instead of cutting.
+      away = true;
+      enteredAt = performance.now();
+      // Start blending toward the next tab now. The page that arrives
+      // finishes the same blend on the same clock (toneTween).
       var seg = url.pathname.split("/").filter(Boolean)[0] || "";
       var dest = toneMap[seg] || toneMap[""];
       if (dest) {
@@ -623,10 +804,14 @@ const rgb2 = palette[1] ?? palette[0];
         mixed = [mixed[0]];
         blendAt = Date.now();
         blending = true;
+        window.__warpFrom = { pal: base, at: blendAt, dur: BLEND };
+        // For a full page load in place of the router (a page it cannot
+        // take), so that page can pick up the blend too.
         try { sessionStorage.setItem("warp-from", JSON.stringify({ pal: base, at: blendAt })); } catch (e) {}
-        tint();
+        tintOn();
       }
       leaving = false;
+      closeGate();
       root.hidden = false;
       root.classList.add("is-quick");
       void root.offsetWidth;
@@ -639,8 +824,23 @@ const rgb2 = palette[1] ?? palette[0];
       setTimeout(function () { leave(id); }, 6000);
     }
 
+    // The arriving page names its own palette; home's is every tab.
+    function aim(next) {
+      var el = next && next.getElementById("warp");
+      var p;
+      try { p = JSON.parse((el && el.getAttribute("data-palette")) || "null"); } catch (e) { p = null; }
+      if (!p || !p.length) return;
+      toPal = p;
+      blending = true;
+      tintOn();
+      call("aim", [p]);
+    }
+
     function ready() {
-      setTimeout(function () { leave(0); }, Math.max(0, MIN - (performance.now() - t0)));
+      setTimeout(function () {
+        if (gating) showGate();
+        else leave(0);
+      }, Math.max(0, MIN - (performance.now() - t0)));
     }
     if (document.readyState === "complete") ready();
     else window.addEventListener("load", ready, { once: true });
@@ -656,9 +856,12 @@ const rgb2 = palette[1] ?? palette[0];
       call("size", d);
     }, { passive: true });
 
-    // Back/forward cache restores the page as it was left, loader and all.
+    // Back/forward cache restores the page as it was left, loader and all
+    // (after following a link the router hands to the browser, like a PDF).
     window.addEventListener("pageshow", function (e) {
       if (!e.persisted) return;
+      trip++;
+      away = false;
       leaving = true;
       root.classList.remove("is-quick");
       root.classList.add("is-done");
@@ -668,19 +871,28 @@ const rgb2 = palette[1] ?? palette[0];
     });
 
     if (reduce) return;
-    // Bubble phase on document, so React handlers that call preventDefault
-    // (tabs, dialogs) have already run and are respected.
-    document.addEventListener("click", function (e) {
-      if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
-      var a = e.target && e.target.closest ? e.target.closest("a[href]") : null;
-      if (!a || (a.target && a.target !== "_self") || a.hasAttribute("download")) return;
-      var url;
-      try { url = new URL(a.href, location.href); } catch (err) { return; }
-      if (url.origin !== location.origin) return;
-      if (/\.(pdf|png|jpe?g|webp|avif|gif|svg|xml|txt|zip)$/i.test(url.pathname)) return;
-      // Same page (an anchor on this page) just scrolls.
-      if (url.pathname === location.pathname && url.search === location.search) return;
-      enter(url);
+    // The router moves between pages without a reload. It announces each
+    // move before fetching the next page: the warp comes up then, blending
+    // toward the next tab. Files (a PDF, an image) go to the browser.
+    var FILE = /\.(pdf|png|jpe?g|webp|avif|gif|svg|xml|txt|zip|json|mp4|webm)$/i;
+    document.addEventListener("astro:before-preparation", function (e) {
+      if (e.defaultPrevented || FILE.test(e.to.pathname)) return;
+      enter(e.to);
+      var id = trip;
+      var load = e.loader;
+      e.loader = function () {
+        return Promise.resolve(load()).then(function () {
+          if (id === trip && e.newDocument && e.newDocument !== document) aim(e.newDocument);
+        });
+      };
+    });
+    // The new page is in and its scripts have started: arrive, once the jump
+    // has had its moment.
+    document.addEventListener("astro:page-load", function () {
+      if (!away) return;
+      try { sessionStorage.removeItem("warp-from"); } catch (e) {}
+      var id = trip;
+      setTimeout(function () { leave(id); }, Math.max(0, HOLD - (performance.now() - enteredAt)));
     });
   })();
 </script>

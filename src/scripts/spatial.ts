@@ -1,15 +1,23 @@
+import { afterImages } from "./lifecycle";
+
 // Shared spatial interactions for the glass redesign: pointer glare, 3D tilt,
 // magnetic pull, depth arrival on scroll, and count-up metrics. Every effect
 // bails under prefers-reduced-motion; pointer effects also bail on touch.
 // All handlers are transform/opacity only, batched through rAF.
+//
+// Each one takes an optional AbortSignal (from onPage in lifecycle.ts). When
+// it aborts, the listeners, observers and frame loops it started stop, so
+// a page shown again after client side navigation starts clean.
 
 const reduce = () =>
   window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 const finePointer = () => window.matchMedia("(pointer: fine)").matches;
+const onAbort = (signal: AbortSignal | undefined, fn: () => void) =>
+  signal?.addEventListener("abort", fn, { once: true });
 
 /** Specular highlight that follows the cursor. Sets --gx/--gy percent vars
  *  consumed by a ::after radial gradient. */
-export function initGlare(selector: string): void {
+export function initGlare(selector: string, signal?: AbortSignal): void {
   if (!finePointer()) return;
   document.querySelectorAll<HTMLElement>(selector).forEach((el) => {
     el.addEventListener(
@@ -19,13 +27,13 @@ export function initGlare(selector: string): void {
         el.style.setProperty("--gx", (((e.clientX - r.left) / r.width) * 100).toFixed(1) + "%");
         el.style.setProperty("--gy", (((e.clientY - r.top) / r.height) * 100).toFixed(1) + "%");
       },
-      { passive: true },
+      { passive: true, signal },
     );
   });
 }
 
 /** 3D tilt toward the cursor, max angle from data-tiltmax (default 5deg). */
-export function initTilt(selector: string): void {
+export function initTilt(selector: string, signal?: AbortSignal): void {
   if (reduce() || !finePointer()) return;
   document.querySelectorAll<HTMLElement>(selector).forEach((el) => {
     const max = parseFloat(el.dataset.tiltmax || "5");
@@ -37,18 +45,18 @@ export function initTilt(selector: string): void {
         const y = (e.clientY - r.top) / r.height - 0.5;
         el.style.transform = `perspective(700px) rotateX(${(-y * max).toFixed(2)}deg) rotateY(${(x * max).toFixed(2)}deg) translateY(-2px)`;
       },
-      { passive: true },
+      { passive: true, signal },
     );
     el.addEventListener("pointerleave", () => {
       el.style.transition = "transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1)";
       el.style.transform = "";
       setTimeout(() => (el.style.transition = ""), 410);
-    });
+    }, { signal });
   });
 }
 
 /** Elements lean a few px toward the cursor and spring back on leave. */
-export function initMagnetic(selector: string): void {
+export function initMagnetic(selector: string, signal?: AbortSignal): void {
   if (reduce() || !finePointer()) return;
   document.querySelectorAll<HTMLElement>(selector).forEach((el) => {
     el.addEventListener(
@@ -59,13 +67,13 @@ export function initMagnetic(selector: string): void {
         const y = (e.clientY - (r.top + r.height / 2)) / (r.height / 2);
         el.style.transform = `translate(${(x * 6).toFixed(1)}px, ${(y * 6).toFixed(1)}px)`;
       },
-      { passive: true },
+      { passive: true, signal },
     );
     el.addEventListener("pointerleave", () => {
       el.style.transition = "transform 0.45s cubic-bezier(0.2, 0.9, 0.3, 1.4)";
       el.style.transform = "";
       setTimeout(() => (el.style.transition = ""), 460);
-    });
+    }, { signal });
   });
 }
 
@@ -74,7 +82,7 @@ export function initMagnetic(selector: string): void {
  *  docked content is never distorted while being read. Fast scrolling adds
  *  a motion-blur pass on top: content lags a touch, stretches slightly
  *  along the scroll axis, and softens, then snaps sharp as you stop. */
-export function initArrive(selector: string): void {
+export function initArrive(selector: string, signal?: AbortSignal): void {
   if (reduce()) return;
   const els = Array.from(document.querySelectorAll<HTMLElement>(selector));
   if (!els.length) return;
@@ -115,17 +123,18 @@ export function initArrive(selector: string): void {
     else vel = 0;
   };
   const queue = () => {
-    if (!raf) raf = requestAnimationFrame(apply);
+    if (!raf && !signal?.aborted) raf = requestAnimationFrame(apply);
   };
-  window.addEventListener("scroll", queue, { passive: true });
-  window.addEventListener("resize", queue, { passive: true });
+  window.addEventListener("scroll", queue, { passive: true, signal });
+  window.addEventListener("resize", queue, { passive: true, signal });
+  onAbort(signal, () => cancelAnimationFrame(raf));
   apply();
 }
 
 /** Decorative elements drift vertically at their own rate while you scroll
  *  (data-parallax = speed factor), which reads as layers at different
  *  depths. Decor only: everything using this is aria-hidden. */
-export function initParallax(selector = "[data-parallax]"): void {
+export function initParallax(selector = "[data-parallax]", signal?: AbortSignal): void {
   if (reduce()) return;
   const els = Array.from(document.querySelectorAll<HTMLElement>(selector));
   if (!els.length) return;
@@ -141,7 +150,8 @@ export function initParallax(selector = "[data-parallax]"): void {
   const queue = () => {
     if (!raf) raf = requestAnimationFrame(apply);
   };
-  window.addEventListener("scroll", queue, { passive: true });
+  window.addEventListener("scroll", queue, { passive: true, signal });
+  onAbort(signal, () => cancelAnimationFrame(raf));
   apply();
 }
 
@@ -159,7 +169,7 @@ export function ambTargets(): HTMLElement[] {
  *  actually shows its own colour; otherwise the stops spread linearly over
  *  the page height. The starfield reads the same values, so the glow reads
  *  as coming from the stars. */
-export function initAmbient(stops: Array<[string, string]>, sectionIds?: string[]): void {
+export function initAmbient(stops: Array<[string, string]>, sectionIds?: string[], signal?: AbortSignal): void {
   const el = document.querySelector<HTMLElement>("[data-ambient]");
   if (!el || stops.length < 2) return;
   const cols = stops.map(([a, b]) => [a.split(",").map(Number), b.split(",").map(Number)]);
@@ -221,8 +231,9 @@ export function initAmbient(stops: Array<[string, string]>, sectionIds?: string[
     setAt(0, 0);
     return;
   }
-  const queue = () => { if (!raf) raf = requestAnimationFrame(apply); };
-  window.addEventListener("scroll", queue, { passive: true });
+  const queue = () => { if (!raf && !signal?.aborted) raf = requestAnimationFrame(apply); };
+  window.addEventListener("scroll", queue, { passive: true, signal });
+  onAbort(signal, () => cancelAnimationFrame(raf));
   // Phones fire resize as the address bar comes and goes; section centres
   // only move when the width changes, so measure again only then.
   let measuredWidth = window.innerWidth;
@@ -235,16 +246,18 @@ export function initAmbient(stops: Array<[string, string]>, sectionIds?: string[
       }
       queue();
     },
-    { passive: true },
+    { passive: true, signal },
   );
-  // Layout can shift as images load; re-measure once things settle.
-  window.addEventListener("load", () => { measure(); queue(); }, { once: true });
+  // Layout can shift as images load; re-measure once things settle. After a
+  // client side navigation there is no window load, so wait on the images.
+  if (document.readyState === "complete" && signal) afterImages(signal, () => { measure(); queue(); });
+  else window.addEventListener("load", () => { measure(); queue(); }, { once: true, signal });
   apply();
 }
 
 /** Space objects are alive: click one and it flies off into the depth of
  *  space, then respawns somewhere else in its section a moment later. */
-export function initSpaceObjects(selector = ".space-el"): void {
+export function initSpaceObjects(selector = ".space-el", signal?: AbortSignal): void {
   document.querySelectorAll<HTMLElement>(selector).forEach((wrap) => {
     const objs = Array.from(wrap.children) as HTMLElement[];
     if (!objs.length) return;
@@ -269,7 +282,7 @@ export function initSpaceObjects(selector = ".space-el"): void {
           o.addEventListener("animationend", () => o.classList.remove("space-spawn"), { once: true });
         });
       }, wait);
-    });
+    }, { signal });
   });
 }
 
@@ -278,7 +291,7 @@ export function initSpaceObjects(selector = ".space-el"): void {
  *  motion), fades out near the end of its life, and is reborn somewhere
  *  else on a new heading. Clicking one sends it into the abyss early.
  *  The section owns its comets, so they scroll away with the content. */
-export function initComets(selector = ".space-el"): void {
+export function initComets(selector = ".space-el", signal?: AbortSignal): void {
   if (reduce()) return;
   const wraps = Array.from(document.querySelectorAll<HTMLElement>(selector));
   if (!wraps.length) return;
@@ -346,7 +359,7 @@ export function initComets(selector = ".space-el"): void {
         respawn();
         st.flying = false;
       }, 2100 + Math.random() * 1500);
-    });
+    }, { signal });
     (st as CometState & { respawn?: () => void }).respawn = respawn;
     comets.push(st);
   }
@@ -364,14 +377,15 @@ export function initComets(selector = ".space-el"): void {
   if ("ResizeObserver" in window) {
     const ro = new ResizeObserver(remeasure);
     parents.forEach((p) => ro.observe(p));
-  } else window.addEventListener("resize", remeasure, { passive: true });
+    onAbort(signal, () => ro.disconnect());
+  } else window.addEventListener("resize", remeasure, { passive: true, signal });
   let raf = 0;
   let last = performance.now();
   // Below 1024px the comets are display: none (landing.css), so the loop
   // stays asleep there instead of moving what nobody can see.
   const hiddenHere = window.matchMedia("(max-width: 1023px)");
   const wake = () => {
-    if (raf || !near.size || document.hidden || hiddenHere.matches) return;
+    if (raf || signal?.aborted || !near.size || document.hidden || hiddenHere.matches) return;
     last = performance.now();
     raf = requestAnimationFrame(tick);
   };
@@ -387,12 +401,17 @@ export function initComets(selector = ".space-el"): void {
       { rootMargin: "60px 0px" },
     );
     parents.forEach((p) => io.observe(p));
+    onAbort(signal, () => io.disconnect());
   } else parents.forEach((p) => near.add(p));
-  document.addEventListener("visibilitychange", wake);
-  hiddenHere.addEventListener?.("change", wake);
+  document.addEventListener("visibilitychange", wake, { signal });
+  hiddenHere.addEventListener?.("change", wake, { signal });
+  onAbort(signal, () => {
+    cancelAnimationFrame(raf);
+    raf = 0;
+  });
   function tick(now: number) {
     raf = 0;
-    if (!near.size || document.hidden || hiddenHere.matches) return;
+    if (signal?.aborted || !near.size || document.hidden || hiddenHere.matches) return;
     raf = requestAnimationFrame(tick);
     const dt = Math.min((now - last) / 1000, 0.08);
     last = now;
@@ -425,7 +444,7 @@ export function initComets(selector = ".space-el"): void {
  *  carry on from the same frame before it scrolls back in. Browsers keep
  *  ticking them off screen otherwise. Finite animations and transitions are
  *  left alone. */
-export function pauseOffscreen(selector: string): void {
+export function pauseOffscreen(selector: string, signal?: AbortSignal): void {
   const els = document.querySelectorAll<HTMLElement>(selector);
   if (!els.length || !("IntersectionObserver" in window) || !els[0].getAnimations) return;
   const held = new WeakSet<Animation>();
@@ -448,11 +467,12 @@ export function pauseOffscreen(selector: string): void {
     { rootMargin: "100% 0px" },
   );
   els.forEach((el) => io.observe(el));
+  onAbort(signal, () => io.disconnect());
 }
 
 /** Numbers with data-count animate from 0 when they first become visible.
  *  data-prefix / data-suffix wrap the number. */
-export function initCountUps(selector: string): void {
+export function initCountUps(selector: string, signal?: AbortSignal): void {
   const els = document.querySelectorAll<HTMLElement>(selector);
   if (!els.length || !("IntersectionObserver" in window)) return;
   const io = new IntersectionObserver(
@@ -482,4 +502,5 @@ export function initCountUps(selector: string): void {
     { threshold: 0.6 },
   );
   els.forEach((el) => io.observe(el));
+  onAbort(signal, () => io.disconnect());
 }

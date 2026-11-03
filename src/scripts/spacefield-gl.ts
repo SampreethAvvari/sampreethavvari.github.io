@@ -4,8 +4,11 @@
 // OffscreenCanvas. See SpaceField.astro for what the sky looks like and why.
 
 /** What the page tells the sky: where it is scrolled, the section colours,
- *  and when the loader handed over (epoch ms), if it has. */
-export type SkyInput = { scrollY: number; th1: number[]; th2: number[]; arrivedAt: number | null };
+ *  when the loader last handed over (epoch ms), if it has, and how far the
+ *  camera already travelled on earlier pages of the visit. The sky persists
+ *  across client side navigation, so a new page's scroll and arrival add on
+ *  to that instead of flying back. */
+export type SkyInput = { scrollY: number; th1: number[]; th2: number[]; arrivedAt: number | null; travel?: number };
 
 export type Sky = {
   /** Calls back once the shaders are linked (true) or failed (false). */
@@ -215,7 +218,7 @@ export function createSky(canvas: HTMLCanvasElement | OffscreenCanvas, isMobile:
         const p = Math.min(1, (now - input.arrivedAt) / 1800);
         coast = 7 * (1 - Math.pow(1 - p, 3));
       }
-      const target = input.scrollY * 0.006 + t * 0.22 + coast;
+      const target = (input.travel || 0) + input.scrollY * 0.006 + t * 0.22 + coast;
       const prev = cam;
       cam += (target - cam) * 0.08;
       // Smoothed camera speed drives the warp streaks.

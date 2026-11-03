@@ -150,13 +150,20 @@ const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
 // through the cloud stays clean and things pass behind you.
 const NEAR = 28;
 
-export function mountMind() {
+// Mounts the map on the page and returns a function that takes it down
+// again: the render loop, the observers and every window listener. The site
+// moves between pages without reloading, so /mind calls this each time it is
+// shown and the returned function when it is swapped away.
+export function mountMind(): (() => void) | undefined {
   const canvas = document.getElementById("mind-canvas") as HTMLCanvasElement | null;
   const dataEl = document.getElementById("mind-data");
   const panel = document.querySelector("[data-mind-panel]");
   if (!canvas || !dataEl || !panel) return;
   const ctx = canvas.getContext("2d");
   if (!ctx) return;
+  const life = new AbortController();
+  const signal = life.signal;
+  const on = { signal };
 
   const graphs: RawGraph[] = JSON.parse(dataEl.textContent || "[]");
   if (!graphs.length) return;
@@ -875,6 +882,7 @@ export function mountMind() {
 
   let prevCam = { tx: 0, ty: 0, tz: 0, dist: 0, yaw: 0, pitch: 0 };
   function render(now: number) {
+    if (signal.aborted) return;
     const dt = last ? Math.min(0.05, (now - last) / 1000) : 0;
     last = now;
     time += dt;
@@ -1251,9 +1259,9 @@ export function mountMind() {
       wake();
       if (k.startsWith("arrow")) e.preventDefault();
     }
-  });
-  window.addEventListener("keyup", (e) => keys.delete(e.key.toLowerCase()));
-  window.addEventListener("blur", () => keys.clear());
+  }, on);
+  window.addEventListener("keyup", (e) => keys.delete(e.key.toLowerCase()), on);
+  window.addEventListener("blur", () => keys.clear(), on);
   function keysFly(dt: number) {
     if (!keys.size) return;
     const { right, up, back } = axes();
@@ -1627,7 +1635,7 @@ export function mountMind() {
   // keep pointer and wheel on the tour card from moving the map
   for (const ev of ["pointerdown", "wheel", "click"]) tourEl?.addEventListener(ev, (e) => e.stopPropagation());
   tourOpen?.addEventListener("click", (e) => { e.stopPropagation(); startTour(); });
-  window.addEventListener("resize", () => placeTour());
+  window.addEventListener("resize", () => placeTour(), on);
 
   // ---- boot ---------------------------------------------------------------
   let resizeQueued = false;
@@ -1640,11 +1648,20 @@ export function mountMind() {
   resize();
   loadGraph(graphKey);
   raf = requestAnimationFrame(render);
-  window.addEventListener("beforeunload", () => cancelAnimationFrame(raf));
   // first visit in this browser: the tour opens once the map has settled
   let seen = false;
   try { seen = localStorage.getItem(TOUR_KEY) === "seen"; } catch { seen = false; }
-  if (!seen && !new URLSearchParams(location.search).has("notour")) window.setTimeout(startTour, 1400);
+  const tourTimer = !seen && !new URLSearchParams(location.search).has("notour") ? window.setTimeout(startTour, 1400) : 0;
+
+  return () => {
+    life.abort();
+    cancelAnimationFrame(raf);
+    raf = 0;
+    ro.disconnect();
+    clearTimeout(tourTimer);
+    keys.clear();
+    document.body.classList.remove("mind-touring");
+  };
 }
 
 // ---- helpers --------------------------------------------------------------

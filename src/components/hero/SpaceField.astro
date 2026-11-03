@@ -14,9 +14,14 @@
 // The drawing lives in src/scripts/spacefield-gl.ts and runs in a worker on
 // an OffscreenCanvas, so starting WebGL and drawing each frame never use the
 // page's main thread. Browsers without OffscreenCanvas draw here instead.
+//
+// One sky for the whole visit: the canvas persists across client side
+// navigation (transition:persist) and the script below runs once. On a page
+// swap the camera keeps the distance it has flown, so the new page's scroll
+// position and the loader's arrival add on instead of flying it back.
 ---
 
-<canvas class="spacefield" data-spacefield aria-hidden="true"></canvas>
+<canvas class="spacefield" data-spacefield aria-hidden="true" transition:persist="spacefield"></canvas>
 
 <style>
   .spacefield {
@@ -42,7 +47,9 @@
 
   (function () {
     const canvas = document.querySelector<HTMLCanvasElement>("[data-spacefield]");
-    if (!canvas) return;
+    // Once a visit: the canvas persists, and it can only be handed over once.
+    if (!canvas || canvas.dataset.sky) return;
+    canvas.dataset.sky = "1";
     const cv: HTMLCanvasElement = canvas;
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
     const isMobile = window.matchMedia("(max-width: 1023px)").matches;
@@ -76,17 +83,34 @@
     };
     window.addEventListener("scroll", () => update({ scrollY: window.scrollY }), { passive: true });
     if (ambientEl) new MutationObserver(() => update(colours())).observe(ambientEl, { attributes: true, attributeFilter: ["style"] });
-    if (!input.arrivedAt) {
-      let stamp: number | undefined;
-      Object.defineProperty(w, "__warpArrive", {
-        configurable: true,
-        get: () => stamp,
-        set: (v: number) => {
-          stamp = v;
-          update({ arrivedAt: arrival() });
-        },
-      });
-    }
+    // The loader hands over on the first page and again after every move to
+    // another page. Each arrival coasts the camera forward; the coast of the
+    // one before is kept as distance travelled, so a new one never pulls back.
+    const coastNow = () => {
+      if (!input.arrivedAt) return 0;
+      const p = Math.min(1, (performance.timeOrigin + performance.now() - input.arrivedAt) / 1800);
+      return 7 * (1 - Math.pow(1 - p, 3));
+    };
+    let stamp = w.__warpArrive;
+    Object.defineProperty(w, "__warpArrive", {
+      configurable: true,
+      get: () => stamp,
+      set: (v: number) => {
+        const travel = (input.travel || 0) + coastNow();
+        stamp = v;
+        update({ travel, arrivedAt: arrival() });
+      },
+    });
+    // A page swap: the router scrolls the new page to its top (or where it
+    // was left). Fold the old page's scroll into the distance travelled.
+    let leftAt = window.scrollY;
+    document.addEventListener("astro:before-swap", () => {
+      leftAt = window.scrollY;
+    });
+    document.addEventListener("astro:after-swap", () => {
+      const y = window.scrollY;
+      update({ travel: (input.travel || 0) + (leftAt - y) * 0.006, scrollY: y });
+    });
     // Phones fire resize as the address bar comes and goes. Resizing a canvas
     // clears it, so only pass on a real change of size.
     const key = (s: { w: number; h: number; dpr: number }) => `${s.w}x${s.h}@${s.dpr}`;

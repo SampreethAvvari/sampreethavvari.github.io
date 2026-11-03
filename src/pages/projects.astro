@@ -747,23 +747,28 @@ const FACE_STATS = { flag: 2, tile: 1 };
 </style>
 
 <script>
+  import { onPage } from "../scripts/lifecycle";
+
   // An open tile moves into a row of its own (and moves back when closed).
   // Keep the line that was clicked where it was on screen, so the reader
-  // never loses their place when the grid reflows.
-  document.querySelectorAll<HTMLDetailsElement>(".ptile > .pmore").forEach((d) => {
-    const summary = d.querySelector("summary");
-    if (!summary) return;
-    let before: number | null = null;
-    summary.addEventListener("click", () => {
-      before = summary.getBoundingClientRect().top;
-    });
-    d.addEventListener("toggle", () => {
-      if (before === null) return;
-      const was = before;
-      before = null;
-      requestAnimationFrame(() => {
-        const shift = summary.getBoundingClientRect().top - was;
-        if (Math.abs(shift) > 2) window.scrollBy({ top: shift, behavior: "instant" as ScrollBehavior });
+  // never loses their place when the grid reflows. Runs each time the page
+  // is shown; the listeners are on its own tiles, so they go with the page.
+  onPage("projects", () => {
+    document.querySelectorAll<HTMLDetailsElement>(".ptile > .pmore").forEach((d) => {
+      const summary = d.querySelector("summary");
+      if (!summary) return;
+      let before: number | null = null;
+      summary.addEventListener("click", () => {
+        before = summary.getBoundingClientRect().top;
+      });
+      d.addEventListener("toggle", () => {
+        if (before === null) return;
+        const was = before;
+        before = null;
+        requestAnimationFrame(() => {
+          const shift = summary.getBoundingClientRect().top - was;
+          if (Math.abs(shift) > 2) window.scrollBy({ top: shift, behavior: "instant" as ScrollBehavior });
+        });
       });
     });
   });

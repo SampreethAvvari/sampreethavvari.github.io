@@ -6,6 +6,13 @@
 // build cannot run. Everything else is limited to this site plus the two
 // Workers the pages call and the demo the JobPilot post embeds.
 //
+// The site moves between pages without reloading (Astro view transitions),
+// so the policy of the page a visit starts on stays in force for the whole
+// visit, and every page's meta adds its own on top. A page's inline scripts
+// must therefore be allowed on every page. Two passes: hash the inline
+// scripts of every page first, then write the same policy, with the union
+// of those hashes, into every page.
+//
 // Runs after `astro build` (see package.json). Re-running it on the same
 // dist replaces the old policy.
 
@@ -60,12 +67,14 @@ function walk(dir, out = []) {
   return out;
 }
 
-let pages = 0;
+const OLD_META = /<meta http-equiv="Content-Security-Policy"[^>]*>/i;
+
+// Pass 1: every page's inline scripts, hashed into one set.
+const files = walk(DIST);
+const hashes = new Set();
 let scripts = 0;
-for (const file of walk(DIST)) {
-  let html = fs.readFileSync(file, "utf8");
-  html = html.replace(/<meta http-equiv="Content-Security-Policy"[^>]*>/i, "");
-  const hashes = new Set();
+for (const file of files) {
+  const html = fs.readFileSync(file, "utf8").replace(OLD_META, "");
   for (const m of html.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script>/gi)) {
     const attrs = m[1];
     if (/\bsrc\s*=/.test(attrs)) continue;
@@ -76,11 +85,26 @@ for (const file of walk(DIST)) {
     hashes.add("sha256-" + crypto.createHash("sha256").update(body, "utf8").digest("base64"));
     scripts++;
   }
+}
+
+// Pass 2: the same policy, with all of those hashes, into every page. A page
+// with its own extra script source (PAGE_SCRIPTS) is a plain HTML page the
+// router never swaps in, so that source stays on that page alone.
+const union = [...hashes].sort();
+const policies = new Set();
+let pages = 0;
+for (const file of files) {
+  let html = fs.readFileSync(file, "utf8").replace(OLD_META, "");
   const rel = path.relative(DIST, file).split(path.sep).join("/");
-  const meta = `<meta http-equiv="Content-Security-Policy" content="${policyFor([...hashes], PAGE_SCRIPTS[rel] || [])}">`;
+  const policy = policyFor(union, PAGE_SCRIPTS[rel] || []);
+  policies.add(policy);
+  const meta = `<meta http-equiv="Content-Security-Policy" content="${policy}">`;
   if (/<meta charset[^>]*>/i.test(html)) html = html.replace(/(<meta charset[^>]*>)/i, `$1${meta}`);
   else html = html.replace(/<head([^>]*)>/i, `<head$1>${meta}`);
   fs.writeFileSync(file, html);
   pages++;
 }
-console.log(`[csp] policy written to ${pages} pages (${scripts} inline scripts hashed)`);
+console.log(
+  `[csp] one policy written to ${pages} pages: ${union.length} distinct inline scripts (${scripts} in all)` +
+    (policies.size > 1 ? `; ${policies.size - 1} of them adds an extra script source` : ""),
+);

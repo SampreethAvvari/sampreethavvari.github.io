@@ -1,64 +1,70 @@
 ---
+// The filmmaking page. Among Monsters leads as the coming feature, the rest
+// of the slate arrives as you scroll, then frames from the film, the jobs I
+// do on set and where to watch and read. Every film has its own page; the
+// facts for all of them live in src/data/films.ts.
 import BaseLayout from "../layouts/BaseLayout.astro";
-import fs from "node:fs";
-import path from "node:path";
 import SmartImage from "../components/common/SmartImage.astro";
 import Icon from "../components/common/Icon.astro";
-import { canonicalImageList } from "../utils/optimizedImage";
-import { filmNodes } from "../utils/seo";
+import {
+  films,
+  crafts,
+  filmPath,
+  filmBySlug,
+  filmByTitle,
+  filmStills,
+  yearLabel,
+  rolesLine,
+  photographyUrl,
+  type Film,
+} from "../data/films";
+import { filmNodes, itemListNode } from "../utils/seo";
 
 const title = "SA: Filmmaking";
 const description =
   "Films by Sampreeth Avvari. Among Monsters, an independent crime drama shot in New York, plus the full slate, stills, cast and crew.";
-const playlistUrl = "https://www.youtube.com/@DudeStrong";
-const screenplayUrl = "/among-monsters-screenplay.pdf";
-const imdbUrl = "https://www.imdb.com/title/tt39700295/";
-const photographyUrl = "https://www.instagram.com/on.my.earth/";
 
-const posterSrc = "/among-monsters-poster.jpg";
+const feature = filmBySlug("among-monsters")!;
+const { imdb, screenplay, playlist } = feature.links!;
+const stills = filmStills(feature);
+const keyCreators = feature.credits?.find((g) => g.label === "Above the line")?.people ?? [];
+// The logline's first sentence carries the film on its own.
+const loglineLead = (feature.logline!.match(/^.+?[.!?](?=\s|$)/) || [feature.logline!])[0];
 
-const IMG_RE = /\.(png|jpe?g|webp|gif|avif)$/i;
-const readImages = (dir) => {
-  try {
-    return canonicalImageList(fs.readdirSync(dir).filter((file) => IMG_RE.test(file))).sort((a, b) =>
-      a.localeCompare(b)
-    );
-  } catch (error) {
-    return [];
-  }
-};
+const featureFacts = [
+  { label: "Year", value: feature.year! },
+  { label: "Status", value: feature.statusNote! },
+  { label: "Shot", value: `${feature.shot!.place}, ${feature.shot!.when}` },
+  { label: "Genre", value: feature.genre! },
+];
 
-// Among Monsters stills. Filenames carry the edit's clip numbers
-// ("Carl 1_1.90.1"), so the readable part is everything before them.
-const galleryDir = path.join(process.cwd(), "public", "Photo Gallery");
-const stillName = (file) =>
-  file
-    .replace(/\.[^/.]+$/, "")
-    .replace(/_[\d.]+$/, "")
-    .replace(/[-_]+/g, " ")
-    .trim();
-const stills = readImages(galleryDir).map((file) => ({
-  src: `/Photo%20Gallery/${encodeURIComponent(file)}`,
-  alt: `Among Monsters still, ${stillName(file)}`,
-}));
+// The reel: each film's poster, a frame from it, or a title card. A title
+// card is plainly a card (the title set in type on a red field between
+// letterbox bars), never dressed up as a poster.
+const swechcha = filmBySlug("swechcha")!;
+const swechchaFrame = filmStills(swechcha)[4] ?? filmStills(swechcha)[0];
+const art = (film: Film) =>
+  film.poster ? "poster" : film.slug === "swechcha" && swechchaFrame ? "still" : "card";
+// Where each card's nebula and eclipse sit, so no two cards look alike.
+const SEEDS = [
+  [24, 40, 76, 58],
+  [70, 34, 26, 66],
+  [36, 64, 78, 30],
+  [78, 56, 22, 38],
+  [50, 28, 30, 70],
+  [26, 60, 70, 36],
+  [62, 66, 34, 30],
+  [40, 32, 74, 64],
+  [72, 44, 24, 56],
+];
+const metaLine = (film: Film) =>
+  film.status === "dated"
+    ? yearLabel(film)
+    : `${yearLabel(film)} · ${film.statusNote ?? (film.status === "upcoming" ? "Upcoming" : "Released")}`;
 
-const swechchaStills = readImages(path.join(galleryDir, "Swechcha")).map((file, i) => ({
-  src: `/Photo%20Gallery/Swechcha/${encodeURIComponent(file)}`,
-  alt: `Swechcha still ${i + 1}`,
-}));
-
-const crewPhoto = (filename) => ({
-  src: `/Crew%20Photos/${encodeURIComponent(filename)}`,
-  alt: filename.replace(/\.[^/.]+$/, ""),
-});
-
-const instagramUrl = (handle) => (handle ? `https://instagram.com/${handle.replace(/^@/, "")}` : "");
-
-// Cast and crew without a real headshot get a clean initials panel rather
-// than reusing an on set still, so no scene is passed off as a portrait.
-const pickGalleryImage = () => ({ placeholder: true });
-const initials = (name) =>
-  (name || "")
+const instagramUrl = (handle?: string) => (handle ? `https://instagram.com/${handle.replace(/^@/, "")}` : "");
+const initials = (name: string) =>
+  name
     .split(/\s+/)
     .map((w) => w[0])
     .filter(Boolean)
@@ -66,208 +72,14 @@ const initials = (name) =>
     .join("")
     .toUpperCase();
 
-const keyCreators = [
-  {
-    role: "Director · Writer",
-    name: "Sampreeth Sharma",
-    image: crewPhoto("Sampreeth.JPG"),
-    instagram: "@sampreeth.sharma",
-  },
-  {
-    role: "Director of photography",
-    name: "Isaac Chipe",
-    image: crewPhoto("Isaac.jpg"),
-    instagram: "@isaacchipedop",
-  },
-  {
-    role: "Co writer",
-    name: "Akash Munji",
-    image: crewPhoto("Akash.jpg"),
-    instagram: "@akumunji",
-  },
-];
-
-const mainCast = [
-  {
-    name: "Sam Velletri",
-    role: "John Reese · Harold Finch",
-    image: crewPhoto("Sam Velletri.jpg"),
-    instagram: "@samvelletri",
-  },
-  {
-    name: "Matt Ehrmann",
-    role: "",
-    image: pickGalleryImage(),
-    instagram: "@mattspaceship",
-  },
-  {
-    name: "Kendall Hobson",
-    role: "Carl",
-    image: crewPhoto("Kendall.jpeg"),
-    instagram: "@kenny.flair",
-  },
-  {
-    name: "Lazaro Clapp",
-    role: "",
-    image: crewPhoto("Lazaro.png"),
-    imageStyle: "object-position: 28% center;",
-    instagram: "@lazaroclapp",
-  },
-  {
-    name: "Alex Murray",
-    role: "Sam",
-    image: crewPhoto("Alex.jpeg"),
-    instagram: "@cooldudemurray",
-  },
-  {
-    name: "Evan Beskin",
-    role: "Agent David",
-    image: crewPhoto("Evan.png"),
-    imageStyle: "object-position: 65% 60%; transform: scale(1.12);",
-    instagram: "",
-  },
-];
-
-const supportingCast = [
-  {
-    name: "Asli Mumtas",
-    role: "Grace",
-    image: crewPhoto("Asli.png"),
-    imageStyle: "object-position: 70% center;",
-    instagram: "@asliimumtas",
-  },
-  {
-    name: "Tom Velletri",
-    role: "Faith",
-    image: crewPhoto("Tom Velletri.jpeg"),
-    imageStyle: "object-position: 30% center; transform: scale(1.05);",
-    instagram: "@tomvelletri",
-  },
-  {
-    name: "Jordyn Andrea",
-    role: "Sarah",
-    image: crewPhoto("Jordyn.jpeg"),
-    imageStyle: "transform: scale(1.05);",
-    instagram: "@jordyn.andrea",
-  },
-  {
-    name: "Luke Johnson",
-    role: "Marcus",
-    image: crewPhoto("Luke.jpeg"),
-    instagram: "@lukeabjohnson",
-  },
-  {
-    name: "Riyaan Jiwani",
-    role: "Max",
-    image: crewPhoto("Max.jpeg"),
-    instagram: "@riyaan.jiwani",
-  },
-  {
-    name: "Dylan Redford",
-    role: "Unnamed FBI agent",
-    image: pickGalleryImage(),
-    instagram: "@dylanredford",
-  },
-];
-
-const musicCredits = [
-  {
-    name: "Sai Charan Thota",
-    role: "PRO-JECT 53",
-    image: pickGalleryImage(),
-    instagram: "@charan_af",
-  },
-  {
-    name: "Eknath Sravanam",
-    role: "PRO-JECT 53",
-    image: pickGalleryImage(),
-    instagram: "@eknath_sravanam",
-  },
-];
-
-const crewGroups = [
-  { label: "Above the line", people: keyCreators },
-  { label: "Cast", people: [...mainCast, ...supportingCast] },
-  { label: "Music", people: musicCredits },
-];
-
-// The slate, newest first. Credits read as sentence case with middots.
-const filmography = [
-  { title: "Among Monsters", year: "2026", roles: ["Director", "Writer", "Editor", "Music"] },
-  { title: "L'immigrata", year: "2026", roles: ["Assistant Director", "Editor"] },
-  { title: "Office Plant", year: "2026", roles: ["Assistant Director", "Editor"] },
-  { title: "Extraordinary Lives", year: "upcoming", roles: ["Director", "Writer"] },
-  { title: "Pupa", year: "upcoming", roles: ["Writer"] },
-  { title: "Solstice", year: "2025", roles: ["Editor"] },
-  { title: "Swechcha", year: "2024", roles: ["Editor"] },
-  { title: "Tiger Man", year: "2022", roles: ["Director", "Writer", "Editor"] },
-  { title: "Strangers", year: "2019", roles: ["Cinematographer", "Music"] },
-];
-const yearLabel = (year) => (year === "upcoming" ? "Soon" : year);
-
-// The same films seen by the job I did on each.
-const roles = [
-  {
-    title: "Director",
-    image: "/Creative%20Roles/Director.jpg",
-    films: ["Extraordinary Lives", "Among Monsters", "Tiger Man"],
-  },
-  {
-    title: "Writer",
-    image: "/Creative%20Roles/Write.jpg",
-    films: ["Extraordinary Lives", "Pupa", "Among Monsters", "Tiger Man"],
-  },
-  {
-    title: "Editor",
-    image: "/Creative%20Roles/Editor.jpg",
-    films: ["Among Monsters", "L'immigrata", "Office Plant", "Solstice", "Swechcha", "Tiger Man"],
-  },
-  {
-    title: "Cinematographer",
-    image: "/Creative%20Roles/Cinematographer.jpg",
-    films: ["Among Monsters", "Strangers"],
-  },
-  {
-    title: "Music composer",
-    image: "/Creative%20Roles/Music.jpg",
-    films: ["Among Monsters", "Strangers"],
-  },
-];
-
-const featureFacts = [
-  { label: "My roles", value: "Director · Writer · Editor · Music" },
-  { label: "Year", value: "2026" },
-  { label: "Status", value: "Premiering in NYC" },
-  { label: "Shot", value: "New York City, 2024 and 2025" },
-  { label: "Genre", value: "Independent crime drama" },
-];
-
 const links = [
-  {
-    title: "Among Monsters playlist",
-    line: "The film's playlist on YouTube.",
-    href: playlistUrl,
-    icon: "youtube",
-  },
-  {
-    title: "Screenplay",
-    line: "Read the Among Monsters script as a PDF.",
-    href: screenplayUrl,
-    icon: "file",
-  },
-  {
-    title: "Photography",
-    line: "My photography page on Instagram.",
-    href: photographyUrl,
-    icon: "instagram",
-  },
-  {
-    title: "IMDb",
-    line: "Among Monsters on IMDb.",
-    href: imdbUrl,
-    icon: "imdb",
-  },
+  { title: "Among Monsters playlist", line: "The film's playlist on YouTube.", href: playlist!, icon: "youtube" },
+  { title: "Screenplay", line: "Read the Among Monsters script as a PDF.", href: screenplay!, icon: "file" },
+  { title: "Photography", line: "My photography page on Instagram.", href: photographyUrl, icon: "instagram" },
+  { title: "IMDb", line: "Among Monsters on IMDb.", href: imdb!, icon: "imdb" },
 ];
+
+const base = Astro.site!.toString();
 ---
 
 <BaseLayout
@@ -275,320 +87,338 @@ const links = [
   description={description}
   footerVariant="filmmaking"
   ogImage="/og/film.jpg"
-  schema={filmNodes(Astro.site!.toString())}
+  preloadImage="/among-monsters-poster.avif"
+  schema={[
+    ...filmNodes(base),
+    itemListNode(base, "/filmmaking", "Films by Sampreeth Avvari", films.map((f) => ({ name: f.title, path: filmPath(f.slug) }))),
+  ]}
   crumbs={[{ name: "Home", path: "/" }, { name: "Filmmaking", path: "/filmmaking" }]}
 >
-  <!-- Page top and the current feature -->
-  <section class="page-top film-top">
-    <div class="tone-atmos" aria-hidden="true"></div>
-    <div class="wrap on-top">
-      <div class="film-intro">
-        <p class="kicker">Film</p>
-        <h1 class="t-title film-title">
-          Gray characters and tight spaces.
-          <span class="t-tail">The chaos hiding inside ordinary lives.</span>
-        </h1>
-        <p class="t-lede film-lede">
-          I write, direct, edit and score. Among Monsters is the independent
-          crime drama I made in New York, and below it is the rest of the
-          slate, back to 2019.
-        </p>
+  <div class="fm">
+    <!-- The coming feature -->
+    <section id="among-monsters" class="fm-hero" aria-labelledby="fm-title">
+      <div class="fm-space" aria-hidden="true">
+        <span class="fm-nebula fm-nebula-a"></span>
+        <span class="fm-nebula fm-nebula-b"></span>
+        <span class="fm-beam"></span>
+        <canvas class="fm-dust" data-fm-dust></canvas>
       </div>
 
-      <article id="among-monsters" class="surface feature" aria-labelledby="feature-title">
-        <div class="feature-media">
-          <SmartImage
-            src={posterSrc}
-            alt="Among Monsters poster with the full credits"
-            class="feature-img"
-            loading="eager"
-            fetchpriority="high"
-          />
-        </div>
-        <div class="feature-body">
-          <div class="feature-copy">
-            <div class="feature-badges">
+      <div class="wrap">
+        <div class="fm-stage">
+          <div class="fm-hero-top">
+            <p class="kicker">Film</p>
+            <div class="fm-badges">
               <span class="badge badge-tone">Current feature</span>
               <span class="badge">Premieres 2026</span>
             </div>
-            <h2 id="feature-title" class="t-h2 feature-name">Among Monsters</h2>
-            <p class="feature-logline">
-              A criminal trapped in a coward's body sets out to take revenge at
-              any cost. Guns and drugs don't save people. The question isn't
-              whether he breaks, it's how long he can keep going before the
-              chaos finishes him.
-            </p>
-            <p class="t-body feature-note">
-              I wrote, directed, edited, and scored it. We shot it across New
-              York City in 2024 and 2025, in real living rooms and motel
-              parking lots and the kind of streets the script kept asking for.
-              Premieres in NYC in 2026.
-            </p>
-            <div class="feature-actions">
-              <a href={imdbUrl} target="_blank" rel="noreferrer" class="btn btn-glass">
-                <span class="imdb-wordmark">IMDb</span> On IMDb
-                <Icon name="arrow-up-right" size={15} class="arrow-ur" />
-              </a>
-              <a href={screenplayUrl} target="_blank" rel="noreferrer" class="btn btn-glass">
-                Read the screenplay
-              </a>
-              <a href={playlistUrl} target="_blank" rel="noreferrer" class="btn btn-ghost">
-                Watch the playlist
-                <Icon name="arrow-up-right" size={15} class="arrow-ur" />
-              </a>
-            </div>
           </div>
 
-          <dl class="facts">
+          <div class="fm-screen-wrap">
+            <span class="fm-sun" aria-hidden="true"><span class="fm-corona"></span></span>
+            <a href={filmPath(feature.slug)} class="fm-screen" aria-label="Among Monsters, open the film's page">
+              <SmartImage
+                src={feature.poster!.src}
+                alt={feature.poster!.alt}
+                class="fm-screen-img"
+                loading="eager"
+                fetchpriority="high"
+              />
+            </a>
+            <span class="fm-floor" aria-hidden="true"></span>
+          </div>
+
+          <div class="fm-credits">
+            <div>
+              <h1 id="fm-title" class="fm-title">Among Monsters</h1>
+              <p class="fm-roles">
+                <span class="fm-label">My roles</span>
+                {rolesLine(feature)}
+              </p>
+            </div>
+            <p class="fm-logline">{loglineLead}</p>
+          </div>
+          <div class="fm-actions">
+            <a href="#stills" class="btn btn-primary">
+              See the stills <Icon name="arrow-down" size={15} />
+            </a>
+            <a href={screenplay} target="_blank" rel="noreferrer" class="btn btn-tone">Read the screenplay</a>
+            <a href={imdb} target="_blank" rel="noreferrer" class="btn btn-ghost">
+              <span class="imdb-wordmark">IMDb</span> On IMDb
+              <Icon name="arrow-up-right" size={15} class="arrow-ur" />
+            </a>
+            <a href={playlist} target="_blank" rel="noreferrer" class="btn btn-ghost">
+              Watch the playlist <Icon name="arrow-up-right" size={15} class="arrow-ur" />
+            </a>
+          </div>
+
+          <dl class="fm-facts">
             {featureFacts.map((f) => (
-              <div class="fact">
+              <div class="fm-fact">
                 <dt class="t-meta">{f.label}</dt>
                 <dd>{f.value}</dd>
               </div>
             ))}
           </dl>
         </div>
-      </article>
-    </div>
-  </section>
-
-  <!-- The slate -->
-  <section class="section" aria-labelledby="slate-title">
-    <div class="wrap">
-      <div class="sec-head" data-reveal>
-        <div class="sec-head-main">
-          <h2 id="slate-title" class="t-h2">
-            Nine films, in order.
-            <span class="t-tail">Some are out, some are in the cut, some are still pages.</span>
-          </h2>
-        </div>
       </div>
+    </section>
 
-      <div class="group-head" data-reveal>
-        <h3 class="t-h4">By year</h3>
-        <span class="t-meta">{filmography.length} films</span>
-      </div>
-      <ul class="rows slate" data-reveal>
-        {filmography.map((film) => (
-          <li class="slate-row">
-            <span class="slate-year t-meta">{yearLabel(film.year)}</span>
-            <span class="slate-title">{film.title}</span>
-            <span class="slate-roles t-meta">{film.roles.join(" · ")}</span>
-          </li>
-        ))}
-      </ul>
-
-      <div class="group-head group-gap" data-reveal>
-        <h3 class="t-h4">By role</h3>
-        <span class="t-meta">{roles.length} jobs on set</span>
-      </div>
-      <ul class="roles" data-reveal>
-        {roles.map((role) => (
-          <li class="surface role">
-            <div class="role-media">
-              <SmartImage src={role.image} alt={`${role.title} at work`} class="role-img" loading="lazy" />
-            </div>
-            <div class="role-body">
-              <h4 class="t-h4">{role.title}</h4>
-              <ul class="role-films">
-                {role.films.map((film) => (
-                  <li class="t-small">{film}</li>
-                ))}
-              </ul>
-            </div>
-          </li>
-        ))}
-      </ul>
-    </div>
-  </section>
-
-  <!-- Stills -->
-  <section class="section section-flush" aria-labelledby="stills-title">
-    <div class="wrap">
-      <div class="sec-head" data-reveal>
-        <div class="sec-head-main">
-          <h2 id="stills-title" class="t-h2">
-            On set.
-            <span class="t-tail">Frames from the films.</span>
-          </h2>
-        </div>
-      </div>
-
-      <div class="group-head" data-reveal>
-        <h3 class="t-h4">Among Monsters <span class="t-meta">2026</span></h3>
-        <span class="t-meta">{stills.length} stills</span>
-      </div>
-      {stills.length ? (
-        <ul class="stills" data-reveal>
-          {stills.map((item, i) => (
-            <li>
-              <button
-                type="button"
-                class="still"
-                data-still
-                data-group="am"
-                data-index={i}
-                data-full={item.src}
-                data-caption="Among Monsters"
-                aria-label={`View still ${i + 1} of ${stills.length} from Among Monsters`}
-              >
-                <SmartImage src={item.src} alt={item.alt} class="still-img" loading="lazy" />
-              </button>
-            </li>
-          ))}
-        </ul>
-      ) : (
-        <p class="t-small inset empty">Stills coming soon.</p>
-      )}
-
-      <div id="swechcha" class="group-head group-gap" data-reveal>
-        <div>
-          <h3 class="t-h4">Swechcha <span class="t-meta">2024</span></h3>
-          <p class="t-small mt-1">Earlier work. A short film I edited and color graded in 2024.</p>
-        </div>
-        <span class="t-meta">{swechchaStills.length} stills</span>
-      </div>
-      {swechchaStills.length ? (
-        <ul class="stills stills-wide" data-reveal>
-          {swechchaStills.map((item, i) => (
-            <li>
-              <button
-                type="button"
-                class="still"
-                data-still
-                data-group="swechcha"
-                data-index={i}
-                data-full={item.src}
-                data-caption="Swechcha"
-                aria-label={`View still ${i + 1} of ${swechchaStills.length} from Swechcha`}
-              >
-                <SmartImage src={item.src} alt={item.alt} class="still-img" loading="lazy" />
-              </button>
-            </li>
-          ))}
-        </ul>
-      ) : (
-        <p class="t-small inset empty">Swechcha stills coming soon.</p>
-      )}
-    </div>
-  </section>
-
-  <!-- Cast and crew -->
-  <section class="section" aria-labelledby="crew-title">
-    <div class="wrap">
-      <div class="sec-head" data-reveal>
-        <div class="sec-head-main">
-          <h2 id="crew-title" class="t-h2">
-            The people who made the scene work.
-            <span class="t-tail">Cast and crew of Among Monsters.</span>
-          </h2>
-        </div>
-      </div>
-
-      {crewGroups.map((group, gi) => (
-        <div class:list={["crew-group", gi > 0 && "group-gap"]}>
-          <div class="group-head" data-reveal>
-            <h3 class="t-h4">{group.label}</h3>
-            <span class="t-meta">{group.people.length}</span>
+    <!-- The slate, one film at a time -->
+    <section id="slate" class="section fm-slate" aria-labelledby="slate-title">
+      <span class="fm-haze fm-haze-left" aria-hidden="true"></span>
+      <div class="wrap on-top">
+        <div class="sec-head" data-reveal>
+          <div class="sec-head-main">
+            <h2 id="slate-title" class="t-h2">
+              Gray characters and tight spaces.
+              <span class="t-tail">The chaos hiding inside ordinary lives.</span>
+            </h2>
+            <p class="t-lede">
+              I write, direct, edit and score. Among Monsters is the independent
+              crime drama I made in New York, and the rest of the slate goes back
+              to 2019.
+            </p>
           </div>
-          <ul class="people" data-reveal>
-            {group.people.map((person) => {
-              const Tag = person.instagram ? "a" : "div";
-              const linkProps = person.instagram
-                ? {
-                    href: instagramUrl(person.instagram),
-                    target: "_blank",
-                    rel: "noreferrer",
-                    "aria-label": `${person.name} on Instagram`,
-                  }
+        </div>
+
+        <div class="fm-group-head" data-reveal>
+          <p class="t-h4">Nine films, in order</p>
+          <p class="t-meta">Some are out, some are in the cut, some are still pages.</p>
+        </div>
+
+        <ol class="reel">
+          {films.map((film, i) => {
+            const [nx, ny, sx, sy] = SEEDS[i % SEEDS.length];
+            const kind = art(film);
+            return (
+              <li class="reel-item" data-side={i % 2 ? "right" : "left"}>
+                <a href={filmPath(film.slug)} class="reel-card">
+                  <div class="reel-frame-wrap">
+                    <span class="reel-mark" aria-hidden="true">
+                      <span class="reel-dot"></span>
+                      <span class="reel-year">{yearLabel(film)}</span>
+                    </span>
+                    <span class="reel-glow" aria-hidden="true"></span>
+                    <div class="reel-frame">
+                      {kind === "poster" ? (
+                        <SmartImage src={film.poster!.src} alt={`${film.title} poster`} class="reel-img" loading="lazy" />
+                      ) : (
+                        <div
+                          class:list={["tc", kind === "still" && "tc-has-still"]}
+                          style={`--nx:${nx}%;--ny:${ny}%;--sx:${sx}%;--sy:${sy}%;`}
+                        >
+                          <span class="tc-bar" aria-hidden="true">{film.year ?? "In development"}</span>
+                          <span class="tc-field">
+                            {kind === "still" ? (
+                              <SmartImage src={swechchaFrame!.src} alt={swechchaFrame!.alt} class="tc-still" loading="lazy" />
+                            ) : (
+                              <span class="tc-sun" aria-hidden="true"></span>
+                            )}
+                            <span class="tc-dust" aria-hidden="true"></span>
+                            <span class="tc-title" aria-hidden="true">{film.title}</span>
+                          </span>
+                          <span class="tc-bar" aria-hidden="true">{rolesLine(film)}</span>
+                        </div>
+                      )}
+                      <span class="reel-veil" aria-hidden="true"></span>
+                    </div>
+                  </div>
+                  <div class="reel-meta">
+                    <div class="min-w-0">
+                      <h3 class="reel-title">{film.title}</h3>
+                      <p class="t-meta reel-when">{metaLine(film)}</p>
+                      <p class="reel-roles">{rolesLine(film)}</p>
+                    </div>
+                    <span class="reel-go" aria-hidden="true"><Icon name="arrow-right" size={16} /></span>
+                  </div>
+                </a>
+              </li>
+            );
+          })}
+        </ol>
+      </div>
+    </section>
+
+    <!-- Frames from the film -->
+    <section id="stills" class="section fm-stills" aria-labelledby="stills-title">
+      <div class="wrap">
+        <div class="sec-head" data-reveal>
+          <div class="sec-head-main">
+            <h2 id="stills-title" class="t-h2">
+              On set.
+              <span class="t-tail">Frames from Among Monsters.</span>
+            </h2>
+          </div>
+          <a href={`${filmPath(feature.slug)}#stills`} class="tlink">
+            All {stills.length} stills, cast and crew <Icon name="arrow-right" size={14} />
+          </a>
+        </div>
+      </div>
+
+      {stills.length ? (
+        <div class="strip" data-strip>
+          <ul class="strip-track" data-strip-track aria-label={`Among Monsters, ${stills.length} stills`}>
+            {stills.map((item, i) => (
+              <li class="strip-item">
+                <button
+                  type="button"
+                  class="strip-still"
+                  data-still
+                  data-group="am"
+                  data-index={i}
+                  data-full={item.src}
+                  data-caption="Among Monsters"
+                  aria-label={`View still ${i + 1} of ${stills.length} from Among Monsters`}
+                >
+                  <SmartImage src={item.src} alt={item.alt} class="strip-img" loading="lazy" />
+                </button>
+              </li>
+            ))}
+          </ul>
+          <div class="wrap strip-ctrl">
+            <span class="t-meta">{stills.length} stills · open any frame to see it whole</span>
+            <div class="strip-btns">
+              <button type="button" class="strip-btn" data-strip-prev aria-label="Earlier stills">
+                <Icon name="arrow-left" size={16} />
+              </button>
+              <button type="button" class="strip-btn" data-strip-next aria-label="Later stills">
+                <Icon name="arrow-right" size={16} />
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : (
+        <div class="wrap"><p class="t-small">Stills coming soon.</p></div>
+      )}
+
+      <div class="wrap">
+        <div class="fm-team" data-reveal>
+          <p class="t-meta fm-team-label">Made with</p>
+          <ul class="fm-team-list">
+            {keyCreators.map((p) => {
+              const Tag = p.instagram ? "a" : "div";
+              const linkProps = p.instagram
+                ? { href: instagramUrl(p.instagram), target: "_blank", rel: "noreferrer", "aria-label": `${p.name} on Instagram` }
                 : {};
               return (
                 <li>
-                  <Tag class="surface person" {...linkProps}>
-                    <div class="person-media">
-                      {person.image?.placeholder ? (
-                        <div class="person-ph" aria-hidden="true">
-                          <span>{initials(person.name)}</span>
-                        </div>
+                  <Tag class="fm-person" {...linkProps}>
+                    <span class="fm-person-face">
+                      {p.photo ? (
+                        <SmartImage src={p.photo} alt={`${p.name} portrait`} class="fm-person-img" loading="lazy" />
                       ) : (
-                        <SmartImage
-                          src={person.image.src}
-                          alt={`${person.name} portrait`}
-                          class="person-img"
-                          style={person.imageStyle}
-                          loading="lazy"
-                        />
+                        <span aria-hidden="true">{initials(p.name)}</span>
                       )}
-                    </div>
-                    <div class="person-body">
-                      <div class="min-w-0">
-                        <p class="person-name">{person.name}</p>
-                        <p class="t-meta person-role">{person.role || "Cast"}</p>
-                      </div>
-                      {person.instagram && (
-                        <span class="person-ig" aria-hidden="true">
-                          <Icon name="instagram" size={14} />
-                        </span>
-                      )}
-                    </div>
+                    </span>
+                    <span class="min-w-0">
+                      <span class="block fm-person-name">{p.name}</span>
+                      <span class="block t-meta">{p.role}</span>
+                    </span>
                   </Tag>
                 </li>
               );
             })}
           </ul>
-        </div>
-      ))}
-    </div>
-  </section>
-
-  <!-- Links -->
-  <section class="section section-last" aria-labelledby="links-title">
-    <div class="wrap">
-      <div class="sec-head" data-reveal>
-        <div class="sec-head-main">
-          <h2 id="links-title" class="t-h2">
-            Watch and read.
-            <span class="t-tail">The playlist, the screenplay and the photography.</span>
-          </h2>
+          <a href={`${filmPath(feature.slug)}#cast`} class="tlink fm-team-more">
+            Full cast and crew <Icon name="arrow-right" size={14} />
+          </a>
         </div>
       </div>
-      <ul class="links" data-reveal>
-        {links.map((l) => (
-          <li>
-            <a href={l.href} target="_blank" rel="noreferrer" class="surface link-card">
-              <span class="link-icon" aria-hidden="true">
-                {l.icon === "imdb" && <span class="imdb-wordmark">IMDb</span>}
-                {l.icon === "instagram" && <Icon name="instagram" size={18} />}
-                {l.icon === "youtube" && (
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z" />
-                  </svg>
-                )}
-                {l.icon === "file" && (
-                  <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z" />
-                    <path d="M14 2v4a2 2 0 0 0 2 2h4M16 13H8M16 17H8M10 9H8" />
-                  </svg>
-                )}
-              </span>
-              <span class="min-w-0">
-                <span class="block t-h4">{l.title}</span>
-                <span class="block t-small mt-1">{l.line}</span>
-              </span>
-              <span class="link-arrow" aria-hidden="true">
-                <Icon name="arrow-up-right" size={16} />
-              </span>
-            </a>
-          </li>
-        ))}
-      </ul>
-    </div>
-  </section>
+    </section>
+
+    <!-- The jobs -->
+    <section id="crafts" class="section fm-crafts" aria-labelledby="crafts-title">
+      <span class="fm-haze fm-haze-right" aria-hidden="true"></span>
+      <div class="wrap on-top">
+        <div class="sec-head" data-reveal>
+          <div class="sec-head-main">
+            <h2 id="crafts-title" class="t-h2">
+              Five jobs on set.
+              <span class="t-tail">The same films, seen by the job I did on each.</span>
+            </h2>
+          </div>
+        </div>
+        <ul class="crafts" data-reveal>
+          {crafts.map((craft) => (
+            <li class="surface craft">
+              <div class="craft-media">
+                <SmartImage src={craft.image} alt={`${craft.title} at work`} class="craft-img" loading="lazy" />
+                <span class="craft-shade" aria-hidden="true"></span>
+                <h3 class="craft-title">{craft.title}</h3>
+              </div>
+              <ul class="craft-films">
+                {craft.films.map((name) => {
+                  const f = filmByTitle(name);
+                  return (
+                    <li>
+                      {f ? (
+                        <a href={filmPath(f.slug)} class="craft-film">
+                          <span>{name}</span>
+                          <span class="t-meta">{yearLabel(f)}</span>
+                        </a>
+                      ) : (
+                        <span class="craft-film">{name}</span>
+                      )}
+                    </li>
+                  );
+                })}
+              </ul>
+            </li>
+          ))}
+        </ul>
+      </div>
+    </section>
+
+    <!-- Links -->
+    <section id="links" class="section fm-links-sec" aria-labelledby="links-title">
+      <div class="wrap">
+        <div class="sec-head" data-reveal>
+          <div class="sec-head-main">
+            <h2 id="links-title" class="t-h2">
+              Watch and read.
+              <span class="t-tail">The playlist, the screenplay and the photography.</span>
+            </h2>
+          </div>
+        </div>
+        <ul class="links" data-reveal>
+          {links.map((l) => (
+            <li>
+              <a href={l.href} target="_blank" rel="noreferrer" class="surface link-card">
+                <span class="link-icon" aria-hidden="true">
+                  {l.icon === "imdb" && <span class="imdb-wordmark">IMDb</span>}
+                  {l.icon === "instagram" && <Icon name="instagram" size={18} />}
+                  {l.icon === "youtube" && (
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z" />
+                    </svg>
+                  )}
+                  {l.icon === "file" && (
+                    <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z" />
+                      <path d="M14 2v4a2 2 0 0 0 2 2h4M16 13H8M16 17H8M10 9H8" />
+                    </svg>
+                  )}
+                </span>
+                <span class="min-w-0">
+                  <span class="block t-h4">{l.title}</span>
+                  <span class="block t-small mt-1">{l.line}</span>
+                </span>
+                <span class="link-arrow" aria-hidden="true">
+                  <Icon name="arrow-up-right" size={16} />
+                </span>
+              </a>
+            </li>
+          ))}
+        </ul>
+      </div>
+    </section>
+  </div>
 
   <!-- Still viewer -->
   <div id="flb" class="lb" hidden role="dialog" aria-modal="true" aria-label="Still viewer">
     <div class="lb-backdrop" data-lb-close></div>
-    <button type="button" class="lb-btn lb-close lg" data-lb-close aria-label="Close viewer">
+    <button type="button" class="lb-btn lb-close" data-lb-close aria-label="Close viewer">
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12" /></svg>
     </button>
     <figure class="lb-stage">
@@ -597,11 +427,11 @@ const links = [
         <span id="flb-cap" class="t-small"></span>
       </figcaption>
     </figure>
-    <div class="lb-bar lg">
+    <div class="lb-bar">
       <button type="button" class="lb-btn" data-lb-prev aria-label="Previous still">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6" /></svg>
       </button>
-      <span id="flb-count" class="t-meta lb-count"></span>
+      <span id="flb-count" class="t-meta lb-count" aria-live="polite"></span>
       <button type="button" class="lb-btn" data-lb-next aria-label="Next still">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 18 6-6-6-6" /></svg>
       </button>
@@ -610,8 +440,138 @@ const links = [
 </BaseLayout>
 
 <script>
+  const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  // Star dust over the feature: one small 2D canvas. Motes drift up slowly
+  // and twinkle; it sleeps when the feature is off screen or the tab is
+  // hidden, and draws one still frame for people who asked for less motion.
+  const dust = document.querySelector<HTMLCanvasElement>("[data-fm-dust]");
+  const ctx = dust?.getContext("2d");
+  if (dust && ctx) {
+    const phone = window.matchMedia("(max-width: 767px)").matches;
+    const dprCap = phone ? 1.5 : 2;
+    type Mote = { x: number; y: number; r: number; a: number; tw: number; ts: number; vx: number; vy: number; red: boolean };
+    const spawn = (anywhere: boolean): Mote => ({
+      x: Math.random(),
+      y: anywhere ? Math.random() : 1.02,
+      r: Math.random() ** 2.2 * 1.5 + 0.35,
+      a: 0.25 + Math.random() * 0.7,
+      tw: Math.random() * Math.PI * 2,
+      ts: 0.5 + Math.random() * 1.4,
+      vx: (Math.random() - 0.5) * 0.006,
+      vy: -(0.003 + Math.random() * 0.01),
+      red: Math.random() < 0.4,
+    });
+    const motes = Array.from({ length: phone ? 70 : 160 }, () => spawn(true));
+    let w = 0;
+    let h = 0;
+    const resize = () => {
+      const rect = dust.getBoundingClientRect();
+      const dpr = Math.min(window.devicePixelRatio || 1, dprCap);
+      w = rect.width;
+      h = rect.height;
+      dust.width = Math.max(1, Math.round(w * dpr));
+      dust.height = Math.max(1, Math.round(h * dpr));
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    };
+    const draw = (t: number, dt: number) => {
+      ctx.clearRect(0, 0, w, h);
+      for (const m of motes) {
+        m.x += m.vx * dt;
+        m.y += m.vy * dt;
+        if (m.y < -0.02 || m.x < -0.02 || m.x > 1.02) Object.assign(m, spawn(false), { x: Math.random() });
+        // Fade out toward the bottom of the feature so the dust has no edge.
+        const fade = Math.max(0, Math.min(1, (1 - m.y) / 0.3));
+        const twinkle = 0.55 + 0.45 * Math.sin(t * m.ts + m.tw);
+        ctx.globalAlpha = m.a * twinkle * fade;
+        ctx.fillStyle = m.red ? "#ff5d78" : "#ffe6ea";
+        ctx.beginPath();
+        ctx.arc(m.x * w, m.y * h, m.r, 0, Math.PI * 2);
+        ctx.fill();
+        if (m.r > 1.3) {
+          ctx.globalAlpha *= 0.18;
+          ctx.beginPath();
+          ctx.arc(m.x * w, m.y * h, m.r * 3.2, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      }
+      ctx.globalAlpha = 1;
+    };
+
+    let running = false;
+    let onScreen = true;
+    let last = 0;
+    let raf = 0;
+    const frame = (now: number) => {
+      const dt = Math.min(0.05, (now - last) / 1000 || 0);
+      last = now;
+      draw(now / 1000, dt);
+      raf = requestAnimationFrame(frame);
+    };
+    const sync = () => {
+      const want = !reduce && onScreen && !document.hidden;
+      if (want && !running) {
+        running = true;
+        last = performance.now();
+        raf = requestAnimationFrame(frame);
+      } else if (!want && running) {
+        running = false;
+        cancelAnimationFrame(raf);
+      }
+    };
+    resize();
+    draw(0, 0);
+    new ResizeObserver(() => {
+      resize();
+      if (!running) draw(performance.now() / 1000, 0);
+    }).observe(dust);
+    new IntersectionObserver((entries) => {
+      onScreen = entries[0]?.isIntersecting ?? true;
+      sync();
+    }).observe(dust);
+    document.addEventListener("visibilitychange", sync);
+    sync();
+  }
+
+  // The reel. Browsers with scroll driven animations tie each card's rise to
+  // the scroll in CSS; the rest get the same arrival from an observer.
+  const timelines = typeof CSS !== "undefined" && CSS.supports?.("animation-timeline: view()");
+  if (!timelines && !reduce && "IntersectionObserver" in window) {
+    document.documentElement.classList.add("fm-io");
+    const io = new IntersectionObserver(
+      (entries) =>
+        entries.forEach((e) => {
+          if (!e.isIntersecting) return;
+          e.target.classList.add("is-in");
+          io.unobserve(e.target);
+        }),
+      { rootMargin: "0px 0px -12% 0px", threshold: 0.12 },
+    );
+    document.querySelectorAll(".reel-card").forEach((el) => io.observe(el));
+  }
+
+  // The stills strip: arrows step a screen at a time and dim at the ends.
+  document.querySelectorAll<HTMLElement>("[data-strip]").forEach((strip) => {
+    const track = strip.querySelector<HTMLElement>("[data-strip-track]");
+    const prev = strip.querySelector<HTMLButtonElement>("[data-strip-prev]");
+    const next = strip.querySelector<HTMLButtonElement>("[data-strip-next]");
+    if (!track || !prev || !next) return;
+    const step = (dir: number) =>
+      track.scrollBy({ left: dir * track.clientWidth * 0.8, behavior: reduce ? "auto" : "smooth" });
+    const ends = () => {
+      prev.disabled = track.scrollLeft < 4;
+      next.disabled = track.scrollLeft + track.clientWidth > track.scrollWidth - 4;
+    };
+    prev.addEventListener("click", () => step(-1));
+    next.addEventListener("click", () => step(1));
+    track.addEventListener("scroll", ends, { passive: true });
+    window.addEventListener("resize", ends, { passive: true });
+    ends();
+  });
+
   // A calm viewer for the stills: click to open, arrows or swipe to move,
-  // Escape or the backdrop to close. Focus goes back to the still you opened.
+  // Escape or the backdrop to close. Focus stays inside while it is open and
+  // goes back to the still you opened.
   const lb = document.getElementById("flb");
   const img = document.getElementById("flb-img") as HTMLImageElement | null;
   const cap = document.getElementById("flb-cap");
@@ -628,12 +588,10 @@ const links = [
       caption: el.dataset.caption || "",
       alt: el.querySelector("img")?.getAttribute("alt") || "",
     }));
-
   const preload = (i: number) => {
     const it = items[i];
     if (it) new Image().src = it.src;
   };
-
   const render = () => {
     if (!img || !cap || !count) return;
     const it = items[cursor];
@@ -647,7 +605,6 @@ const links = [
     preload(cursor + 1);
     preload(cursor - 1);
   };
-
   const open = (el: HTMLElement) => {
     if (!lb) return;
     opener = el;
@@ -659,7 +616,6 @@ const links = [
     render();
     lb.querySelector<HTMLElement>(".lb-close")?.focus();
   };
-
   const close = () => {
     if (!lb || lb.hidden) return;
     lb.classList.remove("is-open");
@@ -669,7 +625,6 @@ const links = [
     }, 220);
     opener?.focus();
   };
-
   const step = (delta: number) => {
     if (!items.length) return;
     cursor = (cursor + delta + items.length) % items.length;
@@ -687,14 +642,18 @@ const links = [
     if (target.closest("[data-lb-prev]")) step(-1);
     if (target.closest("[data-lb-next]")) step(1);
   });
-
   document.addEventListener("keydown", (e) => {
     if (!lb || lb.hidden) return;
     if (e.key === "Escape") close();
     if (e.key === "ArrowLeft") step(-1);
     if (e.key === "ArrowRight") step(1);
+    if (e.key === "Tab") {
+      const stops = Array.from(lb.querySelectorAll<HTMLElement>("button"));
+      const at = stops.indexOf(document.activeElement as HTMLElement);
+      e.preventDefault();
+      stops[(at + (e.shiftKey ? -1 : 1) + stops.length) % stops.length]?.focus();
+    }
   });
-
   let touchX: number | null = null;
   lb?.addEventListener("touchstart", (e) => (touchX = e.touches[0]?.clientX ?? null), { passive: true });
   lb?.addEventListener(
@@ -705,255 +664,592 @@ const links = [
       if (Math.abs(dx) > 48) step(dx < 0 ? 1 : -1);
       touchX = null;
     },
-    { passive: true }
+    { passive: true },
   );
 </script>
 
 <style>
-  /* Page top */
-  .film-intro { max-width: 68rem; }
-  .film-title { margin-top: 22px; }
-  .film-lede { margin-top: 22px; }
+  /* =========================================================================
+     Red space. Deep black, crimson nebulae, a red eclipse rising behind the
+     screen, fine dust and a slow drifting light. Everything here paints with
+     gradients and transforms; the only canvas is the dust over the feature.
+     No backdrop blur anywhere on this page, so phones stay light.
+     ========================================================================= */
+  .fm {
+    --crimson: 244, 63, 94;
+    --blood: 159, 18, 57;
+    --ember: 255, 99, 122;
+    position: relative;
+    overflow-x: clip;
+  }
 
-  /* The current feature: the key art full width, the story and the facts under it. */
-  .feature { margin-top: clamp(40px, 5vw, 56px); overflow: hidden; }
-  .feature-media {
+  /* The feature ----------------------------------------------------------- */
+  .fm-hero {
+    position: relative;
+    isolation: isolate;
+    padding-top: clamp(96px, 9vw, 116px);
+    padding-bottom: clamp(48px, 6vw, 80px);
+  }
+  .fm-space { position: absolute; inset: 0 0 -10% 0; z-index: -1; pointer-events: none; overflow: hidden; }
+  .fm-dust { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+  .fm-nebula { position: absolute; border-radius: 50%; will-change: transform; }
+  .fm-nebula-a {
+    width: 70vw;
+    height: 52vw;
+    left: -22vw;
+    top: -6vw;
+    background: radial-gradient(closest-side, rgba(var(--blood), 0.42) 0%, rgba(var(--blood), 0.3) 22%, rgba(var(--blood), 0.16) 44%, rgba(var(--blood), 0.06) 66%, rgba(var(--blood), 0.015) 84%, rgba(var(--blood), 0) 100%);
+    animation: fm-drift-a 46s ease-in-out infinite alternate;
+  }
+  .fm-nebula-b {
+    width: 64vw;
+    height: 46vw;
+    right: -20vw;
+    top: 18vw;
+    background: radial-gradient(closest-side, rgba(var(--crimson), 0.26) 0%, rgba(var(--crimson), 0.18) 24%, rgba(var(--crimson), 0.09) 48%, rgba(var(--crimson), 0.03) 72%, rgba(var(--crimson), 0) 100%);
+    animation: fm-drift-b 58s ease-in-out infinite alternate;
+  }
+  /* A wide soft light that slides across the dark, like a lamp passing. */
+  .fm-beam {
+    position: absolute;
+    top: -20%;
+    left: -30%;
+    width: 60%;
+    height: 140%;
+    background: linear-gradient(100deg, rgba(var(--ember), 0) 0%, rgba(var(--ember), 0.035) 40%, rgba(255, 220, 226, 0.05) 50%, rgba(var(--ember), 0.035) 60%, rgba(var(--ember), 0) 100%);
+    transform: translateX(0) rotate(8deg);
+    animation: fm-beam 34s ease-in-out infinite alternate;
+    will-change: transform;
+  }
+  @keyframes fm-drift-a { to { transform: translate3d(6vw, 3vw, 0) scale(1.08); } }
+  @keyframes fm-drift-b { to { transform: translate3d(-5vw, -2vw, 0) scale(1.06); } }
+  @keyframes fm-beam { to { transform: translateX(210%) rotate(8deg); } }
+
+  /* The stage: as wide as the screen can be while the title still fits in
+     the first view. */
+  .fm-stage {
+    --screen-w: min(100%, 1080px, max(560px, calc((100vh - 400px) * 1.7778)));
+    width: var(--screen-w);
+    margin-inline: auto;
+  }
+  @supports (height: 100svh) {
+    .fm-stage { --screen-w: min(100%, 1080px, max(560px, calc((100svh - 400px) * 1.7778))); }
+  }
+  .fm-hero-top { position: relative; z-index: 1; display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 18px; }
+  .fm-badges { display: flex; flex-wrap: wrap; gap: 6px; justify-content: flex-end; }
+  /* Solid chips, so they read where the eclipse rim passes behind them. */
+  .fm-badges .badge { background: rgba(16, 5, 9, 0.88); box-shadow: inset 0 0 0 1px var(--line-strong); }
+  .fm-badges .badge-tone { color: #ff8a9e; box-shadow: inset 0 0 0 1px rgba(var(--crimson), 0.45); }
+
+  .fm-screen-wrap { position: relative; isolation: isolate; }
+  /* The eclipse: a black disc with a lit rim, rising behind the screen. */
+  .fm-sun {
+    position: absolute;
+    z-index: -1;
+    left: 50%;
+    top: 0;
+    width: 70%;
+    aspect-ratio: 1;
+    border-radius: 50%;
+    transform: translate(-50%, -21%);
+    background: radial-gradient(circle closest-side, #050002 0%, #050002 90.5%, rgba(255, 170, 182, 0.95) 92%, rgba(var(--ember), 0.75) 93.5%, rgba(var(--crimson), 0.38) 95.5%, rgba(var(--crimson), 0.14) 98%, rgba(var(--crimson), 0) 100%);
+  }
+  .fm-sun::before {
+    content: "";
+    position: absolute;
+    inset: -42%;
+    border-radius: 50%;
+    background: radial-gradient(closest-side, rgba(var(--crimson), 0.24) 0%, rgba(var(--crimson), 0.17) 40%, rgba(var(--crimson), 0.09) 58%, rgba(var(--crimson), 0.035) 76%, rgba(var(--crimson), 0.008) 90%, rgba(var(--crimson), 0) 100%);
+    z-index: -1;
+  }
+  .fm-corona {
+    position: absolute;
+    inset: -6%;
+    border-radius: 50%;
+    background: conic-gradient(from 0deg, rgba(var(--ember), 0) 0deg, rgba(255, 190, 200, 0.55) 22deg, rgba(var(--ember), 0) 52deg, rgba(var(--crimson), 0.4) 98deg, rgba(var(--ember), 0) 140deg, rgba(255, 170, 185, 0.5) 200deg, rgba(var(--ember), 0) 236deg, rgba(var(--crimson), 0.38) 290deg, rgba(var(--ember), 0) 330deg, rgba(var(--ember), 0) 360deg);
+    -webkit-mask: radial-gradient(closest-side, transparent 84%, #000 86.5%, #000 88%, transparent 95%);
+    mask: radial-gradient(closest-side, transparent 84%, #000 86.5%, #000 88%, transparent 95%);
+    animation: fm-spin 90s linear infinite;
+    will-change: transform;
+  }
+  @keyframes fm-spin { to { transform: rotate(360deg); } }
+
+  .fm-screen {
+    position: relative;
+    display: block;
     aspect-ratio: 16 / 9;
+    border-radius: 8px;
     overflow: hidden;
-    background: #07080b;
-    border-bottom: 1px solid var(--line);
+    background: #050002;
+    box-shadow:
+      0 0 0 1px rgba(255, 255, 255, 0.09),
+      0 0 60px -10px rgba(var(--crimson), 0.35),
+      0 50px 120px -40px rgba(var(--crimson), 0.55),
+      0 30px 70px -30px rgba(0, 0, 0, 0.95);
+    transition: transform 700ms var(--ease-glass), box-shadow 700ms var(--ease-glass);
   }
-  .feature-media :global(.feature-img) { display: block; width: 100%; height: 100%; object-fit: cover; }
-  .feature-body {
-    display: grid;
-    gap: 32px;
-    padding: 24px;
+  .fm-screen::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background: linear-gradient(170deg, rgba(255, 255, 255, 0.07) 0%, rgba(255, 255, 255, 0) 28%);
   }
-  @media (min-width: 640px) { .feature-body { padding: 32px; } }
-  @media (min-width: 1024px) {
-    .feature-body { grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); gap: 56px; padding: 40px; }
+  .fm-screen :global(.fm-screen-img) { display: block; width: 100%; height: 100%; object-fit: cover; }
+  .fm-screen:hover {
+    transform: translateY(-3px);
+    box-shadow:
+      0 0 0 1px rgba(var(--crimson), 0.4),
+      0 0 80px -10px rgba(var(--crimson), 0.45),
+      0 60px 130px -40px rgba(var(--crimson), 0.65),
+      0 30px 70px -30px rgba(0, 0, 0, 0.95);
   }
-  .feature-badges { display: flex; flex-wrap: wrap; gap: 6px; }
-  .feature-name { margin-top: 16px; }
-  .feature-logline {
-    margin-top: 16px;
-    font-size: clamp(1.0625rem, 1.3vw, 1.1875rem);
-    line-height: 1.6;
+  .fm-screen:focus-visible { outline: none; box-shadow: 0 0 0 3px rgba(var(--crimson), 0.75), 0 50px 120px -40px rgba(var(--crimson), 0.55); }
+  /* The screen's light on the floor below it. */
+  .fm-floor {
+    position: absolute;
+    left: 8%;
+    right: 8%;
+    bottom: -46px;
+    height: 70px;
+    z-index: -1;
+    background: radial-gradient(closest-side, rgba(var(--crimson), 0.22), rgba(var(--crimson), 0.1) 45%, rgba(var(--crimson), 0.03) 75%, rgba(var(--crimson), 0));
+  }
+
+  .fm-credits { display: grid; gap: 16px; margin-top: 26px; }
+  @media (min-width: 900px) {
+    .fm-credits { grid-template-columns: auto minmax(0, 1fr); gap: 44px; align-items: end; }
+    .fm-title { white-space: nowrap; }
+  }
+  .fm-title {
+    font-size: clamp(2.6rem, 4.2vw, 4rem);
+    line-height: 0.98;
+    letter-spacing: -0.046em;
+    font-weight: 600;
+    color: #fff;
+    text-wrap: balance;
+    text-shadow: 0 0 48px rgba(var(--crimson), 0.28);
+  }
+  .fm-label {
+    display: block;
+    margin-bottom: 6px;
+    font-size: 0.8125rem;
+    font-weight: 500;
+    color: var(--tone);
+  }
+  .fm-roles {
+    margin-top: 12px;
+    font-size: clamp(1.0625rem, 1.4vw, 1.25rem);
+    font-weight: 500;
+    letter-spacing: -0.012em;
     color: var(--ink);
-    max-width: 38rem;
+  }
+  .fm-logline {
+    font-size: clamp(1.0625rem, 1.3vw, 1.1875rem);
+    line-height: 1.55;
+    color: var(--ink-soft);
+    max-width: 34rem;
     text-wrap: pretty;
   }
-  .feature-note { margin-top: 14px; max-width: 38rem; }
+  .fm-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 22px; }
+  .fm-actions .btn-ghost { padding: 0 12px; }
 
-  .facts { margin: 0; align-self: start; }
-  @media (min-width: 1024px) { .facts { margin-top: 38px; } }
-  .fact {
+  .fm-facts {
     display: grid;
-    grid-template-columns: 96px minmax(0, 1fr);
-    gap: 16px;
-    align-items: baseline;
-    padding: 13px 0;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0 24px;
+    margin: 36px 0 0;
     border-top: 1px solid var(--line);
   }
-  .fact:last-child { border-bottom: 1px solid var(--line); }
-  .fact dd { margin: 0; font-size: 0.9375rem; line-height: 1.45; color: var(--ink); }
-  .feature-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 28px; }
+  @media (min-width: 900px) { .fm-facts { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+  .fm-fact { padding: 14px 0 0; }
+  .fm-fact dd { margin: 4px 0 0; font-size: 0.9375rem; line-height: 1.45; color: var(--ink); }
 
-  /* Small heads inside a section: a label and a count on one line. */
-  .group-head {
+  /* Quiet haze behind a section, so the red carries down the page. */
+  .fm-haze { position: absolute; pointer-events: none; z-index: 0; border-radius: 50%; }
+  .fm-haze-left {
+    width: 60vw;
+    height: 60vw;
+    left: -30vw;
+    top: 30%;
+    background: radial-gradient(closest-side, rgba(var(--blood), 0.28), rgba(var(--blood), 0.16) 35%, rgba(var(--blood), 0.07) 62%, rgba(var(--blood), 0.015) 85%, rgba(var(--blood), 0));
+  }
+  .fm-haze-right {
+    width: 54vw;
+    height: 54vw;
+    right: -26vw;
+    top: -10%;
+    background: radial-gradient(closest-side, rgba(var(--crimson), 0.16), rgba(var(--crimson), 0.09) 38%, rgba(var(--crimson), 0.035) 66%, rgba(var(--crimson), 0.008) 86%, rgba(var(--crimson), 0));
+  }
+
+  /* The reel ------------------------------------------------------------ */
+  .fm-group-head {
     display: flex;
-    align-items: flex-end;
-    justify-content: space-between;
-    gap: 16px;
-    margin-bottom: 16px;
-  }
-  .group-head h3 .t-meta { margin-left: 6px; font-weight: 400; }
-  .group-head > .t-meta { flex: none; white-space: nowrap; }
-  .group-gap { margin-top: clamp(48px, 6vw, 72px); }
-
-  /* The slate: a credits list, year first. */
-  .slate-row {
-    display: grid;
-    grid-template-columns: 64px minmax(0, 1fr);
-    grid-template-areas: "year title" ". roles";
-    column-gap: 16px;
-    row-gap: 4px;
+    flex-wrap: wrap;
     align-items: baseline;
-    padding: 18px 4px;
-  }
-  @media (min-width: 768px) {
-    .slate-row {
-      grid-template-columns: 88px minmax(0, 1fr) auto;
-      grid-template-areas: "year title roles";
-      padding: 20px 4px;
-    }
-  }
-  .slate-year { grid-area: year; font-size: 0.875rem; }
-  .slate-title {
-    grid-area: title;
-    font-size: clamp(1.0625rem, 1.5vw, 1.25rem);
-    font-weight: 600;
-    letter-spacing: -0.018em;
-    line-height: 1.3;
-    color: var(--ink);
-  }
-  .slate-roles { grid-area: roles; }
-  @media (min-width: 768px) { .slate-roles { text-align: right; } }
-
-  /* By role: a picture of the job, then the films it covers. */
-  .roles {
-    list-style: none;
-    margin: 0;
-    padding: 0;
-    display: grid;
-    gap: 16px;
-    grid-template-columns: 1fr;
-  }
-  @media (min-width: 640px) { .roles { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
-  @media (min-width: 900px) { .roles { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
-  @media (min-width: 1100px) { .roles { grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 20px; } }
-  .role {
-    display: grid;
-    grid-template-columns: 112px minmax(0, 1fr);
-    overflow: hidden;
-  }
-  .role-media {
-    background: #07080b;
-    border-right: 1px solid var(--line);
-    min-height: 112px;
-    overflow: hidden;
-  }
-  .role-media :global(.role-img) { display: block; width: 100%; height: 100%; object-fit: cover; }
-  .role-body { padding: 16px 18px; }
-  @media (min-width: 640px) {
-    .role { grid-template-columns: 1fr; grid-template-rows: auto 1fr; }
-    .role-media { aspect-ratio: 3 / 2; min-height: 0; border-right: 0; border-bottom: 1px solid var(--line); }
-    .role-body { padding: 18px 20px 20px; }
-  }
-  .role-films { list-style: none; margin: 8px 0 0; padding: 0; display: grid; gap: 3px; }
-
-  /* Stills: one aspect, one gap, widescreen like the films. */
-  .section-flush { padding-top: 0; }
-  .stills {
-    list-style: none;
-    margin: 0;
-    padding: 0;
-    display: grid;
-    gap: 10px;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-  @media (min-width: 900px) { .stills { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; } }
-  .still {
-    display: block;
-    width: 100%;
-    padding: 0;
-    aspect-ratio: 2 / 1;
-    overflow: hidden;
-    border-radius: 12px;
-    border: 1px solid var(--line);
-    background: #07080b;
-    cursor: zoom-in;
-    transition: border-color 200ms var(--ease-glass), box-shadow 300ms var(--ease-glass);
-  }
-  .still :global(.still-img) {
-    --zoom: 1;
-    display: block;
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    transform: scale(var(--zoom));
-    transition: transform 600ms var(--ease-glass);
-  }
-  /* The Swechcha frames are screen grabs with the letterbox baked in, so
-     they zoom just past the bars to sit in the same 2:1 frame. */
-  .stills-wide .still :global(.still-img) { --zoom: 1.14; }
-  .still:hover { border-color: var(--line-strong); box-shadow: 0 0 0 1px rgba(var(--tone-rgb), 0.18); }
-  .still:hover :global(.still-img) { transform: scale(calc(var(--zoom) * 1.03)); }
-  .still:focus-visible { outline: none; box-shadow: 0 0 0 3px rgba(var(--tone-rgb), 0.45); }
-  .empty { padding: 20px 24px; }
-
-  /* Cast and crew: one portrait shape, names wrap, the card opens Instagram. */
-  .people {
-    list-style: none;
-    margin: 0;
-    padding: 0;
-    display: grid;
-    gap: 16px;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-  @media (min-width: 640px) { .people { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
-  @media (min-width: 900px) { .people { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
-  @media (min-width: 1100px) { .people { grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 20px; } }
-  .people > li { display: flex; }
-  .person { display: flex; flex-direction: column; width: 100%; overflow: hidden; }
-  .person-media {
-    position: relative;
-    aspect-ratio: 4 / 5;
-    overflow: hidden;
-    background: #07080b;
+    justify-content: space-between;
+    gap: 6px 20px;
+    padding-bottom: 14px;
+    margin-bottom: clamp(36px, 5vw, 56px);
     border-bottom: 1px solid var(--line);
   }
-  .person-media :global(.person-img) {
+  .reel { position: relative; list-style: none; margin: 0; padding: 0; }
+  /* The spine the films hang from. */
+  .reel::before {
+    content: "";
     position: absolute;
-    inset: 0;
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    display: block;
+    top: 0;
+    bottom: 0;
+    left: 11px;
+    width: 1px;
+    background: linear-gradient(180deg, rgba(var(--crimson), 0) 0%, rgba(var(--crimson), 0.55) 6%, rgba(var(--crimson), 0.3) 70%, rgba(var(--crimson), 0) 100%);
   }
-  .person-ph {
+  .reel-item { position: relative; display: flex; pointer-events: none; padding-left: 36px; }
+  .reel-item + .reel-item { margin-top: 36px; }
+  .reel-card {
+    pointer-events: auto;
+    display: block;
+    width: 100%;
+    color: var(--ink);
+    text-decoration: none;
+    view-timeline: --reel block;
+  }
+  .reel-frame-wrap { position: relative; }
+  .reel-mark {
+    position: absolute;
+    top: 50%;
+    left: -25px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    transform: translate(-50%, -50%);
+  }
+  .reel-dot {
+    width: 9px;
+    height: 9px;
+    border-radius: 9999px;
+    background: var(--tone);
+    box-shadow: 0 0 0 4px rgba(var(--crimson), 0.16), 0 0 14px rgba(var(--crimson), 0.9);
+    flex: none;
+  }
+  .reel-year { display: none; font-size: 0.8125rem; font-weight: 500; color: var(--ink-soft); font-variant-numeric: tabular-nums; white-space: nowrap; }
+
+  @media (min-width: 900px) {
+    .reel::before { left: 50%; }
+    .reel-item { padding-left: 0; }
+    .reel-item[data-side="right"] { justify-content: flex-end; }
+    /* Each film starts beside the one before it, so the list reads as a
+       staggered reel rather than rows. */
+    .reel-item + .reel-item { margin-top: calc(-13% - 20px); }
+    .reel-card { width: calc(50% - 56px); }
+    .reel-item[data-side="left"] .reel-mark { left: auto; right: -56px; transform: translate(50%, -50%); }
+    .reel-item[data-side="right"] .reel-mark { left: -56px; transform: translate(-50%, -50%); flex-direction: row-reverse; }
+    .reel-year { display: block; position: absolute; left: 22px; }
+    .reel-item[data-side="right"] .reel-year { left: auto; right: 22px; }
+  }
+
+  .reel-glow {
+    position: absolute;
+    inset: -14% -8%;
+    z-index: -1;
+    border-radius: 50%;
+    background: radial-gradient(closest-side, rgba(var(--crimson), 0.32), rgba(var(--crimson), 0.14) 50%, rgba(var(--crimson), 0.04) 78%, rgba(var(--crimson), 0));
+    opacity: 0.5;
+  }
+  .reel-frame {
+    position: relative;
+    aspect-ratio: 16 / 9;
+    border-radius: 10px;
+    overflow: hidden;
+    background: #050002;
+    box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.08), 0 30px 60px -36px rgba(0, 0, 0, 0.95);
+    transition: transform 600ms var(--ease-glass), box-shadow 400ms var(--ease-glass);
+  }
+  .reel-frame :global(.reel-img) { display: block; width: 100%; height: 100%; object-fit: cover; }
+  .reel-veil { position: absolute; inset: 0; background: #000; opacity: 0; pointer-events: none; }
+  .reel-card:hover .reel-frame { transform: translateY(-4px); box-shadow: 0 0 0 1px rgba(var(--crimson), 0.45), 0 0 40px -6px rgba(var(--crimson), 0.45), 0 30px 60px -36px rgba(0, 0, 0, 0.95); }
+  .reel-card:focus-visible { outline: none; }
+  .reel-card:focus-visible .reel-frame { box-shadow: 0 0 0 3px rgba(var(--crimson), 0.8); }
+
+  .reel-meta { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; padding: 16px 2px 0; }
+  .reel-title { font-size: clamp(1.125rem, 1.6vw, 1.375rem); font-weight: 600; letter-spacing: -0.022em; line-height: 1.2; color: var(--ink); }
+  .reel-when { margin-top: 4px; }
+  .reel-roles { margin-top: 6px; font-size: 0.9375rem; color: var(--ink-soft); }
+  .reel-go {
+    flex: none;
+    display: inline-grid;
+    place-items: center;
+    width: 36px;
+    height: 36px;
+    border-radius: 9999px;
+    color: var(--ink-faint);
+    border: 1px solid var(--line);
+    transition: color 200ms var(--ease-glass), border-color 200ms var(--ease-glass), transform 300ms var(--ease-glass);
+  }
+  .reel-card:hover .reel-go { color: var(--tone); border-color: rgba(var(--crimson), 0.5); transform: translateX(3px); }
+
+  /* Arrival. Tied to scroll where the browser can; an observer otherwise. */
+  @media (prefers-reduced-motion: no-preference) {
+    @supports (animation-timeline: view()) {
+      .reel-card { animation: reel-rise linear both; animation-timeline: --reel; animation-range: entry 0% cover 34%; }
+      .reel-veil { animation: reel-light linear both; animation-timeline: --reel; animation-range: entry 10% cover 46%; }
+      .reel-glow { animation: reel-glow linear both; animation-timeline: --reel; animation-range: entry 20% cover 55%; }
+      .tc-sun { animation: tc-rise linear both; animation-timeline: --reel; animation-range: entry 10% cover 50%; }
+    }
+  }
+  @keyframes reel-rise {
+    from { opacity: 0; transform: translateY(90px) scale(0.9); }
+    to { opacity: 1; transform: none; }
+  }
+  @keyframes reel-light { from { opacity: 0.85; } to { opacity: 0; } }
+  @keyframes reel-glow { from { opacity: 0; } 70% { opacity: 1; } to { opacity: 0.6; } }
+  @keyframes tc-rise {
+    from { opacity: 0.15; transform: translate(-50%, -38%) scale(0.82); }
+    to { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+  }
+  :global(html.fm-io) .reel-card { transition: opacity 900ms var(--ease-glass), transform 900ms var(--ease-glass); }
+  :global(html.fm-io) .reel-card:not(.is-in) { opacity: 0; transform: translateY(70px) scale(0.93); }
+  :global(html.fm-io) .reel-veil { transition: opacity 1200ms var(--ease-glass) 200ms; }
+  :global(html.fm-io) .reel-card:not(.is-in) .reel-veil { opacity: 0.85; }
+
+  /* Title cards. The title set in type on a red field between letterbox
+     bars, the year above and my credits below, like an opening title. */
+  .tc {
     position: absolute;
     inset: 0;
+    container-type: inline-size;
+    display: grid;
+    grid-template-rows: 12.8% 1fr 12.8%;
+    background: #000;
+  }
+  .tc-bar {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 4%;
+    font-size: max(10px, 1.9cqw);
+    font-weight: 500;
+    letter-spacing: 0.08em;
+    color: rgba(245, 245, 247, 0.6);
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .tc-field {
+    position: relative;
+    overflow: hidden;
     display: grid;
     place-items: center;
     background:
-      radial-gradient(80% 70% at 20% 0%, rgba(var(--tone-rgb), 0.16) 0%, rgba(var(--tone-rgb), 0.1561) 7%, rgba(var(--tone-rgb), 0.1447) 14%, rgba(var(--tone-rgb), 0.127) 21%, rgba(var(--tone-rgb), 0.1047) 28%, rgba(var(--tone-rgb), 0.08) 35%, rgba(var(--tone-rgb), 0.0553) 42%, rgba(var(--tone-rgb), 0.033) 49%, rgba(var(--tone-rgb), 0.0153) 56%, rgba(var(--tone-rgb), 0.0039) 63%, rgba(var(--tone-rgb), 0) 70%),
-      #07080b;
-    color: var(--ink-faint);
-    font-size: 1.375rem;
+      radial-gradient(42% 70% at var(--nx) var(--ny), rgba(var(--crimson), 0.42) 0%, rgba(var(--crimson), 0.3) 22%, rgba(var(--blood), 0.2) 46%, rgba(var(--blood), 0.07) 72%, rgba(var(--blood), 0) 100%),
+      radial-gradient(34% 60% at calc(100% - var(--nx)) calc(100% - var(--ny)), rgba(var(--blood), 0.32) 0%, rgba(var(--blood), 0.14) 50%, rgba(var(--blood), 0) 100%),
+      radial-gradient(120% 90% at 50% 120%, rgba(90, 8, 26, 0.55) 0%, rgba(90, 8, 26, 0.2) 40%, rgba(90, 8, 26, 0) 70%),
+      #070103;
+  }
+  .tc-dust {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background-image:
+      radial-gradient(1px 1px at 12% 22%, rgba(255, 235, 238, 0.9), transparent),
+      radial-gradient(1px 1px at 31% 71%, rgba(255, 235, 238, 0.7), transparent),
+      radial-gradient(1.5px 1.5px at 47% 14%, rgba(255, 140, 160, 0.9), transparent),
+      radial-gradient(1px 1px at 63% 83%, rgba(255, 235, 238, 0.8), transparent),
+      radial-gradient(1px 1px at 82% 36%, rgba(255, 235, 238, 0.75), transparent),
+      radial-gradient(1.5px 1.5px at 91% 68%, rgba(255, 140, 160, 0.8), transparent),
+      radial-gradient(1px 1px at 22% 48%, rgba(255, 235, 238, 0.5), transparent),
+      radial-gradient(1px 1px at 72% 58%, rgba(255, 235, 238, 0.5), transparent);
+    background-size: 52% 64%;
+    opacity: 0.8;
+  }
+  .tc-sun {
+    position: absolute;
+    left: var(--sx);
+    top: var(--sy);
+    width: 34cqw;
+    aspect-ratio: 1;
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+    background: radial-gradient(circle closest-side, #060002 0%, #060002 88%, rgba(255, 180, 192, 0.9) 90%, rgba(var(--ember), 0.6) 92%, rgba(var(--crimson), 0.26) 95%, rgba(var(--crimson), 0.08) 98%, rgba(var(--crimson), 0) 100%);
+    box-shadow: 0 0 7cqw rgba(var(--crimson), 0.22);
+  }
+  .tc-title {
+    position: relative;
+    z-index: 1;
+    padding: 0 8%;
+    text-align: center;
+    font-size: clamp(1.25rem, 8.4cqw, 6rem);
     font-weight: 600;
-    letter-spacing: -0.01em;
+    letter-spacing: -0.045em;
+    line-height: 1;
+    color: #fff;
+    text-wrap: balance;
+    text-shadow: 0 0 2.4cqw rgba(var(--crimson), 0.55), 0 2px 18px rgba(0, 0, 0, 0.7);
   }
-  .person-body {
-    display: flex;
-    align-items: flex-start;
-    justify-content: space-between;
-    gap: 8px;
-    padding: 12px 14px 14px;
-    flex: 1;
+  /* A frame from the film in place of the field, title low and to the left. */
+  .tc-has-still .tc-field { place-items: end start; }
+  .tc-has-still .tc-field::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(0deg, rgba(0, 0, 0, 0.72) 0%, rgba(0, 0, 0, 0.18) 45%, rgba(0, 0, 0, 0) 70%), rgba(var(--blood), 0.12);
   }
-  .person-name {
-    font-size: 0.9375rem;
-    font-weight: 600;
-    letter-spacing: -0.012em;
-    line-height: 1.3;
-    color: var(--ink);
-    overflow-wrap: anywhere;
-  }
-  .person-role { margin-top: 3px; overflow-wrap: anywhere; }
-  .person-ig { flex: none; margin-top: 2px; color: var(--ink-faint); transition: color 150ms var(--ease-glass); }
-  a.person:hover .person-ig { color: var(--tone); }
+  .tc-has-still .tc-field :global(picture) { position: absolute; inset: 0; }
+  .tc-has-still .tc-field :global(.tc-still) { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+  .tc-has-still .tc-title { padding: 0 5% 4.5%; text-align: left; font-size: clamp(1.25rem, 6.4cqw, 4.5rem); }
+  .tc-has-still .tc-dust { display: none; }
 
-  /* Links */
-  .section-last { padding-bottom: clamp(56px, 7vw, 96px); }
-  .links {
+  /* Stills strip -------------------------------------------------------- */
+  .fm-stills { overflow: clip; }
+  .strip { position: relative; }
+  .strip-track {
+    --edge: max(var(--gutter), calc((100vw - var(--max)) / 2));
     list-style: none;
     margin: 0;
-    padding: 0;
-    display: grid;
-    gap: 16px;
-    grid-template-columns: 1fr;
+    display: flex;
+    gap: 6px;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scroll-snap-type: x proximity;
+    scroll-padding-inline: var(--edge);
+    padding: 22px var(--edge);
+    scrollbar-width: none;
+    /* Film stock: sprocket holes along both edges, riding with the frames. */
+    background:
+      linear-gradient(90deg, rgba(255, 255, 255, 0.13) 0 9px, transparent 9px 22px) 0 7px / 22px 8px repeat-x local,
+      linear-gradient(90deg, rgba(255, 255, 255, 0.13) 0 9px, transparent 9px 22px) 0 calc(100% - 7px) / 22px 8px repeat-x local,
+      #070204;
+    border-block: 1px solid rgba(var(--crimson), 0.16);
   }
+  .strip-track::-webkit-scrollbar { display: none; }
+  .strip-item { flex: none; scroll-snap-align: start; }
+  .strip-still {
+    display: block;
+    height: clamp(132px, 22vw, 290px);
+    aspect-ratio: 2.39 / 1;
+    padding: 0;
+    border: 0;
+    border-radius: 3px;
+    overflow: hidden;
+    background: #050002;
+    cursor: zoom-in;
+    view-timeline: --frame inline;
+    transition: box-shadow 300ms var(--ease-glass);
+  }
+  .strip-still :global(.strip-img) {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 700ms var(--ease-glass), filter 500ms var(--ease-glass);
+  }
+  .strip-still:hover :global(.strip-img) { transform: scale(1.04); }
+  .strip-still:focus-visible { outline: none; box-shadow: 0 0 0 3px rgba(var(--crimson), 0.8); }
+  @media (prefers-reduced-motion: no-preference) {
+    @supports (animation-timeline: view()) {
+      .strip-still :global(.strip-img) { animation: frame-light linear both; animation-timeline: --frame; animation-range: entry 0% cover 30%; }
+    }
+  }
+  @keyframes frame-light { from { filter: brightness(0.35) saturate(0.6); } to { filter: none; } }
+  .strip-ctrl { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-top: 16px; }
+  .strip-btns { display: flex; gap: 8px; }
+  .strip-btn {
+    display: inline-grid;
+    place-items: center;
+    width: 44px;
+    height: 44px;
+    border-radius: 9999px;
+    color: var(--ink);
+    background: rgba(18, 8, 11, 0.9);
+    border: 1px solid var(--line-strong);
+    cursor: pointer;
+    transition: border-color 150ms var(--ease-glass), color 150ms var(--ease-glass), opacity 200ms var(--ease-glass);
+  }
+  .strip-btn:hover:not(:disabled) { border-color: rgba(var(--crimson), 0.6); color: var(--tone); }
+  .strip-btn:focus-visible { outline: none; box-shadow: 0 0 0 3px rgba(var(--crimson), 0.6); }
+  .strip-btn:disabled { opacity: 0.35; cursor: default; }
+
+  /* The key creators, a short line under the stills. */
+  .fm-team {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 16px 28px;
+    margin-top: clamp(36px, 5vw, 56px);
+    padding-top: 24px;
+    border-top: 1px solid var(--line);
+  }
+  .fm-team-list { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 12px 28px; }
+  .fm-person { display: flex; align-items: center; gap: 12px; text-decoration: none; color: var(--ink); }
+  .fm-person-face {
+    flex: none;
+    display: grid;
+    place-items: center;
+    width: 44px;
+    height: 44px;
+    border-radius: 9999px;
+    overflow: hidden;
+    background: #12070a;
+    box-shadow: 0 0 0 1px var(--line-strong);
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: var(--ink-faint);
+    transition: box-shadow 200ms var(--ease-glass);
+  }
+  .fm-person-face :global(picture), .fm-person-face :global(.fm-person-img) { display: block; width: 100%; height: 100%; object-fit: cover; }
+  .fm-person-name { font-size: 0.9375rem; font-weight: 600; letter-spacing: -0.012em; }
+  a.fm-person:hover .fm-person-face { box-shadow: 0 0 0 2px rgba(var(--crimson), 0.7); }
+  a.fm-person:focus-visible { outline: none; }
+  a.fm-person:focus-visible .fm-person-face { box-shadow: 0 0 0 3px rgba(var(--crimson), 0.8); }
+  .fm-team-more { margin-left: auto; }
+  @media (max-width: 639px) { .fm-team-more { margin-left: 0; } }
+
+  /* Crafts -------------------------------------------------------------- */
+  .crafts { list-style: none; margin: 0; padding: 0; display: grid; gap: 16px; grid-template-columns: 1fr; }
+  @media (min-width: 640px) { .crafts { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  @media (min-width: 900px) { .crafts { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+  @media (min-width: 1100px) { .crafts { grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 18px; } }
+  .craft { overflow: hidden; display: flex; flex-direction: column; }
+  .craft-media { position: relative; aspect-ratio: 4 / 3; overflow: hidden; background: #050002; }
+  .craft-media :global(picture) { display: block; width: 100%; height: 100%; }
+  .craft-media :global(.craft-img) {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    filter: saturate(0.7) brightness(0.8);
+    transition: filter 500ms var(--ease-glass), transform 700ms var(--ease-glass);
+  }
+  .craft:hover .craft-media :global(.craft-img) { filter: none; transform: scale(1.03); }
+  .craft-shade {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(0deg, rgba(5, 0, 2, 0.88) 0%, rgba(5, 0, 2, 0.3) 45%, rgba(5, 0, 2, 0) 70%), linear-gradient(180deg, rgba(var(--blood), 0.25), rgba(var(--blood), 0));
+  }
+  .craft-title { position: absolute; left: 16px; bottom: 12px; font-size: 1.125rem; font-weight: 600; letter-spacing: -0.02em; color: #fff; }
+  .craft-films { list-style: none; margin: 0; padding: 8px 8px 10px; display: grid; gap: 2px; }
+  .craft-film {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 7px 8px;
+    border-radius: 8px;
+    font-size: 0.875rem;
+    color: var(--ink-soft);
+    text-decoration: none;
+    transition: background-color 150ms var(--ease-glass), color 150ms var(--ease-glass);
+  }
+  a.craft-film:hover { color: var(--ink); background: var(--wash-strong); }
+  a.craft-film:focus-visible { outline: none; box-shadow: 0 0 0 2px rgba(var(--crimson), 0.7); color: var(--ink); }
+
+  /* Links --------------------------------------------------------------- */
+  .fm-links-sec { padding-bottom: clamp(56px, 7vw, 96px); }
+  .links { list-style: none; margin: 0; padding: 0; display: grid; gap: 16px; grid-template-columns: 1fr; }
   @media (min-width: 768px) { .links { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; } }
   .links > li { display: flex; }
-  .link-card {
-    display: grid;
-    grid-template-columns: 44px minmax(0, 1fr) auto;
-    align-items: center;
-    gap: 16px;
-    width: 100%;
-    padding: 18px 20px;
-  }
+  .link-card { display: grid; grid-template-columns: 44px minmax(0, 1fr) auto; align-items: center; gap: 16px; width: 100%; padding: 18px 20px; }
   @media (min-width: 640px) { .link-card { padding: 22px 24px; } }
   .link-icon {
     display: grid;
@@ -961,15 +1257,15 @@ const links = [
     width: 44px;
     height: 44px;
     border-radius: 12px;
-    background: var(--wash);
-    border: 1px solid var(--line);
+    background: rgba(var(--crimson), 0.08);
+    border: 1px solid rgba(var(--crimson), 0.2);
     color: var(--ink);
   }
   .link-icon .imdb-wordmark { margin: 0; font-size: 0.6875rem; }
   .link-arrow { color: var(--ink-faint); transition: color 150ms var(--ease-glass), transform 250ms var(--ease-glass); }
   .link-card:hover .link-arrow { color: var(--tone); transform: translate(1px, -1px); }
 
-  /* Still viewer: a dark room, the frame, and quiet glass controls. */
+  /* Still viewer: a dark room, the frame, and solid controls. */
   :global(html.lb-lock), :global(html.lb-lock body) { overflow: hidden; }
   .lb {
     position: fixed;
@@ -984,7 +1280,7 @@ const links = [
   }
   .lb[hidden] { display: none; }
   .lb.is-open { opacity: 1; }
-  .lb-backdrop { position: absolute; inset: 0; background: rgba(0, 0, 0, 0.9); }
+  .lb-backdrop { position: absolute; inset: 0; background: rgba(3, 0, 1, 0.94); }
   .lb-stage {
     position: relative;
     z-index: 1;
@@ -1001,8 +1297,8 @@ const links = [
     max-width: 100%;
     max-height: calc(100svh - 220px);
     object-fit: contain;
-    border-radius: 12px;
-    border: 1px solid var(--line);
+    border-radius: 6px;
+    box-shadow: 0 0 0 1px var(--line), 0 40px 120px -40px rgba(var(--crimson), 0.5);
     opacity: 0;
     transform: scale(0.985);
     transition: opacity 280ms var(--ease-glass), transform 280ms var(--ease-glass);
@@ -1013,8 +1309,8 @@ const links = [
   .lb-btn {
     display: inline-grid;
     place-items: center;
-    width: 40px;
-    height: 40px;
+    width: 44px;
+    height: 44px;
     border-radius: 9999px;
     color: var(--ink);
     background: transparent;
@@ -1023,8 +1319,8 @@ const links = [
     transition: background-color 150ms var(--ease-glass);
   }
   .lb-btn:hover { background: var(--wash-strong); }
-  .lb-btn:focus-visible { outline: none; box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.25); }
-  .lb-close { position: absolute; top: 16px; right: 16px; z-index: 2; width: 44px; height: 44px; }
+  .lb-btn:focus-visible { outline: none; box-shadow: 0 0 0 3px rgba(var(--crimson), 0.6); }
+  .lb-close { position: absolute; top: 16px; right: 16px; z-index: 2; background: rgba(20, 10, 13, 0.92); border: 1px solid var(--line-strong); }
   .lb-bar {
     position: absolute;
     left: 50%;
@@ -1036,11 +1332,14 @@ const links = [
     gap: 6px;
     padding: 4px;
     border-radius: 9999px;
+    background: rgba(20, 10, 13, 0.92);
+    border: 1px solid var(--line-strong);
   }
   .lb-count { min-width: 64px; text-align: center; }
 
   @media (prefers-reduced-motion: reduce) {
-    .still, .still :global(.still-img), .lb, .lb-img, .link-arrow, .person-ig { transition: none; }
-    .still:hover :global(.still-img) { transform: scale(var(--zoom)); }
+    .fm-nebula, .fm-beam, .fm-corona { animation: none; }
+    .fm-screen, .reel-frame, .reel-go, .strip-still :global(.strip-img), .craft-media :global(.craft-img), .lb, .lb-img, .link-arrow { transition: none; }
+    .fm-screen:hover, .reel-card:hover .reel-frame, .reel-card:hover .reel-go { transform: none; }
   }
 </style>

@@ -3,12 +3,16 @@
 // minute clock that sends a pulse through the sync path when it hits zero.
 // Archify's SVG carries data-node-id on parts and data-edge-from/to on paths,
 // which is all this needs.
+//
+// The page is shown again and again without a reload (client side
+// navigation), so everything this starts stops when `signal` aborts: the
+// document listener, the clock's frames and timer, and the observers.
 
 type Part = { kind: string; owner: string; what: string; fails?: string; source?: string };
 
 const SVG_NS = "http://www.w3.org/2000/svg";
 
-export function initArchitecture() {
+export function initArchitecture(signal?: AbortSignal) {
   const stage = document.querySelector<HTMLElement>("[data-stage]");
   const canvas = stage?.querySelector<HTMLElement>("[data-canvas]");
   const svg = canvas?.querySelector<SVGSVGElement>("svg");
@@ -130,9 +134,13 @@ export function initArchitecture() {
     }, 280);
   }
   insp.querySelector("[data-insp-close]")?.addEventListener("click", close);
-  document.addEventListener("keydown", (ev) => {
-    if (ev.key === "Escape" && picked) close();
-  });
+  document.addEventListener(
+    "keydown",
+    (ev) => {
+      if (ev.key === "Escape" && picked) close();
+    },
+    { signal },
+  );
 
   // Pulses: light travelling along a path. The main data path carries a
   // slow steady stream; the clock fires a brighter burst on the sync path.
@@ -288,6 +296,13 @@ export function initArchitecture() {
     let raf = 0;
     let timer = 0;
     let onScreen = true;
+    let io: IntersectionObserver | null = null;
+    signal?.addEventListener("abort", () => {
+      cancelAnimationFrame(raf);
+      clearTimeout(timer);
+      raf = timer = 0;
+      io?.disconnect();
+    });
     const loop = () => {
       raf = 0;
       const now = simNow();
@@ -320,6 +335,7 @@ export function initArchitecture() {
     // happens on time. A hidden tab runs nothing, as before: the browser
     // holds the frames, and the clock catches up when the tab comes back.
     function schedule() {
+      if (signal?.aborted) return;
       if (onScreen) {
         if (timer) {
           clearTimeout(timer);
@@ -342,18 +358,23 @@ export function initArchitecture() {
       }
       schedule();
     });
-    document.addEventListener("visibilitychange", () => {
-      if (!document.hidden) schedule();
-    });
+    document.addEventListener(
+      "visibilitychange",
+      () => {
+        if (!document.hidden) schedule();
+      },
+      { signal },
+    );
     // Starts a screen early, so the clock is already current when it scrolls in.
     if ("IntersectionObserver" in window) {
-      new IntersectionObserver(
+      io = new IntersectionObserver(
         (entries) => {
           onScreen = entries[entries.length - 1].isIntersecting;
           schedule();
         },
         { rootMargin: "100% 0px" },
-      ).observe(stage!);
+      );
+      io.observe(stage!);
     }
     schedule();
   }
@@ -361,13 +382,15 @@ export function initArchitecture() {
   // The light running along the paths pauses while the drawing is off
   // screen and carries on from the same place when it comes back.
   if (!reduceMotion && "IntersectionObserver" in window) {
-    new IntersectionObserver(
+    const paused = new IntersectionObserver(
       (entries) => {
         if (entries[entries.length - 1].isIntersecting) svg.unpauseAnimations();
         else svg.pauseAnimations();
       },
       { rootMargin: "100% 0px" },
-    ).observe(stage);
+    );
+    paused.observe(stage);
+    signal?.addEventListener("abort", () => paused.disconnect());
   }
 
   // Phones: the drawing pans sideways inside its frame, the page never does.

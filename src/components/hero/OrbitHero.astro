@@ -59,8 +59,14 @@
 <script>
   import OrbitWorker from "../../scripts/orbit.worker.ts?worker";
   import { createOrbit, type OrbitInput } from "../../scripts/orbit-draw";
+  import { onPage } from "../../scripts/lifecycle";
 
-  (function () {
+  // Each time a page with the hero is shown. When it is swapped away the
+  // worker is ended, the frame loop stops and every listener and observer
+  // goes with it.
+  onPage("orbit-hero", (signal) => {
+    const stops: Array<() => void> = [];
+    const done = () => stops.forEach((f) => f());
     // Its own hook: the scroll gauge (ScrollOrbit) also carries data-orbit and
     // comes first in the page.
     const root = document.querySelector<HTMLElement>("[data-orbit-hero]");
@@ -111,6 +117,7 @@
         w.postMessage({ type: "init", back: offBack, front: offFront, ...dims(), input }, [offBack, offFront]);
         send = (m) => w.postMessage(m);
         inWorker = true;
+        stops.push(() => w.terminate());
       }
     }
     if (!inWorker) {
@@ -119,8 +126,13 @@
       let raf = 0;
       let last = 0;
       let run = !still;
+      stops.push(() => {
+        run = false;
+        cancelAnimationFrame(raf);
+      });
       const loop = (now: number) => {
         raf = 0;
+        if (signal.aborted) return;
         orbit.frame(last ? now - last : 0, input);
         last = now;
         if (run) raf = requestAnimationFrame(loop);
@@ -166,33 +178,38 @@
           targetY: Math.max(-1, Math.min(1, (e.clientY - cy) / (window.innerHeight / 2))),
         });
       },
-      { passive: true },
+      { passive: true, signal },
     );
     hero.addEventListener("pointerenter", () => {
       measure();
       update({ targetBoost: 1 });
     });
     hero.addEventListener("pointerleave", () => update({ targetBoost: 0 }));
-    window.addEventListener("load", measure, { once: true });
+    if (document.readyState === "complete") requestAnimationFrame(measure);
+    else window.addEventListener("load", measure, { once: true, signal });
 
     if (amb) {
-      new MutationObserver(() => {
+      const mo = new MutationObserver(() => {
         const c = readColours();
         if (c.c1 !== input.c1 || c.c2 !== input.c2) update(c);
-      }).observe(amb, { attributes: true, attributeFilter: ["style"] });
+      });
+      mo.observe(amb, { attributes: true, attributeFilter: ["style"] });
+      stops.push(() => mo.disconnect());
     }
-    if (still) return;
+    if (still) return done;
 
     // Pause while the hero is off screen or the tab is hidden.
     let visible = true;
     const run = () => send({ type: "run", run: visible && !document.hidden });
     if ("IntersectionObserver" in window) {
-      new IntersectionObserver((entries) => {
+      const io = new IntersectionObserver((entries) => {
         visible = entries[0]?.isIntersecting ?? true;
         run();
-      }).observe(root);
+      });
+      io.observe(root);
+      stops.push(() => io.disconnect());
     }
-    document.addEventListener("visibilitychange", run);
+    document.addEventListener("visibilitychange", run, { signal });
     // The frame can be zero wide when this first runs (in a production build
     // the portrait may not have laid out yet), so size the canvases whenever
     // the frame itself changes size, not only when the window does.
@@ -204,7 +221,11 @@
       fitted = d.size;
       send({ type: "resize", ...d });
     };
-    if ("ResizeObserver" in window) new ResizeObserver(refit).observe(root);
-    else window.addEventListener("resize", refit);
-  })();
+    if ("ResizeObserver" in window) {
+      const ro = new ResizeObserver(refit);
+      ro.observe(root);
+      stops.push(() => ro.disconnect());
+    } else window.addEventListener("resize", refit, { signal });
+    return done;
+  });
 </script>

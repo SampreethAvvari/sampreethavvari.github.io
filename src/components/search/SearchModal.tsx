@@ -1,6 +1,7 @@
 import Fuse from "fuse.js";
 import { useEffect, useMemo, useState } from "react";
 import Modal from "react-modal";
+import { navigate } from "astro:transitions/client";
 
 // The search dialog. Loaded only the first time someone opens search, so the
 // index and the dialog library stay out of every page's first load.
@@ -8,9 +9,10 @@ export default function SearchModal({ items, open, onClose }: any) {
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [selected, setSelected] = useState(0);
 
-  useEffect(() => {
-    Modal.setAppElement("body");
-  }, []);
+  // The nav (and this dialog in it) persists across page changes, so the
+  // content to hide from screen readers while the dialog is open is read
+  // on every render: the <main> of the page showing now.
+  const appElement = typeof document !== "undefined" ? document.querySelector("main") ?? document.body : undefined;
 
   // Build the index once per items array, not on every keystroke render.
   const fuse = useMemo(() => new Fuse(items ?? [], { keys: ["title", "description"] }), [items]);
@@ -39,7 +41,12 @@ export default function SearchModal({ items, open, onClose }: any) {
       } else if (e.key === "Enter") {
         e.preventDefault();
         const hit = searchResults[selected];
-        if (hit) window.location.href = hit.item.url;
+        // Through the router, so the page changes without a reload and the
+        // sound and the rest of the visit carry on.
+        if (hit) {
+          onClose();
+          navigate(hit.item.url);
+        }
       }
     };
     window.addEventListener("keydown", handleKeyboard);
@@ -51,6 +58,7 @@ export default function SearchModal({ items, open, onClose }: any) {
       isOpen={open}
       onRequestClose={onClose}
       contentLabel="Search"
+      appElement={appElement}
       className="search-modal"
       overlayClassName="fixed top-0 left-0 right-0 bottom-0 bg-black/50 backdrop-filter backdrop-blur-[6px] z-[90]"
     >

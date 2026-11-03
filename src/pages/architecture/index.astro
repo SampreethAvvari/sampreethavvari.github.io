@@ -87,41 +87,48 @@ const listSchema = [
   <NextStep next={{ href: "/posts", label: "Read the writing" }} />
 
   <script>
-    const chips = document.querySelectorAll<HTMLButtonElement>(".ix-filters [data-filter]");
-    const cells = [...document.querySelectorAll<HTMLElement>("[data-cell]")];
-    const empty = document.querySelector<HTMLElement>("[data-empty]");
-    // No lone card on a last row: on three columns, one leftover spans the
-    // row and two leftovers take half each; on two columns, one spans both.
-    const balance = () => {
-      const shown = cells.filter((c) => !c.hidden);
-      shown.forEach((c) => c.removeAttribute("data-tail"));
-      const n = shown.length;
-      if (n % 3 === 1) shown[n - 1].dataset.tail = "3-1";
-      if (n % 3 === 2) shown.slice(-2).forEach((c) => (c.dataset.tail = "3-2"));
-      if (n % 2 === 1) shown[n - 1].dataset.tail = (shown[n - 1].dataset.tail || "") + " 2-1";
-    };
-    const apply = (f: string) => {
-      chips.forEach((c) => {
-        const on = c.dataset.filter === f;
-        c.classList.toggle("is-on", on);
-        c.setAttribute("aria-pressed", String(on));
-      });
-      cells.forEach((c) => {
-        const d = c.querySelector<HTMLElement>("[data-arch-tile]")?.dataset.disciplines || "";
-        c.hidden = f !== "all" && !d.split(" ").includes(f);
-      });
+    import { onPage } from "../../scripts/lifecycle";
+
+    // Filter chips. Runs each time the index is shown; the listeners are on
+    // its own chips, so they go with the page.
+    onPage("architecture-index", () => {
+      const chips = document.querySelectorAll<HTMLButtonElement>(".ix-filters [data-filter]");
+      if (!chips.length) return;
+      const cells = [...document.querySelectorAll<HTMLElement>("[data-cell]")];
+      const empty = document.querySelector<HTMLElement>("[data-empty]");
+      // No lone card on a last row: on three columns, one leftover spans the
+      // row and two leftovers take half each; on two columns, one spans both.
+      const balance = () => {
+        const shown = cells.filter((c) => !c.hidden);
+        shown.forEach((c) => c.removeAttribute("data-tail"));
+        const n = shown.length;
+        if (n % 3 === 1) shown[n - 1].dataset.tail = "3-1";
+        if (n % 3 === 2) shown.slice(-2).forEach((c) => (c.dataset.tail = "3-2"));
+        if (n % 2 === 1) shown[n - 1].dataset.tail = (shown[n - 1].dataset.tail || "") + " 2-1";
+      };
+      const apply = (f: string) => {
+        chips.forEach((c) => {
+          const on = c.dataset.filter === f;
+          c.classList.toggle("is-on", on);
+          c.setAttribute("aria-pressed", String(on));
+        });
+        cells.forEach((c) => {
+          const d = c.querySelector<HTMLElement>("[data-arch-tile]")?.dataset.disciplines || "";
+          c.hidden = f !== "all" && !d.split(" ").includes(f);
+        });
+        balance();
+        if (empty) empty.hidden = cells.some((c) => !c.hidden);
+        try {
+          sessionStorage.setItem("arch-filter", f);
+        } catch {}
+      };
+      chips.forEach((c) => c.addEventListener("click", () => apply(c.dataset.filter || "all")));
       balance();
-      if (empty) empty.hidden = cells.some((c) => !c.hidden);
       try {
-        sessionStorage.setItem("arch-filter", f);
+        const saved = new URLSearchParams(location.search).get("kind") || sessionStorage.getItem("arch-filter");
+        if (saved && [...chips].some((c) => c.dataset.filter === saved && !c.disabled)) apply(saved);
       } catch {}
-    };
-    chips.forEach((c) => c.addEventListener("click", () => apply(c.dataset.filter || "all")));
-    balance();
-    try {
-      const saved = new URLSearchParams(location.search).get("kind") || sessionStorage.getItem("arch-filter");
-      if (saved && [...chips].some((c) => c.dataset.filter === saved && !c.disabled)) apply(saved);
-    } catch {}
+    });
   </script>
 </BaseLayout>
 

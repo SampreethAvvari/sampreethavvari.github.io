@@ -317,7 +317,9 @@ const sections = [
   <script type="application/json" id="arch-parts" set:html={JSON.stringify(arch.parts).replace(/</g, "\\u003c")} />
 
   <script>
+    import { onPage } from "../../scripts/lifecycle";
     import { initArchitecture } from "../../scripts/architecture";
-    initArchitecture();
+    // Each time a drawing is shown; it stops when the page is swapped away.
+    onPage("architecture", (signal) => initArchitecture(signal));
   </script>
 </BaseLayout>

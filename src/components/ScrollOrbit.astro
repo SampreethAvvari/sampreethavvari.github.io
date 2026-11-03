@@ -4,10 +4,13 @@
 // a comet that rides it as you scroll. Its tail streams behind it and grows
 // with your speed, so it points the way you came. Clicking the track flies
 // there. Desktop only, and only on pages long enough to need it.
+//
+// Part of the chrome: it persists across client side navigation and its
+// script runs once a visit, reading whichever page is showing.
 const ticks = Array.from({ length: 11 }, (_, i) => i);
 ---
 
-<div class="orbit" data-orbit aria-hidden="true">
+<div class="orbit" data-orbit aria-hidden="true" transition:persist="scroll-orbit">
   <svg class="orbit-planet" viewBox="0 0 24 24" fill="none">
     <circle cx="12" cy="12" r="4.2" />
     <ellipse cx="12" cy="12" rx="10" ry="3.2" transform="rotate(-20 12 12)" />
@@ -139,7 +142,8 @@ const ticks = Array.from({ length: 11 }, (_, i) => i);
   const trail = root?.querySelector<HTMLElement>("[data-orbit-trail]");
   const tail = root?.querySelector<HTMLElement>("[data-orbit-tail]");
   const read = root?.querySelector<HTMLElement>("[data-orbit-read]");
-  if (root && track && head && trail && tail && read) {
+  if (root && track && head && trail && tail && read && !root.dataset.live) {
+    root.dataset.live = "1";
     let last = window.scrollY;
     let speed = 0;
     let shown = -1;
@@ -196,8 +200,18 @@ const ticks = Array.from({ length: 11 }, (_, i) => i);
     shows.addEventListener?.("change", wake);
     if ("ResizeObserver" in window) {
       const ro = new ResizeObserver(wake);
+      let body = document.body;
       ro.observe(document.documentElement);
-      ro.observe(document.body);
+      ro.observe(body);
+      // A page swap brings a new <body>: measure that one instead.
+      document.addEventListener("astro:after-swap", () => {
+        ro.unobserve(body);
+        body = document.body;
+        ro.observe(body);
+        last = window.scrollY;
+        speed = 0;
+        wake();
+      });
     }
     wake();
     track.addEventListener("click", (ev) => {

@@ -1,4 +1,5 @@
 ---
+import { ViewTransitions } from "astro:transitions";
 import Nav from "../components/navbar/Nav";
 import TopButton from "../components/TopButton";
 import ChatWidget from "../components/chatbot/ChatWidget";
@@ -27,6 +28,9 @@ const {
   crumbs,
   published,
   modified,
+  // A page that drives the background wash itself (initAmbient in its own
+  // onPage setup) passes this; every other page gets its tab's colour.
+  ownSky = false,
 }: {
   title: string;
   description?: string;
@@ -39,6 +43,7 @@ const {
   crumbs?: Crumb[];
   published?: string;
   modified?: string;
+  ownSky?: boolean;
 } = Astro.props;
 
 // Canonical URL for the current page (no query strings), absolute via astro.config `site`.
@@ -182,6 +187,27 @@ const pageComets = hasOwnComets
     <script type="application/ld+json" set:html={JSON.stringify(jsonLd).replace(/</g, "\\u003c")} />
     <!-- No icon font: every icon is an inline SVG. -->
     <title>{title}</title>
+    <!-- Pages change without a reload, so the document, the sound, the sky
+         and the chrome marked transition:persist last the whole visit. The
+         loader covers each move (WarpLoader); page scripts start and stop
+         through src/scripts/lifecycle.ts. Browsers without the View
+         Transition API get the same swap with a plain fade. -->
+    <ViewTransitions fallback="animate" />
+    <style is:global>
+      /* Reduced motion: page changes swap in place, with no animation. */
+      @media (prefers-reduced-motion: reduce) {
+        ::view-transition-group(*),
+        ::view-transition-old(*),
+        ::view-transition-new(*) {
+          animation: none !important;
+        }
+      }
+      /* Focus lands on the new page's content after a move; the content
+         itself shows no ring. */
+      main[tabindex="-1"]:focus {
+        outline: none;
+      }
+    </style>
     <script is:inline>
       // Cloudflare Web Analytics: privacy-first, cookieless, no consent
       // banner needed. Just basic traffic stats. Replaces GA4.
@@ -201,81 +227,82 @@ const pageComets = hasOwnComets
     </script>
     <script is:inline>
       // The site is dark only. Set the class inline in head to avoid FOUC.
+      // Runs once a visit (the same text on every page, so the router does
+      // not run it again); lifecycle.ts carries the class across page swaps.
       document.documentElement.classList.add("dark");
     </script>
     <script>
-      const setupReveal = () => {
-        const elements = document.querySelectorAll("[data-reveal]");
-        if (!elements.length) return;
+      import { onPage } from "../scripts/lifecycle";
 
-        if (!("IntersectionObserver" in window)) {
-          elements.forEach((el) => el.classList.add("reveal-visible"));
-          return;
-        }
+      // A link to a file (a PDF, an image) goes straight to the browser
+      // instead of being fetched by the router first and then again.
+      document.addEventListener("astro:before-preparation", (e) => {
+        const to = (e as Event & { to: URL }).to;
+        if (/\.(pdf|png|jpe?g|webp|avif|gif|svg|xml|txt|zip|json|mp4|webm)$/i.test(to.pathname)) e.preventDefault();
+      });
 
-        if (!window.__revealObserver) {
-          window.__revealObserver = new IntersectionObserver(
-            (entries) => {
-              entries.forEach((entry) => {
-                if (entry.isIntersecting) {
-                  entry.target.classList.add("reveal-visible");
-                } else {
-                  entry.target.classList.remove("reveal-visible");
-                }
-              });
-            },
-            // threshold 0 (not 0.2) so sections taller than ~5x the viewport
-            // still reveal, at 0.2 a very tall section (e.g. AIE's 6 project
-            // cards on mobile) could never reach 20% visibility and stayed hidden.
-            { threshold: 0, rootMargin: "0px 0px -10% 0px" }
-          );
-        }
-
-        elements.forEach((el) => {
-          if (el.dataset.revealObserved) return;
-          el.dataset.revealObserved = "true";
-          window.__revealObserver.observe(el);
-        });
-      };
-
-      const boot = () => {
-        setupReveal();
-        if ("MutationObserver" in window) {
-          // Coalesce mutation bursts (island hydration, chat messages) into
-          // one rescan instead of one per DOM change.
-          let pending = false;
-          const observer = new MutationObserver(() => {
-            if (pending) return;
-            pending = true;
-            setTimeout(() => {
-              pending = false;
-              setupReveal();
-            }, 120);
+      // Blocks marked data-reveal ease in as they scroll into view. One
+      // observer per page shown, plus a watch for blocks that islands add.
+      onPage("reveal", (signal) => {
+        const seen = new Set<HTMLElement>();
+        const io =
+          "IntersectionObserver" in window
+            ? new IntersectionObserver(
+                (entries) => {
+                  entries.forEach((entry) => {
+                    entry.target.classList.toggle("reveal-visible", entry.isIntersecting);
+                  });
+                },
+                // threshold 0 (not 0.2) so sections taller than ~5x the viewport
+                // still reveal, at 0.2 a very tall section (e.g. AIE's 6 project
+                // cards on mobile) could never reach 20% visibility and stayed hidden.
+                { threshold: 0, rootMargin: "0px 0px -10% 0px" },
+              )
+            : null;
+        const scan = () => {
+          document.querySelectorAll<HTMLElement>("[data-reveal]").forEach((el) => {
+            if (seen.has(el)) return;
+            seen.add(el);
+            el.dataset.revealObserved = "true";
+            if (io) io.observe(el);
+            else el.classList.add("reveal-visible");
           });
-          observer.observe(document.body, { childList: true, subtree: true });
-        }
-      };
-
-      if (document.readyState === "loading") {
-        document.addEventListener("DOMContentLoaded", boot);
-      } else {
-        boot();
-      }
+        };
+        scan();
+        // Coalesce mutation bursts (island hydration, chat messages) into
+        // one rescan instead of one per DOM change.
+        let pending = 0;
+        const mo = new MutationObserver(() => {
+          if (pending) return;
+          pending = window.setTimeout(() => {
+            pending = 0;
+            if (!signal.aborted) scan();
+          }, 120);
+        });
+        mo.observe(document.body, { childList: true, subtree: true });
+        return () => {
+          mo.disconnect();
+          io?.disconnect();
+          clearTimeout(pending);
+          // A block that persists onto the next page is watched again there.
+          seen.forEach((el) => delete el.dataset.revealObserved);
+        };
+      });
     </script>
   </head>
   <body
     class="relative bg-dk-primary text-dk-text w-full overflow-x-clip"
     data-tone={tone}
     data-sky={toneRgb}
-    data-own-sky={pathname === "/" ? "true" : undefined}
+    data-own-sky={ownSky ? "true" : undefined}
   >
     <!-- First in the body so it covers the very first paint. -->
     <WarpLoader palette={warpPalette} toneMap={toneMap} />
     <!-- Shared space backdrop on every page: starfield, ambient colour
          flow, and film grain. All behind the content (z -1, grain overlay). -->
     <SpaceField />
-    <div class="ambient" data-ambient aria-hidden="true"></div>
-    <div class="grain" aria-hidden="true"></div>
+    <div class="ambient" data-ambient aria-hidden="true" transition:persist="ambient"></div>
+    <div class="grain" aria-hidden="true" transition:persist="grain"></div>
     {pageComets.length > 0 && (
       <div class="page-comets" aria-hidden="true" style="position:absolute; inset:0; overflow:hidden; z-index:0; pointer-events:none;">
         {pageComets.map((c) => (
@@ -290,28 +317,68 @@ const pageComets = hasOwnComets
       </div>
     )}
     <script>
-      // Default ambient colour flow; pages with their own section stops
-      // (landing, writing) call initAmbient again and win. The comet engine
-      // is idempotent per element, so page-level calls coexist with this.
+      // Run once a visit: the score, the pointer effects and the glass. They
+      // keep going across page changes (module scripts run once, and their
+      // layers move into each new page).
+      import { onPage } from "../scripts/lifecycle";
       import { initAmbient, initComets } from "../scripts/spatial";
       import { initLiquidGlass } from "../scripts/liquid-glass";
       import { tweenToneFromWarp } from "../scripts/toneTween";
+      import { mountSound } from "../scripts/sound/engine";
+      import { mountClickBurst } from "../scripts/fx/click-burst";
+      mountClickBurst();
+      import { mountSpaceLens } from "../scripts/fx/space-lens";
+      mountSpaceLens();
+      import { mountCursor } from "../scripts/fx/cursor";
+      mountCursor();
+      // The site's score: off until the visitor turns it on.
+      mountSound();
       // Real refracting glass on the navigation layer (Chromium only).
       initLiquidGlass(".nav-glass, .btn-glass, .social, .to-top, .proj-arrow, .chat-launcher");
-      // Every page's sky takes its tab's colour. The landing page blends its
-      // own, section by section, so it is left alone here.
-      if (!document.body.dataset.ownSky) {
-        const rgb = document.body.dataset.sky || "91,141,239";
-        initAmbient([
-          [rgb, rgb],
-          [rgb, rgb],
-        ]);
-      }
-      initComets(".space-el");
-      // Finish the colour blend the loader started on the page before.
-      tweenToneFromWarp();
+
+      // Every page shown: default ambient colour flow and the page's comets.
+      // A page with its own section stops passes ownSky (data-own-sky on
+      // <body>) and calls initAmbient itself. The comet engine is
+      // idempotent per element, so page level calls coexist with this.
+      onPage("layout", (signal) => {
+        if (!document.body.dataset.ownSky) {
+          const rgb = document.body.dataset.sky || "91,141,239";
+          initAmbient(
+            [
+              [rgb, rgb],
+              [rgb, rgb],
+            ],
+            undefined,
+            signal,
+          );
+        }
+        initComets(".space-el", signal);
+      });
+      // Finish the colour blend the loader started when the link was
+      // followed. Last, so it starts from what the page's own ambient set.
+      onPage("tone", (signal) => tweenToneFromWarp(signal), 10);
+
+      // After a move, focus goes to the new page's content when it was not
+      // kept on a persisted control (a nav tab keeps it). The router
+      // announces the new title for screen readers.
+      let moved = false;
+      document.addEventListener("astro:after-swap", () => {
+        moved = true;
+      });
+      onPage("focus", () => {
+        if (!moved) return;
+        const active = document.activeElement;
+        if (active && active !== document.body && active !== document.documentElement) return;
+        const main = document.querySelector<HTMLElement>("main");
+        if (!main) return;
+        if (!main.hasAttribute("tabindex")) main.setAttribute("tabindex", "-1");
+        main.focus({ preventScroll: true });
+      }, 20);
     </script>
-    <Nav client:visible searchItems={searchItems} cv={info.cv} />
+    <!-- The chrome persists across page changes: the nav keeps its state
+         and the sound toggle, an open chat stays open, the scroll gauge and
+         back to top carry on. Nav reads the new path after each swap. -->
+    <Nav client:visible transition:persist="nav" searchItems={searchItems} cv={info.cv} />
     <ScrollOrbit />
     <main class="w-full">
       <slot />
@@ -319,7 +386,7 @@ const pageComets = hasOwnComets
     <FooterBar variant={footerVariant} />
     <!-- In the HTML from the first paint, so the launcher arrives with the page;
          it wakes up once the browser is idle. -->
-    <ChatWidget client:idle />
-    <TopButton client:only />
+    <ChatWidget client:idle transition:persist="chat" />
+    <TopButton client:idle transition:persist="to-top" />
   </body>
 </html>

@@ -112,8 +112,11 @@ const dataJson = JSON.stringify(mindGraphs).replace(/</g, "\\u003c");
   </div>
 
   <script>
+    import { onPage } from "../scripts/lifecycle";
     import { mountMind } from "../scripts/mind-stage";
-    mountMind();
+    // Mounted each time the page is shown; the disposer it returns stops the
+    // render loop and its listeners when the page is swapped away.
+    onPage("mind", () => mountMind());
   </script>
 </BaseLayout>
 

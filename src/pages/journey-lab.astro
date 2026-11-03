@@ -1,0 +1,102 @@
+---
+// Bare test page for the journey engine. Not linked anywhere; delete before merge.
+const chapters = [
+  { id: "launch", color: "#5B8DEF" },
+  { id: "proof", color: "#22D3EE" },
+  { id: "projects", color: "#5B8DEF" },
+  { id: "disciplines", color: "#F5A524" },
+  { id: "writing", color: "#34D399" },
+  { id: "film", color: "#F43F5E" },
+  { id: "mind", color: "#A78BFA" },
+  { id: "contact", color: "#F5A524" },
+];
+---
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex" />
+    <title>Journey lab</title>
+    <style>
+      html, body { margin: 0; background: #020309; color: #fff; font-family: system-ui, sans-serif; }
+      #journey { position: fixed; inset: 0; width: 100vw; height: 100vh; display: block; }
+      .chapter { height: 100vh; display: flex; align-items: flex-end; padding: 0 0 12vh 6vw; box-sizing: border-box; position: relative; pointer-events: none; }
+      .chapter h2 { font-size: clamp(28px, 5vw, 64px); margin: 0; font-weight: 600; letter-spacing: -0.02em; text-shadow: 0 2px 24px rgba(0,0,0,.6); opacity: .9; }
+      .chapter p { margin: 8px 0 0; opacity: .6; font-size: 14px; }
+      #hud { position: fixed; top: 8px; right: 8px; font: 12px ui-monospace, monospace; background: rgba(0,0,0,.45); padding: 4px 8px; border-radius: 6px; z-index: 2; }
+      body.clean #hud, body.clean main { visibility: hidden; }
+    </style>
+  </head>
+  <body>
+    <canvas id="journey"></canvas>
+    <div id="hud">loading</div>
+    <main>
+      {chapters.map((c, i) => (
+        <section class="chapter" data-id={c.id}>
+          <div><h2>{c.id}</h2><p>chapter {i + 1}</p></div>
+        </section>
+      ))}
+    </main>
+    <script define:vars={{ chapters }} is:inline>
+      window.__chapters = chapters;
+    </script>
+    <script>
+      import type { Journey, JourneyChapter } from "../scripts/journey/engine";
+
+      const w = window as unknown as {
+        __chapters: JourneyChapter[];
+        __journey?: Journey;
+        __frames: number;
+        __setP?: (p: number, v?: number) => void;
+      };
+      w.__frames = 0;
+      const params = new URLSearchParams(location.search);
+      const quality = params.get("q") === "low" ? "low" : "high";
+      const fixedP = params.has("p") ? parseFloat(params.get("p") || "0") : null;
+      const reduced = params.get("rm") === "1" || matchMedia("(prefers-reduced-motion: reduce)").matches;
+      if (params.get("clean") === "1") document.body.classList.add("clean");
+      const canvas = document.getElementById("journey") as HTMLCanvasElement;
+      const hud = document.getElementById("hud")!;
+
+      (async () => {
+        const { mountJourney } = await import("../scripts/journey/engine");
+        canvas.addEventListener("journeyready", () => ((window as unknown as { __ready: number }).__ready = performance.now()));
+        const j = mountJourney(canvas, { chapters: w.__chapters, quality, reducedMotion: reduced });
+        w.__journey = j;
+        const max = w.__chapters.length - 1;
+        let lastY = scrollY;
+        let lastT = performance.now();
+        const progress = () => Math.min(max, Math.max(0, scrollY / innerHeight));
+        const onScroll = () => {
+          const now = performance.now();
+          const dt = Math.max(1, now - lastT) / 1000;
+          const vel = (scrollY - lastY) / innerHeight / dt;
+          lastY = scrollY;
+          lastT = now;
+          if (fixedP === null) j.setScroll(progress(), vel);
+        };
+        addEventListener("scroll", onScroll, { passive: true });
+        addEventListener("pointermove", (e) => j.setPointer((e.clientX / innerWidth) * 2 - 1, (e.clientY / innerHeight) * 2 - 1), { passive: true });
+        document.addEventListener("visibilitychange", () => j.setPaused(document.hidden));
+        w.__setP = (p: number, v = 0) => j.setScroll(p, v);
+        j.setScroll(fixedP ?? progress(), 0);
+
+        // Frame counter for measurements.
+        let frames = 0;
+        let t0 = performance.now();
+        const tick = () => {
+          frames++;
+          w.__frames++;
+          const now = performance.now();
+          if (now - t0 > 1000) {
+            hud.textContent = `${quality} ${Math.round((frames * 1000) / (now - t0))} fps p=${progress().toFixed(2)}`;
+            frames = 0;
+            t0 = now;
+          }
+          requestAnimationFrame(tick);
+        };
+        requestAnimationFrame(tick);
+      })();
+    </script>
+  </body>
+</html>

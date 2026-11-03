@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import Search from "../search/Search";
+import SoundPlacard from "../../scripts/sound/Placard.jsx";
 
 // One colour per tab. The coloured icon beside each label is the legend for
 // the whole site: the same colour marks that tab's page, its kicker and links.
@@ -39,14 +40,56 @@ const ALIAS = { gallery: "filmmaking", demos: "projects", teaching: "posts" };
 
 // The resume link comes in as a prop: importing the whole site data file here
 // would ship all of it to the browser with the nav.
+// Sound on or off, and the "i" that explains the music. The engine
+// (scripts/sound/engine.ts) owns the state and announces it; the click is
+// passed straight through so the browser lets the sound start.
+function SoundToggle() {
+  const [on, setOn] = useState(false);
+  useEffect(() => {
+    setOn(document.documentElement.dataset.sound === "on");
+    const f = (e) => setOn(!!(e.detail && e.detail.on));
+    window.addEventListener("sound:state", f);
+    return () => window.removeEventListener("sound:state", f);
+  }, []);
+  const label = on ? "Sound on. Turn it off" : "Sound off. Turn it on";
+  return (
+    <span className="nav-sound-pair">
+      <button
+        type="button"
+        className={`nav-icon nav-sound${on ? " is-on" : ""}`}
+        aria-pressed={on}
+        aria-label={label}
+        title={label}
+        onClick={() => window.dispatchEvent(new CustomEvent("sound:set", { detail: !on }))}
+      >
+        <span className="nav-sound-bars" aria-hidden="true"><i /><i /><i /><i /></span>
+      </button>
+      <SoundPlacard on={on} />
+    </span>
+  );
+}
+
 export default function Nav({ searchItems, cv = "/resume" }) {
   const [open, setOpen] = useState(false);
   const [active, setActive] = useState("");
   const [condensed, setCondensed] = useState(false);
 
+  // The nav persists across page changes (transition:persist in
+  // BaseLayout), so after each swap it reads the new path, closes the menu
+  // sheet and checks the scroll again.
   useEffect(() => {
-    const seg = (window.location.pathname || "/").split("/").filter(Boolean)[0] || "";
-    setActive(ALIAS[seg] || seg);
+    const read = () => {
+      const seg = (window.location.pathname || "/").split("/").filter(Boolean)[0] || "";
+      setActive(ALIAS[seg] || seg);
+    };
+    const onSwap = () => {
+      read();
+      setOpen(false);
+      setCondensed(window.scrollY > 8);
+    };
+    read();
+    document.addEventListener("astro:after-swap", onSwap);
+    return () => document.removeEventListener("astro:after-swap", onSwap);
   }, []);
 
   useEffect(() => {
@@ -104,6 +147,7 @@ export default function Nav({ searchItems, cv = "/resume" }) {
             </nav>
 
             <div className="nav-actions">
+              <SoundToggle />
               <Search items={searchItems} />
               <a href={cv} className="btn btn-primary btn-sm nav-resume" title="Resume">
                 <TabIcon name="resume" />

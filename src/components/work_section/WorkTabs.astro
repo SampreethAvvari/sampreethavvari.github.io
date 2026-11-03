@@ -94,24 +94,29 @@ const items = [
 </style>
 
 <script>
+  import { onPage } from "../../scripts/lifecycle";
+
   // Keep the current page's segment in view and fade whichever edge has more.
-  const tracks = document.querySelectorAll<HTMLElement>("[data-wt-scroll]");
-  tracks.forEach((track) => {
-    const mark = () => {
-      const max = track.scrollWidth - track.clientWidth;
-      if (max <= 1) return track.removeAttribute("data-more");
-      const atStart = track.scrollLeft <= 1;
-      const atEnd = track.scrollLeft >= max - 1;
-      track.setAttribute("data-more", atStart ? "end" : atEnd ? "start" : "both");
-    };
-    const on = track.querySelector<HTMLElement>(".is-on");
-    if (on && track.scrollWidth > track.clientWidth) {
-      // Set scrollLeft on the track itself so the page never scrolls.
-      const left = on.getBoundingClientRect().left - track.getBoundingClientRect().left + track.scrollLeft;
-      track.scrollLeft = left - (track.clientWidth - on.offsetWidth) / 2;
-    }
-    mark();
-    track.addEventListener("scroll", mark, { passive: true });
-    window.addEventListener("resize", mark, { passive: true });
+  // Runs each time a page with the tabs is shown.
+  onPage("work-tabs", (signal) => {
+    const tracks = document.querySelectorAll<HTMLElement>("[data-wt-scroll]");
+    tracks.forEach((track) => {
+      const mark = () => {
+        const max = track.scrollWidth - track.clientWidth;
+        if (max <= 1) return track.removeAttribute("data-more");
+        const atStart = track.scrollLeft <= 1;
+        const atEnd = track.scrollLeft >= max - 1;
+        track.setAttribute("data-more", atStart ? "end" : atEnd ? "start" : "both");
+      };
+      const on = track.querySelector<HTMLElement>(".is-on");
+      if (on && track.scrollWidth > track.clientWidth) {
+        // Set scrollLeft on the track itself so the page never scrolls.
+        const left = on.getBoundingClientRect().left - track.getBoundingClientRect().left + track.scrollLeft;
+        track.scrollLeft = left - (track.clientWidth - on.offsetWidth) / 2;
+      }
+      mark();
+      track.addEventListener("scroll", mark, { passive: true, signal });
+      window.addEventListener("resize", mark, { passive: true, signal });
+    });
   });
 </script>

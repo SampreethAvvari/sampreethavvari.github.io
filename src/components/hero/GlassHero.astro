@@ -30,7 +30,11 @@
 </style>
 
 <script>
-  (function () {
+  import { onPage } from "../../scripts/lifecycle";
+
+  // Each time a page with the hero is shown. When it is swapped away the
+  // frame loop, listeners and observer stop and the WebGL context is let go.
+  onPage("glass-hero", (signal) => {
     const canvas = document.querySelector<HTMLCanvasElement>("[data-glasshero]");
     if (!canvas) return;
     const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -175,7 +179,7 @@ void main(){
         tmy = c.y;
         lastInputAt = performance.now();
       },
-      { passive: true },
+      { passive: true, signal },
     );
 
     // Clicking or tapping anywhere in the hero fires a shockwave from that
@@ -205,15 +209,18 @@ void main(){
       gl.viewport(0, 0, canvas.width, canvas.height);
     }
     size();
-    window.addEventListener("resize", size, { passive: true });
+    window.addEventListener("resize", size, { passive: true, signal });
 
-    new IntersectionObserver((en) => { visible = en[0].isIntersecting; }, { threshold: 0 }).observe(canvas);
-    document.addEventListener("visibilitychange", () => { hidden = document.hidden; });
+    const io = new IntersectionObserver((en) => { visible = en[0].isIntersecting; }, { threshold: 0 });
+    io.observe(canvas);
+    document.addEventListener("visibilitychange", () => { hidden = document.hidden; }, { signal });
 
     const isDark = () => document.documentElement.classList.contains("dark");
     const t0 = performance.now();
+    let raf = 0;
     (function frame() {
-      requestAnimationFrame(frame);
+      if (signal.aborted) return;
+      raf = requestAnimationFrame(frame);
       if (!visible || hidden) return;
       const now = performance.now();
       if (now - lastInputAt > 2500) {
@@ -233,5 +240,11 @@ void main(){
       gl.clear(gl.COLOR_BUFFER_BIT);
       gl.drawArrays(gl.TRIANGLES, 0, 3);
     })();
-  })();
+    return () => {
+      cancelAnimationFrame(raf);
+      io.disconnect();
+      document.documentElement.classList.remove("glasshero-on");
+      gl.getExtension("WEBGL_lose_context")?.loseContext();
+    };
+  });
 </script>

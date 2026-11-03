@@ -1,0 +1,1066 @@
+---
+// One page per film: the poster or a title card full width, the title and
+// where the film stands, my credits in large type, the story where the site
+// has one, the stills, the cast and crew where we have them, and the films
+// either side of it. Facts come from src/data/films.ts and nowhere else.
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import SmartImage from "../../components/common/SmartImage.astro";
+import Icon from "../../components/common/Icon.astro";
+import {
+  films,
+  filmPath,
+  filmStills,
+  neighbours,
+  yearLabel,
+  statusLabel,
+  rolesLine,
+  rolesProse,
+  filmDescription,
+  type Film,
+} from "../../data/films";
+import { filmNode } from "../../utils/seo";
+
+export function getStaticPaths() {
+  return films.map((film) => ({ params: { slug: film.slug }, props: { film } }));
+}
+
+const { film } = Astro.props as { film: Film };
+const stills = filmStills(film);
+const { prev, next } = neighbours(film.slug);
+const path = filmPath(film.slug);
+const description = filmDescription(film, stills.length);
+const pageTitle = `${film.title}${film.year ? ` (${film.year})` : ""} · SA: Filmmaking`;
+// The image search engines see: the poster, else a frame from the film.
+const schemaImage = film.poster?.image ?? (stills[0] ? stills[0].src.replace(/\.avif$/i, ".webp") : undefined);
+const heroStill = film.slug === "swechcha" ? stills[4] ?? stills[0] : undefined;
+
+// The same nebula and eclipse placement the reel gives this film's card.
+const SEEDS = [
+  [24, 40, 76, 58],
+  [70, 34, 26, 66],
+  [36, 64, 78, 30],
+  [78, 56, 22, 38],
+  [50, 28, 30, 70],
+  [26, 60, 70, 36],
+  [62, 66, 34, 30],
+  [40, 32, 74, 64],
+  [72, 44, 24, 56],
+];
+const seedFor = (f: Film) => SEEDS[films.indexOf(f) % SEEDS.length];
+const [nx, ny, sx, sy] = seedFor(film);
+
+const statusText =
+  film.status === "dated" ? yearLabel(film) : [film.year, film.statusNote ?? statusLabel(film)].filter(Boolean).join(" · ");
+
+const facts = [
+  { label: "Year", value: yearLabel(film) },
+  ...(film.status !== "dated" ? [{ label: "Status", value: film.statusNote ?? statusLabel(film) }] : []),
+  ...(film.genre ? [{ label: "Genre", value: film.genre }] : []),
+  ...(film.shot ? [{ label: "Shot", value: `${film.shot.place}, ${film.shot.when}` }] : []),
+  ...(stills.length ? [{ label: "Stills", value: `${stills.length} frames` }] : []),
+];
+
+// My other films in each of the jobs I did on this one.
+const alsoAs = film.roles
+  .map((role) => ({ role, others: films.filter((f) => f !== film && f.roles.includes(role)) }))
+  .filter((g) => g.others.length);
+
+const links = [
+  film.links?.imdb && { title: "IMDb", line: `${film.title} on IMDb.`, href: film.links.imdb, icon: "imdb" },
+  film.links?.screenplay && { title: "Screenplay", line: "Read the script as a PDF.", href: film.links.screenplay, icon: "file" },
+  film.links?.playlist && { title: "Playlist", line: "The film's playlist on YouTube.", href: film.links.playlist, icon: "youtube" },
+].filter(Boolean) as Array<{ title: string; line: string; href: string; icon: string }>;
+
+const instagramUrl = (handle?: string) => (handle ? `https://instagram.com/${handle.replace(/^@/, "")}` : "");
+const initials = (name: string) =>
+  name
+    .split(/\s+/)
+    .map((w) => w[0])
+    .filter(Boolean)
+    .slice(0, 2)
+    .join("")
+    .toUpperCase();
+
+const base = Astro.site!.toString();
+---
+
+<BaseLayout
+  title={pageTitle}
+  description={description}
+  footerVariant={film.links?.imdb ? "filmmaking" : "default"}
+  ogImage="/og/film.jpg"
+  preloadImage={film.poster ? film.poster.image.replace(/\.webp$/, ".avif") : heroStill?.src}
+  schema={[filmNode(base, film.slug, { description, image: schemaImage })]}
+  crumbs={[
+    { name: "Home", path: "/" },
+    { name: "Filmmaking", path: "/filmmaking" },
+    { name: film.title, path },
+  ]}
+>
+  <div class="fp">
+    {film.poster ? (
+      <section class="fp-poster-hero" aria-label={`${film.title} poster`}>
+        <div class="fp-space" aria-hidden="true">
+          <span class="fp-nebula fp-nebula-a"></span>
+          <span class="fp-nebula fp-nebula-b"></span>
+          <span class="fp-beam"></span>
+          <canvas class="fp-dust" data-fp-dust></canvas>
+        </div>
+        <div class="fp-poster-stage">
+          <span class="fp-sun" aria-hidden="true"><span class="fp-corona"></span></span>
+          <div class="fp-screen">
+            <SmartImage src={film.poster.src} alt={film.poster.alt} class="fp-screen-img" loading="eager" fetchpriority="high" />
+          </div>
+        </div>
+        <div class="wrap fp-head">
+          <a href="/filmmaking" class="fp-back"><Icon name="arrow-left" size={14} /> All films</a>
+          <p class="kicker fp-kicker">Film · {statusText}</p>
+          <h1 class="fp-h1">{film.title}</h1>
+          <p class="fp-head-roles">{rolesLine(film)}</p>
+        </div>
+      </section>
+    ) : (
+      <section class="fp-card-hero" style={`--nx:${nx}%;--ny:${ny}%;--sx:${sx}%;--sy:${sy}%;`} aria-labelledby="fp-title">
+        <div class="fp-bar fp-bar-top" aria-hidden="true"></div>
+        <div class:list={["fp-field", heroStill && "fp-field-still"]}>
+          {heroStill ? (
+            <SmartImage src={heroStill.src} alt={heroStill.alt} class="fp-field-img" loading="eager" fetchpriority="high" />
+          ) : (
+            <span class="fp-card-sun" aria-hidden="true"><span class="fp-corona"></span></span>
+          )}
+          <span class="fp-field-shade" aria-hidden="true"></span>
+          <canvas class="fp-dust" data-fp-dust aria-hidden="true"></canvas>
+          <div class="wrap fp-field-back">
+            <a href="/filmmaking" class="fp-back"><Icon name="arrow-left" size={14} /> All films</a>
+          </div>
+          <div class="fp-field-inner">
+            <p class="fp-over">
+              {film.status === "upcoming" && <span class="badge badge-tone">Upcoming</span>}
+              <span>{statusText}</span>
+            </p>
+            <h1 id="fp-title" class="fp-card-title">{film.title}</h1>
+          </div>
+        </div>
+        <div class="fp-bar fp-bar-bottom">
+          <span class="fp-bar-roles">{rolesLine(film)}</span>
+        </div>
+      </section>
+    )}
+
+    <!-- Credits and facts -->
+    <section class="section fp-credits-sec" aria-labelledby="credits-title">
+      <span class="fp-haze fp-haze-left" aria-hidden="true"></span>
+      <div class="wrap on-top">
+        <div class="fp-credits">
+          <div class="fp-credit-block" data-reveal>
+            <h2 id="credits-title" class="fp-label">My credits</h2>
+            <ul class="fp-roles">
+              {film.roles.map((r) => <li>{r}</li>)}
+            </ul>
+            <p class="t-meta fp-credited">Credited as Sampreeth Sharma</p>
+          </div>
+          <dl class="fp-facts" data-reveal>
+            {facts.map((f) => (
+              <div class="fp-fact">
+                <dt class="t-meta">{f.label}</dt>
+                <dd>{f.value}</dd>
+              </div>
+            ))}
+          </dl>
+        </div>
+
+        {(film.logline || film.work) && (
+          <div class="fp-story" data-reveal>
+            {film.logline && (
+              <div>
+                <p class="fp-label">The story</p>
+                <p class="fp-logline">{film.logline}</p>
+              </div>
+            )}
+            {film.work && (
+              <div>
+                <p class="fp-label">My work on it</p>
+                <p class="t-body fp-work">{film.work}</p>
+              </div>
+            )}
+          </div>
+        )}
+
+        {links.length > 0 && (
+          <ul class="fp-links" data-reveal>
+            {links.map((l) => (
+              <li>
+                <a href={l.href} target="_blank" rel="noreferrer" class="surface fp-link">
+                  <span class="fp-link-icon" aria-hidden="true">
+                    {l.icon === "imdb" && <span class="imdb-wordmark">IMDb</span>}
+                    {l.icon === "youtube" && (
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z" />
+                      </svg>
+                    )}
+                    {l.icon === "file" && (
+                      <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z" />
+                        <path d="M14 2v4a2 2 0 0 0 2 2h4M16 13H8M16 17H8M10 9H8" />
+                      </svg>
+                    )}
+                  </span>
+                  <span class="min-w-0">
+                    <span class="block t-h4">{l.title}</span>
+                    <span class="block t-small mt-1">{l.line}</span>
+                  </span>
+                  <span class="fp-link-arrow" aria-hidden="true"><Icon name="arrow-up-right" size={16} /></span>
+                </a>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+    </section>
+
+    <!-- Stills -->
+    {stills.length > 0 && (
+      <section id="stills" class="section fp-stills-sec" aria-labelledby="stills-title">
+        <div class="wrap">
+          <div class="sec-head" data-reveal>
+            <div class="sec-head-main">
+              <h2 id="stills-title" class="t-h2">
+                Frames.
+                <span class="t-tail">{stills.length} stills from {film.title}.</span>
+              </h2>
+            </div>
+          </div>
+          <ul class="fp-stills" data-reveal>
+            {stills.map((item, i) => (
+              <li>
+                <button
+                  type="button"
+                  class:list={["fp-still", film.stills?.letterboxed && "fp-still-boxed"]}
+                  data-still
+                  data-group={film.slug}
+                  data-index={i}
+                  data-full={item.src}
+                  data-caption={film.title}
+                  aria-label={`View still ${i + 1} of ${stills.length} from ${film.title}`}
+                >
+                  <SmartImage src={item.src} alt={item.alt} class="fp-still-img" loading="lazy" />
+                </button>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </section>
+    )}
+
+    <!-- Cast and crew -->
+    {film.credits && (
+      <section id="cast" class="section fp-cast-sec" aria-labelledby="cast-title">
+        <span class="fp-haze fp-haze-right" aria-hidden="true"></span>
+        <div class="wrap on-top">
+          <div class="sec-head" data-reveal>
+            <div class="sec-head-main">
+              <h2 id="cast-title" class="t-h2">
+                The people who made the scene work.
+                <span class="t-tail">Cast and crew of {film.title}.</span>
+              </h2>
+            </div>
+          </div>
+          {film.credits.map((group, gi) => (
+            <div class:list={["fp-crew-group", gi > 0 && "fp-gap"]}>
+              <div class="fp-group-head" data-reveal>
+                <h3 class="t-h4">{group.label}</h3>
+                <span class="t-meta">{group.people.length}</span>
+              </div>
+              <ul class="people" data-reveal>
+                {group.people.map((person) => {
+                  const Tag = person.instagram ? "a" : "div";
+                  const linkProps = person.instagram
+                    ? {
+                        href: instagramUrl(person.instagram),
+                        target: "_blank",
+                        rel: "noreferrer",
+                        "aria-label": `${person.name} on Instagram`,
+                      }
+                    : {};
+                  return (
+                    <li>
+                      <Tag class="surface person" {...linkProps}>
+                        <div class="person-media">
+                          {person.photo ? (
+                            <SmartImage
+                              src={person.photo}
+                              alt={`${person.name} portrait`}
+                              class="person-img"
+                              style={person.imageStyle}
+                              loading="lazy"
+                            />
+                          ) : (
+                            <div class="person-ph" aria-hidden="true">
+                              <span>{initials(person.name)}</span>
+                            </div>
+                          )}
+                        </div>
+                        <div class="person-body">
+                          <div class="min-w-0">
+                            <p class="person-name">{person.name}</p>
+                            <p class="t-meta person-role">{person.role || "Cast"}</p>
+                          </div>
+                          {person.instagram && (
+                            <span class="person-ig" aria-hidden="true">
+                              <Icon name="instagram" size={14} />
+                            </span>
+                          )}
+                        </div>
+                      </Tag>
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
+          ))}
+        </div>
+      </section>
+    )}
+
+    <!-- The same jobs on other films -->
+    {alsoAs.length > 0 && (
+      <section class="section fp-also-sec" aria-labelledby="also-title">
+        <div class="wrap">
+          <div class="sec-head" data-reveal>
+            <div class="sec-head-main">
+              <h2 id="also-title" class="t-h2">
+                The same jobs, other films.
+                <span class="t-tail">Where else I was the {rolesProse(film)}.</span>
+              </h2>
+            </div>
+          </div>
+          <div class="fp-also" data-reveal>
+            {alsoAs.map((g) => (
+              <div class="fp-also-row">
+                <p class="fp-also-role">{g.role}</p>
+                <ul class="fp-also-films">
+                  {g.others.map((f) => (
+                    <li>
+                      <a href={filmPath(f.slug)} class="chip fp-chip">
+                        {f.title} <span class="t-meta">{yearLabel(f)}</span>
+                      </a>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+    )}
+
+    <!-- Either side on the slate -->
+    <nav class="section fp-next-sec" aria-label="More films">
+      <div class="wrap">
+        <div class="fp-pn">
+          {[
+            { f: prev, dir: "Previous film" },
+            { f: next, dir: "Next film" },
+          ].map(({ f, dir }) => {
+            const [a, b, c, d] = seedFor(f);
+            return (
+              <a href={filmPath(f.slug)} class:list={["fp-pn-card", dir === "Next film" && "fp-pn-next"]}>
+                <div class="fp-pn-frame">
+                  {f.poster ? (
+                    <SmartImage src={f.poster.src} alt="" class="fp-pn-img" loading="lazy" />
+                  ) : (
+                    <div class="fp-pn-tc" style={`--nx:${a}%;--ny:${b}%;--sx:${c}%;--sy:${d}%;`} aria-hidden="true">
+                      <span class="fp-pn-sun"></span>
+                      <span class="fp-pn-title">{f.title}</span>
+                    </div>
+                  )}
+                </div>
+                <div class="fp-pn-meta">
+                  <span class="t-meta fp-pn-dir">
+                    {dir === "Previous film" && <Icon name="arrow-left" size={13} />}
+                    {dir}
+                    {dir === "Next film" && <Icon name="arrow-right" size={13} />}
+                  </span>
+                  <span class="fp-pn-name">{f.title}</span>
+                  <span class="t-meta">{yearLabel(f)} · {rolesLine(f)}</span>
+                </div>
+              </a>
+            );
+          })}
+        </div>
+        <div class="fp-all">
+          <a href="/filmmaking#slate" class="btn btn-tone">All nine films</a>
+        </div>
+      </div>
+    </nav>
+  </div>
+
+  {stills.length > 0 && (
+    <div id="flb" class="lb" hidden role="dialog" aria-modal="true" aria-label="Still viewer">
+      <div class="lb-backdrop" data-lb-close></div>
+      <button type="button" class="lb-btn lb-close" data-lb-close aria-label="Close viewer">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12" /></svg>
+      </button>
+      <figure class="lb-stage">
+        <img id="flb-img" class="lb-img" alt="" />
+        <figcaption class="lb-cap"><span id="flb-cap" class="t-small"></span></figcaption>
+      </figure>
+      <div class="lb-bar">
+        <button type="button" class="lb-btn" data-lb-prev aria-label="Previous still">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6" /></svg>
+        </button>
+        <span id="flb-count" class="t-meta lb-count" aria-live="polite"></span>
+        <button type="button" class="lb-btn" data-lb-next aria-label="Next still">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 18 6-6-6-6" /></svg>
+        </button>
+      </div>
+    </div>
+  )}
+</BaseLayout>
+
+<script>
+  const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  // Star dust in the hero: one small 2D canvas that sleeps off screen, in
+  // background tabs and for people who asked for less motion.
+  const dust = document.querySelector<HTMLCanvasElement>("[data-fp-dust]");
+  const ctx = dust?.getContext("2d");
+  if (dust && ctx) {
+    const phone = window.matchMedia("(max-width: 767px)").matches;
+    const dprCap = phone ? 1.5 : 2;
+    type Mote = { x: number; y: number; r: number; a: number; tw: number; ts: number; vx: number; vy: number; red: boolean };
+    const spawn = (anywhere: boolean): Mote => ({
+      x: Math.random(),
+      y: anywhere ? Math.random() : 1.02,
+      r: Math.random() ** 2.2 * 1.5 + 0.35,
+      a: 0.25 + Math.random() * 0.7,
+      tw: Math.random() * Math.PI * 2,
+      ts: 0.5 + Math.random() * 1.4,
+      vx: (Math.random() - 0.5) * 0.006,
+      vy: -(0.003 + Math.random() * 0.01),
+      red: Math.random() < 0.4,
+    });
+    const motes = Array.from({ length: phone ? 60 : 130 }, () => spawn(true));
+    let w = 0;
+    let h = 0;
+    const resize = () => {
+      const rect = dust.getBoundingClientRect();
+      const dpr = Math.min(window.devicePixelRatio || 1, dprCap);
+      w = rect.width;
+      h = rect.height;
+      dust.width = Math.max(1, Math.round(w * dpr));
+      dust.height = Math.max(1, Math.round(h * dpr));
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    };
+    const draw = (t: number, dt: number) => {
+      ctx.clearRect(0, 0, w, h);
+      for (const m of motes) {
+        m.x += m.vx * dt;
+        m.y += m.vy * dt;
+        if (m.y < -0.02 || m.x < -0.02 || m.x > 1.02) Object.assign(m, spawn(false), { x: Math.random() });
+        const fade = Math.max(0, Math.min(1, (1 - m.y) / 0.25, m.y / 0.08));
+        const twinkle = 0.55 + 0.45 * Math.sin(t * m.ts + m.tw);
+        ctx.globalAlpha = m.a * twinkle * fade;
+        ctx.fillStyle = m.red ? "#ff5d78" : "#ffe6ea";
+        ctx.beginPath();
+        ctx.arc(m.x * w, m.y * h, m.r, 0, Math.PI * 2);
+        ctx.fill();
+        if (m.r > 1.3) {
+          ctx.globalAlpha *= 0.18;
+          ctx.beginPath();
+          ctx.arc(m.x * w, m.y * h, m.r * 3.2, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      }
+      ctx.globalAlpha = 1;
+    };
+    let running = false;
+    let onScreen = true;
+    let last = 0;
+    let raf = 0;
+    const frame = (now: number) => {
+      const dt = Math.min(0.05, (now - last) / 1000 || 0);
+      last = now;
+      draw(now / 1000, dt);
+      raf = requestAnimationFrame(frame);
+    };
+    const sync = () => {
+      const want = !reduce && onScreen && !document.hidden;
+      if (want && !running) {
+        running = true;
+        last = performance.now();
+        raf = requestAnimationFrame(frame);
+      } else if (!want && running) {
+        running = false;
+        cancelAnimationFrame(raf);
+      }
+    };
+    resize();
+    draw(0, 0);
+    new ResizeObserver(() => {
+      resize();
+      if (!running) draw(performance.now() / 1000, 0);
+    }).observe(dust);
+    new IntersectionObserver((entries) => {
+      onScreen = entries[0]?.isIntersecting ?? true;
+      sync();
+    }).observe(dust);
+    document.addEventListener("visibilitychange", sync);
+    sync();
+  }
+
+  // The still viewer: click to open, arrows or swipe to move, Escape or the
+  // backdrop to close. Focus stays inside and goes back to the still.
+  const lb = document.getElementById("flb");
+  const img = document.getElementById("flb-img") as HTMLImageElement | null;
+  const cap = document.getElementById("flb-cap");
+  const count = document.getElementById("flb-count");
+  if (lb && img && cap && count) {
+    type Item = { src: string; caption: string; alt: string };
+    let items: Item[] = [];
+    let cursor = 0;
+    let opener: HTMLElement | null = null;
+    const collect = (group: string): Item[] =>
+      Array.from(document.querySelectorAll<HTMLElement>(`[data-still][data-group="${group}"]`)).map((el) => ({
+        src: el.dataset.full || "",
+        caption: el.dataset.caption || "",
+        alt: el.querySelector("img")?.getAttribute("alt") || "",
+      }));
+    const preload = (i: number) => {
+      const it = items[i];
+      if (it) new Image().src = it.src;
+    };
+    const render = () => {
+      const it = items[cursor];
+      if (!it) return;
+      img.classList.remove("is-in");
+      img.onload = () => img.classList.add("is-in");
+      img.src = it.src;
+      img.alt = it.alt;
+      cap.textContent = it.caption;
+      count.textContent = `${cursor + 1} / ${items.length}`;
+      preload(cursor + 1);
+      preload(cursor - 1);
+    };
+    const open = (el: HTMLElement) => {
+      opener = el;
+      items = collect(el.dataset.group || "");
+      cursor = Math.min(Math.max(Number(el.dataset.index || 0), 0), items.length - 1);
+      lb.hidden = false;
+      requestAnimationFrame(() => lb.classList.add("is-open"));
+      document.documentElement.classList.add("lb-lock");
+      render();
+      lb.querySelector<HTMLElement>(".lb-close")?.focus();
+    };
+    const close = () => {
+      if (lb.hidden) return;
+      lb.classList.remove("is-open");
+      document.documentElement.classList.remove("lb-lock");
+      window.setTimeout(() => {
+        lb.hidden = true;
+      }, 220);
+      opener?.focus();
+    };
+    const step = (delta: number) => {
+      if (!items.length) return;
+      cursor = (cursor + delta + items.length) % items.length;
+      render();
+    };
+    document.addEventListener("click", (e) => {
+      const target = e.target as HTMLElement;
+      const still = target.closest<HTMLElement>("[data-still]");
+      if (still) {
+        open(still);
+        return;
+      }
+      if (target.closest("[data-lb-close]")) close();
+      if (target.closest("[data-lb-prev]")) step(-1);
+      if (target.closest("[data-lb-next]")) step(1);
+    });
+    document.addEventListener("keydown", (e) => {
+      if (lb.hidden) return;
+      if (e.key === "Escape") close();
+      if (e.key === "ArrowLeft") step(-1);
+      if (e.key === "ArrowRight") step(1);
+      if (e.key === "Tab") {
+        const stops = Array.from(lb.querySelectorAll<HTMLElement>("button"));
+        const at = stops.indexOf(document.activeElement as HTMLElement);
+        e.preventDefault();
+        stops[(at + (e.shiftKey ? -1 : 1) + stops.length) % stops.length]?.focus();
+      }
+    });
+    let touchX: number | null = null;
+    lb.addEventListener("touchstart", (e) => (touchX = e.touches[0]?.clientX ?? null), { passive: true });
+    lb.addEventListener(
+      "touchend",
+      (e) => {
+        if (touchX === null) return;
+        const dx = (e.changedTouches[0]?.clientX ?? touchX) - touchX;
+        if (Math.abs(dx) > 48) step(dx < 0 ? 1 : -1);
+        touchX = null;
+      },
+      { passive: true },
+    );
+  }
+</script>
+
+<style>
+  /* Red space, the same sky as the filmmaking page: deep black, crimson
+     nebulae, a red eclipse, fine dust, a slow drifting light. No backdrop
+     blur on this page. */
+  .fp {
+    --crimson: 244, 63, 94;
+    --blood: 159, 18, 57;
+    --ember: 255, 99, 122;
+    position: relative;
+    overflow-x: clip;
+  }
+  .fp-dust { position: absolute; inset: 0; width: 100%; height: 100%; display: block; pointer-events: none; }
+  .fp-back {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--ink-soft);
+    text-decoration: none;
+    transition: color 150ms var(--ease-glass);
+  }
+  .fp-back:hover { color: var(--ink); }
+  .fp-back:focus-visible { outline: none; box-shadow: 0 0 0 3px rgba(var(--crimson), 0.6); border-radius: 6px; }
+  .fp-corona {
+    position: absolute;
+    inset: -6%;
+    border-radius: 50%;
+    background: conic-gradient(from 0deg, rgba(var(--ember), 0) 0deg, rgba(255, 190, 200, 0.55) 22deg, rgba(var(--ember), 0) 52deg, rgba(var(--crimson), 0.4) 98deg, rgba(var(--ember), 0) 140deg, rgba(255, 170, 185, 0.5) 200deg, rgba(var(--ember), 0) 236deg, rgba(var(--crimson), 0.38) 290deg, rgba(var(--ember), 0) 330deg, rgba(var(--ember), 0) 360deg);
+    -webkit-mask: radial-gradient(closest-side, transparent 84%, #000 86.5%, #000 88%, transparent 95%);
+    mask: radial-gradient(closest-side, transparent 84%, #000 86.5%, #000 88%, transparent 95%);
+    animation: fp-spin 90s linear infinite;
+    will-change: transform;
+  }
+  @keyframes fp-spin { to { transform: rotate(360deg); } }
+
+  /* Poster hero -------------------------------------------------------- */
+  .fp-poster-hero { position: relative; isolation: isolate; padding-top: clamp(92px, 9vw, 112px); }
+  .fp-space { position: absolute; inset: 0 0 -10% 0; z-index: -1; overflow: hidden; pointer-events: none; }
+  .fp-nebula { position: absolute; border-radius: 50%; will-change: transform; }
+  .fp-nebula-a {
+    width: 70vw;
+    height: 52vw;
+    left: -22vw;
+    top: -6vw;
+    background: radial-gradient(closest-side, rgba(var(--blood), 0.5) 0%, rgba(var(--blood), 0.36) 22%, rgba(var(--blood), 0.2) 44%, rgba(var(--blood), 0.08) 66%, rgba(var(--blood), 0.02) 84%, rgba(var(--blood), 0) 100%);
+    animation: fp-drift-a 46s ease-in-out infinite alternate;
+  }
+  .fp-nebula-b {
+    width: 64vw;
+    height: 46vw;
+    right: -20vw;
+    top: 16vw;
+    background: radial-gradient(closest-side, rgba(var(--crimson), 0.26) 0%, rgba(var(--crimson), 0.18) 24%, rgba(var(--crimson), 0.09) 48%, rgba(var(--crimson), 0.03) 72%, rgba(var(--crimson), 0) 100%);
+    animation: fp-drift-b 58s ease-in-out infinite alternate;
+  }
+  .fp-beam {
+    position: absolute;
+    top: -20%;
+    left: -30%;
+    width: 60%;
+    height: 140%;
+    background: linear-gradient(100deg, rgba(var(--ember), 0) 0%, rgba(var(--ember), 0.035) 40%, rgba(255, 220, 226, 0.05) 50%, rgba(var(--ember), 0.035) 60%, rgba(var(--ember), 0) 100%);
+    transform: rotate(8deg);
+    animation: fp-beam 34s ease-in-out infinite alternate;
+    will-change: transform;
+  }
+  @keyframes fp-drift-a { to { transform: translate3d(6vw, 3vw, 0) scale(1.08); } }
+  @keyframes fp-drift-b { to { transform: translate3d(-5vw, -2vw, 0) scale(1.06); } }
+  @keyframes fp-beam { to { transform: translateX(210%) rotate(8deg); } }
+
+  .fp-poster-stage {
+    position: relative;
+    isolation: isolate;
+    width: min(calc(100% - 2 * var(--gutter)), 1320px, max(560px, calc((100vh - 360px) * 1.7778)));
+    margin-inline: auto;
+  }
+  @supports (height: 100svh) {
+    .fp-poster-stage { width: min(calc(100% - 2 * var(--gutter)), 1320px, max(560px, calc((100svh - 360px) * 1.7778))); }
+  }
+  .fp-sun {
+    position: absolute;
+    z-index: -1;
+    left: 50%;
+    top: 0;
+    width: 64%;
+    aspect-ratio: 1;
+    border-radius: 50%;
+    transform: translate(-50%, -18%);
+    background: radial-gradient(circle closest-side, #050002 0%, #050002 90.5%, rgba(255, 170, 182, 0.95) 92%, rgba(var(--ember), 0.75) 93.5%, rgba(var(--crimson), 0.38) 95.5%, rgba(var(--crimson), 0.14) 98%, rgba(var(--crimson), 0) 100%);
+  }
+  .fp-sun::before {
+    content: "";
+    position: absolute;
+    inset: -42%;
+    z-index: -1;
+    border-radius: 50%;
+    background: radial-gradient(closest-side, rgba(var(--crimson), 0.3) 0%, rgba(var(--crimson), 0.22) 40%, rgba(var(--crimson), 0.12) 58%, rgba(var(--crimson), 0.05) 76%, rgba(var(--crimson), 0.012) 90%, rgba(var(--crimson), 0) 100%);
+  }
+  .fp-screen {
+    position: relative;
+    aspect-ratio: 16 / 9;
+    border-radius: 8px;
+    overflow: hidden;
+    background: #050002;
+    box-shadow:
+      0 0 0 1px rgba(255, 255, 255, 0.09),
+      0 0 60px -10px rgba(var(--crimson), 0.35),
+      0 50px 120px -40px rgba(var(--crimson), 0.55),
+      0 30px 70px -30px rgba(0, 0, 0, 0.95);
+  }
+  .fp-screen :global(.fp-screen-img) { display: block; width: 100%; height: 100%; object-fit: cover; }
+  .fp-head { padding-top: clamp(24px, 3vw, 32px); }
+  .fp-head .fp-back { display: flex; width: fit-content; }
+  .fp-kicker { display: flex; width: fit-content; margin-top: 18px; }
+  .fp-h1 {
+    margin-top: 14px;
+    font-size: clamp(2.75rem, 6.4vw, 5.75rem);
+    line-height: 0.96;
+    letter-spacing: -0.048em;
+    font-weight: 600;
+    color: #fff;
+    text-wrap: balance;
+    text-shadow: 0 0 48px rgba(var(--crimson), 0.28);
+  }
+  .fp-head-roles { margin-top: 14px; font-size: clamp(1.0625rem, 1.5vw, 1.3125rem); font-weight: 500; letter-spacing: -0.012em; color: var(--ink-soft); }
+
+  /* Title card hero ---------------------------------------------------- */
+  .fp-card-hero {
+    --bar: clamp(84px, 11vh, 108px);
+    position: relative;
+    isolation: isolate;
+    display: grid;
+    grid-template-rows: var(--bar) minmax(0, 1fr) var(--bar);
+    min-height: min(88vh, 820px);
+    background: #000;
+  }
+  @supports (height: 100svh) { .fp-card-hero { min-height: min(88svh, 820px); } }
+  @media (max-width: 639px) { .fp-card-hero { --bar: 72px; min-height: min(78svh, 640px); } }
+  .fp-bar { position: relative; z-index: 1; display: flex; align-items: center; justify-content: center; padding: 0 var(--gutter); background: #000; }
+  .fp-bar-roles {
+    font-size: clamp(0.8125rem, 1.1vw, 0.9375rem);
+    font-weight: 500;
+    letter-spacing: 0.08em;
+    color: rgba(245, 245, 247, 0.72);
+    text-align: center;
+  }
+  .fp-field {
+    position: relative;
+    overflow: hidden;
+    display: grid;
+    place-items: center;
+    background:
+      radial-gradient(40% 70% at var(--nx) var(--ny), rgba(var(--crimson), 0.4) 0%, rgba(var(--crimson), 0.28) 22%, rgba(var(--blood), 0.2) 46%, rgba(var(--blood), 0.07) 72%, rgba(var(--blood), 0) 100%),
+      radial-gradient(34% 60% at calc(100% - var(--nx)) calc(100% - var(--ny)), rgba(var(--blood), 0.32) 0%, rgba(var(--blood), 0.14) 50%, rgba(var(--blood), 0) 100%),
+      radial-gradient(120% 90% at 50% 120%, rgba(90, 8, 26, 0.55) 0%, rgba(90, 8, 26, 0.2) 40%, rgba(90, 8, 26, 0) 70%),
+      #070103;
+  }
+  .fp-card-sun {
+    position: absolute;
+    left: var(--sx);
+    top: var(--sy);
+    width: min(46vw, 72vh, 620px);
+    aspect-ratio: 1;
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+    background: radial-gradient(circle closest-side, #060002 0%, #060002 88%, rgba(255, 180, 192, 0.9) 90%, rgba(var(--ember), 0.6) 92%, rgba(var(--crimson), 0.26) 95%, rgba(var(--crimson), 0.08) 98%, rgba(var(--crimson), 0) 100%);
+    box-shadow: 0 0 120px rgba(var(--crimson), 0.2);
+  }
+  .fp-field-shade { position: absolute; inset: 0; pointer-events: none; background: radial-gradient(70% 70% at 50% 50%, rgba(0, 0, 0, 0.35), rgba(0, 0, 0, 0) 70%); }
+  .fp-field-still :global(picture) { position: absolute; inset: 0; }
+  .fp-field-still :global(.fp-field-img) { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+  .fp-field-still .fp-field-shade { background: linear-gradient(0deg, rgba(0, 0, 0, 0.55), rgba(0, 0, 0, 0.25)), rgba(var(--blood), 0.18); }
+  .fp-field-inner { position: relative; z-index: 2; width: 100%; max-width: calc(var(--max) + 2 * var(--gutter)); padding: 28px var(--gutter); text-align: center; }
+  .fp-field-back { position: absolute; z-index: 3; top: 20px; left: 0; right: 0; }
+  .fp-over { display: inline-flex; align-items: center; gap: 10px; font-size: 0.9375rem; font-weight: 500; color: var(--ink-soft); font-variant-numeric: tabular-nums; }
+  .fp-card-title {
+    margin-top: 18px;
+    font-size: clamp(3.25rem, 10vw, 9.5rem);
+    line-height: 0.94;
+    letter-spacing: -0.05em;
+    font-weight: 600;
+    color: #fff;
+    text-wrap: balance;
+    text-shadow: 0 0 60px rgba(var(--crimson), 0.45), 0 4px 30px rgba(0, 0, 0, 0.6);
+  }
+
+  /* Credits ------------------------------------------------------------ */
+  .fp-haze { position: absolute; pointer-events: none; z-index: 0; border-radius: 50%; }
+  .fp-haze-left {
+    width: 60vw;
+    height: 60vw;
+    left: -30vw;
+    top: 0;
+    background: radial-gradient(closest-side, rgba(var(--blood), 0.26), rgba(var(--blood), 0.15) 35%, rgba(var(--blood), 0.06) 62%, rgba(var(--blood), 0.015) 85%, rgba(var(--blood), 0));
+  }
+  .fp-haze-right {
+    width: 54vw;
+    height: 54vw;
+    right: -26vw;
+    top: -10%;
+    background: radial-gradient(closest-side, rgba(var(--crimson), 0.16), rgba(var(--crimson), 0.09) 38%, rgba(var(--crimson), 0.035) 66%, rgba(var(--crimson), 0.008) 86%, rgba(var(--crimson), 0));
+  }
+  .fp-credits { display: grid; gap: 40px; }
+  @media (min-width: 900px) { .fp-credits { grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr); gap: 64px; align-items: start; } }
+  .fp-label { font-size: 0.875rem; font-weight: 500; color: var(--tone); }
+  .fp-roles { list-style: none; margin: 14px 0 0; padding: 0; }
+  .fp-roles li {
+    font-size: clamp(2.25rem, 5vw, 4.25rem);
+    line-height: 1.04;
+    letter-spacing: -0.045em;
+    font-weight: 600;
+    color: var(--ink);
+  }
+  .fp-roles li + li { margin-top: 4px; }
+  .fp-credited { margin-top: 18px; }
+  .fp-facts { margin: 0; border-top: 1px solid var(--line); }
+  @media (min-width: 900px) { .fp-facts { margin-top: 34px; } }
+  .fp-fact {
+    display: grid;
+    grid-template-columns: 88px minmax(0, 1fr);
+    gap: 16px;
+    align-items: baseline;
+    padding: 13px 0;
+    border-bottom: 1px solid var(--line);
+  }
+  .fp-fact dd { margin: 0; font-size: 0.9375rem; line-height: 1.45; color: var(--ink); }
+
+  .fp-story { display: grid; gap: 32px; margin-top: clamp(48px, 6vw, 72px); padding-top: clamp(32px, 4vw, 44px); border-top: 1px solid var(--line); }
+  @media (min-width: 900px) { .fp-story { grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr); gap: 64px; } }
+  .fp-logline {
+    margin-top: 12px;
+    font-size: clamp(1.25rem, 2vw, 1.625rem);
+    line-height: 1.42;
+    letter-spacing: -0.016em;
+    color: var(--ink);
+    text-wrap: pretty;
+  }
+  .fp-work { margin-top: 12px; max-width: 34rem; }
+
+  .fp-links { list-style: none; margin: clamp(40px, 5vw, 56px) 0 0; padding: 0; display: grid; gap: 16px; grid-template-columns: 1fr; }
+  @media (min-width: 768px) { .fp-links { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+  .fp-links > li { display: flex; }
+  .fp-link { display: grid; grid-template-columns: 44px minmax(0, 1fr) auto; align-items: center; gap: 14px; width: 100%; padding: 18px 20px; }
+  .fp-link-icon {
+    display: grid;
+    place-items: center;
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+    background: rgba(var(--crimson), 0.08);
+    border: 1px solid rgba(var(--crimson), 0.2);
+    color: var(--ink);
+  }
+  .fp-link-icon .imdb-wordmark { margin: 0; font-size: 0.6875rem; }
+  .fp-link-arrow { color: var(--ink-faint); transition: color 150ms var(--ease-glass), transform 250ms var(--ease-glass); }
+  .fp-link:hover .fp-link-arrow { color: var(--tone); transform: translate(1px, -1px); }
+
+  /* Stills ------------------------------------------------------------- */
+  .fp-stills-sec { padding-top: clamp(24px, 4vw, 48px); }
+  .fp-also-sec { padding-bottom: clamp(24px, 3vw, 40px); }
+  .fp-cast-sec { padding-top: clamp(48px, 6vw, 80px); }
+  .fp-stills { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  @media (min-width: 900px) { .fp-stills { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; } }
+  .fp-still {
+    display: block;
+    width: 100%;
+    padding: 0;
+    aspect-ratio: 2.39 / 1;
+    overflow: hidden;
+    border: 0;
+    border-radius: 6px;
+    background: #050002;
+    box-shadow: 0 0 0 1px var(--line);
+    cursor: zoom-in;
+    transition: box-shadow 300ms var(--ease-glass);
+  }
+  .fp-still :global(.fp-still-img) {
+    --zoom: 1;
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transform: scale(var(--zoom));
+    transition: transform 600ms var(--ease-glass);
+  }
+  .fp-still:hover { box-shadow: 0 0 0 1px rgba(var(--crimson), 0.5), 0 0 30px -6px rgba(var(--crimson), 0.45); }
+  .fp-still:hover :global(.fp-still-img) { transform: scale(calc(var(--zoom) * 1.04)); }
+  .fp-still:focus-visible { outline: none; box-shadow: 0 0 0 3px rgba(var(--crimson), 0.8); }
+
+  /* Cast and crew ------------------------------------------------------ */
+  .fp-group-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; margin-bottom: 16px; }
+  .fp-gap { margin-top: clamp(48px, 6vw, 72px); }
+  .people { list-style: none; margin: 0; padding: 0; display: grid; gap: 14px; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  @media (min-width: 640px) { .people { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+  @media (min-width: 900px) { .people { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+  @media (min-width: 1100px) { .people { grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 18px; } }
+  .people > li { display: flex; }
+  .person { display: flex; flex-direction: column; width: 100%; overflow: hidden; }
+  .person-media { position: relative; aspect-ratio: 4 / 5; overflow: hidden; background: #070103; border-bottom: 1px solid var(--line); }
+  .person-media :global(.person-img) { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block; }
+  .person-ph {
+    position: absolute;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    background: radial-gradient(80% 70% at 20% 0%, rgba(var(--crimson), 0.2) 0%, rgba(var(--crimson), 0.1) 35%, rgba(var(--crimson), 0.03) 60%, rgba(var(--crimson), 0) 75%), #070103;
+    color: var(--ink-faint);
+    font-size: 1.375rem;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+  }
+  .person-body { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; padding: 12px 14px 14px; flex: 1; }
+  .person-name { font-size: 0.9375rem; font-weight: 600; letter-spacing: -0.012em; line-height: 1.3; color: var(--ink); overflow-wrap: anywhere; }
+  .person-role { margin-top: 3px; overflow-wrap: anywhere; }
+  .person-ig { flex: none; margin-top: 2px; color: var(--ink-faint); transition: color 150ms var(--ease-glass); }
+  a.person:hover .person-ig { color: var(--tone); }
+
+  /* Other films in the same jobs -------------------------------------- */
+  .fp-also { display: grid; gap: 0; border-top: 1px solid var(--line); }
+  .fp-also-row { display: grid; gap: 10px; padding: 18px 0; border-bottom: 1px solid var(--line); }
+  @media (min-width: 768px) { .fp-also-row { grid-template-columns: 200px minmax(0, 1fr); align-items: center; gap: 24px; } }
+  .fp-also-role { font-size: 1.0625rem; font-weight: 600; letter-spacing: -0.015em; color: var(--ink); }
+  .fp-also-films { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 8px; }
+  .fp-chip { height: 34px; gap: 8px; }
+  .fp-chip:hover { border-color: rgba(var(--crimson), 0.5); }
+  .fp-chip:focus-visible { outline: none; box-shadow: 0 0 0 3px rgba(var(--crimson), 0.6); }
+
+  /* Previous and next --------------------------------------------------- */
+  .fp-next-sec { padding-top: clamp(40px, 5vw, 64px); }
+  .fp-pn { display: grid; gap: 16px; grid-template-columns: 1fr; }
+  @media (min-width: 768px) { .fp-pn { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; } }
+  .fp-pn-card {
+    display: grid;
+    grid-template-columns: minmax(0, 0.9fr) minmax(0, 1fr);
+    align-items: center;
+    gap: 18px;
+    padding: 12px;
+    border-radius: 16px;
+    text-decoration: none;
+    color: var(--ink);
+    background: rgba(14, 6, 9, 0.9);
+    border: 1px solid var(--line);
+    transition: border-color 200ms var(--ease-glass), transform 300ms var(--ease-glass);
+  }
+  .fp-pn-card:hover { border-color: rgba(var(--crimson), 0.45); transform: translateY(-2px); }
+  .fp-pn-card:focus-visible { outline: none; box-shadow: 0 0 0 3px rgba(var(--crimson), 0.7); }
+  .fp-pn-next { grid-template-columns: minmax(0, 1fr) minmax(0, 0.9fr); }
+  .fp-pn-next .fp-pn-frame { order: 2; }
+  .fp-pn-next .fp-pn-meta { text-align: right; align-items: flex-end; }
+  .fp-pn-frame { position: relative; aspect-ratio: 16 / 9; border-radius: 8px; overflow: hidden; background: #050002; }
+  .fp-pn-frame :global(.fp-pn-img) { display: block; width: 100%; height: 100%; object-fit: cover; }
+  .fp-pn-tc {
+    position: absolute;
+    inset: 0;
+    container-type: inline-size;
+    display: grid;
+    place-items: center;
+    overflow: hidden;
+    /* Letterbox bars over a red field. */
+    background:
+      linear-gradient(#000, #000) top / 100% 12.8% no-repeat,
+      linear-gradient(#000, #000) bottom / 100% 12.8% no-repeat,
+      radial-gradient(42% 60% at var(--nx) var(--ny), rgba(var(--crimson), 0.42) 0%, rgba(var(--blood), 0.2) 46%, rgba(var(--blood), 0) 100%),
+      #070103;
+  }
+  .fp-pn-sun {
+    position: absolute;
+    left: var(--sx);
+    top: var(--sy);
+    width: 34cqw;
+    aspect-ratio: 1;
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+    background: radial-gradient(circle closest-side, #060002 0%, #060002 88%, rgba(255, 180, 192, 0.85) 90%, rgba(var(--crimson), 0.3) 95%, rgba(var(--crimson), 0) 100%);
+  }
+  .fp-pn-title { position: relative; padding: 0 8%; text-align: center; font-size: 9cqw; font-weight: 600; letter-spacing: -0.045em; line-height: 1; color: #fff; text-shadow: 0 0 3cqw rgba(var(--crimson), 0.5); }
+  .fp-pn-meta { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+  .fp-pn-dir { display: inline-flex; align-items: center; gap: 6px; }
+  .fp-pn-name { font-size: clamp(1.0625rem, 1.6vw, 1.25rem); font-weight: 600; letter-spacing: -0.02em; line-height: 1.2; }
+  .fp-all { display: flex; justify-content: center; margin-top: 28px; }
+
+  /* Still viewer ------------------------------------------------------- */
+  :global(html.lb-lock), :global(html.lb-lock body) { overflow: hidden; }
+  .lb {
+    position: fixed;
+    inset: 0;
+    z-index: 90;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 72px 16px 104px;
+    opacity: 0;
+    transition: opacity 220ms var(--ease-glass);
+  }
+  .lb[hidden] { display: none; }
+  .lb.is-open { opacity: 1; }
+  .lb-backdrop { position: absolute; inset: 0; background: rgba(3, 0, 1, 0.94); }
+  .lb-stage {
+    position: relative;
+    z-index: 1;
+    margin: 0;
+    max-width: min(1400px, 100%);
+    max-height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    pointer-events: none;
+  }
+  .lb-img {
+    max-width: 100%;
+    max-height: calc(100svh - 220px);
+    object-fit: contain;
+    border-radius: 6px;
+    box-shadow: 0 0 0 1px var(--line), 0 40px 120px -40px rgba(var(--crimson), 0.5);
+    opacity: 0;
+    transform: scale(0.985);
+    transition: opacity 280ms var(--ease-glass), transform 280ms var(--ease-glass);
+    pointer-events: auto;
+  }
+  .lb-img.is-in { opacity: 1; transform: none; }
+  .lb-cap { pointer-events: auto; text-align: center; }
+  .lb-btn {
+    display: inline-grid;
+    place-items: center;
+    width: 44px;
+    height: 44px;
+    border-radius: 9999px;
+    color: var(--ink);
+    background: transparent;
+    border: 0;
+    cursor: pointer;
+    transition: background-color 150ms var(--ease-glass);
+  }
+  .lb-btn:hover { background: var(--wash-strong); }
+  .lb-btn:focus-visible { outline: none; box-shadow: 0 0 0 3px rgba(var(--crimson), 0.6); }
+  .lb-close { position: absolute; top: 16px; right: 16px; z-index: 2; background: rgba(20, 10, 13, 0.92); border: 1px solid var(--line-strong); }
+  .lb-bar {
+    position: absolute;
+    left: 50%;
+    bottom: 28px;
+    z-index: 2;
+    transform: translateX(-50%);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px;
+    border-radius: 9999px;
+    background: rgba(20, 10, 13, 0.92);
+    border: 1px solid var(--line-strong);
+  }
+  .lb-count { min-width: 64px; text-align: center; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .fp-nebula, .fp-beam, .fp-corona { animation: none; }
+    .fp-still, .fp-still :global(.fp-still-img), .fp-pn-card, .fp-link-arrow, .person-ig, .lb, .lb-img { transition: none; }
+    .fp-pn-card:hover, .fp-still:hover :global(.fp-still-img) { transform: none; }
+  }
+</style>

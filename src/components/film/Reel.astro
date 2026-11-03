@@ -1,0 +1,368 @@
+---
+// The reel at the top of /filmmaking: one film per screen. The markup is a
+// stack of full screen panels, which is also what shows without script;
+// reel.ts turns it into a pinned stage on mouse screens and a snapping
+// stack on phones. Each panel's text is the film's own facts.
+import SmartImage from "../common/SmartImage.astro";
+import type { ReelItem } from "../../data/films";
+
+interface Props {
+  items: ReelItem[];
+  /** Where "Skip the reel" lands. */
+  after: string;
+}
+const { items, after } = Astro.props;
+const n = items.length;
+const pad = (i: number) => String(i).padStart(2, "0");
+---
+
+{n > 0 && (
+  <section class="reel" data-reel style={`--n:${n}`} aria-roledescription="carousel" aria-label="Films, one per screen">
+    <h1 class="sr-only">Films by Sampreeth Avvari</h1>
+    <a href={after} class="reel-skip">Skip the reel</a>
+    <div class="reel-stage" data-reel-stage>
+      {items.map((it, i) => (
+        <article
+          class:list={["reel-panel", i === 0 && "is-active"]}
+          data-reel-panel
+          data-i={i}
+          data-href={it.href}
+          data-audio={it.audio}
+          id={i === 0 ? it.slug : undefined}
+          aria-roledescription="slide"
+          aria-label={`${i + 1} of ${n}: ${it.title}`}
+        >
+          <div class="reel-media" aria-hidden="true">
+            <SmartImage
+              src={it.poster}
+              alt=""
+              class={`reel-poster${it.posterBoxed ? " is-boxed" : ""}`}
+              loading={i === 0 ? "eager" : "lazy"}
+              fetchpriority={i === 0 ? "high" : undefined}
+            />
+            {it.kind === "video" ? (
+              <video
+                class="reel-video"
+                data-reel-video
+                data-src={it.mp4}
+                data-src-phone={it.mp4Phone}
+                muted
+                loop
+                playsinline
+                preload="none"
+                disablepictureinpicture
+              />
+            ) : (
+              <canvas class="reel-still" data-reel-stills data-stills={JSON.stringify(it.frames)} />
+            )}
+          </div>
+          <span class="reel-shade" aria-hidden="true"></span>
+          <div class="reel-ui">
+            <p class="reel-count" aria-hidden="true">
+              {pad(i + 1)} · {pad(n)}
+            </p>
+            <div class="reel-name">
+              <p class="reel-cat">{it.category}</p>
+              <h2 class="reel-title"><span>{it.title}</span></h2>
+            </div>
+            <p class="reel-year">{it.year}</p>
+            <p class="reel-hint" aria-hidden="true">(Scroll to explore)</p>
+            <a href={it.href} class="reel-go">
+              Watch <span class="sr-only">{it.title}</span>
+            </a>
+            <button type="button" class="reel-pause" data-reel-pause aria-pressed="false" aria-label="Pause the reel">
+              <svg class="i-pause" width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="6" y="5" width="4" height="14" rx="1" /><rect x="14" y="5" width="4" height="14" rx="1" /></svg>
+              <svg class="i-play" width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5.5v13a1 1 0 0 0 1.5.86l10.5-6.5a1 1 0 0 0 0-1.72L9.5 4.64A1 1 0 0 0 8 5.5Z" /></svg>
+            </button>
+          </div>
+        </article>
+      ))}
+      <canvas class="reel-gl" data-reel-gl aria-hidden="true"></canvas>
+      <a href={items[0].href} class="reel-watch" data-reel-watch>
+        <span class="reel-watch-dot" aria-hidden="true"></span>
+        Watch <span class="sr-only" data-reel-watch-name>{items[0].title}</span>
+      </a>
+      <p class="sr-only" aria-live="polite" data-reel-live></p>
+    </div>
+  </section>
+)}
+
+<script>
+  import "./reel";
+</script>
+
+<style>
+  /* The stack (no script, and phones): one full screen panel per film. */
+  .reel { position: relative; background: #000; }
+  .reel-stage { position: relative; isolation: isolate; }
+  .reel-panel {
+    position: relative;
+    height: 100vh;
+    height: 100svh;
+    overflow: hidden;
+    scroll-snap-align: start;
+    scroll-snap-stop: always;
+  }
+  .reel-media { position: absolute; inset: 0; z-index: 1; background: #050002; }
+  .reel-media :global(picture) { position: absolute; inset: 0; }
+  .reel-media :global(.reel-poster) { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+  /* Stills with bars baked in: past the bars on a tall screen. */
+  .reel-media :global(.reel-poster.is-boxed) { transform: scale(1.34); }
+  .reel-video,
+  .reel-still {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+    opacity: 0;
+    transition: opacity 700ms var(--ease-glass);
+  }
+  .reel-media.is-playing .reel-video,
+  .reel-media.is-playing .reel-still { opacity: 1; }
+
+  /* Legibility: dark where the words sit, plus a fine moving grain. */
+  .reel-shade {
+    position: absolute;
+    inset: 0;
+    z-index: 3;
+    pointer-events: none;
+    overflow: hidden;
+    background:
+      linear-gradient(90deg, rgba(0, 0, 0, 0.62) 0%, rgba(0, 0, 0, 0.36) 28%, rgba(0, 0, 0, 0) 58%),
+      linear-gradient(0deg, rgba(0, 0, 0, 0.7) 0%, rgba(0, 0, 0, 0) 32%),
+      linear-gradient(180deg, rgba(0, 0, 0, 0.5) 0%, rgba(0, 0, 0, 0) 22%);
+  }
+  .reel-shade::after {
+    content: "";
+    position: absolute;
+    inset: -50%;
+    opacity: 0.11;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23g)'/%3E%3C/svg%3E");
+    animation: reel-grain 0.9s steps(6) infinite;
+  }
+  @keyframes reel-grain {
+    0% { transform: translate(0, 0); }
+    20% { transform: translate(-6%, 4%); }
+    40% { transform: translate(5%, -7%); }
+    60% { transform: translate(-3%, 8%); }
+    80% { transform: translate(7%, 2%); }
+    100% { transform: translate(-4%, -5%); }
+  }
+
+  /* The words over the picture. */
+  .reel-ui { position: absolute; inset: 0; z-index: 4; pointer-events: none; color: #fff; }
+  .reel-ui a, .reel-ui button { pointer-events: auto; }
+  .reel-count,
+  .reel-year {
+    position: absolute;
+    top: 50%;
+    margin: 0;
+    font-size: 0.875rem;
+    font-weight: 500;
+    letter-spacing: 0.04em;
+    font-variant-numeric: tabular-nums;
+    color: rgba(255, 255, 255, 0.82);
+    text-shadow: 0 1px 12px rgba(0, 0, 0, 0.6);
+    transform: translateY(-50%);
+  }
+  .reel-count { left: var(--gutter); }
+  .reel-year { right: var(--gutter); }
+  .reel-name {
+    position: absolute;
+    top: 50%;
+    left: max(calc(var(--gutter) + 96px), 16vw);
+    right: calc(var(--gutter) + 64px);
+    transform: translateY(-50%);
+  }
+  .reel-cat { margin: 0 0 10px; font-size: 0.9375rem; font-weight: 500; color: #ff8a9e; text-shadow: 0 1px 12px rgba(0, 0, 0, 0.6); }
+  .reel-title {
+    margin: 0;
+    overflow: hidden;
+    padding-bottom: 0.06em;
+    font-size: clamp(3rem, 7.4vw, 7.5rem);
+    font-weight: 600;
+    line-height: 0.94;
+    letter-spacing: -0.05em;
+    color: #fff;
+    text-wrap: balance;
+  }
+  .reel-title > span { display: block; text-shadow: 0 2px 40px rgba(0, 0, 0, 0.45); }
+  .reel-hint {
+    position: absolute;
+    left: 50%;
+    bottom: 26px;
+    margin: 0;
+    transform: translateX(-50%);
+    font-size: 0.8125rem;
+    color: rgba(255, 255, 255, 0.68);
+    white-space: nowrap;
+  }
+  .reel-go {
+    position: absolute;
+    left: var(--gutter);
+    bottom: 76px;
+    display: none;
+    align-items: center;
+    height: 44px;
+    padding: 0 22px;
+    border-radius: 9999px;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    text-decoration: none;
+    color: #000;
+    background: #fff;
+  }
+  .reel-go:focus-visible { outline: none; box-shadow: 0 0 0 3px rgba(244, 63, 94, 0.8); }
+  .reel-pause {
+    position: absolute;
+    right: var(--gutter);
+    bottom: 18px;
+    display: inline-grid;
+    place-items: center;
+    width: 44px;
+    height: 44px;
+    border-radius: 9999px;
+    color: #fff;
+    background: rgba(12, 6, 8, 0.72);
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    cursor: pointer;
+    transition: border-color 150ms var(--ease-glass);
+  }
+  .reel-pause:hover { border-color: rgba(255, 255, 255, 0.4); }
+  .reel-pause:focus-visible { outline: none; box-shadow: 0 0 0 3px rgba(244, 63, 94, 0.8); }
+  .reel-pause .i-play { display: none; }
+  .reel-pause.is-paused .i-play { display: block; }
+  .reel-pause.is-paused .i-pause { display: none; }
+
+  .reel-skip {
+    position: absolute;
+    top: 84px;
+    left: var(--gutter);
+    z-index: 20;
+    padding: 10px 16px;
+    border-radius: 9999px;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: #000;
+    background: #fff;
+    text-decoration: none;
+    transform: translateY(-200%);
+    opacity: 0;
+  }
+  .reel-skip:focus-visible { transform: none; opacity: 1; outline: none; box-shadow: 0 0 0 3px rgba(244, 63, 94, 0.8); }
+
+  .reel-gl, .reel-watch { display: none; }
+
+  /* The stage: mouse and trackpad screens, once reel.ts runs. The section
+     is one screen tall per film; the stage stays pinned while the page
+     scrolls through it, and lets go after the last film. */
+  .reel.is-stage { height: calc(var(--n) * 100vh); }
+  .reel.is-stage .reel-stage { position: sticky; top: 0; height: 100vh; overflow: hidden; cursor: pointer; }
+  .reel.is-stage .reel-panel { position: absolute; inset: 0; height: auto; visibility: hidden; scroll-snap-align: none; }
+  .reel.is-stage .reel-panel.is-active,
+  .reel.is-stage .reel-panel.is-leaving { visibility: visible; }
+  .reel.is-stage .reel-panel.is-active .reel-media { z-index: 1; }
+  .reel.is-stage .reel-panel.is-leaving .reel-media { z-index: 0; }
+  .reel.is-stage .reel-gl {
+    display: block;
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+    width: 100%;
+    height: 100%;
+    opacity: 0;
+    pointer-events: none;
+  }
+  .reel.is-stage .reel-gl.is-on { opacity: 1; }
+
+  /* Titles rise into place for the film that arrives. */
+  .reel.is-stage .reel-title > span,
+  .reel.is-stage .reel-cat,
+  .reel.is-stage .reel-count,
+  .reel.is-stage .reel-year {
+    transition: transform 900ms var(--ease-glass), opacity 600ms var(--ease-glass);
+  }
+  .reel.is-stage .reel-panel:not(.is-active) .reel-title > span { transform: translateY(105%); }
+  .reel.is-stage .reel-panel:not(.is-active) .reel-cat { opacity: 0; transform: translateY(12px); }
+  .reel.is-stage .reel-panel:not(.is-active) .reel-count,
+  .reel.is-stage .reel-panel:not(.is-active) .reel-year { opacity: 0; }
+  .reel.is-stage .reel-panel.is-active .reel-cat { transition-delay: 120ms; }
+  .reel.is-stage .reel-panel.is-active .reel-title > span { transition-delay: 60ms; }
+  .reel.is-stage .reel-panel.is-leaving .reel-ui { opacity: 0; transition: opacity 260ms var(--ease-glass); }
+
+  /* Crossfade between films when the shader is not used. */
+  .reel.is-fade .reel-panel.is-active .reel-media { animation: reel-in 600ms var(--ease-glass) both; }
+  .reel.is-fade.is-still .reel-panel.is-active .reel-media { animation-duration: 200ms; }
+  @keyframes reel-in { from { opacity: 0; } to { opacity: 1; } }
+
+  /* Watch: a small pill that follows the pointer over the picture. */
+  .reel.is-stage .reel-watch {
+    display: inline-flex;
+    position: absolute;
+    left: 0;
+    top: 0;
+    z-index: 5;
+    align-items: center;
+    gap: 8px;
+    height: 34px;
+    padding: 0 14px 0 12px;
+    border-radius: 9999px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    text-decoration: none;
+    color: #fff;
+    background: rgba(8, 3, 5, 0.66);
+    border: 1px solid rgba(255, 255, 255, 0.22);
+    will-change: transform;
+  }
+  .reel-watch-dot { width: 7px; height: 7px; border-radius: 2px; background: #f43f5e; box-shadow: 0 0 10px rgba(244, 63, 94, 0.9); }
+  .reel.is-stage .reel-watch:hover { border-color: rgba(255, 255, 255, 0.5); }
+  .reel.is-stage .reel-watch:focus-visible { outline: none; box-shadow: 0 0 0 3px rgba(244, 63, 94, 0.8); }
+
+  /* Phones and tablets: the stack, snapping one film per screen. */
+  @media (max-width: 767px), (hover: none) and (pointer: coarse) {
+    .reel-count, .reel-year { top: 92px; transform: none; }
+    .reel-name { top: auto; left: var(--gutter); right: var(--gutter); bottom: 136px; transform: none; }
+    .reel-title { font-size: clamp(2.75rem, 13vw, 4.5rem); }
+    .reel-go { display: inline-flex; }
+    .reel-pause { bottom: 76px; }
+    .reel-hint { bottom: 24px; }
+    .reel-shade {
+      background:
+        linear-gradient(0deg, rgba(0, 0, 0, 0.82) 0%, rgba(0, 0, 0, 0.45) 30%, rgba(0, 0, 0, 0) 58%),
+        linear-gradient(180deg, rgba(0, 0, 0, 0.55) 0%, rgba(0, 0, 0, 0) 22%);
+    }
+  }
+  @media (min-width: 768px) {
+    .reel-media :global(.reel-poster.is-boxed) { transform: scale(1.06); }
+  }
+
+  /* While the reel is on a phone, nothing blurs over the moving picture:
+     the floating glass turns solid. */
+  :global(html.fm-reel-snap) { scroll-snap-type: y proximity; scroll-padding-top: 0; }
+  :global(html.fm-reel-snap) :global(.lg),
+  :global(html.fm-reel-snap) :global(.lg-thick),
+  :global(html.fm-reel-snap) :global(.nav-glass),
+  :global(html.fm-reel-snap) :global(.to-top),
+  :global(html.fm-reel-snap) :global(.chat-launcher),
+  :global(html.fm-reel-snap) :global(.chat-nudge),
+  :global(html.fm-reel-snap) :global(.btn-glass),
+  :global(html.fm-reel-snap) :global(.social) {
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
+  }
+  :global(html.fm-reel-snap) :global(.nav-glass) { background: rgba(8, 4, 6, 0.9) !important; }
+  :global(html.fm-reel-snap) :global(.to-top),
+  :global(html.fm-reel-snap) :global(.chat-launcher) { background: rgba(12, 6, 8, 0.92) !important; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .reel-shade::after { animation: none; }
+    .reel-video, .reel-still, .reel-title > span, .reel-cat, .reel-count, .reel-year { transition: none !important; }
+  }
+</style>

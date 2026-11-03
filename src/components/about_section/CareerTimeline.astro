@@ -762,7 +762,11 @@ const trackH = rows.length * ROW_H;
 </style>
 
 <script>
-  (function () {
+  import { onPage } from "../../scripts/lifecycle";
+
+  // Each time the page with the timeline is shown; the document listeners
+  // go when it is swapped away.
+  onPage("career-timeline", (signal) => {
     const root = document.getElementById("career-tl");
     const dataEl = document.getElementById("tl-data");
     if (!root || !dataEl) return;
@@ -890,11 +894,19 @@ const trackH = rows.length * ROW_H;
 
     // ---- close paths
     closeBtn.addEventListener("click", closeDialog);
-    document.addEventListener("click", (e) => {
-      if (open && !dialog.contains(e.target as Node)) closeDialog();
-    });
-    document.addEventListener("keydown", (e) => {
-      if (e.key === "Escape") closeDialog();
-    });
-  })();
+    document.addEventListener(
+      "click",
+      (e) => {
+        if (open && !dialog.contains(e.target as Node)) closeDialog();
+      },
+      { signal },
+    );
+    document.addEventListener(
+      "keydown",
+      (e) => {
+        if (e.key === "Escape") closeDialog();
+      },
+      { signal },
+    );
+  });
 </script>

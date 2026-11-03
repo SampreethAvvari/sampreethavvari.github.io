@@ -634,6 +634,112 @@ a.chip:hover, button.chip:hover { color: var(--ink); border-color: var(--line-st
   transition: color 150ms var(--ease-glass), background-color 150ms var(--ease-glass);
 }
 .nav-icon:hover, .nav-icon:focus-visible { color: var(--ink); background: var(--wash-strong); outline: none; }
+/* Sound: four bars, flat when off, dancing in the tab's colour when on. */
+.nav-sound-bars { display: inline-flex; align-items: center; gap: 2px; height: 14px; }
+.nav-sound-bars i {
+  width: 2px;
+  height: 100%;
+  border-radius: 2px;
+  background: currentColor;
+  transform: scaleY(0.22);
+  transition: transform 300ms var(--ease-glass), background-color 300ms;
+}
+.nav-sound.is-on { color: var(--ink); }
+.nav-sound.is-on .nav-sound-bars i { background: rgb(var(--tone-rgb)); animation: nav-sound-bar 1.1s ease-in-out infinite; }
+.nav-sound.is-on .nav-sound-bars i:nth-child(2) { animation-delay: -0.3s; }
+.nav-sound.is-on .nav-sound-bars i:nth-child(3) { animation-delay: -0.6s; }
+.nav-sound.is-on .nav-sound-bars i:nth-child(4) { animation-delay: -0.85s; }
+@keyframes nav-sound-bar { 0%, 100% { transform: scaleY(0.3); } 50% { transform: scaleY(1); } }
+@media (prefers-reduced-motion: reduce) { .nav-sound.is-on .nav-sound-bars i { animation: none; transform: scaleY(0.7); } }
+/* The "i" beside the toggle opens a wall label for the music. */
+.nav-sound-pair { display: inline-flex; align-items: center; }
+.sound-info { position: relative; display: inline-flex; }
+.nav-info { width: 30px; }
+.nav-info.is-open { color: var(--ink); background: var(--wash-strong); }
+.sound-card {
+  position: absolute;
+  top: calc(100% + 14px);
+  right: -6px;
+  z-index: 70;
+  width: min(360px, calc(100vw - 32px));
+  padding: 18px 20px 16px;
+  border-radius: 20px;
+  border: 1px solid var(--line-strong);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.015)),
+    rgba(10, 11, 15, 0.8);
+  -webkit-backdrop-filter: blur(20px) saturate(140%);
+  backdrop-filter: blur(20px) saturate(140%);
+  box-shadow: 0 24px 60px -20px rgba(0, 0, 0, 0.85), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  color: var(--ink);
+  font-family: var(--font);
+  text-align: left;
+  pointer-events: auto;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-6px) scale(0.985);
+  transform-origin: top right;
+  transition: opacity 180ms var(--ease-glass), transform 260ms var(--ease-glass), visibility 0s linear 260ms;
+}
+.sound-card[data-open="true"] {
+  opacity: 1;
+  visibility: visible;
+  transform: none;
+  transition: opacity 180ms var(--ease-glass), transform 260ms var(--ease-glass), visibility 0s;
+}
+/* a bridge, so the pointer can cross from the "i" to the card */
+.sound-card::before { content: ""; position: absolute; left: 0; right: 0; top: -16px; height: 16px; }
+.sound-card:focus { outline: none; }
+.sound-card:focus-visible { outline: 2px solid rgba(var(--tone-rgb), 0.7); outline-offset: 3px; }
+.sound-card-kicker { margin: 0 0 8px; font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: rgb(var(--tone-rgb)); }
+.sound-card-title { margin: 0; font-size: 1.125rem; font-weight: 600; letter-spacing: -0.015em; line-height: 1.25; color: var(--ink); }
+.sound-card-sub { margin: 4px 0 0; font-size: 0.8125rem; line-height: 1.45; color: var(--ink-soft); }
+.sound-card-now {
+  margin: 12px 0 0;
+  padding: 9px 11px;
+  border-radius: 12px;
+  font-size: 0.8125rem;
+  line-height: 1.45;
+  color: var(--ink);
+  background: rgba(var(--tone-rgb), 0.1);
+  box-shadow: inset 0 0 0 1px rgba(var(--tone-rgb), 0.22);
+}
+.sound-card-now span { display: block; margin-bottom: 2px; font-size: 10.5px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: rgb(var(--tone-rgb)); }
+.sound-card-lines { display: grid; gap: 7px; margin: 14px 0 0; padding: 14px 0 0; list-style: none; border-top: 1px solid var(--line); }
+.sound-card-lines li { position: relative; padding-left: 14px; font-size: 0.84375rem; line-height: 1.5; color: var(--ink-soft); }
+.sound-card-lines li::before { content: ""; position: absolute; left: 0; top: 0.62em; width: 5px; height: 5px; border-radius: 50%; background: rgba(var(--tone-rgb), 0.75); }
+.sound-card-foot { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin: 14px 0 0; font-size: 11.5px; color: var(--ink-faint); }
+.sound-card-play {
+  flex: none;
+  height: 28px;
+  padding: 0 12px;
+  border-radius: 9999px;
+  border: 1px solid rgba(var(--tone-rgb), 0.4);
+  background: rgba(var(--tone-rgb), 0.12);
+  color: var(--ink);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.sound-card-play:hover { background: rgba(var(--tone-rgb), 0.2); }
+/* Phones: full width under the bar, solid, no blur over moving canvases. */
+@media (max-width: 767px), (pointer: coarse) {
+  .sound-card {
+    position: fixed;
+    top: 76px;
+    left: 16px;
+    right: 16px;
+    width: auto;
+    max-height: calc(100dvh - 96px);
+    overflow-y: auto;
+    background: rgba(10, 11, 15, 0.95);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+    transform-origin: top center;
+  }
+}
+@media (prefers-reduced-motion: reduce) { .sound-card, .sound-card[data-open="true"] { transition: none; transform: none; } }
 .nav-here { display: none; }
 .nav-menu-btn { display: none; }
 @media (max-width: 1099px) {
@@ -1117,3 +1223,97 @@ html.lg-live .nav-condensed .nav-glass,
 @media (prefers-reduced-transparency: reduce) {
   .ambient::after, .tone-atmos::after { display: none; }
 }
+
+/* Click light: a ring and a few sparks in the tab's colour (scripts/fx/click-burst.ts). */
+.fx-burst-layer { position: fixed; inset: 0; pointer-events: none; z-index: 2147481000; overflow: hidden; }
+.fx-burst { position: absolute; width: 0; height: 0; }
+.fx-burst::before {
+  content: "";
+  position: absolute;
+  left: -14px;
+  top: -14px;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 1.5px solid rgba(var(--tone-rgb, 255, 255, 255), 0.9);
+  box-shadow: 0 0 14px rgba(var(--tone-rgb, 255, 255, 255), 0.7), inset 0 0 10px rgba(var(--tone-rgb, 255, 255, 255), 0.4);
+  animation: fx-ring 620ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+.fx-burst.is-strong::before { animation-duration: 720ms; }
+.fx-burst i {
+  position: absolute;
+  left: -1.5px;
+  top: -1.5px;
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 0 6px rgba(var(--tone-rgb, 255, 255, 255), 1), 0 0 12px rgba(var(--tone-rgb, 255, 255, 255), 0.8);
+  animation: fx-spark 560ms cubic-bezier(0.2, 0.7, 0.3, 1) forwards;
+}
+@keyframes fx-ring { 0% { transform: scale(0.2); opacity: 1; } 100% { transform: scale(2.4); opacity: 0; } }
+@keyframes fx-spark { 0% { transform: translate(0, 0) scale(1); opacity: 1; } 100% { transform: translate(var(--dx), var(--dy)) scale(0.2); opacity: 0; } }
+
+/* The gravity lens that follows the mouse (scripts/fx/space-lens.ts). */
+.fx-lens {
+  position: fixed;
+  left: 0;
+  top: 0;
+  width: 192px;
+  height: 192px;
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 2147480000;
+  opacity: 0;
+  will-change: transform, opacity;
+  /* a faint ring of light at the lens edge, in the tab's colour */
+  background: radial-gradient(circle, transparent 58%, rgba(var(--tone-rgb, 255, 255, 255), 0.04) 66%, rgba(var(--tone-rgb, 255, 255, 255), 0.11) 69.5%, transparent 72%);
+}
+.fx-lens.is-warp {
+  -webkit-backdrop-filter: url(#fx-lens);
+  backdrop-filter: url(#fx-lens);
+  /* feather the edge so the bent area melts into the page */
+  -webkit-mask-image: radial-gradient(circle, #000 52%, rgba(0, 0, 0, 0.6) 64%, transparent 72%);
+  mask-image: radial-gradient(circle, #000 52%, rgba(0, 0, 0, 0.6) 64%, transparent 72%);
+}
+
+/* The site's cursor (scripts/fx/cursor.ts): the system arrow hides only once ours is running. */
+html.has-fx-cursor, html.has-fx-cursor * { cursor: none !important; }
+.fx-cursor, .fx-cursor-dot {
+  position: fixed;
+  left: 0;
+  top: 0;
+  pointer-events: none;
+  z-index: 2147483600;
+  opacity: 0;
+  transition: opacity 0.25s ease;
+  mix-blend-mode: difference;
+}
+.fx-cursor.is-on, .fx-cursor-dot.is-on { opacity: 1; }
+.fx-cursor::before {
+  content: "";
+  position: absolute;
+  left: -15px;
+  top: -15px;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  border: 1.25px solid rgba(255, 255, 255, 0.85);
+  transition: transform 0.28s cubic-bezier(0.2, 0.8, 0.2, 1), background-color 0.28s ease, border-color 0.28s ease, border-radius 0.28s ease, width 0.28s ease, height 0.28s ease, left 0.28s ease, top 0.28s ease;
+}
+.fx-cursor.is-press::before { transform: scale(1.7); background: rgba(255, 255, 255, 0.14); border-color: #fff; }
+.fx-cursor.is-down::before { transform: scale(0.72); }
+.fx-cursor.is-press.is-down::before { transform: scale(1.35); }
+.fx-cursor.is-text::before { width: 2px; height: 26px; left: -1px; top: -13px; border-radius: 2px; background: #fff; border-color: transparent; }
+.fx-cursor-dot::before {
+  content: "";
+  position: absolute;
+  left: -2.5px;
+  top: -2.5px;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: #fff;
+  transition: opacity 0.2s ease;
+}
+.fx-cursor-dot.is-text::before { opacity: 0; }

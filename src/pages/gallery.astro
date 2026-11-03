@@ -314,138 +314,159 @@ const shown = sections.filter((s) => s.count > 0);
 </BaseLayout>
 
 <script>
-  // Viewer: click a screenshot to open it, arrows or swipe to move within
-  // its project, Escape or the backdrop to close.
-  const wlb = document.getElementById("wlb");
-  const wlbImg = document.getElementById("wlb-img") as HTMLImageElement | null;
-  const wlbCap = document.getElementById("wlb-cap");
-  const wlbCount = document.getElementById("wlb-count");
+  import { onPage } from "../scripts/lifecycle";
 
-  type Item = { src: string; caption: string };
-  let items: Item[] = [];
-  let cursor = 0;
-  let opener: HTMLElement | null = null;
+  // Runs each time the gallery is shown and stops when it is swapped away.
+  onPage("gallery", (signal) => {
+    if (!document.getElementById("wlb")) return;
+    // Viewer: click a screenshot to open it, arrows or swipe to move within
+    // its project, Escape or the backdrop to close.
+    const wlb = document.getElementById("wlb");
+    const wlbImg = document.getElementById("wlb-img") as HTMLImageElement | null;
+    const wlbCap = document.getElementById("wlb-cap");
+    const wlbCount = document.getElementById("wlb-count");
 
-  const collect = (group: string): Item[] =>
-    Array.from(document.querySelectorAll<HTMLElement>(`[data-shot][data-group="${group}"]`)).map((el) => ({
-      src: el.dataset.full || "",
-      caption: el.dataset.caption || "",
-    }));
+    type Item = { src: string; caption: string };
+    let items: Item[] = [];
+    let cursor = 0;
+    let opener: HTMLElement | null = null;
 
-  const preload = (i: number) => {
-    const it = items[i];
-    if (it) new Image().src = it.src;
-  };
+    const collect = (group: string): Item[] =>
+      Array.from(document.querySelectorAll<HTMLElement>(`[data-shot][data-group="${group}"]`)).map((el) => ({
+        src: el.dataset.full || "",
+        caption: el.dataset.caption || "",
+      }));
 
-  const render = () => {
-    if (!wlbImg || !wlbCap || !wlbCount) return;
-    const it = items[cursor];
-    if (!it) return;
-    wlbImg.classList.remove("is-in");
-    wlbImg.onload = () => wlbImg.classList.add("is-in");
-    wlbImg.src = it.src;
-    wlbImg.alt = it.caption;
-    wlbCap.textContent = it.caption;
-    wlbCount.textContent = `${cursor + 1} / ${items.length}`;
-    preload(cursor + 1);
-    preload(cursor - 1);
-  };
+    const preload = (i: number) => {
+      const it = items[i];
+      if (it) new Image().src = it.src;
+    };
 
-  const open = (el: HTMLElement) => {
-    if (!wlb) return;
-    opener = el;
-    items = collect(el.dataset.group || "");
-    cursor = Math.min(Math.max(Number(el.dataset.index || 0), 0), items.length - 1);
-    wlb.hidden = false;
-    requestAnimationFrame(() => wlb.classList.add("is-open"));
-    document.documentElement.classList.add("lb-lock");
-    render();
-    wlb.querySelector<HTMLElement>(".lb-close")?.focus();
-  };
+    const render = () => {
+      if (!wlbImg || !wlbCap || !wlbCount) return;
+      const it = items[cursor];
+      if (!it) return;
+      wlbImg.classList.remove("is-in");
+      wlbImg.onload = () => wlbImg.classList.add("is-in");
+      wlbImg.src = it.src;
+      wlbImg.alt = it.caption;
+      wlbCap.textContent = it.caption;
+      wlbCount.textContent = `${cursor + 1} / ${items.length}`;
+      preload(cursor + 1);
+      preload(cursor - 1);
+    };
 
-  const close = () => {
-    if (!wlb || wlb.hidden) return;
-    wlb.classList.remove("is-open");
-    document.documentElement.classList.remove("lb-lock");
-    window.setTimeout(() => {
-      wlb.hidden = true;
-    }, 220);
-    opener?.focus();
-  };
+    const open = (el: HTMLElement) => {
+      if (!wlb) return;
+      opener = el;
+      items = collect(el.dataset.group || "");
+      cursor = Math.min(Math.max(Number(el.dataset.index || 0), 0), items.length - 1);
+      wlb.hidden = false;
+      requestAnimationFrame(() => wlb.classList.add("is-open"));
+      document.documentElement.classList.add("lb-lock");
+      render();
+      wlb.querySelector<HTMLElement>(".lb-close")?.focus();
+    };
 
-  const step = (delta: number) => {
-    if (!items.length) return;
-    cursor = (cursor + delta + items.length) % items.length;
-    render();
-  };
+    const close = () => {
+      if (!wlb || wlb.hidden) return;
+      wlb.classList.remove("is-open");
+      document.documentElement.classList.remove("lb-lock");
+      window.setTimeout(() => {
+        wlb.hidden = true;
+      }, 220);
+      opener?.focus();
+    };
 
-  document.addEventListener("click", (e) => {
-    const target = e.target as HTMLElement;
-    const shot = target.closest<HTMLElement>("[data-shot]");
-    if (shot) {
-      open(shot);
-      return;
-    }
-    if (target.closest("[data-wlb-close]")) close();
-    if (target.closest("[data-wlb-prev]")) step(-1);
-    if (target.closest("[data-wlb-next]")) step(1);
-  });
+    const step = (delta: number) => {
+      if (!items.length) return;
+      cursor = (cursor + delta + items.length) % items.length;
+      render();
+    };
 
-  document.addEventListener("keydown", (e) => {
-    if (!wlb || wlb.hidden) return;
-    if (e.key === "Escape") close();
-    if (e.key === "ArrowLeft") step(-1);
-    if (e.key === "ArrowRight") step(1);
-  });
-
-  // Swipe on touch screens.
-  let touchX: number | null = null;
-  wlb?.addEventListener("touchstart", (e) => (touchX = e.touches[0]?.clientX ?? null), { passive: true });
-  wlb?.addEventListener(
-    "touchend",
-    (e) => {
-      if (touchX === null) return;
-      const dx = (e.changedTouches[0]?.clientX ?? touchX) - touchX;
-      if (Math.abs(dx) > 48) step(dx < 0 ? 1 : -1);
-      touchX = null;
-    },
-    { passive: true }
-  );
-
-  // The project bar follows the section in view.
-  const chips = new Map<string, HTMLElement>();
-  document.querySelectorAll<HTMLElement>("[data-chip]").forEach((chip) => chips.set(chip.dataset.chip || "", chip));
-
-  const setActive = (slug: string) => {
-    chips.forEach((chip, key) => {
-      const on = key === slug;
-      chip.classList.toggle("is-on", on);
-      if (on) {
-        chip.setAttribute("aria-current", "true");
-        // Scroll only the bar, never the page: scrollIntoView walks every
-        // scrollable ancestor and would tug the page while someone scrolls.
-        const track = chip.closest<HTMLElement>(".gal-track");
-        if (track) {
-          const left = chip.offsetLeft - (track.clientWidth - chip.offsetWidth) / 2;
-          track.scrollTo({ left: Math.max(0, left), behavior: "smooth" });
+    document.addEventListener(
+      "click",
+      (e) => {
+        const target = e.target as HTMLElement;
+        const shot = target.closest<HTMLElement>("[data-shot]");
+        if (shot) {
+          open(shot);
+          return;
         }
-      } else {
-        chip.removeAttribute("aria-current");
-      }
-    });
-  };
-
-  if ("IntersectionObserver" in window) {
-    const spy = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) setActive((entry.target as HTMLElement).dataset.spy || "");
-        });
+        if (target.closest("[data-wlb-close]")) close();
+        if (target.closest("[data-wlb-prev]")) step(-1);
+        if (target.closest("[data-wlb-next]")) step(1);
       },
-      { rootMargin: "-25% 0px -65% 0px" }
+      { signal },
     );
-    document.querySelectorAll<HTMLElement>("[data-spy]").forEach((el) => spy.observe(el));
-  }
+
+    document.addEventListener(
+      "keydown",
+      (e) => {
+        if (!wlb || wlb.hidden) return;
+        if (e.key === "Escape") close();
+        if (e.key === "ArrowLeft") step(-1);
+        if (e.key === "ArrowRight") step(1);
+      },
+      { signal },
+    );
+
+    // Swipe on touch screens.
+    let touchX: number | null = null;
+    wlb?.addEventListener("touchstart", (e) => (touchX = e.touches[0]?.clientX ?? null), { passive: true });
+    wlb?.addEventListener(
+      "touchend",
+      (e) => {
+        if (touchX === null) return;
+        const dx = (e.changedTouches[0]?.clientX ?? touchX) - touchX;
+        if (Math.abs(dx) > 48) step(dx < 0 ? 1 : -1);
+        touchX = null;
+      },
+      { passive: true }
+    );
+
+    // The project bar follows the section in view.
+    const chips = new Map<string, HTMLElement>();
+    document.querySelectorAll<HTMLElement>("[data-chip]").forEach((chip) => chips.set(chip.dataset.chip || "", chip));
+
+    const setActive = (slug: string) => {
+      chips.forEach((chip, key) => {
+        const on = key === slug;
+        chip.classList.toggle("is-on", on);
+        if (on) {
+          chip.setAttribute("aria-current", "true");
+          // Scroll only the bar, never the page: scrollIntoView walks every
+          // scrollable ancestor and would tug the page while someone scrolls.
+          const track = chip.closest<HTMLElement>(".gal-track");
+          if (track) {
+            const left = chip.offsetLeft - (track.clientWidth - chip.offsetWidth) / 2;
+            track.scrollTo({ left: Math.max(0, left), behavior: "smooth" });
+          }
+        } else {
+          chip.removeAttribute("aria-current");
+        }
+      });
+    };
+
+    let spy: IntersectionObserver | null = null;
+    if ("IntersectionObserver" in window) {
+      spy = new IntersectionObserver(
+        (entries) => {
+          entries.forEach((entry) => {
+            if (entry.isIntersecting) setActive((entry.target as HTMLElement).dataset.spy || "");
+          });
+        },
+        { rootMargin: "-25% 0px -65% 0px" }
+      );
+      document.querySelectorAll<HTMLElement>("[data-spy]").forEach((el) => spy!.observe(el));
+    }
+
+    return () => {
+      spy?.disconnect();
+      // The page scroll lock lives on <html>, which outlasts the page.
+      document.documentElement.classList.remove("lb-lock");
+    };
+  });
 </script>
 
 <style>

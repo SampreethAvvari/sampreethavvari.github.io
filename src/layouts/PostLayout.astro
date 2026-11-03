@@ -284,47 +284,59 @@ const more = [...related, ...others.filter((p) => !related.includes(p))].slice(0
     )
   }
 
-  <script is:inline>
-    (function () {
+  <script>
+    import { onPage } from "../scripts/lifecycle";
+
+    // Runs each time a post is shown (moving from one post to the next
+    // swaps the page without a reload), and stops when it is swapped away.
+    onPage("post", (signal) => {
+      const on = { passive: true, signal };
+      let raf = 0;
+      let spyRaf = 0;
+      const stop = () => {
+        cancelAnimationFrame(raf);
+        cancelAnimationFrame(spyRaf);
+      };
       // Reading progress, in the writing colour.
-      var bar = document.getElementById("post-progress");
+      const bar = document.getElementById("post-progress");
       if (bar) {
-        var raf = 0;
-        var update = function () {
+        const update = () => {
           raf = 0;
-          var doc = document.documentElement;
-          var height = doc.scrollHeight - doc.clientHeight;
-          var pct = height > 0 ? Math.min(1, Math.max(0, doc.scrollTop / height)) : 0;
+          const doc = document.documentElement;
+          const height = doc.scrollHeight - doc.clientHeight;
+          const pct = height > 0 ? Math.min(1, Math.max(0, doc.scrollTop / height)) : 0;
           bar.style.transform = "scaleX(" + pct + ")";
         };
-        var queue = function () { if (!raf) raf = requestAnimationFrame(update); };
-        window.addEventListener("scroll", queue, { passive: true });
-        window.addEventListener("resize", queue);
+        const queue = () => {
+          if (!raf) raf = requestAnimationFrame(update);
+        };
+        window.addEventListener("scroll", queue, on);
+        window.addEventListener("resize", queue, on);
         update();
       }
 
-      var body = document.getElementById("post-prose-body");
-      if (!body) return;
+      const body = document.getElementById("post-prose-body");
+      if (!body) return stop;
 
       // Wide tables scroll inside their own frame, never the page.
-      body.querySelectorAll("table").forEach(function (t) {
+      body.querySelectorAll("table").forEach((t) => {
         if (t.parentElement && t.parentElement.classList.contains("post-table")) return;
-        var wrap = document.createElement("div");
+        const wrap = document.createElement("div");
         wrap.className = "post-table";
         wrap.setAttribute("tabindex", "0");
         wrap.setAttribute("role", "region");
         wrap.setAttribute("aria-label", "Table");
-        t.parentNode.insertBefore(wrap, t);
+        t.parentNode!.insertBefore(wrap, t);
         wrap.appendChild(t);
         // Columns that hold sentences get more room on a phone.
-        var longest = [];
-        Array.prototype.forEach.call(t.rows, function (row) {
-          Array.prototype.forEach.call(row.cells, function (cell, i) {
+        const longest: number[] = [];
+        Array.from(t.rows).forEach((row) => {
+          Array.from(row.cells).forEach((cell, i) => {
             longest[i] = Math.max(longest[i] || 0, (cell.textContent || "").trim().length);
           });
         });
-        Array.prototype.forEach.call(t.rows, function (row) {
-          Array.prototype.forEach.call(row.cells, function (cell, i) {
+        Array.from(t.rows).forEach((row) => {
+          Array.from(row.cells).forEach((cell, i) => {
             if (longest[i] > 32) cell.classList.add("is-wide");
           });
         });
@@ -332,39 +344,41 @@ const more = [...related, ...others.filter((p) => !related.includes(p))].slice(0
 
       // Mark the section being read in the side contents: the last heading
       // that has passed a line 30% down the window.
-      var toc = document.getElementById("post-toc");
-      if (!toc) return;
-      var links = {};
-      var heads = [];
-      toc.querySelectorAll("a[data-target]").forEach(function (a) {
-        var id = a.getAttribute("data-target");
-        var h = document.getElementById(id);
+      const toc = document.getElementById("post-toc");
+      if (!toc) return stop;
+      const links: Record<string, HTMLElement> = {};
+      const heads: HTMLElement[] = [];
+      toc.querySelectorAll<HTMLElement>("a[data-target]").forEach((a) => {
+        const id = a.getAttribute("data-target") || "";
+        const h = document.getElementById(id);
         if (!h) return;
         links[id] = a;
         heads.push(h);
       });
-      var active = null;
-      var spyRaf = 0;
-      var spy = function () {
+      let active: string | null = null;
+      const spy = () => {
         spyRaf = 0;
-        var line = window.innerHeight * 0.3;
-        var current = null;
-        for (var i = 0; i < heads.length; i++) {
+        const line = window.innerHeight * 0.3;
+        let current: string | null = null;
+        for (let i = 0; i < heads.length; i++) {
           if (heads[i].getBoundingClientRect().top <= line) current = heads[i].id;
           else break;
         }
         if (current === active) return;
         active = current;
-        Object.keys(links).forEach(function (k) {
+        Object.keys(links).forEach((k) => {
           links[k].classList.toggle("is-active", k === current);
           if (k === current) links[k].setAttribute("aria-current", "true");
           else links[k].removeAttribute("aria-current");
         });
       };
-      var queueSpy = function () { if (!spyRaf) spyRaf = requestAnimationFrame(spy); };
-      window.addEventListener("scroll", queueSpy, { passive: true });
-      window.addEventListener("resize", queueSpy);
+      const queueSpy = () => {
+        if (!spyRaf) spyRaf = requestAnimationFrame(spy);
+      };
+      window.addEventListener("scroll", queueSpy, on);
+      window.addEventListener("resize", queueSpy, on);
       spy();
-    })();
+      return stop;
+    });
   </script>
 </BaseLayout>

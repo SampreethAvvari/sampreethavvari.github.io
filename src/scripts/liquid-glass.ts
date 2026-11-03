@@ -11,6 +11,11 @@
 //
 // Only Chromium can point backdrop-filter at an SVG filter. Everywhere else the
 // CSS keeps a clear tinted glass and this file does nothing.
+//
+// Started once a visit. The filters move with each page swap, and each new
+// page's glass elements are picked up as they arrive.
+
+import { keepAcrossPages } from "./lifecycle";
 
 const NS = "http://www.w3.org/2000/svg";
 
@@ -120,7 +125,7 @@ export function initLiquidGlass(selector: string): void {
   svg.setAttribute("width", "0");
   svg.setAttribute("height", "0");
   svg.style.cssText = "position:absolute;width:0;height:0;overflow:hidden;pointer-events:none";
-  document.body.appendChild(svg);
+  document.body.appendChild(keepAcrossPages(svg));
 
   const cache = new Map<string, Cached>();
   let count = 0;
@@ -211,25 +216,55 @@ export function initLiquidGlass(selector: string): void {
           }
         })
       : null;
+  // Elements being watched, so the ones a page swap removed can be let go.
+  const watched = new Set<HTMLElement>();
+  // Server markup inside an island that React has not taken over yet: an
+  // inline style now would not match what React renders, so it waits. React
+  // marks each element it has hydrated with its own fiber key.
+  const hydrated = (el: HTMLElement) => !el.closest("astro-island") || Object.keys(el).some((k) => k.startsWith("__reactFiber$"));
+  let retry = 0;
+  let tries = 0;
   const scan = () => {
     const fresh: HTMLElement[] = [];
+    let waiting = false;
     document.querySelectorAll<HTMLElement>(selector).forEach((el) => {
       if (seen.has(el)) return;
+      if (!hydrated(el)) {
+        waiting = true;
+        return;
+      }
       seen.add(el);
       fresh.push(el);
     });
     // The observer reports each new element's size once on its own.
-    if (ro) fresh.forEach((el) => ro.observe(el));
+    if (ro) fresh.forEach((el) => (ro.observe(el), watched.add(el)));
     else measureAll(fresh);
+    clearTimeout(retry);
+    if (waiting && tries++ < 60) retry = window.setTimeout(scan, 250);
+    else if (!waiting) tries = 0;
   };
   scan();
   // Islands (the nav, the chat button, back to top) mount after this runs.
   let pending = 0;
-  new MutationObserver(() => {
+  const mo = new MutationObserver(() => {
     if (pending) return;
     pending = window.setTimeout(() => {
       pending = 0;
       scan();
     }, 150);
-  }).observe(document.body, { childList: true, subtree: true });
+  });
+  mo.observe(document.body, { childList: true, subtree: true });
+  // A swap brings a new <body>: watch that one, let go of what left with the
+  // old page, and pick up the new page's glass.
+  document.addEventListener("astro:after-swap", () => {
+    mo.disconnect();
+    mo.observe(document.body, { childList: true, subtree: true });
+    for (const el of watched) {
+      if (el.isConnected) continue;
+      ro?.unobserve(el);
+      watched.delete(el);
+    }
+    tries = 0;
+    scan();
+  });
 }

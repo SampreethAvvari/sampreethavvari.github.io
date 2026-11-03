@@ -4,6 +4,8 @@
 // article, a technical article about a system, a list) and its breadcrumbs.
 // Facts come from the same data the pages render, so they never disagree.
 
+import { films, filmPath } from "../data/films";
+
 export type Crumb = { name: string; path: string };
 
 export const PERSON_ID = "/#person";
@@ -55,35 +57,50 @@ export function personNode(base: string, opts: { image: string; email: string; d
   };
 }
 
-// His films, from the filmmaking page's credits. Among Monsters carries its
-// IMDb page, so engines join the film, its IMDb record and him into one
-// entity; the rest are named with their year and his roles.
-const FILMS: Array<{ name: string; year?: string; imdb?: string; roles: string[] }> = [
-  { name: "Among Monsters", year: "2026", imdb: "https://www.imdb.com/title/tt39700295/", roles: ["Director", "Writer", "Editor", "Music"] },
-  { name: "L'immigrata", year: "2026", roles: ["Assistant Director", "Editor"] },
-  { name: "Office Plant", year: "2026", roles: ["Assistant Director", "Editor"] },
-  { name: "Tiger Man", year: "2022", roles: ["Director", "Writer", "Editor"] },
-  { name: "Solstice", year: "2025", roles: ["Editor"] },
-  { name: "Swechcha", year: "2024", roles: ["Editor"] },
-  { name: "Strangers", year: "2019", roles: ["Cinematographer", "Music"] },
-  { name: "Extraordinary Lives", roles: ["Director", "Writer"] },
-  { name: "Pupa", roles: ["Writer"] },
-];
+// His films, from src/data/films.ts, the same list the filmmaking pages
+// render. Each film's node is named by its own page's URL, so the slate on
+// /filmmaking and the film's page describe one entity. Among Monsters also
+// carries its IMDb page, so engines join the film, its IMDb record and him.
+const FILMS = films.map((f) => ({ slug: f.slug, name: f.title, year: f.year, imdb: f.links?.imdb, roles: f.roles }));
 
-export function filmNodes(base: string) {
+function movieNode(base: string, f: (typeof FILMS)[number]) {
   const me = { "@id": abs(base, PERSON_ID) };
-  return FILMS.map((f) => ({
+  const url = abs(base, filmPath(f.slug));
+  return {
     "@type": "Movie",
-    "@id": abs(base, `/filmmaking#${f.name.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`),
+    "@id": url + "#movie",
     name: f.name,
+    url,
     ...(f.year ? { dateCreated: f.year } : { creativeWorkStatus: "In development" }),
-    ...(f.imdb ? { url: f.imdb, sameAs: f.imdb } : {}),
+    ...(f.imdb ? { sameAs: f.imdb } : {}),
     ...(f.roles.includes("Director") ? { director: me } : {}),
     ...(f.roles.includes("Writer") ? { author: me } : {}),
     ...(f.roles.includes("Editor") ? { editor: me } : {}),
     ...(f.roles.includes("Music") ? { musicBy: me } : {}),
-    ...(f.roles.includes("Cinematographer") ? { contributor: me } : {}),
-  }));
+    ...(f.roles.some((r) => r === "Cinematographer" || r === "Assistant Director") ? { contributor: me } : {}),
+  };
+}
+
+export function filmNodes(base: string) {
+  return FILMS.map((f) => movieNode(base, f));
+}
+
+// One film's full node for its own page: the slate's node plus what that
+// page shows (description, image, genre, where it was shot, the cast).
+export function filmNode(base: string, slug: string, opts: { description: string; image?: string }) {
+  const film = films.find((f) => f.slug === slug);
+  const f = FILMS.find((x) => x.slug === slug);
+  if (!film || !f) return null;
+  const cast = film.credits?.find((g) => g.label === "Cast")?.people ?? [];
+  return {
+    ...movieNode(base, f),
+    description: opts.description,
+    mainEntityOfPage: abs(base, filmPath(slug)),
+    ...(opts.image ? { image: abs(base, opts.image) } : {}),
+    ...(film.genre ? { genre: film.genre } : {}),
+    ...(film.shot ? { locationCreated: { "@type": "Place", name: film.shot.place } } : {}),
+    ...(cast.length ? { actor: cast.map((p) => ({ "@type": "Person", name: p.name })) } : {}),
+  };
 }
 
 export function websiteNode(base: string, description: string) {
