@@ -15,6 +15,13 @@ export function mountWritingClose(): void {
   onPage("writing-close", (signal) => {
     const wc = document.querySelector<HTMLElement>(".wc");
     if (!wc) return;
+    // A cover's overlay appears once its art has arrived.
+    wc.querySelectorAll<HTMLElement>(".wc-card").forEach((card) => {
+      const img = card.querySelector<HTMLImageElement>("img");
+      const ready = () => card.classList.add("is-art");
+      if (!img || img.complete) ready();
+      else img.addEventListener("load", ready, { once: true, signal });
+    });
     const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
     if (reduce) return;
     const aurora = wc.querySelector<HTMLElement>(".wc-aurora");

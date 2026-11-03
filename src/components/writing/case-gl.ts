@@ -161,7 +161,7 @@ varying vec2 vUv; varying vec3 vN; varying vec3 vView;
 uniform sampler2D uTex; uniform float uHasTex;
 uniform vec3 uAccent; uniform float uOpacity; uniform float uDissolve; uniform float uChroma;
 uniform float uSweep; uniform float uDim; uniform float uRim; uniform float uSeed; uniform float uTime;
-uniform vec2 uPointer;
+uniform vec2 uPointer; uniform float uSweepGain;
 ${NOISE}
 float box(vec2 p, vec2 b, float r) { vec2 q = abs(p) - b + r; return length(max(q, 0.0)) + min(max(q.x, q.y), 0.0) - r; }
 void main() {
@@ -202,7 +202,7 @@ void main() {
   col += (uAccent * 0.8 + 0.35) * edge * 0.9 * uRim;
   col.r += edge * 0.25 * uRim * step(0.0, p.x);
   col.b += edge * 0.25 * uRim * step(p.x, 0.0);
-  float band = exp(-pow((uv.x * 1.0 + (1.0 - uv.y) * 0.42 - uSweep) * 6.5, 2.0));
+  float band = exp(-pow((uv.x * 1.0 + (1.0 - uv.y) * 0.42 - uSweep) * 15.0, 2.0)) * uSweepGain;
   col += (vec3(1.0) * 0.26 + uAccent * 0.3) * band;
 
   // What the slab hides of the stars behind it: the subject, the rim and the
@@ -361,6 +361,7 @@ export function mountCaseGL(
         uTime: { value: 0 },
         uBend: { value: 0 },
         uPointer: { value: pointer },
+        uSweepGain: { value: 0.3 },
       },
     });
     const mesh = new Mesh(slabGeo, mat);
@@ -592,9 +593,11 @@ export function mountCaseGL(
       if (i === k + 1) {
         // The light sweeps across the arriving slab.
         u.uSweep.value = lerp(-0.6, 1.7, clamp01((e - 0.25) / 0.75));
+        u.uSweepGain.value = 1.1;
         u.uRim.value = 0.6 + 0.8 * Math.sin(Math.PI * clamp01(e));
       } else if (i === k) {
         u.uSweep.value = ((time * 0.09 + i * 0.37) % 1) * 3.4 - 1.2;
+        u.uSweepGain.value = 0.3;
         u.uRim.value = 1 - e * 0.5;
       } else {
         u.uSweep.value = -1;

@@ -406,6 +406,7 @@ const spelled = items.map((h) => {
     .cx-sum { display: block; overflow: visible; -webkit-line-clamp: unset; padding-right: 56px; }
     .cx-sum-rest { display: none; }
     .cx-stat { padding-right: 56px; }
+    .cx-stat-l { display: block; overflow: visible; -webkit-line-clamp: unset; }
   }
   @media (max-width: 899px) and (prefers-reduced-motion: no-preference) {
     :global(html:has(.cx)) { scroll-snap-type: y proximity; }
@@ -553,7 +554,7 @@ const spelled = items.map((h) => {
       transform: translate3d(0, calc(var(--cout, 0) * -64px), 0);
     }
     .cx-hero:not([data-live]) .cx-copy-in { pointer-events: none; }
-    .cx-title { max-width: min(13.5em, 56vw); font-size: clamp(3rem, 5.5vw, 6.25rem); line-height: 0.98; }
+    .cx-title { max-width: min(13.5em, 52vw); font-size: clamp(3rem, 5.5vw, 6.25rem); line-height: 0.98; }
     /* Each letter rises into place, sharpening as it lands. No mask, so no letter is ever cut. */
     .cx-l {
       display: inline-block;
