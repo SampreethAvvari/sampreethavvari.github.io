@@ -810,16 +810,6 @@ a.pfx-sky-star { color: var(--ink); text-decoration: underline; text-underline-o
 }
 
 /* ---------------------------------------------------------------------------
-   Phones: a post opens on a live canvas, and blur over a moving canvas is what
-   made iPhone Safari reload the page. This sheet only loads on posts, so here
-   the bar, the buttons and the chat are solid glass.
-   --------------------------------------------------------------------------- */
-@media (max-width: 899px), (pointer: coarse) {
-  *, *::before, *::after { -webkit-backdrop-filter: none !important; backdrop-filter: none !important; }
-  .lg, .lg-thick, .nav-glass, .btn-glass, .chat-launcher, .to-top { background: #0e0f14 !important; }
-}
-
-/* ---------------------------------------------------------------------------
    Print: the article and nothing else, in black on white. The script leaves
    transforms and a margin on the head, so those are undone here too.
    --------------------------------------------------------------------------- */

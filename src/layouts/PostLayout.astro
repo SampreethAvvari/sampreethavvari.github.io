@@ -21,6 +21,7 @@ import path from "node:path";
 // Article styles live in their own sheet so only post pages download them.
 import "../styles/post-article.css";
 import "../components/post-fx/post-fx.css";
+import "../styles/solid-glass.css";
 import "../components/post-fx/figures.css";
 
 const { frontmatter, headings = [] } = Astro.props;
@@ -291,10 +292,10 @@ const fxData = JSON.stringify({ links: linkCards }).replace(/</g, "\\u003c");
                 <a href={`/architecture/${archForPost.slug}`} class="btn btn-primary btn-sm">
                   Open the drawing <Icon name="arrow-right" size={14} class="arrow-r" />
                 </a>
-                <a href="/#contact" class="tlink">Get in touch <Icon name="arrow-right" size={14} /></a>
+                <a href="/#ch-connect" class="tlink">Get in touch <Icon name="arrow-right" size={14} /></a>
               </>
             ) : (
-              <a href="/#contact" class="btn btn-primary btn-sm">
+              <a href="/#ch-connect" class="btn btn-primary btn-sm">
                 Get in touch <Icon name="arrow-right" size={14} class="arrow-r" />
               </a>
             )}

@@ -16,6 +16,7 @@ import { RESUME, bayStopCount, groupCards } from "../../components/work-world/wo
 import { disciplines } from "../../data/disciplines";
 import { readingTime } from "../../utils/readingTime";
 import { readPosts } from "../../utils/postFiles";
+import "../../styles/solid-glass.css";
 
 export function getStaticPaths() {
   return disciplines.map((d) => ({ params: { slug: d.slug }, props: { d } }));
