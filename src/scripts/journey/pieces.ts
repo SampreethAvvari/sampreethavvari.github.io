@@ -1512,6 +1512,7 @@ function landingWorld(i: number, color: Color, ctx: Ctx): Piece {
       surface.update({ time, dt, camera: camera as PerspectiveCamera, cover: fade.value, s, pxScale, dpr, reduced, land: L });
       haze.color.copy(surface.hazeColor);
       flare.pos.copy(surface.sunWorld).multiplyScalar(5200).add(l.pad);
+      flare.strength = 0.1 * (1 - smooth(1.2, 1.8, s));
     },
   };
 }

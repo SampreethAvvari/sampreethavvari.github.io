@@ -91,6 +91,10 @@ export function groundHeight(x: number, z: number) {
   // Low ridges that break the far horizon.
   const far = smooth(500, 2200, r);
   if (far > 0) h += far * (Math.pow(fbm2(x * 0.0009 + 3.1, z * 0.0009 + 7.7), 2.2) * 70 + crest * 8);
+  // The low rise he stops behind in the first steps.
+  const rx = x / 3.4;
+  const rz = (z - 12.3) / 1.15;
+  h += 0.27 * Math.exp(-rx * rx - rz * rz);
   return h - (r * r) / (2 * 90000);
 }
 
@@ -369,6 +373,7 @@ const DOME_FS = (layers: number) => /* glsl */ `
   uniform vec3 uRingN;
   uniform vec3 uRingA;
   uniform vec3 uRingB;
+  uniform sampler2D tNoise;
   uniform float uRing;
   uniform float uMilky;
   uniform vec3 uGalN;
@@ -385,11 +390,7 @@ const DOME_FS = (layers: number) => /* glsl */ `
     vec2 i = floor(p);
     vec2 f = fract(p);
     f = f * f * (3.0 - 2.0 * f);
-    float a = hash13(vec3(i, 1.0));
-    float b = hash13(vec3(i + vec2(1.0, 0.0), 1.0));
-    float c = hash13(vec3(i + vec2(0.0, 1.0), 1.0));
-    float d = hash13(vec3(i + vec2(1.0, 1.0), 1.0));
-    return mix(mix(a, b, f.x), mix(c, d, f.x), f.y);
+    return texture2D(tNoise, (i + f + 0.5) / 256.0).r;
   }
   void main() {
     vec3 d = normalize(vDir);
@@ -451,16 +452,16 @@ const DOME_FS = (layers: number) => /* glsl */ `
       mw = mix(mw, vec3(0.95, 0.5, 0.6), smoothstep(0.66, 0.86, tint) * 0.42 * body);
       mw = mix(mw, vec3(0.42, 0.6, 1.0), smoothstep(0.6, 0.86, 1.0 - tint) * 0.32);
       float above = smoothstep(-0.02, 0.1, d.y);
-      c += mw * glow * 0.15 * uMilky * above;
+      c += mw * glow * 0.23 * uMilky * above;
       // Star dust: thousands of tiny points, thick where the band is thick and gone in the lanes.
       float dustK = clamp(dens * 1.5 + halo * 0.12, 0.0, 1.0) * (1.0 - lane * 0.95);
       for (int k = 0; k < DUST_LAYERS; k++) {
         float scale = 760.0 + float(k) * 520.0;
         vec3 did = floor(d * scale);
         float dh = hash13(did + float(k) * 41.0);
-        if (dh > 0.995 - dustK * 0.26) {
+        if (dh > 0.996 - dustK * 0.075) {
           float pw2 = hash13(did + 7.7);
-          c += mix(vec3(0.72, 0.8, 1.0), vec3(1.0, 0.86, 0.68), hash13(did + 3.3)) * (0.02 + pw2 * pw2 * 0.34) * uMilky * above;
+          c += mix(vec3(0.72, 0.8, 1.0), vec3(1.0, 0.86, 0.68), hash13(did + 3.3)) * (0.012 + pw2 * pw2 * pw2 * 0.34) * uMilky * above;
         }
       }
       bandK = clamp(body * (1.0 - lane * 0.9) + halo * 0.15, 0.0, 1.0) * uMilky;
@@ -474,7 +475,7 @@ const DOME_FS = (layers: number) => /* glsl */ `
         vec3 sd = d * dens;
         vec3 id = floor(sd);
         float h = hash13(id + fi * 17.0);
-        float thr = 0.984 - fi * 0.006 - bandK * 0.13;
+        float thr = 0.986 - fi * 0.004 - bandK * 0.03;
         if (h > thr) {
           vec3 q = fract(sd) - 0.5;
           vec3 off = vec3(hash13(id + 3.1), hash13(id + 5.7), hash13(id + 9.3)) - 0.5;
@@ -680,6 +681,8 @@ const CARD_FS = /* glsl */ `
     if (a < 0.004) discard;
     vec3 c = t.rgb;
     float l = dot(c, vec3(0.3, 0.59, 0.11));
+    // Highlights compress as the warm light goes, so no sun glare survives on the glove.
+    l = mix(l / (1.0 + l * 5.5) * 2.0, l, uKeep);
     // The shadows take the colour of the sky; what stays of the plate's own
     // warm light is what the hour still has.
     vec3 relit = l * uShadow * 1.2;
@@ -688,7 +691,7 @@ const CARD_FS = /* glsl */ `
     // The small lamp lights what is near it.
     vec3 dl = vWorld - uLampWorld;
     float lamp = exp(-dot(dl, dl) / (uLampR * uLampR));
-    col += (l * 2.2 + 0.018) * uLampCol * lamp;
+    col += (l * 1.6 + 0.045) * uLampCol * lamp;
     gl_FragColor = vec4(col, a);
   }
 `;
@@ -705,9 +708,12 @@ const CARD_DEPTH_FS = /* glsl */ `
 const SAP_VS = /* glsl */ `
   uniform float uTime;
   uniform float uTouch;
+  uniform vec3 uSapOrigin;
   attribute float aBend;
+  uniform vec3 uLampSite;
   varying vec3 vN;
   varying vec3 vP;
+  varying vec3 vL;
   varying float vT;
   void main() {
     vec3 p = position;
@@ -721,7 +727,8 @@ const SAP_VS = /* glsl */ `
     p.y -= k * k * dip;
     p.x -= k * k * uTouch * 0.002;
     vec4 w = modelMatrix * vec4(p, 1.0);
-    vP = (w.xyz);
+    vP = w.xyz;
+    vL = uLampSite - (p + uSapOrigin);
     vN = normalize(mat3(modelMatrix) * normal);
     vT = k;
     gl_Position = projectionMatrix * viewMatrix * w;
@@ -736,16 +743,21 @@ const SAP_FS = /* glsl */ `
   uniform vec3 uLampSite;
   varying vec3 vN;
   varying vec3 vP;
+  varying vec3 vL;
   varying float vT;
   void main() {
-    vec3 green = mix(vec3(0.16, 0.2, 0.05), vec3(0.3, 0.42, 0.09), vT);
+    float leaf = smoothstep(0.84, 0.9, vT);
+    vec3 green = mix(vec3(0.07, 0.085, 0.03), vec3(0.15, 0.25, 0.05), leaf);
     vec3 n = normalize(vN);
     float nl = abs(dot(n, normalize(uSunDir)));
-    vec3 col = green * (uAmb + uKey * (0.35 + nl));
-    // Light through the leaves from behind.
-    col += green * uKey * 0.9 * vT;
-    // The small lamp, close and warm.
-    col += green * uLampCol * 3.2;
+    vec3 col = green * (uAmb * 1.1 + uKey * (0.3 + nl));
+    // Light through the leaves from behind while there is still sun.
+    col += green * uKey * 0.8 * leaf;
+    // The small lamp, close and warm, shaping the leaves.
+    vec3 lv = normalize(vL);
+    float ln = abs(dot(n, lv));
+    float fall = 0.9 / (1.0 + dot(vL, vL) * 42.0);
+    col += green * uLampCol * (0.3 + 1.5 * ln) * fall;
     gl_FragColor = vec4(col, 1.0);
   }
 `;
@@ -855,6 +867,7 @@ export function buildSurface(o: { low: boolean; landing: Landing; cloudTex: Text
   group.quaternion.copy(l.quat);
   group.updateMatrixWorld(true);
   const inv = new Quaternion().copy(l.quat).invert();
+  if (location.search.includes("dbgsurf")) (window as unknown as { __surf: Group }).__surf = group;
   const r = rng(4242);
 
   // Shared by the sky and the ground.
@@ -873,6 +886,17 @@ export function buildSurface(o: { low: boolean; landing: Landing; cloudTex: Text
   const uTime = { value: 0 };
 
   // ------------------------------------------------------------ sky dome
+  const noiseTex = (() => {
+    const N = 256;
+    const d = new Uint8Array(N * N * 4);
+    for (let k = 0; k < N * N; k++) d[k * 4] = d[k * 4 + 1] = d[k * 4 + 2] = d[k * 4 + 3] = Math.floor(r() * 256);
+    const t = new DataTexture(d, N, N, RGBAFormat, UnsignedByteType);
+    t.wrapS = t.wrapT = RepeatWrapping;
+    t.magFilter = LinearFilter;
+    t.minFilter = LinearFilter;
+    t.needsUpdate = true;
+    return t;
+  })();
   // The plane of the ring, tilted so the arc crosses the upper sky on the sun's side.
   const ringN = new Vector3(0.14, 0.92, 0.37).normalize();
   const ringA = new Vector3(1, 0, 0).addScaledVector(ringN, -ringN.x).normalize();
@@ -901,6 +925,7 @@ export function buildSurface(o: { low: boolean; landing: Landing; cloudTex: Text
       uRingN: { value: ringN },
       uRingA: { value: ringA },
       uRingB: { value: ringB },
+      tNoise: { value: noiseTex },
       uRing: { value: 1 },
       uMilky: { value: 0 },
       uGalN: { value: galN },
@@ -1078,16 +1103,16 @@ export function buildSurface(o: { low: boolean; landing: Landing; cloudTex: Text
           float fb = seen * (1.0 - smoothstep(14.0, 120.0, dist)) * mix(0.2, 1.0, patchy) * high;
           // Sand grain, right at the lens only.
           float gn = (texture2D(tRipple, uv * 2.7).a - 0.5) + (texture2D(tRipple, uv * 11.0).a - 0.5) * 1.2;
-          float fg = 1.0 - smoothstep(0.3, 5.0, dist);
+          float fg = 1.0 - smoothstep(0.4, 6.0, dist);
           // Rotate the slopes back into site space.
           vec2 g1 = (a.xy - 0.5) * 0.8 * fa + (b.xy - 0.5) * 0.6 * fb;
           vec2 g = vec2(ca * g1.x + sa * g1.y, -sa * g1.x + ca * g1.y);
           sandGrad = vec3(g.x, 0.0, g.y) * 1.25;
-          sandH = (a.z - 0.5) * fa * 0.28 + (b.z - 0.5) * fb * 0.2 + (field - 0.5) * 0.7 + gn * fg * 0.5;
+          sandH = (a.z - 0.5) * fa * 0.28 + (b.z - 0.5) * fb * 0.2 + (field - 0.5) * 0.7 + gn * fg * mix(0.5, 1.1, uNight);
           diffuseColor.rgb = mix(vec3(0.44, 0.2, 0.085), vec3(0.72, 0.38, 0.16), clamp(0.5 + sandH * 0.8, 0.0, 1.0));
           // Broad forms: faces toward the low sun lift, lee sides and long shadows sink.
           float face = dot(normalize(vSiteN.xz + 1e-4) * length(vSiteN.xz), normalize(uSun.xz + 1e-4));
-          diffuseColor.rgb = mix(diffuseColor.rgb, vec3(dot(diffuseColor.rgb, vec3(0.34))) * vec3(0.84, 0.92, 1.16), uNight);
+          diffuseColor.rgb = mix(diffuseColor.rgb, vec3(dot(diffuseColor.rgb, vec3(0.34))) * vec3(0.84, 0.92, 1.16) * (1.0 + 1.5 * gn * fg), uNight);
           diffuseColor.rgb *= mix(1.0, clamp(0.84 + face * 7.5, 0.5, 1.45) * mix(0.46, 1.0, vShade), max(uSunK, 0.25));
         }`,
       )
@@ -1105,7 +1130,7 @@ export function buildSurface(o: { low: boolean; landing: Landing; cloudTex: Text
           vec3 lv = uLampSite - vSite;
           float ld2 = dot(lv, lv);
           float nl = max(normalize(lv).y + (sandGrad.x * lv.x + sandGrad.z * lv.z) * 2.0, 0.0);
-          totalEmissiveRadiance += vec3(0.9, 0.82, 0.74) * uLampCol * nl * 0.0065 / (ld2 + 0.0035);
+          totalEmissiveRadiance += vec3(0.86, 0.78, 0.7) * uLampCol * nl * 0.0028 / (ld2 + 0.006);
         }`,
       )
       .replace(
@@ -1303,6 +1328,9 @@ export function buildSurface(o: { low: boolean; landing: Landing; cloudTex: Text
       const sa = Math.sin(yaw);
       out.look.x = out.pos.x + dx * ca - dz * sa;
       out.look.z = out.pos.z + dx * sa + dz * ca;
+      // The words sit in the lower half of a tall screen, so the subject moves up, clear of them.
+      const drop = (s <= 1 ? lerp(1, 5, s) : s <= 2 ? lerp(5, 9, s - 1) : lerp(9, 17, smooth(0.45, 1, s - 2))) * (Math.PI / 180);
+      out.look.y -= Math.hypot(dx, dz) * Math.tan(drop);
     }
     out.pos.applyMatrix4(group.matrixWorld);
     out.look.applyMatrix4(group.matrixWorld);
@@ -1322,7 +1350,7 @@ export function buildSurface(o: { low: boolean; landing: Landing; cloudTex: Text
     uGain: { value: 1 },
     uLampCol: { value: new Color(0, 0, 0) },
     uLampWorld: { value: new Vector3() },
-    uLampR: { value: 0.12 },
+    uLampR: { value: 0.085 },
   };
   const makeCard = () => {
     const tMap = { value: null as Texture | null };
@@ -1367,7 +1395,7 @@ export function buildSurface(o: { low: boolean; landing: Landing; cloudTex: Text
         float along = vUv.y;
         float across = abs(vUv.x - 0.5) * 2.0;
         float width = mix(0.5, 0.95, along);
-        float a = smoothstep(width, width * 0.15, across) * smoothstep(0.0, 0.02, along) * pow(1.0 - along, 1.6);
+        float a = smoothstep(width, width * 0.15, across) * smoothstep(0.0, 0.02, along) * pow(max(1.0 - along, 0.0), 1.6);
         gl_FragColor = vec4(uColor, a * uStrength);
       }`,
     uniforms: { uStrength: { value: 0 }, uColor: { value: new Color(0.03, 0.012, 0.008) } },
@@ -1454,6 +1482,7 @@ export function buildSurface(o: { low: boolean; landing: Landing; cloudTex: Text
     uSunDir: skyU.uSun,
     uLampCol: shared.uLampCol,
     uLampSite: { value: new Vector3() },
+    uSapOrigin: { value: SAP.clone() },
   };
   const sapG = saplingGeometry(SAP_H);
   const sapMat = new ShaderMaterial({ vertexShader: SAP_VS, fragmentShader: SAP_FS, uniforms: sapU, side: DoubleSide, fog: false });
@@ -1502,7 +1531,7 @@ export function buildSurface(o: { low: boolean; landing: Landing; cloudTex: Text
   // ------------------------------------------------------------ the three performances
   type Stage = { perf: string; idle: string; state: number; t: number; dur: number; scene: "exit" | "helmet" | "touch"; beats: number[]; sent: number };
   const stages: Stage[] = [
-    { perf: "exitP", idle: "exitI", state: 0, t: 0, dur: 8, scene: "exit", beats: [0, 0.36, 0.55], sent: -1 },
+    { perf: "exitP", idle: "exitI", state: 0, t: 0, dur: 130 / 24, scene: "exit", beats: [0, 0.3, 0.6], sent: -1 },
     { perf: "helmetP", idle: "helmetI", state: 0, t: 0, dur: 8, scene: "helmet", beats: [0, 0.42, 0.56, 0.68], sent: -1 },
     { perf: "handP", idle: "handI", state: 0, t: 0, dur: 8, scene: "touch", beats: [0, 0.03, HAND_REACH / 8, 0.6], sent: -1 },
   ];
@@ -1645,9 +1674,9 @@ export function buildSurface(o: { low: boolean; landing: Landing; cloudTex: Text
   const STARS = [0.1, 0.16, 0.72, 1];
   const MILKY = [0, 0, 0.03, 1];
   const MOON_K = [1, 0.86, 0.55, 0.12];
-  const PLATE_GAIN = [1, 0.9, 0.62, 1.7];
+  const PLATE_GAIN = [1, 0.9, 0.62, 0.95];
   const PLATE_KEEP = [1, 1, 0.8, 0];
-  const SUN_K = [1, 0.8, 0.14, 0];
+  const SUN_K = [1, 0.8, 0.14, 0.2];
 
   function update(f: SurfaceInput) {
     const { time, dt, camera, s } = f;
@@ -1682,9 +1711,9 @@ export function buildSurface(o: { low: boolean; landing: Landing; cloudTex: Text
     blend(s, SKY.fill, skyLight);
     blend(s, SKY.bounce, groundLight);
     hazeColor.copy(skyU.uHorSun.value).lerp(skyU.uMid.value, 0.5).multiplyScalar(0.8);
-    const night = smooth(2.25, 3, s);
+    const night = smooth(1.15, 3, s);
     sandU.uNight.value = night;
-    sandU.uAmbient.value.copy(skyLight).multiplyScalar(0.3 + 0.75 * night);
+    sandU.uAmbient.value.copy(skyLight).multiplyScalar(0.3 + 0.75 * night * night);
     blend(s, SKY.dust, dustCol);
     for (const m of veils) m.uniforms.uColor.value.copy(dustCol);
     devilMat.uniforms.uColor.value.copy(dustCol).multiplyScalar(0.62);
@@ -1737,18 +1766,21 @@ export function buildSurface(o: { low: boolean; landing: Landing; cloudTex: Text
       const perf = bank.meta(st.perf);
       if (perf && perf.height) {
         // How much bigger he has grown in the plate says how far he has come.
-        const fr = st.state === 0 ? 0 : st.state === 1 ? Math.min(perf.frames - 1, Math.floor(st.t * perf.fps)) : perf.frames - 1;
+        const last = perf.frames - 1;
+        const fr = st.state === 0 ? 0 : st.state === 1 ? Math.min(last, Math.floor(st.t * perf.fps)) : last;
         const h0 = perf.height[0];
         const rho = perf.height[fr] / h0;
         const D = EXIT_D0 / Math.max(rho, 0.5);
         const z = EXIT_POS.z - D;
         const onRamp = clamp((RAMP_FOOT_Z - z) / (RAMP_FOOT_Z - HATCH_Z), 0, 1);
-        const y = groundHeight(0, z) + RAMP_DROP * onRamp;
-        anchorW.set(((perf.foot[fr][0] - perf.foot[0][0]) * 1.35) / perf.height[fr], y, z);
+        const y = groundHeight(0, Math.min(z, 10.9)) + RAMP_DROP * onRamp;
+        const sideX = ((perf.foot[fr][0] - perf.foot[0][0]) * 1.35) / perf.height[fr];
+        anchorW.set(sideX, y, z);
         const idle = st.state === 2 ? bank.meta(st.idle) : null;
         if (idle && idle.height) {
           const fi = Math.floor(st.t * idle.fps) % idle.frames;
-          m = placeCard(st, anchorW, idle.foot[fi][0], idle.foot[fi][1], 1.35 / idle.height[fi], 0, 0);
+          m = placeCard(st, anchorW, idle.foot[0][0], idle.foot[0][1], 1.35 / perf.height[last], 0, 0);
+          void fi;
         } else {
           m = placeCard(st, anchorW, perf.foot[fr][0], perf.foot[fr][1], 1.35 / perf.height[fr], 0, 0);
         }
@@ -1840,6 +1872,11 @@ export function buildSurface(o: { low: boolean; landing: Landing; cloudTex: Text
     update,
     dispose() {
       bank.destroy();
+      ripple.dispose();
+      noiseTex.dispose();
+      for (const m of moonList) m.map.dispose();
+      planeG.dispose();
+      shadowG.dispose();
     },
   };
 }

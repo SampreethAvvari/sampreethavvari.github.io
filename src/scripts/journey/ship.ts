@@ -380,7 +380,22 @@ export function buildShip(opts: ShipBuildOptions): Ship {
   const RAMP_OPEN = Math.PI - Math.acos(Math.min(1, (STAND - 0.44) / RAMP_LEN));
   rampPivot.scale.y = RAMP_CLOSED;
   // The open hatch: warm light from inside, framed by the hull.
-  const doorMat = new MeshBasicMaterial({ color: new Color(0, 0, 0) });
+  const doorMat = new ShaderMaterial({
+    vertexShader: /* glsl */ `varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`,
+    fragmentShader: /* glsl */ `
+      uniform float uOpen;
+      varying vec2 vUv;
+      void main() {
+        // A lit corridor seen from outside: bright overhead, dark at the sides and floor.
+        vec2 q = vUv - vec2(0.5, 0.5);
+        float room = smoothstep(0.5, 0.18, abs(q.x)) * smoothstep(-0.52, 0.28, q.y);
+        float ceiling = exp(-pow((q.y - 0.42) / 0.09, 2.0)) * smoothstep(0.42, 0.08, abs(q.x));
+        float ribs = 0.86 + 0.14 * sin(vUv.y * 40.0);
+        vec3 c = vec3(0.012, 0.009, 0.008) + vec3(0.7, 0.36, 0.14) * room * ribs + vec3(1.5, 0.92, 0.5) * ceiling;
+        gl_FragColor = vec4(c * uOpen, 1.0);
+      }`,
+    uniforms: { uOpen: { value: 0 } },
+  });
   const doorPanel = new Mesh(new PlaneGeometry(0.8, 0.86).translate(0, -0.02, 0), doorMat);
   doorPanel.position.set(0, 0, LZ1 + 0.012);
   doorPanel.visible = false;
@@ -629,8 +644,8 @@ export function buildShip(opts: ShipBuildOptions): Ship {
     rampPivot.rotation.x = re * RAMP_OPEN;
     rampPivot.scale.y = RAMP_CLOSED + (1 - RAMP_CLOSED) * re;
     doorPanel.visible = re > 0.01;
-    doorMat.color.setRGB(1.05 * re, 0.56 * re, 0.22 * re);
-    landerGlows.setIntensity(door, re * 0.8);
+    doorMat.uniforms.uOpen.value = re;
+    landerGlows.setIntensity(door, re * 0.22);
     for (const i of flood) landerGlows.setIntensity(i, 0.5 + 1.1 * Math.max(s.gear, re));
     landerGlows.setIntensity(navL, 1.6);
     landerGlows.setIntensity(navR, 1.6);
