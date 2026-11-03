@@ -186,7 +186,7 @@ export default function Nav({ cv = "/resume" }) {
               <hr />
               <a href="/demos">Live demos</a>
               <a href="/gallery">Gallery</a>
-              <a href="/#contact">Contact</a>
+              <a href="/#ch-connect">Contact</a>
               <a href={cv}>Resume</a>
             </div>
           )}
