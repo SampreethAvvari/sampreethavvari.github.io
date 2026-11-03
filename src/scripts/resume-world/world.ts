@@ -10,6 +10,8 @@
 // The words stay in the HTML. This module draws, and moves the invisible
 // links that sit over what it draws.
 
+import { Governor } from "../gl-governor";
+import { prelink, quietShaderChecks } from "../gl-warm";
 import {
   BufferAttribute,
   BufferGeometry,
@@ -329,10 +331,12 @@ export async function mountWorld(
     renderer.dispose();
     return null;
   }
+  quietShaderChecks(renderer);
   renderer.outputColorSpace = LinearSRGBColorSpace;
   renderer.setClearColor(0x000000, 0);
   renderer.autoClear = true;
-  let dpr = Math.min(devicePixelRatio || 1, tier.dpr);
+  const baseDpr = Math.min(devicePixelRatio || 1, tier.dpr);
+  let dpr = baseDpr;
 
   const finish = new Finish(renderer, { levels: tier.bloom, samples: tier.samples });
 
@@ -379,8 +383,10 @@ export async function mountWorld(
     cv.height = 1;
   };
 
+  await nextFrame();
   const measure = document.createElement("canvas").getContext("2d")!;
   const layoutData: Layout = layoutPage(measure, data, masks);
+  await nextFrame();
   const pageTex: Texture[] = [];
   for (let i = 0; i < data.sheets.length; i++) {
     pageTex.push(tex(paintPage(layoutData, i, tier.page)));
@@ -1295,9 +1301,14 @@ export async function mountWorld(
     return cornerSet;
   };
 
-  let slowFrames = 0;
-  let sampled = 0;
-  let downSteps = 0;
+  // Fewer pixels when frames run slow and that helps, and back again when there is room.
+  const governor = new Governor({
+    steps: [1, 0.85, 0.72],
+    apply: (scale) => {
+      dpr = Math.max(1, baseDpr * scale);
+      layout();
+    },
+  });
 
   function frame(now: number, p: number, vel: number) {
     const dt = Math.min(0.05, Math.max(0.001, (now - last) / 1000));
@@ -1874,26 +1885,14 @@ export async function mountWorld(
     finish.finish({ bloom: 0.2 + speed * 0.25, chroma: speed * 1.1, exposure: 1, time });
 
     // ---- slow machine: give up pixels, not the picture
-    if (sampled < 300 && !document.hidden) {
-      sampled++;
-      if (dt > 0.03) slowFrames++;
-      if (sampled % 100 === 0) {
-        if (slowFrames > 45 && downSteps < 2 && dpr > 1) {
-          downSteps++;
-          dpr = Math.max(1, dpr * 0.8);
-          layout();
-        }
-        slowFrames = 0;
-      }
-    }
+    governor.frame(dt * 1000, Math.abs(speed) > 0.02);
   }
 
   const rtAxis = new Vector3(1, 0, 0);
 
   // ------------------------------------------------------------- compile
-  // Warm the shaders before the first visible frame, so nothing hitches.
-  renderer.compile(scene, camera);
-  await nextFrame();
+  // Warm the shaders before the first visible frame, in the background, so nothing hitches.
+  await Promise.all([prelink(renderer, scene, camera, finish.scene), finish.warm()]);
 
   const lost = (e: Event) => {
     e.preventDefault();

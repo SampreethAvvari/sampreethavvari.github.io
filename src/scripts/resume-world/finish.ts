@@ -4,6 +4,7 @@
 // canvas stays transparent where nothing is drawn, so the site's own sky
 // shows through and the page sits in the same space as every other tab.
 
+import { prelinkPasses } from "../gl-warm";
 import {
   BufferAttribute,
   BufferGeometry,
@@ -174,6 +175,17 @@ export class Finish {
       this.downs.push(new WebGLRenderTarget(4, 4, opt));
       this.ups.push(new WebGLRenderTarget(4, 4, opt));
     }
+  }
+
+  /** Link the passes in the background, so the first frame finds them ready. */
+  warm() {
+    return prelinkPasses(this.r, this.mesh, this.cam, [
+      [this.mBright, this.bright],
+      [this.mDown, this.bright],
+      [this.mUp, this.bright],
+      [this.mBlur, this.bright],
+      [this.mFinal, null],
+    ]);
   }
 
   setSize(w: number, h: number) {

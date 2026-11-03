@@ -8,6 +8,7 @@
 //   resume:transition  { direction, from, to, duration }   duration in seconds
 //   resume:hover       { kind, id, note }                   note: a stable small integer
 
+import { hasWebGL2 } from "../gl-probe";
 import { initAmbient } from "../spatial";
 import { mountMotion } from "./motion";
 import { STOPS, type WorldData } from "./types";
@@ -29,17 +30,10 @@ export function startResumeWorld(visit: AbortSignal): void | (() => void) {
   );
 
   const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
-  const hasGL = (() => {
-    try {
-      const g = document.createElement("canvas").getContext("webgl2");
-      g?.getExtension("WEBGL_lose_context")?.loseContext();
-      return !!g;
-    } catch {
-      return false;
-    }
-  })();
-  // Reduced motion and no WebGL get the same markup as a plain document.
-  if (reduced || !hasGL) {
+  const hasGL = hasWebGL2();
+  // Reduced motion and no WebGL get the same markup as a plain document, and so
+  // does a page whose script came so late the plain page has already taken over.
+  if (reduced || !hasGL || document.documentElement.classList.contains("no-stage")) {
     root.classList.remove("is-live");
     return;
   }
@@ -490,10 +484,12 @@ export function startResumeWorld(visit: AbortSignal): void | (() => void) {
   };
 
   // ------------------------------------------------------------ the 3D world
-  // Lazy: three and the world arrive after the first paint.
+  // Lazy: three and the world arrive after the first paint. The code starts down
+  // the wire now; the world starts when there is a moment.
+  const code = import("./world");
   const boot = () => {
     if (signal.aborted) return;
-    import("./world")
+    code
       .then(async (m) => {
         if (signal.aborted) return;
         const w = await m.mountWorld(
