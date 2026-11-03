@@ -8,7 +8,7 @@
 // it), and 11 small dishes further out are the eleven sources.
 
 import { Group, Mesh, Vector3 } from "three";
-import { assemble, ball, cone, cyl, damp, faceted, fibSphere, glow, ico, instanced, mat, placeAlong, pointCloud, pointsMaterial, rng, surface, tor, type Part, type WorldBuilder, NOISE } from "../toolkit";
+import { assemble, cone, cyl, damp, fibSphere, glow, ico, instanced, mat, placeAlong, pointCloud, pointsMaterial, rng, surface, tor, type Part, type WorldBuilder, NOISE } from "../toolkit";
 
 const NUC = 5;
 
@@ -20,7 +20,7 @@ export const buildComet: WorldBuilder = (shared, sun) => {
   const uPtr = { value: new Vector3(0, 999, 0) };
   const uPtrOn = { value: 0 };
   const uNeedles = { value: 0 };
-  const uRuns = { value: 0 };
+  
 
   // ---- the rock
   const rock = new Mesh(ico(NUC, 32), surface(shared, sun, {
@@ -142,7 +142,7 @@ export const buildComet: WorldBuilder = (shared, sun) => {
     return { p: pointCloud(p, { aD: [a, 4] }, m), uH };
   };
   const dust = mkTail(shared.low ? 5000 : 15000, 0.06, 0.13, 0.62, "vec3(0.72, 0.92, 1.4)", "vec3(0.3, 0.46, 0.92)", 190);
-  const runs = mkTail(1008, 0.12, 0.13, 2.1, "vec3(2.2, 2.6, 3.2)", "vec3(0.9, 1.3, 2.1)", 170);
+  const runs = mkTail(1008, 0.09, 0.1, 1.5, "vec3(2.2, 2.6, 3.2)", "vec3(0.9, 1.3, 2.1)", 170);
   group.add(dust.p, runs.p);
 
   // the coma
@@ -155,7 +155,7 @@ export const buildComet: WorldBuilder = (shared, sun) => {
   const fenceParts = [];
   for (let i = 0; i < 16; i++) {
     const arc = ((Math.PI * 2) / 16) * 0.8;
-    fenceParts.push({ g: tor(21, 0.075, 6, 16, arc), m: mat(0, 0, 0, 0, 0, (i / 16) * Math.PI * 2) });
+    fenceParts.push({ g: tor(21, 0.04, 6, 16, arc), m: mat(0, 0, 0, 0, 0, (i / 16) * Math.PI * 2) });
   }
   const fence = new Mesh(assemble(fenceParts), fenceMat);
   fence.rotation.set(1.18, 0.24, 0);
@@ -192,8 +192,6 @@ export const buildComet: WorldBuilder = (shared, sun) => {
   const yA = new Vector3(0, 1, 0);
   const tv = new Vector3();
   let rot = 0;
-  void ball;
-  void faceted;
 
   return {
     group,

@@ -9,7 +9,7 @@
 // ever goes back out. 17 fins on the mast are the 17 days to production.
 
 import { Group, Mesh, Vector3 } from "three";
-import { NOISE, ball, beams, box, cyl, damp, faceted, glow, instanced, lerp, mat, rng, surface, tor, assemble, type Part, type WorldBuilder } from "../toolkit";
+import { ball, beams, box, cyl, damp, faceted, glow, instanced, mat, rng, surface, tor, assemble, type Part, type WorldBuilder } from "../toolkit";
 
 const R = 22;
 const W = 6.4;
@@ -250,8 +250,6 @@ export const buildRing: WorldBuilder = (shared, sun) => {
   ];
   let rot = 0.3;
   let shuttleT = 0;
-  void NOISE;
-  void lerp;
 
   const toGroup = (v: Vector3, inSpin: boolean) => {
     if (inSpin) v.applyAxisAngle(tv.set(1, 0, 0), rot);

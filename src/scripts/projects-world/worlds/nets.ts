@@ -8,7 +8,7 @@
 // is the log: nothing in it. 67 beads are the leads that got their missing fields.
 // Move the pointer over the nets and it throws sparks where you point.
 
-import { AdditiveBlending, BufferAttribute, DoubleSide, Group, InstancedMesh, Matrix4, Mesh, Vector3, Vector4 } from "three";
+import { BufferAttribute, DoubleSide, Group, InstancedMesh, Matrix4, Mesh, Vector3, Vector4 } from "three";
 import { ball, beams, box, cyl, damp, faceted, glow, ico, instanced, placeAlong, pointCloud, pointsMaterial, rng, surface, tor, type BeamItem, type Part, type U, type WorldBuilder } from "../toolkit";
 
 const SHELLS = [17, 12.4, 8];
@@ -174,8 +174,6 @@ export const buildNets: WorldBuilder = (shared, sun) => {
   board.position.z = -0.25;
   leadHold.add(board, leads);
   group.add(leadHold);
-  const link = beams([{ a: new Vector3(0, 0, 0), b: new Vector3(1, 0, 0), color: "#ffd9a8", i: 0.7, w: 0.05 }], shared);
-  void link;
 
   // ---- the cost: one small coin
   const uCoin = { value: 0 };
@@ -337,5 +335,3 @@ export const buildNets: WorldBuilder = (shared, sun) => {
     },
   };
 };
-
-void AdditiveBlending;

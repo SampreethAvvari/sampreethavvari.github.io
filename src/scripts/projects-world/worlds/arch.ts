@@ -16,8 +16,7 @@ const DZ = 21;
 const ZC = 2;
 const MAX = 1.82; // half the arch's sweep, in radians
 
-const archAt = (phi: number, grow = 0, out = new Vector3()) => out.set(Math.sin(phi) * (WX + grow), 0, ZC - Math.cos(phi) * (DZ + grow));
-const SPIN_Y = 0;
+const archAt = (ta: number, grow = 0, out = new Vector3()) => out.set(Math.sin(ta) * (WX + grow), 0, ZC - Math.cos(ta) * (DZ + grow));
 
 export const buildArch: WorldBuilder = (shared, sun) => {
   const group = new Group();
@@ -31,7 +30,7 @@ export const buildArch: WorldBuilder = (shared, sun) => {
   // ---- the stones
   const n = 32;
   const stoneMat = surface(shared, sun, {
-    color: "#efe2cc",
+    color: "#a89a84",
     metal: 0.08,
     rough: 0.62,
     data: true,
@@ -39,11 +38,11 @@ export const buildArch: WorldBuilder = (shared, sun) => {
     uniforms: { uSweep, uRead, uPtr, uPtrOn, uStones },
     head: /* glsl */ `uniform float uSweep; uniform float uRead; uniform vec3 uPtr; uniform float uPtrOn; uniform float uStones; varying float vLit; varying float vGot; varying float vPtr;`,
     vertex: /* glsl */ `
-    float phi = d.w;
+    float ta = d.w;
     vec3 c = (instanceMatrix * vec4(0.0, 0.0, 0.0, 1.0)).xyz;
-    float dd = phi - uSweep;
+    float dd = ta - uSweep;
     vLit = exp(-dd * dd * 90.0);
-    vGot = step(phi, uSweep) * uRead;
+    vGot = step(ta, uSweep) * uRead;
     vPtr = smoothstep(7.0, 1.0, distance(c.xz, uPtr.xz)) * uPtrOn;
     // the stones lift where the pointer is, and as the blade passes
     if (p.y > 0.0) p.y += (vLit * 0.13 + vPtr * 0.26);
@@ -57,26 +56,26 @@ export const buildArch: WorldBuilder = (shared, sun) => {
     glowCol = mix(vec3(0.72, 0.56, 1.5), vec3(2.2, 2.4, 3.8), vLit);
     glow = groove * front * (0.1 + vGot * 0.82 + vLit * 5.5 + vPtr * 1.7 + uStones * 0.9) * (0.4 + h * 0.6);
     glow += vLit * 0.12;
-    base *= 0.62 + 0.38 * (h);
+    base *= 0.42 + 0.58 * h;
     `,
   });
   const stoneGeo = faceted(box(1, 1, 1));
   const stones = instanced(stoneGeo, stoneMat, n, (i, m, d) => {
     const t = (i + 0.5) / n;
-    const phi = lerp(-MAX, MAX, t);
-    const dist = Math.abs(phi) / MAX;
+    const ta = lerp(-MAX, MAX, t);
+    const dist = Math.abs(ta) / MAX;
     const wid = lerp(1.6, 3.2, smooth(0.25, 0.95, dist)); // narrow at the crown, broad at the back
     const hgt = lerp(8.2, 5.2, smooth(0.1, 1, dist)) * (0.94 + r() * 0.12);
     const dep = lerp(1.6, 2.5, dist);
-    const pos = archAt(phi);
-    const tan = new Vector3(Math.cos(phi) * WX, 0, Math.sin(phi) * DZ).normalize();
+    const pos = archAt(ta);
+    const tan = new Vector3(Math.cos(ta) * WX, 0, Math.sin(ta) * DZ).normalize();
     const out = new Vector3(tan.z, 0, -tan.x);
     m.makeBasis(tan, new Vector3(0, 1, 0), out);
     // lean a little inward, like real teeth do
     m.multiply(mat(0, 0, 0, 0.05 * (r() - 0.5), 0, 0.07 * (r() - 0.5)));
     m.scale(new Vector3(wid, hgt, dep));
     m.setPosition(pos.x, hgt / 2, pos.z);
-    d[3] = phi;
+    d[3] = ta;
   });
   group.add(stones);
 
@@ -85,9 +84,9 @@ export const buildArch: WorldBuilder = (shared, sun) => {
   const pl = new Float32Array((seg + 1) * 2 * 3);
   const idx: number[] = [];
   for (let i = 0; i <= seg; i++) {
-    const phi = lerp(-MAX - 0.05, MAX + 0.05, i / seg);
-    const a = archAt(phi, 3.5);
-    const b = archAt(phi, -3.4);
+    const ta = lerp(-MAX - 0.05, MAX + 0.05, i / seg);
+    const a = archAt(ta, 3.5);
+    const b = archAt(ta, -3.4);
     pl.set([a.x, 0, a.z, b.x, 0, b.z], i * 6);
     if (i < seg) idx.push(i * 2, i * 2 + 1, i * 2 + 2, i * 2 + 1, i * 2 + 3, i * 2 + 2);
   }
@@ -114,10 +113,10 @@ export const buildArch: WorldBuilder = (shared, sun) => {
   // ---- the dial: 0 to 200, in ticks along the outer edge
   const dial: BeamItem[] = [];
   for (let i = 0; i <= 200; i++) {
-    const phi = lerp(-MAX, MAX, i / 200);
+    const ta = lerp(-MAX, MAX, i / 200);
     const major = i % 50 === 0;
-    const a = archAt(phi, 7.3);
-    const b = archAt(phi, major ? 9.1 : i % 10 === 0 ? 8.3 : 7.8);
+    const a = archAt(ta, 7.3);
+    const b = archAt(ta, major ? 9.1 : i % 10 === 0 ? 8.3 : 7.8);
     dial.push({ a: a.setY(0.03), b: b.setY(0.03), color: major ? "#efe9ff" : "#ad9ff0", i: major ? 2.4 : 0.9, w: major ? 0.05 : 0.02, seed: i / 200 });
   }
   const uDial = { value: 0 };
@@ -167,13 +166,12 @@ void main() {
   gate.add(new Mesh(tor(3.2, 0.13, 8, 64), surface(shared, sun, { color: "#e8e3f5", metal: 0.8, rough: 0.26, glow: 0.4, uniforms: { uGate }, fragHead: "uniform float uGate;", frag: "glowCol = vec3(1.6, 1.5, 2.8); glow *= 1.0 + uGate * 8.0;" })));
   group.add(gate);
   const moonMat = surface(shared, sun, { color: "#f1eefa", metal: 0.12, rough: 0.45, glow: 0.62, frag: "glowCol = vec3(1.2, 1.2, 1.8);" });
-  const reports = [0, 1].map((i) => {
+  const reports = [0, 1].map(() => {
     const g = new Group();
     g.add(new Mesh(ball(0.9, 20, 14), moonMat));
     g.add(glow("#d9d0ff", 4.2, { intensity: 0.5 }));
     group.add(g);
     return g;
-    void i;
   });
   const shot = beams([{ a: new Vector3(0, 3.4, gateZ), b: new Vector3(0, 3.4, gateZ + 150), color: "#efe9ff", w: 0.22 }], shared, {
     head: "uniform float uShot;",
@@ -217,8 +215,6 @@ void main() {
   pad.add(new Mesh(cyl(2.6, 2.6, 0.14, 32), surface(shared, sun, { color: "#3a3b45", metal: 0.86, rough: 0.34 })));
   const spark = glow("#ffffff", 1.9, { intensity: 3 });
   pad.add(spark);
-  const uPad = { value: 0 };
-  void uPad;
   group.add(pad);
 
   group.add(glow("#b5a3ff", 90, { intensity: 0.014, power: 2.8 }));
@@ -247,11 +243,11 @@ void main() {
       const q = (clock % LOOP) / LOOP;
       // 0 to 0.62: the blade crosses the arch and back to its start
       const sweepK = Math.min(1, q / 0.62);
-      const phi = lerp(-MAX - 0.3, MAX + 0.3, sweepK);
-      uSweep.value = phi;
+      const ta = lerp(-MAX - 0.3, MAX + 0.3, sweepK);
+      uSweep.value = ta;
       uRead.value = q < 0.93 ? 1 : 1 - (q - 0.93) / 0.07;
       // the blade stands square to the arch where it is
-      bladeHold.rotation.y = -(Math.atan2(archAt(phi).x, -(archAt(phi).z - ZC)) - Math.PI / 2);
+      bladeHold.rotation.y = -(Math.atan2(archAt(ta).x, -(archAt(ta).z - ZC)) - Math.PI / 2);
       (bladeMat.uniforms.uOn as { value: number }).value = sweepK < 1 ? smooth(0, 0.04, sweepK) * smooth(1, 0.96, sweepK) : 0;
       bladeEdge.visible = sweepK < 1;
       (dialMesh.material as ShaderMaterial).uniforms.uFill.value = sweepK * 0.64;
@@ -283,7 +279,6 @@ void main() {
 
       archAt(0.95, 8.3, parts[4].at);
       archAt(-0.55, 0, parts[5].at).setY(6.4);
-      void SPIN_Y;
     },
   };
 };

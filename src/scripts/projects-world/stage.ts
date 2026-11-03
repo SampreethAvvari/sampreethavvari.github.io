@@ -120,14 +120,13 @@ export function mountProjectsWorld() {
     const idAt = (i: number) => (i === 0 ? "system" : i <= worlds.length ? worlds[i - 1].id : "belt");
     const setStage = (st: number) => {
       if (st === active) return;
-      const from = active;
       active = st;
       emit("projects:world", { index: st, id: idAt(st), accent: accentAt(st) });
       if (countEl) countEl.textContent = String(clamp(st, 0, worlds.length)).padStart(2, "0");
       pins.forEach((p, i) => (i + 1 === st ? p.setAttribute("aria-current", "step") : p.removeAttribute("aria-current")));
       root.classList.toggle("is-touring", st > 0);
+      root.classList.toggle("is-belt", st === N - 1);
       document.documentElement.classList.toggle("pw-touring", st > 0 && st <= worlds.length);
-      void from;
     };
     let transitionFrom = -1;
     const update = () => {
@@ -475,6 +474,23 @@ export function mountProjectsWorld() {
       );
     });
 
+    // the skip links jump straight there, not through the whole flight
+    root.querySelectorAll<HTMLAnchorElement>('a[href="#all"]').forEach((a) => {
+      a.addEventListener(
+        "click",
+        (e) => {
+          const target = document.getElementById("all");
+          if (!target) return;
+          e.preventDefault();
+          stopGlide();
+          clearTimeout(settleLater);
+          scrollTo({ top: target.getBoundingClientRect().top + scrollY, ...inst });
+          target.querySelector<HTMLElement>("[data-ax-q]")?.focus({ preventScroll: true });
+        },
+        { signal },
+      );
+    });
+
     // open what a click means
     const open = (id: string, href: string | null | undefined) => {
       if (!href) return;
@@ -725,10 +741,10 @@ export function mountProjectsWorld() {
         const y = f.bodies[i * 4 + 1];
         const front = f.bodies[i * 4 + 2] > 0.5;
         const rad = f.bodies[i * 4 + 3];
-        const on = inBelt && front && rad > (phone ? 26 : 22) && x > 10 && x < vw - 10 && y > 84 && y < vh - 40;
-        a.style.opacity = on ? smooth(22, 56, rad).toFixed(2) : "0";
+        const on = inBelt && f.g < N - 0.1 && front && rad > 58 && x > 10 && x < vw - 10 && y > 84 && y < vh - 40;
+        a.style.opacity = on ? smooth(58, 92, rad).toFixed(2) : "0";
         a.style.pointerEvents = on ? "auto" : "none";
-        if (on) a.style.transform = `translate3d(${Math.min(x + rad * 0.8, vw - (phone ? 130 : 220)).toFixed(1)}px, ${(y - 12).toFixed(1)}px, 0)`;
+        if (on) a.style.transform = `translate3d(${clamp(x + rad * 0.72, 12, vw - (phone ? 190 : 240)).toFixed(1)}px, ${clamp(y - 14, 84, vh - 120).toFixed(1)}px, 0)`;
       });
 
       // ---- leader lines from the numbers to the parts they stand for

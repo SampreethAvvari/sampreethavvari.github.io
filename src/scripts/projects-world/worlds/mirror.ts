@@ -14,7 +14,6 @@ import {
   BufferAttribute,
   BufferGeometry,
   CircleGeometry,
-  Color,
   DoubleSide,
   Group,
   LineSegments,
@@ -23,7 +22,7 @@ import {
   ShaderMaterial,
   Vector3,
 } from "three";
-import { NOISE, ball, beams, box, damp, faceted, glow, instanced, placeAlong, rng, surface, type BeamItem, type Part, type WorldBuilder } from "../toolkit";
+import { NOISE, ball, beams, box, damp, faceted, glow, instanced, rng, surface, type BeamItem, type Part, type WorldBuilder } from "../toolkit";
 
 const R = 13;
 
@@ -108,7 +107,6 @@ export const buildMirror: WorldBuilder = (shared, sun) => {
     ${plateVertexPlaced}
     q.xz += vec2(sin(q.y * 1.3 + uTime * 0.9), cos(q.y * 1.1 - uTime * 0.7)) * 0.05 * abs(q.y);
   `,
-    fragHead: /* glsl */ `uniform vec3 uTint;`,
     frag: /* glsl */ `
     glowCol = vec3(0.45, 0.7, 1.4);
     glow *= 0.8;
@@ -120,8 +118,6 @@ export const buildMirror: WorldBuilder = (shared, sun) => {
   const spinB = new Group();
   spinB.scale.y = -1;
   const lowerGeo = plateGeo.clone();
-  const r2 = rng(101);
-  void r2;
   const lower = instanced(lowerGeo, lowerMat, rows.length, (i, m, d) => {
     const t = rows[i];
     const n = new Vector3(Math.cos(t.lat) * Math.cos(t.lon), Math.sin(t.lat), Math.cos(t.lat) * Math.sin(t.lon));
@@ -149,7 +145,6 @@ export const buildMirror: WorldBuilder = (shared, sun) => {
     vertexShader: /* glsl */ `
 varying vec3 vL; varying vec3 vW;
 void main() {
-  vL = position.xzy * vec3(1.0, 1.0, 1.0);
   vL = vec3(position.x, 0.0, -position.y);
   vec4 w = modelMatrix * vec4(position, 1.0);
   vW = w.xyz;
@@ -291,7 +286,6 @@ void main() {
   const moonGeo = ball(1.15, 12, 8);
   const moonLens = surface(shared, sun, { color: "#ffffff", metal: 0, rough: 0.9, glow: 3, frag: "glowCol = vec3(0.8, 1.2, 2.4);" });
   const moons: { up: Group; down: Group; r: number; a: number; w: number; y: number }[] = [];
-  const moonLinks: BeamItem[] = [];
   const mkMoon = () => {
     const g = new Group();
     const body = new Mesh(moonGeo, moonMat);
@@ -306,7 +300,6 @@ void main() {
     const down = mkMoon();
     group.add(up, down);
     moons.push({ up, down, r: 26 + i * 3.2, a: (i / 4) * Math.PI * 2 + 0.5, w: 0.05 - i * 0.006, y: 7 + (i % 2) * 3 });
-    moonLinks.push({ a: new Vector3(), b: new Vector3(), color: "#8db8ff", i: 0.8, w: 0.03 });
   }
   const moonLine = new BufferGeometry();
   const moonLineArr = new Float32Array(4 * 2 * 3);

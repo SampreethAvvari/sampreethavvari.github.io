@@ -6,7 +6,7 @@
 // and into a scoring ring cut 40, 40 and 20 around the core. When one gets there
 // a jet fires: the report goes out. The pointer stirs the disk.
 
-import { Color, Group, Mesh, MeshBasicMaterial, PlaneGeometry, ShaderMaterial, AdditiveBlending, Vector3 } from "three";
+import { Group, Mesh, MeshBasicMaterial, PlaneGeometry, ShaderMaterial, AdditiveBlending, Vector3 } from "three";
 import { assemble, ball, beams, box, damp, glow, instanced, mat, pointCloud, pointsMaterial, rng, surface, tor, type Part, type WorldBuilder } from "../toolkit";
 
 const INNER = 6.2;
@@ -227,7 +227,7 @@ void main() {
   });
   const dayGroup = new Group();
   dayGroup.add(days);
-  const dayArc = new Mesh(tor(44, 0.012, 5, 64, 1.3).rotateX(Math.PI / 2).rotateY(0.5), surface(shared, sun, { color: "#ffffff", glow: 0.5, frag: "glowCol = vec3(1.2, 1.3, 1.6);" }));
+  const dayArc = new Mesh(tor(44, 0.006, 5, 64, 1.3).rotateX(Math.PI / 2).rotateY(0.5), surface(shared, sun, { color: "#3a3f4a", glow: 0.1, frag: "glowCol = vec3(1.2, 1.3, 1.6);" }));
   dayArc.position.y = 3.4;
   dayGroup.add(dayArc);
   tilt.add(dayGroup);
@@ -243,9 +243,6 @@ void main() {
     { key: "gates", at: new Vector3(), r: 5 },
   ];
   const tv = new Vector3();
-  const cc = new Color();
-  void cc;
-  let spinT = 0;
   let jetT = 0;
 
   return {
@@ -254,7 +251,6 @@ void main() {
     parts,
     update(c) {
       const dt = c.dt;
-      spinT += dt;
       score.rotation.y = c.t * 0.05;
       uPtrOn.value = damp(uPtrOn.value, c.ptrOn, 5, dt);
       uPtr.value.copy(c.ptr);
@@ -278,7 +274,6 @@ void main() {
       parts[3].at.set(Math.cos(0.15 - da) * 44, 3.4, Math.sin(0.15 - da) * 44).applyEuler(tilt.rotation);
       parts[4].at.set(Math.cos(3.6) * 31, 0, Math.sin(3.6) * 31).applyEuler(tilt.rotation);
       parts[5].at.copy(gates[1].position).setY(3.6).applyEuler(tilt.rotation);
-      void spinT;
     },
   };
 };

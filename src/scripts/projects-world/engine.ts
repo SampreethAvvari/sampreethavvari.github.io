@@ -105,7 +105,7 @@ export async function mountSystem(canvas: HTMLCanvasElement, o: SystemOptions): 
   // every material writes linear light; the final pass does its own conversion
   renderer.outputColorSpace = LinearSRGBColorSpace;
   renderer.setClearColor(0x000000, 1);
-  renderer.debug.checkShaderErrors = !!import.meta.env?.DEV;
+  renderer.debug.checkShaderErrors = false;
 
   const shared: Shared = {
     time: { value: 0 },
@@ -509,8 +509,8 @@ void main() {
     project(star.group.position, info.star, 0, STAR_R * 1.4);
 
     // the belt only draws when it is part of the picture
-    belt.group.visible = overview > 0.01 || g > STAGE_COUNT - 1.7;
-    belt.update(o.reduced ? time * 0.2 : time, dt, camera.position, g, heatPick?.kind === "body" ? heatPick.body : -1);
+    belt.group.visible = overview > 0.01 || g > STAGE_COUNT - 1.14;
+    belt.update(o.reduced ? time * 0.2 : time, dt, camera.position, heatPick?.kind === "body" ? heatPick.body : -1);
     belt.bodies.forEach((b, i) => project(b.world, info.bodies, i * 4, b.radius));
 
     typeRing.update(overview, time);

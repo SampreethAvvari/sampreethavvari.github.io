@@ -223,7 +223,7 @@ const SHAPES: Record<string, () => Piece[]> = {
 
 export function buildBelt(shared: Shared, ids: string[]) {
   const group = new Group();
-  let foreground: Mesh | null = null;
+  const sweepers: Group[] = [];
   const r = rng(909);
   const sun: U<Vector3> = { value: new Vector3(0, 0, 1) };
 
@@ -247,18 +247,17 @@ export function buildBelt(shared: Shared, ids: string[]) {
     p = spinAround(p, axis, uTime * (0.03 + s * 0.11) + s * 20.0);
     `,
   });
-  const rockN = Math.round(shared.low ? 900 : 2800);
+  const rockN = Math.round(shared.low ? 1100 : 3600);
   const rocks = instanced(ico(1, shared.low ? 1 : 2), rockMat, rockN, (i, m, d) => {
     const a = r() * Math.PI * 2;
     let rad = lerp(BELT_INNER, BELT_OUTER, (r() + r()) / 2);
-    let y = (r() + r() + r() - 1.5) * 15;
+    let y = (r() + r() + r() - 1.5) * 34;
     const size = 0.26 + Math.pow(r(), 5.5) * 5.4;
     // the corridor the tour flies down stays clear of anything big
     const wrap = Math.PI * 2 * Math.floor((BELT_START - 0.12) / (Math.PI * 2));
     const inSweep = a > BELT_START - 0.12 - wrap && a < BELT_START + BELT_SWEEP * 1.14 - wrap;
-    if (inSweep && size > 0.6 && Math.abs(rad - BELT_R) < 52) {
-      rad = BELT_R + Math.sign(rad - BELT_R || 1) * (52 + r() * 40);
-      y *= 1.5;
+    if (inSweep && size > 0.5 && Math.abs(rad - BELT_R) < 32 && Math.abs(y) < 22) {
+      rad = BELT_R + Math.sign(rad - BELT_R || 1) * (32 + r() * 34);
     }
     m.makeScale(size, size, size);
     m.setPosition(Math.cos(a) * rad, y, Math.sin(a) * rad);
@@ -296,7 +295,6 @@ export function buildBelt(shared: Shared, ids: string[]) {
       d[0] = d[1] = d[2] = 0.72;
     });
     group.add(fore);
-    foreground = fore;
   }
 
   // ---- dust
@@ -306,7 +304,7 @@ export function buildBelt(shared: Shared, ids: string[]) {
   for (let i = 0; i < n; i++) {
     const ang = r() * Math.PI * 2;
     const rad = lerp(BELT_INNER - 30, BELT_OUTER + 30, (r() + r() + r()) / 3);
-    pos.set([Math.cos(ang) * rad, (r() + r() - 1) * 14, Math.sin(ang) * rad], i * 3);
+    pos.set([Math.cos(ang) * rad, (r() + r() - 1) * 30, Math.sin(ang) * rad], i * 3);
     a[i] = r();
   }
   const dustMat = pointsMaterial(shared, {
@@ -322,26 +320,24 @@ export function buildBelt(shared: Shared, ids: string[]) {
 
   // ---- the named bodies
   const bodyMat = surface(shared, sun, {
-    color: "#d6dbe4",
-    metal: 0.42,
-    rough: 0.38,
+    color: "#e4e8ef",
+    metal: 0.3,
+    rough: 0.32,
     data: true,
     frag: "glowCol = vec3(0.95, 1.3, 2.3);",
   });
-  const uHot = { value: 0 };
-  void uHot;
   type Body = { id: string; hold: Group; world: Vector3; radius: number; spin: number; heat: number; halo: Mesh };
   const bodies: Body[] = [];
-  void foreground;
+  // left and right of the lane, high and low, so each passes on its own
   const sides = [
-    [19, 4],
-    [-21, -5],
-    [17, -8],
-    [-18, 8],
-    [24, 2],
-    [-24, -2],
-    [18, 7],
-    [-19, -8],
+    [13, 6.5],
+    [-14, -7],
+    [12, -8],
+    [-13, 8],
+    [15, 2.5],
+    [-15, -3],
+    [12.5, 8],
+    [-12.5, -8],
   ];
   ids.forEach((id, i) => {
     const shape = SHAPES[id];
@@ -361,8 +357,6 @@ export function buildBelt(shared: Shared, ids: string[]) {
     if (id === "cbct-scan-validator") {
       // a blade of light goes over this moon, again and again
       const blade = beams([{ a: new Vector3(-5.6, 0, 0), b: new Vector3(5.6, 0, 0), color: "#dff0ff", i: 2.2, w: 0.09 }], shared, {
-        head: "uniform float uB;",
-        uniforms: { uB: { value: 1 } },
         chunk: "i *= 1.0 - abs(2.0 * t - 1.0) * 0.3;",
       });
       const sweep = new Group();
@@ -374,6 +368,32 @@ export function buildBelt(shared: Shared, ids: string[]) {
     bodies.push({ id, hold, world: new Vector3(), radius: 5.5, spin: 0.04 + r() * 0.09, heat: 0, halo });
   });
 
+  // two lines of small lights mark the lane
+  {
+    const lamps = 150;
+    const lp = new Float32Array(lamps * 2 * 3);
+    const la = new Float32Array(lamps * 2);
+    for (let i = 0; i < lamps; i++) {
+      const ang = BELT_START - 0.05 + (i / lamps) * BELT_SWEEP * 1.22;
+      [-20, 20].forEach((off, k) => {
+        lp.set([Math.cos(ang) * (BELT_R + off), -4.5, Math.sin(ang) * (BELT_R + off)], (i * 2 + k) * 3);
+        la[i * 2 + k] = i;
+      });
+    }
+    const lampMat = pointsMaterial(shared, {
+      head: "attribute float aI;",
+      maxSize: 7,
+      vertex: /* glsl */ `
+      // a pulse runs down the lane, the way the tour is going
+      float p = fract(aI / 150.0 * 6.0 - uTime * 0.16);
+      col = mix(vec3(0.22, 0.42, 1.0), vec3(1.5, 2.1, 3.4), pow(p, 12.0));
+      size = 0.3;
+      a = 1.4;
+      `,
+    });
+    group.add(pointCloud(lp, { aI: [la, 1] }, lampMat));
+  }
+
   const sunV = new Vector3();
   return {
     group,
@@ -381,11 +401,10 @@ export function buildBelt(shared: Shared, ids: string[]) {
     setAngle(a2: number) {
       group.rotation.y = -a2;
     },
-    update(t: number, dt: number, cam: Vector3, g: number, hot: number) {
+    update(t: number, dt: number, cam: Vector3, hot: number) {
       // the belt's light always comes from the star; each rock takes the mean
       sunV.copy(cam).setY(0).negate().normalize();
       sun.value.copy(sunV);
-      void g;
       sweepers.forEach((s) => {
         s.position.y = Math.sin(t * 0.8) * 3.6;
         s.rotation.y = t * 0.2;
@@ -401,5 +420,4 @@ export function buildBelt(shared: Shared, ids: string[]) {
   };
 }
 
-const sweepers: Group[] = [];
 const yAxis = new Vector3(0, 1, 0);

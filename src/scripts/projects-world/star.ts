@@ -5,7 +5,6 @@
 
 import {
   AdditiveBlending,
-  BackSide,
   BufferAttribute,
   CatmullRomCurve3,
   Color,
@@ -26,6 +25,8 @@ export const STAR_R = 30;
 
 export function buildStar(shared: Shared) {
   const group = new Group();
+  // fewer octaves where the star can fill a phone's screen
+  const FINE = shared.low ? "fbm3" : "fbm5";
   const uHeat = { value: 0 };
 
   // the face: boiling granules, dark at the limb
@@ -48,7 +49,7 @@ void main() {
   vec3 d = normalize(vP);
   float t = uTime * 0.035;
   vec3 warp = vec3(fbm3(d * 3.0 + t), fbm3(d * 3.0 + 7.0 - t), fbm3(d * 3.0 + 13.0 + t * 0.5));
-  float g = fbm5(d * 7.0 + warp * 2.4 + vec3(0.0, t * 1.5, 0.0));
+  float g = ${FINE}(d * 7.0 + warp * 2.4 + vec3(0.0, t * 1.5, 0.0));
   float fine = fbm3(d * 34.0 + warp * 5.0 - t * 2.0);
   float nv = max(dot(normalize(vN), normalize(vV)), 0.0);
   float limb = pow(nv, 0.42);
@@ -92,7 +93,7 @@ void main() {
   float inner = 0.1579; // the star's edge, in units of this quad
   float x = max(r - inner, 0.0) / (1.0 - inner);
   vec3 q = vec3(cos(a) * 2.6, sin(a) * 2.6, uTime * 0.04);
-  float streak = fbm5(q + vec3(0.0, 0.0, x * 0.6));
+  float streak = ${FINE}(q + vec3(0.0, 0.0, x * 0.6));
   float fine = fbm3(vec3(cos(a) * 9.0, sin(a) * 9.0, uTime * 0.07));
   float s = smoothstep(0.28, 0.78, streak) * 0.75 + smoothstep(0.36, 0.76, fine) * 0.32;
   float fall = exp(-x * (12.0 - s * 8.0));
@@ -185,10 +186,6 @@ void main() {
   group.add(ring);
 
   const parts: Part[] = [{ key: "services", at: new Vector3(STAR_R * 0.7, STAR_R * 0.7, 0), r: STAR_R }];
-  // the system's only light; a back side shell keeps depth clean behind the corona
-  const backShell = new Mesh(new SphereGeometry(STAR_R * 1.02, 24, 16), new ShaderMaterial({ side: BackSide, colorWrite: false, depthWrite: false, vertexShader: "void main(){gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);}", fragmentShader: "void main(){gl_FragColor=vec4(0.0);}" }));
-  backShell.visible = false;
-  group.add(backShell);
 
   return {
     group,

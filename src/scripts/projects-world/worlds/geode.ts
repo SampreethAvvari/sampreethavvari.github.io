@@ -6,7 +6,7 @@
 // lines hung on them: price, tier, label and price book version, frozen where
 // they were saved. Around it, 14 and a half ticks: the hours to v1.0.0.
 
-import { AdditiveBlending, BufferAttribute, BufferGeometry, DoubleSide, Group, Mesh, Vector3 } from "three";
+import { BufferAttribute, BufferGeometry, DoubleSide, Group, Mesh, Vector3 } from "three";
 import { assemble, ball, beams, box, cone, cyl, damp, faceted, glow, ico, instanced, mat, rng, surface, tor, fibSphere, type BeamItem, type Part, type WorldBuilder } from "../toolkit";
 
 const R = 12;
@@ -20,6 +20,7 @@ export const buildGeode: WorldBuilder = (shared, sun) => {
   const uPtrOn = { value: 0 };
   const uOpen = { value: 0.1 };
   const uFire = { value: 0.5 };
+  const uInside = { value: 0 };
 
   // ---- facets: a real cut stone. Each face is a plane, clipped against every
   // other plane, so edges are straight and the faces meet.
@@ -91,7 +92,7 @@ export const buildGeode: WorldBuilder = (shared, sun) => {
     additive: true,
     side: DoubleSide,
     envI: 1.4,
-    uniforms: { uPtr, uPtrOn, uOpen, uFire },
+    uniforms: { uPtr, uPtrOn, uOpen, uFire, uInside },
     head: /* glsl */ `attribute vec4 aCenter; attribute float aEdge; uniform vec3 uPtr; uniform float uPtrOn; uniform float uOpen; varying float vEdge; varying float vOpen; varying vec3 vCtr; varying float vSc; varying float vR;`,
     vertex: /* glsl */ `
     vec3 cdir = aCenter.xyz;
@@ -108,7 +109,7 @@ export const buildGeode: WorldBuilder = (shared, sun) => {
     vSc = length(modelMatrix[0].xyz);
     vR = aCenter.w;
     `,
-    fragHead: /* glsl */ `varying float vEdge; varying float vOpen; uniform float uFire; varying vec3 vCtr; varying float vSc; varying float vR;`,
+    fragHead: /* glsl */ `varying float vEdge; varying float vOpen; uniform float uFire; uniform float uInside; varying vec3 vCtr; varying float vSc; varying float vR;`,
     frag: /* glsl */ `
     base = vec3(0.68, 0.82, 1.0);
     `,
@@ -122,10 +123,13 @@ export const buildGeode: WorldBuilder = (shared, sun) => {
     float fire = exp(-miss * miss * 0.14) * (0.42 + uFire * 0.7);
     float sparkle = 0.55 + 0.45 * sin(vR * 60.0 + uTime * 0.3);
     vec3 thru = textureCube(tEnv, rd).rgb * vec3(0.8, 0.9, 1.0) * 0.9;
-    col = col * (0.05 + F * 0.8) + thru * 0.32;
+    col = col * (0.04 + F * 0.7) + thru * (0.2 - uInside * 0.16);
     col += vec3(3.4, 1.5, 0.36) * fire * fire * sparkle * 0.9;
-    col += vec3(0.012, 0.024, 0.05);
-    col += vec3(0.62, 0.86, 1.3) * e * (0.26 + vOpen * 0.34);
+    col += vec3(0.006, 0.012, 0.026);
+    col += vec3(0.7, 0.95, 1.45) * e * (0.42 + vOpen * 0.3);
+    // a slow glint crossing each face, so a flat facet is never a flat colour
+    float glint = pow(max(dot(reflect(-V, N), normalize(vec3(0.5, 0.7, -0.4))), 0.0), 26.0);
+    col += vec3(0.8, 0.95, 1.3) * glint * 0.55;
     `,
   });
   const shell = new Mesh(shellGeo, shellMat);
@@ -278,6 +282,7 @@ export const buildGeode: WorldBuilder = (shared, sun) => {
       const camD = c.cam.length();
       const want = 0.12 + 0.9 * (1 - Math.min(1, Math.max(0, (camD - 13) / 12)));
       uOpen.value = damp(uOpen.value, want, 3, dt);
+      uInside.value = damp(uInside.value, camD < 14 ? 1 : 0, 3, dt);
       uPtrOn.value = damp(uPtrOn.value, c.ptrOn, 6, dt);
       uPtr.value.copy(c.ptr).applyAxisAngle(yA, -rot);
       uFire.value = damp(uFire.value, 0.6 + c.heat[2] * 0.8 + c.ptrOn * 0.5, 4, dt);
@@ -300,5 +305,3 @@ export const buildGeode: WorldBuilder = (shared, sun) => {
     },
   };
 };
-
-void AdditiveBlending;

@@ -328,11 +328,11 @@ const stageTop = (i: number) => SPANS.slice(0, i).reduce((a, b) => a + b, 0);
   /* the belt's bodies */
   .pw.is-live .pw-bodies { display: block; position: absolute; inset: 0; pointer-events: none; }
   .pw-bodies ol { list-style: none; margin: 0; padding: 0; }
-  .pw-body { position: absolute; left: 0; top: 0; display: grid; gap: 2px; max-width: 230px; padding: 4px 0 4px 12px; color: #fff; text-decoration: none; opacity: 0; will-change: transform, opacity; border-left: 1px solid rgba(91, 141, 239, 0.8); }
-  .pw-body-name { font-size: 0.875rem; font-weight: 500; letter-spacing: -0.008em; line-height: 1.25; text-shadow: 0 1px 12px rgba(0, 0, 0, 0.95); }
-  .pw-body-more { font-size: 0.75rem; line-height: 1.35; color: rgba(255, 255, 255, 0.72); max-height: 0; overflow: hidden; opacity: 0; transition: max-height 0.3s ease, opacity 0.25s ease; text-shadow: 0 1px 10px rgba(0, 0, 0, 0.95); }
+  .pw-body { position: absolute; left: 0; top: 0; display: grid; gap: 3px; max-width: 240px; padding: 4px 0 4px 12px; color: #fff; text-decoration: none; opacity: 0; will-change: transform, opacity; border-left: 1px solid rgba(91, 141, 239, 0.8); }
+  .pw-body-name { font-size: 1rem; font-weight: 500; letter-spacing: -0.008em; line-height: 1.25; text-shadow: 0 1px 12px rgba(0, 0, 0, 0.95); }
+  .pw-body-more { font-size: 0.8125rem; line-height: 1.35; color: rgba(255, 255, 255, 0.78); text-shadow: 0 1px 10px rgba(0, 0, 0, 0.95); }
   .pw-body-more b { font-weight: 600; color: #fff; }
-  .pw-body:hover .pw-body-more, .pw-body:focus-visible .pw-body-more, .pw-body.is-hot .pw-body-more { max-height: 5em; opacity: 1; }
+  .pw-body:hover .pw-body-name, .pw-body.is-hot .pw-body-name { color: #9ec1ff; }
   .pw-body:focus-visible { outline: 1.5px solid #5b8def; outline-offset: 3px; border-radius: 6px; }
 
   .pw.is-live .pw-beltcopy .pw-kick, .pw.is-live .pw-belttitle, .pw.is-live .pw-beltcopy .pw-line, .pw.is-live .pw-beltskip { position: absolute; left: max(32px, var(--gutter)); opacity: 0; transition: opacity 0.5s ease; }
@@ -348,6 +348,7 @@ const stageTop = (i: number) => SPANS.slice(0, i).reduce((a, b) => a + b, 0);
   .pw.is-live .pw-count b { color: #fff; font-weight: 500; }
   .pw.is-live .pw-count i { font-style: normal; opacity: 0.4; }
   .pw.is-live.is-touring .pw-count { opacity: 1; }
+  .pw.is-live.is-belt .pw-count { opacity: 0; }
   .pw.is-live .pw-top, .pw.is-live .pw-skip { display: inline-flex; position: absolute; font-size: 0.75rem; color: rgba(255, 255, 255, 0.58); text-decoration: none; transition: color 0.2s ease, opacity 0.4s ease; }
   .pw.is-live .pw-skip { right: var(--rx); bottom: clamp(20px, 4vh, 36px); padding: 6px 0; border-bottom: 1px solid rgba(91, 141, 239, 0.6); }
   .pw.is-live .pw-top { top: 96px; right: max(32px, var(--gutter)); opacity: 0; pointer-events: none !important; }

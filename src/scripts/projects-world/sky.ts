@@ -30,7 +30,6 @@ import { NOISE, rng, type Shared, type U } from "./toolkit";
 const NEBULA_FS = /* glsl */ `
 ${NOISE}
 varying vec3 vDir;
-vec3 band(vec3 d) { return d; }
 void main() {
   vec3 d = normalize(vDir);
   // the galaxy's plane, tipped against the system's

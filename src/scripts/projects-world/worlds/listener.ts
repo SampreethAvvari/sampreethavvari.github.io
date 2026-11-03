@@ -19,7 +19,7 @@ export const buildListener: WorldBuilder = (shared, sun) => {
   const group = new Group();
   const spin = new Group();
   group.add(spin);
-  const r = rng(303);
+
   const uPtr = { value: new Vector3(0, 999, 0) };
   const uPtrOn = { value: 0 };
   const uHead = { value: 0 };
