@@ -273,6 +273,8 @@ const stageTop = (i: number) => SPANS.slice(0, i).reduce((a, b) => a + b, 0);
 
   .pw.is-live .pw-hero { position: absolute; left: max(32px, var(--gutter)); top: clamp(88px, 12vh, 112px); padding: 0; max-width: 34rem; transition: opacity 0.6s ease, transform 0.8s cubic-bezier(0.16, 1, 0.3, 1); }
   .pw.is-live .pw-hero.is-gone { opacity: 0; transform: translateY(16px); }
+  .pw.is-live .pw-h1 { transition: opacity 0.7s ease; }
+  .pw.is-live.type-on .pw-h1 { opacity: 0; }
   .pw.is-3d.has-type .pw-h1 { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; margin: 0; }
   .pw.is-3d.has-type .pw-tail { margin-top: 10px; max-width: 22rem; }
 
@@ -481,6 +483,9 @@ const stageTop = (i: number) => SPANS.slice(0, i).reduce((a, b) => a + b, 0);
     .pw.is-live .pw-c span { font-size: 0.75rem; line-height: 1.32; }
     .pw.is-live .pw-c button { display: grid; gap: 4px; }
     .pw.is-live .pw-c.is-hot { border-color: rgba(91, 141, 239, 0.8); }
+    /* the words always have a dark floor to sit on */
+    .pw.is-live.is-touring .pw-shade { opacity: 1; background: linear-gradient(to top, rgba(2, 3, 6, 0.86) 0%, rgba(2, 3, 6, 0.62) 30%, transparent 52%); }
+    .pw.is-live.is-touring.is-belt .pw-shade { opacity: 0; }
     .pw.is-live .pw-count { top: 72px; }
     .pw.is-live .pw-top { top: 72px; right: 16px; }
     /* some worlds read from the top instead */

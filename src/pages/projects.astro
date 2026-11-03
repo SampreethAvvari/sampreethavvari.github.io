@@ -289,9 +289,11 @@ const starView: StarView = {
 const worldIds = new Set(WORLD_COPY.map((w) => findRaw(w.match)?.title));
 const beltRaw = projects.filter((p) => !worldIds.has(p.title) && !p.title.includes(STAR_MATCH));
 const beltBySlug = new Map(beltRaw.map((p) => [slug(p.title), p]));
+// The number a body shows, where the entry's first stat reads badly out of context.
+const BELT_STAT: Record<string, number> = { "cowork-dashboard": 1 };
 const bodyViews: BodyView[] = BELT_ORDER.filter((id) => beltBySlug.has(id)).map((id) => {
   const c = card(beltBySlug.get(id));
-  const st = c.stats[0];
+  const st = c.stats[BELT_STAT[id] ?? 0];
   return {
     id,
     title: c.title,

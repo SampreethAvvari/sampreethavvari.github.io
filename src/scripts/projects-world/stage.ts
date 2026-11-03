@@ -106,6 +106,15 @@ export function mountProjectsWorld() {
     let lastT = performance.now();
     let velocity = 0;
 
+    // one transition event per move, however the move started
+    let lastEmit = { t: 0, dir: 0 };
+    const emitTransition = (direction: number, from: number, to: number, duration: number) => {
+      const t = performance.now();
+      if (direction === lastEmit.dir && t - lastEmit.t < 1200) return;
+      lastEmit = { t, dir: direction };
+      emit("projects:transition", { direction, from, to, duration: Math.round(duration) });
+    };
+
     // ---- what is on screen
     let active = -1;
     const beatOf = (st: number, s: number) => {
@@ -168,7 +177,7 @@ export function mountProjectsWorld() {
         const dir = dg > 0 ? 1 : -1;
         const to = Math.max(0, Math.min(N - 1, st + dir));
         const speedScreens = Math.abs(dg / dt) || 0.1;
-        emit("projects:transition", { direction: dir, from: st, to, duration: Math.round(clamp((0.3 / speedScreens) * 1000, 300, 2600)) });
+        emitTransition(dir, st, to, clamp((0.3 / speedScreens) * 1000, 300, 2600));
       } else if (!inGap) transitionFrom = -1;
 
       const onStage = root.getBoundingClientRect().bottom > innerHeight * 0.5;
@@ -259,8 +268,7 @@ export function mountProjectsWorld() {
       if (dist < 3) return;
       glideTo(yFromG(target), clamp(dist * 0.7 + 420, 520, inGap ? 1700 : 1100), !inGap);
       if (inGap) {
-        const dir = target > here ? 1 : -1;
-        emit("projects:transition", { direction: dir, from: Math.floor(here), to: Math.round(target), duration: clamp(dist * 0.7 + 420, 520, 1700) });
+        emitTransition(target > here ? 1 : -1, Math.floor(here), Math.floor(target), clamp(dist * 0.7 + 420, 520, 1700));
       }
     };
     const scheduleSettle = () => {
@@ -427,7 +435,7 @@ export function mountProjectsWorld() {
           if (down) glideTo(yFromG(N - 1 + 0.2), 900);
           return;
         }
-        emit("projects:transition", { direction: down ? 1 : -1, from: Math.floor(here), to: Math.floor(next), duration: 1000 });
+        if (Math.floor(next) !== Math.floor(here)) emitTransition(down ? 1 : -1, Math.floor(here), Math.floor(next), 1000);
         glideTo(yFromG(next), 1000);
       },
       { signal },
@@ -455,7 +463,7 @@ export function mountProjectsWorld() {
       if (Math.abs(target - g) < 0.01) return;
       const dist = Math.abs(target - g);
       const dur = reduced ? 0 : clamp(1500 + dist * 260, 1700, 3400);
-      emit("projects:transition", { direction: target > g ? 1 : -1, from, to: st, duration: dur });
+      emitTransition(target > g ? 1 : -1, from, st, dur);
       flying = true;
       window.setTimeout(() => (flying = false), dur + 200);
       stopGlide();
@@ -868,6 +876,8 @@ export function mountProjectsWorld() {
 
     // ---- the scene: after first paint, paused off screen
     let destroyed = false;
+    let typeLater = 0;
+    let typeLater2 = 0;
     const boot = () => {
       if (destroyed) return;
       import("./engine")
@@ -890,7 +900,10 @@ export function mountProjectsWorld() {
           sys = s;
           update();
           root.classList.add("is-3d");
-          if (!phone) root.classList.add("has-type");
+          if (!phone) {
+            typeLater = window.setTimeout(() => root.classList.add("type-on"), 450);
+            typeLater2 = window.setTimeout(() => root.classList.add("has-type"), 1250);
+          }
           const io = new IntersectionObserver(([e]) => s.setPaused(!e.isIntersecting || document.hidden));
           io.observe(stage);
           signal.addEventListener("abort", () => io.disconnect());
@@ -909,6 +922,9 @@ export function mountProjectsWorld() {
 
     return () => {
       destroyed = true;
+      clearTimeout(typeLater);
+      clearTimeout(typeLater2);
+      root.classList.remove("type-on", "has-type", "is-3d");
       clearTimeout(settleLater);
       stopGlide();
       stopFling();
