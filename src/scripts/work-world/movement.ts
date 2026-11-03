@@ -48,6 +48,8 @@ export function mountMovement(o: MovementOptions) {
   let fling = 0;
   let arrived = -1;
   let lastQ = -1;
+  let departed = -1;
+  let departedAt = 0;
 
   const stopFling = () => {
     if (fling) cancelAnimationFrame(fling);
@@ -76,7 +78,13 @@ export function mountMovement(o: MovementOptions) {
       return;
     }
     gliding = true;
-    o.onDepart?.(Math.round(qNow()), to, dur);
+    const fromStop = Math.round(qNow());
+    // A glide that replaces one going to the same stop is the same move.
+    if (fromStop !== to && (departed !== to || performance.now() - departedAt > 1800)) {
+      departed = to;
+      departedAt = performance.now();
+      o.onDepart?.(fromStop, to, dur);
+    }
     const t0 = performance.now();
     const step = (t: number) => {
       if (id !== glideId || signal.aborted) return;

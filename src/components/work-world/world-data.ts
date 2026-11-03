@@ -171,7 +171,7 @@ export const TRAIL: TrailStop[] = [
     id: "t2024r",
     body: "binary",
     year: 2024,
-    title: "Graduate ML Researcher",
+    title: ml.title,
     org: "NYU",
     place: ml.location,
     date: ml.date,

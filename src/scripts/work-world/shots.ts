@@ -82,6 +82,8 @@ const bayShot = (i: number, phiDeg: number, p: [number, number, number], l: [num
 };
 
 export const STATION_PHI = [-68, -102, -84, -58];
+// The dock's hall leans along its boom, so the walk goes where the boom goes.
+const leanFde = (v: [number, number, number]): [number, number, number] => (v[2] > 0 ? [v[0] + v[2] * 0.333, v[1] - v[2] * 0.136, v[2]] : v);
 
 // What each stop on /work looks at. Bays first, then the trail.
 export function indexKeys(curveAt: (u: number) => Vector3, uAtZ: (z: number) => number, wide: boolean): Key[] {
@@ -120,7 +122,7 @@ export function indexKeys(curveAt: (u: number) => Vector3, uAtZ: (z: number) => 
 
   // 4 Software: low along the face of the ring, the doors seen edge on, the
   // hull running away to the horizon behind them.
-  k.push({ ...bayShot(3, STATION_PHI[3], wide ? [22, -16, 122] : [6, -28, 158], wide ? [-22, 4, -50] : [0, 14, -30], wide ? -5 : -2, wide ? 30 : 42), stop: 4 });
+  k.push({ ...bayShot(3, STATION_PHI[3], wide ? [70, -30, 74] : [8, -30, 140], wide ? [-36, 12, -12] : [0, 12, -20], wide ? -7 : -2, wide ? 40 : 44), stop: 4 });
   P({ p: V(330, -130, 420), l: V(120, -60, 20), r: -5, f: 44, a: ringFor(3, STATION_PHI[3] * DEG) + 26 * DEG });
 
   // 5 The whole station at last, dead on, the trail running out of its hub
@@ -140,7 +142,13 @@ export function indexKeys(curveAt: (u: number) => Vector3, uAtZ: (z: number) => 
 
   // 6 2017: a thin crescent, small in a lot of black, the comet leaving it.
   const moon = BODY.moon;
-  P({ p: V(moon.x - 30, moon.y + 26, moon.z + (wide ? 1020 : 1500)), l: V(moon.x - (wide ? 190 : 20), moon.y + (wide ? 110 : 130), moon.z - 200), r: 9, f: 26, u: 0.006, stop: 6, sun: 0.22, sky: 0.62 });
+  {
+    const back = wide ? 840 : 1120;
+    // A hair off the line to the star, so a bead of it shows past the limb.
+    const cam = moon.clone().addScaledVector(SUN_DIR, -back).add(V(wide ? 62 : 74, wide ? 44 : 50, 0));
+    const look = moon.clone().add(wide ? V(-190, -44, 0) : V(0, -84, 0));
+    P({ p: cam, l: look, r: wide ? 6 : 2, f: 30, u: 0.02, stop: 6, sun: 0.74, sky: 0.74 });
+  }
   P({ p: V(moon.x - 110, moon.y + 130, moon.z - 260), l: V(190, 40, zAt(2019)), r: -9, f: 46, u: 0.06, sun: 0.28, sky: 0.66 });
   P({ p: ahead(zAt(2019.2), 14, 20), l: ahead(zAt(2020.6), 10, 0), r: -16, f: 62, u: 0.16, sun: 0.3, sky: 0.68 });
 
@@ -174,13 +182,13 @@ export function indexKeys(curveAt: (u: number) => Vector3, uAtZ: (z: number) => 
 
   // 10 2024: from directly above the pair, the disc turning, rolled hard.
   const b = BODY.binary;
-  P({ p: V(b.x + 40, b.y + (wide ? 540 : 840), b.z + (wide ? 250 : 360)), l: V(b.x + (wide ? 76 : 0), b.y, b.z + (wide ? -40 : 30)), r: wide ? 28 : 6, f: 42, u: uAtZ(b.z + 4), stop: 10, sun: 0.72, sky: 0.9 });
+  P({ p: V(b.x + 40, b.y + (wide ? 430 : 840), b.z + (wide ? 420 : 460)), l: V(b.x + (wide ? -150 : 0), b.y, b.z + (wide ? -10 : 30)), r: wide ? 24 : 6, f: 40, u: uAtZ(b.z + 4), stop: 10, sun: 0.72, sky: 0.9 });
   P({ p: V(b.x - 120, b.y - 170, b.z - 260), l: V(120, -60, zAt(2025.4)), r: 12, f: 60, u: uAtZ(b.z - 280), sun: 0.8, sky: 0.94 });
   P({ p: V(180, -20, zAt(2025.5)), l: V(0, 0, 200), r: 4, f: 54, u: uAtZ(zAt(2025.45)), sun: 0.9, sky: 1 });
 
   // 11 Now: from far out to the side, the whole line at once, the station big
   // at the end of it.
-  P({ p: wide ? V(1260, 300, 880) : V(1120, 420, 1420), l: wide ? V(250, 10, 420) : V(150, 40, 520), r: wide ? 3 : 2, f: wide ? 40 : 50, a: a5 + 34 * DEG, u: 1, stop: 11, sun: 1, sky: 1 });
+  P({ p: wide ? V(-720, -400, -530) : V(-860, -620, -760), l: wide ? V(-30, 20, 40) : V(30, -200, 40), r: wide ? 10 : 6, f: wide ? 36 : 44, a: a5 + 34 * DEG, u: 1, stop: 11, sun: 1, sky: 1 });
   return k;
 }
 
@@ -307,9 +315,11 @@ export function interiorKeys(id: BayId, stops: number): Key[] {
     const t = stops > 1 ? (s / (stops - 1)) * (list.length - 1) : 0;
     const j = Math.round(t);
     const sh = list[j];
+    const pv = id === "fde" ? leanFde(sh.p) : sh.p;
+    const lv = id === "fde" ? leanFde(sh.l) : sh.l;
     keys.push({
-      p: bayToWorld(INSIDE_PHI, V(...sh.p)),
-      l: bayToWorld(INSIDE_PHI, V(...sh.l)),
+      p: bayToWorld(INSIDE_PHI, V(...pv)),
+      l: bayToWorld(INSIDE_PHI, V(...lv)),
       r: sh.r ?? 0,
       f: sh.f ?? 46,
       a,

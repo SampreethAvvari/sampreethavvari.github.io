@@ -20,6 +20,7 @@ import {
   Scene,
   Vector2,
   Vector3,
+  Vector4,
   WebGLRenderer,
   type Object3D,
 } from "three";
@@ -144,6 +145,8 @@ export function mountWorld(canvas: HTMLCanvasElement, opts: WorldOptions) {
   let extraWarp = 0;
   let irisOpen = 0;
   let insideK = 0;
+  const shadeNow = new Vector4();
+  const shadeT = new Vector4();
 
   // Bay state.
   const open = [0, 0, 0, 0];
@@ -164,6 +167,8 @@ export function mountWorld(canvas: HTMLCanvasElement, opts: WorldOptions) {
     phi1: number;
     done?: () => void;
     settled?: boolean;
+    /** Set on a move between two bays: the bay left behind, and the ring's start and end. */
+    across?: { from: number; a0: number; a1: number; out: Vector3; lookOut: Vector3 };
   };
   let flight: Flight | null = null;
 
@@ -319,6 +324,28 @@ export function mountWorld(canvas: HTMLCanvasElement, opts: WorldOptions) {
       const phi = lerp(f.phi0, f.phi1, e);
       a = phi - bayAngle(f.bay);
       const to = f.to();
+      if (f.across) {
+        // Three moves in one: back out, the ring turns, then in. Only the ring moves in the middle.
+        const x = f.across;
+        const out = smooth(k / 0.36);
+        const turn = inOut(range(k, 0.26, 0.74));
+        const inn = smooth((k - 0.64) / 0.36);
+        a = lerp(x.a0, x.a1, turn);
+        bayToWorld(INSIDE_PHI, tmp.copy(f.from.p).lerp(x.out, out).lerp(to.p, inn), shown.p);
+        bayToWorld(INSIDE_PHI, tmp2.copy(f.from.l).lerp(x.lookOut, out).lerp(to.l, inn), shown.l);
+        bayUp(INSIDE_PHI, shown.up);
+        pFinal = shown.p;
+        lFinal = shown.l;
+        upFinal = shown.up;
+        rFinal = lerp(f.from.r, to.r, inn);
+        fFinal = lerp(f.from.f, to.f, inn) + Math.sin(k * Math.PI) * 10;
+        extraWarp = Math.sin(turn * Math.PI) * 0.5;
+        if (k >= 1 && !f.settled) {
+          f.settled = true;
+          flight = null;
+          f.done?.();
+        }
+      } else {
       // In the bay's own frame: a curve through the mouth.
       const u = 1 - e;
       if (f.via) {
@@ -344,6 +371,7 @@ export function mountWorld(canvas: HTMLCanvasElement, opts: WorldOptions) {
         f.settled = true;
         flight = null;
         f.done?.();
+      }
       }
     } else {
       extraWarp = damp(extraWarp, 0, 6, dt);
@@ -386,7 +414,7 @@ export function mountWorld(canvas: HTMLCanvasElement, opts: WorldOptions) {
       power[i] = damp(power[i], powerT[i], reduced ? 30 : 2.4, dt);
       const bay = baysKit.bays[i];
       const phi = phiForBay(i, ringNow);
-      const near = i === focus || (flight?.bay === i) || (onIndex && Math.abs(phi - STATION_PHI[0] * DEG) < 1.2 && qs < 1.5);
+      const near = i === focus || flight?.bay === i || flight?.across?.from === i || (onIndex && Math.abs(phi - STATION_PHI[0] * DEG) < 1.2 && qs < 1.5);
       bay.inside.visible = stationOn && (near || (onIndex && open[i] > 0.02));
       bay.update(time, dt, open[i], power[i], page.kind === "bay" && !flight && IDX(page.id) === i);
     }
@@ -406,7 +434,7 @@ export function mountWorld(canvas: HTMLCanvasElement, opts: WorldOptions) {
       const nowOn = range(qs, 10.6, 11);
       // The giant is small and far until the path swings toward it, and again after.
       const giantScale = lerp(0.2, 1, smooth((qs - 7.1) / 0.8)) * lerp(1, 0.2, smooth((qs - 9.1) / 0.7));
-      trail.update(time, dt, u, sizeState.dpr, sizeState.h, camera.fov, { servicesOn: nowOn, irisOpen, giantScale });
+      trail.update(time, dt, u, sizeState.dpr, sizeState.h, camera.fov, { servicesOn: nowOn, irisOpen, giantScale, cam: camera.position, speed: Math.abs(vel) });
       // The comet carries a lamp along.
       if (qs > 5.5 && qs < 10.8) {
         lamps[0].position.copy(trail.headPosition);
@@ -454,6 +482,12 @@ export function mountWorld(canvas: HTMLCanvasElement, opts: WorldOptions) {
       flash,
       sun: sunFrame,
       rays: sunVis * (0.34 + 0.66 * pose.sun) * 0.5 * (0.1 + 0.9 * rise),
+      shade: shadeNow.set(
+        (shadeNow.x = damp(shadeNow.x, shadeT.x, 3.5, dt)),
+        (shadeNow.y = damp(shadeNow.y, shadeT.y, 3.5, dt)),
+        (shadeNow.z = damp(shadeNow.z, shadeT.z, 3.5, dt)),
+        (shadeNow.w = damp(shadeNow.w, shadeT.w, 3.5, dt)),
+      ),
       exposure: reduced ? 1 : 0.62 + 0.38 * intro,
     });
     listeners.forEach((cb) => cb({ camera, q: qs, vel, flying }));
@@ -495,6 +529,19 @@ export function mountWorld(canvas: HTMLCanvasElement, opts: WorldOptions) {
     },
     bayState(i: number) {
       return { open: open[i], power: power[i] };
+    },
+    /** Which side of the picture the words want dark: bl, br, tl, tr, b, all, or nothing. */
+    setShade(kind: string) {
+      const map: Record<string, [number, number, number, number]> = {
+        bl: [-1, -1, 0.74, 0],
+        br: [1, -1, 0.74, 0],
+        tl: [-1, 1, 0.7, 0],
+        tr: [1, 1, 0.7, 0],
+        b: [0, -1, 0.74, 0],
+        all: [0, 0, 0.62, 1],
+      };
+      const m = map[kind] ?? [shadeT.x, shadeT.y, 0, 0];
+      shadeT.set(m[0], m[1], m[2], m[3]);
     },
     setHotStop(id: string, v: number) {
       trail.setHot(id, v);
@@ -603,6 +650,40 @@ export function mountWorld(canvas: HTMLCanvasElement, opts: WorldOptions) {
         phi1,
         done,
       };
+    },
+    /** Out of one bay, the ring turns, into the next, inside one shot. */
+    flyAcross(fromId: BayId, toId: BayId, stops: number, done?: () => void, dur = 2200) {
+      const fromI = IDX(fromId);
+      const toI = IDX(toId);
+      const inner = new Track(interiorKeys(toId, stops)).at(0, newPose());
+      const a0 = INSIDE_PHI - bayAngle(fromI);
+      let a1 = INSIDE_PHI - bayAngle(toI);
+      // The short way round.
+      while (a1 - a0 > Math.PI) a1 -= Math.PI * 2;
+      while (a1 - a0 < -Math.PI) a1 += Math.PI * 2;
+      const from = {
+        p: worldToBay(INSIDE_PHI, camera.position.clone()),
+        l: worldToBay(INSIDE_PHI, look.clone()),
+        up: camera.up.clone(),
+        f: camera.fov,
+        r: rollNow(),
+      };
+      const toP = worldToBay(INSIDE_PHI, inner.p.clone());
+      const toL = worldToBay(INSIDE_PHI, inner.l.clone());
+      flight = {
+        bay: toI,
+        t0: performance.now(),
+        dur: reduced ? 1 : dur,
+        from,
+        via: null,
+        to: () => ({ p: toP, l: toL, f: inner.f, r: inner.r }),
+        phi0: INSIDE_PHI,
+        phi1: INSIDE_PHI,
+        done,
+        across: { from: fromI, a0, a1, out: new Vector3(0, -6, 150), lookOut: new Vector3(0, -2, -60) },
+      };
+      openT[fromI] = 1;
+      powerT[fromI] = 1;
     },
     flying: () => !!flight,
     snap() {

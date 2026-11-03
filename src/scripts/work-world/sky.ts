@@ -150,7 +150,7 @@ export function buildSky(renderer: WebGLRenderer, opts: { low: boolean; hdr: boo
       void main() {
         vec3 d = normalize(vDir);
         float a = acos(clamp(dot(d, uSun), -1.0, 1.0));
-        vec3 c = textureCube(tCube, d).rgb * 2.2 + vec3(1.0, 0.56, 0.24) * 34.0 * exp(-a * 16.0) + vec3(0.26, 0.24, 0.24) * 0.32;
+        vec3 c = textureCube(tCube, d).rgb * 2.2 + vec3(1.0, 0.54, 0.22) * 5.0 * exp(-a * 6.0) + vec3(0.26, 0.24, 0.24) * 0.32;
         gl_FragColor = vec4(c, 1.0);
       }`,
     side: BackSide,

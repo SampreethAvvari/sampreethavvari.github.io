@@ -20,13 +20,13 @@ export const DEG = Math.PI / 180;
 
 /** A seeded generator, so the station is built the same way on every visit. */
 export function rng(seed: number) {
-  let s = seed >>> 0 || 1;
+  let s = seed >>> 0;
   return () => {
-    s ^= s << 13;
-    s ^= s >>> 17;
-    s ^= s << 5;
-    s >>>= 0;
-    return s / 4294967296;
+    s = (s + 0x6d2b79f5) >>> 0;
+    let t = s;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
   };
 }
 

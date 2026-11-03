@@ -90,6 +90,7 @@ function buildMoon(low: boolean) {
     vertexShader: BODY_VS,
     fragmentShader: /* glsl */ `
       ${NOISE}
+      uniform mat4 modelMatrix;
       uniform vec3 uSun; uniform float uHot, uTime;
       varying vec3 vN, vO, vW;
       float crater(vec3 p, float scale) {
@@ -418,15 +419,34 @@ function buildBinary(low: boolean) {
           float vn = clamp(dot(normalize(vN), view), 0.0, 1.0);
           float g = fbm(n * uScale + vec3(uTime * 0.07, 0.0, -uTime * 0.05));
           float g2 = fbm(n * uScale * 3.2 + g * 3.0);
-          vec3 c = uTint * (0.7 + g * 2.0 + g2 * 2.4) * (0.45 + 0.8 * pow(vn, 0.6));
+          float cells = smoothstep(0.3, 0.72, g2);
+          vec3 c = uTint * (0.5 + g * 1.0 + cells * 1.25) * (0.42 + 0.85 * pow(vn, 0.7));
           gl_FragColor = vec4(c, 1.0);
         }`,
     });
-  const aMat = starMat(4.2, new Color(1, 0.56, 0.2));
-  const bMat = starMat(6.2, new Color(1, 0.84, 0.62));
-  const A = new Mesh(new SphereGeometry(58, 48, 32), aMat);
-  const B = new Mesh(new SphereGeometry(30, 40, 28), bMat);
+  const aMat = starMat(5.2, new Color(1, 0.46, 0.14));
+  const bMat = starMat(8.2, new Color(1, 0.7, 0.38));
+  const A = new Mesh(new SphereGeometry(58, 64, 48), aMat);
+  const B = new Mesh(new SphereGeometry(30, 48, 32), bMat);
   group.add(A, B);
+  // A soft glow around each.
+  const glowMat = (size: number, c: Color) =>
+    new ShaderMaterial({
+      transparent: true,
+      blending: AdditiveBlending,
+      depthWrite: false,
+      uniforms: { uSize: { value: size }, uC: { value: c } },
+      vertexShader: `uniform float uSize; varying vec2 vP; void main(){ vP=position.xy*2.0; vec3 c=(modelViewMatrix*vec4(0.0,0.0,0.0,1.0)).xyz; gl_Position=projectionMatrix*vec4(c+vec3(position.xy*uSize*2.0,0.0),1.0); }`,
+      fragmentShader: `uniform vec3 uC; varying vec2 vP; void main(){ float r=length(vP); float a=exp(-max(r-0.28,0.0)*6.0)*0.5*(1.0-smoothstep(0.8,1.0,r)); gl_FragColor=vec4(uC*a,1.0); }`,
+    });
+  const haloA = new Mesh(new PlaneGeometry(1, 1), glowMat(210, new Color(1, 0.46, 0.14)));
+  const haloB = new Mesh(new PlaneGeometry(1, 1), glowMat(110, new Color(1, 0.62, 0.3)));
+  haloA.frustumCulled = false;
+  haloB.frustumCulled = false;
+  haloA.renderOrder = 2;
+  haloB.renderOrder = 2;
+  A.add(haloA);
+  B.add(haloB);
   // The stream between them, and a disc of what they have thrown off.
   const N = low ? 3000 : 16000;
   const R = rng(5150);
@@ -452,17 +472,19 @@ function buildBinary(low: boolean) {
         // Half the dust spirals around the pair; the rest runs from one star to the other.
         vec3 p;
         if (aS.z < 0.55) {
-          float r = 70.0 + pow(aS.y, 1.4) * 420.0;
-          float a = aS.x * 6.2831 + uTime * (3.0 / (r * 0.05 + 2.0)) + log(r) * 2.4;
-          p = vec3(cos(a) * r, (aS.z - 0.27) * 22.0 * (1.0 + r * 0.004), sin(a) * r);
-          vB = 0.18 + 0.62 * pow(1.0 - aS.y, 2.0);
+          float r = 120.0 + pow(aS.y, 1.2) * 520.0;
+          // Two arms, wound tight.
+          float arm = step(0.5, fract(aS.x * 7.3)) * 3.14159;
+          float a = arm + (aS.x - 0.5) * 0.9 + uTime * (3.0 / (r * 0.05 + 2.0)) + log(r) * 3.4;
+          p = vec3(cos(a) * r, (aS.z - 0.27) * 16.0 * (1.0 + r * 0.004), sin(a) * r);
+          vB = 0.34 + 1.1 * pow(1.0 - aS.y, 2.0);
         } else {
           vec3 d = uB - uA;
           float s = sin(k * 3.14159);
           float a = k * 12.0 + aS.y * 6.28;
           vec3 side = normalize(cross(d, vec3(0.0, 1.0, 0.0)));
-          p = mix(uA, uB, k) + side * cos(a) * s * 22.0 + vec3(0.0, sin(a) * s * 22.0, 0.0);
-          vB = 1.5 * s + 0.2;
+          p = mix(uA, uB, k) + side * cos(a) * s * 11.0 + vec3(0.0, sin(a) * s * 11.0, 0.0);
+          vB = 1.8 * s + 0.2;
         }
         vec4 mv = modelViewMatrix * vec4(p, 1.0);
         gl_Position = projectionMatrix * mv;
@@ -496,7 +518,7 @@ function buildBinary(low: boolean) {
     worldA: A,
     worldB: B,
     dispose() {
-      [aMat, bMat, dustMat].forEach((m) => m.dispose());
+      [aMat, bMat, dustMat, haloA.material as Material, haloB.material as Material].forEach((m) => m.dispose());
     },
   };
 }
@@ -550,7 +572,7 @@ void main() {
   float back = uHead - aU;
   // Wider toward the comet behind it, a thin thread ahead of it.
   float k = back >= 0.0 ? 1.0 : 0.0;
-  float world = k * (uBase + 13.0 * exp(-back * 60.0) + 2.0 * exp(-back * 9.0)) + (1.0 - k) * 0.7;
+  float world = k * (uBase + 3.4 * exp(-back * 400.0) + 1.3 * exp(-back * 34.0)) + (1.0 - k) * 0.7;
   float minW = 1.3 * dist / uPx;
   float w = max(world, minW);
   vec3 p = mv.xyz + sideV * w * aSide;
@@ -569,7 +591,7 @@ void main() {
   float lens = smoothstep(14.0, 260.0, vD);
   if (vK >= 0.0) {
     float flow = 0.72 + 0.28 * n1(vU * 900.0 - uTime * 2.2) + 0.3 * n1(vU * 180.0 + uTime * 0.3);
-    float near = 1.0 + 2.2 * exp(-vK * 40.0);
+    float near = 1.0 + 2.0 * exp(-vK * 90.0);
     vec3 c = vec3(1.0, 0.6, 0.24) * (core * 2.6 + halo * 0.8) * flow * near * uGain * lens;
     gl_FragColor = vec4(c, 1.0);
   } else {
@@ -789,7 +811,17 @@ export function buildTrail(opts: { low: boolean; font: string }) {
       hotOf[stop] = v;
     },
     /** Move the comet to path position u and set everything going. */
-    update(t: number, dt: number, u: number, dpr: number, heightPx: number, fov: number, opts2: { servicesOn: number; irisOpen: number; giantScale: number }) {
+    update(t: number, dt: number, u: number, dpr: number, heightPx: number, fov: number, opts2: { servicesOn: number; irisOpen: number; giantScale: number; cam: Vector3; speed: number }) {
+      gate.group.visible = gate.group.position.distanceTo(opts2.cam) < 1500;
+      iris.group.visible = iris.group.position.distanceTo(opts2.cam) < 1700;
+      binary.group.visible = binary.group.position.distanceTo(opts2.cam) < 1900;
+      moon.mesh.visible = moon.mesh.position.distanceTo(opts2.cam) < 4600;
+      yearGroup.children.forEach((yg, i) => {
+        const d = yg.position.distanceTo(opts2.cam);
+        const k = (1 - smooth((d - 360) / 620)) * smooth(opts2.speed / 0.22);
+        yg.visible = k > 0.01;
+        (numMat[i] as MeshBasicMaterial).color.copy(AMBER).multiplyScalar(1.5 * k);
+      });
       const uh = clamp(u, 0, 1);
       ribbonMat.uniforms.uHead.value = uh;
       ribbonMat.uniforms.uTime.value = t;

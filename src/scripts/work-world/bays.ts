@@ -52,6 +52,8 @@ export const BAY_IDS: BayId[] = ["aie", "fde", "mle", "sde"];
 export const HALL = 230; // how far the halls run back
 
 const WARM = new Color(1, 0.62, 0.26);
+// The line from the dock out toward the camera that looks back through it.
+export const BOOM_AIM = new Vector3(0.313, -0.128, 0.94).normalize();
 
 export interface BayLight {
   /** Local position. */
@@ -446,6 +448,7 @@ function buildFde(kit: Kit, index: number): Bay {
   // The boom. Three telescoping sections; the pods hang off its far end.
   const boomGroup = new Group();
   boomGroup.position.set(0, -H / 2 + 5, 0);
+  boomGroup.quaternion.setFromUnitVectors(new Vector3(0, 0, 1), BOOM_AIM);
   group.add(boomGroup);
   const secs = [
     { w: 4.4, len: 70 },
@@ -464,11 +467,12 @@ function buildFde(kit: Kit, index: number): Bay {
   headLight.position.set(0, 0, 8.3);
 
   // The pods: three offices and a lab, out in the open on long tethers.
+  const along = (t: number, ox: number, oy: number, sc: number): [number, number, number, number] => [BOOM_AIM.x * t + ox, BOOM_AIM.y * t + oy - H / 2 + 5, BOOM_AIM.z * t, sc];
   const podAt: [number, number, number, number][] = [
-    [-70, 26, 244, 1], // an office
-    [-16, 44, 322, 1],
-    [58, 30, 274, 1],
-    [14, -30, 366, 1.55], // the lab, bigger
+    along(236, 64, 42, 1), // an office
+    along(286, -14, -34, 1),
+    along(262, -56, 12, 1),
+    along(348, 34, -24, 1.5), // the lab, bigger
   ];
   const podMat = hullMaterial({ mode: "box", color: 0x8d8579, plate: 5, windows: 0.42, windowScale: 0.34 });
   kit.uniforms.push(podMat.uniforms as any);
@@ -495,7 +499,8 @@ function buildFde(kit: Kit, index: number): Bay {
   });
 
   // Tethers, with light running along them both ways.
-  const tetherPts = podAt.map(([x, y, z]) => ({ a: new Vector3(0, -H / 2 + 5, 206), b: new Vector3(x, y, z) }));
+  const tipAt = new Vector3(0, -H / 2 + 5, 0).addScaledVector(BOOM_AIM, 208);
+  const tetherPts = podAt.map(([x, y, z]) => ({ a: tipAt, b: new Vector3(x, y, z) }));
   const tethers: BufferGeometry[] = [];
   for (const t of tetherPts) tethers.push(strut(t.a, t.b, 0.09, 3));
   const tetherMesh = new Mesh(merge(tethers), kit.add(lightMat(1.6)));
@@ -534,9 +539,9 @@ function buildFde(kit: Kit, index: number): Bay {
     hit,
     parts: podHit,
     lights: [
-      { p: [0, 8, 40], i: 900, d: 160 },
-      { p: [0, 10, 170], i: 1200, d: 200 },
-      { p: [0, 10, 300], i: 1800, d: 260 },
+      { p: [13, 3, 40], i: 700, d: 160 },
+      { p: [57, -13, 170], i: 900, d: 200 },
+      { p: [100, -31, 300], i: 1300, d: 260 },
     ],
     update(t, _dt, open, power, within) {
       glow.group.visible = !within;
@@ -585,6 +590,7 @@ function buildMle(kit: Kit, index: number): Bay {
 
   // A round hole in a square collar.
   const c = collarPlate(kit, MOUTH_W * 2 + 8, MOUTH_H * 2 + 8, 3.2, (p) => p.absarc(0, 0, TR + 1, 0, TAU, true));
+  c.material = kit.dark;
   group.add(c);
   const lip = new Mesh(new TorusGeometry(TR + 1.6, 0.9, 10, seg), kit.steel);
   lip.position.z = 3.8;
@@ -598,7 +604,7 @@ function buildMle(kit: Kit, index: number): Bay {
   group.add(new Mesh(merge(lamps), lampsMat));
 
   // The tube.
-  const tube = new Mesh(new CylinderGeometry(TR, TR, HALL, seg, 1, true), new MeshStandardMaterial({ color: 0x4e4a43, roughness: 0.6, metalness: 0.88, side: 1 }));
+  const tube = new Mesh(new CylinderGeometry(TR, TR, HALL, seg, 1, true), new MeshStandardMaterial({ color: 0x2c2a26, roughness: 0.66, metalness: 0.7, side: 1, envMapIntensity: 0.3 }));
   tube.rotation.x = Math.PI / 2;
   tube.position.z = -HALL / 2;
   tube.receiveShadow = true;
@@ -690,10 +696,10 @@ function buildMle(kit: Kit, index: number): Bay {
       void main() {
         float plane = mod(uTime * 2.6, 26.0) - 13.0;
         float hit = exp(-pow((position.y - plane * 0.6) * 1.4, 2.0));
-        vB = aS * (0.07 + hit * 0.9) * uPower;
+        vB = aS * (0.16 + hit * 2.2) * uPower;
         vec4 mv = modelViewMatrix * vec4(position, 1.0);
         gl_Position = projectionMatrix * mv;
-        gl_PointSize = uPx * clamp(70.0 / -mv.z, 1.0, 4.0);
+        gl_PointSize = uPx * clamp(110.0 / -mv.z, 1.2, 4.0);
       }`,
     fragmentShader: `varying float vB; void main(){ vec2 q=gl_PointCoord-0.5; float a=smoothstep(0.5,0.1,length(q)); gl_FragColor=vec4(vec3(1.0,0.7,0.38)*vB*a,1.0); }`,
   });
@@ -733,7 +739,11 @@ function buildMle(kit: Kit, index: number): Bay {
   blade.lineTo(bladeR * 1.32, -2);
   blade.lineTo(bladeR * 1.18, bladeR * 0.7);
   blade.quadraticCurveTo(bladeR * 0.56, bladeR * 0.5, 0, 0);
-  const bladeGeo = new ExtrudeGeometry(blade, { depth: 0.5, bevelEnabled: false, curveSegments: 12 });
+  const bladeGeo = new ExtrudeGeometry(blade, { depth: 0.5, bevelEnabled: true, bevelThickness: 0.18, bevelSize: 0.18, bevelSegments: 1, curveSegments: 12 });
+  const edgeLen = bladeR * 0.62;
+  const edgeTilt = Math.atan2(-2, bladeR * 1.32);
+  const edgeGeo = place(new BoxGeometry(edgeLen, 0.12, 0.12), Math.cos(edgeTilt) * edgeLen * 0.5 + 1.2, Math.sin(edgeTilt) * edgeLen * 0.5, 0.82, 0, 0, edgeTilt);
+  const edgeMat = kit.add(lightMat(2.2)) as MeshBasicMaterial;
   const irisRoot = new Group();
   irisRoot.position.z = 1.2;
   const blades = Array.from({ length: BL }, (_, i) => {
@@ -741,10 +751,10 @@ function buildMle(kit: Kit, index: number): Bay {
     const a = (i / BL) * TAU;
     pivot.position.set(Math.cos(a) * (TR + 2.4), Math.sin(a) * (TR + 2.4), i * 0.02);
     pivot.rotation.z = a + Math.PI;
-    const mesh = new Mesh(bladeGeo, kit.wall);
+    const mesh = new Mesh(bladeGeo, kit.trim);
     mesh.castShadow = true;
     const inner = new Group();
-    inner.add(mesh);
+    inner.add(mesh, new Mesh(edgeGeo, edgeMat));
     pivot.add(inner);
     irisRoot.add(pivot);
     return inner;
@@ -789,12 +799,13 @@ function buildMle(kit: Kit, index: number): Bay {
       gantries.forEach((g, i) => (g.rotation.z = t * (i % 2 ? -0.42 : 0.3) * (0.3 + power * 1.2) + i));
       cloudMat.uniforms.uTime.value = t;
       cloudMat.uniforms.uPower.value = power;
-      fanMat.uniforms.uK.value = 0.05 * power;
+      fanMat.uniforms.uK.value = 0.1 * power;
       stripsMat.color.copy(WARM).multiplyScalar(0.2 + power * 1.0);
       cubeMat.emissiveIntensity = 0.1 + 0.3 * power;
       glow.mat.uniforms.uK.value = open * (0.02 + 0.05 * power);
       const e = smooth(open);
-      blades.forEach((b) => (b.rotation.z = lerp(0, -62 * DEG, e)));
+      blades.forEach((b) => (b.rotation.z = lerp(0, -128 * DEG, e)));
+      edgeMat.color.copy(WARM).multiplyScalar((0.5 + 1.4 * power) * (1 - smooth(e * 1.4 - 0.2)));
     },
     dispose() {
       fanMat.dispose();
@@ -851,16 +862,52 @@ function buildSde(kit: Kit, index: number): Bay {
     s.lineTo(0, -h);
     const geo = new ExtrudeGeometry(s, { depth: 2.2, bevelEnabled: true, bevelSize: 0.2, bevelThickness: 0.2, bevelSegments: 1 });
     const parts: BufferGeometry[] = [geo as BufferGeometry];
-    for (let y = -14; y <= 14; y += 7) parts.push(box(w - 8, 1.1, 0.8, dir * (w / 2 + 2), y, 2.8));
+    for (const y of [-h + 0.8, h - 0.8]) parts.push(box(w - 3, 1.2, 0.8, dir * (w / 2 + 1), y, 2.8));
     const m = new Mesh(merge(parts), kit.wall);
     m.castShadow = true;
     return m;
   };
+  // The cells on the doors. Half of 360 on each, in the same order as the wall.
+  const doorMat = (side: number) =>
+    new ShaderMaterial({
+      uniforms: { uTime: { value: 0 }, uPower: { value: 0 }, uSide: { value: side } },
+      vertexShader: `varying vec2 vUv; void main(){ vUv=uv; gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0); }`,
+      fragmentShader: /* glsl */ `
+        uniform float uTime, uPower, uSide; varying vec2 vUv;
+        float h(vec2 p){ return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
+        void main() {
+          vec2 g = vec2(15.0, 12.0);
+          vec2 q = vUv * g;
+          vec2 id = floor(q);
+          vec2 f = fract(q);
+          float col = uSide > 0.0 ? id.x + 15.0 : id.x;
+          float seq = ((g.y - 1.0 - id.y) * 30.0 + col) / 360.0;
+          float cyc = fract(uTime * 0.07) * 1.45;
+          float lit = smoothstep(seq, seq + 0.006, cyc);
+          float wave = exp(-abs(cyc - seq) * 60.0);
+          float m = smoothstep(0.07, 0.12, f.x) * smoothstep(0.93, 0.88, f.x) * smoothstep(0.1, 0.16, f.y) * smoothstep(0.9, 0.84, f.y);
+          vec3 c = vec3(1.0, 0.6, 0.2) * m * (0.03 + lit * (0.5 + 0.5 * h(id)) * 0.9 + wave * 3.4);
+          gl_FragColor = vec4(c * (0.35 + 0.65 * uPower), 1.0);
+        }`,
+    });
+  const doorL = doorMat(-1);
+  const doorR = doorMat(1);
+  const cellW = MOUTH_W - 3.2;
+  const cellH = MOUTH_H * 2 - 6;
   const left = door(-1);
   const right = door(1);
   left.position.z = 0.6;
   right.position.z = 0.6;
   group.add(left, right);
+  const panelL = new Mesh(new PlaneGeometry(cellW, cellH), doorL);
+  panelL.position.set(-(cellW / 2 + 3), 0, 2.95);
+  const panelR = new Mesh(new PlaneGeometry(cellW, cellH), doorR);
+  panelR.position.set(cellW / 2 + 3, 0, 2.95);
+  left.add(panelL);
+  right.add(panelR);
+  const seamMat = kit.add(lightMat(3.4)) as MeshBasicMaterial;
+  const seam = new Mesh(merge([box(0.16, MOUTH_H * 2 - 2, 0.16, 0, 0, 3.4), box(MOUTH_W * 2 + 2, 0.16, 0.16, 0, MOUTH_H - 0.6, 3.4), box(MOUTH_W * 2 + 2, 0.16, 0.16, 0, -MOUTH_H + 0.6, 3.4)]), seamMat);
+  group.add(seam);
   const pistonMat = kit.steel;
   const pistons = [-12, 12].flatMap((y) =>
     [-1, 1].map((dir) => {
@@ -987,6 +1034,13 @@ function buildSde(kit: Kit, index: number): Bay {
       const e = smooth(open);
       left.position.x = -e * (MOUTH_W - 1);
       right.position.x = e * (MOUTH_W - 1);
+      seam.scale.x = 1 + e * 0.02;
+      seam.visible = e < 0.98;
+      seamMat.color.setRGB(1, 0.62, 0.26).multiplyScalar((1 - e) * (0.8 + 2.4 * power));
+      doorL.uniforms.uTime.value = t;
+      doorR.uniforms.uTime.value = t;
+      doorL.uniforms.uPower.value = power;
+      doorR.uniforms.uPower.value = power;
       pistons.forEach((p) => (p.rod.position.x = p.dir * (MOUTH_W + 12 + 0 * e) + p.dir * e * 2));
       glow.mat.uniforms.uK.value = open * (0.02 + 0.06 * power);
       // A new slab, every eleven seconds: lowered, set, and it stays.
@@ -1001,6 +1055,8 @@ function buildSde(kit: Kit, index: number): Bay {
     },
     dispose() {
       wallMat.dispose();
+      doorL.dispose();
+      doorR.dispose();
     },
   };
 }

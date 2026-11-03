@@ -134,7 +134,7 @@ float hullH; vec3 hullE; float hullR; float hullM;`,
     float r1 = hh(id1 + 3.1);
     float r2 = hh(id1 + 7.7);
     float seam1 = smoothstep(0.1, 0.1 + fw.x + fw.y + 0.12, min(d1.x, d1.y));
-    float k1 = clamp(1.0 - (fw.x + fw.y) / (uPlate * 0.45), 0.0, 1.0);
+    float k1 = clamp(1.0 - (fw.x + fw.y) / (uPlate * 0.16), 0.0, 1.0);
     // Some plates break into medium ones, and a few of those into small ones.
     vec2 s2 = s1 / vec2(3.0, 2.0);
     vec2 q2 = uv / s2 + vec2(r1 * 11.0, 0.0);
@@ -152,7 +152,7 @@ float hullH; vec3 hullE; float hullR; float hullM;`,
     float use3 = use2 * step(0.74, r3);
     float r4 = hh(id3 + 5.9);
     float seam3 = mix(1.0, smoothstep(0.03, 0.03 + fw.x + fw.y + 0.03, min(d3.x, d3.y)), use3 * clamp(1.0 - (fw.x + fw.y) / (s3.x * 0.45), 0.0, 1.0));
-    tone = 0.66 + 0.6 * r1 * k1 + use2 * (r3 - 0.5) * 0.36 * k1 + use3 * (r4 - 0.5) * 0.32 * k1;
+    tone = 0.82 + 0.3 * r1 * k1 + use2 * (r3 - 0.5) * 0.24 * k1 + use3 * (r4 - 0.5) * 0.22 * k1;
     float seam = mix(1.0, seam1, k1) * seam2 * seam3;
     // Fine engraved lines and rows of fasteners, for when the camera comes close.
     vec2 s4 = vec2(uPlate * 0.11, uPlate * 0.11);
@@ -184,6 +184,8 @@ float hullH; vec3 hullE; float hullR; float hullM;`,
 #else
     bands = step(mod(uv.y + 20.0, 7.0 * uWinScale), 1.5 * uWinScale);
 #endif
+    float bandFar = clamp(fwidth(uv.y) / 1.6, 0.0, 1.0);
+    bands = mix(bands, 0.14, bandFar);
     vec2 wq = uv / ws;
     vec2 wid = floor(wq);
     vec2 wf2 = fract(wq);
@@ -203,7 +205,7 @@ float hullH; vec3 hullE; float hullR; float hullM;`,
       paint = smoothstep(0.38, 0.62, paint);
       // Worn paint: the plate seams and a little noise bite into it.
       paint *= 0.72 + 0.28 * seam;
-      diffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.86, 0.74, 0.56), paint * 0.94);
+      diffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.6, 0.53, 0.42), paint * 0.94);
       hullR = mix(hullR, 0.62, paint);
       hullM = mix(hullM, 0.18, paint);
     }

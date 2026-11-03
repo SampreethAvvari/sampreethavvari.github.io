@@ -372,7 +372,8 @@ export function buildStation(opts: { low: boolean }) {
   const hp = new Mesh(merge(hubParts), trimMat.mat);
   hp.castShadow = true;
   hub.add(hp);
-  hub.add(new Mesh(bands([[8.5, 124.2], [23, 124.2]], 48), glowMat));
+  hub.add(new Mesh(bands([[0, 124.1], [23, 124.1]], 48), dimMat));
+  hub.add(new Mesh(bands([[23.2, 124.4], [24, 124.4]], 96), glowMat));
 
   // ---- traffic: small lights going about their day around the ring
   const shuttleCount = low ? 18 : 46;

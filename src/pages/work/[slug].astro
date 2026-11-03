@@ -122,7 +122,7 @@ const resume = RESUME[d.slug];
 
     <!-- The projects, a few to a screen -->
     {groups.map((g, gi) => (
-      <section class={`ww-panel ${SIDES[gi % shopCount]}`} data-stop={3 + gi} data-id={`work-${gi + 1}`} data-shade={SHADES[gi % shopCount]} data-depth="28">
+      <section class={`ww-panel ${SIDES[gi % shopCount]}`} data-stop={3 + gi} data-id={`work-${gi + 1}`} id={`work-${gi + 1}`} data-shade={SHADES[gi % shopCount]} data-depth="28">
         <div class={`ww-deck n${g.length} ${g.length === 2 ? "lay-pair" : LAYS[gi % LAYS.length]}`} data-ww-scroll>
           {g.map((p, k) => (
             <article class="ww-card" data-note={gi * 3 + k} data-id={`card-${gi * 3 + k}`}>

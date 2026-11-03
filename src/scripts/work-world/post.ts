@@ -19,6 +19,7 @@ import {
   UnsignedByteType,
   Vector2,
   Vector3,
+  Vector4,
   WebGLRenderTarget,
   type Scene,
   type WebGLRenderer,
@@ -99,6 +100,7 @@ const FINAL = /* glsl */ `
 uniform sampler2D tScene; uniform sampler2D tBloom; uniform sampler2D tRays;
 uniform float uAspect, uTime, uBloom, uRays, uCA, uGrain, uVignette, uExposure, uFade, uWarp, uFlash;
 uniform vec3 uSun; // uv x, uv y, strength
+uniform vec4 uShade; // direction x, y, strength, how much is radial
 uniform vec3 uLift;
 varying vec2 vUv;
 vec3 rrtOdt(vec3 v) { vec3 a = v * (v + 0.0245786) - 0.000090537; vec3 b = v * (0.983729 * v + 0.4329510) + 0.238081; return a / b; }
@@ -143,6 +145,16 @@ void main() {
     col += vec3(1.0, 0.62, 0.28) * uSun.z * (streak + hair);
   }
   col += vec3(1.0, 0.72, 0.42) * uFlash * 3.0;
+  // Room for the words: done in linear light, so a star under it stays hot
+  // and amber instead of turning into a grey disc.
+  if (uShade.z > 0.003) {
+    vec2 sd = uShade.xy;
+    float sl = length(sd);
+    float side = sl > 0.01 ? smoothstep(-0.2, 1.05, dot((vUv - 0.5) * 2.0, sd / sl)) : 0.0;
+    float round_ = 1.0 - smoothstep(0.15, 1.0, length((vUv - 0.5) * 2.0));
+    float m = mix(side, round_, uShade.w);
+    col *= mix(1.0, 0.05, m * uShade.z);
+  }
   // Filmic, but holding on to the hue, so bright amber stays amber instead of
   // washing out to grey and white.
   vec3 expo = max(col * uExposure, vec3(0.0));
@@ -169,6 +181,7 @@ export interface PostFrame {
   sun: Vector3;
   rays: number;
   exposure: number;
+  shade: Vector4;
 }
 
 export class Post {
@@ -232,6 +245,7 @@ export class Post {
         uWarp: { value: 0 },
         uFlash: { value: 0 },
         uSun: { value: new Vector3() },
+        uShade: { value: new Vector4() },
         uLift: { value: new Vector3(0.012, 0.006, 0.002) },
       },
     });
@@ -295,6 +309,7 @@ export class Post {
     u.uWarp.value = f.warp;
     u.uFlash.value = f.flash;
     u.uSun.value.copy(f.sun);
+    u.uShade.value.copy(f.shade);
     u.uRays.value = on ? f.rays : 0;
     u.uExposure.value = f.exposure;
     this.pass(this.final, null);

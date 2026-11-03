@@ -19,7 +19,6 @@ const { page, slug, stops, label, span = 1.9 } = Astro.props;
   <div class="ww-stage" data-ww-stage>
     <div class="ww-sky" aria-hidden="true"></div>
     <canvas class="ww-canvas" aria-hidden="true" transition:persist="work-world"></canvas>
-    <div class="ww-shade" aria-hidden="true"></div>
     <div class="ww-panels" data-ww-layer>
       <slot />
     </div>
@@ -66,20 +65,6 @@ const { page, slug, stops, label, span = 1.9 } = Astro.props;
   }
   .ww-canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; opacity: 0; transition: opacity 1s ease; }
   .ww.is-3d .ww-canvas { opacity: 1; }
-  /* A dark floor where words sit; each panel says which side it wants. */
-  .ww-shade {
-    position: absolute;
-    inset: 0;
-    pointer-events: none;
-    opacity: 0;
-    transition: opacity 0.7s ease, background 0.7s ease;
-  }
-  .ww[data-shade="bl"] .ww-shade { opacity: 1; background: linear-gradient(to top right, rgba(3, 2, 1, 0.82) 0%, rgba(3, 2, 1, 0.34) 32%, transparent 56%); }
-  .ww[data-shade="br"] .ww-shade { opacity: 1; background: linear-gradient(to top left, rgba(3, 2, 1, 0.82) 0%, rgba(3, 2, 1, 0.34) 32%, transparent 56%); }
-  .ww[data-shade="tl"] .ww-shade { opacity: 1; background: linear-gradient(to bottom right, rgba(3, 2, 1, 0.78) 0%, rgba(3, 2, 1, 0.3) 32%, transparent 56%); }
-  .ww[data-shade="tr"] .ww-shade { opacity: 1; background: linear-gradient(to bottom left, rgba(3, 2, 1, 0.78) 0%, rgba(3, 2, 1, 0.3) 32%, transparent 56%); }
-  .ww[data-shade="b"] .ww-shade { opacity: 1; background: linear-gradient(to top, rgba(3, 2, 1, 0.86) 0%, rgba(3, 2, 1, 0.42) 34%, transparent 62%); }
-  .ww[data-shade="all"] .ww-shade { opacity: 1; background: radial-gradient(60% 60% at 50% 50%, rgba(3, 2, 1, 0.68) 0%, rgba(3, 2, 1, 0.34) 60%, rgba(3, 2, 1, 0.1) 100%); }
 
   .ww-panels { position: absolute; inset: 0; z-index: 2; pointer-events: none; overflow: hidden; transform-style: preserve-3d; perspective-origin: 50% 50%; }
   .ww-panel {
@@ -124,6 +109,7 @@ const { page, slug, stops, label, span = 1.9 } = Astro.props;
   .ww-eye i { width: 44px; height: 1px; background: linear-gradient(90deg, #f5a524, rgba(245, 165, 36, 0.08)); }
   .at-br .ww-eye, .at-r .ww-eye, .at-tr .ww-eye { justify-content: flex-end; }
   .at-bc .ww-eye, .at-c .ww-eye { justify-content: center; }
+  .ww-h1, .ww-h2 { text-shadow: 0 2px 26px rgba(0, 0, 0, 0.55); }
   .ww-h1 {
     margin: 0;
     font-size: clamp(2.75rem, 7.4vw, 7.25rem);
@@ -132,7 +118,7 @@ const { page, slug, stops, label, span = 1.9 } = Astro.props;
     line-height: 0.96;
     text-wrap: balance;
   }
-  .ww-h1 .is-dim { display: block; color: rgba(255, 255, 255, 0.5); }
+  .ww-h1 .is-dim { display: block; color: rgba(255, 255, 255, 0.62); }
   .ww-h2 {
     margin: 0;
     font-size: clamp(2.1rem, 4.6vw, 4.5rem);
@@ -367,7 +353,6 @@ const { page, slug, stops, label, span = 1.9 } = Astro.props;
   .ww.is-flat .ww-stage { position: relative; height: auto; overflow: visible; touch-action: auto; }
   .ww.is-flat .ww-sky { position: fixed; inset: 0; opacity: 0.8; }
   .ww.is-flat .ww-canvas { position: fixed; inset: 0; height: 100vh; opacity: 0.5; }
-  .ww.is-flat .ww-shade { display: none; }
   .ww.is-flat .ww-panels { position: relative; overflow: visible; perspective: none !important; padding-top: 72px; }
   .ww.is-flat .ww-panel { position: relative; inset: auto; opacity: 1 !important; visibility: visible !important; transform: none !important; pointer-events: auto; padding-block: 36px; justify-items: start; align-items: start; text-align: left; }
   .ww.is-flat .ww-panel a, .ww.is-flat .ww-panel button { pointer-events: auto; }

@@ -26,6 +26,8 @@ const NOW_YEAR = 2026.85;
 const PER_YEAR = 1100;
 
 const BAYS: BayId[] = ["aie", "fde", "mle", "sde"];
+// How far each bay's doors stand open at rest, before the pointer reaches them.
+const AJAR = [0.36, 0.13, 0.1, 0.04];
 const isWork = (p: string) => p === "/work" || p === "/work/" || p.startsWith("/work/");
 const bayOf = (p: string): BayId | null => {
   const m = p.match(/^\/work\/([a-z]+)\/?$/);
@@ -145,7 +147,9 @@ onPage("work-world", (signal) => {
     };
   }
 
-  document.documentElement.classList.add("in-ww");
+  const markStage = () => document.documentElement.classList.toggle("in-ww", root.getBoundingClientRect().bottom > innerHeight * 0.5);
+  markStage();
+  addEventListener("scroll", markStage, { passive: true, ...sig });
 
   let w: World | null = null;
   let pan: Panels | null = null;
@@ -159,7 +163,7 @@ onPage("work-world", (signal) => {
   const openStops = new Set<number>();
   const doorsWere = [false, false, false, false];
   const shade = (i: number) => {
-    root.dataset.shade = panels[i]?.dataset.shade || "";
+    w?.setShade(panels[i]?.dataset.shade || "");
   };
 
   // Before the 3D is ready, panels just cross fade.
@@ -177,7 +181,6 @@ onPage("work-world", (signal) => {
     active = i;
     rail.forEach((a, k) => (k === i ? a.setAttribute("aria-current", "step") : a.removeAttribute("aria-current")));
     shade(i);
-    root.classList.toggle("is-trail", pageKind === "index" && i >= 6);
     if (touch) updateBays();
   };
 
@@ -224,7 +227,7 @@ onPage("work-world", (signal) => {
     for (let i = 0; i < 4; i++) {
       const focus = settled && focusStop === i + 1;
       const hot = hoverBay === i || panelBay === i || (touch && focus);
-      const open = hot ? 1 : focus ? 0.13 : 0;
+      const open = hot ? 1 : focus ? AJAR[i] : 0;
       const power = hot ? 1 : focus ? 0.5 : 0.12;
       w.setBay(i, open, power);
       if (hot !== doorsWere[i]) {
@@ -319,8 +322,8 @@ onPage("work-world", (signal) => {
   stage.addEventListener("pointerdown", (e) => {
     if (e.pointerType === "touch" || e.button !== 0) return;
     const el = e.target as Element;
-    if (el.closest("a, button, input")) return;
-    down = { x: e.clientX, y: e.clientY, t: performance.now(), lastX: e.clientX, lastY: e.clientY, v: 0, moved: false, onUi: !!el.closest(".ww-card, .ww-box") };
+    if (el.closest("a, button, input, .ww-card, .ww-box, .ww-shelf")) return;
+    down = { x: e.clientX, y: e.clientY, t: performance.now(), lastX: e.clientX, lastY: e.clientY, v: 0, moved: false, onUi: false };
   }, sig);
   addEventListener("pointerup", (e) => {
     if (!down) return;
@@ -485,7 +488,6 @@ onPage("work-world", (signal) => {
   shade(Math.round(q));
   active = Math.round(q);
   rail.forEach((a, k) => (k === active ? a.setAttribute("aria-current", "step") : a.removeAttribute("aria-current")));
-  root.classList.toggle("is-trail", pageKind === "index" && active >= 6);
 
   // ---- the world
   let stopFrame: (() => void) | null = null;
@@ -507,6 +509,7 @@ onPage("work-world", (signal) => {
       mod!.newPose,
     );
     updateBays();
+    shade(Math.round(q));
     // Flights that begin on arrival.
     if (returning && wasBay) {
       flyingOut = true;
@@ -517,9 +520,9 @@ onPage("work-world", (signal) => {
         document.documentElement.classList.remove("ww-flying");
       });
     } else if (pageKind === "bay" && wasBay && wasBay !== slug) {
-      emit("work:transition", { direction: "across", from: wasBay, to: slug, duration: 1500 });
+      emit("work:transition", { direction: "across", from: wasBay, to: slug, duration: 2200 });
       wd.setScroll(q, true);
-      wd.flyIn(slug!, count, () => document.documentElement.classList.remove("ww-flying"));
+      wd.flyAcross(wasBay, slug!, count, () => document.documentElement.classList.remove("ww-flying"));
     } else if (wd.flying()) {
       wd.setScroll(q, true);
       // Already in the air from the page before: let it land.
@@ -538,6 +541,7 @@ onPage("work-world", (signal) => {
       qShown = f.q;
       pan?.update(f.camera, f.q, f.flying, active);
       root.classList.toggle("is-moving", Math.abs(f.vel) > 0.12);
+      root.classList.toggle("is-trail", pageKind === "index" && f.q > 5.02);
       const t = performance.now();
       if (t - lastSpin > 70 && Math.abs(f.vel - spinSent) > 0.01) {
         lastSpin = t;

@@ -19,7 +19,7 @@ const BAY_AT = [
 ];
 const TRAIL_AT = [
   { at: "at-tl", shade: "tl", depth: 300 },
-  { at: "at-bc", shade: "b", depth: 300 },
+  { at: "at-bc", shade: "b", depth: 300, glass: true },
   { at: "at-tr", shade: "tr", depth: 340 },
   { at: "at-r", shade: "", depth: 240 },
   { at: "at-bl", shade: "bl", depth: 300 },
@@ -71,7 +71,7 @@ const stopsTotal = 1 + BAYS.length + 1 + TRAIL.length;
     })}
 
     <!-- 5 The turn: from the bays to the trail -->
-    <section class="ww-panel at-tl" data-stop="5" data-id="trail" data-shade="tl" data-depth="500" id="trail">
+    <section class="ww-panel at-bl" data-stop="5" data-id="trail" data-shade="bl" data-depth="500" id="trail">
       <div class="ww-box">
         <p class="ww-eye"><b>The trail</b><i></i><span>Six chapters on one path</span></p>
         <h2 class="ww-h1">2017 <span class="is-dim">to now.</span></h2>
@@ -85,7 +85,7 @@ const stopsTotal = 1 + BAYS.length + 1 + TRAIL.length;
       const last = i === TRAIL.length - 1;
       return (
         <section class={`ww-panel ww-stop ${a.at}`} data-stop={6 + i} data-id={t.id} data-body={t.body} data-shade={a.shade} data-depth={a.depth} id={t.id}>
-          <div class="ww-box">
+          <div class:list={["ww-box", { "is-glass": a.glass }]}>
             <p class="ww-eye"><b>{t.date}</b></p>
             <h2 class="ww-h2">{t.title}</h2>
             <p class="ww-line">{t.org} · {t.place}</p>
@@ -104,7 +104,7 @@ const stopsTotal = 1 + BAYS.length + 1 + TRAIL.length;
             {last && (
               <div class="ww-actions">
                 <a class="jb is-solid" href="/resume"><span>Resume</span><i class="jb-arrow"><Icon name="arrow-up-right" size={13} /></i></a>
-                <a class="jb is-ghost" href="/projects"><span>See every project</span><i class="jb-arrow"><Icon name="arrow-right" size={13} /></i></a>
+                <a class="jb is-ghost" href="/gallery"><span>Screenshots</span><i class="jb-arrow"><Icon name="arrow-right" size={13} /></i></a>
               </div>
             )}
           </div>
