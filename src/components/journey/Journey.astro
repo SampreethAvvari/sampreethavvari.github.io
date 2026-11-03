@@ -42,7 +42,8 @@ const chapters = [
   { id: "connect", name: "Connect", color: "#86EFAC", rgb: "134,239,172" },
 ];
 // The last three chapters are filmed scenes on the planet's surface.
-const SCENES: Record<string, string> = { mind: "exit", contact: "helmet", connect: "touch" };
+// They play inside the live 3D world (scripts/journey/surface.ts), so no flat film covers it.
+const SCENES: Record<string, string> = {};
 const N = chapters.length;
 const pad = (n: number) => String(n).padStart(2, "0");
 const words = (s: string) => s.split(" ");
@@ -316,6 +317,9 @@ const ENDING = 0;
   .journey[data-copy-side="right"] .journey-shade { background: none; }
   .journey[data-copy-side="right"] .journey-shade::after { opacity: 1; }
   .journey[data-copy-v="top"] .journey-shade { background: linear-gradient(to bottom, rgba(2, 3, 6, 0.78) 0%, rgba(2, 3, 6, 0.3) 36%, transparent 60%), linear-gradient(to right, rgba(2, 3, 6, 0.5) 0%, transparent 46%); }
+  /* on the planet the sky is the picture: only a warm dark behind the words */
+  .journey.on-surface .journey-shade { background: linear-gradient(to right, rgba(26, 9, 3, 0.62) 0%, rgba(26, 9, 3, 0.3) 30%, transparent 56%), linear-gradient(to bottom, rgba(26, 9, 3, 0.34) 0%, transparent 22%); }
+  .journey.on-surface .journey-grain { opacity: 0.045; }
 
   /* the counter, top centre under the nav */
   .journey-count {
@@ -633,6 +637,7 @@ const ENDING = 0;
     let landed: ((p: number) => number) | null = null;
     // the filmed chapters' state (declared before anything can call show)
     const firstScene = chapters.findIndex((c) => c.scene);
+    const landWorldAt = chapters.findIndex((c) => c.id === "film");
     let sceneRaf = 0, sceneNow: string | null = null;
     const sceneLength = (id: string) => (player?.duration?.(id) ?? 8);
     let framing: Framing[] = [];
@@ -859,9 +864,10 @@ const ENDING = 0;
       if (fill) fill.style.transform = `scaleY(${f})`;
       if (label) label.style.top = `${f * 100}%`;
       root.classList.toggle("is-moving", progress > 0.04);
+      root.classList.toggle("on-surface", landWorldAt >= 0 && progress > landWorldAt + REST + 0.06);
       document.documentElement.classList.toggle("in-journey", root.getBoundingClientRect().bottom > innerHeight * 0.5);
       journey?.setScroll(progress, velocity);
-      if (progress > firstScene - 1.6) bootEnding();
+      if (firstScene >= 0 && progress > firstScene - 1.6) bootEnding();
       window.dispatchEvent(new CustomEvent("journey:progress", { detail: { progress, velocity, count: N } }));
     };
     function onScroll() { if (!ticking) { ticking = true; requestAnimationFrame(update); } }
@@ -918,7 +924,10 @@ const ENDING = 0;
           const cx = sh.x * innerWidth, cy = sh.y * innerHeight, rr = sh.r * innerHeight;
           const nx = Math.max(b.left, Math.min(cx, b.right)), ny = Math.max(b.top, Math.min(cy, b.bottom));
           const overlap = rr - Math.hypot(cx - nx, cy - ny);
-          const dx = overlap > 0 ? (cx > (b.left + b.right) / 2 ? -1 : 1) * Math.min(56, overlap) : 0;
+          let dx = overlap > 0 ? (cx > (b.left + b.right) / 2 ? -1 : 1) * Math.min(56, overlap) : 0;
+          // never past the edge of the screen
+          const was = parseFloat(pane.style.getPropertyValue("--nx")) || 0;
+          dx = Math.max(dx, 16 - (b.left - was));
           pane.style.setProperty("--nx", `${dx.toFixed(0)}px`);
         };
         journey = m.mountJourney(canvas, { chapters, quality: low ? "low" : "high", reducedMotion: reduced, onShip }) as Journey;

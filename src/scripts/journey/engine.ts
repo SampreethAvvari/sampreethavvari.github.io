@@ -52,6 +52,7 @@ import { buildShip, type ShipInput } from "./ship";
 import { compositeTextures, foilNormal, solarTexture } from "./skin";
 import type { PointerRay } from "./pieces";
 import { buildSpace, type Chapter } from "./space";
+import type { SurfaceShot } from "./surface";
 import { cloudTexture, glowTexture } from "./textures";
 
 export interface JourneyChapter {
@@ -190,6 +191,9 @@ const _b = new Vector3();
 const _landerPos = new Vector3();
 const _yAxis = new Vector3(0, 1, 0);
 const _evening = new Color(1.0, 0.62, 0.42);
+const _spaceFillSky = new Color(0x6070a0);
+const _spaceFillGround = new Color(0x050608);
+const _sunKey = new Vector3();
 
 function clamp(x: number, a: number, b: number) {
   return x < a ? a : x > b ? b : x;
@@ -328,6 +332,18 @@ export function mountJourney(canvas: HTMLCanvasElement, opts: JourneyOptions): J
 
   const space = buildSpace(path, chapters, low, glowTex, cloudTex, landing, landWorld);
   scene.add(space.group);
+  const surface = space.surface;
+  const sshot: SurfaceShot = { pos: new Vector3(), look: new Vector3(), fov: 42, parallax: 0 };
+  // Progress at which each chapter from the landing on comes to rest. The
+  // surface progress s counts them: 0 landed, 1 first steps, 2 helmet, 3 touch.
+  const restKnots: number[] = [];
+  for (let i = landWorld; i < N; i++) restKnots.push(i === N - 1 && i > landWorld ? i : i + REST);
+  const surfaceAt = (pp: number) => {
+    if (pp <= restKnots[0]) return 0;
+    for (let i = 1; i < restKnots.length; i++) if (pp <= restKnots[i]) return i - 1 + (pp - restKnots[i - 1]) / (restKnots[i] - restKnots[i - 1]);
+    return restKnots.length - 1;
+  };
+  fill.position.copy(landing.up);
 
   // Multisampling only where the pixel ratio is too low to hide jagged edges.
   const dpr0 = Math.min(window.devicePixelRatio || 1, dprCap);
@@ -383,6 +399,8 @@ export function mountJourney(canvas: HTMLCanvasElement, opts: JourneyOptions): J
   let camTurn = 0;
   let camTurnV = 0;
   let ptrOn = 0;
+  let shipLift = 0;
+  let shadowWide = false;
   const ptr: PointerRay = { o: new Vector3(), d: new Vector3(0, 0, -1), on: 0 };
   const shipIn: ShipInput = { time: 0, dt: 0, speed: 0, boost: 0, color: _color, reduced, gear: 0, brake: 0, idle: 0, detach: 0, heading: 1, heat: 0, landed: 0 };
   const screen: ShipScreen = { x: 0.7, y: 0.5, r: 0.2, jump: null };
@@ -521,8 +539,12 @@ export function mountJourney(canvas: HTMLCanvasElement, opts: JourneyOptions): J
     // Rig on the path.
     path.frame(q, _rigPos, _rigQuat, _right, _up, _fwd);
     const bend = path.bend(q, _right);
-    rig.position.copy(_rigPos);
+    // Once he is on the ground the big ship climbs back to orbit and out of the sky.
+    const sNow = landState === 2 ? surfaceAt(p) : 0;
+    shipLift = damp(shipLift, sNow > 0.02 ? 1800 : 0, sNow > 0.02 ? 0.5 : 4, dt);
+    rig.position.copy(_rigPos).addScaledVector(landing.up, shipLift);
     rig.quaternion.copy(_rigQuat);
+    rig.visible = shipLift < 1500;
 
     // Ship motion inside the rig: a slow hover, a bank into curves, a little pointer steering.
     const sr = ship.root;
@@ -603,7 +625,7 @@ export function mountJourney(canvas: HTMLCanvasElement, opts: JourneyOptions): J
 
     // ---- Camera: the chapter's shot around the ship, eased into the landing shot.
     blendShots(p);
-    const fov = 42 + (reduced ? 0 : 16 * bell) + (portrait ? 16 : 0);
+    let fov = 42 + (reduced ? 0 : 16 * bell) + (portrait ? 16 : 0);
     const tanV = Math.tan((fov * Math.PI) / 360);
     const tanH = tanV * aspect;
     // Focus: the mothership, handing over to the lander during the landing.
@@ -652,10 +674,28 @@ export function mountJourney(canvas: HTMLCanvasElement, opts: JourneyOptions): J
         .addScaledVector(landing.up, lerp(-11, 4.6, k))
         .addScaledVector(landing.fwd, 40);
       _v.copy(_target).lerp(_look, cb);
-      camera.lookAt(_v);
     } else {
-      camera.lookAt(_target);
+      _v.copy(_target);
     }
+    // On the surface the camera travels one path through the world. The look
+    // point stays put while the camera position moves, so the pointer and the
+    // slow breathing are real parallax.
+    if (surface && sNow > 0) {
+      surface.shot(sNow, portrait, sshot);
+      const k = smooth(0, 0.22, sNow);
+      camera.position.lerp(sshot.pos, k);
+      _v.lerp(sshot.look, k);
+      camera.up.copy(landing.up);
+      fov += (sshot.fov - fov) * k;
+      if (!reduced) {
+        const par = sshot.parallax * k;
+        camera.position
+          .addScaledVector(landing.right, px * par + Math.sin(time * 0.21) * par * 0.14)
+          .addScaledVector(landing.up, -py * par * 0.45 + Math.sin(time * 0.33 + 1) * par * 0.09)
+          .addScaledVector(landing.fwd, Math.sin(time * 0.17 + 2) * par * 0.2);
+      }
+    }
+    camera.lookAt(_v);
     // Put the focus where the shot wants it on screen, then add roll and shake.
     const off = 1 - Math.max(c1, cb);
     camera.rotateY(Math.atan(sx * tanH) * off);
@@ -672,19 +712,55 @@ export function mountJourney(canvas: HTMLCanvasElement, opts: JourneyOptions): J
       camera.updateProjectionMatrix();
     }
     camera.updateMatrixWorld();
-    pxScale = height / (2 * tanV);
+    pxScale = height / (2 * Math.tan((camera.fov * Math.PI) / 360));
 
     // Lights: the hard key comes from the shot's sun direction; the rim in
     // the chapter colour comes from behind the ship as the camera sees it.
     _key.set(S.kx, S.ky, S.kz).normalize().applyAxisAngle(_yAxis, turnAng).applyQuaternion(_rigQuat);
+    const groundK = surface ? smooth(0.2, 0.55, L) : 0;
     if (L > 0) {
-      _v.copy(landing.fwd).addScaledVector(landing.up, 0.35).addScaledVector(landing.right, 0.45).normalize();
+      if (surface) {
+        // The sun as the ground sees it, held just above the horizon so the
+        // light still rakes the sand once the disc is going down.
+        _sunKey.copy(surface.sunWorld);
+        const lift = 0.085 - _sunKey.dot(landing.up);
+        if (lift > 0) _sunKey.addScaledVector(landing.up, lift);
+        _v.copy(_sunKey).normalize();
+      } else {
+        _v.copy(landing.fwd).addScaledVector(landing.up, 0.35).addScaledVector(landing.right, 0.45).normalize();
+      }
       _key.lerp(_v, smooth(0, 0.5, L)).normalize();
     }
-    key.position.copy(_target).addScaledVector(_key, 30);
+    key.position.copy(_target).addScaledVector(_key, shadowWide ? 80 : 30);
     // Evening on the landing world: a lower, warmer sun.
     key.intensity = lerp(3.2, 2.1, smooth(0, 0.6, L));
     key.color.setRGB(1, 0.957, 0.91).lerp(_evening, smooth(0, 0.6, L));
+    if (surface && groundK > 0) {
+      key.intensity = lerp(key.intensity, 1, groundK);
+      key.color.lerp(surface.sunColor, groundK);
+      fill.intensity = lerp(0.12, 0.24, groundK);
+      fill.color.copy(_spaceFillSky).lerp(surface.skyLight, groundK);
+      fill.groundColor.copy(_spaceFillGround).lerp(surface.groundLight, groundK);
+    } else {
+      fill.intensity = 0.12;
+      fill.color.copy(_spaceFillSky);
+      fill.groundColor.copy(_spaceFillGround);
+    }
+    // The low sun throws long shadows, so the shadow camera opens up on the ground.
+    const wantWide = shadows && L > 0.7;
+    if (wantWide !== shadowWide) {
+      shadowWide = wantWide;
+      const sc = key.shadow.camera;
+      const e = wantWide ? 26 : 9;
+      sc.left = -e;
+      sc.right = e;
+      sc.top = e;
+      sc.bottom = -e;
+      sc.far = wantWide ? 170 : 60;
+      sc.updateProjectionMatrix();
+    }
+    // Far from the lander nothing near casts a shadow any more.
+    if (shadows) renderer.shadowMap.autoUpdate = sNow < 1.6;
     key.target.position.copy(_target);
     key.target.updateMatrixWorld();
     _v.subVectors(_target, camera.position).normalize().addScaledVector(_up, 0.35);
@@ -692,13 +768,14 @@ export function mountJourney(canvas: HTMLCanvasElement, opts: JourneyOptions): J
     rim.target.position.copy(_target);
     rim.target.updateMatrixWorld();
     rim.color.copy(_color);
+    rim.intensity = lerp(1.3, 0.35, groundK);
     // The pointer as a ray into the scene, for the things that answer it.
     ptrOn = damp(ptrOn, hasPointer ? 1 : 0, 3, dt);
     ptr.o.copy(camera.position);
     ptr.d.set(ptx, -pty, 0.5).unproject(camera).sub(camera.position).normalize();
     ptr.on = ptrOn * (1 - bell);
 
-    space.update({ p, q, time, dt, speed, boost, color: _color, camera, fwd: _fwd, reduced, pxScale, dpr, warp: reduced ? 0 : bell, ptr, heading: Math.cos(turnAng), land: L });
+    space.update({ p, q, time, dt, speed, boost, color: _color, camera, fwd: _fwd, reduced, pxScale, dpr, warp: reduced ? 0 : bell, ptr, heading: Math.cos(turnAng), land: L, s: sNow });
     const fog = scene.fog as FogExp2;
     fog.color.setRGB(0.012, 0.014, 0.03).lerp(_color, 0.04).lerp(space.haze.color, space.haze.weight);
     fog.density = lerp(0.0008, space.haze.density, space.haze.weight);
@@ -711,7 +788,8 @@ export function mountJourney(canvas: HTMLCanvasElement, opts: JourneyOptions): J
     const sRad = radius / Math.max(0.5, depth) / (2 * tanV);
     screen.x = fx0;
     screen.y = 1 - fy0;
-    screen.r = sRad;
+    // On the surface the shots leave the words their own side of the frame.
+    screen.r = sNow > 0 ? 0 : sRad;
     screen.jump = jump;
     if (opts.onShip) opts.onShip(screen);
 

@@ -47,6 +47,7 @@ import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js
 import { additive, GlowBatch } from "./fx";
 import { NOISE } from "./glsl";
 import { CROSS, type FlightPath, type Landing } from "./path";
+import { buildSurface, type Surface } from "./surface";
 import { rng } from "./textures";
 
 /** The pointer as a ray in world space. on: 0 when there is no pointer. */
@@ -64,6 +65,11 @@ export interface PieceFrame {
   ptr: PointerRay;
   /** Landing phase 0..1 (touchdown at 0.84), driven by the engine's clock. */
   land: number;
+  /** Surface progress: 0 landed, 1 first steps, 2 helmet, 3 touch. */
+  s: number;
+  pxScale: number;
+  dpr: number;
+  reduced: boolean;
 }
 
 export interface Piece {
@@ -80,6 +86,10 @@ export interface Piece {
   flare?: { pos: Vector3; color: Color; strength: number };
   /** Air in this world: fog colour and density. */
   haze?: { color: Color; density: number };
+  /** The live surface world, on the landing piece. */
+  surface?: Surface;
+  /** 0 in orbit, 1 once the surface fills the view. */
+  cover?: number;
   update?(f: PieceFrame): void;
 }
 
@@ -1393,44 +1403,10 @@ function writing(i: number, color: Color, ctx: Ctx): Piece {
 
 // ------------------------------------------------------------------ landing world
 
-/** Simple 2D value noise for the dunes, deterministic. */
-function noise2(x: number, z: number) {
-  const ix = Math.floor(x);
-  const iz = Math.floor(z);
-  const fx = x - ix;
-  const fz = z - iz;
-  const h = (a: number, b: number) => {
-    const s = Math.sin(a * 127.1 + b * 311.7) * 43758.5453;
-    return s - Math.floor(s);
-  };
-  const sx = fx * fx * (3 - 2 * fx);
-  const sz = fz * fz * (3 - 2 * fz);
-  const a = h(ix, iz);
-  const b = h(ix + 1, iz);
-  const c = h(ix, iz + 1);
-  const d = h(ix + 1, iz + 1);
-  return a + (b - a) * sx + (c - a) * sz + (a - b - c + d) * sx * sz;
-}
-function fbm2(x: number, z: number) {
-  return noise2(x, z) * 0.55 + noise2(x * 2.1 + 5.2, z * 2.1 + 1.3) * 0.3 + noise2(x * 4.3 + 9.1, z * 4.3 + 7.7) * 0.15;
-}
-
-/** Dune height in the landing site's frame; flat where the lander touches down. */
-function dune(x: number, z: number) {
-  const n1 = fbm2(x * 0.006, z * 0.006);
-  const w = x * 0.03 + z * 0.011 + n1 * 6;
-  const crest = Math.pow(0.5 + 0.5 * Math.sin(w), 2.4);
-  let h = crest * (3.5 + 9 * n1) + fbm2(x * 0.035, z * 0.035) * 1.6;
-  const r = Math.hypot(x, z);
-  h *= smooth(6, 30, r);
-  return h;
-}
-
 /**
- * The landing world: a desert forest under a red eclipse low on the horizon.
- * Dunes around the site, sparse strange trees, small glowing plants, cloud
- * banks the lander comes down through, dust in the air, a pale moon, and the
- * mothership waiting in the sky.
+ * The landing world. From orbit: a planet, a low sun and cloud banks the lander
+ * comes down through. Below the clouds it hands over to the surface (surface.ts),
+ * the live desert world that carries the rest of the story.
  */
 function landingWorld(i: number, color: Color, ctx: Ctx): Piece {
   const { low, landing: l } = ctx;
@@ -1440,8 +1416,15 @@ function landingWorld(i: number, color: Color, ctx: Ctx): Piece {
   const U = l.up;
   const F = l.fwd;
   const Rt = l.right;
+  const surface = buildSurface({ low, landing: l, cloudTex: ctx.cloudTex });
+  group.add(surface.group);
+
+  // Everything seen from orbit lives here and goes away below the clouds.
+  const orbit = new Group();
+  group.add(orbit);
   const center = l.pad.clone().addScaledVector(U, -(R + 2.5));
-  const sunDir = F.clone().addScaledVector(U, 0.085).addScaledVector(Rt, 0.3).normalize();
+  const az = (8 * Math.PI) / 180;
+  const sunDir = F.clone().multiplyScalar(Math.cos(az)).addScaledVector(Rt, Math.sin(az)).addScaledVector(U, 0.1).normalize();
   const sunPos = l.pad.clone().addScaledVector(sunDir, 5200);
   const amber = new Color(1.0, 0.45, 0.22).lerp(color, 0.25);
 
@@ -1464,148 +1447,10 @@ function landingWorld(i: number, color: Color, ctx: Ctx): Piece {
   (shell.material as ShaderMaterial).uniforms.uEdge.value = 0.06;
   (shell.material as ShaderMaterial).uniforms.uPower.value = 2.0;
   (shell.material as ShaderMaterial).uniforms.uColor.value = hdr(amber, 2.4);
-  group.add(body);
+  orbit.add(body);
 
-  // The site: everything below is in a frame where Y is up and -Z faces the dawn.
-  const site = new Group();
-  site.position.copy(l.pad);
-  site.quaternion.copy(l.quat);
-  group.add(site);
-  const ground = (x: number, z: number) => dune(x, z) - (x * x + z * z) / (2 * R);
-
-  // Dunes, following the curve of the world so the horizon stays true.
-  const TS = low ? 96 : 180;
-  const SIZE = 820;
-  const tg = new PlaneGeometry(SIZE, SIZE, TS, TS);
-  tg.rotateX(-Math.PI / 2);
-  const tp = tg.getAttribute("position") as BufferAttribute;
-  const tc = new Float32Array(tp.count * 3);
-  const crest = new Color(0.5, 0.26, 0.13);
-  const trough = new Color(0.12, 0.05, 0.03);
-  const cc = new Color();
-  for (let k = 0; k < tp.count; k++) {
-    const x = tp.getX(k);
-    const z = tp.getZ(k);
-    const h = ground(x, z);
-    tp.setY(k, h);
-    const d = dune(x, z);
-    cc.copy(trough).lerp(crest, Math.min(1, 0.2 + d / 9) * (0.8 + 0.4 * noise2(x * 0.2, z * 0.2)));
-    tc.set([cc.r, cc.g, cc.b], k * 3);
-  }
-  tg.setAttribute("color", new BufferAttribute(tc, 3));
-  tg.computeVertexNormals();
-  const sand = new MeshStandardMaterial({ vertexColors: true, roughness: 0.96, metalness: 0, envMapIntensity: 0.2 });
-  const terrain = new Mesh(tg, sand);
-  terrain.receiveShadow = !low;
-  site.add(terrain);
-
-  // Trees: umbrella crowns on twisted trunks, and tall spires hung with pods.
-  const r = rng(808);
-  const tube = (pts: Vector3[], rad: number, seg = 10) => new TubeGeometry(new CatmullRomCurve3(pts), seg, rad, 6, false).toNonIndexed();
-  const barkA: BufferGeometry[] = [tube([new Vector3(0, -0.3, 0), new Vector3(0.15, 1.4, 0.05), new Vector3(0.35, 2.8, -0.1), new Vector3(0.3, 3.4, 0.05)], 0.24)];
-  for (let k = 0; k < 7; k++) {
-    const a = (k / 7) * Math.PI * 2;
-    barkA.push(tube([new Vector3(0.3, 3.3, 0.05), new Vector3(0.3 + Math.cos(a) * 0.8, 3.9, 0.05 + Math.sin(a) * 0.8), new Vector3(0.3 + Math.cos(a) * 1.7, 4.4, 0.05 + Math.sin(a) * 1.7)], 0.07, 6));
-  }
-  const crownA = new SphereGeometry(1, 18, 8, 0, Math.PI * 2, 0, Math.PI / 2).scale(2.5, 0.75, 2.5).translate(0.3, 4.3, 0.05).toNonIndexed();
-  const barkB = new LatheGeometry([new Vector2(0.4, -0.3), new Vector2(0.32, 1.5), new Vector2(0.22, 3.6), new Vector2(0.12, 5.6), new Vector2(0.02, 7.4)], 8).toNonIndexed();
-  const pods: BufferGeometry[] = [];
-  for (const [y, s, a] of [
-    [2.4, 0.5, 0],
-    [3.8, 0.42, 2.1],
-    [5.0, 0.34, 4.2],
-    [6.1, 0.26, 1.0],
-  ])
-    pods.push(new SphereGeometry(s, 10, 8).scale(1, 1.4, 1).translate(Math.cos(a) * 0.35, y, Math.sin(a) * 0.35).toNonIndexed());
-  const podB = mergeGeometries(pods, false)!;
-  const barkMat = standard(0x1c120c, 0.1, 0.85);
-  const crownMat = standard(0x10201b, 0.05, 0.75);
-  crownMat.emissive = new Color(0.0, 0.02, 0.018);
-  const podMat = standard(0x0d2a28, 0.1, 0.4);
-  podMat.emissive = new Color(0.05, 0.35, 0.3);
-  const TN = low ? 26 : 70;
-  const SN = low ? 12 : 30;
-  const trunks = new InstancedMesh(mergeGeometries(barkA, false)!, barkMat, TN);
-  const crowns = new InstancedMesh(crownA, crownMat, TN);
-  const spires = new InstancedMesh(barkB, barkMat, SN);
-  const podsM = new InstancedMesh(podB, podMat, SN);
-  for (const m of [trunks, crowns, spires, podsM]) {
-    m.castShadow = !low;
-    m.frustumCulled = false;
-  }
-  const m4 = new Matrix4();
-  const q4 = new Quaternion();
-  const yAxis = new Vector3(0, 1, 0);
-  const plantPos: Vector3[] = [];
-  const spot = (minR: number) => {
-    for (;;) {
-      // Most trees stand ahead of the closing shot, toward the eclipse.
-      const a = r() < 0.7 ? Math.PI * 1.15 + r() * Math.PI * 0.7 : r() * Math.PI * 2;
-      const rad = minR + Math.pow(r(), 0.8) * 340;
-      const x = Math.cos(a) * rad;
-      const z = Math.sin(a) * rad;
-      // Keep the view from the camera to the lander clear.
-      if (z > -14 && rad < 70) continue;
-      return new Vector3(x, ground(x, z), z);
-    }
-  };
-  for (let k = 0; k < TN; k++) {
-    const p = spot(22);
-    const s = 0.9 + r() * 1.0;
-    q4.setFromAxisAngle(yAxis, r() * Math.PI * 2);
-    m4.compose(p, q4, new Vector3(s, s * (0.8 + r() * 0.5), s));
-    trunks.setMatrixAt(k, m4);
-    crowns.setMatrixAt(k, m4);
-    if (k % 3 === 0) plantPos.push(p.clone().add(new Vector3(r() * 3 - 1.5, 0.3, r() * 3 - 1.5)));
-  }
-  const tipPos: Vector3[] = [];
-  for (let k = 0; k < SN; k++) {
-    const p = spot(26);
-    const s = 0.8 + r() * 0.9;
-    q4.setFromAxisAngle(yAxis, r() * Math.PI * 2);
-    m4.compose(p, q4, new Vector3(s, s * (0.9 + r() * 0.6), s));
-    spires.setMatrixAt(k, m4);
-    podsM.setMatrixAt(k, m4);
-    tipPos.push(new Vector3(0, 7.4, 0).applyMatrix4(m4));
-  }
-  site.add(trunks, crowns, spires, podsM);
-
-  // Small glowing plants on the ground and at the spire tips. They brighten under the pointer.
-  for (let k = 0; k < (low ? 10 : 26); k++) {
-    const a = r() * Math.PI * 2;
-    const rad = 9 + r() * 60;
-    const x = Math.cos(a) * rad;
-    const z = Math.sin(a) * rad;
-    if (z > -6 && Math.abs(x) < 12) continue;
-    plantPos.push(new Vector3(x, ground(x, z) + 0.25, z));
-  }
-  const plants = new GlowBatch(plantPos.length + tipPos.length, fade);
-  plantPos.forEach((p) => plants.add(p.x, p.y, p.z, 0.9, 0.25, 1.0, 0.85, 1.2));
-  tipPos.forEach((p) => plants.add(p.x, p.y, p.z, 1.4, 0.4, 1.0, 0.9, 1.4));
-  site.add(plants.mesh);
-  site.updateMatrixWorld(true);
-  const plantWorld = [...plantPos, ...tipPos].map((p) => p.clone().applyMatrix4(site.matrixWorld));
-  const plantHot = new Float32Array(plantWorld.length);
-
-  // Three marker beacons a probe left around the site.
-  const marks = new GlowBatch(3, fade);
-  for (let k = 0; k < 3; k++) {
-    const a = (k / 3) * Math.PI * 2 + 0.4;
-    marks.add(Math.cos(a) * 14, 0.5, Math.sin(a) * 14, 0.7, 1, 0.6, 0.25, 1);
-  }
-  site.add(marks.mesh);
-
-  // Dust hanging in the dawn air.
-  const air = new Motes(ctx, low ? 120 : 320, new Vector3(0, 8, -30), 70, new Color(1.0, 0.62, 0.32).multiplyScalar(0.9), fade, 0.25);
-  site.add(air.points);
-
-  // A pale moon high on the left of the sun.
-  const moonB = planet(ctx, fade, { radius: 70, a: new Color(0.3, 0.26, 0.2), b: new Color(0.85, 0.78, 0.66), atmo: hdr(amber, 0.3), seed: 6.1, light: sunDir, segs: low ? 24 : 40 });
-  moonB.position.copy(l.pad).addScaledVector(F.clone().addScaledVector(Rt, -0.12).addScaledVector(U, 0.34).normalize(), 2600);
-  group.add(moonB);
-
-  // The red eclipse: a sun low on the horizon with a dark world across it.
-  const SUN_R = 300;
+  // The sun as seen from orbit.
+  const SUN_R = 210;
   const sunMat = new ShaderMaterial({
     vertexShader: PLANET_VS,
     fragmentShader: /* glsl */ `
@@ -1621,37 +1466,20 @@ function landingWorld(i: number, color: Color, ctx: Ctx): Piece {
         vec3 col = mix(uDeep, uHot, clamp(n * 0.9 + n2 * 0.45, 0.0, 1.0)) * pow(mu, 0.4);
         gl_FragColor = vec4(col * uFade, 1.0);
       }`,
-    uniforms: { uHot: { value: new Color(6.0, 2.2, 0.9) }, uDeep: { value: new Color(1.6, 0.12, 0.08) }, uTime: { value: 0 }, uFade: fade },
+    uniforms: { uHot: { value: new Color(8.0, 4.2, 1.6) }, uDeep: { value: new Color(3.2, 1.0, 0.3) }, uTime: { value: 0 }, uFade: fade },
   });
   const sunBall = new Mesh(new SphereGeometry(SUN_R, low ? 32 : 64, low ? 20 : 40), sunMat);
   sunBall.position.copy(sunPos);
-  group.add(sunBall);
-  const eclMat = new ShaderMaterial({
-    vertexShader: PLANET_VS,
-    fragmentShader: /* glsl */ `
-      uniform vec3 uRim; uniform float uFade; uniform vec3 uSun;
-      varying vec3 vObj; varying vec3 vN; varying vec3 vW;
-      void main() {
-        vec3 N = normalize(vN);
-        vec3 V = normalize(cameraPosition - vW);
-        float f = pow(1.0 - max(dot(N, V), 0.0), 5.0);
-        float toward = smoothstep(-0.2, 0.9, dot(N, normalize(uSun - vW)));
-        vec3 col = vec3(0.004, 0.002, 0.003) + uRim * f * (0.15 + 2.5 * toward);
-        gl_FragColor = vec4(col * uFade, uFade);
-      }`,
-    uniforms: { uRim: { value: new Color(3.0, 0.5, 0.25) }, uFade: fade, uSun: { value: sunPos } },
-    transparent: true,
-  });
-  const ecl = new Mesh(new SphereGeometry(SUN_R * 0.8, low ? 32 : 64, low ? 20 : 40), eclMat);
-  ecl.position.copy(l.pad).addScaledVector(sunDir.clone().addScaledVector(U, 0.012).addScaledVector(Rt, -0.01).normalize(), 4300);
-  group.add(ecl);
-  const sun = new GlowBatch(3, fade);
-  sun.add(sunPos.x, sunPos.y, sunPos.z, SUN_R * 6, 1.0, 0.2, 0.12, 1.3);
-  sun.add(sunPos.x, sunPos.y, sunPos.z, SUN_R * 2.4, 1.0, 0.5, 0.3, 1.5);
-  sun.mesh.renderOrder = -10;
-  group.add(sun.mesh);
+  orbit.add(sunBall);
+  const sunGlow = new GlowBatch(2, fade);
+  sunGlow.add(sunPos.x, sunPos.y, sunPos.z, SUN_R * 6, 1.0, 0.36, 0.14, 1.3);
+  sunGlow.add(sunPos.x, sunPos.y, sunPos.z, SUN_R * 2.4, 1.0, 0.6, 0.3, 1.5);
+  sunGlow.mesh.renderOrder = -10;
+  orbit.add(sunGlow.mesh);
 
   // Cloud banks over the site that the lander comes down through.
+  const r = rng(808);
+  const cloudFade = { value: 1 };
   const cl: { pos: Vector3; size: number; color: Color; rot: number }[] = [];
   const cloudCol = new Color(1.0, 0.5, 0.32).lerp(color, 0.3);
   for (let k = 0; k < (low ? 14 : 34); k++) {
@@ -1660,9 +1488,14 @@ function landingWorld(i: number, color: Color, ctx: Ctx): Piece {
     const pos = l.pad.clone().addScaledVector(Rt, Math.cos(a) * rad).addScaledVector(F, Math.sin(a) * rad - 60).addScaledVector(U, 38 + r() * 30);
     cl.push({ pos, size: 40 + r() * 60, color: cloudCol.clone().multiplyScalar(0.18 + r() * 0.16), rot: r() * 6.28 });
   }
-  group.add(puffs(cl, ctx.cloudTex, fade, 0.9));
+  const clouds = puffs(cl, ctx.cloudTex, cloudFade, 0.9);
+  group.add(clouds);
 
-  // Dust thrown up by the braking jets.
+  // Dust thrown up by the braking jets, in the landing site's frame.
+  const site = new Group();
+  site.position.copy(l.pad);
+  site.quaternion.copy(l.quat);
+  group.add(site);
   const DN = low ? 18 : 42;
   const dg = new InstancedBufferGeometry();
   dg.setAttribute("position", new BufferAttribute(new Float32Array([-1, -1, 0, 1, -1, 0, 1, 1, 0, -1, 1, 0]), 3));
@@ -1711,29 +1544,41 @@ function landingWorld(i: number, color: Color, ctx: Ctx): Piece {
   dust.renderOrder = 8;
   site.add(dust);
 
-  return {
+  const haze = { color: new Color(0.17, 0.06, 0.035), density: 0.0024 };
+  const hazeOrbit = new Color(0.17, 0.06, 0.035);
+  const flare = { pos: sunPos.clone(), color: new Color(1.0, 0.45, 0.2), strength: 0.9 };
+  const sunNow = new Vector3();
+
+  const piece: Piece = {
     id: "contact",
     group,
     fade,
     weight: hard(i - 1 + CROSS, i + 100),
     nebula: 0.15,
     warm: { amount: 1.3, dir: sunDir },
-    flare: { pos: sunPos, color: new Color(1.0, 0.35, 0.2), strength: 0.9 },
-    haze: { color: new Color(0.17, 0.06, 0.035), density: 0.0024 },
-    update({ time, dt, ptr, land }) {
+    flare,
+    haze,
+    surface,
+    cover: 0,
+    update({ time, dt, land, s, camera, pxScale, dpr, reduced }) {
       const L = land;
+      // Below the cloud deck the sky and the ground take over from orbit.
+      const cover = smooth(0.22, 0.5, L);
+      piece.cover = cover;
+      orbit.visible = cover < 0.999;
+      cloudFade.value = fade.value * (1 - smooth(0.8, 1.0, L));
+      clouds.visible = cloudFade.value > 0.002;
       dustMat.uniforms.uTime.value = time;
       dustMat.uniforms.uSpread.value = smooth(0.55, 1.0, L);
       dustMat.uniforms.uAmt.value = smooth(0.55, 0.74, L) * (1 - smooth(0.9, 1.0, L)) * 1.6;
-      for (let k = 0; k < plantWorld.length; k++) {
-        plantHot[k] = Math.max(hover(ptr, plantWorld[k], 0.05), plantHot[k] - dt * 0.8);
-        plants.setIntensity(k, 0.9 + 0.35 * Math.sin(time * 1.3 + k * 1.7) + plantHot[k] * 4);
-      }
-      plants.commit();
-      for (let k = 0; k < 3; k++) marks.setIntensity(k, Math.pow(Math.max(0, Math.sin(time * 1.6 + k * 2.1)), 10) * 3 + 0.3);
-      marks.commit();
-      air.update(time);
       sunMat.uniforms.uTime.value = time;
+      surface.update({ time, dt, camera: camera as PerspectiveCamera, cover, s, pxScale, dpr, reduced });
+      haze.color.copy(hazeOrbit).lerp(surface.hazeColor, cover);
+      haze.density = 0.0024 + (0.0011 - 0.0024) * cover;
+      sunNow.copy(surface.sunWorld).multiplyScalar(5200).add(l.pad);
+      flare.pos.copy(sunPos).lerp(sunNow, cover);
+      flare.strength = 0.9 + (0.42 - 0.9) * cover;
     },
   };
+  return piece;
 }

@@ -23,6 +23,7 @@ import { additive } from "./fx";
 import { NOISE } from "./glsl";
 import { travel, type FlightPath, type Landing } from "./path";
 import { buildPieces, VIEW, type Piece, type PieceFrame, type PointerRay } from "./pieces";
+import type { Surface } from "./surface";
 import { rng } from "./textures";
 
 export interface SpaceInput {
@@ -37,6 +38,8 @@ export interface SpaceInput {
   heading: number;
   /** Landing phase 0..1 (touchdown at 0.84). */
   land: number;
+  /** Surface progress: 0 landed, 1 first steps, 2 helmet, 3 touch. */
+  s: number;
   time: number;
   dt: number;
   speed: number;
@@ -65,6 +68,8 @@ export interface Space {
   flare: Flare;
   /** Every set piece, so the engine can warm up their shaders. */
   pieces: Piece[];
+  /** The live surface world. */
+  surface: Surface | null;
 }
 
 export interface Chapter {
@@ -437,7 +442,7 @@ export function buildSpace(path: FlightPath, chapters: Chapter[], low: boolean, 
   const flare: Flare = { pos: new Vector3(), color: new Color(), strength: 0 };
   const skyColor = new Color();
   const haze = { color: new Color(), density: 0, weight: 0 };
-  const frame: PieceFrame = { time: 0, dt: 0, p: 0, camera: null as unknown as PerspectiveCamera, ptr: { o: new Vector3(), d: new Vector3(), on: 0 }, land: 0 };
+  const frame: PieceFrame = { time: 0, dt: 0, p: 0, camera: null as unknown as PerspectiveCamera, ptr: { o: new Vector3(), d: new Vector3(), on: 0 }, land: 0, s: 0, pxScale: 800, dpr: 1, reduced: false };
 
   function update(s: SpaceInput) {
     const { p, time, dt, camera } = s;
@@ -449,6 +454,7 @@ export function buildSpace(path: FlightPath, chapters: Chapter[], low: boolean, 
     // Nebula strength and the dawn glow come from the set pieces in view.
     let neb = 0.22;
     let warm = 0;
+    let cover = 0;
     flare.strength = 0;
     haze.weight = 0;
     VIEW.uPx.value = s.pxScale;
@@ -462,6 +468,10 @@ export function buildSpace(path: FlightPath, chapters: Chapter[], low: boolean, 
     frame.camera = camera;
     frame.ptr = s.ptr;
     frame.land = s.land;
+    frame.s = s.s;
+    frame.pxScale = s.pxScale;
+    frame.dpr = s.dpr;
+    frame.reduced = s.reduced;
     for (const pc of pieces) {
       const w = pc.weight(p);
       const on = w > 0.001;
@@ -474,6 +484,7 @@ export function buildSpace(path: FlightPath, chapters: Chapter[], low: boolean, 
         skyMat.uniforms.uWarmDir.value.copy(pc.warm.dir);
       }
       pc.update?.(frame);
+      if (pc.cover !== undefined) cover = Math.max(cover, pc.cover * w);
       if (pc.haze && w > haze.weight) {
         haze.weight = w;
         haze.color.copy(pc.haze.color);
@@ -485,6 +496,12 @@ export function buildSpace(path: FlightPath, chapters: Chapter[], low: boolean, 
         flare.color.copy(pc.flare.color);
       }
     }
+    // On the ground the deep space behind the sky is not drawn at all.
+    const open = cover < 0.999;
+    sky.visible = open;
+    stars.visible = open;
+    threadCore.visible = open;
+    threadHalo.visible = open;
     skyMat.uniforms.uNebula.value = neb;
     skyMat.uniforms.uWarm.value = warm;
 
@@ -509,7 +526,8 @@ export function buildSpace(path: FlightPath, chapters: Chapter[], low: boolean, 
     threadUniforms.uTime.value = time;
   }
 
-  return { group, update, flare, pieces, haze };
+  const surface = pieces.find((pc) => pc.surface)?.surface ?? null;
+  return { group, update, flare, pieces, haze, surface };
 }
 
 /** Chapter light at progress p, eased between neighbours. */
