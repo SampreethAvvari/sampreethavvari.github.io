@@ -77,33 +77,6 @@ const postFor = (p: any): string | null => {
   return href && postExists(href) ? href : null;
 };
 
-// Per-project gallery deep links. A project gets a "Screenshots" link only
-// when public/gallery/<slug>/ actually holds images or docs. Most projects
-// map to their title slug; the few whose folder name differs are listed.
-const GALLERY_SLUG_FOR: Record<string, string> = {
-  "Doc Coach": "doc-coach",
-};
-const gallerySlugFor = (t: string) => {
-  const key = Object.keys(GALLERY_SLUG_FOR).find((k) => t.includes(k));
-  return key ? GALLERY_SLUG_FOR[key] : slug(t);
-};
-const galleryRoot = path.join(process.cwd(), "public", "gallery");
-const MEDIA_RE = /\.(png|jpe?g|webp|gif|avif|pdf)$/i;
-const liveGallerySlugs = new Set<string>();
-try {
-  for (const d of fs.readdirSync(galleryRoot, { withFileTypes: true })) {
-    if (!d.isDirectory()) continue;
-    const hasMedia = fs.readdirSync(path.join(galleryRoot, d.name)).some((f) => MEDIA_RE.test(f));
-    if (hasMedia) liveGallerySlugs.add(d.name);
-  }
-} catch {
-  // No gallery folder yet, so no Screenshots links.
-}
-const galleryFor = (t: string) => {
-  const s = gallerySlugFor(t);
-  return liveGallerySlugs.has(s) ? s : null;
-};
-
 // Status, read from what each entry says about itself. Industry work that
 // is still running is live unless its own write up says it is not deployed
 // yet (in build) or runs on sample data (a prototype).
@@ -208,7 +181,6 @@ const card = (p: any) => {
     imageStyle: p.imageStyle as string | undefined,
     post: postFor(p),
     demo: (p.demo as string) || null,
-    gallery: galleryFor(p.title),
     link: (p.link as string) || null,
     linkLabel: p.tier === "personal" ? "View on GitHub" : "Open the project",
     tech: (p.tech as string[]) || [],

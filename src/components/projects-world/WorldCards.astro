@@ -51,7 +51,7 @@ const STAR_PARTS = [
     <div class="ax-grid" data-ax-grid>
       {cards.map((c, i) => {
         const face = c.stats[0];
-        const hasLinks = !!(c.post || c.demo || c.gallery || c.link);
+        const hasLinks = !!(c.post || c.demo || c.link);
         const q = [c.title, c.line, c.status.label, ...(c.tech || [])].join(" ").toLowerCase();
         return (
           <article id={c.id} class="ac" data-group={c.group} data-live={c.status.live ? "1" : "0"} data-q={q} style={`--i:${i};`}>
@@ -123,7 +123,6 @@ const STAR_PARTS = [
                   <div class="am-links">
                     {c.post && <a href={c.post} class="ac-go">Read the write up <Icon name="arrow-right" size={14} /></a>}
                     {c.demo && <a href={c.demo} class="am-x">Live demo <Icon name="arrow-right" size={13} /></a>}
-                    {c.gallery && <a href={`/gallery#p-${c.gallery}`} class="am-x">Screenshots</a>}
                     {c.link && (
                       <a href={c.link} target="_blank" rel="noopener" class="am-x">
                         {c.linkLabel} <Icon name="arrow-up-right" size={13} />

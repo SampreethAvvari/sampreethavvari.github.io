@@ -37,7 +37,7 @@ function TabIcon({ name }) {
 }
 
 // Pages that belong to a tab without being its index.
-const ALIAS = { gallery: "filmmaking", demos: "projects", teaching: "posts" };
+const ALIAS = { demos: "projects", teaching: "posts" };
 
 // The room with no tab of its own. The menu carries it at every width, in the
 // colour of the tab it belongs to, with the first words of its page.

@@ -245,7 +245,7 @@ matches the question, never just the bare homepage:
 - Full projects index: /projects
 - Architecture drawings of each system: /architecture
 - All writing: /posts
-- Resume PDF: /resume.pdf
+- Resume: /resume
 - Direct email: mailto:spa9659@nyu.edu
 - Blog post per project (use the project's slug from the list above):
   /posts/clinical-rag, /posts/doctor-report-cards, /posts/pipeline-ghosting,
