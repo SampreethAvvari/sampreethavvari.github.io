@@ -1,6 +1,6 @@
 // The 3D scene behind the six case studies: one WebGL context for the page.
 //
-// Each case study's art hangs on a curved glass slab in a nebula, the six
+// Each case study's art hangs on a curved glass slab among the stars, the six
 // slabs in a line receding into space. Scroll flies the camera from one
 // slab to the next: the slab you leave dissolves from a glowing edge as you
 // pass through it, the next one grows out of the dark with a light sweep
@@ -66,7 +66,7 @@ function pickTier(): Tier {
   const cores = navigator.hardwareConcurrency || 4;
   const mem = (navigator as Navigator & { deviceMemory?: number }).deviceMemory || 8;
   const high = !coarse && cores >= 8 && mem >= 8;
-  return high ? { dpr: 1.5, stars: 2400, tex: 2560 } : { dpr: 1, stars: 1100, tex: 1280 };
+  return high ? { dpr: 1.5, stars: 3600, tex: 2560 } : { dpr: 1, stars: 1600, tex: 1280 };
 }
 
 const NOISE = /* glsl */ `
@@ -89,20 +89,40 @@ const SKY_FS = /* glsl */ `
 precision highp float;
 varying vec2 vUv;
 uniform float uTime; uniform float uAspect; uniform float uOff; uniform float uWarp;
+uniform float uStreak; uniform float uPX; uniform float uPY;
 uniform vec3 uCol1; uniform vec3 uCol2;
 ${NOISE}
+// One sheet of stars. Each grid cell may hold one star, kept far enough from
+// the cell's edge that it is never cut, even stretched by speed.
+vec3 stars(vec2 p, float cells, float seed, float density, float sMin, float sMax) {
+  vec2 g = p * cells + seed;
+  vec2 id = floor(g);
+  vec2 f = fract(g) - 0.5;
+  float h = hash(id + seed);
+  if (h > density) return vec3(0.0);
+  float a = hash(id + 3.1); float b = hash(id + 7.7); float c = hash(id + 11.3); float e = hash(id + 13.7);
+  vec2 d = f - (vec2(a, b) - 0.5) * 0.46;
+  d.y /= 1.0 + uStreak * 0.75;
+  float size = mix(sMin, sMax, c * c * c);
+  float core = smoothstep(size, 0.0, length(d));
+  float twinkle = 0.72 + 0.28 * sin(uTime * (0.5 + 2.2 * e) + a * 40.0);
+  vec3 tint = mix(vec3(1.0, 0.86, 0.72), vec3(0.74, 0.84, 1.0), b);
+  return mix(vec3(1.0), tint, 0.55) * core * core * twinkle * (0.4 + 0.6 * e);
+}
 void main() {
   vec2 p = (vUv - 0.5) * vec2(uAspect, 1.0);
-  vec2 q = p * 1.5 + vec2(uOff * 0.32, uOff * 0.1);
-  float n = fbm(q + vec2(uTime * 0.012, -uTime * 0.008));
-  float m = fbm(q * 1.7 - n * 1.25 + vec2(-uTime * 0.01, uTime * 0.007) + 3.1);
   vec3 col = vec3(0.004, 0.006, 0.014);
-  col += uCol1 * pow(smoothstep(0.28, 0.92, m), 1.7) * 0.95;
-  col += uCol2 * pow(smoothstep(0.42, 1.0, n), 2.4) * 0.6;
-  col += vec3(0.55, 0.6, 0.75) * pow(smoothstep(0.6, 1.0, m), 3.0) * 0.22;
-  col *= 0.7 + 0.3 * smoothstep(0.18, 0.72, n);
-  // The tunnel of light while flying between slabs.
+  // A trace of the case study's colour, so the dark is not dead.
   float r = length(p);
+  col += mix(uCol1, uCol2, 0.3) * 0.045 * (1.0 - smoothstep(0.0, 1.0, r));
+  // Three sheets at three depths: the nearer the sheet, the faster it moves
+  // with the scroll and the pointer.
+  float drift = uTime * 0.0016;
+  vec2 ptr = vec2(uPX, -uPY);
+  col += 0.34 * stars(p + vec2(uOff * 0.02, -uOff * 0.1 - drift) + ptr * 0.004, 150.0, 1.3, 0.34, 0.15, 0.24);
+  col += 0.62 * stars(p + vec2(uOff * 0.05, -uOff * 0.22 - drift * 2.0) + ptr * 0.011, 82.0, 4.7, 0.27, 0.1, 0.22);
+  col += 1.15 * stars(p + vec2(uOff * 0.1, -uOff * 0.42 - drift * 3.5) + ptr * 0.024, 38.0, 9.1, 0.15, 0.05, 0.15);
+  // The tunnel of light while flying between slabs.
   col += mix(uCol1, uCol2, 0.5) * uWarp * 0.34 * (1.0 - smoothstep(0.0, 0.85, r));
   col *= 1.0 - 0.5 * dot(p * 0.85, p * 0.85);
   gl_FragColor = vec4(col, 1.0);
@@ -261,6 +281,9 @@ export function mountCaseGL(
       uAspect: { value: 1.6 },
       uOff: { value: 0 },
       uWarp: { value: 0 },
+      uStreak: { value: 0 },
+      uPX: { value: 0 },
+      uPY: { value: 0 },
       uCol1: { value: accents[0].clone() },
       uCol2: { value: (accents[1] || accents[0]).clone() },
     },
@@ -471,6 +494,7 @@ export function mountCaseGL(
   let slowFrames = 0;
   let sampled = 0;
   let steps = 0;
+  let skyX = state.x;
 
   function draw(now: number) {
     const dtMs = Math.min(64, now - lastNow);
@@ -520,7 +544,7 @@ export function mountCaseGL(
       s.mesh.rotation.y = L.ry + Math.sin(time * 0.17 + i) * 0.035 + (i === k ? e * 0.25 : 0);
       s.mesh.rotation.x = Math.sin(time * 0.13 + i * 2.1) * 0.02;
       const d = s.mesh.position.distanceTo(camPos);
-      // Far slabs fade into the nebula.
+      // Far slabs fade into the dark.
       u.uDim.value = clamp01((d - dist * 1.1) / 70) * 0.85;
       u.uChroma.value = speed;
       u.uBend.value = Math.max(-1, Math.min(1, velS / 2.2));
@@ -548,7 +572,12 @@ export function mountCaseGL(
     // Sky
     const su = skyMat.uniforms;
     su.uTime.value = time;
-    su.uOff.value = t;
+    // The stars follow the whole scroll, holds included, with a little weight.
+    skyX += (state.x - skyX) * 0.12;
+    su.uOff.value = skyX;
+    su.uStreak.value = speed;
+    su.uPX.value = pmx;
+    su.uPY.value = pmy;
     su.uWarp.value = warp * 0.8 + ar * 0.5;
     col.copy(accents[k]).lerp(accents[Math.min(n - 1, k + 1)], ez);
     su.uCol1.value.copy(col);
