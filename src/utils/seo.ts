@@ -26,7 +26,7 @@ export function personNode(base: string, opts: { image: string; email: string; d
     url: abs(base, "/"),
     image: abs(base, opts.image),
     email: `mailto:${opts.email}`,
-    jobTitle: "Forward Deployed Engineer",
+    jobTitle: "AI Engineer",
     description: opts.description,
     worksFor: { "@type": "Organization", name: "Hybridge Implants", url: "https://hybridgeimplants.com" },
     alumniOf: [

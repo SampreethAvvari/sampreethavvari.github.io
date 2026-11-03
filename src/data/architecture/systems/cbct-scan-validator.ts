@@ -51,7 +51,7 @@ const arch: Architecture = {
     sftp: {
       kind: "My VM",
       owner: "mine",
-      what: "cbct-sftp, an e2-small VM running OpenSSH. The lab's user is chrooted to two folders: drop for scans coming in, inbox for verdicts going out. A systemd service watches drop and copies each file to the bucket and to a Drive audit folder.",
+      what: "cbct-sftp, an e2-small VM running OpenSSH. The lab's user is chrooted to two folders: drop for scans coming in, inbox for verdicts going out. A systemd service watches drop and copies each file to the bucket and to an audit folder.",
       fails: "The local file is deleted only after both copies land. If either fails, the file stays in drop for the next event to retry.",
       source: "scripts/sftp_to_gcs_and_drive.py:8",
     },
@@ -72,20 +72,20 @@ const arch: Architecture = {
       kind: "My service",
       owner: "mine",
       what: "cbct-validator on Cloud Run: FastAPI, 2 vCPU and 8 GiB, at most 3 instances, scales to zero. A frozen dental segmentation encoder compiled to OpenVINO feeds a small trained head, and a rules router names the artifact family and the next step. It writes a PDF and JSON report, emails the PDF and pushes it back to the lab.",
-      fails: "Email, the Drive archive and the write back are best effort, and each logs its own failure. The report is saved to storage before any of them run.",
+      fails: "Email, the archive and the write back are best effort, and each logs its own failure. The report is saved to storage before any of them run.",
       source: "scan_val/inference/service.py:274",
     },
     drive: {
       kind: "Google Workspace",
       owner: "outside",
-      what: "Staff sort example scans into labeled folders in Drive: good scans, plus one folder per artifact type. That folder tree is the source of truth for training labels.",
+      what: "Staff sort example scans into labeled folders: good scans, plus one folder per artifact type. That folder tree is the source of truth for training labels.",
       source: "scripts/training_data_sync.py:72",
     },
     etl: {
       kind: "My job",
       owner: "mine",
       what: "training-etl-sync, a Cloud Run job with 4 CPUs and 16 GiB, runs at 6 AM every day. It turns each new labeled zip into a tensor under a versioned prefix with the same ETL code the validator runs, and skips anything already done at that version. A lock object keeps two runs from overlapping.",
-      fails: "A scan that fails twice moves to a Manual review folder in Drive, and I get an email.",
+      fails: "A scan that fails twice moves to a manual review folder, and I get an email.",
       source: "scripts/training_data_sync.py:125",
     },
     trainer: {
@@ -117,7 +117,7 @@ const arch: Architecture = {
   },
   breaks: [
     { title: "Eventarc fires twice", body: "The first run moves the zip to processed/, so the second finds nothing to score. Skipped events answer 200 and real failures 500, so only real failures retry.", source: "scan_val/inference/service.py:326" },
-    { title: "One upload of two fails", body: "The SFTP box deletes its copy only after the bucket and Drive both have the file. Until then the file waits in drop for the next retry.", source: "scripts/sftp_to_gcs_and_drive.py:8" },
+    { title: "One upload of two fails", body: "The SFTP box deletes its copy only after the bucket and the audit folder both have the file. Until then the file waits in drop for the next retry.", source: "scripts/sftp_to_gcs_and_drive.py:8" },
     { title: "A scan will not convert", body: "The ETL tries twice, then moves the zip to a Manual review folder, logs the error and emails me.", source: "scripts/training_data_sync.py:16" },
   ],
   tuned: [

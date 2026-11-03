@@ -36,7 +36,7 @@ facts:
 
 ## The problem
 
-The consult grader had been live for about a week, and it was a polite liar. A run could show complete while the email never went out and the master Sheet never got its row. Some consults never showed up at all.
+The consult grader had been live for about a week, and it was a polite liar. A run could show complete while the email never went out and the log never got its row. Some consults never showed up at all.
 
 The complaints came in two shapes. "I ran it but no email came." And errors nobody could see in All Runs, the dashboard table. I was rerunning consults by hand and could not always say why the first run had failed.
 

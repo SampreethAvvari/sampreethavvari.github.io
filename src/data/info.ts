@@ -9,7 +9,7 @@ export const info = {
 
   about: {
     description:
-      "I'm an AI engineer who likes building things right next to the people who'll actually use them. After my MS at NYU, I joined a dental implant company as its only engineer, and the systems I ship there are used every day by doctors, coordinators, finance and the lab. I also make movies, which is where I learned to work with people who don't write code.",
+      "I'm an AI engineer who likes building things right next to the people who'll actually use them. After my MS at NYU, I joined a dental implant company as its only engineer, and the systems I ship there are built for doctors, coordinators, finance and the lab. I also make movies, which is where I learned to work with people who don't write code.",
     // Everything on one axis for the About timeline. start/end are "YYYY-MM";
     // "present" pins to today. short is the label inside the bar.
     timeline: [
@@ -205,7 +205,7 @@ export const info = {
           "[Accounting Automation Suite](/posts/accounting-automation). Our controller's nine Python scripts moved from a laptop terminal to one page behind IAP in one evening. Every question is asked before the run, and every script edit is tested before it is committed.",
           "[Reconciliation](/posts/reconciliation). A deterministic engine that cross checks the schedule, production ledger, and clinical notes across Eaglesoft and Denticon to confirm every patient seen got documented and billed correctly, surfacing only the exceptions. About 70 hours a week of manual cross checking by the insurance team became an exception review; live on Cloud Run.",
           "[Centralized Diagnostic Filter](/posts/cdf-diagnostic-filter). Intake and experience surveys with Gemini writing the doctor's page and a panorex read under the founder's own ruleset. Every Gemini call falls back through newer models, and clinic emails wait for both reports.",
-          "[Platform map](/posts/platform). 45 live services in 14 Google Cloud projects for three offices and a lab. One service holds the Denticon credentials, every other app reads the mirror through a registry, and six apps file feature requests through one relay.",
+          "[Platform map](/posts/platform). 45 live services in 14 Google Cloud projects for three offices and a lab. One service holds the Denticon credentials, the apps that need it read the mirror through a registry, and six apps file feature requests through one relay.",
         ],
       },
       {
@@ -408,27 +408,27 @@ export const info = {
       flagshipRank: 1,
       date: "Jun 2026 to present",
       description:
-        "I built the staff side of our patient platform: one row per patient, every document one click away, and a live read only mirror of the practice management system that the estimator and capacity planner read through.",
+        "I built the staff side of our patient platform: one row per patient, with linked records one click away, and a live read only mirror of the practice management system that the estimator and capacity planner read through.",
       link: "",
       post: "/posts/patient-dashboard",
       details: {
         summary_short:
-          "The staff dashboard behind the CDF platform. One row per patient for treatment coordinators, every document one click away, and a read only Denticon mirror that the estimator and capacity planner read through.",
+          "The staff dashboard behind the CDF platform. One row per patient for treatment coordinators, with linked records one click away, and a read only Denticon mirror that the estimator and capacity planner read through.",
         stats: [
           { value: "453 of 453", label: "Blind test against bookings: every chart the record linker picked was right" },
           { value: "2.6 min", label: "How far the Denticon mirror trailed once the sync ran on a timer, down from 6.0 days" },
-          { value: "81 of 103", label: "Intake surveys that linked to their chart on their own by Sep 30" },
+          { value: "About four in five", label: "Intakes link to their chart on their own" },
           { value: "259 links", label: "Put onto charts by the first backfill with 0 errors, each audited and undoable" },
         ],
         star: {
           problem:
             "Coordinators had four tabs and four ids for one patient. Each system named a patient its own way: the intake survey by response id, the estimator by its own number, the consult grader by Zoom meeting, the experience survey by email. The Denticon id sat in three of them as a hand typed field nothing checked, so it joined nothing.",
           solution:
-            "Two Cloud Run services from one image. The dashboard, behind Google sign in limited to the company domain, holds no Denticon credentials; a sync service that serves no pages holds them. Webhooks and three scheduled jobs keep a Firestore mirror of offices, providers, patients and appointments current, and a registry API with one secret per caller serves it to the estimator and the capacity planner. Profiles join every record on the Denticon id at read time.",
+            "Two Cloud Run services from one image. The dashboard, behind Google sign in limited to the company domain, holds no Denticon credentials; a sync service that serves no pages holds them. Webhooks and three scheduled jobs keep a Firestore mirror of offices, providers, patients and appointments current, and a registry API with one secret per caller serves it to the estimator and the capacity planner. Profiles join linked records on the Denticon id at read time.",
           process:
             "The vendor API has no patient search, so the mirror is the only patient index there is. It also ignores unknown query parameters and returns the whole table with a 200, so a parameter is allowed only once it is proven to change totalCount. The record matcher was attacked from three angles before it could write, ran in shadow mode, and refuses when unsure. A person's decision always wins: each link write is a transaction that decides again on fresh documents, and every link is versioned, audited and undoable. A journey step with no linked chart reads as unknown.",
           result:
-            "Started in June 2026 and rebuilt around the Denticon API in September; the sync read the live practice on 29 September. Once the sync ran on a timer the mirror went from 6.0 days behind to 2.6 minutes behind, the linker picked the right chart 453 times out of 453 in a blind test against bookings, 81 of 103 intakes had linked to their chart on their own by 30 September, and the capacity planner reads the registry every minute.",
+            "Started in June 2026 and rebuilt around the Denticon API in September; the sync read the live practice on 29 September. Once the sync ran on a timer the mirror went from 6.0 days behind to 2.6 minutes behind, the linker picked the right chart 453 times out of 453 in a blind test against bookings, about four in five intakes link to their chart on their own, and the capacity planner reads the registry every minute.",
         },
         summary:
           "The staff side of the Centralized Diagnostic Filter platform for treatment coordinators: patients, intake surveys, manual intake, patient experience, estimates and consultations in one place. Behind it sit a read only Denticon mirror kept fresh by webhooks and scheduled sweeps, a record matcher that refuses when unsure, and a registry API that other internal apps read through.",
@@ -534,6 +534,7 @@ export const info = {
     },
     {
       title: "CBCT Scan Validator",
+      status: "In testing",
       demo: "/demos/scan-validator",
       tier: "industry",
       date: "Mar to May 2026",
@@ -584,10 +585,10 @@ export const info = {
       post: "/posts/platform",
       details: {
         summary_short:
-          "45 live services on 14 Google Cloud projects, with one service holding the Denticon credentials for every other app.",
+          "45 live services on 14 Google Cloud projects, with one service holding the Denticon credentials for the apps that need it.",
         stats: [
           { value: "45 services", label: "Live on Google Cloud across 14 projects, checked Oct 29, 2026" },
-          { value: "1 key holder", label: "For Denticon: every other app reads the mirror through the CDF registry" },
+          { value: "1 key holder", label: "For Denticon: the apps that need it read the mirror through the CDF registry" },
           { value: "1 min", label: "The tightest loops: the planner reads the book and the forms worker sweeps" },
           { value: "$132", label: "Google Cloud from Oct 1 to 28 for the six projects the billing export measured" },
         ],
@@ -597,7 +598,7 @@ export const info = {
           solution:
             "Solve each problem where the data already lives. Three shared services carry the most weight: the Denticon sync keeps a copy of Denticon, the CDF registry serves it to other apps, and the PDF renderer turns surveys into reports.",
           process:
-            "One service holds the Denticon credentials, and every other app reads the mirror. Six apps file feature requests through one relay into one list, and a request filed on October 28 was live 19 minutes later.",
+            "One service holds the Denticon credentials, and the apps that need it read the mirror. Six apps file feature requests through one relay into one list, and a request filed on October 28 was live 19 minutes later.",
           result:
             "45 live services in 14 Google Cloud projects on October 29, 2026. The six projects the billing export measured cost $132 from October 1 to 28.",
         },
@@ -828,7 +829,7 @@ export const info = {
         ],
       },
       imageStyle: "object-position: center 20%;",
-      tech: ["FastAPI", "Vertex AI Gemini 2.5 Pro", "Cloud Run", "Firestore", "BigQuery", "Google Sheets", "Gmail API", "Drive API"],
+      tech: ["FastAPI", "Vertex AI Gemini 2.5 Pro", "Cloud Run", "Firestore", "BigQuery", "Gmail API"],
       img_alt: "Doc Coach, Hybridge Implants LLC",
       img_path: "/doc-coach.png",
     },
@@ -853,7 +854,7 @@ export const info = {
         ],
         star: {
           problem:
-            "An earlier n8n grader proved the idea. Every hour it scored calls as a flat sum out of 60, wrote each result into a Google Doc named after the patient, shared it with the whole company and emailed a link. It kept no database, so no coordinator had a trend, and no quote stood behind a score.",
+            "An earlier n8n grader proved the idea. Every hour it scored calls as a flat sum out of 60, wrote each result into a Google Doc and emailed a link. It kept no database, so no coordinator had a trend, and no quote stood behind a score.",
           solution:
             "A full rebuild on Google Cloud. Every five minutes from 6 AM to 6 PM a Cloud Run Job takes the new recordings from the phone system's SFTP drop, transcribes them with Vertex AI Gemini, keeps the new patient calls, and grades each on six criteria with a transcript quote behind each score, plus three hard gates. Verdicts land in BigQuery, and each coordinator gets the report by email.",
           process:

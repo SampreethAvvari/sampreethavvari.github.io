@@ -7,8 +7,8 @@
       "data": {
         "owner": "SampreethAvvari",
         "description": "Config files for my GitHub profile.",
-        "stars": 0,
         "url": "https://github.com/SampreethAvvari/SampreethAvvari",
+        "stars": 0,
         "languages": [
           "Jupyter Notebook"
         ],
@@ -33,8 +33,8 @@
       "data": {
         "owner": "SampreethAvvari",
         "description": "",
-        "stars": 0,
         "url": "https://github.com/SampreethAvvari/sampreethavvari.github.io",
+        "stars": 0,
         "languages": [
           "TypeScript",
           "Astro",
@@ -97,9 +97,7 @@
       "label": "Solstice-MVP",
       "data": {
         "owner": "KingSing22",
-        "description": "Solstice App",
         "stars": 0,
-        "url": "https://github.com/KingSing22/Solstice-MVP",
         "languages": [
           "TypeScript",
           "CSS",
@@ -117,9 +115,7 @@
       "label": "cbct-scan-validator",
       "data": {
         "owner": "hybridge-implants",
-        "description": "CBCT scan quality validator for dental imaging — 9-class artifact classifier with MLOps pipeline",
         "stars": 0,
-        "url": "https://github.com/hybridge-implants/cbct-scan-validator",
         "languages": [
           "Python",
           "HTML",
@@ -164,9 +160,7 @@
       "label": "treatment-estimator",
       "data": {
         "owner": "hybridge-implants",
-        "description": "",
         "stars": 0,
-        "url": "https://github.com/hybridge-implants/treatment-estimator",
         "languages": [
           "TypeScript",
           "JavaScript",
@@ -185,9 +179,7 @@
       "label": "hybridge-consultation-qa",
       "data": {
         "owner": "hybridge-implants",
-        "description": "Hybridge Consultation QA — Zoom transcript → Vertex AI Gemini scoring → color-coded reports → master Sheet ledger. Multi-tenant Zoom, web UI for manual triggers.",
         "stars": 0,
-        "url": "https://github.com/hybridge-implants/hybridge-consultation-qa",
         "languages": [
           "Python",
           "JavaScript",
@@ -214,9 +206,7 @@
       "label": "hybridge-accounting-tools",
       "data": {
         "owner": "hybridge-implants",
-        "description": "",
         "stars": 0,
-        "url": "https://github.com/hybridge-implants/hybridge-accounting-tools",
         "languages": [
           "Python",
           "HTML",
@@ -235,9 +225,7 @@
       "label": "voiceagents-demo",
       "data": {
         "owner": "RivachLLP",
-        "description": "",
         "stars": 0,
-        "url": "https://github.com/RivachLLP/voiceagents-demo",
         "languages": [
           "TypeScript",
           "Python",
@@ -259,9 +247,7 @@
       "label": "hybridge-npc-coaching",
       "data": {
         "owner": "hybridge-implants",
-        "description": "Hybridge NPC Call Coaching System: post-call AI scoring of New Patient Coordinator calls against the Hybridge playbook.",
         "stars": 0,
-        "url": "https://github.com/hybridge-implants/hybridge-npc-coaching",
         "languages": [
           "Python",
           "TypeScript",
@@ -289,8 +275,8 @@
       "data": {
         "owner": "SampreethAvvari",
         "description": "",
-        "stars": 2,
         "url": "https://github.com/SampreethAvvari/job-pilot",
+        "stars": 2,
         "languages": [
           "Python",
           "TypeScript",
@@ -316,9 +302,7 @@
       "label": "ledger-notes-verifier",
       "data": {
         "owner": "hybridge-implants",
-        "description": "",
         "stars": 0,
-        "url": "https://github.com/hybridge-implants/ledger-notes-verifier",
         "languages": [
           "Python",
           "CSS",
@@ -337,9 +321,7 @@
       "label": "hybridge-dashboard",
       "data": {
         "owner": "hybridge-implants",
-        "description": "Internal engineering project status dashboard (Next.js + Cloud Run + IAP)",
         "stars": 0,
-        "url": "https://github.com/hybridge-implants/hybridge-dashboard",
         "languages": [
           "TypeScript",
           "HCL",
@@ -358,9 +340,7 @@
       "label": "hybridge-assessment",
       "data": {
         "owner": "hybridge-implants",
-        "description": "HYBRIDGE patient assessment platform — Phase 1 of CDF",
         "stars": 0,
-        "url": "https://github.com/hybridge-implants/hybridge-assessment",
         "languages": [
           "TypeScript",
           "JavaScript",
@@ -381,9 +361,7 @@
       "label": "hybridge-enterprise-search",
       "data": {
         "owner": "hybridge-implants",
-        "description": "Advanced enterprise search RAG for Hybridge, built on GCP",
         "stars": 0,
-        "url": "https://github.com/hybridge-implants/hybridge-enterprise-search",
         "languages": [
           "Python",
           "TypeScript",
@@ -412,8 +390,8 @@
       "data": {
         "owner": "SampreethAvvari",
         "description": "Public demo of JobPilot, the open-source job-hunt autopilot. Real console, fictional data. Live at jobpilot-demo.pages.dev",
-        "stars": 0,
         "url": "https://github.com/SampreethAvvari/jobpilot-demo",
+        "stars": 0,
         "languages": [
           "TypeScript",
           "Python",
@@ -432,9 +410,7 @@
       "label": "Golden-Hammer-Sports",
       "data": {
         "owner": "KingSing22",
-        "description": "",
         "stars": 1,
-        "url": "https://github.com/KingSing22/Golden-Hammer-Sports",
         "languages": [
           "TypeScript",
           "PLpgSQL",
@@ -457,8 +433,8 @@
       "data": {
         "owner": "sahajm99",
         "description": "",
-        "stars": 0,
         "url": "https://github.com/sahajm99/previz",
+        "stars": 0,
         "languages": [
           "Python",
           "JavaScript",
@@ -481,8 +457,8 @@
       "data": {
         "owner": "SampreethAvvari",
         "description": "Magic Hour: an AI filmmaking studio. Storyboards, screenwriting, location scouting and character development, all grounded in one story bible. Vertex AI + Cloud Run.",
-        "stars": 0,
         "url": "https://github.com/SampreethAvvari/magic-hour",
+        "stars": 0,
         "languages": [
           "Shell"
         ],
@@ -497,9 +473,7 @@
       "label": "hybridge-marketing-warehouse",
       "data": {
         "owner": "SampreethAvvari",
-        "description": "",
         "stars": 0,
-        "url": "https://github.com/SampreethAvvari/hybridge-marketing-warehouse",
         "languages": [
           "Python",
           "JavaScript",
@@ -519,9 +493,7 @@
       "label": "personal-diary",
       "data": {
         "owner": "SampreethAvvari",
-        "description": "",
         "stars": 0,
-        "url": "https://github.com/SampreethAvvari/personal-diary",
         "languages": [
           "TypeScript",
           "CSS",
@@ -547,8 +519,8 @@
       "data": {
         "owner": "SampreethAvvari",
         "description": "",
-        "stars": 0,
         "url": "https://github.com/SampreethAvvari/ai-systems-tours",
+        "stars": 0,
         "languages": [
           "TypeScript",
           "CSS",
@@ -565,9 +537,7 @@
       "label": "hybridge-treatment-sequence",
       "data": {
         "owner": "hybridge-implants",
-        "description": "Treatment sequence service: the practice's master sequence templates as data, generation from a treatment estimate, and the timeline UI mounted by the estimator and the patients dashboard.",
         "stars": 0,
-        "url": "https://github.com/hybridge-implants/hybridge-treatment-sequence",
         "languages": [
           "TypeScript",
           "JavaScript"
@@ -583,9 +553,7 @@
       "label": "hybridge-cdf",
       "data": {
         "owner": "hybridge-implants",
-        "description": "HYBRIDGE Centralized Diagnostic Filter dashboard. Serves cdf.hybridgeimplants.com. Split out of hybridge-assessment 2026-08-28.",
         "stars": 0,
-        "url": "https://github.com/hybridge-implants/hybridge-cdf",
         "languages": [
           "TypeScript",
           "JavaScript",
@@ -603,9 +571,7 @@
       "label": "hybridge-cowork-dashboard",
       "data": {
         "owner": "hybridge-implants",
-        "description": "Cowork Dashboard: weekly Monday.com exports in Drive to an always-in-sync Cloud Run dashboard. Replaces the Apps Script build. IAP-gated.",
         "stars": 0,
-        "url": "https://github.com/hybridge-implants/hybridge-cowork-dashboard",
         "languages": [
           "TypeScript",
           "JavaScript",
@@ -624,9 +590,7 @@
       "label": "hybridge-capacity-planner",
       "data": {
         "owner": "hybridge-implants",
-        "description": "Shared resource and capacity planning for Hybridge: doctors, assistants and treatment coordinators across ROC, BUF and SYR. Live Denticon demand, treatment sequence projection, availability and coverage..",
         "stars": 0,
-        "url": "https://github.com/hybridge-implants/hybridge-capacity-planner",
         "languages": [
           "TypeScript",
           "PLpgSQL",
@@ -646,9 +610,7 @@
       "label": "hybridge-portal",
       "data": {
         "owner": "hybridge-implants",
-        "description": "Scan intake, duplicate case detection and customer portal around MagicTouch DLCPM",
         "stars": 0,
-        "url": "https://github.com/hybridge-implants/hybridge-portal",
         "languages": [
           "TypeScript",
           "CSS",
@@ -667,9 +629,7 @@
       "label": "hybridge-forms",
       "data": {
         "owner": "hybridge-implants",
-        "description": "Hybridge forms on our own Google Cloud, replacing Tally",
         "stars": 0,
-        "url": "https://github.com/hybridge-implants/hybridge-forms",
         "languages": [
           "TypeScript",
           "Shell",
@@ -690,9 +650,7 @@
       "label": "social-media-automation",
       "data": {
         "owner": "RivachLLP",
-        "description": "Two Gemini agents that find breaking Indian and Hollywood film news and turn it into Instagram posts I approve from Telegram.",
         "stars": 0,
-        "url": "https://github.com/RivachLLP/social-media-automation",
         "languages": [],
         "primary_language": "",
         "topics": [],
@@ -705,9 +663,7 @@
       "label": "hybridge-ui-lab",
       "data": {
         "owner": "hybridge-implants",
-        "description": "Practice repo for the UI restyle",
         "stars": 0,
-        "url": "https://github.com/hybridge-implants/hybridge-ui-lab",
         "languages": [
           "Python",
           "HTML",
@@ -725,9 +681,7 @@
       "label": "hybridge-launchpad",
       "data": {
         "owner": "hybridge-implants",
-        "description": "Every Hybridge app in one place, plus the Work board for leadership",
         "stars": 0,
-        "url": "https://github.com/hybridge-implants/hybridge-launchpad",
         "languages": [
           "TypeScript",
           "PowerShell",
@@ -746,9 +700,7 @@
       "label": "hybridge-website",
       "data": {
         "owner": "hybridge-implants",
-        "description": "Redesign of hybridgeimplants.com: Astro site, AR smile generator, online referral form. Preview, not the live site.",
         "stars": 0,
-        "url": "https://github.com/hybridge-implants/hybridge-website",
         "languages": [
           "JavaScript",
           "Astro",
@@ -769,9 +721,7 @@
       "label": "hybridge-lab-website",
       "data": {
         "owner": "hybridge-implants",
-        "description": "Hybridge Dental Lab website redesign (Astro, Cloud Run preview)",
         "stars": 0,
-        "url": "https://github.com/hybridge-implants/hybridge-lab-website",
         "languages": [
           "Astro",
           "TypeScript",
@@ -792,9 +742,7 @@
       "label": "tastemaker-api-py",
       "data": {
         "owner": "tastemakerclub",
-        "description": "Tastemaker Backend (Python)",
         "stars": 0,
-        "url": "https://github.com/tastemakerclub/tastemaker-api-py",
         "languages": [
           "Python",
           "Shell",
@@ -813,9 +761,7 @@
       "label": "tastemaker-app",
       "data": {
         "owner": "tastemakerclub",
-        "description": "The App!",
         "stars": 0,
-        "url": "https://github.com/tastemakerclub/tastemaker-app",
         "languages": [
           "TypeScript",
           "JavaScript"
@@ -832,8 +778,8 @@
       "data": {
         "owner": "RivachLLP",
         "description": "",
-        "stars": 0,
         "url": "https://github.com/RivachLLP/Bluetroop.com",
+        "stars": 0,
         "languages": [
           "TypeScript",
           "Astro",
@@ -852,8 +798,8 @@
       "data": {
         "owner": "RivachLLP",
         "description": "",
-        "stars": 0,
         "url": "https://github.com/RivachLLP/KandJServices-website",
+        "stars": 0,
         "languages": [
           "Astro",
           "CSS",
@@ -870,9 +816,7 @@
       "label": "LLM-Persuasion",
       "data": {
         "owner": "marcomorucci",
-        "description": "",
         "stars": 0,
-        "url": "https://github.com/marcomorucci/LLM-Persuasion",
         "languages": [
           "Python"
         ],
@@ -888,8 +832,8 @@
       "data": {
         "owner": "ds28-ops",
         "description": "Repository for ECE-GY 9183 course project on Loan Default Risk Assessment",
-        "stars": 1,
         "url": "https://github.com/ds28-ops/loan-default-risk-assessment",
+        "stars": 1,
         "languages": [
           "Jupyter Notebook",
           "Python",
@@ -912,8 +856,8 @@
       "data": {
         "owner": "SampreethAvvari",
         "description": "",
-        "stars": 0,
         "url": "https://github.com/SampreethAvvari/MLOps",
+        "stars": 0,
         "languages": [],
         "primary_language": "",
         "topics": [],
@@ -927,8 +871,8 @@
       "data": {
         "owner": "SampreethAvvari",
         "description": "",
-        "stars": 0,
         "url": "https://github.com/SampreethAvvari/NLP",
+        "stars": 0,
         "languages": [
           "Python"
         ],
@@ -944,8 +888,8 @@
       "data": {
         "owner": "SampreethAvvari",
         "description": "",
-        "stars": 1,
         "url": "https://github.com/SampreethAvvari/BigData",
+        "stars": 1,
         "languages": [
           "Jupyter Notebook",
           "Python",
@@ -963,8 +907,8 @@
       "data": {
         "owner": "SampreethAvvari",
         "description": "Finetuned Llama 3 to detect fake news in #donaldtrump and #joebiden tweets on the benchmark LIAR dataset and used a pretrained RoBERTa model to perform sentiment analysis on the misinformation classification to perform analysis on the spread of negativity and misinformation during US 2020 elections and the impact it had on the results.",
-        "stars": 3,
         "url": "https://github.com/SampreethAvvari/us2020electionanalysis",
+        "stars": 3,
         "languages": [
           "Jupyter Notebook"
         ],
@@ -980,8 +924,8 @@
       "data": {
         "owner": "ds28-ops",
         "description": "Mini-Project repo for Deep Learning Course Spring 2024",
-        "stars": 0,
         "url": "https://github.com/ds28-ops/DL_Resnet",
+        "stars": 0,
         "languages": [
           "Jupyter Notebook"
         ],
@@ -997,8 +941,8 @@
       "data": {
         "owner": "SampreethAvvari",
         "description": "",
-        "stars": 0,
         "url": "https://github.com/SampreethAvvari/NLPprojects",
+        "stars": 0,
         "languages": [],
         "primary_language": "",
         "topics": [],
@@ -1012,8 +956,8 @@
       "data": {
         "owner": "NYU-3Idiots",
         "description": "Building Resnet Architecture Model for Image Classification on CIFAR 10 Dataset with a contraint of having under 5 Million Parameters",
-        "stars": 0,
         "url": "https://github.com/NYU-3Idiots/ResNetUnder50",
+        "stars": 0,
         "languages": [],
         "primary_language": "",
         "topics": [],
@@ -1027,8 +971,8 @@
       "data": {
         "owner": "SampreethAvvari",
         "description": "",
-        "stars": 0,
         "url": "https://github.com/SampreethAvvari/TestasData",
+        "stars": 0,
         "languages": [
           "Jupyter Notebook"
         ],
@@ -1044,8 +988,8 @@
       "data": {
         "owner": "SampreethAvvari",
         "description": "",
-        "stars": 0,
         "url": "https://github.com/SampreethAvvari/datasciencebootcamp",
+        "stars": 0,
         "languages": [
           "Jupyter Notebook"
         ],
@@ -1060,28 +1004,11 @@
       "label": "HW2",
       "data": {
         "owner": "nyu-big-data",
-        "description": "This is the sqlite / rdbms homework",
         "stars": 0,
-        "url": "https://github.com/nyu-big-data/HW2",
         "languages": [
           "Python"
         ],
         "primary_language": "Python",
-        "topics": [],
-        "private": true
-      }
-    },
-    {
-      "id": "repo:nyu-big-data-homework-1-sampreethavvari",
-      "type": "repo",
-      "label": "homework-1-SampreethAvvari",
-      "data": {
-        "owner": "nyu-big-data",
-        "description": "homework-1-SampreethAvvari created by GitHub Classroom",
-        "stars": 0,
-        "url": "https://github.com/nyu-big-data/homework-1-SampreethAvvari",
-        "languages": [],
-        "primary_language": "",
         "topics": [],
         "private": true
       }
@@ -1092,9 +1019,7 @@
       "label": "needforspeed",
       "data": {
         "owner": "Safdarahmedd",
-        "description": "",
         "stars": 0,
-        "url": "https://github.com/Safdarahmedd/needforspeed",
         "languages": [
           "C++",
           "C"
@@ -1117,8 +1042,8 @@
       "data": {
         "owner": "SampreethAvvari",
         "description": "",
-        "stars": 0,
         "url": "https://github.com/SampreethAvvari/RTES",
+        "stars": 0,
         "languages": [
           "C++",
           "C"
@@ -1134,9 +1059,7 @@
       "label": "AIA",
       "data": {
         "owner": "SampreethAvvari",
-        "description": "",
         "stars": 0,
-        "url": "https://github.com/SampreethAvvari/AIA",
         "languages": [],
         "primary_language": "",
         "topics": [],
@@ -1149,9 +1072,7 @@
       "label": "Java-Practice",
       "data": {
         "owner": "SampreethAvvari",
-        "description": "",
         "stars": 0,
-        "url": "https://github.com/SampreethAvvari/Java-Practice",
         "languages": [],
         "primary_language": "",
         "topics": [],
@@ -1164,9 +1085,7 @@
       "label": "Python-Practice",
       "data": {
         "owner": "SampreethAvvari",
-        "description": "",
         "stars": 0,
-        "url": "https://github.com/SampreethAvvari/Python-Practice",
         "languages": [],
         "primary_language": "",
         "topics": [],
@@ -2196,5 +2115,5 @@
       "rel": "uses-language"
     }
   ],
-  "generatedAt": "2026-11-02T22:36:28.241Z"
+  "generatedAt": "2026-11-03T17:22:35.169Z"
 }

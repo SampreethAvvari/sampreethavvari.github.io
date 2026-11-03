@@ -6,8 +6,8 @@ Sampreeth Avvari is an AI Engineer based in New York. He completed his MS in
 Computer Engineering at NYU (May 2025, 3.84 GPA) and since September 2025 has
 been the only engineer at Hybridge Implants, a dental implant practice with
 three offices and its own lab, building production systems alongside the
-people who use them. He also makes movies as a writer, director, editor, and
-composer.
+people who use them. He also makes movies: he writes, directs, shoots, edits
+and scores them.
 
 Current role: AI Engineer at Hybridge Implants (Sept 2025 to present).
 
@@ -210,8 +210,8 @@ Earlier work:
   plus regression testing and bug triage.
 
 Filmmaking credits, nine films:
-- Among Monsters (2026): Director, Writer, Editor, Color, Music. Independent
-  feature in post. IMDb: https://www.imdb.com/title/tt39700295/
+- Among Monsters (2026): Director, Writer, Cinematographer, Editor,
+  Background score. Independent feature in post. IMDb: https://www.imdb.com/title/tt39700295/
 - L'immigrata (October 2026): Assistant Director, Editor.
 - Office Plant (September 2026): Assistant Director, Editor.
 - Extraordinary Lives (upcoming): Director, Writer.

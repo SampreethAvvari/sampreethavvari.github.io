@@ -15,7 +15,7 @@ export const patientAssessment: Tour = {
     "Three near duplicate questionnaires, one per location, ran on a paid vendor. Staff filed each report by hand and re-keyed lead sources into the CRM, several minutes of copy-paste per patient, with the interesting signal (how this patient decides) buried in raw answers.",
   metrics: [
     { label: "Vendor replaced", value: "3-in-1", sub: "one schema-driven form with location routing" },
-    { label: "Manual loop removed", value: "Auto filed", sub: "email, Drive filing and location routing" },
+    { label: "Manual loop removed", value: "Auto filed", sub: "email and location routing" },
     { label: "Questions", value: "30+", sub: "with conditional logic and auto-save" },
     { label: "Clinic email", value: "2 of 2", sub: "reports ready before the clinic email goes" },
   ],
@@ -59,7 +59,7 @@ export const patientAssessment: Tour = {
           "$ submit response #4821 (schema v3)",
           "validate ✓ · risk score 42 (moderate)",
           "render PDF (Playwright, React templates) ✓",
-          "email: patient ✓ · Clinic A list ✓ · Drive: filed ✓",
+          "email: patient ✓ · Clinic A list ✓",
         ],
       },
     },

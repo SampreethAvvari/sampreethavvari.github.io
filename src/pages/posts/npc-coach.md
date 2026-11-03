@@ -38,7 +38,7 @@ facts:
 
 A New Patient Coordinator, an NPC, takes the first phone call. The caller is often nervous and sometimes in pain, and that call decides whether they ever walk in. The practice founder wrote the playbook for it. The founder's rule: the NPC is the patient's "first advocate, not a clinician, not a salesperson," and "correctness always beats conversion."
 
-A grader already existed, built in n8n. Every hour it scored calls as a flat sum out of 60, wrote each result into a Google Doc named after the patient, shared it with the whole company and emailed a link. No database, so no NPC had a trend. No quote behind a score, so nobody could say why a call got a 47. If the workflow died halfway, the call was simply gone.
+A grader already existed, built in n8n. Every hour it scored calls as a flat sum out of 60, wrote each result into a Google Doc and emailed a link. No database, so no NPC had a trend. No quote behind a score, so nobody could say why a call got a 47. If the workflow died halfway, the call was simply gone.
 
 The phone system also records everything: 6,956 recordings in October, most not new patients.
 

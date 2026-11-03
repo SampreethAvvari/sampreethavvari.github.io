@@ -27,14 +27,14 @@ const arch: Architecture = {
   ],
   readouts: [
     { value: "1", unit: "min", label: "the tightest loops: the planner reads the book and the forms worker sweeps deliveries every minute" },
-    { value: "1", unit: "key holder", label: "for Denticon. Every other app reads the mirror through the CDF registry" },
+    { value: "1", unit: "key holder", label: "for Denticon. The apps that need it read the mirror through the CDF registry" },
     { value: "19", unit: "minutes", label: "from a request filed in the Cowork Dashboard to the live fix on Oct 28" },
     { value: "$132", label: "Google Cloud in October for the six projects the billing export measured" },
   ],
   svg,
   views: [
     { id: "patient", label: "One patient's path", focus: ["patients", "pforms", "monday", "renderer", "cdf", "clinic"], note: "A lead form lands on the Monday board. At the consult the intake survey becomes reports and a chart link, and the clinic apps read the book." },
-    { id: "keys", label: "One holder of the Denticon keys", focus: ["denticon", "sync", "cdf", "clinic"], note: "Only the sync service talks to Denticon. Every other app reads the mirror through the CDF registry." },
+    { id: "keys", label: "One holder of the Denticon keys", focus: ["denticon", "sync", "cdf", "clinic"], note: "Only the sync service talks to Denticon. The apps that need it read the mirror through the CDF registry." },
     { id: "requests", label: "Feature requests", focus: ["clinic", "ops", "relay"], note: "Six apps file feature requests through one relay, each with its own Google ID token, into one Launchpad list." },
     { id: "outside", label: "What leaves the building", focus: ["marketing", "monday", "outside", "renderer", "ops"], note: "Each family reaches only the outside systems it needs: Gemini, Gmail, Zoom, the phone system, the lab and the ad platforms." },
   ],
@@ -121,7 +121,7 @@ const arch: Architecture = {
     { title: "Ship from a tag", body: "The estimator, the planner, the CDF and the surveys deploy only from a version tag, and a bad release moves traffic back to the last revision.", source: ".github/workflows/deploy-prod.yaml:13" },
   ],
   guards: [
-    { title: "One holder of the keys", body: "Only the sync service holds Denticon credentials. Every other repo calls the CDF, and none gets its own credentials, not even as a fallback.", source: "hybridge-cdf/docs/HANDOFF.md:225" },
+    { title: "One holder of the keys", body: "Only the sync service holds Denticon credentials. The repos that need it call the CDF, and none gets its own credentials, not even as a fallback.", source: "hybridge-cdf/docs/HANDOFF.md:225" },
     { title: "Every machine call signed", body: "The registry takes one bearer per caller, compared in constant time. The relay and the renderer take Google identity tokens from named service accounts.", source: "hybridge-cdf/lib/registry/auth.ts:26" },
     { title: "Logs carry counts", body: "The forms logger drops answers, names, emails and phones. The sync and the renderer log counts and ids.", source: "hybridge-forms/packages/core/src/log.ts:24" },
   ],

@@ -36,7 +36,7 @@ const hasPublic = (p?: string) =>
     fs.existsSync(path.join(process.cwd(), "public", f)),
   );
 
-const isLive = (s: string) => s === "In production" || s === "Live" || s === "Running program";
+const isLive = (s: string) => s === "In production" || s === "Live";
 
 // The tagline's first sentence finishes the headline; the rest of it opens
 // "What I bring". A tagline that is one sentence splits at its colon.

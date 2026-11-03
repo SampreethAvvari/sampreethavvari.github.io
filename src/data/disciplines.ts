@@ -9,7 +9,7 @@ export type DxStatus =
   | "In build"
   | "In testing"
   | "Design complete"
-  | "Running program"
+  | "Program"
   | "Live"
   | "Paused"
   | "Offline"
@@ -62,7 +62,7 @@ export const disciplines: Discipline[] = [
     rgb: "52, 211, 153",
     icon: "fa-solid fa-wand-magic-sparkles",
     tagline:
-      "LLM systems that hold up in a regulated industry. Structured outputs, evidence rules, and humans where it matters.",
+      "LLM systems built for a dental practice. Structured outputs, evidence rules, and humans where it matters.",
     summary:
       "I build LLM pipelines for a dental practice that fill a schema, quote their evidence, keep patient fields out of logs, and leave the final call to a person.",
     narrative: [
@@ -191,7 +191,7 @@ export const disciplines: Discipline[] = [
           "Duplicate patients proposed by an LLM with mandatory human review, plus structured extraction of free text activity logs.",
         img: "/cowork-dashboard.png",
         highlights: [
-          "No merges on its own. The data has 74 shared phone numbers (married couples)",
+          "No merges on its own. Married couples share phone numbers",
           "Every parse carries a confidence score and source reference for reruns",
           "Consent tokens extracted into an append only ledger",
         ],
@@ -233,7 +233,7 @@ export const disciplines: Discipline[] = [
     narrative: [
       "My role at Hybridge is titled AI engineer, and the work is embedded engineering: the people I build for are surgeons, a VP of finance, treatment coordinators, an operations lead and the lab, and none of them write tickets. Requirements live in their spreadsheets, their meeting transcripts and their workarounds. The discovery work is the work.",
       "The leadership dashboard is the cleanest example. It joined patients to leads by name, and in a June review one office's consults read zero. I measured the join, moved it to the patient boards' own connect column, and the fix linked almost every patient to a lead. Later the finance lead filed a request in the dashboard's own Feature requests tab, and it was live 19 minutes later.",
-      "The other half is enablement. I started an AI Power Hour and office hours for seven nontechnical departments, built from a needs survey, with privacy and compliance covered in every session.",
+      "The other half is enablement. I started an AI Power Hour and office hours for seven nontechnical departments, built from a needs survey.",
       "And sometimes the most valuable deliverable is the honest no. The CRM blueprint I wrote tells leadership plainly: without funded engineering, the correct decision is to stay on the current vendor.",
     ],
     points: [
@@ -255,7 +255,7 @@ export const disciplines: Discipline[] = [
       },
       {
         title: "Enablement and training",
-        body: "Training and office hours that get nontechnical teams to confident, compliant AI use.",
+        body: "Training and office hours that get nontechnical teams to confident AI use.",
       },
       {
         title: "Honest scoping",
@@ -267,7 +267,7 @@ export const disciplines: Discipline[] = [
         name: "Patient Dashboard",
         status: "In production",
         oneLiner:
-          "One row per patient, every document one click away, in a practice where every system named patients differently.",
+          "One row per patient, with linked records one click away, in a practice where every system named patients differently.",
         img: "/patient-dashboard.png",
         href: "/posts/patient-dashboard",
         highlights: [
@@ -334,26 +334,25 @@ export const disciplines: Discipline[] = [
       },
       {
         name: "AI Lab & Office Hours",
-        status: "Running program",
+        status: "Program",
         oneLiner:
           "AI Power Hour sessions and open office hours for seven nontechnical departments, built from a needs survey.",
         img: "/film-and-engineering.png",
         highlights: [
           "Curriculum built from a structured needs survey across seven departments",
           "Decks generated from a build script, versioned like code",
-          "Plain language, no jargon, no code; privacy and compliance in every session",
+          "Plain language, no jargon, no code",
         ],
       },
       {
         name: "Hybridge CRM blueprint",
         status: "Design complete",
         oneLiner:
-          "A ready to build architecture for moving about 15K patient records off Monday.com, with a marketing firewall around patient data.",
+          "A ready to build architecture for moving our patient records off Monday.com, with a marketing firewall around patient data.",
         img: "/enterprise-data.png",
         highlights: [
           "The PRD says it plainly: without funded maintenance, don't build this",
           "Human in the loop dedup; reversible merges; an audit log that captures reads as well as writes",
-          "NY SHIELD analysis citing a $2.85M settlement in Hybridge's own market",
         ],
       },
       {
@@ -521,7 +520,7 @@ export const disciplines: Discipline[] = [
       { lead: "Safe to run twice.", text: "Idempotency at every boundary, so a replay never duplicates anything." },
       { lead: "Read only, by test.", text: "The capacity planner has 0 write methods toward Denticon, held there by a test that fails the build." },
       { lead: "Golden against the old system.", text: "The planner's engine reproduces 360 of 360 day cells from the workbook it replaced." },
-      { lead: "One key holder.", text: "One service holds the Denticon credentials, and every other app reads the mirror through a registry." },
+      { lead: "One key holder.", text: "One service holds the Denticon credentials, and the apps that need it read the mirror through a registry." },
     ],
     strengths: [
       {

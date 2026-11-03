@@ -13,7 +13,7 @@ stats:
     label: "live on Google Cloud across 14 projects, checked on Oct 29, 2026"
     tone: "emerald"
   - value: "1 key holder"
-    label: "for Denticon: every other app reads the mirror through the CDF registry"
+    label: "for Denticon: the apps that need it read the mirror through the CDF registry"
     tone: "blue"
   - value: "$132"
     label: "Google Cloud from Oct 1 to 28 for the six projects the billing export measured"
@@ -106,9 +106,9 @@ Drawings: [Doc Coach](/architecture/doc-coach), [NPC Coach](/architecture/npc-co
 
 Drawings: [CBCT validator](/architecture/cbct-scan-validator), [Doctor Portal](/architecture/doctor-portal).
 
-- **CBCT validator.** When a scan zip lands in storage, a model checks its quality, and a PDF verdict is written and emailed. A storage event wakes it.
+- **CBCT validator.** When the SFTP box hands it a scan zip, a model checks its quality, and a PDF verdict is written and emailed. The scan's arrival wakes it.
 - **SFTP drop box.** A small always on VM that trades files with the lab's scan system.
-- **Training data job.** At 6 AM turns labeled scans in Drive into training data for the model.
+- **Training data job.** At 6 AM turns labeled scans into training data for the model.
 - **CBCT review app.** The testing team uploads a study, records the true verdict, and sees each model's hits and misses.
 - **Doctor Portal.** Where outside doctors will send an Rx and follow their cases, in preview on sample data.
 
@@ -141,7 +141,7 @@ Drawings: [Patient website](/architecture/hybridge-website), [Lab website](/arch
 
 ## What I said no to
 
-**Writing to Denticon.** Every app reads; staff make every real change in Denticon themselves.
+**Writing to Denticon.** The apps that need it only read; staff make every real change in Denticon themselves.
 
 **Replacing the tools staff already use.** Denticon stays the record and Monday stays the board. The services read from them and, for leads, add one item to Monday.
 

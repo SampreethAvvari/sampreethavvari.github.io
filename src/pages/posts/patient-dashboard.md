@@ -2,7 +2,7 @@
 title: "Patient records on one Denticon chart, linked without guessing"
 date: "2026-10-06"
 layout: ../../layouts/PostLayout.astro
-description: "Our coordinators had four tabs and four ids for one patient. I built a read only Denticon mirror, a registry the other apps share, and record links that prove a match before they write."
+description: "Our coordinators had four tabs and four ids for one patient. I built a read only Denticon mirror, a registry other apps share, and record links that prove a match before they write."
 img_path: "/patient-dashboard.png"
 architecture: "patient-dashboard"
 img_alt: "CDF patient dashboard: the day's appointment list beside a patient profile with its journey checkpoints"
@@ -78,13 +78,13 @@ export async function applyMatcherDecision(db: Firestore, w: MatcherWrite): Prom
 
 **Asking patients for a date of birth.** It would make matching easier and add a field to a form patients fill in before meeting anyone. Matching uses email, name, office and booking instead.
 
-**Giving other apps their own Denticon keys.** The capacity planner's first plan kept Denticon secrets in its own project. I cut that. One service holds the credentials, everyone else reads the registry, and revoking one caller's secret does not blind the other.
+**Giving other apps their own Denticon keys.** The capacity planner's first plan kept Denticon secrets in its own project. I cut that. One service holds the credentials, the apps that need it read the registry, and revoking one caller's secret does not blind the other.
 
 **Letting the email rule write.** Email alone is the rule the family case breaks. It runs in shadow mode, recording what it would have linked, until at least 50 of its calls are settled by a coordinator with zero disagreements.
 
 ## Where it landed
 
-It is built for coordinators and office staff at all three offices, and Patients is the page it opens on. Intakes link on their own when a name and a booking agree, which on September 30 covered 81 of 103. I have not measured how often staff open a profile or what time it saves. The billing export for this project only switched on October 28, so there is no measured month of cost yet.
+It is built for coordinators and office staff at all three offices, and Patients is the page it opens on. About four in five intakes link to their chart on their own, when a name and a booking agree. I have not measured how often staff open a profile or what time it saves. The billing export for this project only switched on October 28, so there is no measured month of cost yet.
 
 Still open: a Send intake button that mails a survey link already bound to the chart. Clinical notes cannot be written through the Denticon API, so they still reach the chart by paste.
 

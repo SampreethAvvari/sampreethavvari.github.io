@@ -149,7 +149,7 @@
     <li data-d="what"><b>What it is</b> in one breath</li>
     <li data-d="where"><b>Where it runs</b> and who can use it</li>
   </ul>
-  <p class="foot">Live demo · hybridge-search.web.app</p>
+  <p class="foot">Paused since October 2026</p>
 </section>
 
 <section class="slide">
@@ -264,14 +264,14 @@
   <div class="eyebrow">Roadmap</div>
   <h2>What is next</h2>
   <ul class="big">
-    <li data-d="switch"><b>Live answers switched on in production.</b></li>
+    <li data-d="switch"><b>Live answers ran in production until the pause.</b></li>
     <li data-d="near"><b>Near term:</b> chat attachments, web search toggle, Google Drive sync, multi turn memory, batch uploads, a document library.</li>
     <li data-d="later"><b>Later:</b> voice, dark mode, usage analytics, continuous evaluation, scale hardening.</li>
   </ul>
 </section>
 
 <section class="slide">
-  <div class="eyebrow">Live demo</div>
+  <div class="eyebrow">Demo</div>
   <h2>Watch it work</h2>
   <ul class="big">
     <li data-d="d1"><b>Drop a policy</b> into the vortex and scope it to a group.</li>
@@ -280,7 +280,7 @@
     <li data-d="d4"><b>See two documents disagree,</b> and the answer explain which one it trusted.</li>
     <li data-d="d5"><b>Ask from outside the group:</b> the document simply does not exist for them.</li>
   </ul>
-  <p class="foot">hybridge-search.web.app · questions and feedback welcome</p>
+  <p class="foot">Paused since October 2026</p>
 </section>
 
 <div class="scrim" id="scrim">
@@ -348,7 +348,7 @@
     onedb: ["One database, one query", "Because vectors, keywords, permissions, versions, and chat history share one Postgres, a single SQL query can combine semantically similar with allowed for this user with current version only. That is what makes the security model airtight and fast."],
     discipline: ["How it was built", "Terraform defines every piece of infrastructure. Every deploy is an immutable image tagged with the git commit. Automated tests cover permissions both ways, streaming, versioning, and the UI. Every change was reviewed adversarially before merge, and those reviews caught real permission and correctness bugs."],
     rejected: ["Paths considered and rejected", "Vectorless navigation (an LLM walking a table of contents tree) reads long documents well but costs several model calls and seconds per query. Graph extraction answers multi hop questions but demands heavy upkeep as the corpus shifts. Keyword only search misses paraphrase. Hybrid vectors plus keywords with a reranker won on latency, incremental growth, cost, and permission filtering."],
-    switch: ["Live answers are on", "Vertex AI is enabled in production: query embedding, reranking, grounded Gemini generation, and the full ingestion pipeline (parsing, document cards, chunk embeddings) run live. The guardrails stay in force: grounded answers or honest abstention."],
+    switch: ["Live answers ran in production", "Vertex AI was enabled in production: query embedding, reranking, grounded Gemini generation, and the full ingestion pipeline (parsing, document cards, chunk embeddings) ran live. The guardrails stayed in force: grounded answers or honest abstention."],
     near: ["Near term roadmap", "Chat attachments as conversation scoped context, a web search toggle for questions that should blend public information, Google Drive sync into the corpus, multi turn retrieval memory, batch uploads with one scope, and a persistent document library with supersede and retire actions."],
     later: ["Later", "Voice input, dark mode, automatic conversation titles, analytics on what people ask and where the corpus has gaps, continuous evaluation, and AlloyDB migration when scale demands."],
     d1: ["Demo beat 1: feed it", "Drop a project document into the vortex, walk the scope popup (who can find it, class, date), and watch the status pill go Processing then Ready. Point out that authority is computed, not chosen."],

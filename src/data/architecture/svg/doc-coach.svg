@@ -108,15 +108,15 @@
           <text data-node-label="" data-detail-anchor="" x="345" y="510" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">Cloud Scheduler</text>
         <text data-detail="context" x="345" y="526" class="t-muted" font-size="9" text-anchor="middle">warm 7 AM to 7 PM</text>
         </g>
-        <g id="node-ledger" data-node-id="ledger" data-node-label="Drive + Sheets" tabindex="0" role="button" aria-label="Focus Drive + Sheets, archive, master ledger, Architecture component" aria-pressed="false" data-node-kind="database" data-node-sublabel="archive, master ledger" data-node-context="Architecture component">
+        <g id="node-ledger" data-node-id="ledger" data-node-label="Archive and log" tabindex="0" role="button" aria-label="Focus Archive and log, one row per consult, Architecture component" aria-pressed="false" data-node-kind="database" data-node-sublabel="one row per consult" data-node-context="Architecture component">
           <rect x="500" y="480" width="170" height="64" rx="6" class="c-mask"/>
           <rect x="500" y="480" width="170" height="64" rx="6" class="c-database" stroke-width="1.5"/>
           <g aria-hidden="true" data-semantic-sigil="database" class="semantic-sigil s-database" transform="translate(506 486) scale(0.6875)">
             <ellipse cx="8" cy="4" rx="5" ry="2"/>
             <path d="M3 4v8c0 1.1 2.2 2 5 2s5-.9 5-2V4M3 8c0 1.1 2.2 2 5 2s5-.9 5-2"/>
           </g>
-          <text data-node-label="" data-detail-anchor="" x="585" y="510" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">Drive + Sheets</text>
-        <text data-detail="context" x="585" y="526" class="t-muted" font-size="9" text-anchor="middle">archive, master ledger</text>
+          <text data-node-label="" data-detail-anchor="" x="585" y="510" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">Archive and log</text>
+        <text data-detail="context" x="585" y="526" class="t-muted" font-size="9" text-anchor="middle">one row per consult</text>
         </g>
         <g id="node-cards" data-node-id="cards" data-node-label="Report cards" tabindex="0" role="button" aria-label="Focus Report cards, Mon 8 AM + monthly, Architecture component" aria-pressed="false" data-node-kind="backend" data-node-sublabel="Mon 8 AM + monthly" data-node-context="Architecture component">
           <rect x="740" y="480" width="170" height="64" rx="6" class="c-mask"/>

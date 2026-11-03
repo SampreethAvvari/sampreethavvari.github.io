@@ -101,7 +101,7 @@ const arch: Architecture = {
       kind: "Google Workspace",
       owner: "managed",
       what: "Each consult's scorecard, report PDF and chart note are archived, and one 49 column row per consult is logged.",
-      fails: "Drive uploads are keyed in appProperties and the Sheet append checks the meeting id first, so a replay never writes twice.",
+      fails: "Archive uploads are keyed and the log append checks the meeting id first, so a replay never writes twice.",
       source: "zoom-transcript-pipeline/app/sheets_ledger.py:10",
     },
     cards: {
@@ -121,7 +121,7 @@ const arch: Architecture = {
   breaks: [
     { title: "Zoom sends it twice", body: "Delivery is at least once. A Firestore claim on the meeting and file turns repeats into one run, and a crashed claim can be retaken after 15 minutes.", source: "zoom-transcript-pipeline/app/state.py:1" },
     { title: "Gemini runs out of room", body: "On gemini-2.5-pro the thinking spends the same token budget as the answer. A cut response is never parsed, and the retry doubles the budget instead of repeating the prompt.", source: "zoom-transcript-pipeline/app/scorer.py:312" },
-    { title: "A send fails after scoring", body: "The run turns amber. The sweep repairs only the missing email or Sheet row, without scoring again, up to 3 times, then emails me.", source: "zoom-transcript-pipeline/app/auto_retry.py:86" },
+    { title: "A send fails after scoring", body: "The run turns amber. The sweep repairs only the missing email or log row, without scoring again, up to 3 times, then emails me.", source: "zoom-transcript-pipeline/app/auto_retry.py:86" },
   ],
   tuned: [
     { title: "Budget, not retries", body: "After the September 11 incident the scoring ceiling went from 8,192 to 32,768 tokens. Unused ceiling costs nothing: thinking measured 3,534 tokens at 8,192 and 3,589 at 32,768.", source: "zoom-transcript-pipeline/config/pipeline.yaml:34" },

@@ -21,7 +21,7 @@ stats:
     tone: "amber"
 facts:
   - label: "Problem"
-    value: "Every consult had a scorecard, but seeing how a doctor was doing lately meant scrolling the master Sheet."
+    value: "Every consult had a scorecard, but seeing how a doctor was doing lately meant scrolling a log of one row per consult."
   - label: "What I built"
     value: "Gemini report cards for each doctor from stored consult scores, plus a comparison page across doctors."
   - label: "Who uses it"
@@ -36,7 +36,7 @@ facts:
 
 ## The problem
 
-By June every consult already had a scorecard. That was the trouble. A doctor got one report email per consult, and the questions that matter, how is this doctor doing lately and how do they compare, still meant scrolling the master Sheet and squinting.
+By June every consult already had a scorecard. That was the trouble. A doctor got one report email per consult, and the questions that matter, how is this doctor doing lately and how do they compare, still meant scrolling a log of one row per consult and squinting.
 
 The goal, in the words of the feature doc, was to keep every consult to the same bar regardless of who runs it or when. That needs a view across consults and across doctors, written so a clinician reads it as coaching. The comparison prompt says it in one line: <span class="egg" tabindex="0" data-egg="This line is in the prompt verbatim. It turns out models need tone notes too.">the reader is a clinician, not a defendant</span>.
 

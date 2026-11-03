@@ -40,12 +40,10 @@ const QUERY = `query {
   }
 }`;
 
-// Repo descriptions are written for the team. Compliance labels (HIPAA, PHI,
-// BAA) stay out of the public site.
+// Repo descriptions are written for the team. Private repos are written with
+// no description and no URL.
 const publicText = (d) =>
   (d || "")
-    .replace(/\s*\([^)]*\b(HIPAA|PHI|BAA|patient data)\b[^)]*\)/gi, "")
-    .replace(/\b(HIPAA|PHI|BAA)[- ]\w+,?\s*/gi, "")
     .replace(/\s{2,}/g, " ")
     .replace(/\s+([.,;:])/g, "$1")
     .replace(/([.!?]\s+)([a-z])/g, (_, a, b) => a + b.toUpperCase())
@@ -77,9 +75,8 @@ function build(repos) {
     const topics = (r.repositoryTopics?.nodes || []).map((t) => t.topic?.name).filter(Boolean);
     const rid = node(`repo:${slug(owner)}-${slug(r.name)}`, "repo", r.name, {
       owner,
-      description: publicText(r.description),
+      ...(r.isPrivate ? {} : { description: publicText(r.description), url: r.url || "" }),
       stars: r.stargazerCount || 0,
-      url: r.url || "",
       languages: langs,
       primary_language: primary,
       topics,
@@ -117,6 +114,9 @@ async function main() {
       const key = r?.nameWithOwner;
       if (!key || seen.has(key) || r.isFork) continue;
       seen.add(key);
+      // The Mind page drops class placeholders by this line in the description.
+      // Private repos no longer carry a description, so theirs stop here.
+      if (r.isPrivate && /created by GitHub Classroom/i.test(r.description || "")) continue;
       repos.push(r);
     }
     if (repos.length === 0) {

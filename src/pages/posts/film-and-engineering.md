@@ -21,7 +21,7 @@ facts:
   - label: "Argument"
     value: "Making films and building systems take the same muscle: make the scene work for the people in it."
   - label: "From"
-    value: "Nine film credits since 2014, from cinematographer on Strangers to director of Among Monsters."
+    value: "Making films since 2014, with nine credits since 2019, from cinematographer on Strangers to director of Among Monsters."
   - label: "Day job"
     value: "Building production AI systems at a dental implant company."
   - label: "Lessons"
@@ -40,7 +40,7 @@ The credit list, so we're talking about specifics:
 
 | Year | Project | Role |
 |---|---|---|
-| 2026 | **Among Monsters** ([IMDb](https://www.imdb.com/title/tt39700295/)) | Director, Writer, Editor, Music |
+| 2026 | **Among Monsters** ([IMDb](https://www.imdb.com/title/tt39700295/)) | Director, Writer, Cinematographer, Editor, Background score |
 | 2026 | L'immigrata | Assistant Director, Editor |
 | 2026 | Office Plant | Assistant Director, Editor |
 | upcoming | Extraordinary Lives | Director, Writer |

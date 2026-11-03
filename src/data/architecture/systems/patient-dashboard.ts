@@ -28,13 +28,13 @@ const arch: Architecture = {
   readouts: [
     { value: "15", unit: "min", label: "at most between matcher runs while anyone has the dashboard open" },
     { value: "453 of 453", label: "blind test against bookings: when the rules picked a chart, it was the right one" },
-    // hybridge-cdf docs/plans/2026-09-30-intake-links.md: name + booking links 81 of 103 real intakes.
-    { value: "81 of 103", label: "real intakes the name and booking rule links by itself, measured Sep 30. A coordinator confirms the rest" },
+    // hybridge-cdf docs/plans/2026-09-30-intake-links.md: the name + booking rule.
+    { value: "About four in five", label: "intakes link to their chart on their own. A coordinator confirms the rest" },
     { value: "259", unit: "links", label: "written by the first backfill with 0 errors, each audited and undoable" },
   ],
   svg,
   views: [
-    { id: "day-list", label: "The day's list", focus: ["mirror", "links", "app", "board", "staff"], note: "Coordinators open a day of the book from the mirror and click a patient to see every record on one profile." },
+    { id: "day-list", label: "The day's list", focus: ["mirror", "links", "app", "board", "staff"], note: "Coordinators open a day of the book from the mirror and click a patient to see their linked records on one profile." },
     { id: "record-links", label: "Record links", focus: ["estimator", "docreview", "mirror", "links", "app", "records"], note: "Rules put consults and estimates on a chart. Each write is one audited transaction, and a person's call always wins." },
     { id: "intake-event", label: "Intake finished", focus: ["renderer", "app", "links", "records"], note: "The renderer posts a signed event, the CDF links the intake and answers, and a sweep catches any lost event." },
     { id: "sign-in", label: "Sign in", focus: ["staff", "auth", "board", "app"], note: "Google sign in, then a signed session cookie that only company accounts can get." },
@@ -83,7 +83,7 @@ const arch: Architecture = {
     board: {
       kind: "My app",
       owner: "mine",
-      what: "Patients is the landing page: a day, or a range up to 31 days, of every visit plus the intakes submitted then, filtered by the scheduler's own visit types. A profile joins every record on the Denticon id at read time, with a journey from intake to the next visit.",
+      what: "Patients is the landing page: a day, or a range up to 31 days, of every visit plus the intakes submitted then, filtered by the scheduler's own visit types. A profile joins linked records on the Denticon id at read time, with a journey from intake to the next visit.",
       source: "docs/HANDOFF.md:449",
     },
     staff: {
@@ -94,7 +94,7 @@ const arch: Architecture = {
     docreview: {
       kind: "My service",
       owner: "mine",
-      what: "The consult grader's lookup sends each recorded consult with its note, recording, transcript and Drive folder. Never the scoring: its projection is an allowlist, and the CDF drops anything score shaped as a second lock.",
+      what: "The consult grader's lookup sends each recorded consult with its note, recording and transcript, over a route that never returns a score: its projection is an allowlist, and the CDF drops anything score shaped as a second lock.",
       fails: "The CDF gives up after 12 seconds and keeps no failure. A good answer is shared for three minutes, because each call reads a thousand documents on the other side.",
       source: "lib/profiles/lookups.ts:193",
     },

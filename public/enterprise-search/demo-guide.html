@@ -205,7 +205,7 @@
       <li><a href="#access">Groups and access control</a></li>
       <li><a href="#trust">Trust: versions, conflicts, citations</a></li>
       <li><a href="#chat">Chat, history, and memory</a></li>
-      <li><a href="#security">Security and compliance</a></li>
+      <li><a href="#security">Security</a></li>
       <li><a href="#frontend">The frontend</a></li>
       <li><a href="#evolve">Built to grow, not preloaded</a></li>
       <li><a href="#quality">Quality and evaluation</a></li>
@@ -595,7 +595,7 @@ flowchart LR
     <li><b>Attachments</b> (planned) will be ephemeral context for one conversation only. Dropoff stays the single governed way into the shared corpus, so casual chat uploads can never contaminate company knowledge.</li>
   </ul>
 
-  <h2 id="security"><span class="n">12</span>Security and compliance</h2>
+  <h2 id="security"><span class="n">12</span>Security</h2>
   <div class="grid2">
     <div class="card"><div class="h">Identity</div><p>Google sign in via Identity Platform, restricted to the hybridgeimplants.com domain with verified email required. Users are provisioned on first login. Every API call verifies the Firebase token server side.</p></div>
     <div class="card"><div class="h">Authorization</div><p>Deny by default group permissions enforced in SQL before retrieval, on the source viewer, and on file downloads. Roles gate upload and admin surfaces in both API and UI.</p></div>
@@ -633,7 +633,6 @@ flowchart LR
 
   <h2 id="roadmap"><span class="n">16</span>What is next</h2>
   <ul class="roadmap">
-    <li><span class="tag now">next up</span><b>Turn on Vertex AI in production.</b> Everything is wired and guarded; enabling the API and one role brings live answers and completes ingestion end to end. Minutes of work, gated only on the go decision.</li>
     <li><span class="tag now">near term</span><b>Chat attachments</b> as ephemeral, single conversation context · <b>web search toggle</b> for questions that should blend public info · <b>multi turn retrieval memory</b> so follow ups use conversation context.</li>
     <li><span class="tag now">near term</span><b>Google Drive connector</b> so shared drives sync into the corpus automatically · batch uploads with one scope · a persistent document library view with supersede and retire actions.</li>
     <li><span class="tag next">later</span>Voice input · dark mode · automatic conversation titles · richer analytics on what people ask and where the corpus has gaps (the abstention log is the roadmap for what to ingest next).</li>

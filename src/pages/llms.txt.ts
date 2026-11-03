@@ -18,7 +18,7 @@ export const GET: APIRoute = ({ site }) => {
   lines.push(`# ${info.name}`);
   lines.push("");
   lines.push(
-    `> Sampreeth Avvari is a forward deployed engineer in New York and the only engineer at a three office dental implant practice, building and running about 45 services: patient intake and AI diagnosis, call and consult grading, scheduling, pricing, a marketing data warehouse and previews of the rebuilt practice websites. Every system on this site has a clickable architecture drawing with its real monthly cost, failure paths and guards. Sampreeth is also a filmmaker.`,
+    `> Sampreeth Avvari is a forward deployed engineer in New York and the only engineer at a three office dental implant practice, building and running about 45 services: patient intake and AI diagnosis, call and consult grading, scheduling, pricing, a marketing data warehouse and previews of the rebuilt practice websites. Each system on this site has a clickable architecture drawing of its parts, failure paths and guards, with a measured cost where billing has one. Sampreeth is also a filmmaker.`,
   );
   lines.push("");
   lines.push(
@@ -27,7 +27,7 @@ export const GET: APIRoute = ({ site }) => {
   lines.push("");
   lines.push("## Start here");
   lines.push(`- [Home](${base}/): who he is, four impact numbers, featured systems`);
-  lines.push(`- [Architecture](${base}/architecture): every system drawn, with parts, failure paths and monthly cost`);
+  lines.push(`- [Architecture](${base}/architecture): a drawing of each system's parts and failure paths, with a measured cost where billing has one`);
   lines.push(`- [The platform](${base}/posts/platform): all live services and how they connect`);
   lines.push(`- [What a forward deployed engineer does](${base}/posts/forward-deployed-engineer)`);
   lines.push(`- [Projects](${base}/projects)`);

@@ -85,6 +85,8 @@ const statusOf = (p: any): Status => {
   if (p.tier === "personal") return { label: "Open source", cls: "", live: false };
   if (p.tier === "research") return { label: "Research", cls: "", live: false };
   if (p.tier === "academic") return { label: "Academic", cls: "", live: false };
+  // An entry states its own status when its dates cannot say it.
+  if (p.status) return { label: p.status, cls: "", live: false };
   const d = p.details || {};
   const said = [d.summary_short, d.star?.result, p.description].filter(Boolean).join(" ");
   if (/\bnot deployed\b/i.test(said) || /^in build\b/i.test(d.star?.result || "")) {

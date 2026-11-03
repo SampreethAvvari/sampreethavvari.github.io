@@ -80,7 +80,7 @@ No other service in these six projects shows a warm instance charge. Launchpad's
 
 The one AI system with a measured month is the [CBCT scan validator](/architecture/cbct-scan-validator), which flags unusable dental CT scans before the design team opens a case. It cost $61.76.
 
-Scoring a scan is the cheap part. A frozen dental segmentation encoder compiled for CPU runs on Cloud Run and scales to zero, and all the CBCT services together, the validator and the review app included, used $0.68 of Cloud Run. Training runs on my laptop's GPU, so model training adds nothing to this bill.
+Scoring a scan is the cheap part. A frozen dental segmentation encoder compiled for CPU runs on Cloud Run and scales to zero, and all the CBCT services together, the validator and the review app included, used $0.68 of Cloud Run. Head training runs on an RTX 4080, so model training adds nothing to this bill.
 
 The money goes to the parts around the model. Cloud Run jobs that turn labeled scans into training data cost $45.54. The main one woke every five minutes until October 28 and now runs once a day at 6 AM; the drop is not measured yet. The always on SFTP VM that trades files with the lab's case system cost $11.23.
 

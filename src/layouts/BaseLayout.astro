@@ -13,7 +13,7 @@ import "../styles/landing.css";
 
 const {
   title,
-  description = "Sampreeth Avvari, forward deployed engineer in New York. The only engineer at a three office dental implant practice, running about 45 services, each drawn with its parts, failure paths and monthly cost.",
+  description = "Sampreeth Avvari, forward deployed engineer in New York. The only engineer at a three office dental implant practice, running about 45 services, with a drawing of each system's parts and failure paths and a measured cost where billing has one.",
   footerVariant = "default",
   // Optional LCP image to preload (an AVIF path). Pages pass their above-the-fold
   // hero/cover so the browser fetches it before it discovers the <img> in markup.
@@ -67,7 +67,7 @@ const jsonLd = graph([
     email: info.contact.email,
     description: "Forward deployed engineer in New York. The only engineer at a three office dental implant practice, building and running its software, and a filmmaker.",
   }),
-  websiteNode(base, "Sampreeth Avvari: forward deployed engineer. Systems, architecture drawings with real costs, writing and films."),
+  websiteNode(base, "Sampreeth Avvari: forward deployed engineer. Systems, architecture drawings with a measured cost where billing has one, writing and films."),
   ...(crumbs?.length ? [breadcrumbNode(base, crumbs)] : []),
   ...schema,
 ]);

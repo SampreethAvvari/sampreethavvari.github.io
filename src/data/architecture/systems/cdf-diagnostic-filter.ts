@@ -43,7 +43,7 @@ const arch: Architecture = {
     drive: {
       kind: "Google Workspace",
       owner: "outside",
-      what: "Each patient's Drive folder holds the panorex and clinical photos. The panorex read pulls them in as images inside the Gemini request, and the renderer files the finished PDFs back there.",
+      what: "The panorex and clinical photos for a case. The diagnostic read gives Gemini the case images inside the request.",
       source: "packages/lib/src/drive.ts",
     },
     chain: {
@@ -79,7 +79,7 @@ const arch: Architecture = {
     renderer: {
       kind: "My service",
       owner: "mine",
-      what: "Fastify with headless Chromium, 2 CPU and 4 GiB, CPU kept on after the reply. It renders the patient summary with no risk score, then the doctor report with the psychographic page, mails the patient, then the office's clinic list, files to Drive and tells the CDF. The panorex read runs here when staff press Regenerate.",
+      what: "Fastify with headless Chromium, 2 CPU and 4 GiB, CPU kept on after the reply. It renders the patient summary with no risk score, then the doctor report with the psychographic page, mails the patient, then the office's clinic list, and tells the CDF. The panorex read runs here when staff press Regenerate.",
       fails: "A missing doctor report holds the clinic email and the request answers 500, so the task comes back. Each retry skips whatever already landed.",
       source: "apps/pdf-renderer/src/server.ts:448",
     },
