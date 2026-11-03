@@ -1,0 +1,37 @@
+# Caching on Cloudflare Pages. A URL that matches two rules gets both values joined,
+# so these never overlap. Anything not named here, the pages themselves included,
+# keeps the Pages default: public, max-age=0, must-revalidate, with an ETag. A visitor
+# always sees the latest deploy and pays one round trip for a 304.
+
+# The build puts a hash of the contents in these names, so a name never changes meaning.
+/_astro/*
+  Cache-Control: public, max-age=31536000, immutable
+/assets/*
+  Cache-Control: public, max-age=31536000, immutable
+
+# The fonts, which have one name and do not change.
+/fonts/*
+  Cache-Control: public, max-age=31536000
+
+# Pictures, at every width. No hash in the name, so a replaced picture has to get through:
+# a month without asking, and past that a visitor sees the copy they have while the new one comes.
+/sized/*
+  Cache-Control: public, max-age=2592000, stale-while-revalidate=2592000
+/arch/*
+  Cache-Control: public, max-age=2592000, stale-while-revalidate=2592000
+/writing/*
+  Cache-Control: public, max-age=2592000, stale-while-revalidate=2592000
+/logos/*
+  Cache-Control: public, max-age=2592000, stale-while-revalidate=2592000
+/og/*
+  Cache-Control: public, max-age=2592000, stale-while-revalidate=2592000
+/story/*
+  Cache-Control: public, max-age=2592000, stale-while-revalidate=2592000
+/teaching/pages/*
+  Cache-Control: public, max-age=2592000, stale-while-revalidate=2592000
+/Photo%20Gallery/*
+  Cache-Control: public, max-age=2592000, stale-while-revalidate=2592000
+/Crew%20Photos/*
+  Cache-Control: public, max-age=2592000, stale-while-revalidate=2592000
+/Creative%20Roles/*
+  Cache-Control: public, max-age=2592000, stale-while-revalidate=2592000
