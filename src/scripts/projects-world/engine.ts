@@ -72,6 +72,8 @@ export interface SystemOptions {
   tier: "high" | "mid" | "low";
   reduced: boolean;
   phone: boolean;
+  /** A finger for a pointer: the scene behind the cards takes its cheapest form. */
+  coarse: boolean;
   /** Which belt body goes where: their ids in tour order. */
   bodies: string[];
   title: string[];
@@ -89,9 +91,16 @@ export interface System {
   release(): void;
   fly(g: number, ms: number): void;
   setPaused(p: boolean): void;
+  /** Something changed while the scene was resting behind the cards. */
+  poke(): void;
   resize(): void;
   destroy(): void;
 }
+
+// Where the flight ends and the cards begin, in stage units. Past it the scene is
+// only what is behind the cards: it dims, and draws only while something moves.
+const AFTER = STAGE_COUNT;
+const AFTER_DIM = 0.3;
 
 const STAR_COL = new Color(0.68, 0.82, 1);
 const Y_AXIS = new Vector3(0, 1, 0);
@@ -288,6 +297,11 @@ void main() {
 
   let cssW = 1;
   let cssH = 1;
+  // Behind the cards on a finger device: no bloom, no named bodies, fewer pixels, half
+  // the frames. The sky, the stars, the star, the rocks and the orbits stay, so it is
+  // still the same place. It must not compete with 31 images.
+  const frugal = o.phone || o.coarse;
+  let cheap = false;
   // Fewer pixels when frames run slow and that helps, and back again when there is room.
   const governor = new Governor({ steps: [1, 0.86, 0.72], apply: () => sizeNow() });
   let budget = o.tier === "high" ? 3.4e6 : o.tier === "mid" ? 2.2e6 : 1.5e6;
@@ -298,7 +312,7 @@ void main() {
     const dprCap = o.phone ? 1.5 : 2;
     let dpr = Math.min(window.devicePixelRatio || 1, dprCap);
     if (cssW * cssH * dpr * dpr > budget) dpr = Math.sqrt(budget / (cssW * cssH));
-    dpr = Math.max(0.6, dpr) * governor.scale;
+    dpr = Math.max(0.6, dpr) * governor.scale * (cheap ? 0.72 : 1);
     const w = Math.max(1, Math.round(cssW * dpr));
     const h = Math.max(1, Math.round(cssH * dpr));
     renderer.setPixelRatio(1);
@@ -334,6 +348,16 @@ void main() {
   let lastStage = -1;
   let hoverSlow = 1;
 
+  let stillMs = 0;
+  let skip = 0;
+  const wake = () => {
+    stillMs = 0;
+    if (raf || disposed) return;
+    prev = performance.now();
+    governor.reset();
+    raf = requestAnimationFrame(frame);
+  };
+
   const frame = (now: number) => {
     raf = requestAnimationFrame(frame);
     if (paused || lost || disposed) {
@@ -341,18 +365,39 @@ void main() {
       governor.reset();
       return;
     }
+    // Behind the cards on a finger device the scene draws every other frame, or every third
+    // when drawing it costs too much of the frame, so the cards get the time. It moves slowly
+    // back there and nobody can see the difference.
+    if (cheap && skip > 0) {
+      skip--;
+      return;
+    }
+    const began = performance.now();
     const rawMs = now - prev;
     const dt = Math.min(0.05, Math.max(0.001, rawMs / 1000));
     prev = now;
     time += dt;
     shared.time.value = o.reduced ? time * 0.2 : time;
 
-    governor.frame(rawMs, Math.abs(vel) > 0.01 || !!flight);
+    // Frames left out on purpose are not slow frames: the governor would learn the wrong thing.
+    if (!cheap) governor.frame(rawMs, Math.abs(vel) > 0.01 || !!flight);
 
     gNow = o.reduced ? gTarget : damp(gNow, gTarget, 6.5, dt);
     const g = gNow;
     const overview = 1 - smooth(0.32, 0.86, g);
-    overviewU.value = overview;
+    // leaving the belt, the orbits come back up: the chart of the system behind the cards
+    const after = smooth(AFTER - 0.04, AFTER + 0.2, g);
+    overviewU.value = Math.max(overview, after * 0.55);
+    // the moment to change form is while it moves, a little after the cards have the screen
+    const wantCheap = frugal && g > AFTER + 0.06;
+    if (wantCheap !== cheap && (wantCheap || g < AFTER + 0.02)) {
+      cheap = wantCheap;
+      belt.bodies.forEach((b) => (b.hold.visible = !cheap));
+      // out of the scene, not just out of sight: nothing walks them every frame
+      worlds.forEach((w) => (cheap ? scene.remove(w.group) : scene.add(w.group)));
+      sizeNow();
+      governor.reset();
+    }
 
     // orbits: at speed from far away, nearly stopped close up
     hoverSlow = damp(hoverSlow, heatPick && heatPick.kind !== "star" ? 0.16 : 1, 4, dt);
@@ -534,6 +579,7 @@ void main() {
     belt.bodies.forEach((b, i) => project(b.world, info.bodies, i * 4, b.radius));
 
     typeRing.update(overview, time);
+    if (!o.phone) typeRing.group.visible = g < AFTER + 0.02;
     scene.updateMatrixWorld();
 
     // parts of the world in focus
@@ -590,14 +636,28 @@ void main() {
     o.onFrame(info);
 
     fade = damp(fade, 1, o.reduced ? 8 : 1.6, dt);
+    // on a finger device the bloom and the shafts ease out as the cards take over
+    const finish = frugal ? 1 - smooth(AFTER, AFTER + 0.06, g) : 1;
     post.render(scene, camera, {
       time,
       fade,
-      speed: o.reduced ? 0 : speed,
-      star: { x: sx, y: sy, strength: shaft, color: STAR_COL },
+      speed: o.reduced || finish === 0 ? 0 : speed,
+      star: { x: sx, y: sy, strength: shaft * finish, color: STAR_COL },
       lens: { x: lensX, y: lensY, strength: lensS, radius: lensR },
-      dip,
+      dip: Math.max(dip, after * AFTER_DIM),
+      bloom: finish,
     });
+
+    // Behind the cards, once nothing moves, nothing is drawn. The last picture stays on
+    // the canvas until a scroll or the pointer asks for the next one.
+    const still = g > AFTER + (frugal ? 0 : 0.1) && Math.abs(gTarget - gNow) < 3e-4 && !flight && fade > 0.99 && dip < 0.01 && Math.abs(pxS - px) + Math.abs(pyS - py) < 0.002;
+    stillMs = still ? stillMs + rawMs : 0;
+    if (cheap) skip = performance.now() - began > 6 ? 2 : 1;
+    if (stillMs > (frugal ? 300 : 1600)) {
+      cancelAnimationFrame(raf);
+      raf = 0;
+      stillMs = 0;
+    }
   };
 
   // Compile before the first frame, in the background, so nothing hitches on
@@ -627,6 +687,7 @@ void main() {
     if (disposed) return;
     lost = false;
     stopWarm = warmAhead(renderer, scene, camera, warmJobs());
+    wake();
   };
   if (owed) restore();
 
@@ -636,6 +697,9 @@ void main() {
         firstScroll = false;
         gNow = g;
       }
+      if (g !== gTarget) wake();
+      // a long jump on a finger device goes straight there, not through every world on the way
+      if (frugal && Math.abs(g - gNow) > 1.5) gNow = g;
       gTarget = g;
       vel = velocity;
     },
@@ -734,12 +798,16 @@ void main() {
       gTarget = g;
       gNow = g;
       yaw = pitch = yawV = pitchV = 0;
+      wake();
     },
     setPaused(p) {
       paused = p;
+      if (!p) wake();
     },
+    poke: () => wake(),
     resize() {
       sizeNow();
+      wake();
     },
     destroy() {
       disposed = true;
@@ -748,6 +816,8 @@ void main() {
       canvas.removeEventListener("webglcontextlost", onLost);
       canvas.removeEventListener("webglcontextrestored", onRestored);
       scene.background = null;
+      // the worlds taken out behind the cards are let go with the rest
+      if (cheap) worlds.forEach((w) => scene.add(w.group));
       scene.traverse((obj: Object3D) => {
         const m = obj as Mesh;
         if (m.geometry) m.geometry.dispose();

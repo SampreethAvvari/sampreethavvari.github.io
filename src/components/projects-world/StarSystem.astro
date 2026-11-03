@@ -1,8 +1,10 @@
 ---
 // The Projects tab as one live star system. One stage stays pinned while the
 // page scrolls and a 3D scene (src/scripts/projects-world) flies the camera
-// through it. All the words and links are real HTML here: without WebGL, or
-// before the scene loads, the same articles read as plain cards.
+// through it, and it stays pinned behind the cards that come after the flight
+// (the slot), so there is no edge between them. All the words and links are
+// real HTML here: without WebGL, or before the scene loads, the same articles
+// read as plain cards.
 import Icon from "../common/Icon.astro";
 
 export interface PartView { key: string; value: string; label: string }
@@ -39,7 +41,7 @@ const sum = SPANS.reduce((a, b) => a + b, 0);
 const stageTop = (i: number) => SPANS.slice(0, i).reduce((a, b) => a + b, 0);
 ---
 
-<section
+<div
   id="worlds"
   class="pw"
   data-pw
@@ -48,7 +50,6 @@ const stageTop = (i: number) => SPANS.slice(0, i).reduce((a, b) => a + b, 0);
   data-bodies={JSON.stringify(bodies.map((b) => ({ id: b.id, href: b.href, title: b.title, value: b.value, label: b.label })))}
   data-star={JSON.stringify(star)}
   style={`--pw-total:${sum};`}
-  aria-label="Projects, as a star system"
 >
   <script is:inline>
     (function () {
@@ -74,7 +75,7 @@ const stageTop = (i: number) => SPANS.slice(0, i).reduce((a, b) => a + b, 0);
     })();
   </script>
 
-  <div class="pw-stage" data-pw-stage>
+  <section class="pw-stage" data-pw-stage aria-label="Projects, as a star system">
     <div class="pw-sky" aria-hidden="true"></div>
     <canvas class="pw-canvas" aria-hidden="true"></canvas>
     <div class="pw-shade" aria-hidden="true"></div>
@@ -179,20 +180,25 @@ const stageTop = (i: number) => SPANS.slice(0, i).reduce((a, b) => a + b, 0);
       <p class="pw-hint" data-pw-hint><span>Scroll to fly</span><i>·</i><span class="pw-hint-d">Drag to turn the system</span><i class="pw-hint-d">·</i><span class="pw-hint-mouse">Click a world to go there</span><span class="pw-hint-touch">Tap a world to go there</span></p>
       <div class="pw-tip" data-pw-tip aria-hidden="true"><b></b><span></span></div>
     </div>
+  </section>
+
+  <!-- the scroll of the flight, with one anchor per stage for links and the index -->
+  <div class="pw-flight" data-pw-flight>
+    {worlds.map((w, i) => <span class="pw-anchor" id={w.anchor} style={`top:calc(${stageTop(i + 1) + 3.6 * 0.3} * 100svh)`}></span>)}
   </div>
 
-  <!-- one anchor per stage, for links and the index -->
-  {worlds.map((w, i) => <span class="pw-anchor" id={w.anchor} style={`top:calc(${stageTop(i + 1) + 3.6 * 0.3} * 100svh)`}></span>)}
-</section>
+  <!-- the cards, over the same stage -->
+  <slot />
+</div>
 
 <noscript><style>.pw { height: auto !important; } .pw-stage { position: static !important; height: auto !important; }</style></noscript>
 
 <style is:global>
   /* The site's left gauge and top button would sit on the scene. */
-  html.in-pw .orbit { opacity: 0 !important; pointer-events: none; transition: opacity 0.4s ease; }
-  html.in-pw .to-top { opacity: 0 !important; pointer-events: none !important; }
+  html.pw-live .orbit { opacity: 0 !important; pointer-events: none; transition: opacity 0.4s ease; }
+  html.in-pw:not([data-pw-cards]) .to-top { opacity: 0 !important; pointer-events: none !important; }
   /* on a phone the chat button would sit on the numbers; it is back on the first screen and at the cards */
-  @media (max-width: 899px) { html.in-pw.pw-touring .chat-launcher { opacity: 0 !important; pointer-events: none !important; } }
+  @media (max-width: 899px) { html.in-pw[data-pw-touring] .chat-launcher { opacity: 0 !important; pointer-events: none !important; } }
 </style>
 
 <style>
@@ -200,7 +206,7 @@ const stageTop = (i: number) => SPANS.slice(0, i).reduce((a, b) => a + b, 0);
   /* ---- without the scene: plain cards in the page's flow ---- */
   .pw { position: relative; background: #020306; }
   .pw-stage { position: relative; }
-  .pw-sky, .pw-canvas, .pw-shade, .pw-lines, .pw-pins, .pw-bodies, .pw-count, .pw-top, .pw-tip, .pw-skip { display: none; }
+  .pw-sky, .pw-canvas, .pw-shade, .pw-lines, .pw-pins, .pw-bodies, .pw-count, .pw-top, .pw-tip, .pw-skip, .pw-flight { display: none; }
   .pw-ui { display: grid; gap: 16px; padding: clamp(124px, 13vw, 168px) var(--gutter) 48px; max-width: calc(var(--max, 1200px) + 2 * var(--gutter)); margin-inline: auto; }
   .pw-w, .pw-beltcopy { display: grid; gap: 16px; padding: 24px; border: 1px solid var(--line); border-radius: 18px; background: rgba(255, 255, 255, 0.03); }
   .pw-hero { padding-bottom: 24px; }
@@ -266,25 +272,34 @@ const stageTop = (i: number) => SPANS.slice(0, i).reduce((a, b) => a + b, 0);
   .jb.is-ghost:hover { border-color: rgba(255, 255, 255, 0.4); }
 
   /* ---- the live stage ---- */
-  .pw.is-live { height: calc((var(--pw-total) + 1) * 100svh); }
+  /* The stage is the first thing in the box and the flight's scroll starts level with it. */
+  .pw.is-live .pw-flight { display: block; height: calc((var(--pw-total) + 1) * 100svh); margin-top: -100lvh; }
   .pw-anchor { position: absolute; left: 0; width: 1px; height: 1px; pointer-events: none; }
   .pw.is-live .pw-stage { position: sticky; top: 0; height: 100lvh; overflow: hidden; isolation: isolate; background: #020306; touch-action: pan-y; }
   .pw.is-live .pw-sky { display: block; position: absolute; inset: 0; background: radial-gradient(38% 34% at 58% 44%, rgba(91, 141, 239, 0.3), transparent 72%), radial-gradient(70% 50% at 50% 110%, rgba(91, 141, 239, 0.12), transparent 70%), #020306; transition: opacity 1.4s ease; }
   .pw.is-live .pw-canvas { display: block; position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; transition: opacity 1.2s ease; }
-  .pw.is-3d .pw-canvas { opacity: 1; }
-  .pw.is-3d .pw-sky { opacity: 0; }
+  .pw[data-3d] .pw-canvas { opacity: 1; }
+  .pw[data-3d] .pw-sky { opacity: 0; }
   .pw.is-live .pw-shade { display: block; position: absolute; inset: 0; pointer-events: none; opacity: var(--shade, 0); transition: opacity 0.6s ease; background: linear-gradient(to top, rgba(2, 3, 6, 0.55), transparent 44%); }
   .pw.is-live .pw-lines { display: block; position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 2; }
 
-  .pw.is-live .pw-ui { display: block; position: absolute; left: 0; right: 0; top: 0; height: 100svh; padding: 0; max-width: none; margin: 0; z-index: 3; pointer-events: none; }
+  .pw.is-live .pw-ui { display: block; position: absolute; left: 0; right: 0; top: 0; height: 100svh; padding: 0; max-width: none; margin: 0; z-index: 3; pointer-events: none; transition: opacity 0.35s ease; }
+  /* Past the flight the stage is only the space behind the cards: its words, pins and lines
+     are out of sight, out of the tab order and out of the compositor. All of this hangs on
+     attributes and not classes: a changed class makes the browser work out the style of
+     everything inside, here the whole page, and that is a long task on a phone. */
+  .pw.is-live[data-cards] .pw-ui { opacity: 0; }
+  .pw.is-live[data-cards] .pw-lines, .pw.is-live[data-cards] .pw-shade { display: none; }
+  .pw.is-live[data-past] .pw-ui { content-visibility: hidden; }
+  @supports not (content-visibility: hidden) { .pw.is-live[data-past] .pw-ui { visibility: hidden; } }
   .pw.is-live .pw-ui a, .pw.is-live .pw-ui button { pointer-events: auto; }
 
   .pw.is-live .pw-hero { position: absolute; left: max(32px, var(--gutter)); top: clamp(88px, 12vh, 112px); padding: 0; max-width: 34rem; transition: opacity 0.6s ease, transform 0.8s cubic-bezier(0.16, 1, 0.3, 1); }
   .pw.is-live .pw-hero.is-gone { opacity: 0; transform: translateY(16px); }
   .pw.is-live .pw-h1 { transition: opacity 0.7s ease; }
-  .pw.is-live.type-on .pw-h1 { opacity: 0; }
-  .pw.is-3d.has-type .pw-h1 { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; margin: 0; }
-  .pw.is-3d.has-type .pw-tail { margin-top: 10px; max-width: 22rem; }
+  .pw.is-live[data-type-on] .pw-h1 { opacity: 0; }
+  .pw[data-3d][data-has-type] .pw-h1 { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; margin: 0; }
+  .pw[data-3d][data-has-type] .pw-tail { margin-top: 10px; max-width: 22rem; }
 
   /* panes hide without leaving the tab order: focus brings their world up */
   .pw.is-live .pw-w, .pw.is-live .pw-beltcopy { display: block; position: absolute; inset: 0; padding: 0; border: 0; border-radius: 0; background: none; pointer-events: none; }
@@ -357,19 +372,19 @@ const stageTop = (i: number) => SPANS.slice(0, i).reduce((a, b) => a + b, 0);
   .pw.is-live .pw-count { display: flex; position: absolute; top: 96px; left: 50%; transform: translateX(-50%); gap: 8px; margin: 0; font-size: 0.8125rem; font-variant-numeric: tabular-nums; color: rgba(255, 255, 255, 0.5); opacity: 0; transition: opacity 0.4s ease; }
   .pw.is-live .pw-count b { color: #fff; font-weight: 500; }
   .pw.is-live .pw-count i { font-style: normal; opacity: 0.4; }
-  .pw.is-live.is-touring .pw-count { opacity: 1; }
-  .pw.is-live.is-belt .pw-count { opacity: 0; }
+  .pw.is-live[data-touring] .pw-count { opacity: 1; }
+  .pw.is-live[data-belt] .pw-count { opacity: 0; }
   .pw.is-live .pw-top, .pw.is-live .pw-skip { display: inline-flex; position: absolute; font-size: 0.75rem; color: rgba(255, 255, 255, 0.58); text-decoration: none; transition: color 0.2s ease, opacity 0.4s ease; }
   .pw.is-live .pw-skip { right: var(--rx); bottom: clamp(20px, 4vh, 36px); padding: 6px 0; border-bottom: 1px solid rgba(91, 141, 239, 0.6); }
   .pw.is-live .pw-top { top: 96px; right: max(32px, var(--gutter)); opacity: 0; pointer-events: none !important; }
-  .pw.is-live.is-touring .pw-top { opacity: 1; pointer-events: auto !important; }
+  .pw.is-live[data-touring] .pw-top { opacity: 1; pointer-events: auto !important; }
   .pw.is-live .pw-top:hover, .pw.is-live .pw-skip:hover { color: #fff; }
   .pw.is-live .pw-top:focus-visible, .pw.is-live .pw-skip:focus-visible { outline: 1.5px solid #5b8def; outline-offset: 4px; opacity: 1; }
-  .pw.is-live.is-touring .pw-skip { opacity: 0; pointer-events: none !important; }
+  .pw.is-live[data-touring] .pw-skip { opacity: 0; pointer-events: none !important; }
   .pw.is-live .pw-skip:focus-visible { opacity: 1; }
   .pw-hint { display: none; }
   .pw.is-live .pw-hint { display: flex; position: absolute; left: max(32px, var(--gutter)); bottom: clamp(26px, 4.6vh, 42px); margin: 0; transition: opacity 0.5s ease; }
-  .pw.is-live.is-touring .pw-hint, .pw.is-live.is-moving .pw-hint { opacity: 0; }
+  .pw.is-live[data-touring] .pw-hint, .pw.is-live[data-moving] .pw-hint { opacity: 0; }
   .pw-hint-touch { display: none; }
   @media (pointer: coarse) { .pw-hint-touch { display: inline; } .pw-hint-mouse { display: none; } }
 
@@ -494,9 +509,9 @@ const stageTop = (i: number) => SPANS.slice(0, i).reduce((a, b) => a + b, 0);
     .pw.is-live .pw-c button { display: grid; gap: 4px; }
     .pw.is-live .pw-c.is-hot { border-color: rgba(91, 141, 239, 0.8); }
     /* the words always have a dark floor to sit on */
-    .pw.is-live.is-touring .pw-shade { opacity: 1; background: linear-gradient(to top, rgba(2, 3, 6, 0.86) 0%, rgba(2, 3, 6, 0.62) 30%, transparent 52%); }
-    .pw.is-live.is-touring.copy-top .pw-shade { background: linear-gradient(to bottom, rgba(2, 3, 6, 0.72) 0%, rgba(2, 3, 6, 0.4) 26%, transparent 46%); }
-    .pw.is-live.is-touring.is-belt .pw-shade { opacity: 0; }
+    .pw.is-live[data-touring] .pw-shade { opacity: 1; background: linear-gradient(to top, rgba(2, 3, 6, 0.86) 0%, rgba(2, 3, 6, 0.62) 30%, transparent 52%); }
+    .pw.is-live[data-touring][data-copy-top] .pw-shade { background: linear-gradient(to bottom, rgba(2, 3, 6, 0.72) 0%, rgba(2, 3, 6, 0.4) 26%, transparent 46%); }
+    .pw.is-live[data-touring][data-belt] .pw-shade { opacity: 0; }
     .pw.is-live .pw-count { top: 72px; }
     .pw.is-live .pw-top { top: 72px; right: 16px; }
     /* some worlds read from the top instead */

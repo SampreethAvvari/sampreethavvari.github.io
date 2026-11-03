@@ -194,6 +194,8 @@ export interface PostFrame {
   star: { x: number; y: number; strength: number; color: Color };
   lens: { x: number; y: number; strength: number; radius: number };
   dip: number;
+  /** 1 is the full bloom. At 0 the blur chain does not run at all: the cheap form of the scene. */
+  bloom?: number;
 }
 
 export class Post {
@@ -207,6 +209,7 @@ export class Post {
   private readonly up: ShaderMaterial;
   private readonly final: ShaderMaterial;
   private readonly start: number;
+  private readonly bloomLevel: number;
   private w = 1;
   private h = 1;
 
@@ -215,6 +218,7 @@ export class Post {
     const hdr = renderer.extensions.has("EXT_color_buffer_float") || renderer.extensions.has("EXT_color_buffer_half_float");
     const type = hdr ? HalfFloatType : UnsignedByteType;
     this.start = opts.low ? 4 : 2;
+    this.bloomLevel = opts.low ? 0.3 : 0.27;
     const levels = opts.low ? 4 : 5;
     this.scene = new WebGLRenderTarget(1, 1, { type, samples: opts.msaa, depthBuffer: true, stencilBuffer: false, minFilter: LinearFilter, magFilter: LinearFilter });
     for (let i = 0; i < levels; i++) this.mips.push(new WebGLRenderTarget(1, 1, { type, depthBuffer: false, stencilBuffer: false, minFilter: LinearFilter, magFilter: LinearFilter }));
@@ -238,7 +242,7 @@ export class Post {
         tBloom: { value: this.mips[0].texture },
         uAspect: { value: 1 },
         uTime: { value: 0 },
-        uBloom: { value: opts.low ? 0.3 : 0.27 },
+        uBloom: { value: this.bloomLevel },
         uCA: { value: opts.low ? 0.002 : 0.004 },
         uGrain: { value: opts.low ? 0.022 : 0.03 },
         uVignette: { value: 0.46 },
@@ -297,22 +301,26 @@ export class Post {
     r.clear(true, true, false);
     r.render(scene, camera);
 
-    const m = this.mips;
-    this.prefilter.uniforms.tSrc.value = this.scene.texture;
-    this.prefilter.uniforms.uTexel.value.set(1 / this.w, 1 / this.h);
-    this.pass(this.prefilter, m[0]);
-    for (let i = 1; i < m.length; i++) {
-      this.down.uniforms.tSrc.value = m[i - 1].texture;
-      this.down.uniforms.uTexel.value.set(1 / m[i - 1].width, 1 / m[i - 1].height);
-      this.pass(this.down, m[i]);
-    }
-    for (let i = m.length - 2; i >= 0; i--) {
-      this.up.uniforms.tSrc.value = m[i + 1].texture;
-      this.up.uniforms.uTexel.value.set(1 / m[i + 1].width, 1 / m[i + 1].height);
-      this.pass(this.up, m[i]);
+    const bloom = f.bloom ?? 1;
+    if (bloom > 0) {
+      const m = this.mips;
+      this.prefilter.uniforms.tSrc.value = this.scene.texture;
+      this.prefilter.uniforms.uTexel.value.set(1 / this.w, 1 / this.h);
+      this.pass(this.prefilter, m[0]);
+      for (let i = 1; i < m.length; i++) {
+        this.down.uniforms.tSrc.value = m[i - 1].texture;
+        this.down.uniforms.uTexel.value.set(1 / m[i - 1].width, 1 / m[i - 1].height);
+        this.pass(this.down, m[i]);
+      }
+      for (let i = m.length - 2; i >= 0; i--) {
+        this.up.uniforms.tSrc.value = m[i + 1].texture;
+        this.up.uniforms.uTexel.value.set(1 / m[i + 1].width, 1 / m[i + 1].height);
+        this.pass(this.up, m[i]);
+      }
     }
 
     const u = this.final.uniforms;
+    u.uBloom.value = this.bloomLevel * bloom;
     u.uTime.value = f.time;
     u.uFade.value = f.fade;
     u.uSpeed.value = f.speed;

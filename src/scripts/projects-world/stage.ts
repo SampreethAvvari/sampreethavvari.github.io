@@ -15,6 +15,7 @@
 //   projects:open        { id }  a project is being opened.
 
 import { onPage } from "../lifecycle";
+import { cardsBridge } from "./cards";
 import type { FrameInfo, Pick, System } from "./engine";
 
 interface PartData { key: string; value: string; label: string }
@@ -33,12 +34,30 @@ const REST_A = 0.3;
 const REST_B = 0.7;
 // Where the belt starts, past which everything scrolls freely.
 const BELT_IN = 0.09;
+// Stage units the camera still travels once the flight is over, over the whole of the cards.
+const AFTER = 1;
+const docTop = (el: HTMLElement) => {
+  let y = 0;
+  for (let e: HTMLElement | null = el; e; e = e.offsetParent as HTMLElement | null) y += e.offsetTop;
+  return y;
+};
+
+// Browser back onto this page: the router restores the scroll with the site's smooth
+// scrolling, from the top, before the flight has its height, and the first pause on the
+// way would glide to a shot. Coming back goes straight to where the visitor was.
+let returnTo: number | null = null;
+document.addEventListener("astro:before-preparation", (e) => {
+  const traverse = (e as Event & { navigationType?: string }).navigationType === "traverse";
+  returnTo = traverse ? (history.state?.scrollY ?? null) : null;
+});
 
 export function mountProjectsWorld() {
   onPage("projects-world", (signal) => {
     const root = document.querySelector<HTMLElement>("[data-pw]");
     if (!root || !root.classList.contains("is-live")) return;
     const stage = root.querySelector<HTMLElement>("[data-pw-stage]")!;
+    const flight = root.querySelector<HTMLElement>("[data-pw-flight]")!;
+    const cardsEl = root.querySelector<HTMLElement>("[data-ax]");
     const canvas = root.querySelector<HTMLCanvasElement>(".pw-canvas")!;
     const lines = root.querySelector<SVGSVGElement>(".pw-lines")!;
     const hero = root.querySelector<HTMLElement>("[data-pw-hero]")!;
@@ -62,13 +81,18 @@ export function mountProjectsWorld() {
     const memory = (navigator as Navigator & { deviceMemory?: number }).deviceMemory ?? 8;
     const tier: "high" | "mid" | "low" = phone || memory < 4 ? "low" : coarse || memory < 6 ? "mid" : "high";
 
-    document.documentElement.classList.add("in-pw");
+    document.documentElement.classList.add("in-pw", "pw-live");
 
     // ---- scroll: y on the page to g in stage units
     let vh = innerHeight;
     let vw = innerWidth;
     const cum: number[] = [];
-    const topNow = () => root.getBoundingClientRect().top + scrollY;
+    // Read once and again when the layout changes, never in the middle of a scroll.
+    // The flight's height is in small viewport units; on a phone the toolbar changes innerHeight.
+    let top0 = 0;
+    let unit = 1;
+    let joinAt = 0;
+    let cardsH = 1;
     const measure = () => {
       vh = innerHeight;
       let t = 0;
@@ -77,19 +101,28 @@ export function mountProjectsWorld() {
         t += s;
       });
       cum[N] = t;
+      top0 = docTop(root);
+      unit = flight.offsetHeight / (cum[N] + 1);
+      joinAt = top0 + cum[N] * unit;
+      // the tallest the cards have been at this width: a filter does not swing the camera
+      cardsH = Math.max(cardsH, cardsEl?.offsetHeight ?? 1);
     };
     measure();
-    // the section's height is in small viewport units; on a phone the toolbar changes innerHeight
-    const rawUnit = () => (root.offsetHeight / (cum[N] + 1));
+    if (returnTo != null) {
+      scrollTo({ top: returnTo, ...inst });
+      history.replaceState({ ...history.state, scrollY: returnTo }, "");
+      returnTo = null;
+    }
     const gFromY = (y: number) => {
-      const screens = (y - topNow()) / rawUnit();
+      const screens = (y - top0) / unit;
       if (screens <= 0) return 0;
       for (let i = 0; i < N; i++) if (screens < cum[i + 1]) return i + (screens - cum[i]) / spans[i];
-      return N;
+      // the flight is over and the camera is not: the rest of the page is the rest of its way
+      return N + clamp((y - joinAt) / cardsH) * AFTER;
     };
     const yFromG = (g: number) => {
       const i = Math.min(N - 1, Math.max(0, Math.floor(g)));
-      return topNow() + (cum[i] + spans[i] * (g - i)) * rawUnit();
+      return top0 + (cum[i] + spans[i] * (g - i)) * unit;
     };
 
     // the places the scroll can rest
@@ -131,14 +164,18 @@ export function mountProjectsWorld() {
       emit("projects:world", { index: st, id: idAt(st), accent: accentAt(st) });
       if (countEl) countEl.textContent = String(clamp(st, 0, worlds.length)).padStart(2, "0");
       pins.forEach((p, i) => (i + 1 === st ? p.setAttribute("aria-current", "step") : p.removeAttribute("aria-current")));
-      root.classList.toggle("is-touring", st > 0);
-      root.classList.toggle("is-belt", st === N - 1);
-      document.documentElement.classList.toggle("pw-touring", st > 0 && st <= worlds.length);
+      // Attributes, not classes: a changed class restyles everything inside, the whole page here.
+      root.toggleAttribute("data-touring", st > 0);
+      root.toggleAttribute("data-belt", st === N - 1);
+      document.documentElement.toggleAttribute("data-pw-touring", st > 0 && st <= worlds.length);
     };
     let transitionFrom = -1;
+    // Read in the scroll event, while the page is clean. Read in a frame, after the cards
+    // have written theirs, it would make the browser work the whole style out twice.
+    let scrollNow = scrollY;
     const update = () => {
       ticking = false;
-      const y = scrollY;
+      const y = scrollNow;
       g = gFromY(y);
       const now = performance.now();
       const dt = Math.max(0.016, (now - lastT) / 1000);
@@ -157,13 +194,13 @@ export function mountProjectsWorld() {
           const pane = panes[i - 1];
           if (b) pane.dataset.beat = b;
           else delete pane.dataset.beat;
-          if (i === st) root.classList.toggle("copy-top", b === "a" && (idAt(i) === "listener" || idAt(i) === "comet"));
+          if (i === st) root.toggleAttribute("data-copy-top", b === "a" && (idAt(i) === "listener" || idAt(i) === "comet"));
           if (b === "b") rectsDirty = true;
           linksDirty = true;
         }
       }
       hero.classList.toggle("is-gone", g > 0.42);
-      root.classList.toggle("is-moving", g > 0.03);
+      root.toggleAttribute("data-moving", g > 0.03);
       // which stage has the screen: the change comes in the middle of the sling
       const main = s > 0.97 && st < N - 1 ? st + 1 : st;
       setStage(g < 0.5 ? 0 : main);
@@ -179,16 +216,21 @@ export function mountProjectsWorld() {
         emitTransition(dir, st, to, clamp((0.3 / speedScreens) * 1000, 300, 2600));
       } else if (!inGap) transitionFrom = -1;
 
-      const onStage = root.getBoundingClientRect().bottom > innerHeight * 0.5;
-      document.documentElement.classList.toggle("in-pw", onStage);
+      // The back to top button returns with the cards, and the stage's words step aside for them.
+      document.documentElement.toggleAttribute("data-pw-cards", g >= N);
+      root.toggleAttribute("data-cards", g > N - 0.02);
+      root.toggleAttribute("data-past", g > N + 0.03);
       if (reduced) {
         let best = rests[0];
         for (const r of rests) if (Math.abs(r - g) < Math.abs(best - g)) best = r;
+        // one still picture behind the cards, reached the way every other shot is
+        if (g > N - 0.4) best = N + 0.14;
         sys?.setScroll(best, 0);
-      } else sys?.setScroll(Math.min(N - 0.001, g), velocity);
+      } else sys?.setScroll(g, velocity);
     };
     let ticking = false;
     const onScroll = () => {
+      scrollNow = scrollY;
       if (!ticking) {
         ticking = true;
         requestAnimationFrame(update);
@@ -305,10 +347,7 @@ export function mountProjectsWorld() {
       if (fling) cancelAnimationFrame(fling);
       fling = 0;
     };
-    const inStage = () => {
-      const b = root.getBoundingClientRect();
-      return b.top <= 0.5 && b.bottom >= innerHeight - 0.5;
-    };
+    const inStage = () => scrollY >= top0 - 0.5 && scrollY <= joinAt + 0.5;
     addEventListener(
       "touchstart",
       (e) => {
@@ -433,6 +472,8 @@ export function mountProjectsWorld() {
         if (!inStage()) return;
         const down = e.key === "PageDown" || (e.key === " " && !e.shiftKey);
         const up = e.key === "PageUp" || (e.key === " " && e.shiftKey);
+        // from the belt on there are no more shots: the page keys are the page's
+        if (down && gFromY(scrollY) >= N - 1 + BELT_IN - 0.02) return;
         if (e.key === "ArrowDown" || e.key === "ArrowUp") {
           lastInput = performance.now();
           lastDir = e.key === "ArrowDown" ? 1 : -1;
@@ -442,10 +483,7 @@ export function mountProjectsWorld() {
         e.preventDefault();
         const here = gFromY(scrollY);
         const next = down ? rests.find((r) => r > here + 0.02) : [...rests].reverse().find((r) => r < here - 0.02);
-        if (next == null) {
-          if (down) glideTo(yFromG(N - 1 + 0.2), 900);
-          return;
-        }
+        if (next == null) return;
         if (Math.floor(next) !== Math.floor(here)) emitTransition(down ? 1 : -1, Math.floor(here), Math.floor(next), 1000);
         glideTo(yFromG(next), 1000);
       },
@@ -504,7 +542,8 @@ export function mountProjectsWorld() {
           stopGlide();
           clearTimeout(settleLater);
           scrollTo({ top: target.getBoundingClientRect().top + scrollY, ...inst });
-          target.querySelector<HTMLElement>("[data-ax-q]")?.focus({ preventScroll: true });
+          // on a phone this would raise the keyboard over the cards as they arrive
+          if (!coarse) target.querySelector<HTMLElement>("[data-ax-q]")?.focus({ preventScroll: true });
         },
         { signal },
       );
@@ -663,6 +702,23 @@ export function mountProjectsWorld() {
     const starWrote = { t: "", o: "", p: "" };
     starPin.style.setProperty("--flip", "0.5");
     const onFrame = (f: FrameInfo) => {
+      // the cards come from wherever the star is
+      if (f.star[2] > 0.5) {
+        cardsBridge.x = f.star[0];
+        cardsBridge.y = f.star[1];
+      }
+      // Past the flight nothing in the stage's words is on screen, so nothing is written
+      // to them. The pointer still leans the camera, over the cards too.
+      if (f.g > N + 0.005) {
+        if (hovered) {
+          hovered = null;
+          sys?.setHeat(null);
+          canvas.dataset.cursor = "";
+          root.querySelectorAll(".pw-c.is-hot, .pw-pin.is-hot, .pw-body.is-hot").forEach((el) => el.classList.remove("is-hot"));
+        }
+        sys?.setPointer(mx, my, mOn);
+        return;
+      }
       if (!coarse && !reduced) {
         const tx3 = mOn ? (mx / vw) * 2 - 1 : 0;
         const ty3 = mOn ? (my / vh) * 2 - 1 : 0;
@@ -895,6 +951,7 @@ export function mountProjectsWorld() {
         const h = innerHeight;
         if (coarse && w === sizedW) return;
         if (w === sizedW && h === sizedH) return;
+        if (w !== sizedW) cardsH = 1;
         sizedW = w;
         sizedH = h;
         vw = w;
@@ -906,7 +963,34 @@ export function mountProjectsWorld() {
       { passive: true, signal },
     );
 
+    // The cards change height (a filter, an opened case study, the fonts): the camera's
+    // way past the flight is measured against them.
+    const layout = new ResizeObserver(() => {
+      measure();
+      onScroll();
+    });
+    layout.observe(flight);
+    if (cardsEl) {
+      layout.observe(cardsEl);
+      // the pointer leans the camera behind the cards as it does on the stage
+      if (!coarse && !reduced) {
+        cardsEl.addEventListener(
+          "pointermove",
+          (e) => {
+            if (e.pointerType !== "mouse") return;
+            mx = e.clientX;
+            my = e.clientY;
+            mOn = true;
+            sys?.poke();
+          },
+          { passive: true, signal },
+        );
+        cardsEl.addEventListener("pointerleave", () => (mOn = false), { signal });
+      }
+    }
+
     // everything is declared: read where the page is (a return visit may not be at the top)
+    scrollNow = scrollY;
     update();
 
     // ---- the scene: after first paint, paused off screen
@@ -918,12 +1002,12 @@ export function mountProjectsWorld() {
     // scroll carry on until it comes back.
     let gone = false;
     const showWorld = () => {
-      root.classList.add("is-3d");
+      root.setAttribute("data-3d", "");
       if (phone) return;
       clearTimeout(typeLater);
       clearTimeout(typeLater2);
-      typeLater = window.setTimeout(() => root.classList.add("type-on"), 450);
-      typeLater2 = window.setTimeout(() => root.classList.add("has-type"), 1250);
+      typeLater = window.setTimeout(() => root.setAttribute("data-type-on", ""), 450);
+      typeLater2 = window.setTimeout(() => root.setAttribute("data-has-type", ""), 1250);
     };
     canvas.addEventListener(
       "webglcontextlost",
@@ -931,7 +1015,7 @@ export function mountProjectsWorld() {
         gone = true;
         clearTimeout(typeLater);
         clearTimeout(typeLater2);
-        root.classList.remove("is-3d", "type-on", "has-type");
+        for (const a of ["data-3d", "data-type-on", "data-has-type"]) root.removeAttribute(a);
       },
       { signal },
     );
@@ -956,6 +1040,7 @@ export function mountProjectsWorld() {
             tier,
             reduced,
             phone,
+            coarse,
             bodies: bodiesData.map((b) => b.id),
             title: ["Things I've built."],
             fontFamily: inter,
@@ -993,13 +1078,17 @@ export function mountProjectsWorld() {
       destroyed = true;
       clearTimeout(typeLater);
       clearTimeout(typeLater2);
-      root.classList.remove("type-on", "has-type", "is-3d");
+      for (const a of ["data-3d", "data-type-on", "data-has-type", "data-touring", "data-belt", "data-moving", "data-copy-top", "data-cards", "data-past"]) root.removeAttribute(a);
       clearTimeout(settleLater);
       stopGlide();
       stopFling();
       sys?.destroy();
       sys = null;
-      document.documentElement.classList.remove("in-pw", "pw-touring");
+      layout.disconnect();
+      cardsBridge.x = cardsBridge.y = -1;
+      document.documentElement.classList.remove("in-pw", "pw-live");
+      document.documentElement.removeAttribute("data-pw-touring");
+      document.documentElement.removeAttribute("data-pw-cards");
     };
   });
 }

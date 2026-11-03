@@ -2,6 +2,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import BaseLayout from "../layouts/BaseLayout.astro";
+import "../styles/solid-glass.css";
 import { info } from "../data/info";
 import { itemListNode } from "../utils/seo";
 import StarSystem, { type WorldView, type BodyView, type StarView } from "../components/projects-world/StarSystem.astro";
@@ -337,6 +338,7 @@ const filters = [
   ]}
   crumbs={[{ name: "Home", path: "/" }, { name: "Projects", path: "/projects" }]}
 >
-  <StarSystem worlds={worldViews} bodies={bodyViews} star={starView} total={allCards.length} live={liveCount} />
-  <WorldCards cards={allCards} filters={filters} />
+  <StarSystem worlds={worldViews} bodies={bodyViews} star={starView} total={allCards.length} live={liveCount}>
+    <WorldCards cards={allCards} filters={filters} />
+  </StarSystem>
 </BaseLayout>

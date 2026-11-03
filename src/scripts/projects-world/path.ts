@@ -7,9 +7,11 @@
 // positions and a centripetal Catmull-Rom spline runs through them.
 //
 // The scroll runs in stage units: 0 to 1 is the whole system, 1 to 9 the eight
-// worlds, 9 to 10 the belt. Inside a world, s = 0.30 is the first shot and
-// s = 0.70 the second, with a slow drift between them. The stretch from one
-// world's departure to the next one's arrival is the sling.
+// worlds, 9 to 10 the belt, and 10 to 11 is everything after: the camera climbs
+// out of the belt and keeps going round the star behind the cards. Inside a
+// world, s = 0.30 is the first shot and s = 0.70 the second, with a slow drift
+// between them. The stretch from one world's departure to the next one's
+// arrival is the sling.
 
 import { Vector3 } from "three";
 import { clamp, lerp } from "./toolkit";
@@ -218,7 +220,14 @@ export const STAGES: Stage[] = [
       K(0.3, [0.26, 0.5, -1], 56, { look: [0.33, 1.5, 0], roll: -0.12, pfov: 72 }),
       K(0.52, [0.54, -1.5, 1.5], 56, { look: [0.61, 0, 0], roll: 0.14, pfov: 72 }),
       K(0.74, [0.82, 1, -1], 54, { look: [0.89, -0.5, 0], roll: -0.13, pfov: 72 }),
-      K(0.97, [1.1, 96, 66], 44, { look: [0.76, -10, -130], roll: 0, ps: [0, 0.04] }),
+      K(0.97, [1.1, 96, 66], 44, { look: [0.92, 40, -420], roll: 0, ps: [0, 0.04] }),
+      // Past the last body the camera does not stop: high over the belt and round the
+      // star, the star low on the screen, where the cards come from. A c of -590 is the
+      // star's own axis, so these look just above it.
+      K(1.16, [1.28, 150, 130], 44, { look: [1.3, 138, -590], roll: 0.02, pfov: 56, ps: [0, 0] }),
+      K(1.45, [1.62, 196, 186], 46, { look: [1.6, 186, -590], roll: -0.03, pfov: 58, ps: [0, 0] }),
+      K(1.75, [2.02, 240, 226], 46, { look: [2, 226, -590], roll: 0.02, pfov: 58, ps: [0, 0] }),
+      K(2, [2.4, 280, 260], 45, { look: [2.4, 262, -590], roll: 0, pfov: 58, ps: [0, 0] }),
     ],
   },
 ];
