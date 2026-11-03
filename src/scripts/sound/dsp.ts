@@ -159,8 +159,10 @@ export function bell(sr: number, f: number, dur: number, spec: BellSpec, rng: Rn
     const decay = spec.decays[i] * scale;
     const a = spec.amps[i];
     if (spec.beat && i < 3) {
-      parts.push({ f: pf - spec.beat * 0.5, a: a * 0.5, decay, attack: spec.attack, phase: rng() * 6.28 });
-      parts.push({ f: pf + spec.beat * 0.5, a: a * 0.5, decay, attack: spec.attack, phase: rng() * 6.28 });
+      // a pair starts in phase: it opens at full level and the beating comes after
+      const ph = rng() * 6.28;
+      parts.push({ f: pf - spec.beat * 0.5, a: a * 0.5, decay, attack: spec.attack, phase: ph });
+      parts.push({ f: pf + spec.beat * 0.5, a: a * 0.5, decay, attack: spec.attack, phase: ph });
     } else parts.push({ f: pf, a, decay, attack: spec.attack, phase: rng() * 6.28 });
   }
   const d = additive(sr, dur, parts);
@@ -289,8 +291,10 @@ export function piano(sr: number, f: number, dur: number, rng: Rng, soft = 1): F
     if (pf > 5200) break;
     const a = Math.pow(k, -(1.5 + 0.6 * soft)) * (k === 1 ? 1 : 0.9);
     const decay = T / (1 + 0.55 * (k - 1));
-    parts.push({ f: pf * (1 - 0.00025), a: a * 0.5, decay, attack: 0.003, phase: rng() * 6.28 });
-    parts.push({ f: pf * (1 + 0.00025), a: a * 0.5, decay: decay * 0.92, attack: 0.003, phase: rng() * 6.28 });
+    // two strings struck together, so every note speaks at the same strength
+    const ph = rng() * 6.28;
+    parts.push({ f: pf * (1 - 0.00025), a: a * 0.5, decay, attack: 0.003, phase: ph });
+    parts.push({ f: pf * (1 + 0.00025), a: a * 0.5, decay: decay * 0.92, attack: 0.003, phase: ph });
   }
   const d = additive(sr, dur, parts);
   thump(d, sr, rng, 0.05, 6, 700);

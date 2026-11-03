@@ -292,7 +292,7 @@ export class Home extends Movement {
     this.tape.delayTime.value = 0;
     this.tapeLow = this.own(ac.createBiquadFilter());
     this.tapeLow.type = "lowpass";
-    this.tapeLow.frequency.value = 18000;
+    this.tapeLow.frequency.value = this.tapeOpen;
     this.tapeLow.Q.value = 0.7;
     kr(this.tapeLow.frequency);
     this.tapeGain = this.gain(1, this.st.bus);
@@ -646,7 +646,7 @@ export class Home extends Movement {
       tg.setTargetAtTime(0.0003, hush - 0.06, 0.02);
       thud(this, this.direct, A - 0.3, 34, 74, 0.3, dbg(-17));
     }
-    lp.setValueAtTime(18000, A - 0.015);
+    lp.setValueAtTime(this.tapeOpen, A - 0.015);
     tg.setTargetAtTime(1, A, 0.01);
     this.land(c, A, fwd ? 1 : 0.6, fwd);
     if (fwd && to === 5) this.descend(A);
@@ -774,6 +774,11 @@ export class Home extends Movement {
   }
 
   // ---- the planet: three scenes in real time --------------------------------
+  /** The tape stage wide open: as high as this context's rate allows. */
+  private get tapeOpen(): number {
+    return Math.min(18000, this.ac.sampleRate * 0.49);
+  }
+
   private buildEnding(t: number) {
     const ac = this.ac;
     // wind: two loops of noise, each in its own slowly moving band, with gusts
@@ -912,7 +917,7 @@ export class Home extends Movement {
       set(e.sing, dbg(-40), 1);
       set(e.sand, 0, 1);
       set(e.helmet, 0, 0.3);
-      this.tapeLow.frequency.setTargetAtTime(18000, t, 0.2);
+      this.tapeLow.frequency.setTargetAtTime(this.tapeOpen, t, 0.2);
       this.endDuck = 0.75;
     }
     this.mix(this.lastP, t, 0.5);
@@ -944,9 +949,9 @@ export class Home extends Movement {
     // after the seal the world opens, muffled to full and wide
     if (this.fired.has("seal")) {
       const x = Math.max(0, Math.min(1, (p - 0.15) / 0.45));
-      this.tapeLow.frequency.setTargetAtTime(650 * Math.pow(18000 / 650, x * x), t, 0.15);
+      this.tapeLow.frequency.setTargetAtTime(650 * Math.pow(this.tapeOpen / 650, x * x), t, 0.15);
     }
-    this.once("open", p >= 0.6, () => this.tapeLow.frequency.setTargetAtTime(18000, t, 0.3));
+    this.once("open", p >= 0.6, () => this.tapeLow.frequency.setTargetAtTime(this.tapeOpen, t, 0.3));
   }
 
   /** The helmet seal releases: a hiss of pressure, a click, then open air. */

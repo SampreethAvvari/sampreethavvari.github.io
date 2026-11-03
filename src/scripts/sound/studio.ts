@@ -23,16 +23,20 @@ export class Studio {
   private duckGain: GainNode;
   private duckLow: BiquadFilterNode;
   private ducked = 0;
+  private duckTop: number;
 
   constructor(ac: BaseAudioContext, phone: boolean, dest: AudioNode = ac.destination) {
     this.ac = ac;
     this.phone = phone;
     this.bufRate = Math.min(ac.sampleRate, phone ? 24000 : 32000);
+    // the context may run below the device rate, so stay under its Nyquist
+    const nyq = ac.sampleRate * 0.49;
+    this.duckTop = Math.min(16000, nyq);
     this.bus = ac.createGain();
     this.duckGain = ac.createGain();
     this.duckLow = ac.createBiquadFilter();
     this.duckLow.type = "lowpass";
-    this.duckLow.frequency.value = 16000;
+    this.duckLow.frequency.value = this.duckTop;
     this.duckLow.Q.value = 0.5;
     kr(this.duckLow.frequency);
     const hp = ac.createBiquadFilter();
@@ -45,7 +49,7 @@ export class Studio {
     shelf.gain.value = -3;
     const lp = ac.createBiquadFilter();
     lp.type = "lowpass";
-    lp.frequency.value = 15000;
+    lp.frequency.value = Math.min(15000, nyq);
     lp.Q.value = 0.5;
     this.master = ac.createGain();
     this.master.gain.value = 0;
@@ -119,7 +123,7 @@ export class Studio {
     const tau = a > this.ducked ? 0.15 : 0.3;
     this.ducked = a;
     this.duckGain.gain.setTargetAtTime(1 - 0.85 * a, t, tau);
-    this.duckLow.frequency.setTargetAtTime(16000 * Math.pow(1100 / 16000, a), t, tau);
+    this.duckLow.frequency.setTargetAtTime(this.duckTop * Math.pow(1100 / this.duckTop, a), t, tau);
   }
 
   /** Turn the listener's head: radians, positive looks right. */

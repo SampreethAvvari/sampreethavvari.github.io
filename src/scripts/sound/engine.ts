@@ -12,8 +12,10 @@
 //   journey:jump     detail { from, to, direction, duration }  a jump between worlds starts
 //   journey:ending   detail { scene, progress, beat }  a scene on the planet: exit, helmet, touch
 //   writing:hero     detail { index, slug, accent } an article hero takes the screen
-//   writing:transition detail { from, to, duration }
-//   writing:hover    detail { slug }
+//   writing:transition detail { kind: "hero", direction, from, to, duration }
+//                    or { kind: "dive", direction: "in" | "out", tag }
+//   writing:constellation detail { id, tag, action: "hover" | "open" | "close" }
+//   writing:hover    detail { kind: "star", id, slug, tag, note } or { kind: "card", id, slug }
 //   architecture:focus detail { slug, title, discipline }   a system in focus
 //   architecture:flow  detail { intensity }                  its traffic, 0..1
 //   sound:duck       detail { amount, reason }  a clip with its own sound plays
@@ -170,7 +172,7 @@ export function setSound(v: boolean) {
 
 let px = 0.5, py = 0.5, pt = 0, speed = 0, lastM = 0, yawNow = 0;
 let jT = 0;
-const touches = { hover: 0, click: 0 };
+const touches = { hover: 0, click: 0, sky: 0 };
 let lastY = 0, vS = 0, lastFrame = 0, raf = 0, lastHover = 0;
 
 function kick() {
@@ -265,6 +267,8 @@ function onOver(e: PointerEvent) {
   if (!on || !current || e.pointerType !== "mouse") return;
   const el = (e.target as Element | null)?.closest?.("a, button, [role=button], summary, .journey-rail, [data-sound-hover]");
   if (!el || (e.relatedTarget instanceof Node && el.contains(e.relatedTarget))) return;
+  // the writing sky's stars and cards speak through writing:hover
+  if (currentId === "writing" && el.closest(".ax-s, .ax-slot, .ax-c")) return;
   touches.hover++;
   const t = performance.now();
   if (t - lastHover < 110) return;
@@ -346,15 +350,24 @@ export function mountSound() {
   });
   addEventListener("writing:transition", (e) => {
     const d = (e as CustomEvent).detail;
-    if (d && currentId === "writing") current?.heroTransition(d);
+    if (!d || currentId !== "writing") return;
+    if (d.kind === "dive") current?.dive(String(d.direction || "in"), String(d.tag || ""));
+    else current?.heroTransition(d);
   });
+  addEventListener("writing:constellation", (e) => {
+    const d = (e as CustomEvent).detail;
+    if (d && currentId === "writing") current?.constellation(d);
+  });
+  // stars can be traced quickly, so they get a shorter gap than cards
+  let lastSky = 0;
   addEventListener("writing:hover", (e) => {
     const d = (e as CustomEvent).detail;
-    if (!d?.slug || currentId !== "writing" || !on) return;
+    if (!d || currentId !== "writing" || !on) return;
     const t = performance.now();
-    if (t - lastHover < 120) return;
-    lastHover = t;
-    current?.cardHover(String(d.slug));
+    if (t - lastSky < (d.kind === "star" ? 55 : 110)) return;
+    lastSky = t;
+    touches.sky++;
+    current?.skyHover(d, px);
   });
   addEventListener("journey:words", (e) => {
     const d = (e as CustomEvent).detail;
@@ -403,6 +416,7 @@ export function mountSound() {
       return;
     }
     if (id !== currentId) play(id, true);
+    else current?.swapped();
   });
 
   // leaving the site or reloading: fade instead of cutting

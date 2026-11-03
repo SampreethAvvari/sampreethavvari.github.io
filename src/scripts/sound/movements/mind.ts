@@ -28,6 +28,7 @@ export class Mind extends Movement {
   protected wet = 1.15;
   protected trim = 1.17;
   protected bedSend = 0.6;
+  protected tapLevel = dbg(-20);
   protected tapLo = 79;
   protected tapHi = 91;
   protected grainLo = 78;

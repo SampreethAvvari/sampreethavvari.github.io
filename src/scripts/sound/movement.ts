@@ -486,7 +486,7 @@ export abstract class Movement {
   protected onHover(t: number, x: number, _y: number) {
     // a light tap of the same instrument as the click, shorter and softer
     const tones = tonesIn(this.chord, this.tapLo, this.tapHi);
-    if (tones.length) this.tap.play(tones[Math.min(tones.length - 1, Math.floor(x * tones.length))], t, dbg(-33), this.fx, { dur: 0.06, force: true });
+    if (tones.length) this.tap.play(tones[Math.min(tones.length - 1, Math.floor(x * tones.length))], t, dbg(-28), this.fx, { dur: 0.06, force: true });
   }
   /** Scrolling: i is speed 0..1, dir is +1 down, p how far down the page. */
   scroll(i: number, dir: number, p: number, dy: number, dt: number) {
@@ -557,10 +557,17 @@ export abstract class Movement {
   jump(_from: number, _to: number, _dir: number, _speed: number, _duration?: number) {}
   /** Home: a scene on the planet (exit, helmet, touch), progress 0..1 and its beat. */
   ending(_p: number, _beat: number, _scene?: string) {}
-  /** Writing: a hero takes the screen, a transition between heroes, a card hovered. */
+  /** Writing: a hero takes the screen, a transition between heroes. */
   heroFocus(_d: { index?: number; slug: string; accent?: string }) {}
-  heroTransition(_d: { from?: number; to?: number; duration?: number }) {}
-  cardHover(_slug: string) {}
+  heroTransition(_d: { kind?: string; direction?: string; from?: number; to?: number; duration?: number }) {}
+  /** Writing's sky: a star or a card under the pointer (x is the pointer, 0..1). */
+  skyHover(_d: { kind?: string; slug?: string; tag?: string; note?: number }, _x: number) {}
+  /** Writing's sky: a constellation hovered, opened or closed. */
+  constellation(_d: { tag?: string; action?: string }) {}
+  /** Writing's sky: the camera dives into a constellation or pulls back out. */
+  dive(_direction: string, _tag: string) {}
+  /** A new page came in and this movement carries on playing. */
+  swapped() {}
   /** Make the next scheduled step the first of a new bar. */
   protected alignBar() {
     const spb = this.spb;

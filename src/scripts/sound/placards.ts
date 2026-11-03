@@ -73,7 +73,7 @@ export const PLACARDS: Record<MovementId, Placard> = {
       "The piano speaks in sentences. It rises, falls, ends on a comma or a full stop, then leaves a breath of silence.",
       "Far behind you, two notes repeat every few bars, like a light across water.",
       "G major moving through E minor, C and D, the plainest progression there is, chosen for that.",
-      "Scroll slowly and a soft note marks every third of a screen, like turning a page.",
+      "In the sky of posts each star is a glass chime, so tracing a constellation plays its melody, and every constellation has a chord of its own.",
       "These are case studies. The music asks you to take your time.",
     ],
   },
