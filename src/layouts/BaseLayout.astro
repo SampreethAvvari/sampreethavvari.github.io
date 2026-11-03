@@ -289,10 +289,12 @@ const pageComets = hasOwnComets
     </script>
     <script is:inline>
       // The stylesheets are in the body, under the loader (scripts/late-css.mjs).
-      // The router only knows stylesheets in the head, so once a page has parsed
-      // they move there, and each arriving page's move there too before the swap,
-      // with the new ones loaded first. A stylesheet that hangs holds a move back
-      // for a few seconds at most.
+      // The router only knows stylesheets in the head, so they move there when the
+      // visitor first leaves for another page, and each arriving page's move there
+      // too before the swap, with the new ones loaded first. Not sooner: moving a
+      // stylesheet restyles the whole document, and on a phone that is a third of a
+      // second each, right when the page is starting. Leaving, the loader is up.
+      // A stylesheet that hangs holds a move back for a few seconds at most.
       (function () {
         if (window.__lateCss) return;
         window.__lateCss = true;
@@ -308,9 +310,8 @@ const pageComets = hasOwnComets
             document.head.appendChild(copy);
           });
         }
-        if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", settle, { once: true });
-        else settle();
         document.addEventListener("astro:before-preparation", function (e) {
+          settle();
           var load = e.loader;
           // Offline, a link the browser has no copy of would leave this page for
           // the browser's error page. Stay here instead, and let the loader go.

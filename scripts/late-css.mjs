@@ -6,7 +6,7 @@
 //    whose styles are in the page, is on screen as soon as the HTML arrives.
 //    Everything after the stylesheets still waits for them, parsing and scripts
 //    included, so nothing runs against an unstyled page. BaseLayout's head script
-//    moves them back to the head once parsed, for the router.
+//    moves them to the head when the visitor first leaves the page, for the router.
 //
 // 2. Minifies inline scripts and styles, which Astro leaves exactly as written,
 //    comments and all, in every page.
