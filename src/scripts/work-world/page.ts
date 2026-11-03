@@ -158,19 +158,9 @@ onPage("work-world", (signal) => {
     };
   }
 
-  let skyHeld: boolean | null = null;
-  const markStage = () => {
-    const bottom = root.getBoundingClientRect().bottom;
-    document.documentElement.classList.toggle("in-ww", bottom > innerHeight * 0.5);
-    const hold = bottom > 1;
-    if (hold !== skyHeld) {
-      skyHeld = hold;
-      emit("spacefield:hold", { hold });
-    }
-  };
-  markStage();
-  addEventListener("scroll", markStage, { passive: true, ...sig });
-  signal.addEventListener("abort", () => emit("spacefield:hold", { hold: false }));
+  // While this class is on, the site's gauge and top button step aside and the
+  // global sky rests (SpaceField listens for it).
+  document.documentElement.classList.add("in-ww");
 
   let w: World | null = null;
   let pan: Panels | null = null;
