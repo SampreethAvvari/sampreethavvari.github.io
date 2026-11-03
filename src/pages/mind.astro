@@ -1,11 +1,17 @@
 ---
 import BaseLayout from "../layouts/BaseLayout.astro";
 import { mindGraphs } from "../data/mind/graph";
+import { settle } from "../scripts/mind-world/settle";
 import "../styles/solid-glass.css";
 
+// The stars' places are worked out here, once, so a visitor's phone never has to.
+const withPlaces = mindGraphs.map((g) => {
+  const at = settle(g);
+  return { ...g, nodes: g.nodes.map((n) => ({ ...n, at: at.get(n.id) })) };
+});
 // Escape "<" so a stray "</script>" in any blurb can never break out of the
 // JSON data island.
-const dataJson = JSON.stringify(mindGraphs).replace(/</g, "\\u003c");
+const dataJson = JSON.stringify(withPlaces).replace(/</g, "\\u003c");
 ---
 
 <BaseLayout
@@ -14,6 +20,9 @@ const dataJson = JSON.stringify(mindGraphs).replace(/</g, "\\u003c");
   footerVariant="minimal"
 >
   <div class="mind-root" role="region" aria-label="Mind, an interactive map of my work">
+    <!-- The 3D world, loaded after the words and the first map are up. -->
+    <canvas id="mind-gl" class="mind-gl" aria-hidden="true"></canvas>
+    <!-- The first map, then the names on top of the world. It takes the pointer. -->
     <canvas id="mind-canvas" class="mind-canvas" aria-hidden="true"></canvas>
 
     <!-- The panel floats over the map, so it is navigation layer glass. -->
@@ -42,7 +51,7 @@ const dataJson = JSON.stringify(mindGraphs).replace(/</g, "\\u003c");
       <div class="mind-body" id="mind-panel-body">
         <header class="mind-head">
           <h1 class="mind-title">
-            A star map of my work.
+            <span class="t-main">A star map of my work.</span>
             <span class="t-tail">Everything I've built, and what ties it together.</span>
           </h1>
           <p class="mind-sub" data-mind-sub>Loading the sky…</p>
@@ -80,6 +89,8 @@ const dataJson = JSON.stringify(mindGraphs).replace(/</g, "\\u003c");
 
     <!-- A star's card: opens over the map when a star is tapped. -->
     <aside class="mind-card" data-mind-card hidden>
+      <!-- Open space over the card: the real star or planet is drawn here by the world. -->
+      <div class="mc-port" data-card-port aria-hidden="true"><span class="mc-orb" data-card-orb></span></div>
       <div class="mind-card-frame" role="dialog" aria-labelledby="mind-card-name">
         <span class="mind-card-corner tl" aria-hidden="true"></span>
         <span class="mind-card-corner tr" aria-hidden="true"></span>
@@ -133,6 +144,18 @@ const dataJson = JSON.stringify(mindGraphs).replace(/</g, "\\u003c");
       radial-gradient(52% 48% at 100% 100%, rgba(var(--tone-rgb), 0.08) 0%, rgba(var(--tone-rgb), 0.078) 6.4%, rgba(var(--tone-rgb), 0.0724) 12.8%, rgba(var(--tone-rgb), 0.0635) 19.2%, rgba(var(--tone-rgb), 0.0524) 25.6%, rgba(var(--tone-rgb), 0.04) 32%, rgba(var(--tone-rgb), 0.0276) 38.4%, rgba(var(--tone-rgb), 0.0165) 44.8%, rgba(var(--tone-rgb), 0.0076) 51.2%, rgba(var(--tone-rgb), 0.002) 57.6%, rgba(var(--tone-rgb), 0) 64%);
   }
 
+  /* Fades in over the first map, and stays invisible until it has really drawn. */
+  .mind-gl {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    display: block;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 1100ms var(--ease-glass);
+  }
+  .mind-gl:global(.is-on) { opacity: 1; }
   .mind-canvas {
     position: absolute;
     inset: 0;
@@ -316,8 +339,24 @@ const dataJson = JSON.stringify(mindGraphs).replace(/</g, "\\u003c");
     color: var(--ink);
     text-wrap: balance;
   }
-  /* The page's script failed: the map is not coming, so it does not say it is. */
-  :global(html.no-stage) .mind-sub, :global(html.no-stage) .mind-detail, :global(html.no-stage) .mind-hint { visibility: hidden; }
+  .t-main {
+    display: block;
+    overflow: hidden;
+    max-height: 1.6em;
+    transition: max-height 620ms var(--ease-glass), opacity 420ms var(--ease-glass);
+  }
+  /* In the wide layout the title moves out into the world once it has gathered, so
+     the panel does not say it twice. It stays in the page for readers and search. */
+  @media (min-width: 641px) {
+    .mind-root:global(.words-on) .t-main { max-height: 0; opacity: 0; }
+    .mind-root:global(.words-on) .mind-title .t-tail { color: var(--ink); }
+  }
+  /* The page's script failed: the map is not coming, so nothing promises it, and no
+     control is left that does nothing. The title and its line stay as a plain page. */
+  :global(html.no-stage) .mind-sub, :global(html.no-stage) .mind-detail, :global(html.no-stage) .mind-hint,
+  :global(html.no-stage) .mind-modes, :global(html.no-stage) .mind-filter, :global(html.no-stage) .mind-reset,
+  :global(html.no-stage) .mind-tour-open, :global(html.no-stage) .mind-fold { display: none; }
+  :global(html.no-stage) .mind-gl, :global(html.no-stage) .mind-canvas { display: none; }
   .mind-sub {
     margin: 12px 0 0;
     font-size: 0.875rem;
@@ -552,28 +591,48 @@ const dataJson = JSON.stringify(mindGraphs).replace(/</g, "\\u003c");
   /* The card: a dossier on one star, floating in the space beside the map.
      Its edge glows in the star's own colour. */
   .mind-card {
+    perspective: 1100px;
     position: absolute;
     z-index: 7;
     right: max(var(--gutter), env(safe-area-inset-right, 0px));
-    /* centred in the band between the nav and the chat button */
-    top: 96px;
-    bottom: 112px;
+    /* centred in the band between the nav and the chat button, which it stops above */
+    top: 84px;
+    bottom: var(--card-bottom, 112px);
     width: min(380px, calc(100% - 2 * var(--gutter)));
     display: flex;
-    align-items: center;
+    flex-direction: column;
+    justify-content: center;
     pointer-events: none;
   }
+  /* The open space the body rises in. The frame below overlaps the body's foot. */
+  .mc-port {
+    position: relative;
+    flex: none;
+    height: 54px;
+  }
+  /* Only for a map with no 3D world behind it. */
+  .mind-card .mc-orb {
+    position: absolute;
+    left: 40px;
+    bottom: -8px;
+    width: 52px;
+    height: 52px;
+    border-radius: 9999px;
+    background: radial-gradient(circle at 34% 30%, #fff 0, rgba(var(--nc-rgb, 91, 141, 239), 1) 34%, rgba(var(--nc-rgb, 91, 141, 239), 0.35) 70%, rgba(var(--nc-rgb, 91, 141, 239), 0.05) 100%);
+    box-shadow: 0 0 22px 2px rgba(var(--nc-rgb, 91, 141, 239), 0.5);
+  }
+  .mind-root:global(.has-world) .mind-card .mc-orb { display: none; }
   .mind-card[hidden] { display: none; }
   .mind-card-frame {
     --c: var(--nc, #5b8def);
     --c-rgb: var(--nc-rgb, 91, 141, 239);
     position: relative;
     width: 100%;
-    max-height: 100%;
-    overflow: auto;
-    overscroll-behavior: contain;
+    flex: 0 1 auto;
+    min-height: 0;
+    overflow: hidden;
     pointer-events: auto;
-    padding: 22px 20px 20px;
+    padding: 0;
     border-radius: 18px;
     color: var(--ink);
     background:
@@ -588,10 +647,13 @@ const dataJson = JSON.stringify(mindGraphs).replace(/</g, "\\u003c");
       0 30px 80px -30px rgba(0, 0, 0, 0.9);
     -webkit-backdrop-filter: blur(14px) saturate(1.4);
     backdrop-filter: blur(14px) saturate(1.4);
-    display: grid;
-    gap: 14px;
-    scrollbar-width: thin;
+    display: flex;
+    flex-direction: column;
+    /* leans a little toward the pointer; set only where there is a mouse */
+    transform: rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg));
+    transition: transform 280ms var(--ease-glass);
   }
+  .mind-card :global(.mc-head) { transform: translate(var(--hx, 0), var(--hy, 0)); transition: transform 280ms var(--ease-glass); }
   /* a light that sweeps down the card as it opens */
   .mind-card-frame::after {
     content: "";
@@ -604,12 +666,7 @@ const dataJson = JSON.stringify(mindGraphs).replace(/</g, "\\u003c");
     background-position: 0 120%;
     opacity: 0;
   }
-  .mind-card.is-in .mind-card-frame { animation: mc-in 420ms cubic-bezier(0.16, 1, 0.3, 1) both; }
   .mind-card.is-in .mind-card-frame::after { animation: mc-scan 900ms ease-out 120ms both; }
-  @keyframes mc-in {
-    from { opacity: 0; transform: translateX(18px) scale(0.97); filter: blur(6px); }
-    to { opacity: 1; transform: none; filter: none; }
-  }
   @keyframes mc-scan {
     0% { opacity: 1; background-position: 0 120%; }
     100% { opacity: 0; background-position: 0 -20%; }
@@ -643,30 +700,20 @@ const dataJson = JSON.stringify(mindGraphs).replace(/</g, "\\u003c");
   }
   .mind-card-close:hover { color: var(--ink); border-color: rgba(var(--c-rgb), 0.7); }
   .mind-card-close:focus-visible { outline: none; box-shadow: 0 0 0 2px rgba(var(--c-rgb), 0.7); }
-  .mind-card-body { display: grid; gap: 14px; }
+  .mind-card-body { display: flex; flex-direction: column; min-height: 0; flex: 1 1 auto; }
+  /* The middle scrolls; the name, the close button and the links stay in view. */
+  .mind-card :global(.mc-scroll) {
+    display: grid;
+    gap: 14px;
+    min-height: 0;
+    flex: 1 1 auto;
+    overflow: auto;
+    overscroll-behavior: contain;
+    scrollbar-width: thin;
+    padding: 4px 20px 16px;
+  }
 
-  .mind-card :global(.mc-head) { display: flex; align-items: center; gap: 14px; padding-right: 30px; }
-  .mind-card :global(.mc-orb) {
-    position: relative;
-    flex: none;
-    width: 48px;
-    height: 48px;
-    border-radius: 9999px;
-    background: radial-gradient(circle at 34% 30%, #fff 0, rgba(var(--c-rgb), 1) 34%, rgba(var(--c-rgb), 0.35) 70%, rgba(var(--c-rgb), 0.05) 100%);
-    box-shadow: 0 0 22px 2px rgba(var(--c-rgb), 0.65), 0 0 60px 4px rgba(var(--c-rgb), 0.25);
-  }
-  .mind-card :global(.mc-orb.is-planet::after) {
-    content: "";
-    position: absolute;
-    left: -14px;
-    right: -14px;
-    top: 50%;
-    height: 14px;
-    margin-top: -7px;
-    border-radius: 50%;
-    border: 2px solid rgba(var(--c-rgb), 0.85);
-    transform: rotate(-20deg);
-  }
+  .mind-card :global(.mc-head) { flex: none; display: flex; align-items: center; gap: 14px; padding: 20px 52px 10px 20px; }
   .mind-card :global(.mc-id) { min-width: 0; display: grid; gap: 4px; }
   .mind-card :global(.mc-class) {
     margin: 0;
@@ -710,17 +757,44 @@ const dataJson = JSON.stringify(mindGraphs).replace(/</g, "\\u003c");
     box-shadow: 0 0 8px rgba(var(--c-rgb), 0.45);
   }
   .mind-card :global(.mc-bio) { margin: 0; font-size: 0.9375rem; line-height: 1.6; color: var(--ink-soft); max-width: 46ch; }
+  /* Connections: a count and one small light for each star it touches, in the colour
+     that kind has on the map. They come on as the links light. */
   .mind-card :global(.mc-count) {
     display: grid;
-    gap: 8px;
+    gap: 10px;
     padding: 12px 14px;
     border-radius: 12px;
-    background: rgba(var(--c-rgb), 0.08);
-    border: 1px solid rgba(var(--c-rgb), 0.28);
+    background: rgba(var(--c-rgb), 0.07);
+    border: 1px solid rgba(var(--c-rgb), 0.24);
   }
-  .mind-card :global(.mc-count-row) { display: flex; flex-wrap: wrap; gap: 6px 18px; }
-  .mind-card :global(.mc-count-item) { font-size: 0.875rem; color: var(--ink-soft); white-space: nowrap; }
+  .mind-card :global(.mc-count-row) { display: grid; gap: 8px; }
+  .mind-card :global(.mc-count-item) {
+    display: grid;
+    grid-template-columns: minmax(0, auto) minmax(0, 1fr);
+    align-items: center;
+    gap: 6px 14px;
+    margin: -3px -6px;
+    padding: 3px 6px;
+    border-radius: 8px;
+    font-size: 0.875rem;
+    color: var(--ink-soft);
+    transition: background-color 150ms var(--ease-glass);
+  }
+  .mind-card :global(.mc-count-item:hover) { background: rgba(255, 255, 255, 0.06); }
+  .mind-card :global(.mc-count-top) { white-space: nowrap; }
   .mind-card :global(.mc-count-item b) { font-size: 1.125rem; font-weight: 700; color: var(--ink); font-variant-numeric: tabular-nums; margin-right: 2px; }
+  .mind-card :global(.mc-dots) { display: flex; flex-wrap: wrap; gap: 4px; justify-content: flex-end; }
+  .mind-card :global(.mc-dots i) {
+    width: 6px;
+    height: 6px;
+    border-radius: 9999px;
+    background: var(--kc);
+    box-shadow: 0 0 6px var(--kc);
+    animation: mc-dot-on 420ms var(--ease-glass) calc(180ms + var(--d, 0) * 34ms) backwards;
+  }
+  @keyframes mc-dot-on { from { opacity: 0; transform: scale(0.3); } to { opacity: 1; transform: none; } }
+  .mind-card :global(.mc-chip[data-lit]) { transition: color 150ms var(--ease-glass), border-color 150ms var(--ease-glass); }
+  .mind-card :global(.mc-chip[data-lit]:hover) { color: var(--ink); border-color: var(--hc, rgba(255, 255, 255, 0.3)); }
   .mind-card :global(.mc-more[hidden]) { display: none; }
   .mind-card :global(.mc-more) {
     display: grid;
@@ -763,9 +837,16 @@ const dataJson = JSON.stringify(mindGraphs).replace(/</g, "\\u003c");
     background: var(--hc, currentColor);
     box-shadow: 0 0 8px var(--hc, transparent);
   }
-  .mind-card :global(.mc-hop:hover) { color: var(--ink); border-color: rgba(255, 255, 255, 0.24); }
+  .mind-card :global(.mc-hop:hover) { color: var(--ink); border-color: var(--hc, rgba(255, 255, 255, 0.24)); }
   .mind-card :global(.mc-hop:focus-visible) { outline: none; box-shadow: 0 0 0 2px rgba(var(--c-rgb), 0.7); }
-  .mind-card :global(.mc-actions) { display: flex; flex-wrap: wrap; gap: 8px; }
+  .mind-card :global(.mc-actions) {
+    flex: none;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 12px 20px 16px;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+  }
   .mind-card :global(.mc-btn) {
     display: inline-flex;
     align-items: center;
@@ -850,13 +931,20 @@ const dataJson = JSON.stringify(mindGraphs).replace(/</g, "\\u003c");
       top: auto;
       bottom: calc(env(safe-area-inset-bottom, 0px) + 76px);
       width: auto;
-      max-height: 58vh;
-      align-items: flex-end;
+      justify-content: flex-end;
     }
+    .mc-port { height: 36px; }
+    .mind-card .mc-orb { left: 28px; width: 36px; height: 36px; bottom: -6px; }
     /* the sheet has no set height, so the cap goes on the frame itself */
-    .mind-card-frame { padding: 18px 16px 16px; max-height: 58vh; }
-    :global(body.mind-touring) .mind-card-frame { max-height: 42vh; }
+    .mind-card-frame { max-height: 56vh; }
+    :global(body.mind-touring) .mind-card-frame { max-height: 40vh; }
     .mind-card :global(.mc-name) { font-size: 1.2rem; }
+    .mind-card :global(.mc-head) { padding: 16px 56px 8px 16px; }
+    .mind-card :global(.mc-scroll) { padding: 4px 16px 12px; }
+    /* easy to reach with a thumb */
+    .mind-card :global(.mc-actions) { padding: 10px 16px calc(12px + env(safe-area-inset-bottom, 0px) * 0); }
+    .mind-card :global(.mc-btn) { height: 40px; }
+    .mind-card-close { width: 40px; height: 40px; top: 8px; right: 8px; }
     /* the tour sits up top, clear of the sheet and the card */
     .mind-tour { left: 12px; top: calc(env(safe-area-inset-top, 0px) + 84px); width: calc(100vw - 24px); }
     .mind-tour-frame { padding: 16px 16px 14px; }
@@ -880,8 +968,9 @@ const dataJson = JSON.stringify(mindGraphs).replace(/</g, "\\u003c");
   }
 
   @media (prefers-reduced-motion: reduce) {
+    .mind-gl, .t-main { transition: none; }
     .mind-panel { animation: none; }
-    .mind-card.is-in .mind-card-frame, .mind-card.is-in .mind-card-frame::after { animation: none; }
+    .mind-card.is-in .mind-card-frame::after, .mind-card :global(.mc-dots i) { animation: none; }
     .mind-reset:hover { transform: none; }
     .mind-tour-frame, .mind-tour.is-step .mind-tour-frame, :global(.is-tour-target)::after { animation: none; }
     .mind-tour { transition: none; }
