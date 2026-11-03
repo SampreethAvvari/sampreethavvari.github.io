@@ -2,18 +2,9 @@
 // sprite and a cloud puff. Nothing is fetched over the network.
 
 import { CanvasTexture, LinearFilter, LinearMipmapLinearFilter, RepeatWrapping, SRGBColorSpace, ClampToEdgeWrapping } from "three";
+import { rng } from "./bakes";
 
-/** Small seeded random source so every visit builds the same ship. */
-export function rng(seed: number) {
-  let a = seed >>> 0;
-  return () => {
-    a = (a + 0x6d2b79f5) >>> 0;
-    let t = a;
-    t = Math.imul(t ^ (t >>> 15), t | 1);
-    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-  };
-}
+export { rng };
 
 function canvas(size: number) {
   const c = document.createElement("canvas");
