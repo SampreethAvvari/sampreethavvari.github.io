@@ -48,6 +48,8 @@ const year = new Date().getFullYear();
 const SPAN = 1.7;
 // Where each chapter rests when the scroll settles (fraction of its span).
 const REST = 0.3;
+// Screens of scroll for the closing film after the landing.
+const ENDING = 3;
 ---
 
 <section
@@ -56,12 +58,15 @@ const REST = 0.3;
   data-journey
   data-chapters={JSON.stringify(chapters.map(({ id, color }) => ({ id, color })))}
   data-rest={REST}
-  style={`--n:${N};--span:${SPAN};--jc:${chapters[0].rgb};`}
+  data-span={SPAN}
+  data-ending={ENDING}
+  style={`--n:${N};--span:${SPAN};--ending:${ENDING};--jc:${chapters[0].rgb};`}
   aria-label="Sampreeth Avvari, in eight chapters"
 >
   <div class="journey-stage">
     <div class="journey-sky" aria-hidden="true"></div>
     <canvas class="journey-canvas" aria-hidden="true"></canvas>
+    <canvas class="journey-ending" aria-hidden="true"></canvas>
     <div class="journey-grain" aria-hidden="true"></div>
     <div class="journey-shade" aria-hidden="true"></div>
 
@@ -194,7 +199,7 @@ const REST = 0.3;
 
       <article class="jc jc-end" data-jc="7" style={`--cc:${chapters[7].rgb}`}>
         <p class="jc-kicker"><span>08</span><i></i><span>Open to new work · {year}</span></p>
-        <h2 class="jc-title"><span class="jc-line">{words("Let's build").map((w, k) => <span class="jw" style={`--w:${k}`}>{w} </span>)}<span class="jc-dim">{words("what's next.").map((w, k) => <span class="jw" style={`--w:${k + 2}`}>{w} </span>)}</span></span></h2>
+        <h2 class="jc-title"><span class="jc-line">{words("Connect with me.").map((w, k) => <span class="jw" style={`--w:${k}`}>{w} </span>)}</span><span class="jc-line jc-dim">{words("Let's build what's next.").map((w, k) => <span class="jw" style={`--w:${k + 3}`}>{w} </span>)}</span></h2>
         <div class="jc-reach">
           <a class="jc-mail" href={`mailto:${email}`}>{email} <Icon name="arrow-right" size={16} /></a>
           <p class="jc-links">
@@ -215,13 +220,15 @@ const REST = 0.3;
   </div>
 
   <!-- one anchor per chapter, a screen apart, for links and the index -->
-  {chapters.map((c, i) => <span class="journey-anchor" id={`ch-${c.id}`} style={`top:calc(${i * SPAN + (i ? REST * SPAN : 0)} * 100svh)`}></span>)}
+  {chapters.map((c, i) => <span class="journey-anchor" id={`ch-${c.id}`} style={`top:calc(${i === N - 1 ? i * SPAN + ENDING : i * SPAN + (i ? REST * SPAN : 0)} * 100svh)`}></span>)}
 </section>
 
 
 <style>
   /* every chapter gets SPAN screens; the last one ends where the page ends */
-  .journey { position: relative; height: calc(((var(--n) - 1) * var(--span) + 1) * 100svh); }
+  .journey { position: relative; height: calc(((var(--n) - 1) * var(--span) + var(--ending) + 1) * 100svh); }
+  .journey-ending { position: absolute; inset: 0; width: 100%; height: 100%; display: block; pointer-events: none; opacity: var(--end-o, 0); }
+  .journey:not(.has-ending) .journey-ending { display: none; }
   .journey-anchor { position: absolute; left: 0; width: 1px; height: 1px; pointer-events: none; }
   .journey-stage {
     position: sticky;
@@ -549,18 +556,27 @@ const REST = 0.3;
 <script>
   type Chapter = { id: string; color: string };
   type Journey = { setScroll(p: number, v: number): void; setPointer(x: number, y: number): void; setPaused(p: boolean): void; destroy(): void };
-  // The engine module may also export CHAPTER_FRAMING (where the words should sit per chapter).
+  type Ending = { setProgress(p: number): void; setPaused(b: boolean): void; destroy(): void };
+  type Framing = { side: "left" | "right"; v: "top" | "bottom" };
+  // The engine module may also export CHAPTER_FRAMING (where the words sit per
+  // chapter) and landed(progress) (how settled the ship is in the last world).
 
   // Runs on first load and again after each in-page navigation back to the
   // home page; everything it adds is removed when the page is swapped away.
   function mount() {
-  const root = document.querySelector<HTMLElement>("[data-journey]");
-  if (!root || root.dataset.mounted) return;
-  root.dataset.mounted = "1";
-  const visit = new AbortController();
-  const sig = { signal: visit.signal };
+    const root = document.querySelector<HTMLElement>("[data-journey]");
+    if (!root || root.dataset.mounted) return;
+    root.dataset.mounted = "1";
+    const visit = new AbortController();
+    const sig = { signal: visit.signal };
+
     const chapters: Chapter[] = JSON.parse(root.dataset.chapters || "[]");
     const N = chapters.length;
+    const LAST = N - 1;
+    const SPAN = Number(root.dataset.span || 1.7); // screens per world
+    const ENDING = Number(root.dataset.ending || 3); // screens for the closing film
+    const REST = Number(root.dataset.rest || 0.3); // where a world rests within its span
+    const GLIDE = 1400; // every move between worlds takes exactly this long
     const panes = Array.from(root.querySelectorAll<HTMLElement>("[data-jc]"));
     const now = root.querySelector<HTMLElement>("[data-j-now]");
     const fill = root.querySelector<HTMLElement>("[data-j-fill]");
@@ -572,101 +588,36 @@ const REST = 0.3;
     const hexRgb = (h: string) => { const n = parseInt(h.slice(1), 16); return `${(n >> 16) & 255},${(n >> 8) & 255},${n & 255}`; };
     const pad = (n: number) => String(n).padStart(2, "0");
 
-    let progress = 0, lastP = 0, lastT = performance.now(), velocity = 0, active = -1, ticking = false;
+    let progress = 0, ending = 0, lastP = 0, lastT = performance.now(), velocity = 0, active = -1, ticking = false;
     let journey: Journey | null = null;
+    let player: Ending | null = null;
+    let landed: ((p: number) => number) | null = null;
+    let framing: Framing[] = [];
 
-    const REST = Number(root.dataset.rest || 0.3);
-    const JUMP = 0.8; // the last fifth of each chapter is the jump to the next
-    const span = () => Math.max(1, root.offsetHeight - innerHeight);
+    // ---- geometry: the flight is LAST * SPAN screens, the closing film ENDING screens after it
+    const flightPx = () => LAST * SPAN * innerHeight;
+    const endPx = () => ENDING * innerHeight;
+    const endStart = () => root.offsetTop + flightPx();
     const measure = () => {
-      const r = root.getBoundingClientRect();
-      return Math.min(1, Math.max(0, -r.top / span())) * (N - 1);
+      const y = Math.max(0, -root.getBoundingClientRect().top);
+      const f = flightPx();
+      if (y <= f) return { p: (y / Math.max(1, f)) * LAST, e: 0 };
+      return { p: LAST, e: Math.min(1, (y - f) / Math.max(1, endPx())) };
     };
-    const topFor = (p: number) => root.offsetTop + (p / (N - 1)) * span();
-    const restOf = (i: number) => (i <= 0 ? 0 : i >= N - 1 ? N - 1 : i + REST);
-    // Where each chapter's words sit, from the engine's camera plan.
-    let framing: { side: "left" | "right"; v: "top" | "bottom" }[] = [];
+    const restOf = (i: number) => (i <= 0 ? 0 : i >= LAST ? LAST : i + REST);
+    const topFor = (p: number) => root.offsetTop + (p / LAST) * flightPx();
+    const nearest = (p: number) => {
+      let best = 0, d = Infinity;
+      for (let i = 0; i <= LAST; i++) { const dd = Math.abs(restOf(i) - p); if (dd < d) { d = dd; best = i; } }
+      return best;
+    };
+
+    // ---- the words of a world, and where they sit
     const place = (i: number) => {
       const f = framing[i];
       root.dataset.copySide = f?.side ?? "left";
       root.dataset.copyV = f?.v ?? "bottom";
     };
-    const show = (i: number) => {
-      if (i === active) return;
-      active = i;
-      place(i);
-      panes.forEach((p, k) => p.classList.toggle("is-active", k === i));
-      links.forEach((a, k) => (k === i ? a.setAttribute("aria-current", "step") : a.removeAttribute("aria-current")));
-      if (now) now.textContent = pad(i + 1);
-      if (label) label.textContent = `${pad(i + 1)} ${names[i] || ""}`;
-      root.style.setProperty("--jc", hexRgb(chapters[i].color));
-      // the numbers count up as their chapter arrives
-      panes[i].querySelectorAll<HTMLElement>("[data-count]").forEach((el) => countUp(el));
-      // the score follows the flight (scripts/sound listens), and speaks the words as they arrive
-      window.dispatchEvent(new CustomEvent("journey:chapter", { detail: { index: i, id: chapters[i].id, count: N } }));
-      const pane = panes[i];
-      const said = Array.from(pane.querySelectorAll<HTMLElement>(".jw")).map((w) => (w.textContent || "").trim()).filter(Boolean);
-      const items = pane.querySelectorAll(".jc-stats li, .jc-cards li").length;
-      window.dispatchEvent(new CustomEvent("journey:words", { detail: { index: i, id: chapters[i].id, words: said, items, wordStagger: 0.07, itemStagger: 0.08, delay: 0.18 } }));
-    };
-    const update = () => {
-      ticking = false;
-      const t = performance.now();
-      progress = measure();
-      const dt = Math.max(16, t - lastT) / 1000;
-      velocity = velocity * 0.6 + ((progress - lastP) / dt) * 0.4;
-      lastP = progress; lastT = t;
-      // inside a world its words show; in the jump between worlds they leave
-      const i = Math.min(N - 1, Math.floor(progress + 1e-6));
-      const frac = progress - i;
-      const jumping = i < N - 1 && frac > JUMP;
-      if (jumping !== root.classList.contains("is-jumping")) {
-        root.classList.toggle("is-jumping", jumping);
-        if (jumping) {
-          const dir = velocity >= 0 ? 1 : -1;
-          window.dispatchEvent(new CustomEvent("journey:jump", { detail: { from: dir > 0 ? i : i + 1, to: dir > 0 ? i + 1 : i, direction: dir } }));
-          panes.forEach((p) => p.classList.remove("is-active"));
-          active = -1;
-        }
-      }
-      if (!jumping) show(i);
-      const f = progress / (N - 1);
-      if (fill) fill.style.transform = `scaleY(${f})`;
-      if (label) label.style.top = `${f * 100}%`;
-      root.classList.toggle("is-moving", progress > 0.04);
-      document.documentElement.classList.toggle("in-journey", root.getBoundingClientRect().bottom > innerHeight * 0.5);
-      journey?.setScroll(progress, velocity);
-      window.dispatchEvent(new CustomEvent("journey:progress", { detail: { progress, velocity, count: N } }));
-    };
-    const onScroll = () => { if (!ticking) { ticking = true; requestAnimationFrame(update); } settle(); };
-
-    // Magnetic stops: when the scroll settles near a world's reading spot it
-    // eases onto it, and it never stops halfway through a jump.
-    let idle = 0, gliding = false, held = false;
-    const glide = (p: number) => {
-      gliding = true;
-      scrollTo({ top: topFor(p), behavior: reduced ? "auto" : "smooth" });
-      window.setTimeout(() => { gliding = false; }, 900);
-    };
-    const settle = () => {
-      clearTimeout(idle);
-      if (gliding || held) return;
-      idle = window.setTimeout(() => {
-        if (held) return;
-        const p = measure();
-        const i = Math.min(N - 1, Math.floor(p + 1e-6));
-        const frac = p - i;
-        if (i < N - 1 && frac > JUMP) { glide(velocity < 0 ? restOf(i) : restOf(i + 1)); return; }
-        const r = restOf(i);
-        if (Math.abs(p - r) < 0.16 && Math.abs(p - r) > 0.004) glide(r);
-      }, 170);
-    };
-    addEventListener("pointerdown", () => { held = true; }, sig);
-    addEventListener("pointerup", () => { held = false; settle(); }, sig);
-    addEventListener("touchstart", () => { held = true; }, { passive: true, ...sig });
-    addEventListener("touchend", () => { held = false; settle(); }, { passive: true, ...sig });
-
-    // a number that counts up from zero, keeping its words ("70 hrs", "1,161")
     const countUp = (el: HTMLElement) => {
       const text = el.dataset.count || "";
       const m = text.match(/^([\d,.]+)(.*)$/);
@@ -682,6 +633,166 @@ const REST = 0.3;
       };
       requestAnimationFrame(tick);
     };
+    const show = (i: number) => {
+      if (i === active) return;
+      active = i;
+      panes.forEach((p, k) => p.classList.toggle("is-active", k === i));
+      if (i < 0) return;
+      place(i);
+      links.forEach((a, k) => (k === i ? a.setAttribute("aria-current", "step") : a.removeAttribute("aria-current")));
+      if (now) now.textContent = pad(i + 1);
+      if (label) label.textContent = `${pad(i + 1)} ${names[i] || ""}`;
+      root.style.setProperty("--jc", hexRgb(chapters[i].color));
+      panes[i].querySelectorAll<HTMLElement>("[data-count]").forEach((el) => countUp(el));
+      // the score follows the flight, and speaks the words as they arrive
+      window.dispatchEvent(new CustomEvent("journey:chapter", { detail: { index: i, id: chapters[i].id, count: N } }));
+      const said = Array.from(panes[i].querySelectorAll<HTMLElement>(".jw")).map((w) => (w.textContent || "").trim()).filter(Boolean);
+      const items = panes[i].querySelectorAll(".jc-stats li, .jc-cards li").length;
+      window.dispatchEvent(new CustomEvent("journey:words", { detail: { index: i, id: chapters[i].id, words: said, items, wordStagger: 0.07, itemStagger: 0.08, delay: 0.18 } }));
+    };
+
+    // ---- moving: one gesture, one world, always the same tempo
+    let gliding = false, quietUntil = 0, glideTo = -1;
+    const ease = (t: number) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
+    const glide = (top: number) => {
+      const from = scrollY, to = Math.round(top);
+      if (Math.abs(to - from) < 2) return;
+      if (reduced) { scrollTo(0, to); quietUntil = performance.now() + 200; return; }
+      gliding = true;
+      root.classList.add("is-jumping");
+      const t0 = performance.now();
+      const frame = (t: number) => {
+        if (visit.signal.aborted) return;
+        const k = Math.min(1, (t - t0) / GLIDE);
+        scrollTo(0, from + (to - from) * ease(k));
+        if (k < 1) requestAnimationFrame(frame);
+        else { gliding = false; root.classList.remove("is-jumping"); quietUntil = performance.now() + 160; glideTo = -1; onScroll(); }
+      };
+      requestAnimationFrame(frame);
+    };
+    const go = (j: number) => {
+      const i = nearest(progress);
+      j = Math.max(0, Math.min(LAST, j));
+      if (j === i && Math.abs(progress - restOf(i)) < 0.01 && ending < 0.002) return false;
+      glideTo = j;
+      show(-1); // the words leave for the jump
+      window.dispatchEvent(new CustomEvent("journey:jump", { detail: { from: i, to: j, direction: j >= i ? 1 : -1, duration: reduced ? 0 : GLIDE } }));
+      glide(topFor(restOf(j)));
+      return true;
+    };
+    const inFlight = () => scrollY < endStart() - 2;
+    const inEnding = () => scrollY > endStart() + 2;
+
+    let wheelAcc = 0, lastWheel = 0;
+    addEventListener("wheel", (e) => {
+      if (e.ctrlKey) return; // pinch zoom stays the browser's
+      // the closing film scrolls freely, frame by frame
+      if (inEnding() || (!inFlight() && e.deltaY > 0)) return;
+      e.preventDefault();
+      const t = performance.now();
+      if (gliding || t < quietUntil) { quietUntil = Math.max(quietUntil, t + 140); return; } // trackpad momentum
+      if (t - lastWheel > 220) wheelAcc = 0;
+      lastWheel = t;
+      wheelAcc += e.deltaY;
+      if (Math.abs(wheelAcc) > 24) {
+        go(nearest(progress) + (wheelAcc > 0 ? 1 : -1));
+        wheelAcc = 0;
+      }
+    }, { passive: false, ...sig });
+
+    let touchY = 0, touchT = 0, touchFree = false;
+    addEventListener("touchstart", (e) => {
+      touchY = e.touches[0].clientY; touchT = performance.now();
+      touchFree = inEnding() || !inFlight();
+    }, { passive: true, ...sig });
+    addEventListener("touchmove", (e) => {
+      if (touchFree) {
+        // leaving the film upward hands back to the steps
+        if (scrollY <= endStart() + 2 && e.touches[0].clientY > touchY) { touchFree = false; }
+        else return;
+      }
+      if (e.cancelable) e.preventDefault();
+    }, { passive: false, ...sig });
+    addEventListener("touchend", (e) => {
+      if (touchFree || gliding) return;
+      const dy = touchY - (e.changedTouches[0]?.clientY ?? touchY);
+      if (Math.abs(dy) > 36 && performance.now() - touchT < 900) {
+        const dir = dy > 0 ? 1 : -1;
+        if (dir > 0 && nearest(progress) === LAST) { glide(endStart() + innerHeight * 0.35); return; }
+        go(nearest(progress) + dir);
+      }
+    }, { passive: true, ...sig });
+
+    addEventListener("keydown", (e) => {
+      const tgt = e.target as HTMLElement | null;
+      if (tgt?.closest?.("input, textarea, select, [contenteditable=true]") || e.metaKey || e.ctrlKey || e.altKey) return;
+      if (inEnding()) return;
+      const down = e.key === "ArrowDown" || e.key === "PageDown" || (e.key === " " && !e.shiftKey);
+      const up = e.key === "ArrowUp" || e.key === "PageUp" || (e.key === " " && e.shiftKey);
+      if (!down && !up) return;
+      if (down && nearest(progress) === LAST) return; // into the film, natively
+      e.preventDefault();
+      if (!gliding) go(nearest(progress) + (down ? 1 : -1));
+    }, sig);
+
+    // a drag of the scrollbar, a link or a restore lands between worlds: settle on the nearest
+    let idle = 0;
+    const settle = () => {
+      clearTimeout(idle);
+      idle = window.setTimeout(() => {
+        if (gliding || !inFlight()) return;
+        const { p } = measure();
+        const r = restOf(nearest(p));
+        if (Math.abs(p - r) > 0.004) go(nearest(p));
+      }, 260);
+    };
+
+    // ---- every frame of scroll
+    const update = () => {
+      ticking = false;
+      const t = performance.now();
+      const m = measure();
+      progress = m.p; ending = m.e;
+      const dt = Math.max(16, t - lastT) / 1000;
+      velocity = velocity * 0.6 + ((progress - lastP) / dt) * 0.4;
+      lastP = progress; lastT = t;
+      if (!gliding) {
+        const i = nearest(progress);
+        // the last world speaks only when the hand touches the plant
+        if (i === LAST) show(ending > 0.8 ? LAST : -1);
+        else show(i);
+      }
+      const f = progress / LAST;
+      if (fill) fill.style.transform = `scaleY(${f})`;
+      if (label) label.style.top = `${f * 100}%`;
+      root.classList.toggle("is-moving", progress > 0.04 || ending > 0);
+      root.classList.toggle("in-ending", ending > 0.002);
+      document.documentElement.classList.toggle("in-journey", root.getBoundingClientRect().bottom > innerHeight * 0.5);
+      // the 3D flight and the closing film share the screen: the film fades in once the ship has landed
+      const settled = landed ? landed(progress) : 1;
+      const filmIn = Math.min(1, ending / 0.06) * settled;
+      root.style.setProperty("--end-o", filmIn.toFixed(3));
+      journey?.setScroll(progress, velocity);
+      journey?.setPaused(filmIn >= 0.999);
+      if (ending > 0 || progress > LAST - 1.2) bootEnding();
+      player?.setProgress(ending);
+      player?.setPaused(ending <= 0.001 && progress < LAST - 0.5);
+      window.dispatchEvent(new CustomEvent("journey:progress", { detail: { progress, velocity, count: N, ending } }));
+    };
+    function onScroll() { if (!ticking) { ticking = true; requestAnimationFrame(update); } if (!gliding) settle(); }
+    addEventListener("scroll", onScroll, { passive: true, ...sig });
+    addEventListener("resize", onScroll, { passive: true, ...sig });
+    update();
+
+    // index links and "Begin again" glide to their world
+    root.querySelectorAll<HTMLAnchorElement>("[data-j-go]").forEach((a) => {
+      a.addEventListener("click", (e) => { e.preventDefault(); if (!gliding) go(Number(a.dataset.jGo)); }, sig);
+    });
+    // keyboard focus landing in a hidden world brings that world up
+    panes.forEach((p, k) => p.addEventListener("focusin", () => {
+      if (k === active) return;
+      scrollTo({ top: k === LAST ? endStart() + endPx() : topFor(restOf(k)), behavior: "auto" });
+    }, sig));
 
     // cards lean toward the pointer and catch a glare
     root.querySelectorAll<HTMLElement>(".jart").forEach((card) => {
@@ -696,32 +807,16 @@ const REST = 0.3;
       }, sig);
       card.addEventListener("pointerleave", () => { card.style.setProperty("--rx", "0deg"); card.style.setProperty("--ry", "0deg"); }, sig);
     });
-    addEventListener("scroll", onScroll, { passive: true, ...sig });
-    addEventListener("resize", onScroll, { passive: true, ...sig });
-    update();
-
-    // index links and "Begin again" jump to their chapter
-    root.querySelectorAll<HTMLAnchorElement>("[data-j-go]").forEach((a) => {
-      a.addEventListener("click", (e) => {
-        e.preventDefault();
-        glide(restOf(Number(a.dataset.jGo)));
-      });
-    });
-    // keyboard focus landing in a hidden chapter brings that chapter up
-    panes.forEach((p, k) => p.addEventListener("focusin", () => {
-      if (k === active) return;
-      scrollTo({ top: topFor(restOf(k)), behavior: "auto" });
-    }));
 
     // the pointer steers the ship
     addEventListener("pointermove", (e) => {
       journey?.setPointer((e.clientX / innerWidth) * 2 - 1, (e.clientY / innerHeight) * 2 - 1);
     }, { passive: true, ...sig });
 
-    // the 3D scene: after first paint, only where WebGL works, paused off screen
+    // ---- the 3D flight: after first paint, only where WebGL works, paused off screen
     const canvas = root.querySelector<HTMLCanvasElement>(".journey-canvas");
     const engines = import.meta.glob("../../scripts/journey/engine.ts");
-    const loadEngine = Object.values(engines)[0] as undefined | (() => Promise<{ mountJourney: (c: HTMLCanvasElement, o: unknown) => Journey }>);
+    const loadEngine = Object.values(engines)[0] as undefined | (() => Promise<any>);
     const hasGL = (() => { try { return !!document.createElement("canvas").getContext("webgl2"); } catch { return false; } })();
     if (canvas && loadEngine && hasGL) {
       const boot = () => loadEngine().then((m) => {
@@ -738,19 +833,16 @@ const REST = 0.3;
           const cx = sh.x * innerWidth, cy = sh.y * innerHeight, rr = sh.r * innerHeight;
           const nx = Math.max(b.left, Math.min(cx, b.right)), ny = Math.max(b.top, Math.min(cy, b.bottom));
           const overlap = rr - Math.hypot(cx - nx, cy - ny);
-          let dx = 0;
-          if (overlap > 0) dx = (cx > (b.left + b.right) / 2 ? -1 : 1) * Math.min(56, overlap);
+          const dx = overlap > 0 ? (cx > (b.left + b.right) / 2 ? -1 : 1) * Math.min(56, overlap) : 0;
           pane.style.setProperty("--nx", `${dx.toFixed(0)}px`);
         };
-        journey = m.mountJourney(canvas, { chapters, quality: low ? "low" : "high", reducedMotion: reduced, onShip } as any);
-        const plan = (m as any).CHAPTER_FRAMING as typeof framing | undefined;
+        journey = m.mountJourney(canvas, { chapters, quality: low ? "low" : "high", reducedMotion: reduced, onShip }) as Journey;
+        if (typeof m.landed === "function") landed = m.landed;
+        const plan = m.CHAPTER_FRAMING as Framing[] | undefined;
         if (Array.isArray(plan) && plan.length) {
           framing = plan;
-          panes.forEach((p, k) => {
-            p.dataset.side = plan[k]?.side ?? "left";
-            p.dataset.v = plan[k]?.v ?? "bottom";
-          });
-          place(active);
+          panes.forEach((p, k) => { p.dataset.side = plan[k]?.side ?? "left"; p.dataset.v = plan[k]?.v ?? "bottom"; });
+          if (active >= 0) place(active);
         }
         journey.setScroll(progress, 0);
         root.classList.add("is-3d");
@@ -763,14 +855,33 @@ const REST = 0.3;
       else setTimeout(boot, 600);
     }
 
-  // leaving the page: stop the scene and every listener added above
-  document.addEventListener("astro:before-swap", () => {
-    visit.abort();
-    journey?.destroy();
-    journey = null;
-    delete root.dataset.mounted;
-    document.documentElement.classList.remove("in-journey");
-  }, { once: true });
+    // ---- the closing film: loads when the last world comes near
+    const endCanvas = root.querySelector<HTMLCanvasElement>(".journey-ending");
+    const endings = import.meta.glob("../../scripts/journey/ending.ts");
+    const loadEnding = Object.values(endings)[0] as undefined | (() => Promise<any>);
+    let endingAsked = false;
+    function bootEnding() {
+      if (endingAsked || !endCanvas || !loadEnding) return;
+      endingAsked = true;
+      loadEnding().then((m) => {
+        if (visit.signal.aborted) return;
+        player = m.mountEnding(endCanvas, { manifestUrl: "/story/ending/manifest.json", phone: low }) as Ending;
+        player.setProgress(ending);
+        root.classList.add("has-ending");
+      }).catch(() => { /* no film yet: the landing shot holds */ });
+    }
+
+    // ---- leaving the page: stop the scene, the film and every listener added above
+    document.addEventListener("astro:before-swap", () => {
+      visit.abort();
+      clearTimeout(idle);
+      journey?.destroy();
+      player?.destroy();
+      journey = null;
+      player = null;
+      delete root.dataset.mounted;
+      document.documentElement.classList.remove("in-journey");
+    }, { once: true });
   }
   mount();
   document.addEventListener("astro:page-load", mount);

@@ -21,12 +21,16 @@ import {
 } from "three";
 import { additive } from "./fx";
 import { NOISE } from "./glsl";
-import { approachPoint, SEG, type FlightPath, type Landing } from "./path";
+import { travel, type FlightPath, type Landing } from "./path";
 import { buildPieces, type Piece } from "./pieces";
 import { rng } from "./textures";
 
 export interface SpaceInput {
   p: number;
+  /** Position along the path, in chapters. */
+  q: number;
+  /** 0..1, how far into a hyperspace jump. */
+  warp: number;
   time: number;
   dt: number;
   speed: number;
@@ -355,19 +359,13 @@ export function buildSpace(path: FlightPath, chapters: Chapter[], low: boolean, 
   const fr = new Vector3();
   const fq = new Quaternion();
   const perChapter = low ? 40 : 70;
-  const STEPS = Math.max(2, Math.ceil((landing.start - pStart) * perChapter));
+  const qEnd = travel(path.n - 1 + 0.8, path.n) + 0.05;
+  const STEPS = Math.max(2, Math.ceil((qEnd - pStart) * perChapter));
   for (let i = 0; i <= STEPS; i++) {
-    const p = pStart + ((landing.start - pStart) * i) / STEPS;
+    const p = pStart + ((qEnd - pStart) * i) / STEPS;
     path.frame(p, fp, fq, fr, fu);
-    threadPts.push(fp.clone().addScaledVector(fu, -3.2));
+    threadPts.push(fp.clone().addScaledVector(fu, -9));
     threadP.push(p);
-  }
-  const LAND_STEPS = 40;
-  for (let i = 1; i <= LAND_STEPS; i++) {
-    const u = i / LAND_STEPS;
-    approachPoint(landing, u, fp);
-    threadPts.push(fp.clone().addScaledVector(landing.up, -(3.2 + (landing.stand - 3.15) * u)));
-    threadP.push(landing.start + (landing.last - landing.start) * u);
   }
   const threadCurve = new CatmullRomCurve3(threadPts, false, "catmullrom", 0.5);
   // Progress at each point along the thread, measured by arc length.
@@ -472,15 +470,16 @@ export function buildSpace(path: FlightPath, chapters: Chapter[], low: boolean, 
     starMat.uniforms.uTint.value.copy(s.color);
 
     // Warp streaks only when moving fast, and never with reduced motion.
-    const warp = s.reduced ? 0 : Math.max(0, Math.min(1, (Math.abs(s.speed) - 0.25) / 1.1));
+    // Warp streaks only during a jump, and never with reduced motion.
+    const warp = s.reduced ? 0 : s.warp;
     streaks.visible = warp > 0.01;
-    streakMat.uniforms.uAlpha.value = warp * 1.6;
-    streakMat.uniforms.uLen.value = 8 + warp * SEG * 0.45;
+    streakMat.uniforms.uAlpha.value = Math.min(1, warp * 1.6) * 2.2;
+    streakMat.uniforms.uLen.value = 10 + warp * 420;
     streakMat.uniforms.uDir.value.copy(s.fwd).multiplyScalar(s.speed >= 0 ? 1 : -1);
     streakMat.uniforms.uColor.value.copy(s.color);
     streakMat.uniforms.uWidth.value = 0.0011 * s.dpr;
 
-    threadUniforms.uP.value = p;
+    threadUniforms.uP.value = s.q;
     threadUniforms.uTime.value = time;
   }
 

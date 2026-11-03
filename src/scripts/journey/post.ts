@@ -96,6 +96,10 @@ uniform vec3 uFlareColor;
 uniform vec4 uLens;       // uv x, uv y, strength, Einstein radius in screen heights
 uniform vec3 uLensColor;
 uniform vec3 uShip;       // uv x, uv y, radius in screen heights
+uniform float uJump;      // 0..1, the hyperspace jump
+uniform float uFlash;     // 0..1, the flash at the crossover
+uniform float uDip;       // 0..1, a dip through dark (reduced motion)
+uniform vec3 uFlashColor;
 varying vec2 vUv;
 
 vec3 rrtOdt(vec3 v) {
@@ -141,16 +145,26 @@ void main() {
   }
 #endif
 
+  // The jump pulls the image in at the middle and pushes the edges out.
+  if (uJump > 0.001) {
+    vec2 jd = uv - 0.5;
+    uv = 0.5 + jd * (1.0 - uJump * 0.16 + uJump * 0.42 * dot(jd, jd));
+  }
   vec3 col;
-#ifdef CA
   vec2 cd = uv - 0.5;
-  vec2 co = cd * dot(cd, cd) * uCA;
-  col.r = texture2D(tScene, uv + co).r;
-  col.g = texture2D(tScene, uv).g;
-  col.b = texture2D(tScene, uv - co).b;
+#ifdef CA
+  float split = dot(cd, cd) * uCA + uJump * 0.05;
 #else
-  col = texture2D(tScene, uv).rgb;
+  float split = uJump * 0.04;
 #endif
+  if (split > 0.0005) {
+    vec2 co = cd * split;
+    col.r = texture2D(tScene, uv + co).r;
+    col.g = texture2D(tScene, uv).g;
+    col.b = texture2D(tScene, uv - co).b;
+  } else {
+    col = texture2D(tScene, uv).rgb;
+  }
 #ifdef BLOOM
   col += texture2D(tBloom, uv).rgb * uBloom;
 #endif
@@ -172,7 +186,9 @@ void main() {
     col += uFlareColor * uFlare.z * (streak + hair + glow + ghosts);
   }
 
+  col += uFlashColor * uFlash * 7.0;
   col = aces(col * uExposure);
+  col *= 1.0 - uDip;
   vec2 vc = (vUv - 0.5) * vec2(1.0, 0.9);
   float vig = smoothstep(0.82, 0.18, length(vc));
   col *= mix(1.0 - uVignette, 1.0, vig);
@@ -189,6 +205,10 @@ export interface PostFrame {
   flare: { x: number; y: number; strength: number; color: Color };
   lens: { x: number; y: number; strength: number; radius: number; color: Color };
   ship: { x: number; y: number; radius: number };
+  jump: number;
+  flash: number;
+  dip: number;
+  flashColor: Color;
 }
 
 export class Post {
@@ -227,7 +247,7 @@ export class Post {
     this.prefilter = new ShaderMaterial({
       ...base,
       fragmentShader: PREFILTER_FS,
-      uniforms: { tSrc: { value: null }, uTexel: { value: new Vector2() }, uThreshold: { value: hdr ? 1.2 : 0.75 }, uKnee: { value: 0.45 } },
+      uniforms: { tSrc: { value: null }, uTexel: { value: new Vector2() }, uThreshold: { value: hdr ? 1.6 : 0.85 }, uKnee: { value: 0.45 } },
       blending: NoBlending,
     });
     this.down = new ShaderMaterial({ ...base, fragmentShader: DOWN_FS, uniforms: { tSrc: { value: null }, uTexel: { value: new Vector2() } }, blending: NoBlending });
@@ -263,6 +283,10 @@ export class Post {
         uLens: { value: { x: 0.5, y: 0.5, z: 0, w: 0.05 } },
         uLensColor: { value: new Color() },
         uShip: { value: { x: 0.7, y: 0.3, z: 0.1 } },
+        uJump: { value: 0 },
+        uFlash: { value: 0 },
+        uDip: { value: 0 },
+        uFlashColor: { value: new Color(1, 1, 1) },
       },
       blending: NoBlending,
     });
@@ -329,6 +353,10 @@ export class Post {
     u.uShip.value.x = f.ship.x;
     u.uShip.value.y = f.ship.y;
     u.uShip.value.z = f.ship.radius;
+    u.uJump.value = f.jump;
+    u.uFlash.value = f.flash;
+    u.uDip.value = f.dip;
+    u.uFlashColor.value.copy(f.flashColor);
     this.pass(this.final, null);
   }
 

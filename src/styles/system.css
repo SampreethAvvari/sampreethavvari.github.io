@@ -723,7 +723,12 @@ a.chip:hover, button.chip:hover { color: var(--ink); border-color: var(--line-st
   cursor: pointer;
 }
 .sound-card-play:hover { background: rgba(var(--tone-rgb), 0.2); }
-/* Phones: full width under the bar, solid, no blur over moving canvases. */
+/* Phones: the pair tightens, and the label runs full width under the bar,
+   solid, with no blur over moving canvases. */
+@media (max-width: 520px) {
+  .nav-sound { width: 30px; }
+  .nav-info { width: 26px; }
+}
 @media (max-width: 767px), (pointer: coarse) {
   .sound-card {
     position: fixed;
@@ -733,7 +738,8 @@ a.chip:hover, button.chip:hover { color: var(--ink); border-color: var(--line-st
     width: auto;
     max-height: calc(100dvh - 96px);
     overflow-y: auto;
-    background: rgba(10, 11, 15, 0.95);
+    overscroll-behavior: contain;
+    background: rgba(9, 10, 13, 0.985);
     -webkit-backdrop-filter: none;
     backdrop-filter: none;
     transform-origin: top center;

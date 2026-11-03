@@ -77,7 +77,7 @@ export class Work extends Movement {
     const corners: [number, number, number][] = this.phone
       ? [[-1.2, 0, -1], [1.2, 0, -1], [1.2, 0, -1], [-1.2, 0, -1]]
       : [[-1.2, 0, -1.1], [1.2, 0, -1.1], [1.1, 0.25, 1.1], [-1.1, 0.25, 1.1]];
-    const busFor = (name: string, i: number) => this.layer(name, 0, this.point(...corners[i], 0.35));
+    const busFor = (name: string, i: number) => this.layer(name, 0, this.point(...corners[i], 0.35, 1, corners[i][2] > 0));
     const se = busFor("se", 0), fde = busFor("fde", 1), aie = busFor("aie", 2), mle = busFor("mle", 3);
     this.voices = [
       { name: "se", bus: se, play: (m, t, v) => marimba.play(m, t, dbg(-12) * v, se) },

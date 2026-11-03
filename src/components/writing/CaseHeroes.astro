@@ -1,0 +1,559 @@
+---
+// The six case studies that open the writing index. On a wide screen the
+// section pins and plays them one after another as you scroll: each holds
+// for a beat, then the next opens as a window in the middle of it and
+// grows to fill the screen while the old one falls back into space. On a
+// phone they are full screen cards that stack as you scroll, with snap.
+// With reduced motion they are a calm list. The DOM is the same in every
+// case: six articles in order, each with a real heading and a real link.
+import Icon from "../common/Icon.astro";
+import Picture from "../common/Picture.astro";
+import type { CaseHero } from "./types";
+
+interface Props {
+  items: CaseHero[];
+}
+const { items } = Astro.props;
+const n = items.length;
+const two = (i: number) => String(i).padStart(2, "0");
+---
+
+<section class="cx" id="wx-cases" aria-label="Six case studies" style={`--n:${n};`}>
+  <div class="cx-stage">
+    <div class="cx-space" aria-hidden="true"></div>
+
+    {items.map((h, i) => {
+      const words = h.title.split(/\s+/);
+      return (
+        <article
+          class="cx-hero"
+          id={`case-${h.slug}`}
+          data-i={i}
+          data-live={i === 0 ? "" : undefined}
+          aria-labelledby={`cx-t-${i}`}
+          style={`--i:${i};--a:${h.rgb};--wn:${words.length};--open:${i === 0 ? 0 : 1};--cin:${i === 0 ? 1 : 0};`}
+        >
+          <div class="cx-frame">
+            <div class="cx-art">
+              {h.art ? (
+                <picture>
+                  <source
+                    type="image/avif"
+                    srcset={`${h.art}-1280.avif 1280w, ${h.art}-2560.avif 2560w`}
+                    sizes="100vw"
+                  />
+                  <source
+                    type="image/webp"
+                    srcset={`${h.art}-1280.webp 1280w, ${h.art}-2560.webp 2560w`}
+                    sizes="100vw"
+                  />
+                  <img
+                    class="cx-img"
+                    src={`${h.art}-1280.webp`}
+                    alt=""
+                    width="2560"
+                    height="1440"
+                    loading={i === 0 ? "eager" : "lazy"}
+                    fetchpriority={i === 0 ? "high" : undefined}
+                    decoding="async"
+                  />
+                </picture>
+              ) : h.cover ? (
+                <Picture
+                  src={h.cover}
+                  alt=""
+                  class="cx-img"
+                  width={1600}
+                  height={900}
+                  loading={i === 0 ? "eager" : "lazy"}
+                />
+              ) : null}
+            </div>
+            <div class="cx-nebula" aria-hidden="true"></div>
+            <div class="cx-shade" aria-hidden="true"></div>
+            <div class="cx-dim" aria-hidden="true"></div>
+          </div>
+          <div class="cx-rim" aria-hidden="true"></div>
+
+          <div class="cx-copy">
+            <div class="cx-copy-in">
+              <p class="cx-meta">
+                <span class="cx-no">{two(i + 1)}<span class="cx-of"> / {two(n)}</span></span>
+                {h.tag && <span class="cx-tag">{h.tag}</span>}
+                <span class="cx-when">
+                  <time datetime={h.isoDate}>{h.date}</time> · {h.minutes} min read
+                </span>
+              </p>
+              <h2 class="cx-title" id={`cx-t-${i}`}>
+                {words.map((w, wi) => (
+                  <>
+                    <span class="cx-w"><span class="cx-wi" style={`--wi:${wi};`}>{w}</span></span>{" "}
+                  </>
+                ))}
+              </h2>
+              <p class="cx-sum">{h.description}</p>
+              <div class="cx-act">
+                <a class="btn btn-primary cx-read" href={h.url}>
+                  Read the post<span class="sr-only">: {h.title}</span>
+                  <Icon name="arrow-right" size={15} class="arrow-r" />
+                </a>
+                {h.stat && (
+                  <p class="cx-stat">
+                    <span class="cx-stat-v">{h.stat.value}</span>
+                    <span class="cx-stat-l">{h.stat.label}</span>
+                  </p>
+                )}
+              </div>
+            </div>
+          </div>
+        </article>
+      );
+    })}
+
+    <!-- Snap points for the phone deck. Plain markers, because a sticky
+         card is a poor snap target. -->
+    {items.map((_, i) => <span class="cx-snap" style={`--i:${i};`} aria-hidden="true"></span>)}
+
+    <canvas class="cx-dust" aria-hidden="true"></canvas>
+
+    <nav class="cx-index" aria-label="The six case studies">
+      <ol>
+        {items.map((h, i) => (
+          <li>
+            <a
+              href={`#case-${h.slug}`}
+              data-go={i}
+              style={`--a:${h.rgb};`}
+              aria-current={i === 0 ? "true" : undefined}
+            >
+              <span class="cx-index-name">{h.short}</span>
+              <span class="cx-index-no">{two(i + 1)}</span>
+              <span class="cx-index-bar" aria-hidden="true"><i></i></span>
+            </a>
+          </li>
+        ))}
+      </ol>
+    </nav>
+  </div>
+</section>
+
+<style>
+  /* ---------------------------------------------------------------------
+     Base: one full screen card per case study. Phones and reduced motion
+     build on this; the pinned stage below replaces it on wide screens.
+     --------------------------------------------------------------------- */
+  .cx { position: relative; z-index: 1; }
+  .cx-stage { position: relative; }
+  .cx-space,
+  .cx-dust,
+  .cx-index,
+  .cx-snap { display: none; }
+
+  .cx-hero {
+    position: relative;
+    height: 100vh;
+    height: 100svh;
+    min-height: 560px;
+    overflow: hidden;
+    background: #020306;
+    color: var(--ink);
+  }
+  .cx-frame { position: absolute; inset: 0; overflow: hidden; cursor: pointer; }
+  .cx-art { position: absolute; inset: 0; }
+  .cx-art :global(img),
+  .cx-img {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: 66% 50%;
+    display: block;
+  }
+  /* Nebula light in the post's colour, drifting slowly over the art. */
+  .cx-nebula {
+    position: absolute;
+    inset: -12%;
+    background:
+      radial-gradient(38% 46% at 16% 80%, rgba(var(--a), 0.26), rgba(var(--a), 0.1) 45%, rgba(var(--a), 0) 72%),
+      radial-gradient(30% 40% at 84% 18%, rgba(var(--a), 0.16), rgba(var(--a), 0) 70%);
+    mix-blend-mode: screen;
+    pointer-events: none;
+    animation: cx-nebula 26s ease-in-out infinite alternate;
+  }
+  @keyframes cx-nebula {
+    from { transform: translate3d(-2%, 1%, 0) scale(1); }
+    to { transform: translate3d(3%, -2%, 0) scale(1.08); }
+  }
+  /* Darkness where the words sit. */
+  .cx-shade {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background:
+      linear-gradient(0deg, rgba(1, 2, 5, 0.92) 0%, rgba(1, 2, 5, 0.66) 26%, rgba(1, 2, 5, 0.12) 56%, rgba(1, 2, 5, 0) 70%),
+      linear-gradient(90deg, rgba(1, 2, 5, 0.55) 0%, rgba(1, 2, 5, 0.2) 40%, rgba(1, 2, 5, 0) 62%),
+      linear-gradient(180deg, rgba(1, 2, 5, 0.55) 0%, rgba(1, 2, 5, 0) 18%);
+  }
+  .cx-dim { position: absolute; inset: 0; background: #000; opacity: 0; pointer-events: none; }
+  .cx-rim { display: none; }
+
+  .cx-copy {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    padding-bottom: max(28px, env(safe-area-inset-bottom));
+    pointer-events: none;
+  }
+  .cx-copy-in {
+    width: 100%;
+    max-width: calc(var(--max) + 2 * var(--gutter));
+    margin-inline: auto;
+    padding-inline: var(--gutter);
+    pointer-events: auto;
+  }
+  .cx-meta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px 14px;
+    font-size: 0.8125rem;
+    line-height: 1.3;
+    color: rgba(245, 245, 247, 0.62);
+    font-variant-numeric: tabular-nums;
+  }
+  .cx-no { color: var(--ink); font-weight: 600; letter-spacing: 0.02em; }
+  .cx-of { color: rgba(245, 245, 247, 0.4); font-weight: 500; }
+  .cx-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    color: rgb(var(--a));
+    font-weight: 500;
+  }
+  .cx-tag::before {
+    content: "";
+    width: 6px;
+    height: 6px;
+    border-radius: 9999px;
+    background: rgb(var(--a));
+    box-shadow: 0 0 12px rgba(var(--a), 0.8);
+  }
+  .cx-title {
+    margin-top: 14px;
+    max-width: 14em;
+    font-size: clamp(2.125rem, 9.4vw, 6rem);
+    line-height: 1.02;
+    letter-spacing: -0.045em;
+    font-weight: 600;
+    color: var(--ink);
+    text-wrap: balance;
+    cursor: pointer;
+    text-shadow: 0 2px 30px rgba(0, 0, 0, 0.45);
+  }
+  .cx-w {
+    display: inline-block;
+    overflow: hidden;
+    overflow: clip;
+    vertical-align: top;
+    padding-bottom: 0.12em;
+    margin-bottom: -0.12em;
+  }
+  .cx-wi { display: inline-block; }
+  .cx-sum {
+    margin-top: 16px;
+    max-width: 38rem;
+    font-size: clamp(0.9375rem, 1.2vw, 1.125rem);
+    line-height: 1.55;
+    color: rgba(245, 245, 247, 0.78);
+    text-wrap: pretty;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 4;
+    overflow: hidden;
+  }
+  .cx-act {
+    margin-top: 22px;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 16px 28px;
+  }
+  .cx-read { height: 48px; padding: 0 22px; font-size: 1rem; }
+  .cx-read:focus-visible { box-shadow: 0 0 0 4px rgba(var(--a), 0.55); }
+  .cx-stat {
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+    max-width: 30rem;
+    padding-left: 22px;
+    border-left: 1px solid rgba(255, 255, 255, 0.16);
+  }
+  .cx-stat-v {
+    flex: none;
+    font-size: clamp(1.25rem, 1.9vw, 1.75rem);
+    line-height: 1;
+    letter-spacing: -0.03em;
+    font-weight: 600;
+    color: var(--ink);
+    font-variant-numeric: tabular-nums;
+    text-shadow: 0 0 24px rgba(var(--a), 0.55);
+  }
+  .cx-stat-l {
+    font-size: 0.8125rem;
+    line-height: 1.4;
+    color: rgba(245, 245, 247, 0.6);
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    overflow: hidden;
+  }
+
+  /* ---------------------------------------------------------------------
+     Phones: full screen cards that stack. Each card sticks at the top and
+     the next slides over it; snap points sit on plain markers.
+     --------------------------------------------------------------------- */
+  @media (max-width: 899px) {
+    .cx-hero { min-height: 520px; }
+    .cx-title { margin-top: 12px; font-size: clamp(2rem, 9vw, 3rem); line-height: 1.04; }
+    .cx-sum { font-size: 0.9375rem; -webkit-line-clamp: 3; }
+    .cx-act { margin-top: 18px; gap: 14px 20px; }
+    .cx-stat { padding-left: 0; border-left: 0; flex-direction: column; gap: 6px; }
+    .cx-shade {
+      background:
+        linear-gradient(0deg, rgba(1, 2, 5, 0.96) 0%, rgba(1, 2, 5, 0.82) 34%, rgba(1, 2, 5, 0.2) 62%, rgba(1, 2, 5, 0) 74%),
+        linear-gradient(180deg, rgba(1, 2, 5, 0.6) 0%, rgba(1, 2, 5, 0) 16%);
+    }
+    .cx-nebula { animation: none; }
+  }
+  @media (max-width: 899px) and (prefers-reduced-motion: no-preference) {
+    :global(html:has(.cx)) { scroll-snap-type: y proximity; }
+    .cx-hero {
+      position: sticky;
+      top: 0;
+      border-radius: 26px 26px 0 0;
+      box-shadow: 0 -18px 44px rgba(0, 0, 0, 0.7), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+    }
+    .cx-hero:first-of-type { border-radius: 0; box-shadow: none; }
+    .cx-snap {
+      display: block;
+      position: absolute;
+      left: 0;
+      width: 1px;
+      height: 1px;
+      top: calc(var(--i) * 100svh);
+      scroll-snap-align: start;
+      pointer-events: none;
+    }
+    /* The art settles as its card arrives, where the browser can tie
+       that to scroll without script. */
+    @supports (animation-timeline: view()) {
+      .cx-art {
+        animation: cx-settle linear both;
+        animation-timeline: view();
+        animation-range: entry 0% entry 100%;
+      }
+      .cx-copy-in {
+        animation: cx-rise linear both;
+        animation-timeline: view();
+        animation-range: entry 40% entry 100%;
+      }
+    }
+  }
+  @keyframes cx-settle {
+    from { transform: scale(1.22) translate3d(0, 6%, 0); filter: brightness(0.5); }
+    to { transform: none; filter: none; }
+  }
+  @keyframes cx-rise {
+    from { opacity: 0; transform: translate3d(0, 40px, 0); }
+    to { opacity: 1; transform: none; }
+  }
+
+  /* ---------------------------------------------------------------------
+     Reduced motion: a calm stacked list of cards, no pinning, no snap.
+     --------------------------------------------------------------------- */
+  @media (prefers-reduced-motion: reduce) {
+    .cx-stage {
+      display: grid;
+      gap: 16px;
+      width: 100%;
+      max-width: calc(var(--max) + 2 * var(--gutter));
+      margin-inline: auto;
+      padding-inline: var(--gutter);
+    }
+    .cx-hero {
+      height: auto;
+      min-height: min(78vh, 680px);
+      border-radius: 24px;
+      border: 1px solid var(--line);
+    }
+    .cx-copy-in { padding: 0 clamp(20px, 4vw, 48px); max-width: none; }
+    .cx-copy { padding-bottom: clamp(24px, 4vw, 44px); }
+    .cx-title { font-size: clamp(2rem, 5vw, 4rem); }
+    .cx-nebula { animation: none; }
+  }
+
+  /* ---------------------------------------------------------------------
+     Wide screens: the pinned stage. The script sets, on each case study,
+       --open  1 closed to 0 open, the window it arrives through
+       --zoom  extra scale on its art while it arrives
+       --out   0 to 1 as it falls back for the next one
+       --cin   0 to 1 as its words come in, --cout as they leave
+       --drift a slow parallax on the art while it is on screen
+     and on the stage --dock (0 to 1), the rounded card it docks from.
+     --------------------------------------------------------------------- */
+  @media (min-width: 900px) and (prefers-reduced-motion: no-preference) {
+    .cx { height: calc(100vh + (var(--n) - 1) * 150vh + 60vh); }
+    .cx-stage {
+      position: sticky;
+      top: 0;
+      height: 100vh;
+      overflow: hidden;
+      isolation: isolate;
+      background: #010205;
+      border-radius: calc(var(--dock, 0) * 40px);
+      transform: scale(calc(1 - var(--dock, 0) * 0.07));
+      transform-origin: 50% 0%;
+    }
+    .cx-space {
+      display: block;
+      position: absolute;
+      inset: 0;
+      z-index: 0;
+      background:
+        radial-gradient(60% 50% at 50% 50%, rgba(var(--c-writing-rgb), 0.08), rgba(0, 0, 0, 0) 70%),
+        #010205;
+    }
+    .cx-hero {
+      position: absolute;
+      inset: 0;
+      height: auto;
+      min-height: 0;
+      overflow: visible;
+      background: none;
+      pointer-events: none;
+    }
+    .cx-frame {
+      z-index: calc(1 + var(--i));
+      clip-path: inset(calc(var(--open, 1) * 50%) round calc(var(--open, 1) * 90px + var(--out, 0) * 36px));
+      transform: translate3d(0, calc(var(--out, 0) * -5vh), 0) scale(calc(1 - var(--out, 0) * 0.16));
+      will-change: transform, clip-path;
+    }
+    .cx-hero[data-live] .cx-frame { pointer-events: auto; }
+    .cx-art {
+      transform:
+        translate3d(calc(var(--drift, 0) * -1.4%), calc(var(--drift, 0) * 2%), 0)
+        scale(calc(1.1 + var(--zoom, 0)));
+      will-change: transform;
+    }
+    .cx-dim { opacity: calc(var(--out, 0) * 0.82); }
+    .cx-rim {
+      display: block;
+      position: absolute;
+      z-index: calc(1 + var(--i));
+      inset: calc(var(--open, 1) * 50%);
+      border-radius: calc(var(--open, 1) * 90px);
+      border: 1px solid rgba(var(--a), 0.95);
+      box-shadow:
+        0 0 0 1px rgba(var(--a), 0.25),
+        0 0 46px 4px rgba(var(--a), 0.55),
+        inset 0 0 46px rgba(var(--a), 0.4);
+      opacity: calc(min(var(--open, 1) * 6, 1) * min((1 - var(--open, 1)) * 10, 1));
+      pointer-events: none;
+    }
+    .cx-copy {
+      z-index: calc(30 + var(--i));
+      padding-bottom: clamp(40px, 9vh, 96px);
+      opacity: calc(min(var(--cin, 0) * 3, 1) * (1 - var(--cout, 0)));
+      transform: translate3d(0, calc(var(--cout, 0) * -64px), 0);
+    }
+    .cx-hero:not([data-live]) .cx-copy-in { pointer-events: none; }
+    .cx-title { max-width: 13.5em; font-size: clamp(3rem, 5.5vw, 6.25rem); line-height: 0.98; }
+    /* Each word rises out of its own mask, one after another. */
+    .cx-wi {
+      transform: translate3d(0, calc((1 - clamp(0, var(--cin, 0) * (1 + (var(--wn) - 1) * 0.055) - var(--wi) * 0.055, 1)) * 112%), 0);
+    }
+    .cx-meta,
+    .cx-sum,
+    .cx-act {
+      --k: clamp(0, var(--cin, 0) * 2 - 1, 1);
+      opacity: var(--k);
+      transform: translate3d(0, calc((1 - var(--k)) * 26px), 0);
+    }
+    .cx-meta { --k: clamp(0, var(--cin, 0) * 2.4 - 0.6, 1); }
+
+    .cx-dust {
+      display: block;
+      position: absolute;
+      inset: 0;
+      z-index: 20;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+    }
+
+    /* The index of the six, on the right edge. */
+    .cx-index {
+      display: block;
+      position: absolute;
+      z-index: 60;
+      right: clamp(14px, 2vw, 30px);
+      top: 50%;
+      transform: translateY(-50%);
+    }
+    .cx-index ol { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; align-items: flex-end; gap: 2px; }
+    .cx-index a {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      height: 30px;
+      padding: 0 6px;
+      border-radius: 9999px;
+      color: rgba(245, 245, 247, 0.42);
+      font-size: 0.75rem;
+      font-weight: 500;
+      font-variant-numeric: tabular-nums;
+      text-decoration: none;
+      transition: color 250ms var(--ease-glass);
+    }
+    .cx-index-name {
+      font-size: 0.8125rem;
+      color: var(--ink);
+      white-space: nowrap;
+      opacity: 0;
+      transform: translateX(8px);
+      transition: opacity 300ms var(--ease-glass), transform 300ms var(--ease-glass);
+      text-shadow: 0 1px 12px rgba(0, 0, 0, 0.8);
+    }
+    .cx-index-bar {
+      position: relative;
+      width: 16px;
+      height: 2px;
+      border-radius: 2px;
+      background: rgba(255, 255, 255, 0.2);
+      overflow: hidden;
+      transition: width 400ms var(--ease-glass);
+    }
+    .cx-index-bar i {
+      position: absolute;
+      inset: 0;
+      background: rgb(var(--a));
+      box-shadow: 0 0 10px rgba(var(--a), 0.9);
+      transform-origin: 0 50%;
+      transform: scaleX(var(--f, 0));
+    }
+    .cx-index a:hover,
+    .cx-index a[aria-current="true"] { color: var(--ink); }
+    .cx-index a:hover .cx-index-name,
+    .cx-index a:focus-visible .cx-index-name,
+    .cx-index a[aria-current="true"] .cx-index-name { opacity: 1; transform: none; }
+    .cx-index a[aria-current="true"] .cx-index-bar { width: 40px; }
+    .cx-index a:focus-visible { outline: none; box-shadow: 0 0 0 2px rgba(var(--a), 0.7); }
+  }
+</style>
+
+<script>
+  import { mountCaseHeroes } from "./case-stage";
+  mountCaseHeroes();
+</script>

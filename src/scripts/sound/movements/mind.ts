@@ -45,7 +45,7 @@ export class Mind extends Movement {
   private window = new Float32Array(64);
 
   protected room(): RoomSpec {
-    return { rt60: 6.0, length: 7.0, predelay: 0.04, early: 0, earlyLevel: 0, hi: 7000, lo: 1600, damp: 1.5, lowCut: 120, bloom: 0.3, width: 1 };
+    return { rt60: 4.8, length: 4.6, predelay: 0.04, early: 0, earlyLevel: 0, hi: 7000, lo: 1600, damp: 1.5, lowCut: 120, bloom: 0.3, width: 1 };
   }
 
   private sphere(): [number, number, number] {
@@ -70,7 +70,7 @@ export class Mind extends Movement {
     // a pool of places in the sky; each new star takes the next one
     const n = this.phone ? 2 : 4;
     for (let i = 0; i < n; i++) {
-      const pan = this.panner();
+      const pan = this.panner(true);
       this.setPos(pan, ...this.sphere());
       const bus = this.gain(1, pan);
       pan.connect(this.dry);
@@ -87,7 +87,7 @@ export class Mind extends Movement {
 
     // the endless rise: six sines an octave apart, each climbing for six
     // octaves and fading in and out along the way
-    this.shepBus = this.layer("shepard", 0.7, this.phone ? this.dry : this.orbit(1.6, 47, 1.4, 0, 0.7));
+    this.shepBus = this.layer("shepard", 0.7, this.phone ? this.dry : this.orbit(1.6, 47, 1.4, 0, 0.7, 1, false));
     for (let i = 0; i < 64; i++) this.window[i] = 0.5 - 0.5 * Math.cos((2 * Math.PI * i) / 63);
     const voices = this.phone ? 4 : 6;
     for (let k = 0; k < voices; k++) {

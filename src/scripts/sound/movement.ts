@@ -103,7 +103,9 @@ export abstract class Movement {
     this.ac = st.ac;
     this.phone = st.phone;
     this.rng = mulberry(seed);
-    this.hrtf = st.phone ? 2 : 6;
+    // HRTF panning costs real CPU, so it goes to sources that move, sit
+    // behind or above the listener; fixed side points pan by level
+    this.hrtf = st.phone ? 2 : 5;
   }
 
   // ---- what each movement writes ------------------------------------------
@@ -170,9 +172,9 @@ export abstract class Movement {
     return this.pads[0]?.notes.length ? this.pads[0].notes : tonesIn(this.chord, 55, 72);
   }
 
-  protected panner(): PannerNode {
+  protected panner(hrtf = false): PannerNode {
     const p = this.own(this.ac.createPanner());
-    p.panningModel = this.hrtf-- > 0 ? "HRTF" : "equalpower";
+    p.panningModel = hrtf && this.hrtf-- > 0 ? "HRTF" : "equalpower";
     p.distanceModel = "inverse";
     p.refDistance = 1;
     p.rolloffFactor = 0.7;
@@ -194,8 +196,8 @@ export abstract class Movement {
     } else p.setPosition(x, y, z);
   }
   /** A source fixed at a point around the listener (metres; -z is ahead). */
-  point(x: number, y: number, z: number, send = 0.3, level = 1): GainNode {
-    const p = this.panner();
+  point(x: number, y: number, z: number, send = 0.3, level = 1, hrtf = false): GainNode {
+    const p = this.panner(hrtf);
     this.setPos(p, x, y, z);
     const g = this.gain(level);
     g.connect(p);
@@ -204,8 +206,8 @@ export abstract class Movement {
     return g;
   }
   /** A source that circles the listener: radius, seconds a lap, height, phase. */
-  orbit(r: number, period: number, y: number, phase: number, send = 0.4, level = 1): GainNode {
-    const p = this.panner();
+  orbit(r: number, period: number, y: number, phase: number, send = 0.4, level = 1, hrtf = true): GainNode {
+    const p = this.panner(hrtf);
     const ac = this.ac;
     const g = this.gain(level);
     g.connect(p);
@@ -282,7 +284,7 @@ export abstract class Movement {
     this.bend.start(t);
 
     // touch sounds sit where the pointer is; scroll shimmer circles overhead
-    this.fxPan = this.panner();
+    this.fxPan = this.panner(true);
     this.place(this.fxPan, 0.5, 0.5, t);
     this.fx = this.gain(1);
     this.fx.connect(this.fxPan);

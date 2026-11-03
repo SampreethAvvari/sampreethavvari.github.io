@@ -58,7 +58,7 @@ export class Teaching extends Movement {
     this.bass = new Mono(this, this.layer("bass", 0.15), { wave: this.st.wave("air"), cutoff: 700, level: 0.22, sub: 0.3, lo: 36, hi: 50 });
     this.left = this.layer("lesson", 0, this.point(-1.1, 0.1, -1.0, 0.35));
     this.right = this.gain(1, this.point(1.1, 0.1, -1.0, 0.35));
-    this.layers.memory = this.gain(0, this.point(0, 0.8, -1.8, 0.8));
+    this.layers.memory = this.gain(0, this.point(0, 0.8, -1.8, 0.8, 1, true));
     this.celesta = new Sampler(this, (sr, f) => bell(sr, f, 2.0, BELLS.celesta, r), 24, 10);
     this.box = new Sampler(this, (sr, f) => bell(sr, f, 1.6, BELLS.tine, r), 24, 10);
     this.tap = new Sampler(this, (sr, f) => bell(sr, f, 0.45, BELLS.tine, r), 12, 5);

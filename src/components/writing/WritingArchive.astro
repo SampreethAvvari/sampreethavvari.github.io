@@ -1,0 +1,510 @@
+---
+// Everything after the six case studies: every post on a horizon of light,
+// with the filters (kind of work) and the order (newest or impact), then
+// the guides. Cards rise into place as they scroll in, and light follows
+// the pointer across the one under it.
+import Icon from "../common/Icon.astro";
+import Picture from "../common/Picture.astro";
+import type { ArchivePost } from "./types";
+import type { TeachingMaterial } from "../../data/teaching";
+import { hasPublic } from "../../utils/postTopics";
+
+interface Props {
+  posts: ArchivePost[];
+  guides: TeachingMaterial[];
+}
+const { posts, guides } = Astro.props;
+
+// The filters. Plain words on neutral chips: the selected one turns white.
+const filters = [
+  { key: "all", label: "All", title: "Every post" },
+  { key: "aie", label: "AIE", title: "AI engineering" },
+  { key: "mle", label: "MLE", title: "Machine learning engineering" },
+  { key: "fde", label: "FDE", title: "Working on site with the people who use it" },
+  { key: "sde", label: "SDE", title: "Software engineering" },
+];
+
+const WRITING_RGB = "52,211,153";
+const comets = [
+  { w: 130, top: "6%", pos: "left:3%", rz: 12 },
+  { w: 112, top: "38%", pos: "right:2%", rz: -12 },
+  { w: 118, top: "64%", pos: "left:40%", rz: 8 },
+  { w: 106, top: "86%", pos: "right:28%", rz: -16 },
+];
+---
+
+<section class="ax" aria-labelledby="ax-title">
+  <div class="ax-horizon" aria-hidden="true"><span class="ax-planet"></span><span class="ax-haze"></span></div>
+  {comets.map((c) => (
+    <span class="space-el" style={`width:${c.w}px;height:${Math.round(c.w * 0.27)}px;top:${c.top};${c.pos};`} aria-hidden="true"><span class="comet-glow" style={`--sr-rgb:${WRITING_RGB};`}></span><span class="space-comet" style={`--sr-rgb:${WRITING_RGB};--rz:${c.rz}deg;`}></span></span>
+  ))}
+
+  <div class="wrap on-top ax-head">
+    <p class="kicker">Every post</p>
+    <h2 class="t-h2 ax-h2" id="ax-title">
+      The rest of the writing.
+      <span class="t-tail">Pick a kind of work, or read by impact.</span>
+    </h2>
+
+    <div class="ax-controls">
+      <div class="lg ax-bar" role="group" aria-label="Filter posts by kind of work">
+        {filters.map((f) => (
+          <button
+            type="button"
+            class={`chip ax-filter ${f.key === "all" ? "is-on" : ""}`}
+            data-filter={f.key}
+            aria-pressed={f.key === "all" ? "true" : "false"}
+            title={f.title}
+          >
+            {f.label}
+          </button>
+        ))}
+      </div>
+      <div class="lg ax-bar" role="group" aria-label="Sort posts">
+        <button type="button" class="chip ax-sort is-on" data-sort="date" aria-pressed="true">Newest</button>
+        <button type="button" class="chip ax-sort" data-sort="impact" aria-pressed="false">Impact</button>
+      </div>
+      <p class="t-meta ax-count" id="ax-count" aria-live="polite">{posts.length} posts</p>
+    </div>
+    <p id="ax-impact-note" class="t-small ax-note" hidden>
+      Posts ranked by how much the project behind each one moved the company.
+    </p>
+  </div>
+
+  <div class="wrap on-top">
+    <ul id="ax-grid" class="ax-grid" role="list" aria-label="All posts">
+      {posts.map((p) => (
+        <li
+          class="ax-slot"
+          data-slug={p.slug}
+          data-date={p.time}
+          data-impact={p.impact}
+          data-dx={p.dx.join(" ")}
+          data-featured={p.featured ? "1" : undefined}
+          hidden={p.featured ? true : undefined}
+        >
+          <a href={p.url} class="ax-card">
+            <span class="ax-light" aria-hidden="true"></span>
+            <div class="ax-media">
+              {p.img ? (
+                <Picture src={p.img} alt={p.alt} width={640} height={360} />
+              ) : (
+                <div class="ax-fallback" aria-hidden="true">
+                  <span>{p.fallback}</span>
+                </div>
+              )}
+            </div>
+            <div class="ax-body">
+              <p class="ax-meta">{p.date} · {p.minutes} min read</p>
+              <h3 class="ax-title">{p.title}</h3>
+              <p class="ax-desc">{p.description}</p>
+              <span class="ax-go" aria-hidden="true">Read <Icon name="arrow-right" size={13} /></span>
+            </div>
+          </a>
+        </li>
+      ))}
+    </ul>
+    <p id="ax-empty" class="t-body ax-empty" hidden>No posts in this one yet.</p>
+  </div>
+
+  <!-- Teaching: guides I wrote, kept beside the posts -->
+  <div id="teaching" class="wrap on-top ax-teach" aria-labelledby="ax-teach-title" role="region">
+    <div class="sec-head">
+      <div class="sec-head-main">
+        <p class="kicker">Teaching</p>
+        <h2 class="t-h2" id="ax-teach-title">
+          Guides I wrote.
+          <span class="t-tail">Free PDFs for engineers who ship AI.</span>
+        </h2>
+      </div>
+      <a href="/teaching" class="tlink">All materials <Icon name="arrow-right" size={14} /></a>
+    </div>
+    <div class="ax-teach-grid">
+      {guides.map((g) => (
+        <a href={`/teaching/${g.slug}`} class="ax-guide">
+          <span class="ax-light" aria-hidden="true"></span>
+          <div class="ax-guide-cover">
+            {hasPublic(g.cover) ? (
+              <Picture src={g.cover} alt={g.title} width={360} height={460} />
+            ) : (
+              <div class="ax-fallback" aria-hidden="true"></div>
+            )}
+          </div>
+          <div class="ax-guide-body">
+            <span class="badge">{g.pages ? `PDF · ${g.pages} pages` : "PDF"}</span>
+            <h3 class="t-h3 ax-guide-title">{g.title}</h3>
+            <p class="t-small ax-guide-desc">{g.description}</p>
+            <span class="tlink ax-guide-go">Read it <Icon name="arrow-right" size={14} /></span>
+          </div>
+        </a>
+      ))}
+    </div>
+  </div>
+</section>
+
+<style>
+  .ax {
+    position: relative;
+    z-index: 1;
+    padding-top: clamp(120px, 16vw, 220px);
+    overflow-x: clip;
+  }
+
+  /* The horizon: the rim of a dark planet catching the writing colour,
+     right where the case studies end. */
+  .ax-horizon {
+    position: absolute;
+    left: 50%;
+    top: 0;
+    width: 100%;
+    height: clamp(420px, 52vw, 760px);
+    transform: translateX(-50%);
+    pointer-events: none;
+    overflow: hidden;
+  }
+  .ax-planet {
+    position: absolute;
+    left: 50%;
+    top: clamp(70px, 9vw, 130px);
+    width: max(220vw, 2400px);
+    aspect-ratio: 1;
+    transform: translateX(-50%);
+    border-radius: 50%;
+    background: radial-gradient(closest-side, #010204 97%, rgba(1, 2, 4, 0) 100%);
+    box-shadow:
+      0 0 0 1px rgba(var(--c-writing-rgb), 0.55),
+      0 -2px 18px rgba(var(--c-writing-rgb), 0.6),
+      0 -20px 90px rgba(var(--c-writing-rgb), 0.28),
+      0 -60px 220px rgba(var(--c-writing-rgb), 0.16),
+      inset 0 18px 60px -30px rgba(var(--c-writing-rgb), 0.5);
+  }
+  .ax-haze {
+    position: absolute;
+    left: 50%;
+    top: clamp(-40px, -2vw, 0px);
+    width: min(1400px, 120vw);
+    height: clamp(200px, 24vw, 340px);
+    transform: translateX(-50%);
+    background: radial-gradient(50% 60% at 50% 70%, rgba(var(--c-writing-rgb), 0.16), rgba(var(--c-writing-rgb), 0) 70%);
+    filter: blur(10px);
+  }
+
+  .ax-head { position: relative; }
+  .ax-h2 { margin-top: 18px; max-width: 18ch; }
+  .ax-controls {
+    margin-top: clamp(28px, 3.5vw, 40px);
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px 12px;
+  }
+  .ax-bar {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 5px;
+    border-radius: 9999px;
+  }
+  .ax-bar .chip { cursor: pointer; background: transparent; border-color: transparent; }
+  .ax-bar .chip:hover { transform: none; }
+  .ax-bar .chip:not(.is-on):hover { background: var(--wash-strong); border-color: transparent; }
+  .ax-bar .chip.is-on { color: #000; background: var(--ink); border-color: var(--ink); }
+  .ax-bar .chip:focus-visible { outline: none; box-shadow: 0 0 0 3px rgba(var(--tone-rgb), 0.45); }
+  .ax-count { margin-left: 4px; }
+  .ax-note { margin-top: 14px; max-width: 40rem; }
+
+  /* The grid: six lanes on wide screens, each card two wide, so a last
+     row of one or two can stretch instead of leaving a gap. */
+  .ax-grid {
+    list-style: none;
+    margin: clamp(28px, 3.5vw, 44px) 0 0;
+    padding: 0;
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 18px;
+  }
+  @media (min-width: 720px) {
+    .ax-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .ax-slot[data-tail2="1"] { grid-column: 1 / -1; }
+  }
+  @media (min-width: 1024px) {
+    .ax-grid { grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 22px; }
+    .ax-slot { grid-column: span 2; }
+    .ax-slot[data-tail2="1"] { grid-column: span 2; }
+    .ax-slot[data-tail3="2"] { grid-column: span 3; }
+    .ax-slot[data-tail3="1"] { grid-column: 1 / -1; }
+  }
+  .ax-slot { display: flex; }
+  [hidden] { display: none !important; }
+
+  .ax-card {
+    --mx: 50%;
+    --my: 30%;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    border-radius: 22px;
+    overflow: hidden;
+    text-decoration: none;
+    color: var(--ink);
+    background:
+      linear-gradient(180deg, rgba(255, 255, 255, 0.045), rgba(255, 255, 255, 0.01) 40%),
+      #07080c;
+    border: 1px solid rgba(255, 255, 255, 0.07);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.07),
+      0 30px 60px -40px rgba(0, 0, 0, 0.95);
+    transition:
+      transform 450ms var(--ease-glass),
+      border-color 300ms var(--ease-glass),
+      box-shadow 450ms var(--ease-glass);
+  }
+  /* Light that follows the pointer, and a rim that catches it. */
+  .ax-light {
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+    border-radius: inherit;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 350ms var(--ease-glass);
+    background: radial-gradient(420px circle at var(--mx) var(--my), rgba(var(--c-writing-rgb), 0.16), rgba(var(--c-writing-rgb), 0) 60%);
+  }
+  .ax-light::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    padding: 1px;
+    background: radial-gradient(260px circle at var(--mx) var(--my), rgba(var(--c-writing-rgb), 0.9), rgba(var(--c-writing-rgb), 0) 70%);
+    -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+  }
+  .ax-card:hover,
+  .ax-card:focus-visible {
+    transform: translateY(-4px);
+    border-color: rgba(255, 255, 255, 0.12);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.1),
+      0 40px 80px -40px rgba(0, 0, 0, 1),
+      0 0 60px -30px rgba(var(--c-writing-rgb), 0.55);
+  }
+  .ax-card:hover .ax-light,
+  .ax-card:focus-visible .ax-light { opacity: 1; }
+  .ax-card:focus-visible { outline: none; box-shadow: 0 0 0 3px rgba(var(--c-writing-rgb), 0.6); }
+
+  .ax-media {
+    position: relative;
+    aspect-ratio: 16 / 9;
+    overflow: hidden;
+    background: #05060a;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  }
+  .ax-media :global(img) {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+    transform: scale(1.02);
+    filter: saturate(0.92) brightness(0.92);
+    transition: transform 900ms var(--ease-glass), filter 500ms var(--ease-glass);
+  }
+  .ax-card:hover .ax-media :global(img) { transform: scale(1.07); filter: saturate(1.08) brightness(1.04); }
+  .ax-media::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(180deg, rgba(7, 8, 12, 0) 55%, rgba(7, 8, 12, 0.7) 100%);
+    pointer-events: none;
+  }
+  .ax-fallback {
+    position: absolute;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    padding: 24px;
+    background:
+      radial-gradient(70% 90% at 20% 10%, rgba(var(--c-writing-rgb), 0.2), rgba(var(--c-writing-rgb), 0) 70%),
+      radial-gradient(60% 80% at 90% 100%, rgba(var(--c-writing-rgb), 0.09), rgba(var(--c-writing-rgb), 0) 70%),
+      #07080b;
+  }
+  .ax-fallback span {
+    font-size: clamp(1.375rem, 2vw, 1.75rem);
+    line-height: 1.05;
+    letter-spacing: -0.035em;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    text-align: center;
+    text-wrap: balance;
+    color: var(--ink-ghost);
+  }
+
+  .ax-body {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    padding: 20px 22px 22px;
+  }
+  .ax-meta {
+    font-size: 0.8125rem;
+    line-height: 1.4;
+    color: rgba(245, 245, 247, 0.5);
+    font-variant-numeric: tabular-nums;
+  }
+  .ax-title {
+    margin-top: 10px;
+    font-size: 1.1875rem;
+    line-height: 1.26;
+    letter-spacing: -0.022em;
+    font-weight: 600;
+    color: var(--ink);
+    text-wrap: balance;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 3;
+    overflow: hidden;
+  }
+  .ax-desc {
+    margin-top: 10px;
+    font-size: 0.875rem;
+    line-height: 1.55;
+    color: var(--ink-soft);
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    overflow: hidden;
+  }
+  .ax-go {
+    margin-top: auto;
+    padding-top: 16px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--c-writing);
+    opacity: 0.75;
+    transition: opacity 250ms var(--ease-glass);
+  }
+  .ax-go :global(svg) { transition: transform 250ms var(--ease-glass); }
+  .ax-card:hover .ax-go { opacity: 1; }
+  .ax-card:hover .ax-go :global(svg) { transform: translateX(3px); }
+
+  /* A last card alone in its row lies on its side: art left, words right. */
+  @media (min-width: 720px) {
+    .ax-slot[data-tail2="1"] .ax-card { flex-direction: row; }
+    .ax-slot[data-tail2="1"] .ax-media { flex: 0 0 52%; aspect-ratio: auto; min-height: 280px; border-bottom: 0; border-right: 1px solid rgba(255, 255, 255, 0.06); }
+    .ax-slot[data-tail2="1"] .ax-body { justify-content: center; padding: 32px; }
+    .ax-slot[data-tail2="1"] .ax-title { font-size: 1.5rem; }
+    .ax-slot[data-tail2="1"] .ax-desc { -webkit-line-clamp: 4; }
+  }
+  @media (min-width: 1024px) {
+    .ax-slot[data-tail2="1"]:not([data-tail3="1"]) .ax-card { flex-direction: column; }
+    .ax-slot[data-tail2="1"]:not([data-tail3="1"]) .ax-media { flex: none; aspect-ratio: 16 / 9; min-height: 0; border-right: 0; border-bottom: 1px solid rgba(255, 255, 255, 0.06); }
+    .ax-slot[data-tail2="1"]:not([data-tail3="1"]) .ax-body { justify-content: flex-start; padding: 20px 22px 22px; }
+    .ax-slot[data-tail2="1"]:not([data-tail3="1"]) .ax-title { font-size: 1.1875rem; }
+    .ax-slot[data-tail2="1"]:not([data-tail3="1"]) .ax-desc { -webkit-line-clamp: 2; }
+    .ax-slot[data-tail3="1"] .ax-card { flex-direction: row; }
+    .ax-slot[data-tail3="1"] .ax-media { flex: 0 0 58%; aspect-ratio: auto; min-height: 340px; border-bottom: 0; border-right: 1px solid rgba(255, 255, 255, 0.06); }
+    .ax-slot[data-tail3="1"] .ax-body { justify-content: center; padding: 40px; }
+    .ax-slot[data-tail3="1"] .ax-title { font-size: 1.75rem; }
+    .ax-slot[data-tail3="1"] .ax-desc { -webkit-line-clamp: 4; }
+  }
+
+  .ax-empty { margin-top: 32px; color: var(--ink-faint); }
+
+  /* Cards rise into place as they scroll in: tied to the scroll where the
+     browser can, eased in on arrival where it cannot. */
+  @media (prefers-reduced-motion: no-preference) {
+    @supports (animation-timeline: view()) {
+      .ax-slot {
+        animation: ax-arrive linear both;
+        animation-timeline: view();
+        animation-range: entry 0% cover 26%;
+      }
+      .ax-slot[data-col="1"] { animation-range: entry 8% cover 32%; }
+      .ax-slot[data-col="2"] { animation-range: entry 16% cover 38%; }
+    }
+    @supports not (animation-timeline: view()) {
+      .ax-grid.is-js .ax-slot {
+        opacity: 0;
+        transform: perspective(1400px) translate3d(0, 70px, 0) rotateX(12deg) scale(0.95);
+        transition: opacity 700ms var(--ease-glass), transform 900ms var(--ease-glass);
+        transition-delay: calc(var(--col, 0) * 90ms);
+      }
+      .ax-grid.is-js .ax-slot.is-in { opacity: 1; transform: none; }
+    }
+  }
+  @keyframes ax-arrive {
+    from {
+      opacity: 0;
+      transform: perspective(1400px) translate3d(0, 90px, 0) rotateX(14deg) scale(0.94);
+    }
+    to { opacity: 1; transform: none; }
+  }
+
+  /* Guides */
+  .ax-teach { padding-block: clamp(80px, 10vw, 140px) clamp(8px, 1vw, 16px); }
+  .ax-teach-grid { display: grid; gap: 18px; grid-template-columns: 1fr; }
+  @media (min-width: 900px) { .ax-teach-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 22px; } }
+  .ax-guide {
+    --mx: 50%;
+    --my: 30%;
+    position: relative;
+    display: grid;
+    grid-template-columns: 120px minmax(0, 1fr);
+    gap: 20px;
+    padding: 16px;
+    border-radius: 22px;
+    overflow: hidden;
+    text-decoration: none;
+    color: var(--ink);
+    background:
+      linear-gradient(180deg, rgba(255, 255, 255, 0.045), rgba(255, 255, 255, 0.01) 40%),
+      #07080c;
+    border: 1px solid rgba(255, 255, 255, 0.07);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.07), 0 30px 60px -40px rgba(0, 0, 0, 0.95);
+    transition: transform 450ms var(--ease-glass), border-color 300ms var(--ease-glass);
+  }
+  @media (min-width: 640px) { .ax-guide { grid-template-columns: 150px minmax(0, 1fr); gap: 24px; padding: 20px; } }
+  .ax-guide:hover { transform: translateY(-4px); border-color: rgba(255, 255, 255, 0.12); }
+  .ax-guide:hover .ax-light { opacity: 1; }
+  .ax-guide:focus-visible { outline: none; box-shadow: 0 0 0 3px rgba(var(--c-writing-rgb), 0.6); }
+  .ax-guide-cover {
+    position: relative;
+    border-radius: 12px;
+    overflow: hidden;
+    aspect-ratio: 3 / 4;
+    background: #07080b;
+    border: 1px solid var(--line);
+    box-shadow: 0 20px 40px -24px rgba(var(--c-writing-rgb), 0.45);
+    transition: transform 600ms var(--ease-glass);
+  }
+  .ax-guide:hover .ax-guide-cover { transform: rotate(-2deg) translateY(-2px); }
+  .ax-guide-cover :global(img) { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .ax-guide-body { position: relative; display: flex; flex-direction: column; align-items: flex-start; padding-block: 4px; }
+  .ax-guide-title { margin-top: 16px; }
+  .ax-guide-desc { margin-top: 8px; }
+  .ax-guide-go { margin-top: auto; padding-top: 20px; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .ax-card,
+    .ax-guide,
+    .ax-media :global(img),
+    .ax-guide-cover { transition: none; }
+    .ax-card:hover,
+    .ax-guide:hover { transform: none; }
+    .ax-card:hover .ax-media :global(img) { transform: scale(1.02); }
+    .ax-guide:hover .ax-guide-cover { transform: none; }
+  }
+</style>
+
+<script>
+  import { mountArchive } from "./archive";
+  mountArchive();
+</script>

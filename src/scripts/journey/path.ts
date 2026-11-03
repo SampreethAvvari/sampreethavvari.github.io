@@ -117,26 +117,24 @@ export class FlightPath {
   }
 
   /**
-   * The landing at the end of the flight. Over the last half chapter the
-   * ship leaves the path, curves down onto a pad and settles on its legs.
+   * The landing in the last world. The mothership holds position at the end
+   * of the path while its lander undocks and comes down onto the dunes below
+   * and behind it, so the closing shot looks past the lander toward the ship
+   * and the dawn.
    */
   landing(stand: number): Landing {
     if (this._landing && this._landing.stand === stand) return this._landing;
-    const last = this.n - 1;
-    const start = Math.max(0, last - 0.5);
     const pos = new Vector3();
     const quat = new Quaternion();
     const right = new Vector3();
     const up = new Vector3();
     const fwd = new Vector3();
-    this.frame(last, pos, quat, right, up, fwd);
-    const pad = pos.clone().addScaledVector(fwd, 95).addScaledVector(up, -130);
+    this.frame(travel(this.n, this.n), pos, quat, right, up, fwd);
+    const park = pos.clone();
+    const pad = park.clone().addScaledVector(fwd, -110).addScaledVector(up, -48).addScaledVector(right, -45);
     const touch = pad.clone().addScaledVector(up, stand);
-    const a = this.point(start, new Vector3());
-    const fa = this.forward(start, new Vector3());
-    const c1 = a.clone().addScaledVector(fa, 120);
-    const c2 = touch.clone().addScaledVector(up, 55).addScaledVector(fwd, -35);
-    this._landing = { start, last, pad, touch, quat, right, up, fwd, a, c1, c2, stand };
+    const last = this.n - 1;
+    this._landing = { start: last + LAND_START, end: last + LAND_END, pad, touch, park, quat, right, up, fwd, stand };
     return this._landing;
   }
   private _landing: Landing | null = null;
@@ -144,41 +142,80 @@ export class FlightPath {
 
 export interface Landing {
   start: number;
-  last: number;
+  end: number;
   pad: Vector3;
   touch: Vector3;
+  park: Vector3;
   quat: Quaternion;
   right: Vector3;
   up: Vector3;
   fwd: Vector3;
-  a: Vector3;
-  c1: Vector3;
-  c2: Vector3;
   stand: number;
 }
 
+// Pacing. Every world rests at i + REST. The jump to the next world runs
+// from i + JUMP_A to i + JUMP_B and crosses over (flash, new world) at
+// i + CROSS, the middle of a glide from one rest point to the next. The last
+// world has no jump; its landing runs from LAND_START to LAND_END past it.
+export const REST = 0.35;
+export const JUMP_A = 0.62;
+export const JUMP_B = 1.08;
+export const CROSS = 0.85;
+const LAND_START = 0.4;
+const LAND_END = 0.98;
+const IN_A = JUMP_B - 1; // where travel inside a world starts
+const IN_RATE = 0.28 / (JUMP_A - IN_A); // path chapters per unit of progress inside a world
+
 /** 0 before the landing starts, 1 once the page reaches the end. */
 export function landingPhase(l: Landing, p: number) {
-  if (l.last <= l.start) return p >= l.last ? 1 : 0;
-  const x = (p - l.start) / (l.last - l.start);
+  const x = (p - l.start) / (l.end - l.start);
   return x < 0 ? 0 : x > 1 ? 1 : x;
 }
 
-/** Where the ship is along the approach. u = 0 leaves the path, u = 1 stands on the pad. */
-export function approachPoint(l: Landing, u: number, out: Vector3) {
-  const v = 1 - u;
-  return out
-    .copy(l.a)
-    .multiplyScalar(v * v * v)
-    .addScaledVector(l.c1, 3 * v * v * u)
-    .addScaledVector(l.c2, 3 * v * u * u)
-    .addScaledVector(l.touch, u * u * u);
-}
-
-/** Approach progress for a landing phase: decelerates into touchdown at L = 0.84. */
+/** Descent progress for a landing phase: decelerates into touchdown at L = 0.84. */
 export function approachU(L: number) {
   const x = Math.min(1, L / 0.84);
-  return 1 - Math.pow(1 - x, 3);
+  return x * x * (3 - 2 * x) * 0.35 + (1 - Math.pow(1 - x, 3)) * 0.65;
+}
+
+/** 0 before touchdown, 1 once the lander has settled and the dust is down. */
+export function landedAt(p: number, n: number) {
+  const L = (p - (n - 1 + LAND_START)) / (LAND_END - LAND_START);
+  const t = Math.max(0, Math.min(1, (L - 0.84) / 0.14));
+  return t * t * (3 - 2 * t);
+}
+
+/** Progress to path position: slow inside a world, fast through a jump. */
+export function travel(p: number, n: number) {
+  const x = p - JUMP_A;
+  const i = Math.floor(x);
+  const f = x - i;
+  const span = JUMP_B - JUMP_A;
+  if (i >= 0 && i < n - 1 && f < span) {
+    // Inside a jump: ends match the slow travel speed on both sides.
+    const u = f / span;
+    const a = IN_RATE * span / (1 + 0.02 - 0.3);
+    const g = a * u + (1 - a) * u * u * (3 - 2 * u);
+    return i + 0.3 + (1 + 0.02 - 0.3) * g;
+  }
+  // Inside world w: starts at w + 0.02 when the previous jump ends.
+  const w = Math.max(0, Math.min(n - 1, Math.floor(p - IN_A)));
+  return w + 0.02 + IN_RATE * (p - (w + IN_A));
+}
+
+/** The jump in progress at p, or null while inside a world. */
+export function jumpAt(p: number, n: number): { from: number; to: number; amount: number } | null {
+  const x = p - JUMP_A;
+  const i = Math.floor(x);
+  const f = x - i;
+  const span = JUMP_B - JUMP_A;
+  if (i < 0 || i >= n - 1 || f >= span) return null;
+  return { from: i, to: i + 1, amount: f / span };
+}
+
+/** Which world is on screen at p (it changes at the middle of each jump). */
+export function worldAt(p: number, n: number) {
+  return Math.max(0, Math.min(n - 1, Math.floor(p + 1 - CROSS)));
 }
 
 const tmpUp = new Vector3();

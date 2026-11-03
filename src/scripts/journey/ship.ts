@@ -33,7 +33,7 @@ import {
 } from "three";
 import { buildPlumes, PLUME_FS, PLUME_VS, TRAIL_FS, TRAIL_VS, type Nozzle } from "./exhaust";
 import { additive, GlowBatch } from "./fx";
-import { body, boxUV, latheZ, mergeAll, placed, plate, rod, sidePlate, type Key } from "./kit";
+import { body, boxUV, latheZ, mergeAll, placed, plate, pod, rod, sidePlate, type Key } from "./kit";
 import type { CompositeSet } from "./skin";
 import { rng } from "./textures";
 
@@ -98,11 +98,7 @@ const parts = (): Parts => ({ comp: [], gold: [], silver: [], carbon: [], metal:
 
 /** A rounded box whose long axis is X. */
 function podX(len: number, h: number, d: number, r: number, bevel: number) {
-  const g = new BoxGeometry(len, h, d, 1, 1, 1);
-  // Soften the long edges by chamfering with a slightly smaller inner box.
-  void r;
-  void bevel;
-  return g;
+  return pod(d, h, len, r, bevel).rotateY(Math.PI / 2);
 }
 
 function cylX(r: number, len: number, seg: number) {

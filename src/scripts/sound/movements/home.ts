@@ -146,7 +146,7 @@ export class Home extends Movement {
   private stopCurve = new Float32Array(24);
 
   protected room(): RoomSpec {
-    return { rt60: 3.6, length: 4.4, predelay: 0.03, early: 6, earlyLevel: 0.3, hi: 5200, lo: 1100, damp: 0.8, lowCut: 80, bloom: 0.05, width: 1 };
+    return { rt60: 3.2, length: 3.2, predelay: 0.03, early: 6, earlyLevel: 0.3, hi: 5200, lo: 1100, damp: 0.8, lowCut: 80, bloom: 0.05, width: 1 };
   }
 
   private section(i: number): Section {
@@ -169,7 +169,7 @@ export class Home extends Movement {
     }));
     // stars streaming past: chord tones up high, louder the faster you go
     this.vchoir = new Pad(this, this.air, {
-      wave: this.st.wave("air"), voices: this.phone ? 2 : 4, lo: 72, hi: 86, detune: 7, cutoff: 4000, level: 0, mode: "glide", glide: 1.5,
+      wave: this.st.wave("air"), voices: this.phone ? 2 : 3, lo: 72, hi: 86, detune: 7, cutoff: 4000, level: 0, mode: "glide", glide: 1.5,
     });
     this.pads.push(this.vchoir);
 
@@ -197,7 +197,7 @@ export class Home extends Movement {
     const corners: [number, number, number][] = this.phone
       ? [[-1.2, 0, -1], [1.2, 0, -1]]
       : [[-1.2, 0, -1.1], [1.2, 0, -1.1], [1.1, 0.25, 1.1], [-1.1, 0.25, 1.1]];
-    const busses = corners.map((c) => { const g = this.gain(1, this.point(...c, 0.35)); q.connect(g); return g; });
+    const busses = corners.map((c) => { const g = this.gain(1, this.point(...c, 0.35, 1, c[2] > 0)); q.connect(g); return g; });
     const marimba = new Sampler(this, (sr, f) => modal(sr, f, 1.2, MODES.marimba, r), 14, 6);
     const fmBell = new Sampler(this, (sr, f) => fm(sr, f, 1.6, { ratio: 3.5, index: 1.4, indexDecay: 0.2, decay: 0.7 }), 14, 6);
     this.quartet = [
@@ -209,7 +209,7 @@ export class Home extends Movement {
     // the stars: a pool of places in the sky
     const n = this.phone ? 2 : 3;
     for (let i = 0; i < n; i++) {
-      const pan = this.panner();
+      const pan = this.panner(true);
       const g = this.gain(0, pan);
       pan.connect(this.dry);
       pan.connect(this.gain(0.7, this.verbIn));

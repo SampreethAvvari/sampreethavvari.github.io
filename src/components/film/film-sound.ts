@@ -55,7 +55,7 @@ export class FilmSound {
     }
     const t0 = performance.now();
     const step = (now: number) => {
-      const p = Math.min(1, (now - t0) / ms);
+      const p = Math.max(0, Math.min(1, (now - t0) / ms));
       a.volume = Math.max(0, Math.min(1, from + (to - from) * p));
       if (p < 1) this.fades.set(a, requestAnimationFrame(step));
       else after?.();

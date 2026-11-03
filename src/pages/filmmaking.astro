@@ -6,6 +6,8 @@
 import BaseLayout from "../layouts/BaseLayout.astro";
 import SmartImage from "../components/common/SmartImage.astro";
 import Icon from "../components/common/Icon.astro";
+import Reel from "../components/film/Reel.astro";
+import StillViewer from "../components/film/StillViewer.astro";
 import {
   films,
   crafts,
@@ -16,6 +18,7 @@ import {
   yearLabel,
   rolesLine,
   photographyUrl,
+  reelItems,
   type Film,
 } from "../data/films";
 import { filmNodes, itemListNode } from "../utils/seo";
@@ -28,17 +31,12 @@ const feature = filmBySlug("among-monsters")!;
 const { imdb, screenplay, playlist } = feature.links!;
 const stills = filmStills(feature);
 const keyCreators = feature.credits?.find((g) => g.label === "Above the line")?.people ?? [];
-// The logline's first sentence carries the film on its own.
-const loglineLead = (feature.logline!.match(/^.+?[.!?](?=\s|$)/) || [feature.logline!])[0];
 
-const featureFacts = [
-  { label: "Year", value: feature.year! },
-  { label: "Status", value: feature.statusNote! },
-  { label: "Shot", value: `${feature.shot!.place}, ${feature.shot!.when}` },
-  { label: "Genre", value: feature.genre! },
-];
+// The reel at the top: one film per screen, its clip or its stills.
+const reel = reelItems();
+const reelPreload = reel[0]?.poster.replace(/\.(jpe?g|webp|png)$/i, ".avif");
 
-// The reel: each film's poster, a frame from it, or a title card. A title
+// The timeline: each film's poster, a frame from it, or a title card. A title
 // card is plainly a card (the title set in type on a red field between
 // letterbox bars), never dressed up as a poster.
 const swechcha = filmBySlug("swechcha")!;
@@ -87,7 +85,7 @@ const base = Astro.site!.toString();
   description={description}
   footerVariant="filmmaking"
   ogImage="/og/film.jpg"
-  preloadImage="/among-monsters-poster.avif"
+  preloadImage={reelPreload?.endsWith(".avif") ? reelPreload : undefined}
   schema={[
     ...filmNodes(base),
     itemListNode(base, "/filmmaking", "Films by Sampreeth Avvari", films.map((f) => ({ name: f.title, path: filmPath(f.slug) }))),
@@ -95,74 +93,8 @@ const base = Astro.site!.toString();
   crumbs={[{ name: "Home", path: "/" }, { name: "Filmmaking", path: "/filmmaking" }]}
 >
   <div class="fm">
-    <!-- The coming feature -->
-    <section id="among-monsters" class="fm-hero" aria-labelledby="fm-title">
-      <div class="fm-space" aria-hidden="true">
-        <span class="fm-nebula fm-nebula-a"></span>
-        <span class="fm-nebula fm-nebula-b"></span>
-        <span class="fm-beam"></span>
-        <canvas class="fm-dust" data-fm-dust></canvas>
-      </div>
-
-      <div class="wrap">
-        <div class="fm-stage">
-          <div class="fm-hero-top">
-            <p class="kicker">Film</p>
-            <div class="fm-badges">
-              <span class="badge badge-tone">Current feature</span>
-              <span class="badge">Premieres 2026</span>
-            </div>
-          </div>
-
-          <div class="fm-screen-wrap">
-            <span class="fm-sun" aria-hidden="true"><span class="fm-corona"></span></span>
-            <a href={filmPath(feature.slug)} class="fm-screen" aria-label="Among Monsters, open the film's page">
-              <SmartImage
-                src={feature.poster!.src}
-                alt={feature.poster!.alt}
-                class="fm-screen-img"
-                loading="eager"
-                fetchpriority="high"
-              />
-            </a>
-            <span class="fm-floor" aria-hidden="true"></span>
-          </div>
-
-          <div class="fm-credits">
-            <div>
-              <h1 id="fm-title" class="fm-title">Among Monsters</h1>
-              <p class="fm-roles">
-                <span class="fm-label">My roles</span>
-                {rolesLine(feature)}
-              </p>
-            </div>
-            <p class="fm-logline">{loglineLead}</p>
-          </div>
-          <div class="fm-actions">
-            <a href="#stills" class="btn btn-primary">
-              See the stills <Icon name="arrow-down" size={15} />
-            </a>
-            <a href={screenplay} target="_blank" rel="noreferrer" class="btn btn-tone">Read the screenplay</a>
-            <a href={imdb} target="_blank" rel="noreferrer" class="btn btn-ghost">
-              <span class="imdb-wordmark">IMDb</span> On IMDb
-              <Icon name="arrow-up-right" size={15} class="arrow-ur" />
-            </a>
-            <a href={playlist} target="_blank" rel="noreferrer" class="btn btn-ghost">
-              Watch the playlist <Icon name="arrow-up-right" size={15} class="arrow-ur" />
-            </a>
-          </div>
-
-          <dl class="fm-facts">
-            {featureFacts.map((f) => (
-              <div class="fm-fact">
-                <dt class="t-meta">{f.label}</dt>
-                <dd>{f.value}</dd>
-              </div>
-            ))}
-          </dl>
-        </div>
-      </div>
-    </section>
+    <!-- The reel: one film per screen -->
+    <Reel items={reel} after="#slate" />
 
     <!-- The slate, one film at a time -->
     <section id="slate" class="section fm-slate" aria-labelledby="slate-title">
@@ -187,22 +119,22 @@ const base = Astro.site!.toString();
           <p class="t-meta">Some are out, some are in the cut, some are still pages.</p>
         </div>
 
-        <ol class="reel">
+        <ol class="tl" data-timeline>
           {films.map((film, i) => {
             const [nx, ny, sx, sy] = SEEDS[i % SEEDS.length];
             const kind = art(film);
             return (
-              <li class="reel-item" data-side={i % 2 ? "right" : "left"}>
-                <a href={filmPath(film.slug)} class="reel-card">
-                  <div class="reel-frame-wrap">
-                    <span class="reel-mark" aria-hidden="true">
-                      <span class="reel-dot"></span>
-                      <span class="reel-year">{yearLabel(film)}</span>
+              <li class="tl-item" data-side={i % 2 ? "right" : "left"}>
+                <a href={filmPath(film.slug)} class="tl-card">
+                  <div class="tl-frame-wrap">
+                    <span class="tl-mark" aria-hidden="true">
+                      <span class="tl-dot"></span>
+                      <span class="tl-year">{yearLabel(film)}</span>
                     </span>
-                    <span class="reel-glow" aria-hidden="true"></span>
-                    <div class="reel-frame">
+                    <span class="tl-glow" aria-hidden="true"></span>
+                    <div class="tl-frame">
                       {kind === "poster" ? (
-                        <SmartImage src={film.poster!.src} alt={`${film.title} poster`} class="reel-img" loading="lazy" />
+                        <SmartImage src={film.poster!.src} alt={`${film.title} poster`} class="tl-img" loading="lazy" />
                       ) : (
                         <div
                           class:list={["tc", kind === "still" && "tc-has-still"]}
@@ -221,16 +153,16 @@ const base = Astro.site!.toString();
                           <span class="tc-bar" aria-hidden="true">{rolesLine(film)}</span>
                         </div>
                       )}
-                      <span class="reel-veil" aria-hidden="true"></span>
+                      <span class="tl-veil" aria-hidden="true"></span>
                     </div>
                   </div>
-                  <div class="reel-meta">
+                  <div class="tl-meta">
                     <div class="min-w-0">
-                      <h3 class="reel-title">{film.title}</h3>
-                      <p class="t-meta reel-when">{metaLine(film)}</p>
-                      <p class="reel-roles">{rolesLine(film)}</p>
+                      <h3 class="tl-title">{film.title}</h3>
+                      <p class="t-meta tl-when">{metaLine(film)}</p>
+                      <p class="tl-roles">{rolesLine(film)}</p>
                     </div>
-                    <span class="reel-go" aria-hidden="true"><Icon name="arrow-right" size={16} /></span>
+                    <span class="tl-go" aria-hidden="true"><Icon name="arrow-right" size={16} /></span>
                   </div>
                 </a>
               </li>
@@ -415,265 +347,68 @@ const base = Astro.site!.toString();
     </section>
   </div>
 
-  <!-- Still viewer -->
-  <div id="flb" class="lb" hidden role="dialog" aria-modal="true" aria-label="Still viewer">
-    <div class="lb-backdrop" data-lb-close></div>
-    <button type="button" class="lb-btn lb-close" data-lb-close aria-label="Close viewer">
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12" /></svg>
-    </button>
-    <figure class="lb-stage">
-      <img id="flb-img" class="lb-img" alt="" />
-      <figcaption class="lb-cap">
-        <span id="flb-cap" class="t-small"></span>
-      </figcaption>
-    </figure>
-    <div class="lb-bar">
-      <button type="button" class="lb-btn" data-lb-prev aria-label="Previous still">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6" /></svg>
-      </button>
-      <span id="flb-count" class="t-meta lb-count" aria-live="polite"></span>
-      <button type="button" class="lb-btn" data-lb-next aria-label="Next still">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 18 6-6-6-6" /></svg>
-      </button>
-    </div>
-  </div>
+  <StillViewer />
 </BaseLayout>
 
 <script>
-  const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  import { onPage } from "../scripts/lifecycle";
 
-  // Star dust over the feature: one small 2D canvas. Motes drift up slowly
-  // and twinkle; it sleeps when the feature is off screen or the tab is
-  // hidden, and draws one still frame for people who asked for less motion.
-  const dust = document.querySelector<HTMLCanvasElement>("[data-fm-dust]");
-  const ctx = dust?.getContext("2d");
-  if (dust && ctx) {
-    const phone = window.matchMedia("(max-width: 767px)").matches;
-    const dprCap = phone ? 1.5 : 2;
-    type Mote = { x: number; y: number; r: number; a: number; tw: number; ts: number; vx: number; vy: number; red: boolean };
-    const spawn = (anywhere: boolean): Mote => ({
-      x: Math.random(),
-      y: anywhere ? Math.random() : 1.02,
-      r: Math.random() ** 2.2 * 1.5 + 0.35,
-      a: 0.25 + Math.random() * 0.7,
-      tw: Math.random() * Math.PI * 2,
-      ts: 0.5 + Math.random() * 1.4,
-      vx: (Math.random() - 0.5) * 0.006,
-      vy: -(0.003 + Math.random() * 0.01),
-      red: Math.random() < 0.4,
+  onPage("filmmaking", (signal) => {
+    const timeline = document.querySelector<HTMLElement>("[data-timeline]");
+    if (!timeline) return;
+    const html = document.documentElement;
+    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+    // The timeline. Browsers with scroll driven animations tie each card's
+    // rise to the scroll in CSS; the rest get the same arrival from an
+    // observer.
+    let io: IntersectionObserver | null = null;
+    const timelines = typeof CSS !== "undefined" && CSS.supports?.("animation-timeline: view()");
+    if (!timelines && !reduce && "IntersectionObserver" in window) {
+      html.classList.add("fm-io");
+      io = new IntersectionObserver(
+        (entries) =>
+          entries.forEach((e) => {
+            if (!e.isIntersecting) return;
+            e.target.classList.add("is-in");
+            io?.unobserve(e.target);
+          }),
+        { rootMargin: "0px 0px -12% 0px", threshold: 0.12 },
+      );
+      timeline.querySelectorAll(".tl-card").forEach((el) => io?.observe(el));
+    }
+
+    // The stills strip: arrows step a screen at a time and dim at the ends.
+    document.querySelectorAll<HTMLElement>("[data-strip]").forEach((strip) => {
+      const track = strip.querySelector<HTMLElement>("[data-strip-track]");
+      const prev = strip.querySelector<HTMLButtonElement>("[data-strip-prev]");
+      const next = strip.querySelector<HTMLButtonElement>("[data-strip-next]");
+      if (!track || !prev || !next) return;
+      const step = (dir: number) =>
+        track.scrollBy({ left: dir * track.clientWidth * 0.8, behavior: reduce ? "auto" : "smooth" });
+      const ends = () => {
+        prev.disabled = track.scrollLeft < 4;
+        next.disabled = track.scrollLeft + track.clientWidth > track.scrollWidth - 4;
+      };
+      prev.addEventListener("click", () => step(-1), { signal });
+      next.addEventListener("click", () => step(1), { signal });
+      track.addEventListener("scroll", ends, { passive: true, signal });
+      window.addEventListener("resize", ends, { passive: true, signal });
+      ends();
     });
-    const motes = Array.from({ length: phone ? 70 : 160 }, () => spawn(true));
-    let w = 0;
-    let h = 0;
-    const resize = () => {
-      const rect = dust.getBoundingClientRect();
-      const dpr = Math.min(window.devicePixelRatio || 1, dprCap);
-      w = rect.width;
-      h = rect.height;
-      dust.width = Math.max(1, Math.round(w * dpr));
-      dust.height = Math.max(1, Math.round(h * dpr));
-      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    };
-    const draw = (t: number, dt: number) => {
-      ctx.clearRect(0, 0, w, h);
-      for (const m of motes) {
-        m.x += m.vx * dt;
-        m.y += m.vy * dt;
-        if (m.y < -0.02 || m.x < -0.02 || m.x > 1.02) Object.assign(m, spawn(false), { x: Math.random() });
-        // Fade out toward the bottom of the feature so the dust has no edge.
-        const fade = Math.max(0, Math.min(1, (1 - m.y) / 0.3));
-        const twinkle = 0.55 + 0.45 * Math.sin(t * m.ts + m.tw);
-        ctx.globalAlpha = m.a * twinkle * fade;
-        ctx.fillStyle = m.red ? "#ff5d78" : "#ffe6ea";
-        ctx.beginPath();
-        ctx.arc(m.x * w, m.y * h, m.r, 0, Math.PI * 2);
-        ctx.fill();
-        if (m.r > 1.3) {
-          ctx.globalAlpha *= 0.18;
-          ctx.beginPath();
-          ctx.arc(m.x * w, m.y * h, m.r * 3.2, 0, Math.PI * 2);
-          ctx.fill();
-        }
-      }
-      ctx.globalAlpha = 1;
-    };
 
-    let running = false;
-    let onScreen = true;
-    let last = 0;
-    let raf = 0;
-    const frame = (now: number) => {
-      const dt = Math.min(0.05, (now - last) / 1000 || 0);
-      last = now;
-      draw(now / 1000, dt);
-      raf = requestAnimationFrame(frame);
+    return () => {
+      io?.disconnect();
+      html.classList.remove("fm-io");
     };
-    const sync = () => {
-      const want = !reduce && onScreen && !document.hidden;
-      if (want && !running) {
-        running = true;
-        last = performance.now();
-        raf = requestAnimationFrame(frame);
-      } else if (!want && running) {
-        running = false;
-        cancelAnimationFrame(raf);
-      }
-    };
-    resize();
-    draw(0, 0);
-    new ResizeObserver(() => {
-      resize();
-      if (!running) draw(performance.now() / 1000, 0);
-    }).observe(dust);
-    new IntersectionObserver((entries) => {
-      onScreen = entries[0]?.isIntersecting ?? true;
-      sync();
-    }).observe(dust);
-    document.addEventListener("visibilitychange", sync);
-    sync();
-  }
-
-  // The reel. Browsers with scroll driven animations tie each card's rise to
-  // the scroll in CSS; the rest get the same arrival from an observer.
-  const timelines = typeof CSS !== "undefined" && CSS.supports?.("animation-timeline: view()");
-  if (!timelines && !reduce && "IntersectionObserver" in window) {
-    document.documentElement.classList.add("fm-io");
-    const io = new IntersectionObserver(
-      (entries) =>
-        entries.forEach((e) => {
-          if (!e.isIntersecting) return;
-          e.target.classList.add("is-in");
-          io.unobserve(e.target);
-        }),
-      { rootMargin: "0px 0px -12% 0px", threshold: 0.12 },
-    );
-    document.querySelectorAll(".reel-card").forEach((el) => io.observe(el));
-  }
-
-  // The stills strip: arrows step a screen at a time and dim at the ends.
-  document.querySelectorAll<HTMLElement>("[data-strip]").forEach((strip) => {
-    const track = strip.querySelector<HTMLElement>("[data-strip-track]");
-    const prev = strip.querySelector<HTMLButtonElement>("[data-strip-prev]");
-    const next = strip.querySelector<HTMLButtonElement>("[data-strip-next]");
-    if (!track || !prev || !next) return;
-    const step = (dir: number) =>
-      track.scrollBy({ left: dir * track.clientWidth * 0.8, behavior: reduce ? "auto" : "smooth" });
-    const ends = () => {
-      prev.disabled = track.scrollLeft < 4;
-      next.disabled = track.scrollLeft + track.clientWidth > track.scrollWidth - 4;
-    };
-    prev.addEventListener("click", () => step(-1));
-    next.addEventListener("click", () => step(1));
-    track.addEventListener("scroll", ends, { passive: true });
-    window.addEventListener("resize", ends, { passive: true });
-    ends();
   });
-
-  // A calm viewer for the stills: click to open, arrows or swipe to move,
-  // Escape or the backdrop to close. Focus stays inside while it is open and
-  // goes back to the still you opened.
-  const lb = document.getElementById("flb");
-  const img = document.getElementById("flb-img") as HTMLImageElement | null;
-  const cap = document.getElementById("flb-cap");
-  const count = document.getElementById("flb-count");
-
-  type Item = { src: string; caption: string; alt: string };
-  let items: Item[] = [];
-  let cursor = 0;
-  let opener: HTMLElement | null = null;
-
-  const collect = (group: string): Item[] =>
-    Array.from(document.querySelectorAll<HTMLElement>(`[data-still][data-group="${group}"]`)).map((el) => ({
-      src: el.dataset.full || "",
-      caption: el.dataset.caption || "",
-      alt: el.querySelector("img")?.getAttribute("alt") || "",
-    }));
-  const preload = (i: number) => {
-    const it = items[i];
-    if (it) new Image().src = it.src;
-  };
-  const render = () => {
-    if (!img || !cap || !count) return;
-    const it = items[cursor];
-    if (!it) return;
-    img.classList.remove("is-in");
-    img.onload = () => img.classList.add("is-in");
-    img.src = it.src;
-    img.alt = it.alt;
-    cap.textContent = it.caption;
-    count.textContent = `${cursor + 1} / ${items.length}`;
-    preload(cursor + 1);
-    preload(cursor - 1);
-  };
-  const open = (el: HTMLElement) => {
-    if (!lb) return;
-    opener = el;
-    items = collect(el.dataset.group || "");
-    cursor = Math.min(Math.max(Number(el.dataset.index || 0), 0), items.length - 1);
-    lb.hidden = false;
-    requestAnimationFrame(() => lb.classList.add("is-open"));
-    document.documentElement.classList.add("lb-lock");
-    render();
-    lb.querySelector<HTMLElement>(".lb-close")?.focus();
-  };
-  const close = () => {
-    if (!lb || lb.hidden) return;
-    lb.classList.remove("is-open");
-    document.documentElement.classList.remove("lb-lock");
-    window.setTimeout(() => {
-      lb.hidden = true;
-    }, 220);
-    opener?.focus();
-  };
-  const step = (delta: number) => {
-    if (!items.length) return;
-    cursor = (cursor + delta + items.length) % items.length;
-    render();
-  };
-
-  document.addEventListener("click", (e) => {
-    const target = e.target as HTMLElement;
-    const still = target.closest<HTMLElement>("[data-still]");
-    if (still) {
-      open(still);
-      return;
-    }
-    if (target.closest("[data-lb-close]")) close();
-    if (target.closest("[data-lb-prev]")) step(-1);
-    if (target.closest("[data-lb-next]")) step(1);
-  });
-  document.addEventListener("keydown", (e) => {
-    if (!lb || lb.hidden) return;
-    if (e.key === "Escape") close();
-    if (e.key === "ArrowLeft") step(-1);
-    if (e.key === "ArrowRight") step(1);
-    if (e.key === "Tab") {
-      const stops = Array.from(lb.querySelectorAll<HTMLElement>("button"));
-      const at = stops.indexOf(document.activeElement as HTMLElement);
-      e.preventDefault();
-      stops[(at + (e.shiftKey ? -1 : 1) + stops.length) % stops.length]?.focus();
-    }
-  });
-  let touchX: number | null = null;
-  lb?.addEventListener("touchstart", (e) => (touchX = e.touches[0]?.clientX ?? null), { passive: true });
-  lb?.addEventListener(
-    "touchend",
-    (e) => {
-      if (touchX === null) return;
-      const dx = (e.changedTouches[0]?.clientX ?? touchX) - touchX;
-      if (Math.abs(dx) > 48) step(dx < 0 ? 1 : -1);
-      touchX = null;
-    },
-    { passive: true },
-  );
 </script>
 
 <style>
   /* =========================================================================
-     Red space. Deep black, crimson nebulae, a red eclipse rising behind the
-     screen, fine dust and a slow drifting light. Everything here paints with
-     gradients and transforms; the only canvas is the dust over the feature.
-     No backdrop blur anywhere on this page, so phones stay light.
+     Red space below the reel: crimson haze, title cards on red fields, and
+     frames in letterbox. Gradients and transforms only, and no backdrop
+     blur anywhere on this page, so phones stay light.
      ========================================================================= */
   .fm {
     --crimson: 244, 63, 94;
@@ -682,188 +417,6 @@ const base = Astro.site!.toString();
     position: relative;
     overflow-x: clip;
   }
-
-  /* The feature ----------------------------------------------------------- */
-  .fm-hero {
-    position: relative;
-    isolation: isolate;
-    padding-top: clamp(96px, 9vw, 116px);
-    padding-bottom: clamp(48px, 6vw, 80px);
-  }
-  .fm-space { position: absolute; inset: 0 0 -10% 0; z-index: -1; pointer-events: none; overflow: hidden; }
-  .fm-dust { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
-  .fm-nebula { position: absolute; border-radius: 50%; will-change: transform; }
-  .fm-nebula-a {
-    width: 70vw;
-    height: 52vw;
-    left: -22vw;
-    top: -6vw;
-    background: radial-gradient(closest-side, rgba(var(--blood), 0.42) 0%, rgba(var(--blood), 0.3) 22%, rgba(var(--blood), 0.16) 44%, rgba(var(--blood), 0.06) 66%, rgba(var(--blood), 0.015) 84%, rgba(var(--blood), 0) 100%);
-    animation: fm-drift-a 46s ease-in-out infinite alternate;
-  }
-  .fm-nebula-b {
-    width: 64vw;
-    height: 46vw;
-    right: -20vw;
-    top: 18vw;
-    background: radial-gradient(closest-side, rgba(var(--crimson), 0.26) 0%, rgba(var(--crimson), 0.18) 24%, rgba(var(--crimson), 0.09) 48%, rgba(var(--crimson), 0.03) 72%, rgba(var(--crimson), 0) 100%);
-    animation: fm-drift-b 58s ease-in-out infinite alternate;
-  }
-  /* A wide soft light that slides across the dark, like a lamp passing. */
-  .fm-beam {
-    position: absolute;
-    top: -20%;
-    left: -30%;
-    width: 60%;
-    height: 140%;
-    background: linear-gradient(100deg, rgba(var(--ember), 0) 0%, rgba(var(--ember), 0.035) 40%, rgba(255, 220, 226, 0.05) 50%, rgba(var(--ember), 0.035) 60%, rgba(var(--ember), 0) 100%);
-    transform: translateX(0) rotate(8deg);
-    animation: fm-beam 34s ease-in-out infinite alternate;
-    will-change: transform;
-  }
-  @keyframes fm-drift-a { to { transform: translate3d(6vw, 3vw, 0) scale(1.08); } }
-  @keyframes fm-drift-b { to { transform: translate3d(-5vw, -2vw, 0) scale(1.06); } }
-  @keyframes fm-beam { to { transform: translateX(210%) rotate(8deg); } }
-
-  /* The stage: as wide as the screen can be while the title still fits in
-     the first view. */
-  .fm-stage {
-    --screen-w: min(100%, 1080px, max(560px, calc((100vh - 400px) * 1.7778)));
-    width: var(--screen-w);
-    margin-inline: auto;
-  }
-  @supports (height: 100svh) {
-    .fm-stage { --screen-w: min(100%, 1080px, max(560px, calc((100svh - 400px) * 1.7778))); }
-  }
-  .fm-hero-top { position: relative; z-index: 1; display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 18px; }
-  .fm-badges { display: flex; flex-wrap: wrap; gap: 6px; justify-content: flex-end; }
-  /* Solid chips, so they read where the eclipse rim passes behind them. */
-  .fm-badges .badge { background: rgba(16, 5, 9, 0.88); box-shadow: inset 0 0 0 1px var(--line-strong); }
-  .fm-badges .badge-tone { color: #ff8a9e; box-shadow: inset 0 0 0 1px rgba(var(--crimson), 0.45); }
-
-  .fm-screen-wrap { position: relative; isolation: isolate; }
-  /* The eclipse: a black disc with a lit rim, rising behind the screen. */
-  .fm-sun {
-    position: absolute;
-    z-index: -1;
-    left: 50%;
-    top: 0;
-    width: 70%;
-    aspect-ratio: 1;
-    border-radius: 50%;
-    transform: translate(-50%, -21%);
-    background: radial-gradient(circle closest-side, #050002 0%, #050002 90.5%, rgba(255, 170, 182, 0.95) 92%, rgba(var(--ember), 0.75) 93.5%, rgba(var(--crimson), 0.38) 95.5%, rgba(var(--crimson), 0.14) 98%, rgba(var(--crimson), 0) 100%);
-  }
-  .fm-sun::before {
-    content: "";
-    position: absolute;
-    inset: -42%;
-    border-radius: 50%;
-    background: radial-gradient(closest-side, rgba(var(--crimson), 0.24) 0%, rgba(var(--crimson), 0.17) 40%, rgba(var(--crimson), 0.09) 58%, rgba(var(--crimson), 0.035) 76%, rgba(var(--crimson), 0.008) 90%, rgba(var(--crimson), 0) 100%);
-    z-index: -1;
-  }
-  .fm-corona {
-    position: absolute;
-    inset: -6%;
-    border-radius: 50%;
-    background: conic-gradient(from 0deg, rgba(var(--ember), 0) 0deg, rgba(255, 190, 200, 0.55) 22deg, rgba(var(--ember), 0) 52deg, rgba(var(--crimson), 0.4) 98deg, rgba(var(--ember), 0) 140deg, rgba(255, 170, 185, 0.5) 200deg, rgba(var(--ember), 0) 236deg, rgba(var(--crimson), 0.38) 290deg, rgba(var(--ember), 0) 330deg, rgba(var(--ember), 0) 360deg);
-    -webkit-mask: radial-gradient(closest-side, transparent 84%, #000 86.5%, #000 88%, transparent 95%);
-    mask: radial-gradient(closest-side, transparent 84%, #000 86.5%, #000 88%, transparent 95%);
-    animation: fm-spin 90s linear infinite;
-    will-change: transform;
-  }
-  @keyframes fm-spin { to { transform: rotate(360deg); } }
-
-  .fm-screen {
-    position: relative;
-    display: block;
-    aspect-ratio: 16 / 9;
-    border-radius: 8px;
-    overflow: hidden;
-    background: #050002;
-    box-shadow:
-      0 0 0 1px rgba(255, 255, 255, 0.09),
-      0 0 60px -10px rgba(var(--crimson), 0.35),
-      0 50px 120px -40px rgba(var(--crimson), 0.55),
-      0 30px 70px -30px rgba(0, 0, 0, 0.95);
-    transition: transform 700ms var(--ease-glass), box-shadow 700ms var(--ease-glass);
-  }
-  .fm-screen::after {
-    content: "";
-    position: absolute;
-    inset: 0;
-    pointer-events: none;
-    background: linear-gradient(170deg, rgba(255, 255, 255, 0.07) 0%, rgba(255, 255, 255, 0) 28%);
-  }
-  .fm-screen :global(.fm-screen-img) { display: block; width: 100%; height: 100%; object-fit: cover; }
-  .fm-screen:hover {
-    transform: translateY(-3px);
-    box-shadow:
-      0 0 0 1px rgba(var(--crimson), 0.4),
-      0 0 80px -10px rgba(var(--crimson), 0.45),
-      0 60px 130px -40px rgba(var(--crimson), 0.65),
-      0 30px 70px -30px rgba(0, 0, 0, 0.95);
-  }
-  .fm-screen:focus-visible { outline: none; box-shadow: 0 0 0 3px rgba(var(--crimson), 0.75), 0 50px 120px -40px rgba(var(--crimson), 0.55); }
-  /* The screen's light on the floor below it. */
-  .fm-floor {
-    position: absolute;
-    left: 8%;
-    right: 8%;
-    bottom: -46px;
-    height: 70px;
-    z-index: -1;
-    background: radial-gradient(closest-side, rgba(var(--crimson), 0.22), rgba(var(--crimson), 0.1) 45%, rgba(var(--crimson), 0.03) 75%, rgba(var(--crimson), 0));
-  }
-
-  .fm-credits { display: grid; gap: 16px; margin-top: 26px; }
-  @media (min-width: 900px) {
-    .fm-credits { grid-template-columns: auto minmax(0, 1fr); gap: 44px; align-items: end; }
-    .fm-title { white-space: nowrap; }
-  }
-  .fm-title {
-    font-size: clamp(2.6rem, 4.2vw, 4rem);
-    line-height: 0.98;
-    letter-spacing: -0.046em;
-    font-weight: 600;
-    color: #fff;
-    text-wrap: balance;
-    text-shadow: 0 0 48px rgba(var(--crimson), 0.28);
-  }
-  .fm-label {
-    display: block;
-    margin-bottom: 6px;
-    font-size: 0.8125rem;
-    font-weight: 500;
-    color: var(--tone);
-  }
-  .fm-roles {
-    margin-top: 12px;
-    font-size: clamp(1.0625rem, 1.4vw, 1.25rem);
-    font-weight: 500;
-    letter-spacing: -0.012em;
-    color: var(--ink);
-  }
-  .fm-logline {
-    font-size: clamp(1.0625rem, 1.3vw, 1.1875rem);
-    line-height: 1.55;
-    color: var(--ink-soft);
-    max-width: 34rem;
-    text-wrap: pretty;
-  }
-  .fm-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 22px; }
-  .fm-actions .btn-ghost { padding: 0 12px; }
-
-  .fm-facts {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 0 24px;
-    margin: 36px 0 0;
-    border-top: 1px solid var(--line);
-  }
-  @media (min-width: 900px) { .fm-facts { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
-  .fm-fact { padding: 14px 0 0; }
-  .fm-fact dd { margin: 4px 0 0; font-size: 0.9375rem; line-height: 1.45; color: var(--ink); }
 
   /* Quiet haze behind a section, so the red carries down the page. */
   .fm-haze { position: absolute; pointer-events: none; z-index: 0; border-radius: 50%; }
@@ -882,7 +435,7 @@ const base = Astro.site!.toString();
     background: radial-gradient(closest-side, rgba(var(--crimson), 0.16), rgba(var(--crimson), 0.09) 38%, rgba(var(--crimson), 0.035) 66%, rgba(var(--crimson), 0.008) 86%, rgba(var(--crimson), 0));
   }
 
-  /* The reel ------------------------------------------------------------ */
+  /* The timeline ------------------------------------------------------- */
   .fm-group-head {
     display: flex;
     flex-wrap: wrap;
@@ -893,9 +446,9 @@ const base = Astro.site!.toString();
     margin-bottom: clamp(36px, 5vw, 56px);
     border-bottom: 1px solid var(--line);
   }
-  .reel { position: relative; list-style: none; margin: 0; padding: 0; }
+  .tl { position: relative; list-style: none; margin: 0; padding: 0; }
   /* The spine the films hang from. */
-  .reel::before {
+  .tl::before {
     content: "";
     position: absolute;
     top: 0;
@@ -904,18 +457,18 @@ const base = Astro.site!.toString();
     width: 1px;
     background: linear-gradient(180deg, rgba(var(--crimson), 0) 0%, rgba(var(--crimson), 0.55) 6%, rgba(var(--crimson), 0.3) 70%, rgba(var(--crimson), 0) 100%);
   }
-  .reel-item { position: relative; display: flex; pointer-events: none; padding-left: 36px; }
-  .reel-item + .reel-item { margin-top: 36px; }
-  .reel-card {
+  .tl-item { position: relative; display: flex; pointer-events: none; padding-left: 36px; }
+  .tl-item + .tl-item { margin-top: 36px; }
+  .tl-card {
     pointer-events: auto;
     display: block;
     width: 100%;
     color: var(--ink);
     text-decoration: none;
-    view-timeline: --reel block;
+    view-timeline: --tl block;
   }
-  .reel-frame-wrap { position: relative; }
-  .reel-mark {
+  .tl-frame-wrap { position: relative; }
+  .tl-mark {
     position: absolute;
     top: 50%;
     left: -25px;
@@ -924,7 +477,7 @@ const base = Astro.site!.toString();
     gap: 10px;
     transform: translate(-50%, -50%);
   }
-  .reel-dot {
+  .tl-dot {
     width: 9px;
     height: 9px;
     border-radius: 9999px;
@@ -932,23 +485,23 @@ const base = Astro.site!.toString();
     box-shadow: 0 0 0 4px rgba(var(--crimson), 0.16), 0 0 14px rgba(var(--crimson), 0.9);
     flex: none;
   }
-  .reel-year { display: none; font-size: 0.8125rem; font-weight: 500; color: var(--ink-soft); font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .tl-year { display: none; font-size: 0.8125rem; font-weight: 500; color: var(--ink-soft); font-variant-numeric: tabular-nums; white-space: nowrap; }
 
   @media (min-width: 900px) {
-    .reel::before { left: 50%; }
-    .reel-item { padding-left: 0; }
-    .reel-item[data-side="right"] { justify-content: flex-end; }
+    .tl::before { left: 50%; }
+    .tl-item { padding-left: 0; }
+    .tl-item[data-side="right"] { justify-content: flex-end; }
     /* Each film starts beside the one before it, so the list reads as a
        staggered reel rather than rows. */
-    .reel-item + .reel-item { margin-top: calc(-13% - 20px); }
-    .reel-card { width: calc(50% - 56px); }
-    .reel-item[data-side="left"] .reel-mark { left: auto; right: -56px; transform: translate(50%, -50%); }
-    .reel-item[data-side="right"] .reel-mark { left: -56px; transform: translate(-50%, -50%); flex-direction: row-reverse; }
-    .reel-year { display: block; position: absolute; left: 22px; }
-    .reel-item[data-side="right"] .reel-year { left: auto; right: 22px; }
+    .tl-item + .tl-item { margin-top: calc(-13% - 20px); }
+    .tl-card { width: calc(50% - 56px); }
+    .tl-item[data-side="left"] .tl-mark { left: auto; right: -56px; transform: translate(50%, -50%); }
+    .tl-item[data-side="right"] .tl-mark { left: -56px; transform: translate(-50%, -50%); flex-direction: row-reverse; }
+    .tl-year { display: block; position: absolute; left: 22px; }
+    .tl-item[data-side="right"] .tl-year { left: auto; right: 22px; }
   }
 
-  .reel-glow {
+  .tl-glow {
     position: absolute;
     inset: -14% -8%;
     z-index: -1;
@@ -956,7 +509,7 @@ const base = Astro.site!.toString();
     background: radial-gradient(closest-side, rgba(var(--crimson), 0.32), rgba(var(--crimson), 0.14) 50%, rgba(var(--crimson), 0.04) 78%, rgba(var(--crimson), 0));
     opacity: 0.5;
   }
-  .reel-frame {
+  .tl-frame {
     position: relative;
     aspect-ratio: 16 / 9;
     border-radius: 10px;
@@ -965,17 +518,17 @@ const base = Astro.site!.toString();
     box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.08), 0 30px 60px -36px rgba(0, 0, 0, 0.95);
     transition: transform 600ms var(--ease-glass), box-shadow 400ms var(--ease-glass);
   }
-  .reel-frame :global(.reel-img) { display: block; width: 100%; height: 100%; object-fit: cover; }
-  .reel-veil { position: absolute; inset: 0; background: #000; opacity: 0; pointer-events: none; }
-  .reel-card:hover .reel-frame { transform: translateY(-4px); box-shadow: 0 0 0 1px rgba(var(--crimson), 0.45), 0 0 40px -6px rgba(var(--crimson), 0.45), 0 30px 60px -36px rgba(0, 0, 0, 0.95); }
-  .reel-card:focus-visible { outline: none; }
-  .reel-card:focus-visible .reel-frame { box-shadow: 0 0 0 3px rgba(var(--crimson), 0.8); }
+  .tl-frame :global(.tl-img) { display: block; width: 100%; height: 100%; object-fit: cover; }
+  .tl-veil { position: absolute; inset: 0; background: #000; opacity: 0; pointer-events: none; }
+  .tl-card:hover .tl-frame { transform: translateY(-4px); box-shadow: 0 0 0 1px rgba(var(--crimson), 0.45), 0 0 40px -6px rgba(var(--crimson), 0.45), 0 30px 60px -36px rgba(0, 0, 0, 0.95); }
+  .tl-card:focus-visible { outline: none; }
+  .tl-card:focus-visible .tl-frame { box-shadow: 0 0 0 3px rgba(var(--crimson), 0.8); }
 
-  .reel-meta { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; padding: 16px 2px 0; }
-  .reel-title { font-size: clamp(1.125rem, 1.6vw, 1.375rem); font-weight: 600; letter-spacing: -0.022em; line-height: 1.2; color: var(--ink); }
-  .reel-when { margin-top: 4px; }
-  .reel-roles { margin-top: 6px; font-size: 0.9375rem; color: var(--ink-soft); }
-  .reel-go {
+  .tl-meta { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; padding: 16px 2px 0; }
+  .tl-title { font-size: clamp(1.125rem, 1.6vw, 1.375rem); font-weight: 600; letter-spacing: -0.022em; line-height: 1.2; color: var(--ink); }
+  .tl-when { margin-top: 4px; }
+  .tl-roles { margin-top: 6px; font-size: 0.9375rem; color: var(--ink-soft); }
+  .tl-go {
     flex: none;
     display: inline-grid;
     place-items: center;
@@ -986,31 +539,31 @@ const base = Astro.site!.toString();
     border: 1px solid var(--line);
     transition: color 200ms var(--ease-glass), border-color 200ms var(--ease-glass), transform 300ms var(--ease-glass);
   }
-  .reel-card:hover .reel-go { color: var(--tone); border-color: rgba(var(--crimson), 0.5); transform: translateX(3px); }
+  .tl-card:hover .tl-go { color: var(--tone); border-color: rgba(var(--crimson), 0.5); transform: translateX(3px); }
 
   /* Arrival. Tied to scroll where the browser can; an observer otherwise. */
   @media (prefers-reduced-motion: no-preference) {
     @supports (animation-timeline: view()) {
-      .reel-card { animation: reel-rise linear both; animation-timeline: --reel; animation-range: entry 0% cover 34%; }
-      .reel-veil { animation: reel-light linear both; animation-timeline: --reel; animation-range: entry 10% cover 46%; }
-      .reel-glow { animation: reel-glow linear both; animation-timeline: --reel; animation-range: entry 20% cover 55%; }
-      .tc-sun { animation: tc-rise linear both; animation-timeline: --reel; animation-range: entry 10% cover 50%; }
+      .tl-card { animation: tl-rise linear both; animation-timeline: --tl; animation-range: entry 0% cover 34%; }
+      .tl-veil { animation: tl-light linear both; animation-timeline: --tl; animation-range: entry 10% cover 46%; }
+      .tl-glow { animation: tl-glow linear both; animation-timeline: --tl; animation-range: entry 20% cover 55%; }
+      .tc-sun { animation: tc-rise linear both; animation-timeline: --tl; animation-range: entry 10% cover 50%; }
     }
   }
-  @keyframes reel-rise {
+  @keyframes tl-rise {
     from { opacity: 0; transform: translateY(90px) scale(0.9); }
     to { opacity: 1; transform: none; }
   }
-  @keyframes reel-light { from { opacity: 0.85; } to { opacity: 0; } }
-  @keyframes reel-glow { from { opacity: 0; } 70% { opacity: 1; } to { opacity: 0.6; } }
+  @keyframes tl-light { from { opacity: 0.85; } to { opacity: 0; } }
+  @keyframes tl-glow { from { opacity: 0; } 70% { opacity: 1; } to { opacity: 0.6; } }
   @keyframes tc-rise {
     from { opacity: 0.15; transform: translate(-50%, -38%) scale(0.82); }
     to { opacity: 1; transform: translate(-50%, -50%) scale(1); }
   }
-  :global(html.fm-io) .reel-card { transition: opacity 900ms var(--ease-glass), transform 900ms var(--ease-glass); }
-  :global(html.fm-io) .reel-card:not(.is-in) { opacity: 0; transform: translateY(70px) scale(0.93); }
-  :global(html.fm-io) .reel-veil { transition: opacity 1200ms var(--ease-glass) 200ms; }
-  :global(html.fm-io) .reel-card:not(.is-in) .reel-veil { opacity: 0.85; }
+  :global(html.fm-io) .tl-card { transition: opacity 900ms var(--ease-glass), transform 900ms var(--ease-glass); }
+  :global(html.fm-io) .tl-card:not(.is-in) { opacity: 0; transform: translateY(70px) scale(0.93); }
+  :global(html.fm-io) .tl-veil { transition: opacity 1200ms var(--ease-glass) 200ms; }
+  :global(html.fm-io) .tl-card:not(.is-in) .tl-veil { opacity: 0.85; }
 
   /* Title cards. The title set in type on a red field between letterbox
      bars, the year above and my credits below, like an opening title. */
@@ -1265,81 +818,8 @@ const base = Astro.site!.toString();
   .link-arrow { color: var(--ink-faint); transition: color 150ms var(--ease-glass), transform 250ms var(--ease-glass); }
   .link-card:hover .link-arrow { color: var(--tone); transform: translate(1px, -1px); }
 
-  /* Still viewer: a dark room, the frame, and solid controls. */
-  :global(html.lb-lock), :global(html.lb-lock body) { overflow: hidden; }
-  .lb {
-    position: fixed;
-    inset: 0;
-    z-index: 90;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 72px 16px 104px;
-    opacity: 0;
-    transition: opacity 220ms var(--ease-glass);
-  }
-  .lb[hidden] { display: none; }
-  .lb.is-open { opacity: 1; }
-  .lb-backdrop { position: absolute; inset: 0; background: rgba(3, 0, 1, 0.94); }
-  .lb-stage {
-    position: relative;
-    z-index: 1;
-    margin: 0;
-    max-width: min(1400px, 100%);
-    max-height: 100%;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 12px;
-    pointer-events: none;
-  }
-  .lb-img {
-    max-width: 100%;
-    max-height: calc(100svh - 220px);
-    object-fit: contain;
-    border-radius: 6px;
-    box-shadow: 0 0 0 1px var(--line), 0 40px 120px -40px rgba(var(--crimson), 0.5);
-    opacity: 0;
-    transform: scale(0.985);
-    transition: opacity 280ms var(--ease-glass), transform 280ms var(--ease-glass);
-    pointer-events: auto;
-  }
-  .lb-img.is-in { opacity: 1; transform: none; }
-  .lb-cap { pointer-events: auto; text-align: center; }
-  .lb-btn {
-    display: inline-grid;
-    place-items: center;
-    width: 44px;
-    height: 44px;
-    border-radius: 9999px;
-    color: var(--ink);
-    background: transparent;
-    border: 0;
-    cursor: pointer;
-    transition: background-color 150ms var(--ease-glass);
-  }
-  .lb-btn:hover { background: var(--wash-strong); }
-  .lb-btn:focus-visible { outline: none; box-shadow: 0 0 0 3px rgba(var(--crimson), 0.6); }
-  .lb-close { position: absolute; top: 16px; right: 16px; z-index: 2; background: rgba(20, 10, 13, 0.92); border: 1px solid var(--line-strong); }
-  .lb-bar {
-    position: absolute;
-    left: 50%;
-    bottom: 28px;
-    z-index: 2;
-    transform: translateX(-50%);
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    padding: 4px;
-    border-radius: 9999px;
-    background: rgba(20, 10, 13, 0.92);
-    border: 1px solid var(--line-strong);
-  }
-  .lb-count { min-width: 64px; text-align: center; }
-
   @media (prefers-reduced-motion: reduce) {
-    .fm-nebula, .fm-beam, .fm-corona { animation: none; }
-    .fm-screen, .reel-frame, .reel-go, .strip-still :global(.strip-img), .craft-media :global(.craft-img), .lb, .lb-img, .link-arrow { transition: none; }
-    .fm-screen:hover, .reel-card:hover .reel-frame, .reel-card:hover .reel-go { transform: none; }
+    .tl-frame, .tl-go, .strip-still :global(.strip-img), .craft-media :global(.craft-img), .link-arrow { transition: none; }
+    .tl-card:hover .tl-frame, .tl-card:hover .tl-go { transform: none; }
   }
 </style>

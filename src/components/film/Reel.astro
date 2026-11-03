@@ -32,7 +32,7 @@ const pad = (i: number) => String(i).padStart(2, "0");
           aria-roledescription="slide"
           aria-label={`${i + 1} of ${n}: ${it.title}`}
         >
-          <div class="reel-media" aria-hidden="true">
+          <div class:list={["reel-media", it.kind === "stills" && "is-stills"]} aria-hidden="true">
             <SmartImage
               src={it.poster}
               alt=""
@@ -121,6 +121,20 @@ const pad = (i: number) => String(i).padStart(2, "0");
   }
   .reel-media.is-playing .reel-video,
   .reel-media.is-playing .reel-still { opacity: 1; }
+  /* Letterbox for a stills reel, the same bars the canvas draws, so the
+     first paint already looks like the film. */
+  .reel-media.is-stills::before,
+  .reel-media.is-stills::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    z-index: 1;
+    height: 5.5%;
+    background: #000;
+  }
+  .reel-media.is-stills::before { top: 0; }
+  .reel-media.is-stills::after { bottom: 0; }
 
   /* Legibility: dark where the words sit, plus a fine moving grain. */
   .reel-shade {
@@ -167,12 +181,13 @@ const pad = (i: number) => String(i).padStart(2, "0");
     text-shadow: 0 1px 12px rgba(0, 0, 0, 0.6);
     transform: translateY(-50%);
   }
-  .reel-count { left: var(--gutter); }
+  /* Clear of the page's scroll gauge on the left edge. */
+  .reel-count { left: max(var(--gutter), 76px); }
   .reel-year { right: var(--gutter); }
   .reel-name {
     position: absolute;
     top: 50%;
-    left: max(calc(var(--gutter) + 96px), 16vw);
+    left: max(calc(var(--gutter) + 132px), 16vw);
     right: calc(var(--gutter) + 64px);
     transform: translateY(-50%);
   }
@@ -328,10 +343,11 @@ const pad = (i: number) => String(i).padStart(2, "0");
   /* Phones and tablets: the stack, snapping one film per screen. */
   @media (max-width: 767px), (hover: none) and (pointer: coarse) {
     .reel-count, .reel-year { top: 92px; transform: none; }
+    .reel-count { left: var(--gutter); }
     .reel-name { top: auto; left: var(--gutter); right: var(--gutter); bottom: 136px; transform: none; }
     .reel-title { font-size: clamp(2.75rem, 13vw, 4.5rem); }
     .reel-go { display: inline-flex; }
-    .reel-pause { bottom: 76px; }
+    .reel-pause { right: auto; left: calc(var(--gutter) + 124px); bottom: 76px; }
     .reel-hint { bottom: 24px; }
     .reel-shade {
       background:
@@ -342,6 +358,8 @@ const pad = (i: number) => String(i).padStart(2, "0");
   @media (min-width: 768px) {
     .reel-media :global(.reel-poster.is-boxed) { transform: scale(1.06); }
   }
+  .reel.is-stage .reel-media.is-stills::before,
+  .reel.is-stage .reel-media.is-stills::after { height: max(0px, calc((100vh - 100vw / 2.39) / 2)); }
 
   /* While the reel is on a phone, nothing blurs over the moving picture:
      the floating glass turns solid. */

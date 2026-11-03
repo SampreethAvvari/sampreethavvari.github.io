@@ -94,6 +94,14 @@ export function createReelGL(canvas: HTMLCanvasElement, slices = 12): ReelGL | n
     preserveDrawingBuffer: false,
   }) as WebGLRenderingContext | null;
   if (!gl) return null;
+  // A software renderer (a machine without a usable graphics card) would
+  // spend whole seconds on one cut. The crossfade is the better cut there.
+  const info = gl.getExtension("WEBGL_debug_renderer_info");
+  const renderer = String(info ? gl.getParameter(info.UNMASKED_RENDERER_WEBGL) : gl.getParameter(gl.RENDERER));
+  if (/swiftshader|llvmpipe|software|basic render/i.test(renderer)) {
+    gl.getExtension("WEBGL_lose_context")?.loseContext();
+    return null;
+  }
 
   const shader = (type: number, src: string) => {
     const s = gl.createShader(type);
@@ -152,6 +160,8 @@ export function createReelGL(canvas: HTMLCanvasElement, slices = 12): ReelGL | n
 
   let ok = true;
   let raf = 0;
+  // Frames slower than this, on average over a cut, retire the shader.
+  const SLOW_MS = 40;
   canvas.addEventListener("webglcontextlost", (e) => {
     e.preventDefault();
     ok = false;
@@ -193,9 +203,11 @@ export function createReelGL(canvas: HTMLCanvasElement, slices = 12): ReelGL | n
       gl.uniform2f(uFromSize, ...dims(from));
       gl.uniform1f(uDir, dir);
       let t0 = 0;
+      let frames = 0;
       const frame = (now: number) => {
         if (!ok) return done();
         if (!t0) t0 = now;
+        frames++;
         const p = Math.min(1, (now - t0) / ms);
         upload(texTo, 1, to);
         gl.uniform2f(uToSize, ...dims(to));
@@ -204,7 +216,10 @@ export function createReelGL(canvas: HTMLCanvasElement, slices = 12): ReelGL | n
         gl.drawArrays(gl.TRIANGLES, 0, 3);
         if (p === 0) started?.();
         if (p < 1) raf = requestAnimationFrame(frame);
-        else done();
+        else {
+          if ((now - t0) / Math.max(1, frames - 1) > SLOW_MS) ok = false;
+          done();
+        }
       };
       raf = requestAnimationFrame(frame);
     },

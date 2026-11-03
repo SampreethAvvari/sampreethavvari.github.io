@@ -74,7 +74,7 @@ export class Projects extends Movement {
     this.handsL = this.layer("hands", 0, this.point(-0.9, -0.3, -1.2, 0.35));
     this.handsR = this.layer("handsR", 0, this.point(0.5, -0.4, -1.4, 0.35, 0.8));
     this.strR = this.layer("strings", 0, this.point(0.9, 0.05, -1.1, 0.4));
-    this.strL = this.layer("high", 0, this.point(-1.1, 0.4, 0.4, 0.55));
+    this.strL = this.layer("high", 0, this.point(-1.1, 0.4, 0.4, 0.55, 1, true));
     this.sparkBus = this.layer("sparks", 0, this.phone ? this.dry : this.orbit(1.8, 19, 1.2, 2.0, 0.7));
 
     this.gut = new Sampler(this, (sr, f) => pluck(sr, f, 1.8, { bright: 0.35, t60: 1.6, pick: 0.18 }, r), 20, 10);

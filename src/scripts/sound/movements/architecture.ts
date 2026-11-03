@@ -57,7 +57,7 @@ export class Architecture extends Movement {
   private flowI = 0;
 
   protected room(): RoomSpec {
-    return { rt60: 2.0, length: 2.6, predelay: 0.018, early: 12, earlyLevel: 0.6, hi: 7500, lo: 2000, damp: 0.6, lowCut: 120, bloom: 0, width: 1 };
+    return { rt60: 2.0, length: 2.3, predelay: 0.018, early: 12, earlyLevel: 0.6, hi: 7500, lo: 2000, damp: 0.6, lowCut: 120, bloom: 0, width: 1 };
   }
 
   protected setup() {
@@ -101,7 +101,7 @@ export class Architecture extends Movement {
       ? [[-1.2, 0.2, -1], [1.2, 0.2, -1]]
       : [[-1.3, 0.3, -1.1], [1.3, 0.1, -0.9], [1.0, 0.6, 1.2], [-1.1, -0.1, 1.0]];
     for (const [x, y, z] of spots) {
-      const g = this.gain(1, this.point(x, y, z, 0.3));
+      const g = this.gain(1, this.point(x, y, z, 0.3, 1, z > 0));
       g.connect(this.echoIn);
       this.nodes.push(g);
     }
@@ -115,7 +115,7 @@ export class Architecture extends Movement {
     this.fx.connect(this.gain(0.35, this.echoIn));
 
     // a focused system's signature voice, placed where its name puts it
-    this.sigPan = this.panner();
+    this.sigPan = this.panner(true);
     this.sigBus = this.gain(1, this.sigPan);
     this.sigPan.connect(this.dry);
     this.sigPan.connect(this.gain(0.4, this.verbIn));

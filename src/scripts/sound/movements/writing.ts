@@ -68,7 +68,7 @@ export class Writing extends Movement {
     this.hand = this.layer("piano", 0, this.point(-0.35, 0, -1.1, 0.45));
     this.layers.left = this.gain(0, this.point(-0.5, -0.1, -1.2, 0.45));
     // far behind: distance does the rest
-    this.signal = this.layer("signal", 0.9, this.point(0.6, 0.8, 6.5, 0.9));
+    this.signal = this.layer("signal", 0.9, this.point(0.6, 0.8, 6.5, 0.9, 1, true));
     // the air of the room: pink noise in a soft paper band, very low
     const ac = this.ac;
     const src = this.src(ac.createBufferSource());

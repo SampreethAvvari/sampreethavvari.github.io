@@ -225,7 +225,7 @@ export class Pad {
     b.gain.gain.setTargetAtTime(1, t, old ? x / 4 : x / 3);
     if (old) {
       old.gain.gain.setTargetAtTime(0, t + x * 0.1, x / 3);
-      this.drop(old, t + x * 2.2);
+      this.drop(old, t + x * 1.6);
     }
     this.bank = b;
   }

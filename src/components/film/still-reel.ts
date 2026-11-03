@@ -112,21 +112,28 @@ export class StillReel {
     this.h = h;
   }
 
+  // Letterbox: a 2.39 picture on wide screens, slim bars on phones.
+  private bar() {
+    return this.opts.phone ? Math.round(this.h * 0.055) : Math.max(0, Math.round((this.h - this.w / 2.39) / 2));
+  }
+
   private paint(f: Frame, local: number, slot: number, alpha: number) {
     const ctx = this.ctx;
-    if (!ctx || !f.ready) return;
+    if (!ctx || !f?.ready) return;
     const { img } = f;
     const iw = img.naturalWidth;
     const ih = img.naturalHeight;
     const cy0 = f.y0 * ih;
     const ch = (f.y1 - f.y0) * ih;
+    // The picture fills the space between the bars on wide screens, and the
+    // whole screen on phones (where it pans across its width).
+    const bw = this.w;
+    const bh = this.opts.phone ? this.h : this.h - 2 * this.bar();
     const t = local * local * (3 - 2 * local) * 0.6 + local * 0.4;
-    // Push in from just past cover, a little more on phones where the
-    // picture also pans across its width.
-    const zoom = (this.opts.phone ? 1.02 : 1.04) + 0.1 * t;
-    const s = Math.max(this.w / iw, this.h / ch) * zoom;
-    const ox = Math.max(0, (iw * s - this.w) / 2);
-    const oy = Math.max(0, (ch * s - this.h) / 2);
+    const zoom = (this.opts.phone ? 1.02 : 1.03) + 0.09 * t;
+    const s = Math.max(bw / iw, bh / ch) * zoom;
+    const ox = Math.max(0, (iw * s - bw) / 2);
+    const oy = Math.max(0, (ch * s - bh) / 2);
     const [dx, dy] = DRIFTS[slot % DRIFTS.length];
     const sweep = (t - 0.5) * 2; // -1 to 1 across the hold
     const px = this.opts.phone ? dx * ox * 0.85 * sweep : dx * ox * 0.6 * sweep;
@@ -143,7 +150,8 @@ export class StillReel {
     if (!ctx) return;
     const n = this.frames.length;
     const t = this.elapsed;
-    const slot = Math.floor(t / HOLD);
+    if (!n) return;
+    const slot = Math.max(0, Math.floor(t / HOLD));
     const into = t - slot * HOLD;
     const span = HOLD + DISSOLVE;
     ctx.fillStyle = "#050002";
@@ -153,8 +161,7 @@ export class StillReel {
       const prev = slot - 1;
       this.paint(this.frames[prev % n], (into + HOLD) / span, prev, 1 - into / DISSOLVE);
     }
-    // Letterbox: a 2.39 picture on wide screens, slim bars on phones.
-    const bar = this.opts.phone ? Math.round(this.h * 0.055) : Math.max(0, Math.round((this.h - this.w / 2.39) / 2));
+    const bar = this.bar();
     if (bar > 0) {
       ctx.fillStyle = "#000";
       ctx.fillRect(0, 0, this.w, bar);
@@ -171,7 +178,7 @@ export class StillReel {
     this.last = performance.now();
     const tick = (now: number) => {
       if (!this.playing) return;
-      this.elapsed += Math.min(0.1, (now - this.last) / 1000);
+      this.elapsed += Math.max(0, Math.min(0.1, (now - this.last) / 1000));
       this.last = now;
       this.draw();
       this.raf = requestAnimationFrame(tick);

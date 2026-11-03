@@ -49,7 +49,7 @@ export class Film extends Movement {
   private prog = "A";
 
   protected room(): RoomSpec {
-    return { rt60: 4.0, length: 4.6, predelay: 0.035, early: 5, earlyLevel: 0.25, hi: 3400, lo: 500, damp: 0.6, lowCut: 60, bloom: 0.02, width: 1 };
+    return { rt60: 3.5, length: 3.4, predelay: 0.035, early: 5, earlyLevel: 0.25, hi: 3400, lo: 500, damp: 0.6, lowCut: 60, bloom: 0.02, width: 1 };
   }
 
   protected setup(t: number) {
@@ -72,7 +72,7 @@ export class Film extends Movement {
     this.viola = this.layer("viola", 0.55, this.point(1.0, 0.1, -1.4, 0.55));
     this.heart = this.layer("heart", 0.25, this.point(0, -0.6, -0.6, 0.25));
     this.drum = this.layer("drum", 0.6, this.dry);
-    this.tollBus = this.layer("toll", 0.9, this.point(-2.4, 0.6, 3.6, 0.9));
+    this.tollBus = this.layer("toll", 0.9, this.point(-2.4, 0.6, 3.6, 0.9, 1, true));
     this.toll = new Sampler(this, (sr, f) => bell(sr, f, 6, BELLS.toll, r), 4, 3);
     this.tap = new Sampler(this, (sr, f) => pluck(sr, f, 0.45, { bright: 0.08, t60: 0.35, pick: 0.3 }, r), 12, 5);
     this.grains = new Sampler(this, (sr, f) => bell(sr, f, 1.6, BELLS.glass, r), 14, 8);
