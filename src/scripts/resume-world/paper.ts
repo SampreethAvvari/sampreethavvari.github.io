@@ -219,12 +219,14 @@ export function layoutPage(m: CanvasRenderingContext2D, d: WorldData, masks: Map
         const lines = wrap(m, plain(it.text), BODY, CW);
         const top2 = y;
         const h = lines.length * LH + 8;
+        m.font = BODY;
+        const widest = Math.max(...lines.map((ln) => m.measureText(ln).width));
         pieces.push({
           id: `${role.id}-line-${i}`,
           group: "experience",
           dest: role.id,
           slot: i,
-          rect: { x: MX - PX, y: top2, w: CW + PX * 2, h },
+          rect: { x: MX - PX, y: top2, w: Math.min(CW + PX * 2, widest + PX * 2), h },
           hi: 1.45,
           draw: (c) => {
             lines.forEach((ln, k) => text(c, ln, MX, top2 + 22 + k * LH, { font: BODY, ink: INK(46) }));
@@ -277,10 +279,11 @@ export function layoutPage(m: CanvasRenderingContext2D, d: WorldData, masks: Map
   sectionLabel("education", "Education");
   const eduW = (CW - 28) / 2;
   const eduTop = y;
+  const eduLines = d.education.map((e) => wrap(m, e.title, font(590, 25), eduW - 10));
+  const blockH = 28 + Math.max(...eduLines.map((l) => l.length)) * 31 + 56;
   d.education.forEach((e, i) => {
     const ex = MX + i * (eduW + 28);
-    const titleLines = wrap(m, e.title, font(590, 25), eduW - 10);
-    const blockH = 28 + titleLines.length * 31 + 56;
+    const titleLines = eduLines[i];
     pieces.push({
       id: `${e.id}-card`,
       group: "education",

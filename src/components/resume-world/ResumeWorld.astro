@@ -103,6 +103,9 @@ const eduStop = STOPS.indexOf("education");
         Same person, four lenses. Open the one that fits the role. Each opens in a new tab.
         <span class="rw-hint">Drag a sheet to turn it. Scroll to take one apart.</span>
       </p>
+      <svg class="rw-tethers" aria-hidden="true">
+        {sheets.map((s) => <line data-tether={sheetId(s)} x1="0" y1="0" x2="0" y2="0"></line>)}
+      </svg>
       <ul class="rw-versions" id="versions">
         {sheets.map((s, i) => (
           <li>
@@ -218,7 +221,7 @@ const eduStop = STOPS.indexOf("education");
       </div>
       <p class="rw-last">
         <span class="rw-last-label">Open a PDF</span>
-        {sheets.map((s) => <a class="rw-pill" href={s.file} target="_blank" rel="noopener" aria-label={`Open the ${s.name} resume in a new tab`}>{s.acronym} <Icon name="arrow-up-right" size={12} /></a>)}
+        {sheets.map((s) => <a class="rw-pill" data-end={sheetId(s)} href={s.file} target="_blank" rel="noopener" aria-label={`Open the ${s.name} resume in a new tab`}>{s.acronym} <Icon name="arrow-up-right" size={12} /></a>)}
       </p>
     </section>
 
@@ -380,7 +383,7 @@ const eduStop = STOPS.indexOf("education");
   .is-live .rw-small, .is-live .rw-keyhint { display: block; margin: 12px 0 0; font-size: 0.75rem; line-height: 1.5; color: var(--ink-faint); }
   .rw-coarse { display: none; }
   @media (pointer: coarse) { .rw-coarse { display: inline; } .rw-fine { display: none; } }
-  .is-live .rw-title { margin: 0; font-size: clamp(2rem, 3.9vw, 3.5rem); font-weight: 600; letter-spacing: -0.038em; line-height: 1.02; text-wrap: balance; }
+  .is-live .rw-title { margin: 0; font-size: clamp(2rem, 3.6vw, 3.25rem); font-weight: 600; letter-spacing: -0.038em; line-height: 1.02; text-wrap: balance; }
   .is-live .rw-org { margin-top: 12px; font-size: 1rem; }
   .is-live .rw-date { margin-top: 2px; font-size: 0.875rem; }
   .is-live .rw-copy { text-shadow: 0 1px 18px rgba(0, 0, 0, 0.75); }
@@ -488,17 +491,20 @@ const eduStop = STOPS.indexOf("education");
   .is-live .rw-role .rw-copy { position: absolute; display: block; }
 
   .is-live .rw-s-hybridge .rw-copy { left: var(--gx); top: 50%; width: min(460px, 36vw); margin-top: -170px; --mx: -220px; --my: 0px; }
-  .is-live .has-keys .rw-items { position: relative; min-height: 196px; display: block; }
+  .is-live .has-keys .rw-items { position: relative; min-height: 180px; display: block; }
   .is-live .has-keys .rw-items li { position: absolute; left: 0; right: 0; top: 0; padding-left: 0; opacity: 0; transform: translateY(8px); transition: opacity 0.28s ease, transform 0.4s var(--ease-glass); }
   .is-live .has-keys .rw-items li::before { display: none; }
   .is-live .has-keys .rw-items li.is-shown { opacity: 1; transform: none; }
   .is-live .has-keys .rw-items :global(.ilink) { display: inline; font-size: 1.0625rem; }
 
   .is-live .rw-s-research .rw-copy { right: var(--gx); top: 50%; width: min(440px, 33vw); margin-top: -150px; --mx: 240px; --my: 0px; }
-  .is-live .rw-s-video .rw-copy { left: var(--gx); right: var(--gx); bottom: clamp(28px, 6vh, 56px); display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); column-gap: 40px; align-items: end; --mx: 0px; --my: 160px; }
-  .is-live .rw-s-video .rw-copy > :not(.rw-items) { grid-column: 1; }
-  .is-live .rw-s-video .rw-items { grid-column: 2; grid-row: 1 / span 5; margin: 0; align-self: end; }
-  .is-live .rw-s-shure .rw-copy { right: var(--gx); top: 120px; width: min(460px, 34vw); --mx: 180px; --my: -60px; }
+  .is-live .rw-s-video .rw-copy { left: 10vw; top: 110px; width: min(520px, 44vw); --mx: 0px; --my: -160px; }
+  .is-live .rw-s-shure .rw-copy { right: calc(var(--gx) + 20px); top: 132px; width: min(460px, 34vw); text-align: right; --mx: 180px; --my: -60px; }
+  /* on wide screens the two strips of paper carry these words themselves */
+  @media (min-width: 768px) {
+    :is(.rw-s-video, .rw-s-shure).rw-role :global(.rw-items) { transition: none; }
+    .is-3d :is(.rw-s-video, .rw-s-shure) .rw-items { position: absolute; width: 1px; height: 1px; margin: 0; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+  }
 
   /* ---- skills */
   .is-live .rw-s-skills { display: block; }
@@ -545,7 +551,9 @@ const eduStop = STOPS.indexOf("education");
   .is-live .rw-edu { position: absolute; left: var(--gx); right: var(--gx); top: 26%; }
   .is-live .rw-edu-card { padding: 0; border: 0; background: none; text-align: center; justify-items: center; }
   .is-3d .rw-edu { width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
-  .is-live .rw-last { position: absolute; left: var(--gx); right: var(--gx); bottom: 28px; margin: 0; justify-content: center; }
+  .is-live .rw-last { position: absolute; left: var(--gx); right: var(--gx); bottom: 28px; margin: 0; justify-content: center; gap: 12px; }
+  .is-live .rw-last-label { margin-right: 14px; }
+  .is-live .rw-pill { min-width: 112px; justify-content: center; }
 
   /* ---- where you are */
   .is-live .rw-rail { display: block; position: absolute; right: 12px; top: 50%; transform: translateY(-50%); z-index: 4; }
@@ -556,7 +564,7 @@ const eduStop = STOPS.indexOf("education");
   .rw-rail a:hover i { width: 18px; background: #fff; }
   .rw-rail a:hover .rw-rail-label, .rw-rail a:focus-visible .rw-rail-label { opacity: 1; transform: none; color: #fff; }
   .rw-rail a[aria-current] i { width: 24px; background: #fff; box-shadow: 0 0 8px rgba(255, 255, 255, 0.8); }
-  .rw-rail a[aria-current] .rw-rail-label { opacity: 1; transform: none; color: #fff; }
+  .rw-rail a[aria-current] .rw-rail-label { color: #fff; }
 
   .is-live .rw-dock {
     display: flex;
@@ -580,7 +588,9 @@ const eduStop = STOPS.indexOf("education");
   .rw-dock a { display: grid; place-items: center; height: 26px; min-width: 36px; padding: 0 8px; border-radius: 999px; color: rgba(255, 255, 255, 0.86); text-decoration: none; font-weight: 560; transition: background 0.2s ease, color 0.2s ease; }
   .rw-dock a:hover { background: #fff; color: #05070b; }
   .is-live[data-at="sheets"] .rw-dock, .is-live[data-at="education"] .rw-dock { opacity: 0; transform: translateY(-6px); pointer-events: none; }
-  .is-live[data-at="shure"] .rw-s-shure .rw-copy { top: 132px; }
+  .rw-tethers { display: none; }
+  .is-3d .rw-tethers { display: block; position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; overflow: visible; }
+  .rw-tethers line { stroke: #fff; stroke-width: 1; opacity: 0; transition: opacity 0.25s ease; }
 
   /* ---- phones: the object above, the words below on solid glass (no blur
      over a canvas on iPhone) */
@@ -602,6 +612,9 @@ const eduStop = STOPS.indexOf("education");
     .is-live .rw-stop .rw-copy,
     .is-live .rw-role .rw-copy,
     .is-live .rw-s-video .rw-copy,
+    .is-live .rw-s-shure .rw-copy,
+    .is-live .rw-s-research .rw-copy,
+    .is-live .rw-s-hybridge .rw-copy,
     .is-live .rw-s-page .rw-copy {
       left: 0;
       right: 0;
@@ -623,7 +636,6 @@ const eduStop = STOPS.indexOf("education");
     .is-live .rw-date { font-size: 0.75rem; }
     .is-live .rw-items { margin-top: 10px; }
     .is-live .rw-items li { font-size: 0.8125rem; line-height: 1.5; }
-    .is-live .has-keys .rw-items { min-height: 148px; }
     .is-live .has-keys .rw-items :global(.ilink) { font-size: 0.9375rem; }
     .rw-s-page .rw-title { font-size: 1.75rem; }
     .rw-cta { margin-top: 10px; height: 38px; }
@@ -636,7 +648,11 @@ const eduStop = STOPS.indexOf("education");
     .is-live .rw-chips::-webkit-scrollbar { display: none; }
     .is-live .rw-s-edu .rw-copy { top: 66px; bottom: auto; padding: 8px 16px 0; background: none; border: 0; text-align: left; }
     .is-live .rw-s-edu .rw-title { font-size: 1.75rem; }
-    .is-live .rw-last { bottom: 14px; left: 12px; right: 12px; }
+    .is-live .rw-last { bottom: 14px; left: 12px; right: 12px; gap: 6px; }
+    .is-live .rw-last-label { flex-basis: 100%; margin: 0 0 2px; text-align: center; }
+    .is-live .rw-pill { min-width: 0; flex: 1 1 0; }
+    .is-live[data-at="page"] .rw-dock { opacity: 0; pointer-events: none; }
+    .is-live .rw-s-shure .rw-copy { text-align: left; }
     .is-live .rw-rail { display: none; }
     .is-live .rw-dock { top: 72px; right: 12px; padding: 2px 2px 2px 10px; }
     .is-live .rw-dock a { height: 24px; min-width: 32px; padding: 0 6px; font-size: 0.6875rem; }

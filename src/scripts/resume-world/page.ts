@@ -363,6 +363,17 @@ export function startResumeWorld(signal: AbortSignal): void | (() => void) {
     }, on);
   });
 
+  // The reading pane holds its height: as tall as the longest line it can show.
+  const pane = root.querySelector<HTMLElement>(".has-keys .rw-items");
+  const sizePane = () => {
+    if (!pane) return;
+    let tallest = 0;
+    items.forEach((el) => (tallest = Math.max(tallest, el.offsetHeight)));
+    pane.style.minHeight = `${tallest}px`;
+  };
+  sizePane();
+  document.fonts?.ready.then(() => !signal.aborted && sizePane());
+
   // ------------------------------------------------------------ the skills
   const chips = Array.from(root.querySelectorAll<HTMLElement>("[data-group]"));
   const skillCopy = root.querySelector<HTMLElement>("[data-avoid]");
@@ -425,6 +436,7 @@ export function startResumeWorld(signal: AbortSignal): void | (() => void) {
     sizedW = w;
     sizedH = h;
     motion.measure();
+    sizePane();
     world?.layout();
     setAvoid();
   };
@@ -444,11 +456,14 @@ export function startResumeWorld(signal: AbortSignal): void | (() => void) {
             sheets: hitSheets,
             sections: sectionHits.map((el) => ({ name: el.dataset.section as "experience" | "skills" | "education", el })),
             keys: keyHits,
+            tethers: Array.from(root.querySelectorAll<SVGLineElement>("[data-tether]")),
+            endLinks: Array.from(root.querySelectorAll<HTMLElement>("[data-end]")),
           },
           {
             onSheetFlip: (i) => fire("resume:sheet", { id: ids[i], action: "flip" }),
             onSkillTouch: (i, s) => fire("resume:hover", { kind: s.label ? "group" : "skill", id: s.text, note: s.label ? s.group : i % 24 }),
           },
+          () => motion.progress(),
         );
         if (signal.aborted) {
           w?.destroy();

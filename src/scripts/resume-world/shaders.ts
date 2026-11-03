@@ -7,12 +7,13 @@ vec3 studio(vec3 r) {
   float ca = cos(uEnv), sa = sin(uEnv);
   r = vec3(ca * r.x + sa * r.z, r.y, -sa * r.x + ca * r.z);
   // a long box overhead, a tall strip on one side, a small window on the other
-  float top = smoothstep(0.42, 0.62, r.y) * smoothstep(1.05, 0.55, abs(r.x + 0.12));
-  float strip = smoothstep(0.13, 0.03, abs(r.x + 0.66 + 0.08 * r.y)) * smoothstep(0.86, 0.34, abs(r.y));
+  float top = smoothstep(0.34, 0.56, r.y) * smoothstep(1.05, 0.55, abs(r.x + 0.12));
+  float strip = smoothstep(0.1, 0.02, abs(r.x + 0.5 + 0.08 * r.y)) * smoothstep(0.86, 0.34, abs(r.y));
+  float strip2 = smoothstep(0.05, 0.01, abs(r.x - 0.28 - 0.1 * r.y)) * smoothstep(0.7, 0.3, abs(r.y));
   float win = smoothstep(0.13, 0.08, abs(r.x - 0.72)) * smoothstep(0.34, 0.26, abs(r.y - 0.08));
-  float hor = exp(-r.y * r.y * 24.0) * 0.07;
-  float floorb = smoothstep(-0.25, -0.95, r.y) * 0.1;
-  return vec3(0.93, 0.96, 1.0) * (top * 3.2 + strip * 5.0 + win * 2.2 + hor + floorb);
+  float hor = exp(-r.y * r.y * 20.0) * 0.1;
+  float floorb = smoothstep(-0.25, -0.95, r.y) * 0.14;
+  return vec3(0.93, 0.96, 1.0) * (top * 3.4 + strip * 9.0 + strip2 * 5.0 + win * 3.0 + hor + floorb);
 }`;
 
 const NOISE = /* glsl */ `
@@ -144,11 +145,11 @@ void main() {
   float heart = 1.0 - smoothstep(0.1, 0.92, length(c + wob.xy * 0.22));
   float dist = length(cameraPosition - vW);
   float air = smoothstep(0.7, 3.2, dist) * (1.0 - smoothstep(16.0, 60.0, dist) * 0.8);
-  float face = 0.05 + 0.34 * smoothstep(-0.3, 1.0, ndk) + max(ndc, 0.0) * cAtt * 0.62;
-  float glow = uLuminous * (0.22 + 0.66 * heart);
+  float face = 0.04 + 0.26 * smoothstep(-0.3, 1.0, ndk) + max(ndc, 0.0) * cAtt * 0.6;
+  float glow = uLuminous * (0.05 + 0.82 * heart);
   float through = max(-ndk, 0.0) * 0.2 + max(-ndc, 0.0) * cAtt * 0.36 + glow * 0.34;
   vec3 albedo = vec3(pow(pr.r, 2.2)) * vec3(0.95, 0.955, 0.965);
-  vec3 col = albedo * (face + glow + through * mix(1.0, otherInk, 0.7));
+  vec3 col = albedo * min(face + glow + through * mix(1.0, otherInk, 0.7), 0.94);
 
   // what stands behind glows softly through the sheet
   if (uBehind > 0.001 && !edge) {
@@ -159,9 +160,9 @@ void main() {
   // a satin coat that catches the room; less of it over the ink, so words stay black
   vec3 R = reflect(-V, Np);
   vec3 env = studio(R);
-  float F = 0.03 + 0.97 * pow(1.0 - nv, 5.0);
-  float inkKeep = mix(0.3, 1.0, pr.r);
-  col += env * F * 0.42 * inkKeep;
+  float F = 0.055 + 0.945 * pow(1.0 - nv, 5.0);
+  float inkKeep = mix(0.22, 1.0, pr.r);
+  col += env * F * 0.46 * inkKeep;
 
   vec3 H = normalize(lc + V);
   float nh = max(dot(Np, H), 0.0);
@@ -170,7 +171,7 @@ void main() {
   // stamped foil: gloss black. Only the pointer's light makes it flash.
   float foil = 1.0 - pr.g;
   if (foil > 0.01) {
-    vec3 f = vec3(0.012) + min(env * 0.22, vec3(0.14)) + cAtt * (pow(nh, 90.0) * 3.2);
+    vec3 f = vec3(0.012) + min(env * 0.2, vec3(0.12)) + min(cAtt * pow(nh, 110.0) * 1.2, 0.3);
     col = mix(col, f, foil);
   }
 
@@ -215,6 +216,7 @@ uniform vec3 uCursor;
 uniform vec3 uKeyDir;
 uniform float uCursorI;
 uniform mat3 uAxes;
+uniform float uDome;
 uniform vec2 uRes;
 uniform vec4 uShade[4];
 uniform float uShadeOn;
@@ -244,7 +246,8 @@ void main() {
   vec3 nl = front > 0.5 ? normalize(vec3(-g * slope * 1.6, 1.0)) : normalize(vec3(-g, 0.08));
   vec3 N = normalize(uAxes * nl);
   vec3 V = normalize(cameraPosition - vW);
-  vec3 R = reflect(-V, N);
+  vec3 dome = uAxes * vec3((vUv.x - 0.5) * uDome, (0.5 - vUv.y) * uDome * 0.5, 0.0);
+  vec3 R = reflect(-V, normalize(N + dome * front));
   vec3 env = studio(R);
 
   vec3 Lc = uCursor - vW;
@@ -256,10 +259,11 @@ void main() {
   float nh = max(dot(N, H), 0.0);
 
   // satin metal: a body that always reads, with the room and the pointer's light on top
-  float key = 0.45 + 0.55 * max(dot(N, uKeyDir), 0.0);
-  vec3 body = vec3(0.86, 0.88, 0.92) * uBase * key;
-  vec3 col = body + env * (front > 0.5 ? mix(0.5, 0.26, bevel) : 0.75);
-  col += cAtt * (ndc * 0.5 + pow(nh, 40.0) * 1.2 + pow(nh, 300.0) * 3.0);
+  float key = 0.5 + 0.5 * max(dot(N, uKeyDir), 0.0);
+  float wash = 0.75 + 0.25 * sin((vUv.x * 3.1 + vUv.y * 1.4) + uEnv * 6.0);
+  vec3 body = vec3(0.84, 0.87, 0.92) * uBase * key * wash;
+  vec3 col = body + env * (front > 0.5 ? mix(0.62, 0.22, bevel) : 0.8);
+  col += cAtt * (ndc * 0.24 + pow(nh, 40.0) * 0.9 + pow(nh, 300.0) * 3.0);
   // a band of light crosses it on arrival
   float band = exp(-pow((vUv.x + vUv.y * 0.35 - uSweep) * 7.0, 2.0));
   col += band * vec3(1.6);
