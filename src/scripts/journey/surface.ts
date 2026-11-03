@@ -2208,7 +2208,7 @@ export function buildSurface(o: { low: boolean; landing: Landing; cloudTex: Text
       m.uK.value = moonK;
       const clearOfCount = m === moonList[0] && f.height > f.width ? (-7 * Math.PI * (1 - smooth(0.6, 1.6, s))) / 180 : 0;
       const a = m.az + clearOfCount + (f.reduced ? 0 : time * m.drift * 0.02);
-      const elNow = m.el - 0.42 * smooth(2.25, 3, s) - (f.height > f.width ? 0.08 * (1 - smooth(0.6, 1.6, s)) : 0);
+      const elNow = m.el - 0.42 * smooth(2.25, 3, s) - (f.height > f.width ? 0.14 * (1 - smooth(0.6, 1.6, s)) : 0);
       const ce = Math.cos(elNow);
       m.mesh.position.set(MOON_ANCHOR.x + Math.sin(a) * ce * m.dist, MOON_ANCHOR.y + Math.sin(elNow) * m.dist, MOON_ANCHOR.z - Math.cos(a) * ce * m.dist);
       if (!f.reduced) m.mesh.rotation.y += dt * 0.004;
