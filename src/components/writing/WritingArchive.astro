@@ -698,7 +698,11 @@ const comets = [
     overflow: auto;
     overscroll-behavior: contain;
     min-height: 0;
+    /* A tilted card can poke a pixel or two past the padding. No bar, so
+       that never flashes one and reflows the grid. */
+    scrollbar-width: none;
   }
+  .ax-cards::-webkit-scrollbar { display: none; }
   .ax-c { display: flex; min-width: 0; perspective: 900px; }
   @keyframes ax-card-in {
     from { opacity: 0; transform: translate3d(0, 14px, 0); }
