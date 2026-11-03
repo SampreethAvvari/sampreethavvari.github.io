@@ -115,7 +115,7 @@ export function buildSky(renderer: WebGLRenderer, opts: { low: boolean; hdr: boo
   const bake = new Scene();
   const bakeMat = new ShaderMaterial({ vertexShader: SKY_VS, fragmentShader: NEBULA, side: BackSide, depthTest: false, depthWrite: false, uniforms: { uSun: { value: SUN_DIR } } });
   bake.add(new Mesh(new SphereGeometry(10, 32, 16), bakeMat));
-  const size = opts.low ? 512 : 1536;
+  const size = opts.low ? 512 : 1024;
   const target = new WebGLCubeRenderTarget(size, {
     type: opts.hdr ? HalfFloatType : UnsignedByteType,
     generateMipmaps: true,

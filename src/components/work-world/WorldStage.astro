@@ -30,7 +30,7 @@ const { page, slug, stops, label, span = 1.9 } = Astro.props;
     .ww { height: auto !important; }
     .ww-stage { position: static !important; height: auto !important; overflow: visible !important; }
     .ww-panels { position: static !important; }
-    .ww-panel { position: relative !important; opacity: 1 !important; visibility: visible !important; pointer-events: auto !important; inset: auto !important; min-height: 0 !important; }
+    .ww-panel { position: relative !important; opacity: 1 !important; pointer-events: auto !important; inset: auto !important; min-height: 0 !important; }
     .ww-reveal, .ww-more { max-height: none !important; opacity: 1 !important; overflow: visible !important; }
     .ww-canvas, .ww-rail, .ww-read, .ww-cue { display: none !important; }
   </style>
@@ -49,6 +49,7 @@ const { page, slug, stops, label, span = 1.9 } = Astro.props;
     top: 0;
     height: 100svh;
     overflow: hidden;
+    overflow: clip;
     isolation: isolate;
     background: #030201;
     touch-action: pan-y;
@@ -66,19 +67,19 @@ const { page, slug, stops, label, span = 1.9 } = Astro.props;
   .ww-canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; opacity: 0; transition: opacity 1s ease; }
   .ww.is-3d .ww-canvas { opacity: 1; }
 
-  .ww-panels { position: absolute; inset: 0; z-index: 2; pointer-events: none; overflow: hidden; transform-style: preserve-3d; perspective-origin: 50% 50%; }
+  .ww-stage.is-dragging { user-select: none; -webkit-user-select: none; }
+  .ww-panels { position: absolute; inset: 0; z-index: 2; pointer-events: none; overflow: hidden; overflow: clip; transform-style: preserve-3d; perspective-origin: 50% 50%; }
   .ww-panel {
     position: absolute;
     inset: 0;
     padding: 96px max(32px, var(--gutter, 32px)) 44px;
     display: grid;
     opacity: 0;
-    visibility: hidden;
     transform-origin: 50% 50%;
     pointer-events: none;
     backface-visibility: hidden;
   }
-  .ww-panel[data-stop="0"] { opacity: 1; visibility: visible; }
+  .ww-panel[data-stop="0"] { opacity: 1; }
   .ww-panel.is-active a, .ww-panel.is-active button, .ww-panel.is-active .ww-box, .ww-panel.is-active .ww-card, .ww-panel.is-active [data-ww-scroll] { pointer-events: auto; }
   .ww-box { max-width: 620px; display: grid; gap: 14px; align-content: start; width: 100%; }
   /* Words over hull get solid glass: no blur over a live canvas. */
@@ -86,11 +87,11 @@ const { page, slug, stops, label, span = 1.9 } = Astro.props;
     width: min(560px, 100%);
     padding: 20px 22px;
     border-radius: 20px;
-    background: linear-gradient(180deg, rgba(14, 11, 8, 0.82), rgba(9, 7, 5, 0.88));
+    background: linear-gradient(180deg, rgba(14, 11, 8, 0.86), rgba(9, 7, 5, 0.92));
     border: 1px solid rgba(255, 255, 255, 0.12);
     box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1), 0 30px 70px -30px rgba(0, 0, 0, 0.95);
   }
-  .ww-bay .ww-h2 { font-size: clamp(1.9rem, 3.3vw, 3.1rem); }
+  .ww-bay .ww-h2, .ww-box.is-glass .ww-h2 { font-size: clamp(1.9rem, 3.3vw, 3.1rem); }
   .ww-bay.is-open .ww-box { border-color: rgba(245, 165, 36, 0.34); }
 
   /* Where a panel's words sit. Every screen picks its own. */
@@ -108,6 +109,8 @@ const { page, slug, stops, label, span = 1.9 } = Astro.props;
   .ww-eye b { font-weight: 500; color: #f5a524; font-variant-numeric: tabular-nums; }
   .ww-eye i { width: 44px; height: 1px; background: linear-gradient(90deg, #f5a524, rgba(245, 165, 36, 0.08)); }
   .at-br .ww-eye, .at-r .ww-eye, .at-tr .ww-eye { justify-content: flex-end; }
+  .at-br .ww-h2, .at-r .ww-h2, .at-tr .ww-h2, .at-br .ww-h1, .at-r .ww-h1, .at-tr .ww-h1 { text-align: right; }
+  .at-br .ww-meta, .at-r .ww-meta, .at-tr .ww-meta { text-align: right; justify-self: end; }
   .at-bc .ww-eye, .at-c .ww-eye { justify-content: center; }
   .ww-h1, .ww-h2 { text-shadow: 0 2px 26px rgba(0, 0, 0, 0.55); }
   .ww-h1 {
@@ -136,6 +139,27 @@ const { page, slug, stops, label, span = 1.9 } = Astro.props;
   /* Numbers that arrive when the doors open */
   .ww-reveal { display: grid; gap: 18px; max-height: 0; opacity: 0; overflow: hidden; transition: max-height 0.6s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.4s ease; }
   .ww-panel.is-open .ww-reveal { max-height: 420px; opacity: 1; }
+  .ww-bay .ww-box .ww-eye, .ww-box.is-glass .ww-eye { justify-content: flex-start; }
+  .ww-bay .ww-box .ww-h2, .ww-bay .ww-box .ww-line, .ww-box.is-glass .ww-h2, .ww-box.is-glass .ww-line { text-align: left; justify-self: start; }
+  .ww-bay .ww-box .ww-work, .ww-bay .ww-box .ww-actions, .ww-box.is-glass .ww-facts, .ww-box.is-glass .ww-actions { justify-content: flex-start; }
+  .ww-box.is-glass .ww-toggle { justify-self: start; }
+  /* The exit screen: its words centre on their plate. */
+  .ww-box.is-exit { justify-items: center; text-align: center; }
+  .ww-box.is-exit .ww-eye, .ww-box.is-exit .ww-actions { justify-content: center; }
+  .ww-box.is-exit .ww-h2 { text-align: center; justify-self: center; }
+  @media (max-height: 720px) {
+    .ww-points li { padding: 6px 0; }
+    .ww-points strong { font-size: 0.875rem; }
+    .ww-points span { font-size: 0.75rem; }
+    .ww-plates li { padding: 12px 14px; }
+    .ww-panel { padding-top: 80px; padding-bottom: 28px; }
+    .ww-card-art { aspect-ratio: 21 / 9; }
+  }
+  .ww-box.is-glass[data-ww-scroll] { max-height: calc(100svh - 110px); overflow-y: auto; overscroll-behavior: contain; scrollbar-width: none; }
+  .ww-box.is-glass[data-ww-scroll]::-webkit-scrollbar { display: none; }
+  /* Clear of the chat button in the corner. */
+  .at-br, .at-bc { padding-bottom: 96px; }
+  @media (min-width: 761px) { .at-br, .at-r { padding-right: 96px; } }
   .ww-stats { list-style: none; margin: 8px 0 0; padding: 0; display: grid; grid-template-columns: repeat(3, minmax(0, auto)); justify-content: space-between; gap: 18px; }
   .ww-stats li { display: grid; gap: 4px; align-content: start; opacity: 0; transform: translateY(10px); transition: opacity 0.5s ease, transform 0.7s cubic-bezier(0.16, 1, 0.3, 1); transition-delay: calc(var(--i) * 0.07s); }
   .ww-panel.is-open .ww-stats li { opacity: 1; transform: none; }
@@ -313,7 +337,14 @@ const { page, slug, stops, label, span = 1.9 } = Astro.props;
   /* Phones: the subject holds the top of the screen, words and cards the bottom. */
   @media (max-width: 760px) {
     /* Everything sits above the chat button. */
-    .ww-panel { padding: 84px 16px 92px; }
+    .ww-panel, .at-br, .at-bc { padding: 84px 16px 150px; }
+    .at-br .ww-h2, .at-r .ww-h2, .at-tr .ww-h2, .at-br .ww-h1, .at-r .ww-h1, .at-tr .ww-h1, .at-br .ww-meta, .at-r .ww-meta, .at-tr .ww-meta { text-align: left; justify-self: start; }
+    .ww-box.is-exit { justify-items: start; text-align: left; }
+    .ww-box.is-exit .ww-eye, .ww-box.is-exit .ww-actions { justify-content: flex-start; }
+    .ww-box.is-exit .ww-h2 { text-align: left; justify-self: start; }
+    .ww-doors { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .ww-door.is-next { text-align: left; }
+    .ww-panel[data-stop] .ww-actions .jb { flex: 0 0 auto; }
     .ww-bay .ww-box, .ww-box.is-glass { padding: 14px 16px; border-radius: 16px; }
     .ww-box { max-width: 100%; gap: 10px; }
     .at-tl, .at-tr, .at-l, .at-r, .at-c, .at-bl, .at-br, .at-bc { justify-items: start; align-items: end; text-align: left; }
@@ -350,11 +381,11 @@ const { page, slug, stops, label, span = 1.9 } = Astro.props;
 
   /* The flat page: no WebGL, or reduced motion. Everything in normal flow. */
   .ww.is-flat { height: auto; }
-  .ww.is-flat .ww-stage { position: relative; height: auto; overflow: visible; touch-action: auto; }
+  .ww.is-flat .ww-stage { position: relative; height: auto; overflow: visible; touch-action: auto; clip-path: inset(0); }
   .ww.is-flat .ww-sky { position: fixed; inset: 0; opacity: 0.8; }
   .ww.is-flat .ww-canvas { position: fixed; inset: 0; height: 100vh; opacity: 0.5; }
   .ww.is-flat .ww-panels { position: relative; overflow: visible; perspective: none !important; padding-top: 72px; }
-  .ww.is-flat .ww-panel { position: relative; inset: auto; opacity: 1 !important; visibility: visible !important; transform: none !important; pointer-events: auto; padding-block: 36px; justify-items: start; align-items: start; text-align: left; }
+  .ww.is-flat .ww-panel { position: relative; inset: auto; opacity: 1 !important; transform: none !important; pointer-events: auto; padding-block: 36px; justify-items: start; align-items: start; text-align: left; }
   .ww.is-flat .ww-panel a, .ww.is-flat .ww-panel button { pointer-events: auto; }
   .ww.is-flat .ww-reveal, .ww.is-flat .ww-more { max-height: none; opacity: 1; overflow: visible; }
   .ww.is-flat .ww-stats li { opacity: 1; transform: none; }

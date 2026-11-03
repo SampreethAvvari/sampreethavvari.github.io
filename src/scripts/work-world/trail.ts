@@ -39,7 +39,7 @@ import {
   type Material,
 } from "three";
 import { SUN_DIR } from "./sky";
-import { DEG, TAU, box, cyl, clamp, lerp, merge, place, rng, smooth } from "./util";
+import { DEG, TAU, box, clamp, lerp, merge, place, rng, smooth } from "./util";
 
 export const NOW_YEAR = 2026.85;
 export const PER_YEAR = 1100;
@@ -115,16 +115,21 @@ function buildMoon(low: boolean) {
         float e = 0.012;
         vec3 t = normalize(cross(n, vec3(0.3, 1.0, 0.2)));
         vec3 b = cross(n, t);
-        float h0 = height(n);
-        float hx = height(normalize(n + t * e));
-        float hy = height(normalize(n + b * e));
-        vec3 pert = normalize(wn - (mat3(modelMatrix) * t * (hx - h0) + mat3(modelMatrix) * b * (hy - h0)) / e * 0.22);
-        float nl = clamp(dot(pert, uSun), 0.0, 1.0);
+        float lit0 = dot(wn, uSun);
+        float h0 = 0.5;
+        float nl = 0.0;
+        if (lit0 > -0.08) {
+          h0 = height(n);
+          float hx = height(normalize(n + t * e));
+          float hy = height(normalize(n + b * e));
+          vec3 pert = normalize(wn - (mat3(modelMatrix) * t * (hx - h0) + mat3(modelMatrix) * b * (hy - h0)) / e * 0.22);
+          nl = clamp(dot(pert, uSun), 0.0, 1.0);
+        }
         float soft = smoothstep(-0.05, 0.16, dot(wn, uSun));
         vec3 alb = mix(vec3(0.17, 0.15, 0.13), vec3(0.42, 0.37, 0.31), fbm(n * 5.0 + 3.0)) * (0.78 + h0 * 0.5);
         vec3 c = alb * vec3(1.0, 0.72, 0.45) * nl * soft * 3.4;
         // A trace of light from the comet being born on its dark side.
-        c += alb * vec3(1.0, 0.6, 0.24) * pow(clamp(dot(wn, normalize(vec3(-0.2, 0.34, 1.0))), 0.0, 1.0), 5.0) * (0.03 + uHot * 0.34);
+        c += alb * vec3(1.0, 0.6, 0.24) * pow(clamp(dot(wn, normalize(vec3(-0.2, 0.34, 1.0))), 0.0, 1.0), 5.0) * (0.09 + uHot * 0.34);
         c += vec3(1.0, 0.56, 0.2) * step(0.9985, hash13(floor(n * 180.0))) * uHot * 5.0;
         gl_FragColor = vec4(c, 1.0);
       }`,
@@ -241,7 +246,6 @@ function buildGiant(low: boolean) {
         alb = mix(alb, deep, smoothstep(0.55, 1.0, fine) * 0.35);
         // One long storm.
         vec3 st = normalize(vec3(0.62, -0.2, 0.76));
-        vec2 sq = vec2(acos(clamp(dot(normalize(n * vec3(1.0, 1.0, 1.0)), st), -1.0, 1.0)), 0.0);
         float stormD = length(vec2((n.y - st.y) * 7.0, (atan(n.z, n.x) - atan(st.z, st.x)) * 2.6));
         float storm = smoothstep(1.0, 0.25, stormD + (w2 - 0.5) * 0.8);
         alb = mix(alb, mix(vec3(0.95, 0.5, 0.2), vec3(0.3, 0.1, 0.04), smoothstep(0.1, 0.9, sin(stormD * 9.0 - uTime * 0.2) * 0.5 + 0.5)), storm);
@@ -255,8 +259,7 @@ function buildGiant(low: boolean) {
         c += vec3(1.0, 0.54, 0.2) * rim * smoothstep(-0.32, 0.26, nl) * 3.4;
         c += alb * vec3(0.5, 0.26, 0.1) * 0.05;
         gl_FragColor = vec4(c, 1.0);
-        void(sq);
-      }`.replace("void(sq);", ""),
+      }`,
   });
   const sphere = new Mesh(new SphereGeometry(GIANT_R, low ? 96 : 192, low ? 64 : 128), mat);
   group.add(sphere);
@@ -874,4 +877,3 @@ export function buildTrail(opts: { low: boolean; font: string }) {
   };
 }
 export type Trail = ReturnType<typeof buildTrail>;
-void cyl;

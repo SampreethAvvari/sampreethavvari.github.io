@@ -119,8 +119,8 @@ export function mountMovement(o: MovementOptions) {
     }
     const fresh = performance.now() - lastInput < 900;
     let to: number;
-    if (fresh && lastDir > 0) to = f > 0.12 ? i + 1 : i;
-    else if (fresh && lastDir < 0) to = f < 0.88 ? i : i + 1;
+    if (fresh && lastDir > 0) to = f > 0.05 ? i + 1 : i;
+    else if (fresh && lastDir < 0) to = f < 0.95 ? i : i + 1;
     else to = Math.round(q);
     glide(clamp(to, 0, count - 1));
   }

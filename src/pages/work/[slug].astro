@@ -97,7 +97,7 @@ const resume = RESUME[d.slug];
 
     <!-- How I work -->
     <section class="ww-panel at-r" data-stop="1" data-id="how" data-shade="" data-depth="30" id="how">
-      <div class="ww-box is-glass" style="max-width:440px">
+      <div class="ww-box is-glass" data-ww-scroll tabindex="0" style="max-width:440px">
         <p class="ww-eye"><b>How I work</b></p>
         <ul class="ww-points">
           {d.points.map((pt, k) => (
@@ -167,7 +167,7 @@ const resume = RESUME[d.slug];
 
     <!-- The way out -->
     <section class="ww-panel at-c" data-stop={stops - 1} data-id="exit" data-shade="all" data-depth="20" id="exit">
-      <div class="ww-box" style="justify-items:center;text-align:center;max-width:640px">
+      <div class="ww-box is-glass is-exit" style="width:min(680px,100%);max-width:680px">
         <p class="ww-eye"><b>End of the bay</b></p>
         <h2 class="ww-h2">Where next.</h2>
         <nav class="ww-doors" aria-label="Other bays">

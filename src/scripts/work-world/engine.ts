@@ -7,10 +7,8 @@
 import {
   Color,
   DirectionalLight,
-  Group,
   HemisphereLight,
   LinearSRGBColorSpace,
-  Matrix4,
   NoToneMapping,
   PCFSoftShadowMap,
   PerspectiveCamera,
@@ -24,13 +22,13 @@ import {
   WebGLRenderer,
   type Object3D,
 } from "three";
-import { BAY_IDS, buildBays, type BayId, type BayPart } from "./bays";
+import { BAY_IDS, buildBays, type BayId } from "./bays";
 import { Post } from "./post";
-import { INSIDE_PHI, STATION_PHI, Track, bayToWorld, bayUp, indexKeys, interiorKeys, newPose, worldToBay, type Key, type Pose } from "./shots";
+import { INSIDE_PHI, STATION_PHI, Track, bayToWorld, bayUp, indexKeys, interiorKeys, newPose, worldToBay, type Pose } from "./shots";
 import { SUN_DIR, buildSky } from "./sky";
 import { buildStation, bayAngle } from "./station";
 import { buildTrail } from "./trail";
-import { DEG, clamp, damp, inOut, lerp, outCubic, range, smooth } from "./util";
+import { DEG, clamp, damp, inOut, lerp, range, smooth } from "./util";
 
 export type Hit =
   | { kind: "bay"; bay: number; id: BayId; part?: { id: string; note: number } }
@@ -121,6 +119,9 @@ export function mountWorld(canvas: HTMLCanvasElement, opts: WorldOptions) {
   let indexTrack = new Track(indexKeys(curveAt, trail.uAtZ, wide));
   let page: PageMode = { kind: "index" };
   let track = indexTrack;
+  // Set by a flight into a bay: the scroll of the page being left no longer
+  // counts, and the words stay hidden, until the next page takes over.
+  let holding = false;
 
   // Where things are.
   const pose = newPose();
@@ -128,7 +129,6 @@ export function mountWorld(canvas: HTMLCanvasElement, opts: WorldOptions) {
   let q = 0;
   let qs = 0;
   let vel = 0;
-  let qPrev = 0;
   let snapNext = true;
   let time = 0;
   let last = performance.now();
@@ -181,7 +181,6 @@ export function mountWorld(canvas: HTMLCanvasElement, opts: WorldOptions) {
   const sunNdc = new Vector3();
   const sunFrame = new Vector3();
   const raycaster = new Raycaster();
-  const m4 = new Matrix4();
 
   const sizeState = { w: 0, h: 0, dpr: 1, scale: 1 };
   const maxDpr = low ? 1.5 : Math.min(2, devicePixelRatio || 1);
@@ -296,7 +295,6 @@ export function mountWorld(canvas: HTMLCanvasElement, opts: WorldOptions) {
       qs = damp(qs, q, reduced ? 60 : 7.5, dt);
     }
     vel = damp(vel, (qs - prev) / Math.max(1e-3, dt), 10, dt);
-    qPrev = qs;
 
     poseFor(pose);
     if (debugPose) {
@@ -410,8 +408,8 @@ export function mountWorld(canvas: HTMLCanvasElement, opts: WorldOptions) {
 
     // Bays.
     for (let i = 0; i < 4; i++) {
-      open[i] = damp(open[i], openT[i], reduced ? 30 : 3.4, dt);
-      power[i] = damp(power[i], powerT[i], reduced ? 30 : 2.4, dt);
+      open[i] = reduced ? openT[i] : damp(open[i], openT[i], 3.4, dt);
+      power[i] = reduced ? powerT[i] : damp(power[i], powerT[i], 2.4, dt);
       const bay = baysKit.bays[i];
       const phi = phiForBay(i, ringNow);
       const near = i === focus || flight?.bay === i || flight?.across?.from === i || (onIndex && Math.abs(phi - STATION_PHI[0] * DEG) < 1.2 && qs < 1.5);
@@ -445,7 +443,7 @@ export function mountWorld(canvas: HTMLCanvasElement, opts: WorldOptions) {
     }
 
     // Indoors, only the bay's own lamps count. The dock has no walls.
-    const indoors = page.kind === "bay" && page.id !== "fde" ? 1 : 0;
+    const indoors = page.kind === "bay" && page.id !== "fde" && (!flight || now - flight.t0 > flight.dur * 0.45) ? 1 : 0;
     insideK = damp(insideK, indoors, 2.2, dt);
     bounce.intensity = 0.95 * (1 - insideK * 0.92);
     sun.intensity = 5.6 * (1 - insideK * 0.97);
@@ -469,7 +467,7 @@ export function mountWorld(canvas: HTMLCanvasElement, opts: WorldOptions) {
     const sunVis = inFront ? 1 - smooth((off - 1.1) / 0.9) : 0;
     sunFrame.set(sx, sy, sunVis * pose.sun);
 
-    fade = damp(fade, 1, reduced ? 40 : 3.2, dt);
+    fade = reduced ? 1 : damp(fade, 1, 3.2, dt);
     intro = smooth(time / 2.6);
     flash = damp(flash, 0, 5, dt);
     const speed = Math.abs(vel);
@@ -490,20 +488,17 @@ export function mountWorld(canvas: HTMLCanvasElement, opts: WorldOptions) {
       ),
       exposure: reduced ? 1 : 0.62 + 0.38 * intro,
     });
-    listeners.forEach((cb) => cb({ camera, q: qs, vel, flying }));
+    listeners.forEach((cb) => cb({ camera, q: qs, vel, flying: flying || holding }));
   }
 
   const listeners = new Set<(f: FrameInfo) => void>();
   let debugPose: { p: number[]; l: number[]; r?: number; f?: number; a?: number; u?: number; up?: number[] } | null = null;
 
-  function hitList() {
-    const list: { mesh: Object3D; read: () => Hit; part?: BayPart; uvRead?: boolean }[] = [];
-    return list;
-  }
-  void hitList;
-
-  const pickObjects: Object3D[] = [];
   const v2 = new Vector2();
+  const shown3 = (o: Object3D | null) => {
+    for (let p = o; p; p = p.parent) if (!p.visible) return false;
+    return true;
+  };
 
   return {
     canvas,
@@ -514,6 +509,8 @@ export function mountWorld(canvas: HTMLCanvasElement, opts: WorldOptions) {
       return () => listeners.delete(cb);
     },
     setScroll(p: number, snap = false) {
+      if (holding && !snap) return;
+      if (snap) holding = false;
       q = p;
       if (snap) snapNext = true;
     },
@@ -541,7 +538,8 @@ export function mountWorld(canvas: HTMLCanvasElement, opts: WorldOptions) {
         all: [0, 0, 0.62, 1],
       };
       const m = map[kind] ?? [shadeT.x, shadeT.y, 0, 0];
-      shadeT.set(m[0], m[1], m[2], m[3]);
+      if (!wide && kind && kind !== "all") shadeT.set(0, -1, 0.88, 0);
+      else shadeT.set(m[0], m[1], m[2], m[3]);
     },
     setHotStop(id: string, v: number) {
       trail.setHot(id, v);
@@ -564,6 +562,7 @@ export function mountWorld(canvas: HTMLCanvasElement, opts: WorldOptions) {
       const inTrail = trail.group.visible;
       if (inTrail) {
         for (const h of trail.hits) {
+          if (!shown3(h.mesh.parent)) continue;
           const r = raycaster.intersectObject(h.mesh, false);
           if (r.length) {
             const x = h.read(h.mesh);
@@ -609,9 +608,17 @@ export function mountWorld(canvas: HTMLCanvasElement, opts: WorldOptions) {
         f: camera.fov,
         r: rollNow(),
       };
-      const inner = new Track(interiorKeys(id, stops)).at(0, newPose());
+      const nextTrack = new Track(interiorKeys(id, stops));
+      const inner = nextTrack.at(0, newPose());
       const toP = worldToBay(INSIDE_PHI, inner.p.clone());
       const toL = worldToBay(INSIDE_PHI, inner.l.clone());
+      // The hall is what the camera lands in, whether or not the page has come yet.
+      page = { kind: "bay", id, stops };
+      track = nextTrack;
+      q = 0;
+      qs = 0;
+      vel = 0;
+      holding = true;
       flight = {
         bay: i,
         t0: performance.now(),
@@ -712,11 +719,6 @@ export function mountWorld(canvas: HTMLCanvasElement, opts: WorldOptions) {
       trail.dispose();
       sky.dispose();
       post.dispose();
-      void pickObjects;
-      void m4;
-      void Group;
-      void outCubic;
-      void qPrev;
       renderer.dispose();
       renderer.forceContextLoss();
     },
@@ -728,6 +730,5 @@ export function mountWorld(canvas: HTMLCanvasElement, opts: WorldOptions) {
   }
 }
 export type World = ReturnType<typeof mountWorld>;
-export type { Key };
 export { mountPanels } from "./panels";
 export { newPose } from "./shots";

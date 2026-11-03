@@ -22,10 +22,8 @@ const view = new Matrix4();
 const anchor = new Matrix4();
 const out = new Matrix4();
 const t1 = new Matrix4();
-const zAxis = new Vector3();
 const roll = new Quaternion();
 const qq = new Quaternion();
-const up = new Vector3();
 const dirv = new Vector3();
 const cam = new Vector3();
 const scaleV = new Vector3();
@@ -42,12 +40,10 @@ function poseMatrix(p: Pose, m: Matrix4) {
 
 export function mountPanels(layer: HTMLElement, defs: PanelDef[], stopPose: (i: number, o: Pose) => Pose, newPose: () => Pose) {
   const poses = defs.map((d) => stopPose(d.stop, newPose()));
-  const state = defs.map(() => ({ on: false, rest: false, op: -1 }));
-  let vw = 0;
+  const state = defs.map(() => ({ rest: false, op: -1 }));
   let vh = 0;
   let lastF = 0;
   const measure = () => {
-    vw = layer.clientWidth;
     vh = layer.clientHeight;
   };
   measure();
@@ -73,17 +69,7 @@ export function mountPanels(layer: HTMLElement, defs: PanelDef[], stopPose: (i: 
         }
         const isActive = active === d.stop && !flying && away < 0.5;
         d.el.classList.toggle("is-active", isActive);
-        if (!live) {
-          if (s.on) {
-            s.on = false;
-            d.el.style.visibility = "hidden";
-          }
-          return;
-        }
-        if (!s.on) {
-          s.on = true;
-          d.el.style.visibility = "visible";
-        }
+        if (!live) return;
         if (away < 0.004) {
           if (!s.rest) {
             d.el.style.transform = "none";
@@ -107,15 +93,12 @@ export function mountPanels(layer: HTMLElement, defs: PanelDef[], stopPose: (i: 
         const e = out.elements;
         cam.set(e[12], e[13], e[14]);
         if (cam.z > F - 2) {
-          d.el.style.visibility = "hidden";
-          s.on = false;
+          d.el.style.opacity = "0";
+          s.op = 0;
           return;
         }
         d.el.style.transform = `matrix3d(${e.map((x) => x.toFixed(6)).join(",")})`;
       });
-      void zAxis;
-      void up;
-      void vw;
     },
   };
 }

@@ -6,7 +6,7 @@
 // between them. Scroll position in stops maps through a soft ease onto the
 // keys, so the camera lingers near each stop and moves hard in between.
 
-import { CatmullRomCurve3, Quaternion, Vector3, Matrix4 } from "three";
+import { CatmullRomCurve3, Vector3 } from "three";
 import { BAY_IDS, type BayId } from "./bays";
 import { SUN_DIR } from "./sky";
 import { FACE_Z, RC, bayAngle } from "./station";
@@ -94,7 +94,7 @@ export function indexKeys(curveAt: (u: number) => Vector3, uAtZ: (z: number) => 
   const a1 = ringFor(0, STATION_PHI[0] * DEG);
 
   // 0 Hero. Low under the near rim, looking up across the ring into the star.
-  P({ p: wide ? V(190, -150, 540) : V(90, -240, 860), l: wide ? V(-74, -46, 0) : V(-90, 30, 0), r: wide ? -12 : -6, f: wide ? 38 : 44, a: a1 - 58 * DEG, stop: 0 });
+  P({ p: wide ? V(190, -150, 540) : V(70, -210, 960), l: wide ? V(-74, -46, 0) : V(-50, -210, 0), r: wide ? -12 : -6, f: wide ? 38 : 40, a: a1 - 58 * DEG, stop: 0 });
   P({ p: V(70, -300, 330), l: V(-60, -220, 10), r: -8, f: 40, a: a1 - 22 * DEG });
 
   // 1 AI: three quarters from the left, the room off to the right of frame.
@@ -117,7 +117,7 @@ export function indexKeys(curveAt: (u: number) => Vector3, uAtZ: (z: number) => 
   P({ p: V(120, -420, 240), l: V(10, -220, 20), r: 10, f: 42, a: ringFor(1, STATION_PHI[1] * DEG) + 52 * DEG });
 
   // 3 Machine learning: tight on the iris, nearly filling the frame.
-  k.push({ ...bayShot(2, STATION_PHI[2], wide ? [18, -5, 62] : [0, -16, 92], wide ? [8, -1, -20] : [0, 6, -10], wide ? -7 : -4, wide ? 42 : 50), stop: 3 });
+  k.push({ ...bayShot(2, STATION_PHI[2], wide ? [40, -13, 92] : [0, -16, 106], wide ? [30, -7, -20] : [0, 6, -10], wide ? -7 : -4, wide ? 40 : 50), stop: 3 });
   P({ p: V(260, -350, 230), l: V(70, -210, 20), r: -8, f: 40, a: ringFor(2, STATION_PHI[2] * DEG) + 50 * DEG });
 
   // 4 Software: low along the face of the ring, the doors seen edge on, the
@@ -313,15 +313,20 @@ export function interiorKeys(id: BayId, stops: number): Key[] {
   for (let s = 0; s < stops; s++) {
     // Spread the page's stops over the hall, always using the first and last.
     const t = stops > 1 ? (s / (stops - 1)) * (list.length - 1) : 0;
-    const j = Math.round(t);
-    const sh = list[j];
-    const pv = id === "fde" ? leanFde(sh.p) : sh.p;
-    const lv = id === "fde" ? leanFde(sh.l) : sh.l;
+    const j = Math.min(list.length - 2, Math.floor(t));
+    const k = t - j;
+    const A = list[j];
+    const B = list[j + 1];
+    const mix3 = (a: [number, number, number], b: [number, number, number]): [number, number, number] => [lerp(a[0], b[0], k), lerp(a[1], b[1], k), lerp(a[2], b[2], k)];
+    const pm = mix3(A.p, B.p);
+    const lm = mix3(A.l, B.l);
+    const pv = id === "fde" ? leanFde(pm) : pm;
+    const lv = id === "fde" ? leanFde(lm) : lm;
     keys.push({
       p: bayToWorld(INSIDE_PHI, V(...pv)),
       l: bayToWorld(INSIDE_PHI, V(...lv)),
-      r: sh.r ?? 0,
-      f: sh.f ?? 46,
+      r: lerp(A.r ?? 0, B.r ?? 0, k),
+      f: lerp(A.f ?? 46, B.f ?? 46, k),
       a,
       up,
       u: 1,
@@ -333,5 +338,3 @@ export function interiorKeys(id: BayId, stops: number): Key[] {
   return keys;
 }
 
-void Quaternion;
-void Matrix4;

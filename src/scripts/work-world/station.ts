@@ -351,7 +351,7 @@ export function buildStation(opts: { low: boolean }) {
 
   // ---- the hub, turning against the ring
   const hubProfile: P[] = [
-    [40, -52], [70, -40], [84, -30], [84, 30], [70, 40], [52, 44], [52, 50], [40, 56], [40, 92], [30, 98], [30, 118], [24, 124], [8, 124],
+    [40, -52], [70, -40], [84, -30], [84, 30], [70, 40], [52, 44], [52, 50], [40, 56], [40, 92], [30, 98], [30, 118], [24, 124],
   ];
   const hubMat = hullMaterial({ mode: "polar", color: 0x8d8579, plate: 11, windows: 0.3, r0: 84 });
   uniforms.push(hubMat.uniforms as any);
@@ -372,8 +372,8 @@ export function buildStation(opts: { low: boolean }) {
   const hp = new Mesh(merge(hubParts), trimMat.mat);
   hp.castShadow = true;
   hub.add(hp);
-  hub.add(new Mesh(bands([[0, 124.1], [23, 124.1]], 48), dimMat));
-  hub.add(new Mesh(bands([[23.2, 124.4], [24, 124.4]], 96), glowMat));
+  hub.add(new Mesh(bands([[0.01, 124], [24, 124]], 64), darkMat));
+  hub.add(new Mesh(bands([[21, 124.3], [22, 124.3]], 96), glowMat));
 
   // ---- traffic: small lights going about their day around the ring
   const shuttleCount = low ? 18 : 46;

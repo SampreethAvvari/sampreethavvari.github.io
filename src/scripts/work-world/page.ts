@@ -27,7 +27,7 @@ const PER_YEAR = 1100;
 
 const BAYS: BayId[] = ["aie", "fde", "mle", "sde"];
 // How far each bay's doors stand open at rest, before the pointer reaches them.
-const AJAR = [0.36, 0.13, 0.1, 0.04];
+const AJAR = [0.62, 0.13, 0.34, 0.04];
 const isWork = (p: string) => p === "/work" || p === "/work/" || p.startsWith("/work/");
 const bayOf = (p: string): BayId | null => {
   const m = p.match(/^\/work\/([a-z]+)\/?$/);
@@ -42,8 +42,8 @@ let worldCanvas: HTMLCanvasElement | null = null;
 let keepWorld = false;
 let cameFrom: string | null = null;
 let lastPath: string | null = null;
-let flyingOut = false;
 let mod: typeof import("./engine") | null = null;
+let enterTimer = 0;
 
 // A move between two Work pages stays in the world: the site's loader does not
 // come up. This runs before the loader's own listener and stops it seeing the
@@ -52,6 +52,7 @@ document.addEventListener(
   "astro:before-preparation",
   (e) => {
     const ev = e as Event & { to: URL; from: URL };
+    clearTimeout(enterTimer);
     const from = lastPath ?? ev.from.pathname;
     keepWorld = !!world && isWork(ev.to.pathname) && isWork(from);
     cameFrom = from;
@@ -128,14 +129,24 @@ onPage("work-world", (signal) => {
   if (!gl || reduced) {
     root.classList.add("is-flat");
     document.documentElement.classList.remove("ww-flying");
-    if (gl && reduced && pageKind === "index") {
-      // The calm version: one still frame of the station behind the words.
-      bootWorld(canvas, true, true).then((w) => {
-        if (!w || signal.aborted) return;
-        w.setPage({ kind: "index" });
-        w.setScroll(0, true);
-        w.start();
+    if (gl && reduced) {
+      // The calm version: one still frame of the world behind the words. No
+      // loop runs, and scrolling moves only the words.
+      bootWorld(canvas, low, true).then((sw) => {
+        if (!sw || signal.aborted) return;
+        if (pageKind === "index") {
+          sw.setPage({ kind: "index" });
+          sw.setBay(0, 0, 0.5);
+        } else {
+          sw.setPage({ kind: "bay", id: slug!, stops: count });
+          BAYS.forEach((id, i) => sw.setBay(i, id === slug ? 1 : 0, id === slug ? 1 : 0));
+        }
+        sw.setScroll(0, true);
+        sw.start();
+        // Doors and lamps have taken their places once a frame has run.
+        requestAnimationFrame(() => sw.renderOnce());
         root.classList.add("is-3d");
+        addEventListener("resize", () => sw.renderOnce(), sig);
       }).catch(() => {});
     }
     return () => {
@@ -147,9 +158,19 @@ onPage("work-world", (signal) => {
     };
   }
 
-  const markStage = () => document.documentElement.classList.toggle("in-ww", root.getBoundingClientRect().bottom > innerHeight * 0.5);
+  let skyHeld: boolean | null = null;
+  const markStage = () => {
+    const bottom = root.getBoundingClientRect().bottom;
+    document.documentElement.classList.toggle("in-ww", bottom > innerHeight * 0.5);
+    const hold = bottom > 1;
+    if (hold !== skyHeld) {
+      skyHeld = hold;
+      emit("spacefield:hold", { hold });
+    }
+  };
   markStage();
   addEventListener("scroll", markStage, { passive: true, ...sig });
+  signal.addEventListener("abort", () => emit("spacefield:hold", { hold: false }));
 
   let w: World | null = null;
   let pan: Panels | null = null;
@@ -171,7 +192,6 @@ onPage("work-world", (signal) => {
     panels.forEach((p, i) => {
       const a = Math.abs(at - i);
       p.style.opacity = String(Math.max(0, 1 - a / 0.4));
-      p.style.visibility = a < 0.45 ? "visible" : "hidden";
       p.classList.toggle("is-active", a < 0.3);
     });
   };
@@ -362,7 +382,7 @@ onPage("work-world", (signal) => {
     if (!hit) return;
     if (hit.kind === "bay" && pageKind === "index") {
       const stop = hit.bay + 1;
-      if (Math.round(q) === stop && Math.abs(q - stop) < 0.3) enterBay(hit.id);
+      if ((Math.round(q) === stop && Math.abs(q - stop) < 0.3) || q > 6) enterBay(hit.id);
       else movement.go(stop);
     } else if (hit.kind === "body") {
       const stop = panels.findIndex((p) => p.id === hit.stop);
@@ -382,6 +402,12 @@ onPage("work-world", (signal) => {
     if (open) openStops.add(i);
     else openStops.delete(i);
   }
+  root.querySelectorAll<HTMLElement>(".ww-more a").forEach((a) => {
+    a.addEventListener("focus", () => {
+      const p = a.closest<HTMLElement>("[data-stop]");
+      if (p && !p.classList.contains("is-open")) toggleStop(Number(p.dataset.stop));
+    }, sig);
+  });
   root.querySelectorAll<HTMLElement>("[data-ww-toggle]").forEach((b) => {
     b.addEventListener("click", () => {
       const p = b.closest<HTMLElement>("[data-stop]");
@@ -403,7 +429,8 @@ onPage("work-world", (signal) => {
     emit("work:transition", { direction: "in", from: "station", to: id, duration: dur });
     w.flyIn(id, stops, undefined, dur);
     // The page comes in while the camera is still moving: it lands inside it.
-    setTimeout(() => {
+    clearTimeout(enterTimer);
+    enterTimer = window.setTimeout(() => {
       if (!signal.aborted) navigate(`/work/${id}`);
     }, dur * 0.62);
   }
@@ -433,7 +460,7 @@ onPage("work-world", (signal) => {
   });
 
   // Hovering the words of a bay opens it as well.
-  panels.forEach((p, i) => {
+  panels.forEach((p) => {
     const bay = p.dataset.bay ? BAYS.indexOf(p.dataset.bay as BayId) : -1;
     const box = p.querySelector<HTMLElement>(".ww-box");
     if (bay >= 0 && box) {
@@ -447,8 +474,16 @@ onPage("work-world", (signal) => {
         if (panelBay === bay) panelBay = -1;
         updateBays();
       }, sig);
+      box.addEventListener("focusin", () => {
+        panelBay = bay;
+        updateBays();
+      }, sig);
+      box.addEventListener("focusout", (e) => {
+        if (box.contains(e.relatedTarget as Node | null)) return;
+        if (panelBay === bay) panelBay = -1;
+        updateBays();
+      }, sig);
     }
-    void i;
   });
 
   // Hover notes for the things in the words.
@@ -512,17 +547,17 @@ onPage("work-world", (signal) => {
     shade(Math.round(q));
     // Flights that begin on arrival.
     if (returning && wasBay) {
-      flyingOut = true;
       emit("work:transition", { direction: "out", from: wasBay, to: "station", duration: 1500 });
       wd.setScroll(q, true);
-      wd.flyOut(wasBay, q, () => {
-        flyingOut = false;
-        document.documentElement.classList.remove("ww-flying");
-      });
+      wd.flyOut(wasBay, q, () => document.documentElement.classList.remove("ww-flying"));
     } else if (pageKind === "bay" && wasBay && wasBay !== slug) {
       emit("work:transition", { direction: "across", from: wasBay, to: slug, duration: 2200 });
       wd.setScroll(q, true);
       wd.flyAcross(wasBay, slug!, count, () => document.documentElement.classList.remove("ww-flying"));
+    } else if (pageKind === "bay" && prior.kind === "index" && !wd.flying()) {
+      emit("work:transition", { direction: "in", from: "station", to: slug, duration: 1500 });
+      wd.flyIn(slug!, count, () => document.documentElement.classList.remove("ww-flying"));
+      wd.setScroll(q, true);
     } else if (wd.flying()) {
       wd.setScroll(q, true);
       // Already in the air from the page before: let it land.
@@ -559,12 +594,21 @@ onPage("work-world", (signal) => {
     });
     wd.start();
     root.classList.add("is-3d");
-    const io = new IntersectionObserver(([e]) => wd.setPaused(!e.isIntersecting || document.hidden));
+    let onScreen = true;
+    const pauseIfNeeded = () => wd.setPaused(!onScreen || document.hidden);
+    const io = new IntersectionObserver(([e]) => {
+      onScreen = e.isIntersecting;
+      pauseIfNeeded();
+    });
     io.observe(stage);
-    document.addEventListener("visibilitychange", () => wd.setPaused(document.hidden), sig);
+    document.addEventListener("visibilitychange", pauseIfNeeded, sig);
     signal.addEventListener("abort", () => io.disconnect());
+    // A phone can take the GPU back. The words are all still there, as a page.
     canvas.addEventListener("webglcontextlost", () => {
+      wd.setPaused(true);
       root.classList.remove("is-3d");
+      root.classList.add("is-flat");
+      movement.jump(0);
     }, sig);
     if (import.meta.env.DEV) {
       (window as W).__ww = { world: wd, movement, q: () => qShown, go: (i: number) => { movement.jump(i); wd.setScroll(i, true); wd.snap(); wd.renderOnce(); } };
@@ -595,6 +639,5 @@ onPage("work-world", (signal) => {
       worldCanvas = null;
     }
     delete (window as W).__ww;
-    void flyingOut;
   };
 });

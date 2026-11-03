@@ -125,14 +125,12 @@ function mouthGlow(kit: Kit, w: number, h: number) {
   const mat = hazeMaterial(1);
   kit.add(mat);
   const group = new Group();
-  const planes = [0, -8, -18].map((z, i) => {
+  [0, -8, -18].forEach((z, i) => {
     const m = new Mesh(new PlaneGeometry(w * (1.5 - i * 0.2), h * (1.5 - i * 0.2)), mat);
     m.position.z = z;
     m.renderOrder = 8;
     group.add(m);
-    return m;
   });
-  void planes;
   return { group, mat };
 }
 
@@ -312,7 +310,7 @@ function buildAie(kit: Kit, index: number): Bay {
   // Slatted doors.
   const SL = 12;
   const slatH = (MOUTH_H * 2 - 2) / SL;
-  const slats = new InstancedMesh(new BoxGeometry(MOUTH_W * 2 - 2, slatH * 0.96, 0.5), kit.steel, SL);
+  const slats = new InstancedMesh(new BoxGeometry(MOUTH_W * 2 - 2, slatH * 0.96, 0.5), kit.dark, SL);
   slats.castShadow = true;
   slats.instanceMatrix.setUsage(DynamicDrawUsage);
   slats.frustumCulled = false;
@@ -370,7 +368,7 @@ function buildAie(kit: Kit, index: number): Bay {
       for (let i = 0; i < SL; i++) {
         // Slats tip open from the top down, one after another.
         const e = smooth((open * 1.5 - ((SL - 1 - i) / SL) * 0.5));
-        q.setFromAxisAngle(axis, e * 82 * DEG);
+        q.setFromAxisAngle(axis, -e * 76 * DEG);
         p.set(0, -MOUTH_H + 1 + slatH * (i + 0.5), 1.6);
         m.compose(p, q, s);
         slats.setMatrixAt(i, m);
@@ -751,7 +749,7 @@ function buildMle(kit: Kit, index: number): Bay {
     const a = (i / BL) * TAU;
     pivot.position.set(Math.cos(a) * (TR + 2.4), Math.sin(a) * (TR + 2.4), i * 0.02);
     pivot.rotation.z = a + Math.PI;
-    const mesh = new Mesh(bladeGeo, kit.trim);
+    const mesh = new Mesh(bladeGeo, kit.dark);
     mesh.castShadow = true;
     const inner = new Group();
     inner.add(mesh, new Mesh(edgeGeo, edgeMat));
@@ -957,7 +955,9 @@ function buildSde(kit: Kit, index: number): Bay {
   const crane = new Mesh(merge([box(W - 4, 1.4, 2.6, 0, 0, 0), box(4, 2.2, 3.6, -10, -1.6, 0), cyl(0.12, 0.12, 12, 4, -10, -8, 0, 0)]), kit.steel);
   crane.position.y = H / 2 - 6;
   inside.add(crane);
-  const slabNew = new Mesh(new BoxGeometry(11, 0.9, 30), kit.add(new MeshStandardMaterial({ color: 0x6a645a, roughness: 0.4, metalness: 0.9, emissive: new Color(1, 0.62, 0.26), emissiveIntensity: 0.45 })));
+  const slabNew = new Mesh(new BoxGeometry(11, 0.9, 30), kit.trim);
+  const slabEdgeMat = kit.add(lightMat(2)) as MeshBasicMaterial;
+  slabNew.add(new Mesh(merge([box(11.1, 0.1, 0.1, 0, 0.46, 15), box(11.1, 0.1, 0.1, 0, 0.46, -15), box(0.1, 0.1, 30, 5.5, 0.46, 0), box(0.1, 0.1, 30, -5.5, 0.46, 0)]), slabEdgeMat));
   inside.add(slabNew);
 
   // The wall of 360: twelve rows of thirty, one cell per day cell of the
@@ -1051,7 +1051,7 @@ function buildSde(kit: Kit, index: number): Bay {
       crane.position.z = lerp(crane.position.z, z, 0.04);
       const top = -H / 2 + 1.2 + stackRows * 1.06;
       slabNew.position.set(slabX(side), lerp(H / 2 - 12, top, smooth(cycle * 1.6)), z);
-      (slabNew.material as MeshStandardMaterial).emissiveIntensity = 0.5 * (1 - smooth(cycle * 1.6 - 0.9)) * power;
+      slabEdgeMat.color.copy(WARM).multiplyScalar(2.4 * (1 - smooth(cycle * 1.6 - 0.9)) * power);
     },
     dispose() {
       wallMat.dispose();

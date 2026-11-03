@@ -20,9 +20,9 @@ const BAY_AT = [
 const TRAIL_AT = [
   { at: "at-tl", shade: "tl", depth: 300 },
   { at: "at-bc", shade: "b", depth: 300, glass: true },
-  { at: "at-tr", shade: "tr", depth: 340 },
+  { at: "at-bl", shade: "bl", depth: 340 },
   { at: "at-r", shade: "", depth: 240 },
-  { at: "at-bl", shade: "bl", depth: 300 },
+  { at: "at-tl", shade: "tl", depth: 300 },
   { at: "at-bl", shade: "bl", depth: 420 },
 ];
 const stopsTotal = 1 + BAYS.length + 1 + TRAIL.length;
@@ -104,7 +104,7 @@ const stopsTotal = 1 + BAYS.length + 1 + TRAIL.length;
             {last && (
               <div class="ww-actions">
                 <a class="jb is-solid" href="/resume"><span>Resume</span><i class="jb-arrow"><Icon name="arrow-up-right" size={13} /></i></a>
-                <a class="jb is-ghost" href="/gallery"><span>Screenshots</span><i class="jb-arrow"><Icon name="arrow-right" size={13} /></i></a>
+                <a class="jb is-ghost" href="/gallery"><span>Gallery</span><i class="jb-arrow"><Icon name="arrow-right" size={13} /></i></a>
               </div>
             )}
           </div>
