@@ -98,7 +98,7 @@ export class Architecture extends Movement {
     this.beam = this.layer("beam", 0.6, this.point(0, 1.6, -1.4, 0.6));
     this.layers.ruler = this.gain(0, this.dry);
 
-    this.pen = new Sampler(this, (sr, f) => bell(sr, f, 1.3, BELLS.glass, r), 24, 14);
+    this.pen = new Sampler(this, (sr, f) => bell(sr, f, 1.3, BELLS.glass, r), 24, 14, "pen");
     this.tap = new Sampler(this, (sr, f) => modal(sr, f, 0.2, MODES.key, r), 12, 5);
     this.grains = this.pen;
     this.pen.warm([64, 69, 71, 74, 76, 78, 81, 83]);
@@ -107,8 +107,8 @@ export class Architecture extends Movement {
     // a focused system's signature voice, placed where its name puts it
     this.sigPan = this.panner(true);
     this.sigBus = this.gain(1, this.sigPan);
-    this.sigPan.connect(this.dry);
-    this.sigPan.connect(this.gain(0.4, this.verbIn));
+    this.sigPan.connect(this.front);
+    this.sigPan.connect(this.gain(0.4, this.frontVerb));
     this.sigPan.connect(this.gain(0.25, this.echoIn));
     this.setPos(this.sigPan, 0, 0.3, -1.4);
     this.sigVoices = [
@@ -154,7 +154,7 @@ export class Architecture extends Movement {
     let m = stack[s.motif[k] % stack.length] + s.lift;
     while (m > nm("E6")) m -= 12;
     while (m < nm("E4")) m += 12;
-    s.voice.play(m, t, dbg(-17) * v, this.sigBus);
+    s.voice.play(m, t, dbg(-17) * v, this.sigBus, { force: true });
   }
 
   protected onChord(c: Chord, t: number) {
@@ -194,7 +194,7 @@ export class Architecture extends Movement {
       const tones = tonesIn(this.chord, 76, 91);
       if (tones.length) {
         const at = this.rng() < 0.5 ? t : t + this.stepDur / 2;
-        this.pen.play(this.pick(tones), this.hum(at, 3), dbg(-27) * (0.4 + 0.6 * f), this.nodes[Math.floor(this.rng() * this.nodes.length)], { dur: 0.14 });
+        this.pen.play(this.pick(tones), this.hum(at, 3), dbg(-29) * (0.4 + 0.6 * f), this.air, { dur: 0.14, force: true });
       }
     }
     if (L.ruler) glint(this, this.layers.ruler, nm("E6") + (pos % 2 ? 0 : -5), t, dbg(groupStart ? -40 : -46), 0.03);

@@ -37,7 +37,7 @@ export class Work extends Movement {
   beats = 4;
   protected bright = 2700;
   protected wet = 0.7;
-  protected trim = 1.2;
+  protected trim = 1.7;
   protected tapLo = 72;
   protected tapHi = 86;
 
@@ -71,9 +71,9 @@ export class Work extends Movement {
     }));
     this.bass = new Mono(this, this.layer("bass", 0.12), { wave: this.st.wave("warm"), cutoff: 1000, level: 0.22, sub: 0.3, lo: 36, hi: 50 });
 
-    const marimba = new Sampler(this, (sr, f) => modal(sr, f, 1.2, MODES.marimba, r), 18, 8);
-    const nylon = new Sampler(this, (sr, f) => pluck(sr, f, 1.6, { bright: 0.45, t60: 1.3, pick: 0.13 }, r), 18, 8);
-    const bellS = new Sampler(this, (sr, f) => fm(sr, f, 1.8, { ratio: 3.5, index: 1.6, indexDecay: 0.18, decay: 0.8 }), 18, 8);
+    const marimba = new Sampler(this, (sr, f) => modal(sr, f, 1.2, MODES.marimba, r), 18, 8, "line");
+    const nylon = new Sampler(this, (sr, f) => pluck(sr, f, 1.6, { bright: 0.45, t60: 1.3, pick: 0.13 }, r), 18, 8, "line");
+    const bellS = new Sampler(this, (sr, f) => fm(sr, f, 1.8, { ratio: 3.5, index: 1.6, indexDecay: 0.18, decay: 0.8 }), 18, 8, "line");
     const corners: [number, number, number][] = this.phone
       ? [[-1.2, 0, -1], [1.2, 0, -1], [1.2, 0, -1], [-1.2, 0, -1]]
       : [[-1.2, 0, -1.1], [1.2, 0, -1.1], [1.1, 0.25, 1.1], [-1.1, 0.25, 1.1]];
@@ -83,7 +83,7 @@ export class Work extends Movement {
       { name: "se", bus: se, play: (m, t, v) => marimba.play(m, t, dbg(-12) * v, se) },
       { name: "fde", bus: fde, play: (m, t, v) => nylon.play(m - 12, t, dbg(-12) * v, fde) },
       { name: "aie", bus: aie, play: (m, t, v) => bellS.play(m, t, dbg(-16) * v, aie) },
-      { name: "mle", bus: mle, play: (m, t, v) => lead(this, mle, m, t, this.stepDur * 1.6, dbg(-17) * v, { wave: this.learnWave, attack: 0.03, release: 0.25, cutoff: 2400, vib: 4, vibRate: 5.5 }) },
+      { name: "mle", bus: mle, play: (m, t, v) => lead(this, mle, m, t, this.stepDur * 1.6, dbg(-17) * v, { wave: this.learnWave, attack: 0.03, release: 0.25, cutoff: 2400, vib: 4, vibRate: 5.5, key: "line" }) },
     ];
     this.layers.counter = this.gain(0, this.point(0, 0.4, -1.6, 0.4));
     this.tap = new Sampler(this, (sr, f) => modal(sr, f, 0.35, MODES.marimba, r), 12, 5);

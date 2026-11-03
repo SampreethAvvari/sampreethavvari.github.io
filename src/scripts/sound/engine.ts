@@ -169,6 +169,8 @@ export function setSound(v: boolean) {
 // ---- the visitor ---------------------------------------------------------------
 
 let px = 0.5, py = 0.5, pt = 0, speed = 0, lastM = 0, yawNow = 0;
+let jT = 0;
+const touches = { hover: 0, click: 0 };
 let lastY = 0, vS = 0, lastFrame = 0, raf = 0, lastHover = 0;
 
 function kick() {
@@ -208,6 +210,12 @@ function frame(now: number) {
     }
   }
 
+  // the flight stopped: let the scroll swell fall quiet
+  if (currentId === "home" && journeySeen && jV !== 0 && now - jT > 160) {
+    jV = 0;
+    current.journey(jP, 0);
+  }
+
   // pointer: speed opens the sound, height tilts it, x turns the listener's head
   speed *= Math.pow(0.04, dt);
   const m = Math.min(1, speed / 1.8);
@@ -240,7 +248,10 @@ const INTERACTIVE = "a, button, [role=button], summary, label, input, select, te
 function onDown(e: PointerEvent) {
   if (!on || !current) return;
   const el = (e.target as Element | null)?.closest?.(INTERACTIVE);
-  if (el) current.click(e.clientX / Math.max(1, innerWidth), e.clientY / Math.max(1, innerHeight));
+  if (el) {
+    touches.click++;
+    current.click(e.clientX / Math.max(1, innerWidth), e.clientY / Math.max(1, innerHeight));
+  }
 }
 function onKeyClick(e: MouseEvent) {
   // keyboard activation (Enter or Space) arrives as a click with no detail
@@ -252,8 +263,9 @@ function onKeyClick(e: MouseEvent) {
 }
 function onOver(e: PointerEvent) {
   if (!on || !current || e.pointerType !== "mouse") return;
-  const el = (e.target as Element | null)?.closest?.("a, button, [role=button], summary");
+  const el = (e.target as Element | null)?.closest?.("a, button, [role=button], summary, .journey-rail, [data-sound-hover]");
   if (!el || (e.relatedTarget instanceof Node && el.contains(e.relatedTarget))) return;
+  touches.hover++;
   const t = performance.now();
   if (t - lastHover < 110) return;
   lastHover = t;
@@ -268,7 +280,7 @@ export function mountSound() {
   // for local testing only; Vite drops this from production builds
   if (import.meta.env.DEV) {
     (window as unknown as { __sound: unknown }).__sound = {
-      state: () => ({ ctx: ctx?.state ?? null, on, current: currentId, leaving: leaving.length, chapter: jChapter }),
+      state: () => ({ ctx: ctx?.state ?? null, on, current: currentId, leaving: leaving.length, chapter: jChapter, ...touches }),
     };
   }
   on = readPref();
@@ -309,6 +321,7 @@ export function mountSound() {
   addEventListener("journey:progress", (e) => {
     const d = (e as CustomEvent).detail || {};
     journeySeen = true;
+    jT = performance.now();
     if (Number(d.count) > 1) jCount = Number(d.count);
     jP = Number(d.progress) || 0;
     jV = Number(d.velocity) || 0;

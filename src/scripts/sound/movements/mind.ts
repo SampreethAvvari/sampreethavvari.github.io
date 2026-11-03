@@ -98,7 +98,7 @@ export class Mind extends Movement {
       o.start(t);
       this.shep.push({ o, g, end: t, base: k / voices });
     }
-    this.star = new Sampler(this, (sr, f) => bell(sr, f, 3.2, BELLS.star, r), 24, 10);
+    this.star = new Sampler(this, (sr, f) => bell(sr, f, 3.2, BELLS.star, r), 24, 10, "stars");
     this.tap = new Sampler(this, (sr, f) => bell(sr, f, 0.7, BELLS.spark, r), 12, 5);
     this.grains = this.star;
     this.star.warm([nm("B5"), nm("D#6"), nm("F#5"), nm("A#5"), nm("C#6")]);
@@ -150,7 +150,7 @@ export class Mind extends Movement {
         p.positionY.setTargetAtTime(y, at + 0.3, 0.9);
         p.positionZ.setTargetAtTime(z, at + 0.3, 0.9);
       }
-      lead(this, this.line.bus, to, at, 2.8, dbg(-24), { wave: this.st.wave("air"), attack: 0.6, release: 1.8, cutoff: 3000, glideFrom: this.last.m - 12 > 70 ? this.last.m - 12 : this.last.m, glideTime: 2.2 });
+      lead(this, this.line.bus, to, at, 2.8, dbg(-24), { wave: this.st.wave("air"), attack: 0.6, release: 1.8, cutoff: 3000, key: "lines", glideFrom: this.last.m - 12 > 70 ? this.last.m - 12 : this.last.m, glideTime: 2.2 });
     }
     // the theme as a constellation: four stars, one per beat
     if (L.motif && this.secBar % 4 === 1) {

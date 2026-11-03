@@ -243,14 +243,14 @@ export class Home extends Movement {
     L("toll", 0, this.point(2.2, 0.6, 3.8, 0.9));
     this.buses.far = this.gain(0, this.point(0.4, 0.6, 5.5, 0.9));
 
-    this.pluckS = new Sampler(this, (sr, f) => pluck(sr, f, 1.8, { bright: 0.45, t60: 1.5, pick: 0.16 }, r), 22, 10);
-    this.frame = new Sampler(this, (sr, f) => modal(sr, f, 0.6, MODES.frame, r), 4, 6);
-    this.stone = new Sampler(this, (sr, f) => modal(sr, f, 0.3, MODES.stone, r), 4, 6);
-    this.keys = new Sampler(this, (sr, f) => piano(sr, f, 2.6, r), 20, 12);
-    this.toll = new Sampler(this, (sr, f) => bell(sr, f, 6, BELLS.toll, r), 2, 2);
+    this.pluckS = new Sampler(this, (sr, f) => pluck(sr, f, 1.8, { bright: 0.45, t60: 1.5, pick: 0.16 }, r), 22, 10, "melody");
+    this.frame = new Sampler(this, (sr, f) => modal(sr, f, 0.6, MODES.frame, r), 4, 6, "rhythm");
+    this.stone = new Sampler(this, (sr, f) => modal(sr, f, 0.3, MODES.stone, r), 4, 6, "rhythm");
+    this.keys = new Sampler(this, (sr, f) => piano(sr, f, 2.6, r), 20, 12, "melody");
+    this.toll = new Sampler(this, (sr, f) => bell(sr, f, 6, BELLS.toll, r), 2, 2, "toll");
     this.star = new Sampler(this, (sr, f) => bell(sr, f, 3.0, BELLS.star, r), 16, 8);
     this.wordS = new Sampler(this, (sr, f) => modal(sr, f, 0.7, WORD, r), 20, 12);
-    this.glassS = new Sampler(this, (sr, f) => bell(sr, f, 1.1, BELLS.glass, r), 16, 10);
+    this.glassS = new Sampler(this, (sr, f) => bell(sr, f, 1.1, BELLS.glass, r), 16, 10, "melody");
     this.tap = new Sampler(this, (sr, f) => modal(sr, f, 0.22, MODES.key, r), 12, 5);
     this.grains = this.star;
 
@@ -261,8 +261,8 @@ export class Home extends Movement {
       ? [[-1.2, 0, -1], [1.2, 0, -1]]
       : [[-1.2, 0, -1.1], [1.2, 0, -1.1], [1.1, 0.25, 1.1], [-1.1, 0.25, 1.1]];
     const busses = corners.map((c) => { const g = this.gain(1, this.point(...c, 0.35, 1, c[2] > 0)); q.connect(g); return g; });
-    const marimba = new Sampler(this, (sr, f) => modal(sr, f, 1.2, MODES.marimba, r), 14, 6);
-    const fmBell = new Sampler(this, (sr, f) => fm(sr, f, 1.6, { ratio: 3.5, index: 1.4, indexDecay: 0.2, decay: 0.7 }), 14, 6);
+    const marimba = new Sampler(this, (sr, f) => modal(sr, f, 1.2, MODES.marimba, r), 14, 6, "melody");
+    const fmBell = new Sampler(this, (sr, f) => fm(sr, f, 1.6, { ratio: 3.5, index: 1.4, indexDecay: 0.2, decay: 0.7 }), 14, 6, "melody");
     this.quartet = [
       { s: marimba, bus: busses[0], shift: 0, level: dbg(-13) },
       { s: this.pluckS, bus: busses[1 % busses.length], shift: -12, level: dbg(-12) },
@@ -283,8 +283,8 @@ export class Home extends Movement {
     this.wordPan = this.own(this.ac.createStereoPanner());
     kr(this.wordPan.pan);
     this.wordBus = this.gain(1, this.wordPan);
-    this.wordPan.connect(this.dry);
-    this.wordPan.connect(this.gain(0.35, this.verbIn));
+    this.wordPan.connect(this.front);
+    this.wordPan.connect(this.gain(0.35, this.frontVerb));
 
     // the tape stage: out -> delay (bent for a tape stop) -> low pass -> gain
     const ac = this.ac;
@@ -339,7 +339,7 @@ export class Home extends Movement {
       const g = k === "stars" ? null : this.buses[k];
       g?.gain.setTargetAtTime(v, t, tau);
     }
-    const sky = Math.max(this.cur.stars, this.touch ? 0.9 : 0);
+    const sky = Math.max(this.cur.stars, this.touch ? 2.6 : 0);
     for (const g of this.skyBuses) g.gain.setTargetAtTime(sky, t, tau);
     // the far theme of the first chapter lives only at the very start
     this.buses.far.gain.setTargetAtTime(this.cur.theme * Math.max(0, 1 - p * 1.5), t, tau);
@@ -354,14 +354,21 @@ export class Home extends Movement {
     this.lastP = p;
     // during a jump the mix is already set for the arrival
     if (t > this.jumpUntil && t - this.lastMix > 0.09) this.mix(p, t);
-    const vi = 1 - Math.exp(-Math.abs(v) / 0.7);
-    this.vel = this.vel * 0.75 + vi * 0.25;
-    this.vchoir.out.gain.setTargetAtTime(this.vel * 0.07, t, 0.25);
+    const vi = 1 - Math.exp(-Math.abs(v) / 0.35);
+    this.vel = this.vel * 0.7 + vi * 0.3;
+    if (this.vel < 0.004) this.vel = 0;
+    this.vchoir.out.gain.setTargetAtTime(this.vel * 0.11, t, this.vel > 0 ? 0.18 : 0.5);
+    this.vchoir.filter.frequency.setTargetAtTime(600 + 3600 * this.vel, t, 0.2);
   }
 
   release(t: number, seconds: number, next: Chord | null) {
     super.release(t, seconds, next);
     this.direct?.gain.setTargetAtTime(0, t, 0.3);
+  }
+
+  /** The helmet world plays its theme whole: that is the moment it is at its fullest. */
+  allow(key: string): boolean {
+    return CHAPTERS[this.ch].id === "contact" || super.allow(key);
   }
 
   dispose() {
@@ -414,6 +421,7 @@ export class Home extends Movement {
   chapter(i: number) {
     if (!this.out || this.disposed || i === this.ch || i < 0 || i > LAST) return;
     this.ch = i;
+    this.arrivalBar = this.bar + 1;
     this.setWorld(i, Math.max(this.nextT, this.ac.currentTime + 0.02));
     this.sections = [this.section(i)];
     this.sec = 0;
@@ -490,7 +498,7 @@ export class Home extends Movement {
         const m = tones[this.qWalk[(pos / 2) % 8] % tones.length];
         const v = this.quartet[this.qIdx++ % this.quartet.length];
         if (v.s) v.s.play(m + v.shift, this.hum(t, 6), v.level * (pos % 8 === 0 ? 1 : 0.8), v.bus);
-        else lead(this, v.bus, m, t, 0.45, v.level, { wave: this.st.wave("reed"), attack: 0.03, release: 0.3, cutoff: 2200, vib: 4, vibRate: 5.5 });
+        else lead(this, v.bus, m, t, 0.45, v.level, { wave: this.st.wave("reed"), attack: 0.03, release: 0.3, cutoff: 2200, vib: 4, vibRate: 5.5, key: "melody" });
       }
     }
     // the theme
@@ -512,7 +520,7 @@ export class Home extends Movement {
     if (id === "film" && c.strings > 0.02) {
       for (const [n, s, len] of STRINGS[Math.max(0, this.chBar) % 4]) {
         if (s === pos) lead(this, this.buses.strings, nm(n), t, this.stepDur * len - 0.1, dbg(-16), {
-          wave: this.st.wave("bowed"), attack: 0.6, release: 1.4, cutoff: 950, vib: 9, vibRate: 4.6, detune: 8,
+          wave: this.st.wave("bowed"), attack: 0.6, release: 1.4, cutoff: 950, vib: 9, vibRate: 4.6, detune: 8, key: "melody",
         });
       }
     }
@@ -580,7 +588,7 @@ export class Home extends Movement {
     f.Q.value = 0.8;
     kr(f.frequency);
     const g = ac.createGain();
-    f.connect(g).connect(this.dry);
+    f.connect(g).connect(this.front);
     g.gain.setValueAtTime(0, t0);
     if (fwd) {
       g.gain.setTargetAtTime(lvl, t0, D / 7);
@@ -666,17 +674,17 @@ export class Home extends Movement {
     g.gain.setValueAtTime(0, A);
     g.gain.setTargetAtTime(dbg(-22), A, 1.1);
     g.gain.setTargetAtTime(0, down - 0.05, 0.06);
-    src.connect(lp).connect(g).connect(this.dry);
-    g.connect(this.gain(0.3, this.verbIn));
+    src.connect(lp).connect(g).connect(this.front);
+    g.connect(this.gain(0.3, this.frontVerb));
     src.start(A, 0.9);
     src.stop(down + 0.6);
     src.onended = () => { src.disconnect(); lp.disconnect(); g.disconnect(); };
     // the retro burn: a low open fifth that swells in the last seconds
-    lead(this, this.dry, nm("D2"), A + 2.2, down - A - 2.3, dbg(-24), { wave: this.st.wave("bowed"), attack: 2.2, release: 0.15, cutoff: 600, detune: 12 });
-    lead(this, this.dry, nm("A2"), A + 2.6, down - A - 2.7, dbg(-27), { wave: this.st.wave("bowed"), attack: 2.0, release: 0.15, cutoff: 600, detune: 12 });
+    lead(this, this.front, nm("D2"), A + 2.2, down - A - 2.3, dbg(-24), { wave: this.st.wave("bowed"), attack: 2.2, release: 0.15, cutoff: 600, detune: 12 });
+    lead(this, this.front, nm("A2"), A + 2.6, down - A - 2.7, dbg(-27), { wave: this.st.wave("bowed"), attack: 2.0, release: 0.15, cutoff: 600, detune: 12 });
     // touchdown: weight, dust, and the strings take over
     thud(this, this.direct, down, 78, 32, 1.0, dbg(-15));
-    this.frame.play(nm("D2"), down, dbg(-17), this.dry);
+    this.frame.play(nm("D2"), down, dbg(-17), this.front, { force: true });
     this.dust(down);
   }
 
@@ -694,7 +702,7 @@ export class Home extends Movement {
     g.gain.setValueAtTime(0, t);
     g.gain.linearRampToValueAtTime(dbg(-27), t + 0.03);
     g.gain.setTargetAtTime(0, t + 0.1, 0.5);
-    src.connect(lp).connect(g).connect(this.dry);
+    src.connect(lp).connect(g).connect(this.front);
     src.start(t, 2.2);
     src.stop(t + 2.4);
     src.onended = () => { src.disconnect(); lp.disconnect(); g.disconnect(); };
@@ -718,7 +726,7 @@ export class Home extends Movement {
     g.gain.setValueAtTime(0, t0);
     g.gain.linearRampToValueAtTime(dbg(-20), mid);
     g.gain.linearRampToValueAtTime(0, t1 + 0.05);
-    lp.connect(g).connect(pan).connect(this.dry);
+    lp.connect(g).connect(pan).connect(this.front);
     const nodes: AudioNode[] = [pan, lp, g];
     for (const [m, lv] of [[nm("D3"), 0.5], [nm("A3"), 0.35], [nm("D4"), 0.2]] as [number, number][]) {
       const o = ac.createOscillator();
@@ -757,20 +765,22 @@ export class Home extends Movement {
   /** Arrival: the new world's chord, struck on the downbeat. */
   private land(c: Chord, A: number, amt: number, drum: boolean) {
     const hit = dbg(-17) * amt;
-    tonesIn(c, 67, 86).slice(0, 3).forEach((m, i) => this.star.play(m, A + i * 0.012, hit * (i ? 0.7 : 1), this.dry));
-    if (drum) this.frame.play(nm("D3"), A, hit, this.dry);
-    thud(this, this.dry, A, 120, 55, 0.35, hit * 0.8);
+    tonesIn(c, 67, 86).slice(0, 3).forEach((m, i) => this.star.play(m, A + i * 0.012, hit * (i ? 0.7 : 1), this.front));
+    if (drum) this.frame.play(nm("D3"), A, hit, this.front, { force: true });
+    thud(this, this.front, A, 120, 55, 0.35, hit * 0.8);
     // a reversed bell pulls the ear into the hit
     const pull = tonesIn(c, 72, 86)[0];
-    if (pull !== undefined) this.star.play(pull, A, dbg(-25) * amt, this.direct, { rev: true });
+    if (pull !== undefined) this.star.play(pull, A, dbg(-25) * amt, this.direct, { rev: true, force: true });
   }
 
   // ---- the planet: three scenes in real time --------------------------------
   private buildEnding(t: number) {
     const ac = this.ac;
     // wind: two loops of noise, each in its own slowly moving band, with gusts
-    const wind = this.gain(0, this.dry);
-    wind.connect(this.gain(0.35, this.verbIn));
+    const wind = this.gain(0);
+    const windTrim = this.gain(dbg(5), this.dry);
+    windTrim.connect(this.gain(0.35, this.verbIn));
+    wind.connect(windTrim);
     const sand = this.gain(0, this.dry);
     // the alien part: the same air through two narrow bands tuned to F sharp
     // and C sharp, so the wind sings in the key
@@ -829,8 +839,8 @@ export class Home extends Movement {
     res.frequency.value = 1350;
     res.Q.value = 4;
     res.gain.value = 5;
-    helmet.connect(lp).connect(res).connect(this.dry);
-    res.connect(this.gain(0.06, this.verbIn));
+    helmet.connect(lp).connect(res).connect(this.front);
+    res.connect(this.gain(0.06, this.frontVerb));
     const breath = new Breath(this, helmet, 480);
     // the first breath of open air plays outside the muffle, soft and warm
     const open = this.gain(0.5);
@@ -840,10 +850,10 @@ export class Home extends Movement {
     warm.Q.value = 0.5;
     open.connect(warm).connect(this.direct);
     const air = new Breath(this, open, 560);
-    const steps = this.gain(1, this.dry);
-    steps.connect(this.gain(0.25, this.verbIn));
+    const steps = this.gain(1, this.front);
+    steps.connect(this.gain(0.25, this.frontVerb));
     // the theme comes from ahead, where the sapling is
-    const motif = this.gain(1, this.point(0, 0.2, -3.2, 0.7));
+    const motif = this.gain(1, this.point(0, 0.2, -3.2, 0.7, 1, false, true));
     this.end = { wind, sand, sing, helmet, breath, air, steps, motif };
   }
 
@@ -911,7 +921,7 @@ export class Home extends Movement {
   private exitScene(p: number, t: number, pace: number) {
     // down the ramp: a clank of metal on metal
     this.once("ramp", p >= 0.06, () => {
-      this.stone.play(nm("A2"), t, dbg(-21), this.end!.steps);
+      this.stone.play(nm("A2"), t, dbg(-21), this.end!.steps, { force: true });
       this.tap.play(nm("E5"), t + 0.03, dbg(-30), this.end!.steps);
       thud(this, this.end!.steps, t, 70, 40, 0.3, dbg(-21));
     });
@@ -925,7 +935,7 @@ export class Home extends Movement {
     }
     // far ahead, the four notes again, under the galaxy
     this.once("theme", p >= 0.35, () => {
-      ["D5", "A5", "G5", "E5"].forEach((n, i) => this.keys.play(nm(n), t + 0.2 + i * 0.7, dbg(-23) * (i ? 0.8 : 1), this.end!.motif));
+      ["D5", "A5", "G5", "E5"].forEach((n, i) => this.keys.play(nm(n), t + 0.2 + i * 0.7, dbg(-23) * (i ? 0.8 : 1), this.end!.motif, { force: true }));
     });
   }
 
@@ -969,7 +979,7 @@ export class Home extends Movement {
     this.once("kneel", p >= 0.04, () => {
       this.footstep(t, 0.4);
       thud(this, this.end!.steps, t + 0.12, 70, 45, 0.25, dbg(-20));
-      this.keys.play(nm("F#5"), t + 0.5, dbg(-24), this.end!.motif);
+      this.keys.play(nm("F#5"), t + 0.5, dbg(-24), this.end!.motif, { force: true });
     });
     // the hand meets the sapling
     this.once("touch", beat >= 2 || p >= 0.45, () => this.touchPlant(t));
@@ -1035,8 +1045,8 @@ export class Home extends Movement {
 
   private touchPlant(t: number) {
     this.touch?.gain.setTargetAtTime(0, t, 0.3);
-    const g = this.gain(0, this.dry);
-    g.connect(this.gain(0.8, this.verbIn));
+    const g = this.gain(0, this.front);
+    g.connect(this.gain(0.8, this.frontVerb));
     g.gain.setValueAtTime(0, t);
     g.gain.setTargetAtTime(1, t, 0.02);
     this.touch = g;
@@ -1044,7 +1054,7 @@ export class Home extends Movement {
     this.holdHarmony = true;
     this.harmony(TOUCH, t);
     // struck, rolled from the bottom
-    ns("D2 A2 F#3 C#4 E4 A4").forEach((m, i) => this.keys.play(m, t + i * 0.028, dbg(i < 2 ? -23 : -25), g));
+    ns("D2 A2 F#3 C#4 E4 A4").forEach((m, i) => this.keys.play(m, t + i * 0.028, dbg(i < 2 ? -23 : -25), g, { force: true }));
     // warm strings swell under it and hold
     ([[nm("D3"), -27], [nm("A3"), -29], [nm("F#4"), -30]] as [number, number][]).forEach(([m, lv]) =>
       lead(this, g, m, t + 0.05, 9, dbg(lv), { wave: this.st.wave("bowed"), attack: 1.4, release: 4, cutoff: 1500, vib: 5, vibRate: 4.4, detune: 6 }),
@@ -1052,8 +1062,8 @@ export class Home extends Movement {
     // a light opens above
     ns("A5 D6 F#6").forEach((m, i) => this.starAt(m, t + 0.18 + i * 0.09, dbg(-26) * (i === 2 ? 0.8 : 1)));
     // and the theme, at last, comes to rest: F sharp falls to D
-    this.keys.play(nm("F#5"), t + 1.4, dbg(-23), g);
-    this.keys.play(nm("D5"), t + 2.1, dbg(-22), g);
+    this.keys.play(nm("F#5"), t + 1.4, dbg(-23), g, { force: true });
+    this.keys.play(nm("D5"), t + 2.1, dbg(-22), g, { force: true });
     this.shimmer = 0.45;
     this.mix(this.lastP, t, 0.3);
   }

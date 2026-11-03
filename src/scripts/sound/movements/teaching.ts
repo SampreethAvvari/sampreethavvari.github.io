@@ -25,6 +25,7 @@ export class Teaching extends Movement {
   beats = 4;
   protected bright = 2400;
   protected wet = 0.7;
+  protected trim = 1.4;
   protected tapLo = 75;
   protected tapHi = 89;
 
@@ -59,8 +60,8 @@ export class Teaching extends Movement {
     this.left = this.layer("lesson", 0, this.point(-1.1, 0.1, -1.0, 0.35));
     this.right = this.gain(1, this.point(1.1, 0.1, -1.0, 0.35));
     this.layers.memory = this.gain(0, this.point(0, 0.8, -1.8, 0.8, 1, true));
-    this.celesta = new Sampler(this, (sr, f) => bell(sr, f, 2.0, BELLS.celesta, r), 24, 10);
-    this.box = new Sampler(this, (sr, f) => bell(sr, f, 1.6, BELLS.tine, r), 24, 10);
+    this.celesta = new Sampler(this, (sr, f) => bell(sr, f, 2.0, BELLS.celesta, r), 24, 10, "lesson");
+    this.box = new Sampler(this, (sr, f) => bell(sr, f, 1.6, BELLS.tine, r), 24, 10, "lesson");
     this.tap = new Sampler(this, (sr, f) => bell(sr, f, 0.45, BELLS.tine, r), 12, 5);
     this.grains = this.box;
     this.newPhrase();

@@ -106,7 +106,7 @@ export class Writing extends Movement {
     turnSrc.connect(this.sweep).connect(this.sweepGain).connect(this.air);
     turnSrc.start(0, 1.7);
 
-    this.keys = new Sampler(this, (sr, f) => piano(sr, f, 2.6, r), 24, 14);
+    this.keys = new Sampler(this, (sr, f) => piano(sr, f, 2.6, r), 24, 14, "piano");
     this.tap = new Sampler(this, (sr, f) => piano(sr, f, 0.5, r, 1.4), 12, 5);
     this.grains = this.keys;
     this.keys.warm([nm("G3"), nm("B3"), nm("D4"), nm("E4"), nm("G4"), nm("A4"), nm("B4"), nm("D5")]);
@@ -196,7 +196,8 @@ export class Writing extends Movement {
     const t = this.ac.currentTime + 0.05;
     const tones = tonesIn(this.chord, nm("G3"), nm("D5"));
     const start = this.heroSeed % Math.max(1, tones.length - 2);
-    tones.slice(start, start + 3).forEach((m, i) => this.keys.play(m, t + i * 0.05, dbg(-20) * (i ? 0.8 : 1), this.hand));
+    tones.slice(start, start + 3).forEach((m, i) => this.keys.play(m, t + i * 0.05, dbg(-22) * (i ? 0.8 : 1), this.front, { force: true }));
+    this.arrivalBar = this.bar + 1;
     setTimeout(() => {
       // later sentences wander from the hero's voice
       if (this.voiceRng && !this.disposed) this.voiceRng = mulberry(this.heroSeed + 1 + Math.floor(Math.random() * 3));
@@ -218,8 +219,8 @@ export class Writing extends Movement {
     g.setTargetAtTime(0, t + D * 0.6, D * 0.15);
     // a piano note played backwards, arriving with the new hero, then the hero's low note
     const tones = tonesIn(this.chord, nm("D5"), nm("D6"));
-    if (tones.length) this.keys.play(tones[(d.to ?? 0) % tones.length], t + D, dbg(-22), this.hand, { rev: true });
-    this.keys.play(this.bassM + 12, t + D, dbg(-21), this.layers.left);
+    if (tones.length) this.keys.play(tones[(d.to ?? 0) % tones.length], t + D, dbg(-22), this.front, { rev: true, force: true });
+    this.keys.play(this.bassM + 12, t + D, dbg(-24), this.front, { force: true });
   }
 
   cardHover(slug: string) {

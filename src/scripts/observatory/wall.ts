@@ -291,6 +291,24 @@ export function mountWall(signal: AbortSignal): void | (() => void) {
     if (saved && TESTS[saved] && chips.some((c) => c.dataset.filter === saved && !c.disabled)) filter = saved;
   } catch {}
   let list = cards.map((_, i) => i).filter((i) => TESTS[filter](cards[i]));
+  // Coming back within the visit: land on the same card, centred, and skip
+  // the intro. The card is kept as a cell of the wall, so it survives a
+  // change of screen size.
+  const POS_KEY = "arch-wall-pos";
+  let returning = false;
+  let restoreCell: { i: number; j: number } | null = null;
+  try {
+    const pos = JSON.parse(sessionStorage.getItem(POS_KEY) || "null");
+    if (pos) {
+      returning = true;
+      if (pos.f === filter && Number.isFinite(pos.i) && Number.isFinite(pos.j)) restoreCell = { i: pos.i, j: pos.j };
+    }
+  } catch {}
+  const savePos = (i: number, j: number) => {
+    try {
+      sessionStorage.setItem(POS_KEY, JSON.stringify({ i, j, f: filter }));
+    } catch {}
+  };
   const showFilter = () => {
     chips.forEach((c) => {
       const isOn = c.dataset.filter === filter;
@@ -733,11 +751,11 @@ export function mountWall(signal: AbortSignal): void | (() => void) {
 
   // Intro and filter changes: cards appear outward from the middle.
   type Phase = { kind: "in" | "out" | "rest"; t0: number; ci: number; cj: number; first: boolean };
-  let phase: Phase = { kind: "in", t0: 0, ci: 0, cj: 0, first: true };
+  let phase: Phase = returning ? { kind: "rest", t0: 0, ci: 0, cj: 0, first: false } : { kind: "in", t0: 0, ci: 0, cj: 0, first: true };
   // The intro waits for the site's loader to lift, so it is seen.
   const warp = document.getElementById("warp");
   const warpUp = () => !!warp && !warp.hidden && !warp.classList.contains("is-done");
-  let holdIntro = !reduced && warpUp();
+  let holdIntro = !reduced && !returning && warpUp();
   if (holdIntro && warp) {
     const release = () => {
       if (!holdIntro) return;
@@ -943,6 +961,7 @@ export function mountWall(signal: AbortSignal): void | (() => void) {
     if (opening) return;
     const c = cards[inst.card];
     const href = `/architecture/${c.slug}`;
+    savePos(inst.i, inst.j);
     if (reduced) {
       navigate(href);
       return;
@@ -1016,6 +1035,11 @@ export function mountWall(signal: AbortSignal): void | (() => void) {
     raf = 0;
     if (signal.aborted || mode !== "wall" || document.hidden) return;
     if (resizeDirty) resize();
+    if (restoreCell) {
+      tx = ox = restoreCell.i * cellX;
+      ty = oy = restoreCell.j * cellY;
+      restoreCell = null;
+    }
     const dt = last ? Math.min(0.05, Math.max(0.001, (now - last) / 1000)) : 1 / 60;
     last = now;
     time += dt;
@@ -1232,13 +1256,15 @@ export function mountWall(signal: AbortSignal): void | (() => void) {
   canvas.addEventListener("webglcontextlost", onLost, on);
 
   setMode(mode);
-  if (reduced) {
+  if (reduced || returning) {
     phase = { kind: "rest", t0: 0, ci: 0, cj: 0, first: false };
     hint?.classList.add("is-gone");
   }
   kick();
 
   return () => {
+    // Leaving any other way: remember the card in the middle.
+    if (!opening && cellX > 0) savePos(Math.round(ox / cellX), Math.round(oy / cellY));
     cancelAnimationFrame(raf);
     raf = 0;
     clearTimeout(mipTimer);

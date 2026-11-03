@@ -77,9 +77,9 @@ export class Projects extends Movement {
     this.strL = this.layer("high", 0, this.point(-1.1, 0.4, 0.4, 0.55, 1, true));
     this.sparkBus = this.layer("sparks", 0, this.phone ? this.dry : this.orbit(1.8, 19, 1.2, 2.0, 0.7));
 
-    this.gut = new Sampler(this, (sr, f) => pluck(sr, f, 1.8, { bright: 0.35, t60: 1.6, pick: 0.18 }, r), 20, 10);
-    this.frame = new Sampler(this, (sr, f) => modal(sr, f, 0.6, MODES.frame, r), 4, 6);
-    this.stone = new Sampler(this, (sr, f) => modal(sr, f, 0.3, MODES.stone, r), 4, 6);
+    this.gut = new Sampler(this, (sr, f) => pluck(sr, f, 1.8, { bright: 0.35, t60: 1.6, pick: 0.18 }, r), 20, 10, "motif");
+    this.frame = new Sampler(this, (sr, f) => modal(sr, f, 0.6, MODES.frame, r), 4, 6, "hands");
+    this.stone = new Sampler(this, (sr, f) => modal(sr, f, 0.3, MODES.stone, r), 4, 6, "hands");
     this.spark = new Sampler(this, (sr, f) => bell(sr, f, 0.9, BELLS.spark, r), 12, 6);
     this.tap = new Sampler(this, (sr, f) => modal(sr, f, 0.25, MODES.stone, r), 12, 5);
     this.grains = this.spark;

@@ -15,7 +15,8 @@ export class Sampler {
   private cache = new Map<number, AudioBuffer>();
   private rcache = new Map<number, AudioBuffer>();
   active = 0;
-  constructor(private m: Movement, private render: Render, private max = 18, private poly = 10) {}
+  /** key: a melodic layer that thins out after its theme has arrived. */
+  constructor(private m: Movement, private render: Render, private max = 18, private poly = 10, private key?: string) {}
 
   buffer(midi: number, rev = false): AudioBuffer {
     const map = rev ? this.rcache : this.cache;
@@ -52,8 +53,9 @@ export class Sampler {
    * Play a note. t is when it sounds; for a reversed note, t is when the
    * swell arrives. dur cuts the note short with a soft release.
    */
-  play(midi: number, t: number, gain: number, dest: AudioNode, o?: { dur?: number; rate?: number; rev?: boolean; fade?: number }): AudioBufferSourceNode | null {
+  play(midi: number, t: number, gain: number, dest: AudioNode, o?: { dur?: number; rate?: number; rev?: boolean; fade?: number; force?: boolean }): AudioBufferSourceNode | null {
     if (this.active >= this.poly || gain <= 0.00001) return null;
+    if (this.key && !o?.force && !this.m.allow(this.key)) return null;
     const ac = this.m.ac;
     const buf = this.buffer(midi, !!o?.rev);
     const src = ac.createBufferSource();
@@ -340,10 +342,12 @@ export interface LeadOpts {
   detune?: number; // cents, adds a second oscillator
   glideFrom?: number; // MIDI note to slide from
   glideTime?: number;
+  key?: string; // a melodic layer that thins out after its theme has arrived
 }
 
 /** A live note with its own envelope and a vibrato that arrives late. */
 export function lead(m: Movement, dest: AudioNode, midi: number, t: number, dur: number, vel: number, o: LeadOpts) {
+  if (o.key && !m.allow(o.key)) return;
   const ac = m.ac;
   const end = t + dur + o.release * 4;
   const f = ac.createBiquadFilter();

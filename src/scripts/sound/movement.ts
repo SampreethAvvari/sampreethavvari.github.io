@@ -8,6 +8,11 @@
 //   - a bed bus for held sounds, which the pointer and scrolling bend
 //     (filter, a resonant tilt, a few cents of pitch),
 //   - interaction sounds placed where the pointer is,
+//   - two paths: the music (beds, drones, the sparse melodic events) sits
+//     low and far, mostly room, like the air of the page; touch sounds,
+//     scrolling and transitions sit in front of it, clear,
+//   - melodic events that arrive whole with a world or tab, then thin out to
+//     a phrase now and then, so the page is an atmosphere first,
 //   - a musical handover when the visitor changes tab: the outgoing piece
 //     moves its held chord onto the incoming piece's first chord as it fades,
 //     so the two overlap on the same harmony in two different rooms.
@@ -43,6 +48,11 @@ export abstract class Movement {
   out!: GainNode;
   dry!: GainNode;
   verbIn!: GainNode;
+  /** In front of the music: touch, scrolling, transitions. */
+  front!: GainNode;
+  frontVerb!: GainNode;
+  /** The far, distant layer of the atmosphere. */
+  atmo!: GainNode;
   verbOut!: GainNode;
   bed!: GainNode;
   bedLow!: BiquadFilterNode;
@@ -82,7 +92,11 @@ export abstract class Movement {
   protected tap!: Sampler;
   protected tapLo = 74;
   protected tapHi = 88;
-  protected tapLevel = dbg(-27);
+  protected tapLevel = dbg(-24);
+  /** Share of phrases that play once a theme has arrived. */
+  protected density = 0.38;
+  protected arrivalBar = 0;
+  private gates = new Map<string, { block: number; keep: boolean }>();
   protected grains!: Sampler;
   protected grainLo = 74;
   protected grainHi = 89;
@@ -140,9 +154,9 @@ export abstract class Movement {
     return g;
   }
   /** A bus that plays dry and into the room. */
-  bus(level: number, send: number, dest: AudioNode = this.dry): GainNode {
-    const g = this.gain(level, dest);
-    if (send > 0) g.connect(this.gain(send, this.verbIn));
+  bus(level: number, send: number, dest?: AudioNode, front = false): GainNode {
+    const g = this.gain(level, dest ?? (front ? this.front : this.dry));
+    if (send > 0) g.connect(this.gain(send, front ? this.frontVerb : this.verbIn));
     return g;
   }
   /** A named layer: its level follows the form. */
@@ -202,7 +216,7 @@ export abstract class Movement {
    * With HRTF it gets a real 3D panner (behind, above); otherwise a cheap
    * stereo pan and the same distance loss, which is all a fixed side point needs.
    */
-  point(x: number, y: number, z: number, send = 0.3, level = 1, hrtf = false): GainNode {
+  point(x: number, y: number, z: number, send = 0.3, level = 1, hrtf = false, front = false): GainNode {
     const g = this.gain(level);
     let out: AudioNode;
     if (hrtf && this.hrtf > 0) {
@@ -218,18 +232,18 @@ export abstract class Movement {
       g.connect(sp);
       out = sp;
     }
-    out.connect(this.dry);
-    if (send > 0) out.connect(this.gain(send, this.verbIn));
+    out.connect(front ? this.front : this.dry);
+    if (send > 0) out.connect(this.gain(send, front ? this.frontVerb : this.verbIn));
     return g;
   }
   /** A source that circles the listener: radius, seconds a lap, height, phase. */
-  orbit(r: number, period: number, y: number, phase: number, send = 0.4, level = 1, hrtf = true): GainNode {
+  orbit(r: number, period: number, y: number, phase: number, send = 0.4, level = 1, hrtf = true, front = false): GainNode {
     const p = this.panner(hrtf);
     const ac = this.ac;
     const g = this.gain(level);
     g.connect(p);
-    p.connect(this.dry);
-    if (send > 0) p.connect(this.gain(send, this.verbIn));
+    p.connect(front ? this.front : this.dry);
+    if (send > 0) p.connect(this.gain(send, front ? this.frontVerb : this.verbIn));
     if (!p.positionX) {
       p.setPosition(Math.cos(phase) * r, y, Math.sin(phase) * r);
       return g;
@@ -262,7 +276,10 @@ export abstract class Movement {
     this.out = this.gain(0, this.st.bus);
     this.out.gain.setValueAtTime(0, t);
     this.out.gain.setTargetAtTime(this.trim, t, fadeIn / 3.5);
-    this.dry = this.gain(1, this.out);
+    // the music path sits about 9.5 dB down and keeps more of its room, so it
+    // reads as space; the front path is at full level
+    this.dry = this.gain(dbg(-9.5), this.out);
+    this.front = this.gain(1, this.out);
 
     // the room
     const spec = { ...this.room() };
@@ -278,7 +295,9 @@ export abstract class Movement {
     const conv = this.own(ac.createConvolver());
     conv.normalize = false;
     conv.buffer = ir;
-    this.verbIn = this.gain(1);
+    this.verbIn = this.gain(dbg(-6));
+    this.frontVerb = this.gain(1);
+    this.frontVerb.connect(conv);
     this.verbOut = this.gain(this.wet, this.out);
     this.verbIn.connect(conv).connect(this.verbOut);
 
@@ -305,9 +324,10 @@ export abstract class Movement {
     this.place(this.fxPan, 0.5, 0.5, t);
     this.fx = this.gain(1);
     this.fx.connect(this.fxPan);
-    this.fxPan.connect(this.dry);
-    this.fxPan.connect(this.gain(0.32, this.verbIn));
-    this.air = this.phone ? this.bus(0.8, 0.6) : this.orbit(2.4, 31, 0.9, 0.5, 0.65, 0.8);
+    this.fxPan.connect(this.front);
+    this.fxPan.connect(this.gain(0.3, this.frontVerb));
+    this.air = this.phone ? this.bus(0.8, 0.6, undefined, true) : this.orbit(2.4, 31, 0.9, 0.5, 0.65, 0.8, true, true);
+    this.atmo = this.bus(0.6, 1.1);
 
     const r = this.rng;
     this.tap = new Sampler(this, (sr, f) => modal(sr, f, 0.22, MODES.key, r), 14, 6);
@@ -372,7 +392,10 @@ export abstract class Movement {
 
   private barStart(t: number) {
     this.bar++;
-    if (!this.sections.length) return this.onBar(t);
+    if (!this.sections.length) {
+      this.distant(t);
+      return this.onBar(t);
+    }
     this.secBar++;
     let S = this.sections[this.sec];
     if (this.secBar >= S.bars) {
@@ -385,12 +408,22 @@ export abstract class Movement {
       S = this.sections[this.sec];
     }
     if (this.secBar === 0) this.onSection(S, t);
+    this.distant(t);
     const per = S.per ?? 1;
     if (!this.released && !this.holdHarmony && this.secBar % per === 0) {
       const c = S.prog[Math.floor(this.secBar / per) % S.prog.length];
       if (c !== this.chord) this.harmony(c, t);
     }
     this.onBar(t);
+  }
+
+  /** Far away, now and then, a high bell from the chord: the distant shimmer. */
+  protected distant(t: number) {
+    if (this.released || this.rng() > 0.55) return;
+    const tones = tonesIn(this.chord, this.grainLo, this.grainHi);
+    if (!tones.length) return;
+    const at = t + this.rng() * this.stepDur * this.spb;
+    this.grains.play(this.pick(tones), at, dbg(-22) * (0.5 + 0.5 * this.rng()), this.atmo, { force: true });
   }
 
   /** Change chord: every pad voice leads to its nearest new note. */
@@ -404,10 +437,32 @@ export abstract class Movement {
   }
 
   /** Arriving from another tab: a soft bell on a note both pieces share. */
+  /**
+   * Arriving from another tab: the transition. A bell on a note both pieces
+   * share swells in backwards, and lands on the new piece's chord, struck softly.
+   */
   protected arrive(t: number, from: number[]) {
     const shared = common(from, tonesIn(this.chord, this.grainLo - 12, this.grainHi - 6));
     const m = shared.length ? shared[Math.floor(shared.length / 2)] : tonesIn(this.chord, 72, 84)[0];
-    if (m !== undefined) this.grains.play(m, t + 0.25, dbg(-27), this.air);
+    const A = t + 1.1;
+    if (m !== undefined) this.grains.play(m, A, dbg(-24), this.air, { rev: true, force: true });
+    tonesIn(this.chord, 64, 84).slice(0, 3).forEach((n, i) => this.grains.play(n, A + i * 0.03, dbg(-26) * (i ? 0.75 : 1), this.front, { force: true }));
+  }
+
+  /**
+   * Should a melodic layer play now? A theme plays whole for two bars when it
+   * arrives, then only some two bar phrases do, so it comes and goes.
+   */
+  allow(key: string): boolean {
+    const since = this.bar - this.arrivalBar;
+    if (since < 2) return true;
+    const block = Math.floor(since / 2);
+    let g = this.gates.get(key);
+    if (!g || g.block !== block) {
+      g = { block, keep: this.rng() < this.density };
+      this.gates.set(key, g);
+    }
+    return g.keep;
   }
 
   // ---- the visitor --------------------------------------------------------
@@ -429,8 +484,9 @@ export abstract class Movement {
     this.onHover(t, x, y);
   }
   protected onHover(t: number, x: number, _y: number) {
-    const tones = tonesIn(this.chord, this.tapLo + 12, this.tapHi + 10);
-    if (tones.length) glint(this, this.fx, tones[Math.min(tones.length - 1, Math.floor(x * tones.length))], t, dbg(-44), 0.05);
+    // a light tap of the same instrument as the click, shorter and softer
+    const tones = tonesIn(this.chord, this.tapLo, this.tapHi);
+    if (tones.length) this.tap.play(tones[Math.min(tones.length - 1, Math.floor(x * tones.length))], t, dbg(-33), this.fx, { dur: 0.06, force: true });
   }
   /** Scrolling: i is speed 0..1, dir is +1 down, p how far down the page. */
   scroll(i: number, dir: number, p: number, dy: number, dt: number) {
@@ -459,13 +515,13 @@ export abstract class Movement {
     const tones = tonesIn(this.chord, this.tapLo + 7, this.tapHi + 7);
     if (!tones.length) return;
     this.grainIdx = (this.grainIdx + (dir >= 0 ? 1 : -1) + tones.length * 4) % tones.length;
-    glint(this, this.air, tones[this.grainIdx], t, dbg(-41), 0.09);
+    glint(this, this.air, tones[this.grainIdx], t, dbg(-36), 0.09);
   }
   protected grain(t: number, dir: number, i: number) {
     const tones = tonesIn(this.chord, this.grainLo, this.grainHi);
     if (!tones.length) return;
     this.grainIdx = (this.grainIdx + (dir >= 0 ? 1 : -1) + tones.length * 4) % tones.length;
-    this.grains.play(tones[this.grainIdx], t, dbg(-33) * (0.45 + 0.55 * i), this.air, { dur: 0.22 + 0.3 * this.rng() });
+    this.grains.play(tones[this.grainIdx], t, dbg(-30) * (0.45 + 0.55 * i), this.air, { dur: 0.22 + 0.3 * this.rng(), force: true });
   }
   pointer(m: number, _x: number, y: number) {
     if (!this.out || this.disposed) return;

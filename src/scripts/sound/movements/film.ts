@@ -73,7 +73,7 @@ export class Film extends Movement {
     this.heart = this.layer("heart", 0.25, this.point(0, -0.6, -0.6, 0.25));
     this.drum = this.layer("drum", 0.6, this.dry);
     this.tollBus = this.layer("toll", 0.9, this.point(-2.4, 0.6, 3.6, 0.9, 1, true));
-    this.toll = new Sampler(this, (sr, f) => bell(sr, f, 6, BELLS.toll, r), 4, 3);
+    this.toll = new Sampler(this, (sr, f) => bell(sr, f, 6, BELLS.toll, r), 4, 3, "toll");
     this.tap = new Sampler(this, (sr, f) => pluck(sr, f, 0.45, { bright: 0.08, t60: 0.35, pick: 0.3 }, r), 12, 5);
     this.grains = new Sampler(this, (sr, f) => bell(sr, f, 1.6, BELLS.glass, r), 14, 8);
     this.nextBeat = t + 0.5;
@@ -118,7 +118,7 @@ export class Film extends Movement {
       const line = VIOLA[this.prog][this.secBar % 4];
       for (const [name, at, len] of line) {
         if (at === pos) lead(this, this.viola, nm(name), t, this.stepDur * len - 0.1, dbg(-21), {
-          wave: this.st.wave("bowed"), attack: 0.6, release: 1.1, cutoff: 1500, vib: 11, vibRate: 5.2, detune: 6,
+          wave: this.st.wave("bowed"), attack: 0.6, release: 1.1, cutoff: 1500, vib: 11, vibRate: 5.2, detune: 6, key: "viola",
         });
       }
     }
