@@ -27,7 +27,7 @@ const PER_YEAR = 1100;
 
 const BAYS: BayId[] = ["aie", "fde", "mle", "sde"];
 // How far each bay's doors stand open at rest, before the pointer reaches them.
-const AJAR = [0.62, 0.13, 0.34, 0.04];
+const AJAR = [0.62, 0.13, 0.56, 0.04];
 const isWork = (p: string) => p === "/work" || p === "/work/" || p.startsWith("/work/");
 const bayOf = (p: string): BayId | null => {
   const m = p.match(/^\/work\/([a-z]+)\/?$/);

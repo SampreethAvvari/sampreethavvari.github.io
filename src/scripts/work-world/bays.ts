@@ -291,7 +291,7 @@ function buildAie(kit: Kit, index: number): Bay {
         float frame = m * (0.1 + 0.05 * h(id));
         vec3 base = vec3(1.0, 0.62, 0.26);
         float hot = step(0.0, uHot.x) * step(abs(id.y - uHot.y), 0.5) * uHot.z;
-        vec3 c = base * (frame * 0.5 + m * lit * (0.55 + 0.55 * h(id + 3.0)) * 0.95 + m * hot * 2.4);
+        vec3 c = base * (frame * 0.5 + m * lit * (0.55 + 0.55 * h(id + 3.0)) * 0.72 + m * hot * 2.4);
         gl_FragColor = vec4(c * uPower + vec3(0.012, 0.008, 0.004), 1.0);
       }`,
   });

@@ -274,6 +274,7 @@ const { page, slug, stops, label, span = 1.9 } = Astro.props;
   /* Cards in the bays. Solid glass: no blur over a live canvas. */
   .ww-card {
     position: relative;
+    text-align: left;
     display: flex;
     flex-direction: column;
     min-width: 0;
@@ -341,7 +342,7 @@ const { page, slug, stops, label, span = 1.9 } = Astro.props;
   .ww-plates span { display: block; margin-top: 6px; font-size: 0.8125rem; line-height: 1.42; color: rgba(255, 255, 255, 0.64); }
 
   /* Writing: small cards with art */
-  .ww-shelf { display: grid; gap: 12px; grid-template-columns: repeat(12, minmax(0, 1fr)); width: min(1120px, 100%); pointer-events: none; }
+  .ww-shelf { display: grid; gap: 12px; grid-template-columns: repeat(12, minmax(0, 1fr)); width: 100%; pointer-events: none; }
   .ww-shelf > a { grid-column: span var(--w, 4); display: grid; grid-template-columns: 92px minmax(0, 1fr); gap: 12px; align-items: center; padding: 10px; border-radius: 14px; background: rgba(13, 10, 7, 0.86); border: 1px solid rgba(255, 255, 255, 0.11); color: #fff; text-decoration: none; transition: border-color 0.25s ease; min-width: 0; }
   .ww-shelf > a:hover { border-color: rgba(245, 165, 36, 0.6); }
   .ww-shelf-art { position: relative; display: block; width: 92px; height: 62px; border-radius: 9px; overflow: hidden; background: #0a0705; }
@@ -401,7 +402,7 @@ const { page, slug, stops, label, span = 1.9 } = Astro.props;
     .ww-deck-wrap, .ww-shelf-wrap { width: 100%; }
     .ww-card-art { aspect-ratio: 2 / 1; }
     .ww-card ul { display: none; }
-    .ww-shelf { display: flex; width: calc(100vw - 16px); margin-right: -16px; overflow-x: auto; scroll-snap-type: x mandatory; padding-right: 16px; scrollbar-width: none; }
+    .ww-shelf { display: flex; width: calc(100% + 16px); margin-right: -16px; overflow-x: auto; scroll-snap-type: x mandatory; padding-right: 16px; scrollbar-width: none; }
     .ww-shelf::-webkit-scrollbar { display: none; }
     .ww-shelf > a { flex: 0 0 min(78vw, 300px); scroll-snap-align: start; }
     .ww-plates { gap: 8px; }
