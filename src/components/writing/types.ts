@@ -39,4 +39,9 @@ export type ArchivePost = {
   impact: number;
   /** One of the six heroes at the top of the page. */
   featured: boolean;
+  /** The frontmatter tag, which names the post's constellation on the map. */
+  tag: string;
+  year: string;
+  /** Base path of the small cover for the map, e.g. /writing/thumbs/platform. */
+  thumb?: string;
 };

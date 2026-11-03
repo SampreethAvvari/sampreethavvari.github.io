@@ -1,21 +1,29 @@
-// Chapter set pieces. Each one is built around the flight path at its
-// chapter, lit in its chapter's colour, and only drawn while it is near.
-//
-// Pieces are picked by chapter id when the id is known, otherwise by order.
+// The worlds. Each one is built around the flight path at its chapter, lit
+// in its chapter's colour, and drawn only while the ship is in it: a world
+// appears at the middle of the jump that brings the ship there and goes at
+// the middle of the jump that leaves. Every world has things that live and
+// move, and some that answer the pointer. The last 3D world is the landing:
+// a desert forest planet under a red eclipse, which stays on as the calm
+// hold behind the chapters that follow it.
 
 import {
+  AdditiveBlending,
   BackSide,
   BoxGeometry,
   BufferAttribute,
   BufferGeometry,
+  CatmullRomCurve3,
+  CircleGeometry,
   Color,
   CylinderGeometry,
   DoubleSide,
+  DynamicDrawUsage,
   Group,
   IcosahedronGeometry,
   InstancedBufferAttribute,
   InstancedBufferGeometry,
   InstancedMesh,
+  LatheGeometry,
   LineSegments,
   Matrix4,
   Mesh,
@@ -29,16 +37,32 @@ import {
   ShaderMaterial,
   SphereGeometry,
   TorusGeometry,
+  TubeGeometry,
+  Vector2,
   Vector3,
-  CircleGeometry,
   type Camera,
   type Texture,
 } from "three";
 import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js";
 import { additive, GlowBatch } from "./fx";
 import { NOISE } from "./glsl";
-import { landingPhase, type FlightPath, type Landing } from "./path";
+import { CROSS, landingPhase, type FlightPath, type Landing } from "./path";
 import { rng } from "./textures";
+
+/** The pointer as a ray in world space. on: 0 when there is no pointer. */
+export interface PointerRay {
+  o: Vector3;
+  d: Vector3;
+  on: number;
+}
+
+export interface PieceFrame {
+  time: number;
+  dt: number;
+  p: number;
+  camera: Camera;
+  ptr: PointerRay;
+}
 
 export interface Piece {
   id: string;
@@ -52,8 +76,19 @@ export interface Piece {
   warm?: { amount: number; dir: Vector3 };
   /** A bright light that should throw a lens flare. */
   flare?: { pos: Vector3; color: Color; strength: number };
-  update?(time: number, dt: number, p: number, camera: Camera, pxScale: number, dpr: number): void;
+  /** Air in this world: fog colour and density. */
+  haze?: { color: Color; density: number };
+  update?(f: PieceFrame): void;
 }
+
+/** Shared shader inputs: the pointer ray and the pixel scale for points. */
+export const VIEW = {
+  uRayO: { value: new Vector3() },
+  uRayD: { value: new Vector3(0, 0, -1) },
+  uRayOn: { value: 0 },
+  uPx: { value: 800 },
+  uDpr: { value: 1 },
+};
 
 interface Ctx {
   path: FlightPath;
@@ -62,23 +97,30 @@ interface Ctx {
   glowTex: Texture;
   cloudTex: Texture;
   landing: Landing;
+  /** Index of the landing world; chapters after it have no world of their own. */
+  landWorld: number;
+  ray: { uRayO: { value: Vector3 }; uRayD: { value: Vector3 }; uRayOn: { value: number } };
 }
 
 type Builder = (i: number, color: Color, ctx: Ctx) => Piece;
 
-const ORDER = ["launch", "proof", "projects", "disciplines", "writing", "film", "mind", "contact"];
+const ORDER = ["launch", "proof", "projects", "disciplines", "writing"];
 
-export function buildPieces(ctx: Ctx): Piece[] {
-  const builders: Record<string, Builder> = { launch, proof, projects, disciplines, writing, film, mind, contact };
+export function buildPieces(c: Omit<Ctx, "ray">): Piece[] {
+  const ctx: Ctx = { ...c, ray: { uRayO: VIEW.uRayO, uRayD: VIEW.uRayD, uRayOn: VIEW.uRayOn } };
+  const builders: Record<string, Builder> = { launch, proof, projects, disciplines, writing };
   const out: Piece[] = [];
   const used = new Set<string>();
-  ctx.chapters.forEach((ch, i) => {
-    let key = builders[ch.id] && !used.has(ch.id) ? ch.id : ORDER[i % ORDER.length];
-    // The last chapter always lands on the horizon.
-    if (i === ctx.chapters.length - 1 && !builders[ch.id]) key = "contact";
+  for (let i = 0; i <= ctx.landWorld && i < ctx.chapters.length; i++) {
+    const ch = ctx.chapters[i];
+    if (i === ctx.landWorld) {
+      out.push(landingWorld(i, ch.color, ctx));
+      break;
+    }
+    const key = builders[ch.id] && !used.has(ch.id) ? ch.id : ORDER[i % ORDER.length];
     used.add(key);
     out.push(builders[key](i, ch.color, ctx));
-  });
+  }
   return out;
 }
 
@@ -98,7 +140,7 @@ function frameAt(path: FlightPath, p: number): Frame {
   return f;
 }
 
-/** World point at progress p, offset sideways (x), up (y) and ahead (z). */
+/** World point at path position p, offset sideways (x), up (y) and ahead (z). */
 function place(path: FlightPath, p: number, x: number, y: number, z = 0, out = new Vector3()) {
   const f = frameAt(path, p);
   return out.copy(f.pos).addScaledVector(f.right, x).addScaledVector(f.up, y).addScaledVector(f.fwd, z);
@@ -109,9 +151,10 @@ function smooth(a: number, b: number, x: number) {
   return t * t * (3 - 2 * t);
 }
 
-/** On between a and b, easing in and out over ramp. */
-function windowed(a: number, b: number, ramp: number) {
-  return (p: number) => smooth(a - ramp, a, p) * (1 - smooth(b, b + ramp, p));
+/** On between a and b with near instant edges: worlds swap under the jump's flash. */
+function hard(a: number, b: number) {
+  const e = 0.012;
+  return (p: number) => smooth(a - e, a + e, p) * (1 - smooth(b - e, b + e, p));
 }
 
 function hdr(c: Color, k: number) {
@@ -125,6 +168,50 @@ function standard(color: number, metalness: number, roughness: number, extra: Pa
 }
 
 const SHARED_LIGHT = new Vector3(0.62, 0.42, 0.35).normalize();
+const _h = new Vector3();
+
+/** How close a world point is to the pointer ray: 1 on the ray, 0 beyond ang radians. */
+function hover(ptr: PointerRay, w: Vector3, ang: number) {
+  if (ptr.on <= 0) return 0;
+  _h.subVectors(w, ptr.o);
+  const t = _h.dot(ptr.d);
+  if (t <= 0) return 0;
+  _h.addScaledVector(ptr.d, -t);
+  return ptr.on * Math.max(0, 1 - _h.length() / (t * ang));
+}
+
+/** Move a point away from the pointer ray by amount (world units). */
+function pushAway(ptr: PointerRay, w: Vector3, amount: number, out: Vector3) {
+  out.copy(w);
+  if (amount <= 0.0001) return out;
+  _h.subVectors(w, ptr.o);
+  const t = _h.dot(ptr.d);
+  _h.addScaledVector(ptr.d, -t);
+  const l = _h.length() || 1;
+  return out.addScaledVector(_h, amount / l);
+}
+
+/** The same two ideas for shaders: hover strength and a push away from the ray. */
+const HOVER_GLSL = /* glsl */ `
+uniform vec3 uRayO;
+uniform vec3 uRayD;
+uniform float uRayOn;
+float hoverAt(vec3 w, float ang) {
+  vec3 v = w - uRayO;
+  float t = dot(v, uRayD);
+  if (t <= 0.0) return 0.0;
+  vec3 c = v - uRayD * t;
+  return uRayOn * clamp(1.0 - length(c) / (t * ang), 0.0, 1.0);
+}
+vec3 pushFrom(vec3 w, vec3 centre, float ang, float amount) {
+  vec3 v = centre - uRayO;
+  float t = dot(v, uRayD);
+  if (t <= 0.0) return w;
+  vec3 c = v - uRayD * t;
+  float k = uRayOn * clamp(1.0 - length(c) / (t * ang), 0.0, 1.0);
+  return w + normalize(c + vec3(1e-4, 0.0, 0.0)) * k * k * amount * t * 0.08;
+}
+`;
 
 // ------------------------------------------------------------------ shaders
 
@@ -148,12 +235,15 @@ uniform vec3 uA;
 uniform vec3 uB;
 uniform vec3 uAtmo;
 uniform vec3 uLight;
-uniform vec3 uCity;
 uniform float uSeed;
 uniform float uBands;
 uniform float uBandMix;
 uniform float uFade;
 uniform float uDetail;
+uniform float uTime;
+uniform float uStorm;
+uniform vec3 uAurora;
+uniform float uHover;
 varying vec3 vObj;
 varying vec3 vN;
 varying vec3 vW;
@@ -164,7 +254,6 @@ void main() {
   float m = clamp(mix(n * 1.7 - 0.35, bands, uBandMix), 0.0, 1.0);
   vec3 alb = mix(uA, uB, m) * (0.72 + 0.5 * n2);
   if (uDetail > 0.0) {
-    // Dunes and ridges that only matter up close, on the landing world.
     float fine = vnoise(vObj * 700.0) * 0.6 + vnoise(vObj * 2300.0) * 0.4;
     float ridge = 1.0 - abs(vnoise(vObj * 160.0 + n) * 2.0 - 1.0);
     alb *= mix(1.0, 0.7 + 0.5 * fine + 0.25 * ridge * ridge, uDetail);
@@ -175,10 +264,19 @@ void main() {
   float day = smoothstep(-0.1, 0.65, ndl);
   float fres = pow(1.0 - max(dot(N, V), 0.0), 2.6);
   vec3 col = alb * day * 1.15;
-  col += uAtmo * fres * (0.18 + 1.3 * smoothstep(-0.3, 0.5, ndl));
-  // City lights on the night side, for planets that have them.
-  float city = step(0.6, n2) * step(0.5, hash13(floor(vObj * 180.0))) * (1.0 - smoothstep(-0.25, 0.05, ndl));
-  col += uCity * city * 1.6;
+  col += uAtmo * fres * (0.18 + 1.3 * smoothstep(-0.3, 0.5, ndl)) * (1.0 + uHover * 1.6);
+  if (uStorm > 0.0) {
+    // Lightning: cells that flicker on for a moment at random.
+    vec3 cell = floor(vObj * 9.0);
+    float h = hash13(cell + floor(uTime * 2.5) * 13.1);
+    float flick = step(0.985, h) * (0.5 + 0.5 * sin(uTime * 70.0 + h * 40.0));
+    float spot = smoothstep(0.5, 0.0, length(fract(vObj * 9.0) - 0.5));
+    col += vec3(0.75, 0.8, 1.0) * flick * spot * uStorm * 4.0;
+  }
+  float lat = abs(vObj.y);
+  float aur = smoothstep(0.7, 0.86, lat) * (1.0 - smoothstep(0.93, 1.0, lat));
+  aur *= 0.45 + 0.55 * sin(atan(vObj.z, vObj.x) * 9.0 + uTime * 0.8 + n * 6.0);
+  col += uAurora * max(aur, 0.0) * (0.65 + 0.35 * sin(uTime * 1.3));
   gl_FragColor = vec4(col * uFade, uFade);
 }
 `;
@@ -200,6 +298,7 @@ uniform vec3 uLight;
 uniform float uFade;
 uniform float uEdge;
 uniform float uPower;
+uniform float uHover;
 varying vec3 vN;
 varying vec3 vW;
 void main() {
@@ -207,7 +306,7 @@ void main() {
   vec3 V = normalize(cameraPosition - vW);
   float k = clamp(-dot(N, V) / uEdge, 0.0, 1.0);
   float lit = 0.2 + 1.2 * smoothstep(-0.35, 0.6, dot(N, uLight));
-  float a = pow(k, uPower) * lit;
+  float a = pow(k, uPower) * lit * (1.0 + uHover * 1.5);
   gl_FragColor = vec4(uColor * a * uFade, 1.0);
 }
 `;
@@ -264,12 +363,7 @@ function puffs(list: { pos: Vector3; size: number; color: Color; rot: number }[]
   g.setAttribute("aRot", new InstancedBufferAttribute(rot, 1));
   g.instanceCount = list.length;
   const m = additive(
-    new ShaderMaterial({
-      vertexShader: PUFF_VS,
-      fragmentShader: PUFF_FS,
-      uniforms: { tCloud: { value: cloud }, uFade: fade, uOpacity: { value: opacity } },
-      side: DoubleSide,
-    }),
+    new ShaderMaterial({ vertexShader: PUFF_VS, fragmentShader: PUFF_FS, uniforms: { tCloud: { value: cloud }, uFade: fade, uOpacity: { value: opacity } }, side: DoubleSide }),
   );
   const mesh = new Mesh(g, m);
   mesh.frustumCulled = false;
@@ -277,30 +371,45 @@ function puffs(list: { pos: Vector3; size: number; color: Color; rot: number }[]
   return mesh;
 }
 
-function planet(
-  ctx: Ctx,
-  fade: { value: number },
-  o: { radius: number; a: Color; b: Color; atmo: Color; seed: number; bands?: number; bandMix?: number; city?: Color; light?: Vector3; segs?: number; detail?: number },
-) {
+interface PlanetOpts {
+  radius: number;
+  a: Color;
+  b: Color;
+  atmo: Color;
+  seed: number;
+  bands?: number;
+  bandMix?: number;
+  light?: Vector3;
+  segs?: number;
+  detail?: number;
+  storm?: number;
+  aurora?: Color;
+}
+
+/** A shaded world with an atmosphere shell. userData.uniforms holds uTime and uHover. */
+function planet(ctx: Ctx, fade: { value: number }, o: PlanetOpts) {
   const g = new Group();
   const segs = o.segs ?? (ctx.low ? 40 : 72);
   const light = o.light ?? SHARED_LIGHT;
+  const shared = { uTime: { value: 0 }, uHover: { value: 0 } };
   const body = new Mesh(
     new SphereGeometry(o.radius, segs, Math.round(segs * 0.6)),
     new ShaderMaterial({
       vertexShader: PLANET_VS,
       fragmentShader: PLANET_FS(ctx.low ? 3 : 5),
       uniforms: {
+        ...shared,
         uA: { value: o.a },
         uB: { value: o.b },
         uAtmo: { value: o.atmo },
         uLight: { value: light },
-        uCity: { value: o.city ?? new Color(0, 0, 0) },
         uSeed: { value: o.seed },
         uBands: { value: o.bands ?? 0 },
         uBandMix: { value: o.bandMix ?? 0 },
         uFade: fade,
         uDetail: { value: o.detail ?? 0 },
+        uStorm: { value: o.storm ?? 0 },
+        uAurora: { value: o.aurora ?? new Color(0, 0, 0) },
       },
       transparent: true,
     }),
@@ -311,24 +420,244 @@ function planet(
       new ShaderMaterial({
         vertexShader: ATMO_VS,
         fragmentShader: ATMO_FS,
-        uniforms: { uColor: { value: o.atmo }, uLight: { value: light }, uFade: fade, uEdge: { value: 0.47 }, uPower: { value: 2.4 } },
+        uniforms: { uHover: shared.uHover, uColor: { value: o.atmo }, uLight: { value: light }, uFade: fade, uEdge: { value: 0.47 }, uPower: { value: 2.4 } },
         side: BackSide,
       }),
     ),
   );
   g.add(body, shell);
+  g.userData.uniforms = shared;
   return g;
+}
+
+// ------------------------------------------------------------------ living things
+
+/** Small craft on looping paths, each with a body, a nav light and an engine glow. */
+class Traffic {
+  readonly group = new Group();
+  readonly count: number;
+  private readonly mesh: InstancedMesh;
+  private readonly glows: GlowBatch;
+  private readonly paths: { c: Vector3; a: Vector3; b: Vector3; r: number; w: number; ph: number }[] = [];
+  private readonly m = new Matrix4();
+  private readonly pos = new Vector3();
+  private readonly ahead = new Vector3();
+  private readonly up = new Vector3(0, 1, 0);
+  private readonly scale = new Vector3(1, 1, 1);
+
+  constructor(n: number, color: Color, fade: { value: number }) {
+    this.count = n;
+    const parts = [new BoxGeometry(0.5, 0.32, 1.7), new BoxGeometry(1.6, 0.06, 0.5).translate(0, 0, 0.35), new BoxGeometry(0.3, 0.3, 0.3).translate(0, 0.2, -0.5)].map((g) => g.toNonIndexed());
+    const geo = mergeGeometries(parts, false)!;
+    this.mesh = new InstancedMesh(geo, standard(0xd8dbe0, 0.4, 0.45), n);
+    this.mesh.frustumCulled = false;
+    this.glows = new GlowBatch(n * 2, fade);
+    for (let k = 0; k < n; k++) {
+      this.glows.add(0, 0, 0, 0.9, color.r * 0.6 + 0.4, color.g * 0.6 + 0.4, color.b * 0.6 + 0.4, 1.8);
+      this.glows.add(0, 0, 0, 0.35, k % 2 ? 1 : 0.3, k % 2 ? 0.2 : 1, 0.3, 1.4);
+      this.paths.push({ c: new Vector3(), a: new Vector3(1, 0, 0), b: new Vector3(0, 0, 1), r: 20, w: 0.2, ph: k });
+    }
+    this.group.add(this.mesh, this.glows.mesh);
+  }
+
+  /** Loop craft k around centre c in the plane of a and b, tilted a little. */
+  orbit(k: number, c: Vector3, a: Vector3, b: Vector3, r: number, w: number, ph: number, tilt: number) {
+    const p = this.paths[k];
+    p.c.copy(c);
+    p.a.copy(a).normalize();
+    p.b.copy(b).normalize().applyAxisAngle(p.a, (k % 2 ? 1 : -1) * tilt);
+    p.r = r;
+    p.w = (k % 2 ? 1 : -1) * w;
+    p.ph = ph;
+  }
+
+  update(time: number) {
+    for (let k = 0; k < this.count; k++) {
+      const p = this.paths[k];
+      const t = time * p.w + p.ph;
+      this.pos.copy(p.c).addScaledVector(p.a, Math.cos(t) * p.r).addScaledVector(p.b, Math.sin(t) * p.r * 0.7);
+      this.ahead.copy(p.c).addScaledVector(p.a, Math.cos(t + 0.05 * Math.sign(p.w)) * p.r).addScaledVector(p.b, Math.sin(t + 0.05 * Math.sign(p.w)) * p.r * 0.7);
+      this.m.lookAt(this.ahead, this.pos, this.up);
+      this.m.setPosition(this.pos);
+      this.m.scale(this.scale);
+      this.mesh.setMatrixAt(k, this.m);
+      // Engine glow behind, nav light on top.
+      this.ahead.sub(this.pos).normalize();
+      this.glows.setPos(k * 2, this.pos.x - this.ahead.x * 1.0, this.pos.y - this.ahead.y * 1.0, this.pos.z - this.ahead.z * 1.0);
+      this.glows.setPos(k * 2 + 1, this.pos.x, this.pos.y + 0.3, this.pos.z);
+      this.glows.setIntensity(k * 2 + 1, Math.pow(Math.max(0, Math.sin(time * 4 + k)), 12) * 3);
+    }
+    this.mesh.instanceMatrix.needsUpdate = true;
+    this.glows.commit();
+  }
+}
+
+const COMET_VS = /* glsl */ `
+attribute vec2 aCorner;
+attribute vec3 aHead;
+attribute vec4 aDir; // direction, length
+varying float vAlong;
+varying float vEdge;
+void main() {
+  vec3 tail = aHead - aDir.xyz * aDir.w;
+  vec4 h = viewMatrix * vec4(aHead, 1.0);
+  vec4 t = viewMatrix * vec4(tail, 1.0);
+  vec4 mv = mix(h, t, aCorner.x);
+  vec3 side = normalize(cross(t.xyz - h.xyz + vec3(0.0, 0.0, 1e-4), mv.xyz));
+  mv.xyz += side * aCorner.y * mix(0.9, 0.05, aCorner.x) * (0.004 * max(-mv.z, 1.0) + 0.6);
+  vAlong = aCorner.x;
+  vEdge = aCorner.y;
+  gl_Position = projectionMatrix * mv;
+}
+`;
+
+const COMET_FS = /* glsl */ `
+uniform vec3 uColor;
+uniform float uFade;
+varying float vAlong;
+varying float vEdge;
+void main() {
+  float a = (1.0 - abs(vEdge)) * pow(max(1.0 - vAlong, 0.0), 2.0) * uFade;
+  gl_FragColor = vec4(uColor * a, 1.0);
+}
+`;
+
+/** Comets on long straight crossings, each with a glowing head and a tapering tail. */
+class Comets {
+  readonly group = new Group();
+  private readonly heads: GlowBatch;
+  private readonly aHead: InstancedBufferAttribute;
+  private readonly aDir: InstancedBufferAttribute;
+  private readonly runs: { s: Vector3; d: Vector3; len: number; period: number; ph: number }[] = [];
+  private readonly r: () => number;
+
+  constructor(n: number, color: Color, fade: { value: number }, r: () => number) {
+    this.r = r;
+    const g = new InstancedBufferGeometry();
+    g.setAttribute("aCorner", new BufferAttribute(new Float32Array([0, -1, 0, 1, 1, -1, 1, 1]), 2));
+    g.setAttribute("position", new BufferAttribute(new Float32Array(12), 3));
+    g.setIndex([0, 2, 1, 1, 2, 3]);
+    this.aHead = new InstancedBufferAttribute(new Float32Array(n * 3), 3);
+    this.aHead.setUsage(DynamicDrawUsage);
+    this.aDir = new InstancedBufferAttribute(new Float32Array(n * 4), 4);
+    g.setAttribute("aHead", this.aHead);
+    g.setAttribute("aDir", this.aDir);
+    g.instanceCount = n;
+    const tails = new Mesh(g, additive(new ShaderMaterial({ vertexShader: COMET_VS, fragmentShader: COMET_FS, uniforms: { uColor: { value: color.clone().lerp(new Color(1, 1, 1), 0.4).multiplyScalar(1.6) }, uFade: fade }, side: DoubleSide })));
+    tails.frustumCulled = false;
+    tails.renderOrder = 6;
+    this.heads = new GlowBatch(n, fade);
+    for (let k = 0; k < n; k++) {
+      this.heads.add(0, 0, 0, 2.2, 0.9, 0.95, 1, 0);
+      this.runs.push({ s: new Vector3(), d: new Vector3(1, 0, 0), len: 300, period: 12, ph: 0 });
+    }
+    this.group.add(tails, this.heads.mesh);
+  }
+
+  /** Lay out crossings around a centre, mostly across the view. */
+  scatter(c: Vector3, right: Vector3, up: Vector3, fwd: Vector3, radius: number) {
+    const r = this.r;
+    this.runs.forEach((run, k) => {
+      const side = r() < 0.5 ? -1 : 1;
+      run.s.copy(c).addScaledVector(right, side * radius * (0.8 + r() * 0.6)).addScaledVector(up, (r() - 0.3) * radius).addScaledVector(fwd, (r() - 0.5) * radius);
+      run.d.copy(right).multiplyScalar(-side).addScaledVector(up, (r() - 0.5) * 0.6).addScaledVector(fwd, (r() - 0.5) * 0.8).normalize();
+      run.len = radius * (2 + r());
+      run.period = 9 + r() * 10;
+      run.ph = r();
+      this.aDir.setXYZW(k, run.d.x, run.d.y, run.d.z, 18 + r() * 30);
+    });
+    this.aDir.needsUpdate = true;
+  }
+
+  update(time: number) {
+    this.runs.forEach((run, k) => {
+      const f = (time / run.period + run.ph) % 1;
+      const x = run.s.x + run.d.x * run.len * f;
+      const y = run.s.y + run.d.y * run.len * f;
+      const z = run.s.z + run.d.z * run.len * f;
+      this.aHead.setXYZ(k, x, y, z);
+      this.heads.setPos(k, x, y, z);
+      this.heads.setIntensity(k, Math.sin(Math.PI * f) * 2.4);
+    });
+    this.aHead.needsUpdate = true;
+    this.heads.commit();
+  }
+}
+
+const MOTE_VS = /* glsl */ `
+${HOVER_GLSL}
+attribute float aSeed;
+uniform float uTime;
+uniform float uPx;
+uniform float uDpr;
+uniform float uSize;
+varying float vA;
+void main() {
+  vec3 p = position + vec3(sin(uTime * 0.21 + aSeed * 40.0), sin(uTime * 0.17 + aSeed * 23.0) * 0.6, cos(uTime * 0.19 + aSeed * 31.0)) * 2.5;
+  vec4 w = modelMatrix * vec4(p, 1.0);
+  w.xyz = pushFrom(w.xyz, w.xyz, 0.1, 2.0);
+  vec4 mv = viewMatrix * w;
+  gl_PointSize = clamp(uSize * uPx / max(-mv.z, 1.0), 1.0 * uDpr, 5.0 * uDpr);
+  vA = (0.4 + 0.6 * fract(aSeed * 7.3)) * (0.6 + 0.4 * sin(uTime * (0.8 + aSeed) + aSeed * 50.0));
+  gl_Position = projectionMatrix * mv;
+}
+`;
+
+const MOTE_FS = /* glsl */ `
+uniform vec3 uColor;
+uniform float uFade;
+varying float vA;
+void main() {
+  float d = length(gl_PointCoord - 0.5);
+  float a = smoothstep(0.5, 0.0, d);
+  gl_FragColor = vec4(uColor * a * a * vA * uFade, 1.0);
+}
+`;
+
+/** Drifting motes of light or dust in a ball around a centre; they part around the pointer. */
+class Motes {
+  readonly points: Points;
+  private readonly mat: ShaderMaterial;
+  constructor(ctx: Ctx, n: number, c: Vector3, radius: number, color: Color, fade: { value: number }, size: number) {
+    const r = rng(n * 7 + 3);
+    const pos = new Float32Array(n * 3);
+    const seed = new Float32Array(n);
+    for (let k = 0; k < n; k++) {
+      const u = r() * 2 - 1;
+      const th = r() * Math.PI * 2;
+      const rad = Math.cbrt(r()) * radius;
+      const s = Math.sqrt(1 - u * u);
+      pos.set([c.x + Math.cos(th) * s * rad, c.y + u * rad * 0.6, c.z + Math.sin(th) * s * rad], k * 3);
+      seed[k] = r();
+    }
+    const g = new BufferGeometry();
+    g.setAttribute("position", new BufferAttribute(pos, 3));
+    g.setAttribute("aSeed", new BufferAttribute(seed, 1));
+    this.mat = additive(
+      new ShaderMaterial({
+        vertexShader: MOTE_VS,
+        fragmentShader: MOTE_FS,
+        uniforms: { ...ctx.ray, uPx: VIEW.uPx, uDpr: VIEW.uDpr, uTime: { value: 0 }, uSize: { value: size }, uColor: { value: color }, uFade: fade },
+      }),
+    );
+    this.points = new Points(g, this.mat);
+    this.points.frustumCulled = false;
+    this.points.renderOrder = 6;
+  }
+  update(time: number) {
+    this.mat.uniforms.uTime.value = time;
+  }
 }
 
 // ------------------------------------------------------------------ 1 launch
 
+/** Departure: the ship has just come through a gate of light, which stays behind it. */
 function launch(i: number, color: Color, ctx: Ctx): Piece {
   const { path, low } = ctx;
   const fade = { value: 1 };
   const group = new Group();
-  const at = i + 0.2;
-  const f = frameAt(path, at);
-  group.position.copy(f.pos).addScaledVector(f.up, 1.5);
+  const f = frameAt(path, i - 0.01);
+  group.position.copy(f.pos);
   group.quaternion.copy(f.quat);
 
   const R = 24;
@@ -340,13 +669,11 @@ function launch(i: number, color: Color, ctx: Ctx): Piece {
   // The gate's machinery: armoured segments with lit gaps.
   const SEGS = low ? 18 : 28;
   const frame = new Group();
-  const segGeo = new BoxGeometry(2 * Math.PI * (R + 2) / SEGS - 1.1, 2.6, 3.6);
-  const segMat = standard(0x232934, 0.85, 0.32);
-  const segs = new InstancedMesh(segGeo, segMat, SEGS);
-  const capGeo = new BoxGeometry(2 * Math.PI * (R + 2) / SEGS - 2.2, 0.5, 2.8);
+  const segGeo = new BoxGeometry((2 * Math.PI * (R + 2)) / SEGS - 1.1, 2.6, 3.6);
+  const segs = new InstancedMesh(segGeo, standard(0x232934, 0.85, 0.32), SEGS);
+  const capGeo = new BoxGeometry((2 * Math.PI * (R + 2)) / SEGS - 2.2, 0.5, 2.8);
   const caps = new InstancedMesh(capGeo, standard(0xc9ced6, 0.4, 0.35), SEGS);
-  const gapGeo = new BoxGeometry(0.5, 1.8, 3.9);
-  const gaps = new InstancedMesh(gapGeo, new MeshBasicMaterial({ color: hdr(color, 3.2) }), SEGS);
+  const gaps = new InstancedMesh(new BoxGeometry(0.5, 1.8, 3.9), new MeshBasicMaterial({ color: hdr(color, 3.2) }), SEGS);
   const m = new Matrix4();
   const q = new Quaternion();
   const z = new Vector3(0, 0, 1);
@@ -363,7 +690,6 @@ function launch(i: number, color: Color, ctx: Ctx): Piece {
   }
   frame.add(segs, caps, gaps);
 
-  // The membrane of light inside the gate.
   const memMat = additive(
     new ShaderMaterial({
       vertexShader: /* glsl */ `varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`,
@@ -389,40 +715,71 @@ function launch(i: number, color: Color, ctx: Ctx): Piece {
   const membrane = new Mesh(new CircleGeometry(R - 0.5, low ? 48 : 96), memMat);
   membrane.renderOrder = 7;
 
-  // Two smaller echo rings further along the line.
+  // A tunnel of smaller rings behind it, the way the ship came.
   const echoes = new Group();
   for (const [dz, r, k] of [
-    [-80, 16, 2.4],
-    [-170, 11, 1.6],
+    [70, 18, 2.4],
+    [150, 13, 1.6],
+    [240, 9, 1.0],
   ]) {
     const e = new Mesh(new TorusGeometry(r, 0.22, 8, 96), new MeshBasicMaterial({ color: hdr(color, k) }));
     e.position.z = dz;
     echoes.add(e);
   }
-
   const beacons = new GlowBatch(SEGS, fade);
   for (let k = 0; k < SEGS; k++) {
     const a = ((k + 0.5) / SEGS) * Math.PI * 2;
     beacons.add(Math.cos(a) * (R + 2), Math.sin(a) * (R + 2), 2.2, 1.6, color.r, color.g, color.b, 1.6);
   }
-
   group.add(ring, inner, halo, frame, membrane, echoes, beacons.mesh);
+
+  // Far off, a pale blue world the voyage leaves behind.
+  const home = planet(ctx, fade, {
+    radius: 260,
+    a: new Color(0.02, 0.05, 0.12),
+    b: new Color(0.18, 0.32, 0.55),
+    atmo: hdr(color, 1.2),
+    seed: 1.7,
+    bands: 2,
+    bandMix: 0.15,
+    light: new Vector3(0.7, 0.4, -0.5).normalize(),
+  });
+  home.position.copy(place(path, i - 0.4, 260, -420, 0));
+  const outer = new Group();
+  outer.add(group, home);
+
+  // Small craft come and go through the gate.
+  const craft = new Traffic(low ? 6 : 12, color, fade);
+  const gateC = f.pos.clone();
+  for (let k = 0; k < craft.count; k++) craft.orbit(k, gateC, f.up, f.fwd, 30 + (k % 4) * 9, 0.12 + (k % 3) * 0.05, k * 1.7, 0.35);
+  outer.add(craft.group);
+
+  // Beacons brighten when the pointer passes near them.
+  group.updateMatrixWorld(true);
+  const beaconWorld: Vector3[] = [];
+  for (let k = 0; k < SEGS; k++) beaconWorld.push(new Vector3(beacons.pos[k * 3], beacons.pos[k * 3 + 1], beacons.pos[k * 3 + 2]).applyMatrix4(group.matrixWorld));
+  const hot = new Float32Array(SEGS);
+
   const local = new Vector3();
   return {
     id: "launch",
-    group,
+    group: outer,
     fade,
-    weight: windowed(-5, i + 0.85, 0.35),
-    nebula: 0.1,
-    update(time, dt, _p, camera) {
+    weight: hard(-10, i + CROSS),
+    nebula: 0.12,
+    update({ time, dt, camera, ptr }) {
       frame.rotation.z += dt * 0.04;
       echoes.rotation.z -= dt * 0.06;
       memMat.uniforms.uTime.value = time;
       local.copy(camera.position);
       group.worldToLocal(local);
       memMat.uniforms.uNear.value = smooth(3, 26, Math.abs(local.z));
-      for (let k = 0; k < SEGS; k++) beacons.setIntensity(k, 1.2 + 1.4 * Math.pow(0.5 + 0.5 * Math.sin(time * 2 - k * 0.7), 4));
+      for (let k = 0; k < SEGS; k++) {
+        hot[k] = Math.max(hover(ptr, beaconWorld[k], 0.07), hot[k] - dt * 1.5);
+        beacons.setIntensity(k, 1.2 + 1.4 * Math.pow(0.5 + 0.5 * Math.sin(time * 2 - k * 0.7), 4) + hot[k] * 7);
+      }
       beacons.commit();
+      craft.update(time);
     },
   };
 }
@@ -444,6 +801,7 @@ function shardGeometry(seed: number) {
   return g;
 }
 
+/** A field of dark glassy crystal shards, some lit from within, joined by threads of light. */
 function proof(i: number, color: Color, ctx: Ctx): Piece {
   const { path, low } = ctx;
   const fade = { value: 1 };
@@ -452,8 +810,9 @@ function proof(i: number, color: Color, ctx: Ctx): Piece {
   const N = low ? 60 : 150;
   const variants = 3;
   const per = Math.ceil(N / variants);
-  const rockMat = standard(0x3c4350, 0.55, 0.44, { flatShading: true });
-  rockMat.emissive = hdr(color, 0.03);
+  const rockMat = standard(0x1a2029, 0.55, 0.22, { flatShading: true });
+  rockMat.emissive = hdr(color, 0.02);
+  rockMat.envMapIntensity = 1.3;
   const meshes: InstancedMesh[] = [];
   for (let k = 0; k < variants; k++) {
     const im = new InstancedMesh(shardGeometry(7 + k), rockMat, per);
@@ -472,40 +831,46 @@ function proof(i: number, color: Color, ctx: Ctx): Piece {
   }
   const shards: Shard[] = [];
   const counts = new Array(variants).fill(0);
-  for (let k = 0; k < N; k++) {
-    const p = i - 0.5 + r() * 1.3;
+  let placedCount = 0;
+  while (placedCount < N) {
+    const p = i - 0.2 + r() * 0.75;
     const th = r() * Math.PI * 2;
-    const rad = 13 + Math.pow(r(), 1.5) * 130;
+    const rad = 14 + Math.pow(r(), 1.4) * 140;
+    // Keep the camera's side of the ship clear.
+    if (Math.cos(th) > 0.35 && rad < 120) continue;
     const s = 0.9 + Math.pow(r(), 3) * 9;
-    const mesh = k % variants;
+    const mesh = placedCount % variants;
     shards.push({
-      pos: place(path, p, Math.cos(th) * rad, Math.sin(th) * rad * 0.75),
+      pos: place(path, p, Math.cos(th) * rad, Math.sin(th) * rad * 0.8),
       axis: new Vector3(r() - 0.5, r() - 0.5, r() - 0.5).normalize(),
-      speed: (r() - 0.5) * 0.5,
+      speed: (r() - 0.5) * 0.4,
       angle: r() * Math.PI * 2,
       scale: new Vector3(s, s * (0.8 + r() * 0.6), s),
       mesh,
       slot: counts[mesh]++,
     });
+    placedCount++;
   }
-  meshes.forEach((m, k) => (m.count = counts[k]));
+  meshes.forEach((mm, k) => (mm.count = counts[k]));
 
-  // Glowing crystals and the light filaments that join them.
-  const CN = low ? 10 : 26;
-  const crystals = new InstancedMesh(new OctahedronGeometry(1, 0), new MeshBasicMaterial({ color: hdr(color, 3.2) }), CN);
+  const CN = low ? 12 : 30;
+  const crystals = new InstancedMesh(new OctahedronGeometry(1, 0), new MeshBasicMaterial({ color: hdr(color, 2.6) }), CN);
   crystals.frustumCulled = false;
   const cpos: Vector3[] = [];
   const mm = new Matrix4();
   const qq = new Quaternion();
-  for (let k = 0; k < CN; k++) {
-    const p = i - 0.4 + r() * 1.2;
+  let c = 0;
+  while (c < CN) {
+    const p = i - 0.15 + r() * 0.65;
     const th = r() * Math.PI * 2;
-    const rad = 16 + r() * 70;
-    const pos = place(path, p, Math.cos(th) * rad, Math.sin(th) * rad * 0.7);
+    const rad = 16 + r() * 80;
+    if (Math.cos(th) > 0.35 && rad < 120) continue;
+    const pos = place(path, p, Math.cos(th) * rad, Math.sin(th) * rad * 0.75);
     cpos.push(pos);
     qq.setFromAxisAngle(new Vector3(r(), r(), r()).normalize(), r() * 3);
     const s = 0.35 + r() * 0.6;
-    crystals.setMatrixAt(k, mm.compose(pos, qq, new Vector3(s * 0.6, s * 1.8, s * 0.6)));
+    crystals.setMatrixAt(c, mm.compose(pos, qq, new Vector3(s * 0.6, s * 1.8, s * 0.6)));
+    c++;
   }
   group.add(crystals);
 
@@ -536,158 +901,183 @@ function proof(i: number, color: Color, ctx: Ctx): Piece {
         varying vec2 vT;
         void main() {
           float pulse = pow(0.5 + 0.5 * sin((vT.x - uTime * 0.35 - vT.y * 7.0) * 6.2832), 10.0);
-          float a = (0.22 + 1.4 * pulse) * uFade;
+          float a = (0.2 + 1.3 * pulse) * uFade;
           gl_FragColor = vec4(uColor * a, 1.0);
         }`,
-      uniforms: { uColor: { value: hdr(color, 1.6) }, uTime: { value: 0 }, uFade: fade },
+      uniforms: { uColor: { value: hdr(color, 1.5) }, uTime: { value: 0 }, uFade: fade },
     }),
   );
   const lines = new LineSegments(lg, lineMat);
   lines.frustumCulled = false;
   group.add(lines);
 
+  // Comets cross the field now and then.
+  const comets = new Comets(low ? 2 : 4, color, fade, rng(111));
+  const cf = frameAt(path, i + 0.15);
+  comets.scatter(cf.pos, cf.right, cf.up, cf.fwd, 260);
+  group.add(comets.group);
+
+  // Shards drift away from the pointer and catch a little light as they do.
+  const base = new Color(1, 1, 1);
+  const lit = new Color().copy(color).lerp(new Color(1, 1, 1), 0.5).multiplyScalar(3);
+  const push = new Float32Array(shards.length);
+  for (const s of shards) meshes[s.mesh].setColorAt(s.slot, base);
   const sc = new Vector3();
+  const off = new Vector3();
+  const tint = new Color();
   return {
     id: "proof",
     group,
     fade,
-    weight: windowed(i - 0.6, i + 1.0, 0.25),
-    nebula: 0.15,
-    update(time, dt) {
+    weight: hard(i - 1 + CROSS, i + CROSS),
+    nebula: 0.18,
+    update({ time, dt, ptr }) {
       lineMat.uniforms.uTime.value = time;
-      for (const s of shards) {
+      shards.forEach((s, n) => {
         s.angle += s.speed * dt;
         qq.setFromAxisAngle(s.axis, s.angle);
-        meshes[s.mesh].setMatrixAt(s.slot, mm.compose(s.pos, qq, sc.copy(s.scale)));
+        const h = hover(ptr, s.pos, 0.09);
+        push[n] += (h - push[n]) * Math.min(1, dt * 3);
+        pushAway(ptr, s.pos, push[n] * 9, off);
+        meshes[s.mesh].setMatrixAt(s.slot, mm.compose(off, qq, sc.copy(s.scale)));
+        meshes[s.mesh].setColorAt(s.slot, tint.copy(base).lerp(lit, push[n]));
+      });
+      for (const me of meshes) {
+        me.instanceMatrix.needsUpdate = true;
+        if (me.instanceColor) me.instanceColor.needsUpdate = true;
       }
-      for (const m of meshes) m.instanceMatrix.needsUpdate = true;
+      comets.update(time);
     },
   };
 }
 
 // ------------------------------------------------------------------ 3 projects
 
+/** A tall truss station: stacked modules on a spine with wide solar wings. */
 function station(color: Color, low: boolean, scale: number) {
   const g = new Group();
-  const seg = low ? 24 : 48;
-  const light = standard(0xd5d9df, 0.45, 0.32);
+  const seg = low ? 12 : 20;
+  const light = standard(0xd9dcdf, 0.35, 0.4);
   const metal = standard(0x8f99a6, 0.95, 0.3);
-  const dark = standard(0x1a1f28, 0.7, 0.42);
-  const panel = standard(0x0b1530, 0.9, 0.28);
-  panel.emissive = hdr(color, 0.1);
-
-  const lightParts: BufferGeometry[] = [];
-  const metalParts: BufferGeometry[] = [];
-  const darkParts: BufferGeometry[] = [];
-  const panelParts: BufferGeometry[] = [];
-
-  const hub = new CylinderGeometry(1.3, 1.3, 11, 20);
-  hub.rotateX(Math.PI / 2);
-  metalParts.push(hub);
-  for (const zz of [-5.8, 5.8]) {
-    const c = new CylinderGeometry(1.9, 1.9, 1.2, 20);
-    c.rotateX(Math.PI / 2);
-    c.translate(0, 0, zz);
-    darkParts.push(c);
+  const dark = standard(0x15181e, 0.6, 0.5);
+  const panel = standard(0x0b1530, 0.85, 0.3);
+  panel.emissive = hdr(color, 0.06);
+  const L: BufferGeometry[] = [];
+  const M: BufferGeometry[] = [];
+  const D: BufferGeometry[] = [];
+  const P: BufferGeometry[] = [];
+  const nonIdx = (x: BufferGeometry) => (x.index ? x.toNonIndexed() : x);
+  // Spine truss.
+  for (const [x, z] of [
+    [0.35, 0.35],
+    [-0.35, 0.35],
+    [0.35, -0.35],
+    [-0.35, -0.35],
+  ])
+    M.push(nonIdx(new BoxGeometry(0.08, 18, 0.08).translate(x, 0, z)));
+  for (let y = -8.5; y <= 8.5; y += 1.2) M.push(nonIdx(new BoxGeometry(0.75, 0.06, 0.06).translate(0, y, 0.35)), nonIdx(new BoxGeometry(0.75, 0.06, 0.06).translate(0, y, -0.35)));
+  // Modules.
+  for (const [y, r, h] of [
+    [5.5, 1.3, 3.2],
+    [1.5, 1.6, 3.6],
+    [-3.2, 1.2, 2.8],
+  ]) {
+    L.push(nonIdx(new CylinderGeometry(r, r, h, seg, 1).translate(0, y, 0)));
+    D.push(nonIdx(new CylinderGeometry(r + 0.05, r + 0.05, 0.12, seg, 1).translate(0, y + h / 2 - 0.2, 0)));
   }
-  const ringGeo = new TorusGeometry(7.5, 0.85, 10, seg);
-  lightParts.push(ringGeo);
-  for (let k = 0; k < 4; k++) {
-    const s = new CylinderGeometry(0.22, 0.22, 7, 6);
-    s.rotateZ((k / 4) * Math.PI * 2);
-    s.translate(Math.cos((k / 4) * Math.PI * 2 + Math.PI / 2) * 3.6, Math.sin((k / 4) * Math.PI * 2 + Math.PI / 2) * 3.6, 0);
-    darkParts.push(s);
-  }
-  const mast = new BoxGeometry(22, 0.3, 0.3);
-  mast.translate(0, 0, -3.5);
-  metalParts.push(mast);
-  for (const sx of [-1, 1]) {
-    for (let k = 0; k < 2; k++) {
-      const pnl = new BoxGeometry(4.2, 0.08, 3.2);
-      pnl.translate(sx * (5 + k * 4.6), 0, -3.5);
-      panelParts.push(pnl);
-    }
-  }
-  const dish = new CylinderGeometry(1.6, 0.2, 0.6, 16);
-  dish.translate(0, 2.2, 4.6);
-  lightParts.push(dish);
-
-  const fix = (list: BufferGeometry[]) => mergeGeometries(list.map((x) => (x.index ? x.toNonIndexed() : x)), false)!;
-  const spin = new Group();
-  spin.add(new Mesh(fix(lightParts), light));
-  spin.add(new Mesh(fix(darkParts), dark));
-  const still = new Group();
-  still.add(new Mesh(fix(metalParts), metal));
-  still.add(new Mesh(fix(panelParts), panel));
-  const windows = new Mesh(new TorusGeometry(7.5, 0.12, 6, seg), new MeshBasicMaterial({ color: hdr(color, 3) }));
-  windows.position.z = 0.75;
-  spin.add(windows);
-  g.add(spin, still);
+  // Solar wings on a cross boom.
+  M.push(nonIdx(new BoxGeometry(26, 0.18, 0.18).translate(0, -6.5, 0)));
+  for (const sx of [-1, 1]) for (let k = 0; k < 3; k++) P.push(nonIdx(new BoxGeometry(3.4, 0.06, 5.2).translate(sx * (3.2 + k * 3.6), -6.5, 0)));
+  // Radiators.
+  for (const sx of [-1, 1]) D.push(nonIdx(new BoxGeometry(0.05, 4, 2.2).translate(sx * 1.9, 1.5, 0)));
+  const merge = (list: BufferGeometry[]) => mergeGeometries(list, false)!;
+  g.add(new Mesh(merge(L), light), new Mesh(merge(M), metal), new Mesh(merge(D), dark), new Mesh(merge(P), panel));
+  const windows = new Mesh(new TorusGeometry(1.62, 0.05, 4, seg * 2).rotateX(Math.PI / 2).translate(0, 1.5, 0), new MeshBasicMaterial({ color: hdr(color, 2.2) }));
+  g.add(windows);
   g.scale.setScalar(scale);
-  return { group: g, spin };
+  return g;
 }
 
+/** Workshops in orbit: truss stations hanging below the line over a banded world. */
 function projects(i: number, color: Color, ctx: Ctx): Piece {
   const { path, low } = ctx;
   const fade = { value: 1 };
   const group = new Group();
-  const spins: Group[] = [];
-  const lights = new GlowBatch(32, fade);
+  const lights = new GlowBatch(16, fade);
   const lightIdx: number[] = [];
   const spots: [number, number, number, number, number][] = [
-    [i + 0.0, -30, 12, 1.4, 0.4],
-    [i + 0.38, 36, -4, 2.1, -0.3],
-    [i + 0.72, -24, -16, 1.0, 0.8],
+    [i - 0.08, -34, -28, 1.6, 0.3],
+    [i + 0.16, 40, -40, 2.2, -0.5],
+    [i + 0.42, -20, -52, 1.2, 0.9],
+    [i + 0.3, 58, -14, 1.0, 1.4],
   ];
+  const stations: Group[] = [];
   for (const [p, x, y, s, tilt] of spots) {
     const f = frameAt(path, p);
     const st = station(color, low, s);
-    st.group.position.copy(place(path, p, x, y));
-    st.group.quaternion.copy(f.quat);
-    st.group.rotateY(tilt);
-    st.group.rotateX(tilt * 0.4);
-    group.add(st.group);
-    spins.push(st.spin);
-    // Docking lights at both ends of the hub.
-    for (const zz of [-7, 7]) {
-      const w = new Vector3(0, 0, zz).applyMatrix4(st.group.matrixWorld.compose(st.group.position, st.group.quaternion, st.group.scale));
-      lightIdx.push(lights.add(w.x, w.y, w.z, 1.2 * s, 1, 0.9, 0.8, 0));
+    st.position.copy(place(path, p, x, y));
+    st.quaternion.copy(f.quat);
+    st.rotateZ(0.5 + tilt);
+    st.rotateX(1.2);
+    group.add(st);
+    stations.push(st);
+    st.updateMatrixWorld(true);
+    for (const yy of [-9, 9]) {
+      const w = new Vector3(0, yy, 0).applyMatrix4(st.matrixWorld);
+      lightIdx.push(lights.add(w.x, w.y, w.z, 1.0 * s, 1, 0.85, 0.7, 0));
     }
   }
   group.add(lights.mesh);
-
   const blue = color.clone();
-  const big = planet(ctx, fade, {
-    radius: 70,
-    a: new Color(0.06, 0.09, 0.2),
-    b: blue.clone().multiplyScalar(0.9),
+  const world = planet(ctx, fade, {
+    radius: 150,
+    a: new Color(0.05, 0.08, 0.18),
+    b: blue.clone().multiplyScalar(0.85),
     atmo: hdr(blue, 1.3),
     seed: 4.2,
     bands: 9,
     bandMix: 0.65,
+    light: new Vector3(0.3, 0.8, -0.4).normalize(),
   });
-  big.position.copy(place(path, i + 0.65, 170, 46, 60));
+  world.position.copy(place(path, i + 0.35, 60, -330));
   const moon = planet(ctx, fade, {
-    radius: 15,
+    radius: 18,
     a: new Color(0.12, 0.12, 0.14),
     b: new Color(0.42, 0.43, 0.47),
     atmo: hdr(blue, 0.5),
     seed: 9.1,
     segs: low ? 24 : 40,
+    light: new Vector3(0.3, 0.8, -0.4).normalize(),
   });
-  moon.position.copy(place(path, i + 0.3, -95, 52));
-  group.add(big, moon);
+  moon.position.copy(place(path, i + 0.05, -110, -120));
+  group.add(world, moon);
+
+  // Shuttles working between the stations.
+  const craft = new Traffic(low ? 8 : 16, color, fade);
+  const hubF = frameAt(path, i + 0.15);
+  const hubC = place(path, i + 0.15, 10, -36);
+  for (let k = 0; k < craft.count; k++) craft.orbit(k, hubC, hubF.up, hubF.right, 26 + (k % 5) * 8, 0.1 + (k % 4) * 0.04, k * 2.3, 0.6);
+  group.add(craft.group);
+  const stationPos = stations.map((s) => s.position.clone());
+  const hot = new Float32Array(stations.length);
 
   return {
     id: "projects",
     group,
     fade,
-    weight: windowed(i - 0.75, i + 1.0, 0.3),
+    weight: hard(i - 1 + CROSS, i + CROSS),
     nebula: 0.2,
-    update(time, dt) {
-      for (let k = 0; k < spins.length; k++) spins[k].rotation.z += dt * (0.12 + k * 0.05);
-      for (let k = 0; k < lightIdx.length; k++) lights.setIntensity(lightIdx[k], Math.pow(Math.max(0, Math.sin(time * 1.8 + k * 1.3)), 8) * 5);
+    update({ time, dt, ptr }) {
+      for (let k = 0; k < stations.length; k++) {
+        stations[k].rotateY(dt * (0.05 + k * 0.02));
+        hot[k] = Math.max(hover(ptr, stationPos[k], 0.1), hot[k] - dt);
+      }
+      for (let k = 0; k < lightIdx.length; k++) {
+        const s = Math.floor(k / 2);
+        lights.setIntensity(lightIdx[k], Math.pow(Math.max(0, Math.sin(time * 1.8 + k * 1.3)), 8) * 4 + hot[s] * 6);
+      }
       lights.commit();
+      craft.update(time);
     },
   };
 }
@@ -696,20 +1086,22 @@ function projects(i: number, color: Color, ctx: Ctx): Piece {
 
 const HUES = ["#F5A524", "#5B8DEF", "#34D399", "#A78BFA"];
 
+/** Four worlds hanging overhead, seen from below as the ship passes under them. */
 function disciplines(i: number, _color: Color, ctx: Ctx): Piece {
   const { path, low } = ctx;
   const fade = { value: 1 };
   const group = new Group();
-  // Four worlds on four sides of the line, passing close one after another.
   const spots: [number, number, number, number, number][] = [
-    [i + 0.38, -96, 8, 40, 0],
-    [i + 0.58, 10, 80, 36, 1],
-    [i + 0.78, 104, -6, 46, 2],
-    [i + 0.98, -14, -88, 40, 3],
+    [i - 0.22, -70, 70, 34, 0],
+    [i - 0.05, 30, 95, 30, 1],
+    [i + 0.12, 95, 58, 38, 2],
+    [i + 0.3, -25, 120, 32, 3],
   ];
-  const lin = (hex: string) => new Color(hex);
+  const light = new Vector3(0.3, -0.55, -0.78).normalize();
+  const worlds: { g: Group; u: Record<string, { value: number }>; pos: Vector3; rad: number }[] = [];
+  const moons: { m: Group; c: Vector3; r: number; w: number; ph: number; ax: Vector3; bx: Vector3 }[] = [];
   for (const [p, x, y, rad, h] of spots) {
-    const c = lin(HUES[h]);
+    const c = new Color(HUES[h]);
     const pl = planet(ctx, fade, {
       radius: rad,
       a: c.clone().multiplyScalar(0.12),
@@ -718,24 +1110,35 @@ function disciplines(i: number, _color: Color, ctx: Ctx): Piece {
       seed: 2.3 + h * 3.1,
       bands: h === 0 ? 14 : h === 2 ? 0 : 6,
       bandMix: h === 0 ? 0.85 : h === 2 ? 0 : 0.4,
+      light,
+      // Lightning in the banded giant, auroras on the violet world.
+      storm: h === 0 ? 1 : 0,
+      aurora: h === 3 ? new Color(0.4, 1.6, 0.9) : h === 1 ? new Color(0.5, 0.9, 1.8) : undefined,
     });
     pl.position.copy(place(path, p, x, y));
     pl.rotation.set(0.3 * h, h, 0.2);
     group.add(pl);
+    worlds.push({ g: pl, u: pl.userData.uniforms, pos: pl.position.clone(), rad });
+    // A small moon or two in orbit.
+    for (let k = 0; k < (h === 0 ? 2 : 1); k++) {
+      const mr = rad * (0.08 + 0.05 * k);
+      const moon = planet(ctx, fade, { radius: mr, a: new Color(0.1, 0.1, 0.11), b: new Color(0.45, 0.44, 0.42), atmo: hdr(c, 0.3), seed: 5 + h + k, segs: low ? 16 : 24, light });
+      group.add(moon);
+      const ax = new Vector3(1, 0.2 * k, 0).normalize();
+      moons.push({ m: moon, c: pl.position.clone(), r: rad * (1.9 + k * 0.6), w: 0.12 / (1 + k), ph: h + k * 2, ax, bx: new Vector3(0, 0.35, 1).normalize() });
+    }
     if (h === 0) {
-      // Rings on the amber world.
       const ringMat = additive(
         new ShaderMaterial({
           vertexShader: /* glsl */ `varying vec3 vP; void main(){ vP = position; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`,
           fragmentShader: /* glsl */ `
             uniform vec3 uColor; uniform float uFade; uniform float uIn; uniform float uOut;
             varying vec3 vP;
-            float h(float x){ return fract(sin(x * 91.7) * 43758.5); }
             void main() {
               float r = (length(vP.xy) - uIn) / (uOut - uIn);
               float b = 0.5 + 0.5 * sin(r * 70.0) * sin(r * 23.0 + 1.0);
               float gap = smoothstep(0.42, 0.45, r) * (1.0 - smoothstep(0.5, 0.53, r));
-              float a = b * (1.0 - gap) * smoothstep(0.0, 0.08, r) * (1.0 - smoothstep(0.9, 1.0, r)) * 0.55 * uFade;
+              float a = b * (1.0 - gap) * smoothstep(0.0, 0.08, r) * (1.0 - smoothstep(0.9, 1.0, r)) * 0.5 * uFade;
               gl_FragColor = vec4(uColor * a, 1.0);
             }`,
           uniforms: { uColor: { value: c.clone().multiplyScalar(0.9) }, uFade: fade, uIn: { value: rad * 1.35 }, uOut: { value: rad * 2.3 } },
@@ -751,113 +1154,455 @@ function disciplines(i: number, _color: Color, ctx: Ctx): Piece {
     id: "disciplines",
     group,
     fade,
-    weight: windowed(i - 0.75, i + 1.05, 0.3),
+    weight: hard(i - 1 + CROSS, i + CROSS),
     nebula: 0.25,
-    update(_t, dt) {
-      for (const c of group.children) c.rotation.y += dt * 0.02;
+    update({ time, dt, ptr }) {
+      for (const w of worlds) {
+        w.g.rotation.y += dt * 0.02;
+        w.u.uTime.value = time;
+        // Hovering a world brightens its atmosphere.
+        const h = hover(ptr, w.pos, 0.18);
+        w.u.uHover.value += (h - w.u.uHover.value) * Math.min(1, dt * 4);
+      }
+      for (const m of moons) {
+        const a = time * m.w + m.ph;
+        m.m.position.copy(m.c).addScaledVector(m.ax, Math.cos(a) * m.r).addScaledVector(m.bx, Math.sin(a) * m.r);
+      }
     },
   };
 }
 
 // ------------------------------------------------------------------ 5 writing
 
+const MONO_VS = /* glsl */ `
+${HOVER_GLSL}
+attribute float aSeed;
+uniform float uTime;
+varying vec3 vN;
+varying vec3 vW;
+varying vec3 vObj;
+varying float vSeed;
+varying float vHover;
+void main() {
+  float a = uTime * (0.02 + aSeed * 0.04) + aSeed * 10.0;
+  float c = cos(a);
+  float s = sin(a);
+  mat3 rot = mat3(c, 0.0, s, 0.0, 1.0, 0.0, -s, 0.0, c);
+  vec3 p = rot * position;
+  vec3 n = rot * normal;
+  vec4 w = modelMatrix * instanceMatrix * vec4(p, 1.0);
+  w.y += sin(uTime * 0.15 + aSeed * 20.0) * 1.4;
+  // Slabs lean away from the pointer and light up as it passes.
+  vec3 centre = (modelMatrix * instanceMatrix * vec4(0.0, 0.0, 0.0, 1.0)).xyz;
+  vHover = hoverAt(centre, 0.12);
+  w.xyz = pushFrom(w.xyz, centre, 0.12, 1.0);
+  vW = w.xyz;
+  vN = normalize(mat3(modelMatrix) * mat3(instanceMatrix) * n);
+  vObj = position;
+  vSeed = aSeed;
+  gl_Position = projectionMatrix * viewMatrix * w;
+}
+`;
+
+const MONO_FS = /* glsl */ `
+uniform vec3 uColor;
+uniform vec3 uLight;
+uniform float uFade;
+varying vec3 vN;
+varying vec3 vW;
+varying vec3 vObj;
+varying float vSeed;
+varying float vHover;
+void main() {
+  vec3 N = normalize(vN);
+  vec3 V = normalize(cameraPosition - vW);
+  float ndv = abs(dot(N, V));
+  float fres = pow(1.0 - ndv, 3.0);
+  vec3 R = reflect(-V, N);
+  float glint = pow(max(dot(R, uLight), 0.0), 90.0);
+  float sheen = pow(max(dot(R, uLight), 0.0), 6.0);
+  vec3 e = 0.5 - abs(vObj);
+  float edge = 1.0 - smoothstep(0.0, 0.02, min(min(e.x + step(0.49, abs(vObj.x)), e.y + step(0.49, abs(vObj.y))), e.z + step(0.49, abs(vObj.z))));
+  // Thin layered bands, like the edges of pages, caught by the light.
+  float bands = smoothstep(0.86, 1.0, sin(vObj.y * 70.0 + vSeed * 30.0)) * 0.5 + smoothstep(0.97, 1.0, sin(vObj.y * 23.0 + vSeed * 9.0));
+  vec3 deep = vec3(0.004, 0.018, 0.014);
+  vec3 col = deep + uColor * (fres * 1.3 + bands * (0.12 + vHover * 1.4) + sheen * 0.25) + uColor * edge * (0.7 + vHover * 2.5) + vec3(1.0, 0.98, 0.92) * glint * 2.6;
+  gl_FragColor = vec4(col * uFade, 1.0);
+}
+`;
+
+const RIBBON_VS = /* glsl */ `
+attribute vec2 aUV;
+attribute vec3 aNrm;
+uniform float uTime;
+varying vec2 vUV;
+void main() {
+  vUV = aUV;
+  vec3 p = position + aNrm * sin(aUV.x * 14.0 - uTime * 0.4) * 1.2;
+  gl_Position = projectionMatrix * modelViewMatrix * vec4(p, 1.0);
+}
+`;
+
+const RIBBON_FS = /* glsl */ `
+uniform vec3 uColor;
+uniform float uTime;
+uniform float uFade;
+varying vec2 vUV;
+void main() {
+  float across = 1.0 - abs(vUV.y);
+  float core = pow(max(across, 0.0), 6.0);
+  float soft = pow(max(across, 0.0), 1.5) * 0.25;
+  float flow = 0.55 + 0.45 * sin(vUV.x * 60.0 - uTime * 0.9);
+  float ends = smoothstep(0.0, 0.08, vUV.x) * smoothstep(1.0, 0.92, vUV.x);
+  float a = (core * flow + soft) * ends * uFade;
+  gl_FragColor = vec4(uColor * a, 1.0);
+}
+`;
+
+/** A vast emerald library: dark glass monoliths catching light like pages, and slow luminous ribbons. */
 function writing(i: number, color: Color, ctx: Ctx): Piece {
   const { path, low } = ctx;
   const fade = { value: 1 };
   const group = new Group();
   const r = rng(505);
+
+  // Soft nebula behind it all.
   const list: { pos: Vector3; size: number; color: Color; rot: number }[] = [];
   const teal = new Color(0.1, 0.55, 0.6);
-  const white = new Color(0.8, 1, 0.9);
-  const PN = low ? 14 : 32;
+  const PN = low ? 12 : 26;
   for (let k = 0; k < PN; k++) {
-    const p = i - 0.35 + r() * 1.2;
+    const p = i - 0.3 + r() * 0.9;
     const th = r() * Math.PI * 2;
-    const rad = 30 + r() * 170;
-    const c = color.clone().lerp(r() < 0.3 ? teal : white, r() * 0.35).multiplyScalar(0.16 + r() * 0.12);
-    list.push({ pos: place(path, p, Math.cos(th) * rad, Math.sin(th) * rad * 0.6), size: 70 + r() * 130, color: c, rot: r() * 6.28 });
+    const rad = 60 + r() * 200;
+    const c = color.clone().lerp(teal, r() * 0.4).multiplyScalar(0.12 + r() * 0.12);
+    list.push({ pos: place(path, p, Math.cos(th) * rad, Math.sin(th) * rad * 0.6), size: 90 + r() * 150, color: c, rot: r() * 6.28 });
   }
-  group.add(puffs(list, ctx.cloudTex, fade, 0.45));
+  group.add(puffs(list, ctx.cloudTex, fade, 0.4));
 
-  // Pages of light drifting around the line.
-  const PG = low ? 90 : 240;
-  const pageGeo = new PlaneGeometry(1, 1.36);
-  const seeds = new Float32Array(PG);
-  const pageMat = additive(
+  // Monoliths: tall thin slabs standing in loose rows around the line.
+  const MN = low ? 22 : 52;
+  const mono = new InstancedMesh(
+    new BoxGeometry(1, 1, 1),
     new ShaderMaterial({
-      vertexShader: /* glsl */ `
-        attribute float aSeed;
-        uniform float uTime;
-        varying vec2 vUv;
-        varying float vA;
-        void main() {
-          vec3 p = position;
-          float ang = uTime * (0.25 + aSeed * 0.5) + aSeed * 20.0;
-          float c = cos(ang); float s = sin(ang);
-          p = vec3(c * p.x, p.y, -s * p.x);
-          p.z += sin(uTime * 1.8 + aSeed * 10.0 + position.x * 3.0) * 0.12;
-          vec4 w = modelMatrix * instanceMatrix * vec4(p, 1.0);
-          w.y += sin(uTime * 0.35 + aSeed * 30.0) * 0.9;
-          vec4 mv = viewMatrix * w;
-          vA = smoothstep(2.0, 9.0, -mv.z);
-          vUv = uv;
-          gl_Position = projectionMatrix * mv;
-        }`,
-      fragmentShader: /* glsl */ `
-        uniform vec3 uColor; uniform float uFade;
-        varying vec2 vUv; varying float vA;
-        float h(float x){ return fract(sin(x * 91.7) * 43758.5); }
-        void main() {
-          vec2 d = abs(vUv - 0.5) * 2.0;
-          float edge = smoothstep(0.84, 0.98, max(d.x, d.y)) * (1.0 - smoothstep(0.98, 1.0, max(d.x, d.y)));
-          float row = floor(vUv.y * 11.0);
-          float lines = step(0.55, fract(vUv.y * 11.0)) * step(0.16, vUv.x) * step(vUv.x, 0.84 - 0.35 * h(row)) * step(0.12, vUv.y) * step(vUv.y, 0.86);
-          float a = (0.1 + lines * 0.55 + edge * 0.9) * uFade * vA;
-          gl_FragColor = vec4(uColor * a, 1.0);
-        }`,
-      uniforms: { uColor: { value: hdr(color.clone().lerp(white, 0.35), 1.6) }, uFade: fade, uTime: { value: 0 } },
+      vertexShader: MONO_VS,
+      fragmentShader: MONO_FS,
+      uniforms: { ...ctx.ray, uColor: { value: color.clone().multiplyScalar(1.1) }, uLight: { value: new Vector3(-0.5, 0.6, 0.6).normalize() }, uFade: fade, uTime: { value: 0 } },
+      transparent: true,
+    }),
+    MN,
+  );
+  const seeds = new Float32Array(MN);
+  const m = new Matrix4();
+  const q = new Quaternion();
+  let k = 0;
+  while (k < MN) {
+    const p = i - 0.25 + r() * 0.8;
+    const th = r() * Math.PI * 2;
+    const rad = 18 + Math.pow(r(), 1.2) * 110;
+    const pos = place(path, p, Math.cos(th) * rad, Math.sin(th) * rad * 0.7);
+    const f = frameAt(path, p);
+    q.copy(f.quat).multiply(new Quaternion().setFromAxisAngle(new Vector3(0, 1, 0), r() * Math.PI)).multiply(new Quaternion().setFromAxisAngle(new Vector3(0, 0, 1), (r() - 0.5) * 0.5));
+    const h = 7 + r() * 18;
+    m.compose(pos, q, new Vector3(0.18 + r() * 0.25, h, h * (0.3 + r() * 0.25)));
+    mono.setMatrixAt(k, m);
+    seeds[k] = r();
+    k++;
+  }
+  mono.geometry.setAttribute("aSeed", new InstancedBufferAttribute(seeds, 1));
+  mono.frustumCulled = false;
+  group.add(mono);
+
+  // Ribbons of light winding slowly between them.
+  const RN = low ? 3 : 6;
+  const ribbonMat = additive(
+    new ShaderMaterial({
+      vertexShader: RIBBON_VS,
+      fragmentShader: RIBBON_FS,
+      uniforms: { uColor: { value: color.clone().lerp(new Color(1, 1, 1), 0.25).multiplyScalar(1.7) }, uTime: { value: 0 }, uFade: fade },
       side: DoubleSide,
     }),
   );
-  const pages = new InstancedMesh(pageGeo, pageMat, PG);
-  const m = new Matrix4();
-  const q = new Quaternion();
-  for (let k = 0; k < PG; k++) {
-    const p = i - 0.25 + r() * 1.1;
-    const th = r() * Math.PI * 2;
-    const rad = 7 + Math.pow(r(), 1.4) * 70;
-    q.setFromAxisAngle(new Vector3(r() - 0.5, r() - 0.5, r() - 0.5).normalize(), r() * 6);
-    const s = 0.7 + r() * 1.4;
-    pages.setMatrixAt(k, m.compose(place(path, p, Math.cos(th) * rad, Math.sin(th) * rad * 0.7), q, new Vector3(s, s, s)));
-    seeds[k] = r();
+  const up = new Vector3(0, 1, 0);
+  for (let n = 0; n < RN; n++) {
+    const pts: Vector3[] = [];
+    const th0 = r() * Math.PI * 2;
+    const rad0 = 25 + r() * 60;
+    for (let s = 0; s < 7; s++) {
+      const p = i - 0.3 + s * 0.14;
+      const th = th0 + s * (r() - 0.5) * 1.2;
+      const rad = rad0 + (r() - 0.5) * 30;
+      pts.push(place(path, p, Math.cos(th) * rad, Math.sin(th) * rad * 0.6));
+    }
+    const curve = new CatmullRomCurve3(pts);
+    const SAMPLES = low ? 80 : 160;
+    const width = 1.2 + r() * 1.6;
+    const pos: number[] = [];
+    const uvs: number[] = [];
+    const nrm: number[] = [];
+    const idx: number[] = [];
+    const t = new Vector3();
+    const side = new Vector3();
+    const nn = new Vector3();
+    for (let s = 0; s <= SAMPLES; s++) {
+      const u = s / SAMPLES;
+      const c = curve.getPointAt(u);
+      curve.getTangentAt(u, t);
+      side.crossVectors(t, up).normalize();
+      nn.crossVectors(side, t).normalize();
+      const twist = Math.sin(u * 6 + n) * 0.8;
+      side.applyAxisAngle(t, twist);
+      nn.applyAxisAngle(t, twist);
+      pos.push(c.x - side.x * width, c.y - side.y * width, c.z - side.z * width, c.x + side.x * width, c.y + side.y * width, c.z + side.z * width);
+      uvs.push(u, -1, u, 1);
+      nrm.push(nn.x, nn.y, nn.z, nn.x, nn.y, nn.z);
+      if (s < SAMPLES) {
+        const b = s * 2;
+        idx.push(b, b + 2, b + 1, b + 1, b + 2, b + 3);
+      }
+    }
+    const g = new BufferGeometry();
+    g.setAttribute("position", new BufferAttribute(new Float32Array(pos), 3));
+    g.setAttribute("aUV", new BufferAttribute(new Float32Array(uvs), 2));
+    g.setAttribute("aNrm", new BufferAttribute(new Float32Array(nrm), 3));
+    g.setIndex(idx);
+    const ribbon = new Mesh(g, ribbonMat);
+    ribbon.frustumCulled = false;
+    ribbon.renderOrder = 7;
+    group.add(ribbon);
   }
-  pageGeo.setAttribute("aSeed", new InstancedBufferAttribute(seeds, 1));
-  pages.frustumCulled = false;
-  pages.renderOrder = 7;
-  group.add(pages);
+
+  // Motes of light drifting between the slabs; they part around the pointer.
+  const motes = new Motes(ctx, low ? 160 : 420, place(path, i + 0.15, 0, 0), 80, color.clone().lerp(new Color(1, 1, 1), 0.4).multiplyScalar(1.6), fade, 0.35);
+  group.add(motes.points);
 
   return {
     id: "writing",
     group,
     fade,
-    weight: windowed(i - 0.75, i + 1.0, 0.35),
-    nebula: 1.1,
-    update(time) {
-      pageMat.uniforms.uTime.value = time;
+    weight: hard(i - 1 + CROSS, i + CROSS),
+    nebula: 0.9,
+    update({ time }) {
+      (mono.material as ShaderMaterial).uniforms.uTime.value = time;
+      ribbonMat.uniforms.uTime.value = time;
+      motes.update(time);
     },
   };
 }
 
-// ------------------------------------------------------------------ 6 film
+// ------------------------------------------------------------------ landing world
 
-function film(i: number, color: Color, ctx: Ctx): Piece {
-  const { path, low } = ctx;
+/** Simple 2D value noise for the dunes, deterministic. */
+function noise2(x: number, z: number) {
+  const ix = Math.floor(x);
+  const iz = Math.floor(z);
+  const fx = x - ix;
+  const fz = z - iz;
+  const h = (a: number, b: number) => {
+    const s = Math.sin(a * 127.1 + b * 311.7) * 43758.5453;
+    return s - Math.floor(s);
+  };
+  const sx = fx * fx * (3 - 2 * fx);
+  const sz = fz * fz * (3 - 2 * fz);
+  const a = h(ix, iz);
+  const b = h(ix + 1, iz);
+  const c = h(ix, iz + 1);
+  const d = h(ix + 1, iz + 1);
+  return a + (b - a) * sx + (c - a) * sz + (a - b - c + d) * sx * sz;
+}
+function fbm2(x: number, z: number) {
+  return noise2(x, z) * 0.55 + noise2(x * 2.1 + 5.2, z * 2.1 + 1.3) * 0.3 + noise2(x * 4.3 + 9.1, z * 4.3 + 7.7) * 0.15;
+}
+
+/** Dune height in the landing site's frame; flat where the lander touches down. */
+function dune(x: number, z: number) {
+  const n1 = fbm2(x * 0.006, z * 0.006);
+  const w = x * 0.03 + z * 0.011 + n1 * 6;
+  const crest = Math.pow(0.5 + 0.5 * Math.sin(w), 2.4);
+  let h = crest * (2.2 + 6 * n1) + fbm2(x * 0.035, z * 0.035) * 1.1;
+  const r = Math.hypot(x, z);
+  h *= smooth(9, 42, r);
+  return h;
+}
+
+/**
+ * The landing world: a desert forest under a red eclipse low on the horizon.
+ * Dunes around the site, sparse strange trees, small glowing plants, cloud
+ * banks the lander comes down through, dust in the air, a pale moon, and the
+ * mothership waiting in the sky.
+ */
+function landingWorld(i: number, color: Color, ctx: Ctx): Piece {
+  const { low, landing: l } = ctx;
   const fade = { value: 1 };
   const group = new Group();
-  const r = rng(606);
-  const f = frameAt(path, i + 0.2);
-  const SUN_R = 150;
-  const sunPos = f.pos.clone().addScaledVector(f.fwd, 1700).addScaledVector(f.up, 230).addScaledVector(f.right, -330);
+  const R = 2600;
+  const U = l.up;
+  const F = l.fwd;
+  const Rt = l.right;
+  const center = l.pad.clone().addScaledVector(U, -(R + 2.5));
+  const sunDir = F.clone().addScaledVector(U, 0.085).addScaledVector(Rt, 0.3).normalize();
+  const sunPos = l.pad.clone().addScaledVector(sunDir, 5200);
+  const amber = new Color(1.0, 0.45, 0.22).lerp(color, 0.25);
+
+  const body = planet(ctx, fade, {
+    radius: R,
+    a: new Color(0.1, 0.055, 0.03),
+    b: new Color(0.4, 0.24, 0.13),
+    atmo: hdr(amber, 1.0),
+    seed: 12.5,
+    bands: 3,
+    bandMix: 0.15,
+    light: sunDir,
+    segs: low ? 96 : 160,
+    detail: 1,
+  });
+  body.position.copy(center);
+  body.quaternion.copy(l.quat);
+  const shell = body.children[1] as Mesh;
+  shell.scale.setScalar(1.0012 / 1.12);
+  (shell.material as ShaderMaterial).uniforms.uEdge.value = 0.06;
+  (shell.material as ShaderMaterial).uniforms.uPower.value = 2.0;
+  (shell.material as ShaderMaterial).uniforms.uColor.value = hdr(amber, 2.4);
+  group.add(body);
+
+  // The site: everything below is in a frame where Y is up and -Z faces the dawn.
+  const site = new Group();
+  site.position.copy(l.pad);
+  site.quaternion.copy(l.quat);
+  group.add(site);
+  const ground = (x: number, z: number) => dune(x, z) - (x * x + z * z) / (2 * R);
+
+  // Dunes, following the curve of the world so the horizon stays true.
+  const TS = low ? 96 : 180;
+  const SIZE = 820;
+  const tg = new PlaneGeometry(SIZE, SIZE, TS, TS);
+  tg.rotateX(-Math.PI / 2);
+  const tp = tg.getAttribute("position") as BufferAttribute;
+  const tc = new Float32Array(tp.count * 3);
+  const crest = new Color(0.62, 0.36, 0.18);
+  const trough = new Color(0.2, 0.1, 0.055);
+  const cc = new Color();
+  for (let k = 0; k < tp.count; k++) {
+    const x = tp.getX(k);
+    const z = tp.getZ(k);
+    const h = ground(x, z);
+    tp.setY(k, h);
+    const d = dune(x, z);
+    cc.copy(trough).lerp(crest, Math.min(1, 0.35 + d / 7) * (0.85 + 0.3 * noise2(x * 0.2, z * 0.2)));
+    tc.set([cc.r, cc.g, cc.b], k * 3);
+  }
+  tg.setAttribute("color", new BufferAttribute(tc, 3));
+  tg.computeVertexNormals();
+  const sand = new MeshStandardMaterial({ vertexColors: true, roughness: 0.96, metalness: 0, envMapIntensity: 0.2 });
+  const terrain = new Mesh(tg, sand);
+  terrain.receiveShadow = !low;
+  site.add(terrain);
+
+  // Trees: umbrella crowns on twisted trunks, and tall spires hung with pods.
+  const r = rng(808);
+  const tube = (pts: Vector3[], rad: number, seg = 10) => new TubeGeometry(new CatmullRomCurve3(pts), seg, rad, 6, false).toNonIndexed();
+  const barkA: BufferGeometry[] = [tube([new Vector3(0, -0.3, 0), new Vector3(0.15, 1.4, 0.05), new Vector3(0.35, 2.8, -0.1), new Vector3(0.3, 3.4, 0.05)], 0.24)];
+  for (let k = 0; k < 7; k++) {
+    const a = (k / 7) * Math.PI * 2;
+    barkA.push(tube([new Vector3(0.3, 3.3, 0.05), new Vector3(0.3 + Math.cos(a) * 0.8, 3.9, 0.05 + Math.sin(a) * 0.8), new Vector3(0.3 + Math.cos(a) * 1.7, 4.4, 0.05 + Math.sin(a) * 1.7)], 0.07, 6));
+  }
+  const crownA = new SphereGeometry(1, 18, 8, 0, Math.PI * 2, 0, Math.PI / 2).scale(2.5, 0.75, 2.5).translate(0.3, 4.3, 0.05).toNonIndexed();
+  const barkB = new LatheGeometry([new Vector2(0.4, -0.3), new Vector2(0.32, 1.5), new Vector2(0.22, 3.6), new Vector2(0.12, 5.6), new Vector2(0.02, 7.4)], 8).toNonIndexed();
+  const pods: BufferGeometry[] = [];
+  for (const [y, s, a] of [
+    [2.4, 0.5, 0],
+    [3.8, 0.42, 2.1],
+    [5.0, 0.34, 4.2],
+    [6.1, 0.26, 1.0],
+  ])
+    pods.push(new SphereGeometry(s, 10, 8).scale(1, 1.4, 1).translate(Math.cos(a) * 0.35, y, Math.sin(a) * 0.35).toNonIndexed());
+  const podB = mergeGeometries(pods, false)!;
+  const barkMat = standard(0x1c120c, 0.1, 0.85);
+  const crownMat = standard(0x14261f, 0.05, 0.7);
+  crownMat.emissive = new Color(0.0, 0.035, 0.03);
+  const podMat = standard(0x0d2a28, 0.1, 0.4);
+  podMat.emissive = new Color(0.05, 0.35, 0.3);
+  const TN = low ? 26 : 70;
+  const SN = low ? 12 : 30;
+  const trunks = new InstancedMesh(mergeGeometries(barkA, false)!, barkMat, TN);
+  const crowns = new InstancedMesh(crownA, crownMat, TN);
+  const spires = new InstancedMesh(barkB, barkMat, SN);
+  const podsM = new InstancedMesh(podB, podMat, SN);
+  for (const m of [trunks, crowns, spires, podsM]) {
+    m.castShadow = !low;
+    m.frustumCulled = false;
+  }
+  const m4 = new Matrix4();
+  const q4 = new Quaternion();
+  const yAxis = new Vector3(0, 1, 0);
+  const plantPos: Vector3[] = [];
+  const spot = (minR: number) => {
+    for (;;) {
+      const a = r() * Math.PI * 2;
+      const rad = minR + Math.pow(r(), 0.8) * 340;
+      const x = Math.cos(a) * rad;
+      const z = Math.sin(a) * rad;
+      // Keep the view from the camera to the lander clear.
+      if (z > -14 && rad < 70) continue;
+      return new Vector3(x, ground(x, z), z);
+    }
+  };
+  for (let k = 0; k < TN; k++) {
+    const p = spot(22);
+    const s = 0.9 + r() * 1.0;
+    q4.setFromAxisAngle(yAxis, r() * Math.PI * 2);
+    m4.compose(p, q4, new Vector3(s, s * (0.8 + r() * 0.5), s));
+    trunks.setMatrixAt(k, m4);
+    crowns.setMatrixAt(k, m4);
+    if (k % 3 === 0) plantPos.push(p.clone().add(new Vector3(r() * 3 - 1.5, 0.3, r() * 3 - 1.5)));
+  }
+  const tipPos: Vector3[] = [];
+  for (let k = 0; k < SN; k++) {
+    const p = spot(26);
+    const s = 0.8 + r() * 0.9;
+    q4.setFromAxisAngle(yAxis, r() * Math.PI * 2);
+    m4.compose(p, q4, new Vector3(s, s * (0.9 + r() * 0.6), s));
+    spires.setMatrixAt(k, m4);
+    podsM.setMatrixAt(k, m4);
+    tipPos.push(new Vector3(0, 7.4, 0).applyMatrix4(m4));
+  }
+  site.add(trunks, crowns, spires, podsM);
+
+  // Small glowing plants on the ground and at the spire tips. They brighten under the pointer.
+  for (let k = 0; k < (low ? 10 : 26); k++) {
+    const a = r() * Math.PI * 2;
+    const rad = 9 + r() * 60;
+    const x = Math.cos(a) * rad;
+    const z = Math.sin(a) * rad;
+    if (z > -6 && Math.abs(x) < 12) continue;
+    plantPos.push(new Vector3(x, ground(x, z) + 0.25, z));
+  }
+  const plants = new GlowBatch(plantPos.length + tipPos.length, fade);
+  plantPos.forEach((p) => plants.add(p.x, p.y, p.z, 0.9, 0.25, 1.0, 0.85, 1.2));
+  tipPos.forEach((p) => plants.add(p.x, p.y, p.z, 1.4, 0.4, 1.0, 0.9, 1.4));
+  site.add(plants.mesh);
+  site.updateMatrixWorld(true);
+  const plantWorld = [...plantPos, ...tipPos].map((p) => p.clone().applyMatrix4(site.matrixWorld));
+  const plantHot = new Float32Array(plantWorld.length);
+
+  // Three marker beacons a probe left around the site.
+  const marks = new GlowBatch(3, fade);
+  for (let k = 0; k < 3; k++) {
+    const a = (k / 3) * Math.PI * 2 + 0.4;
+    marks.add(Math.cos(a) * 14, 0.5, Math.sin(a) * 14, 0.7, 1, 0.6, 0.25, 1);
+  }
+  site.add(marks.mesh);
+
+  // Dust hanging in the dawn air.
+  const air = new Motes(ctx, low ? 120 : 320, new Vector3(0, 8, -30), 70, new Color(1.0, 0.62, 0.32).multiplyScalar(0.9), fade, 0.25);
+  site.add(air.points);
+
+  // A pale moon high on the left of the sun.
+  const moonB = planet(ctx, fade, { radius: 70, a: new Color(0.3, 0.26, 0.2), b: new Color(0.85, 0.78, 0.66), atmo: hdr(amber, 0.3), seed: 6.1, light: sunDir, segs: low ? 24 : 40 });
+  moonB.position.copy(l.pad).addScaledVector(F.clone().addScaledVector(Rt, -0.12).addScaledVector(U, 0.34).normalize(), 2600);
+  group.add(moonB);
+
+  // The red eclipse: a sun low on the horizon with a dark world across it.
+  const SUN_R = 300;
   const sunMat = new ShaderMaterial({
     vertexShader: PLANET_VS,
     fragmentShader: /* glsl */ `
@@ -875,14 +1620,10 @@ function film(i: number, color: Color, ctx: Ctx): Piece {
       }`,
     uniforms: { uHot: { value: new Color(6.0, 2.2, 0.9) }, uDeep: { value: new Color(1.6, 0.12, 0.08) }, uTime: { value: 0 }, uFade: fade },
   });
-  const sun = new Mesh(new SphereGeometry(SUN_R, low ? 32 : 64, low ? 20 : 40), sunMat);
-  sun.position.copy(sunPos);
-  group.add(sun);
-
-  // The eclipsing world, closer to us, lit only around its rim.
-  const toCam = f.pos.clone().sub(sunPos).normalize();
-  const moonPos = sunPos.clone().addScaledVector(toCam, 420).addScaledVector(f.right, 34).addScaledVector(f.up, -26);
-  const moonMat = new ShaderMaterial({
+  const sunBall = new Mesh(new SphereGeometry(SUN_R, low ? 32 : 64, low ? 20 : 40), sunMat);
+  sunBall.position.copy(sunPos);
+  group.add(sunBall);
+  const eclMat = new ShaderMaterial({
     vertexShader: PLANET_VS,
     fragmentShader: /* glsl */ `
       uniform vec3 uRim; uniform float uFade; uniform vec3 uSun;
@@ -898,235 +1639,28 @@ function film(i: number, color: Color, ctx: Ctx): Piece {
     uniforms: { uRim: { value: new Color(3.0, 0.5, 0.25) }, uFade: fade, uSun: { value: sunPos } },
     transparent: true,
   });
-  const moon = new Mesh(new SphereGeometry(SUN_R * 0.82, low ? 32 : 64, low ? 20 : 40), moonMat);
-  moon.position.copy(moonPos);
-  group.add(moon);
-
-  const corona = new GlowBatch(3, fade);
-  corona.add(sunPos.x, sunPos.y, sunPos.z, SUN_R * 6.5, 1.0, 0.18, 0.12, 1.3);
-  corona.add(sunPos.x, sunPos.y, sunPos.z, SUN_R * 2.6, 1.0, 0.5, 0.3, 1.6);
-  corona.mesh.renderOrder = -10;
-  group.add(corona.mesh);
-
-  // Deep red nebula around the line.
-  const list: { pos: Vector3; size: number; color: Color; rot: number }[] = [];
-  const PN = low ? 12 : 28;
-  const ember = new Color(1.0, 0.35, 0.15);
-  for (let k = 0; k < PN; k++) {
-    const p = i - 0.45 + r() * 1.3;
-    const th = r() * Math.PI * 2;
-    const rad = 40 + r() * 200;
-    const c = color.clone().lerp(ember, r() * 0.4).multiplyScalar(0.14 + r() * 0.14);
-    list.push({ pos: place(path, p, Math.cos(th) * rad, Math.sin(th) * rad * 0.55), size: 90 + r() * 170, color: c, rot: r() * 6.28 });
-  }
-  group.add(puffs(list, ctx.cloudTex, fade, 0.45));
-
-  return {
-    id: "film",
-    group,
-    fade,
-    weight: windowed(i - 0.6, i + 0.62, 0.35),
-    nebula: 1.0,
-    flare: { pos: sunPos, color: new Color(1.0, 0.32, 0.2), strength: 1 },
-    update(time) {
-      sunMat.uniforms.uTime.value = time;
-    },
-  };
-}
-
-// ------------------------------------------------------------------ 7 mind
-
-function mind(i: number, color: Color, ctx: Ctx): Piece {
-  const { path, low } = ctx;
-  const fade = { value: 1 };
-  const group = new Group();
-  const r = rng(707);
-  const f = frameAt(path, i + 0.55);
-  group.position.copy(f.pos).addScaledVector(f.up, -72).addScaledVector(f.fwd, 120);
-  group.quaternion.copy(f.quat);
-  group.rotateX(0.04);
-
-  const N = low ? 9000 : 26000;
-  const R = 520;
-  const data = new Float32Array(N * 4);
-  const gauss = () => (r() + r() + r() - 1.5) / 1.5;
-  for (let k = 0; k < N; k++) {
-    let rad: number;
-    let ang: number;
-    let h: number;
-    const kind = r();
-    if (kind < 0.12) {
-      rad = Math.pow(r(), 2) * 90;
-      ang = r() * Math.PI * 2;
-      h = gauss() * 22 * (1 - rad / 110);
-    } else if (kind < 0.3) {
-      rad = Math.pow(r(), 0.8) * R;
-      ang = r() * Math.PI * 2;
-      h = gauss() * 8;
-    } else {
-      const arm = Math.floor(r() * 4);
-      const t = Math.pow(r(), 0.7);
-      rad = 30 + t * (R - 30);
-      ang = arm * (Math.PI / 2) + Math.log(1 + rad / 35) * 2.3 + gauss() * (0.42 - t * 0.2);
-      h = gauss() * (4 + 10 * (1 - t));
-    }
-    data.set([rad, ang, h, r()], k * 4);
-  }
-  const g = new BufferGeometry();
-  g.setAttribute("position", new BufferAttribute(new Float32Array(N * 3), 3));
-  g.setAttribute("aG", new BufferAttribute(data, 4));
-  const galMat = additive(
-    new ShaderMaterial({
-      vertexShader: /* glsl */ `
-        attribute vec4 aG;
-        uniform float uTime; uniform float uPx; uniform float uDpr; uniform float uR;
-        uniform vec3 uCore; uniform vec3 uArm; uniform vec3 uAlt;
-        varying vec3 vCol; varying float vA;
-        void main() {
-          float rn = aG.x / uR;
-          float ang = aG.y - uTime * 0.03 / (0.2 + rn);
-          vec3 p = vec3(cos(ang) * aG.x, aG.z, sin(ang) * aG.x);
-          vec4 mv = modelViewMatrix * vec4(p, 1.0);
-          float big = pow(fract(aG.w * 7.13), 9.0);
-          gl_PointSize = clamp((1.1 + 3.0 * big) * uPx / max(-mv.z, 1.0), 1.2 * uDpr, 6.0 * uDpr);
-          float k = fract(aG.w * 13.1);
-          vec3 c = mix(uCore, uArm, smoothstep(0.02, 0.4, rn));
-          c = k < 0.06 ? vec3(1.0, 0.45, 0.85) : (k < 0.22 ? mix(c, uAlt, 0.6) : c);
-          vCol = c * (0.6 + 1.6 * big) * (1.0 + 2.2 * (1.0 - smoothstep(0.0, 0.18, rn)));
-          vA = (1.0 - smoothstep(0.82, 1.0, rn)) * (0.35 + 0.65 * fract(aG.w * 3.3));
-          gl_Position = projectionMatrix * mv;
-        }`,
-      fragmentShader: /* glsl */ `
-        uniform float uFade;
-        varying vec3 vCol; varying float vA;
-        void main() {
-          float d = length(gl_PointCoord - 0.5);
-          float a = smoothstep(0.5, 0.0, d);
-          gl_FragColor = vec4(vCol * a * a * vA * uFade, 1.0);
-        }`,
-      uniforms: {
-        uTime: { value: 0 },
-        uPx: { value: 800 },
-        uDpr: { value: 1 },
-        uR: { value: R },
-        uCore: { value: new Color(1.0, 0.86, 0.95) },
-        uArm: { value: color.clone() },
-        uAlt: { value: new Color(0.45, 0.6, 1.0) },
-        uFade: fade,
-      },
-    }),
-  );
-  const gal = new Points(g, galMat);
-  gal.frustumCulled = false;
-  group.add(gal);
-  const core = new GlowBatch(3, fade);
-  core.add(0, 0, 0, 120, 1.0, 0.75, 1.0, 1.2);
-  core.add(0, 0, 0, 420, color.r, color.g, color.b, 0.35);
-  group.add(core.mesh);
-
-  return {
-    id: "mind",
-    group,
-    fade,
-    weight: windowed(i - 0.65, i + 0.72, 0.3),
-    nebula: 0.45,
-    update(time, _dt, _p, _camera, px, dpr) {
-      galMat.uniforms.uTime.value = time;
-      galMat.uniforms.uPx.value = px;
-      galMat.uniforms.uDpr.value = dpr;
-    },
-  };
-}
-
-// ------------------------------------------------------------------ 8 contact
-
-function contact(i: number, color: Color, ctx: Ctx): Piece {
-  const { low, landing: l } = ctx;
-  const fade = { value: 1 };
-  const group = new Group();
-  const R = 2600;
-  const U = l.up;
-  const F = l.fwd;
-  const Rt = l.right;
-  // The world's highest point is the pad, so the ground is flat around it.
-  const center = l.pad.clone().addScaledVector(U, -(R + 0.6));
-  const sunDir = F.clone().addScaledVector(U, 0.06).addScaledVector(Rt, 0.2).normalize();
-  const sunPos = l.pad.clone().addScaledVector(sunDir, 5200);
-  const warm = color.clone().lerp(new Color(1, 0.6, 0.3), 0.3);
-
-  const body = planet(ctx, fade, {
-    radius: R,
-    a: new Color(0.03, 0.025, 0.035),
-    b: new Color(0.16, 0.1, 0.075),
-    atmo: hdr(warm, 1.1),
-    seed: 12.5,
-    bands: 3,
-    bandMix: 0.2,
-    light: sunDir,
-    segs: low ? 96 : 160,
-    detail: 1,
-  });
-  body.position.copy(center);
-  body.quaternion.copy(l.quat);
-  const shell = body.children[1] as Mesh;
-  shell.scale.setScalar(1.0012 / 1.12);
-  (shell.material as ShaderMaterial).uniforms.uEdge.value = 0.06;
-  (shell.material as ShaderMaterial).uniforms.uPower.value = 2.0;
-  (shell.material as ShaderMaterial).uniforms.uColor.value = hdr(warm, 2.4);
-  group.add(body);
-
+  const ecl = new Mesh(new SphereGeometry(SUN_R * 0.8, low ? 32 : 64, low ? 20 : 40), eclMat);
+  ecl.position.copy(l.pad).addScaledVector(sunDir.clone().addScaledVector(U, 0.012).addScaledVector(Rt, -0.01).normalize(), 4300);
+  group.add(ecl);
   const sun = new GlowBatch(3, fade);
-  sun.add(sunPos.x, sunPos.y, sunPos.z, 380, 1.0, 0.82, 0.58, 1.8);
-  sun.add(sunPos.x, sunPos.y, sunPos.z, 1400, warm.r, warm.g, warm.b, 0.26);
+  sun.add(sunPos.x, sunPos.y, sunPos.z, SUN_R * 6, 1.0, 0.2, 0.12, 1.3);
+  sun.add(sunPos.x, sunPos.y, sunPos.z, SUN_R * 2.4, 1.0, 0.5, 0.3, 1.5);
   sun.mesh.renderOrder = -10;
   group.add(sun.mesh);
 
-  // The landing pad: a hexagonal deck with lit rings and corner beacons.
-  const pad = new Group();
-  pad.position.copy(l.pad);
-  pad.quaternion.copy(l.quat);
-  const deck = new CylinderGeometry(10, 11.2, 1.4, 6, 1);
-  deck.translate(0, -0.7, 0);
-  pad.add(new Mesh(deck, standard(0x272c35, 0.8, 0.38)));
-  const plate = new CylinderGeometry(8.4, 8.4, 0.08, 6, 1);
-  plate.translate(0, 0.04, 0);
-  pad.add(new Mesh(plate, standard(0x15181e, 0.6, 0.5)));
-  const markMat = new MeshBasicMaterial({ color: hdr(color, 2.4) });
-  const marks: BufferGeometry[] = [];
-  for (const [r, w] of [
-    [6.4, 0.08],
-    [3.5, 0.06],
-  ]) {
-    const t = new TorusGeometry(r, w, 4, 72);
-    t.rotateX(Math.PI / 2);
-    t.translate(0, 0.1, 0);
-    marks.push(t.toNonIndexed());
-    t.dispose();
+  // Cloud banks over the site that the lander comes down through.
+  const cl: { pos: Vector3; size: number; color: Color; rot: number }[] = [];
+  const cloudCol = new Color(1.0, 0.5, 0.32).lerp(color, 0.3);
+  for (let k = 0; k < (low ? 14 : 34); k++) {
+    const a = r() * Math.PI * 2;
+    const rad = 20 + Math.sqrt(r()) * 260;
+    const pos = l.pad.clone().addScaledVector(Rt, Math.cos(a) * rad).addScaledVector(F, Math.sin(a) * rad - 60).addScaledVector(U, 38 + r() * 30);
+    cl.push({ pos, size: 40 + r() * 60, color: cloudCol.clone().multiplyScalar(0.18 + r() * 0.16), rot: r() * 6.28 });
   }
-  for (let k = 0; k < 6; k++) {
-    const a = (k / 6) * Math.PI * 2;
-    const bar = new BoxGeometry(0.1, 0.03, 2.2).toNonIndexed();
-    bar.translate(0, 0.1, 7.6);
-    bar.rotateY(a);
-    marks.push(bar);
-  }
-  pad.add(new Mesh(mergeGeometries(marks, false)!, markMat));
-  const beacons = new GlowBatch(24, fade);
-  const corner: number[] = [];
-  for (let k = 0; k < 6; k++) {
-    const a = (k / 6) * Math.PI * 2;
-    corner.push(beacons.add(Math.cos(a) * 10.4, 0.5, Math.sin(a) * 10.4, 0.9, color.r, color.g, color.b, 1));
-  }
-  const ringLights: number[] = [];
-  for (let k = 0; k < 12; k++) {
-    const a = (k / 12) * Math.PI * 2;
-    ringLights.push(beacons.add(Math.cos(a) * 6.4, 0.25, Math.sin(a) * 6.4, 0.4, color.r, color.g, color.b, 1));
-  }
-  pad.add(beacons.mesh);
+  group.add(puffs(cl, ctx.cloudTex, fade, 0.9));
 
-  // Glowing dust thrown up by the braking jets.
+  // Dust thrown up by the braking jets.
   const DN = low ? 18 : 42;
-  const r = rng(808);
   const dg = new InstancedBufferGeometry();
   dg.setAttribute("position", new BufferAttribute(new Float32Array([-1, -1, 0, 1, -1, 0, 1, 1, 0, -1, 1, 0]), 3));
   dg.setIndex([0, 1, 2, 0, 2, 3]);
@@ -1160,7 +1694,7 @@ function contact(i: number, color: Color, ctx: Ctx): Piece {
         }`,
       uniforms: {
         tCloud: { value: ctx.cloudTex },
-        uColor: { value: new Color(1.0, 0.62, 0.36).lerp(color, 0.25).multiplyScalar(0.55) },
+        uColor: { value: new Color(1.0, 0.6, 0.34).lerp(color, 0.2).multiplyScalar(0.6) },
         uAmt: { value: 0 },
         uSpread: { value: 0 },
         uTime: { value: 0 },
@@ -1172,27 +1706,31 @@ function contact(i: number, color: Color, ctx: Ctx): Piece {
   const dust = new Mesh(dg, dustMat);
   dust.frustumCulled = false;
   dust.renderOrder = 8;
-  pad.add(dust);
-  group.add(pad);
+  site.add(dust);
 
   return {
     id: "contact",
     group,
     fade,
-    weight: windowed(i - 0.55, i + 5, 0.35),
-    nebula: 0.2,
-    warm: { amount: 1, dir: sunDir },
-    flare: { pos: sunPos, color: new Color(1.0, 0.7, 0.4), strength: 0.9 },
-    update(time, _dt, p) {
+    weight: hard(i - 1 + CROSS, i + 100),
+    nebula: 0.15,
+    warm: { amount: 1.3, dir: sunDir },
+    flare: { pos: sunPos, color: new Color(1.0, 0.35, 0.2), strength: 0.9 },
+    haze: { color: new Color(0.17, 0.06, 0.035), density: 0.0024 },
+    update({ time, dt, p, ptr }) {
       const L = landingPhase(l, p);
       dustMat.uniforms.uTime.value = time;
       dustMat.uniforms.uSpread.value = smooth(0.55, 1.0, L);
       dustMat.uniforms.uAmt.value = smooth(0.55, 0.74, L) * (1 - smooth(0.9, 1.0, L)) * 1.6;
-      // Pad lights wake up as the ship comes in, then chase around the ring.
-      const wake = 0.25 + 0.75 * smooth(0.1, 0.5, L);
-      for (let k = 0; k < corner.length; k++) beacons.setIntensity(corner[k], wake * (0.6 + 3.4 * Math.pow(Math.max(0, Math.sin(time * 2.6 + k)), 8)));
-      for (let k = 0; k < ringLights.length; k++) beacons.setIntensity(ringLights[k], wake * (0.4 + 2.6 * Math.pow(Math.max(0, Math.sin(time * 2.0 - k * 0.52)), 10)));
-      beacons.commit();
+      for (let k = 0; k < plantWorld.length; k++) {
+        plantHot[k] = Math.max(hover(ptr, plantWorld[k], 0.05), plantHot[k] - dt * 0.8);
+        plants.setIntensity(k, 0.9 + 0.35 * Math.sin(time * 1.3 + k * 1.7) + plantHot[k] * 4);
+      }
+      plants.commit();
+      for (let k = 0; k < 3; k++) marks.setIntensity(k, Math.pow(Math.max(0, Math.sin(time * 1.6 + k * 2.1)), 10) * 3 + 0.3);
+      marks.commit();
+      air.update(time);
+      sunMat.uniforms.uTime.value = time;
     },
   };
 }

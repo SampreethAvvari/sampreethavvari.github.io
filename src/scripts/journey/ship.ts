@@ -55,6 +55,12 @@ export interface ShipInput {
   idle: number;
   /** 0 docked, rising to 1 as the lander pulls away. */
   detach: number;
+  /** 1 facing forward along the path, -1 turned around; in between while turning. */
+  heading: number;
+  /** Heat glow on the lander coming down through the air, 0..1. */
+  heat: number;
+  /** 1 once the lander has settled. */
+  landed: number;
 }
 
 export interface Ship {
@@ -315,64 +321,100 @@ export function buildShip(opts: ShipBuildOptions): Ship {
   root.add(ribs);
 
   // ================================================================ the lander
+  // Simple and angular on purpose: a chamfered box body, a cockpit band at the
+  // front, side engine pods, four legs, a ramp at the back and warm lights.
   const lander = new Group();
   lander.name = "lander";
-  const LZ0 = -1.7;
-  const LZ1 = 1.7;
+  const LZ0 = -1.8;
+  const LZ1 = 1.8;
   const LANDER: Key[] = [
-    [0, 0.1, 0.06, 0.08],
-    [0.16, 0.44, 0.26, 0.22],
-    [0.42, 0.62, 0.38, 0.3],
-    [0.78, 0.68, 0.42, 0.32],
-    [1, 0.64, 0.4, 0.3],
+    [0, 0.42, 0.26, 0.3],
+    [0.1, 0.68, 0.46, 0.42],
+    [0.3, 0.76, 0.56, 0.46],
+    [1, 0.78, 0.58, 0.46],
   ];
   const lp = parts();
-  lp.comp.push(boxUV(body(LANDER, LZ0, LZ1, low ? 10 : 18, 1.2), 2.2));
-  lp.carbon.push(plate(LANDER, LZ0, LZ1, { t0: 0.05, t1: 0.98, s0: 2.35, s1: 5.65, offset: 0.006, thick: 0.035 }, low ? 8 : 14));
-  lp.glass.push(plate(LANDER, LZ0, LZ1, { t0: 0.17, t1: 0.33, s0: 6.75, s1: 9.25, offset: 0.006, thick: 0.02, chamfer: 0.2, chamferLen: 0.4 }, 6));
-  lp.silver.push(boxUV(plate(LANDER, LZ0, LZ1, { t0: 0.55, t1: 0.9, s0: 7.3, s1: 8.7, offset: 0.006, thick: 0.03 }, 6), 0.9));
-  // Small canted stabilisers at the tail.
-  const fin = sidePlate(
-    [
-      [0.6, 0.0],
-      [1.55, 0.0],
-      [1.7, 0.42],
-      [1.42, 0.45],
-    ],
-    0.04,
-    0.012,
-  );
-  for (const sx of [1, -1]) lp.comp.push(boxUV(fin.clone().applyMatrix4(new Matrix4().makeTranslation(sx * 0.38, 0.32, 0).multiply(new Matrix4().makeRotationZ(-sx * 0.5))), 2.2));
-  fin.dispose();
-  for (const x of [-0.26, 0.26]) lp.metal.push(latheZ(BELL.map(([r, z]) => [r * 0.6, z * 0.6]), seg, LZ1 - 0.05, x, 0.02));
-  lp.metal.push(rod(new Vector3(0, 0.4, 0.4), new Vector3(0, 0.62, 0.9), 0.02, 5));
+  lp.comp.push(boxUV(body(LANDER, LZ0, LZ1, low ? 6 : 10), 2.2));
+  lp.carbon.push(plate(LANDER, LZ0, LZ1, { t0: 0.02, t1: 0.98, s0: 2.5, s1: 5.5, offset: 0.006, thick: 0.04 }, 6));
+  lp.glass.push(plate(LANDER, LZ0, LZ1, { t0: 0.03, t1: 0.2, s0: 6.6, s1: 9.4, offset: 0.006, thick: 0.02 }, 4));
+  lp.silver.push(boxUV(plate(LANDER, LZ0, LZ1, { t0: 0.45, t1: 0.85, s0: 7.2, s1: 8.8, offset: 0.006, thick: 0.04 }, 4), 0.9));
+  // Side engine pods with a bell each at the back.
+  for (const sx of [1, -1]) {
+    lp.comp.push(boxUV(new BoxGeometry(0.42, 0.42, 2.4).translate(sx * 0.98, -0.05, 0.45), 2.2));
+    lp.carbon.push(new BoxGeometry(0.46, 0.08, 2.0).translate(sx * 0.98, 0.18, 0.45));
+    lp.metal.push(latheZ(BELL.map(([r, z]) => [r * 0.55, z * 0.55]), seg, 1.62, sx * 0.98, -0.05));
+  }
+  // Roof rack and antenna.
+  lp.carbon.push(new BoxGeometry(0.9, 0.08, 1.0).translate(0, 0.62, 0.6));
+  lp.metal.push(rod(new Vector3(0.3, 0.62, 0.4), new Vector3(0.3, 1.05, 0.55), 0.02, 5));
   const LBRAKE = [
-    [0.42, -0.3, -0.75],
-    [-0.42, -0.3, -0.75],
-    [0.42, -0.3, 0.85],
-    [-0.42, -0.3, 0.85],
+    [0.55, -0.48, -1.0],
+    [-0.55, -0.48, -1.0],
+    [0.55, -0.48, 1.0],
+    [-0.55, -0.48, 1.0],
   ];
   const brakeNozzles: Nozzle[] = LBRAKE.map(([x, y, z]) => {
-    lp.carbon.push(new BoxGeometry(0.16, 0.08, 0.16).translate(x, y, z));
-    return { o: new Vector3(x, y - 0.05, z), d: new Vector3(0, -1, 0), r: 0.07, kind: 1 };
+    lp.carbon.push(new BoxGeometry(0.2, 0.08, 0.2).translate(x, y, z));
+    return { o: new Vector3(x, y - 0.05, z), d: new Vector3(0, -1, 0), r: 0.08, kind: 1 };
   });
   addParts(lander, lp);
 
-  // Lander legs, folded flat under the body until the descent.
-  const STAND = 1.3;
-  const SPLAY = 0.4;
+  // The ramp: closed it is the back wall, open it reaches down to the ground.
+  const STAND = 1.35;
+  const rampPivot = new Group();
+  rampPivot.position.set(0, -0.44, LZ1 + 0.02);
+  const rampGeo = new BoxGeometry(0.9, 0.95, 0.06).translate(0, 0.475, 0);
+  const ramp = new Mesh(boxUV(rampGeo, 2.2), comp);
+  ramp.castShadow = shadows;
+  rampPivot.add(ramp);
+  lander.add(rampPivot);
+  const RAMP_OPEN = Math.PI - Math.acos(Math.min(1, (STAND - 0.44) / 0.95));
+
+  // Heat glow wrapped around the lander while it comes down through the air.
+  const heatMat = additive(
+    new ShaderMaterial({
+      vertexShader: /* glsl */ `
+        varying vec3 vN; varying vec3 vV; varying vec3 vP;
+        void main() {
+          vec4 mv = modelViewMatrix * vec4(position, 1.0);
+          vN = normalize(normalMatrix * normal);
+          vV = normalize(-mv.xyz);
+          vP = position;
+          gl_Position = projectionMatrix * mv;
+        }`,
+      fragmentShader: /* glsl */ `
+        uniform float uHeat; uniform float uTime;
+        varying vec3 vN; varying vec3 vV; varying vec3 vP;
+        void main() {
+          float rim = pow(1.0 - abs(dot(normalize(vN), normalize(vV))), 2.0);
+          float below = smoothstep(0.4, -0.9, vP.y);
+          float flick = 0.75 + 0.25 * sin(uTime * 40.0 + vP.z * 9.0 + vP.x * 7.0);
+          vec3 col = mix(vec3(1.0, 0.35, 0.08), vec3(1.0, 0.85, 0.6), below * 0.6);
+          gl_FragColor = vec4(col * rim * (0.4 + below) * flick * uHeat * 2.2, 1.0);
+        }`,
+      uniforms: { uHeat: { value: 0 }, uTime: { value: 0 } },
+      side: DoubleSide,
+    }),
+  );
+  const heatShell = new Mesh(new SphereGeometry(1, 24, 16).scale(1.45, 1.05, 2.5).translate(0, -0.1, 0), heatMat);
+  heatShell.visible = false;
+  heatShell.renderOrder = 5;
+  lander.add(heatShell);
+
+  // Landing legs, folded flat under the body until the descent.
+  const SPLAY = 0.42;
   const legs: { pivot: Group; side: number }[] = [];
   for (const [x, y, z] of [
-    [0.5, -0.26, -0.85],
-    [-0.5, -0.26, -0.85],
-    [0.5, -0.26, 0.95],
-    [-0.5, -0.26, 0.95],
+    [0.62, -0.42, -1.05],
+    [-0.62, -0.42, -1.05],
+    [0.62, -0.42, 1.15],
+    [-0.62, -0.42, 1.15],
   ]) {
     const len = (STAND + y) / (Math.cos(SPLAY) * Math.cos(0.1));
     const lg: BufferGeometry[] = [
-      new BoxGeometry(0.07, len * 0.6, 0.07).translate(0, -len * 0.3, 0),
-      new CylinderGeometry(0.03, 0.03, len * 0.5, 6).translate(0, -len * 0.72, 0),
-      new CylinderGeometry(0.13, 0.16, 0.05, 12).translate(0, -len + 0.025, 0),
+      new BoxGeometry(0.11, len * 0.6, 0.11).translate(0, -len * 0.3, 0),
+      new CylinderGeometry(0.045, 0.045, len * 0.5, 6).translate(0, -len * 0.72, 0),
+      new CylinderGeometry(0.17, 0.2, 0.06, 12).translate(0, -len + 0.03, 0),
     ];
     const pivot = new Group();
     pivot.position.set(x, y, z);
@@ -384,7 +426,7 @@ export function buildShip(opts: ShipBuildOptions): Ship {
     lander.add(pivot);
     legs.push({ pivot, side: Math.sign(x) });
   }
-  const dock = new Matrix4().makeTranslation(0, 0, -2.1 + LZ0);
+  const dock = new Matrix4().makeTranslation(0, 0, -2.12 + LZ0);
 
   // ================================================================ lights
   // Ring lights turn with the ring: alternating red, green and white.
@@ -402,13 +444,17 @@ export function buildShip(opts: ShipBuildOptions): Ship {
   const rcsGlow = rcsNozzles.map((n) => hubGlows.add(n.o.x + n.d.x * 0.1, n.o.y + n.d.y * 0.1, n.o.z, 0.32, 0.85, 0.92, 1, 0));
   const portGlow = hubGlows.add(0, 0, -2.08, 0.5, 1, 1, 1, 1);
   root.add(hubGlows.mesh);
-  const landerGlows = new GlowBatch(12);
-  const navL = landerGlows.add(-0.66, 0.05, 0.6, 0.14, 1, 0.15, 0.2, 1);
-  const navR = landerGlows.add(0.66, 0.05, 0.6, 0.14, 0.25, 1, 0.4, 1);
-  const lBeacon = landerGlows.add(0, 0.64, 0.92, 0.16, 1, 1, 1, 0);
-  const lEngine = [-0.26, 0.26].map((x) => landerGlows.add(x, 0.02, LZ1 + 0.3, 0.3, 0.6, 0.8, 1, 0.4));
-  const brakeGlow = brakeNozzles.map((n) => landerGlows.add(n.o.x, n.o.y - 0.08, n.o.z, 0.32, 1, 0.9, 0.8, 0));
+  const landerGlows = new GlowBatch(16);
+  const navL = landerGlows.add(-1.2, 0.1, 0.2, 0.16, 1, 0.15, 0.2, 1);
+  const navR = landerGlows.add(1.2, 0.1, 0.2, 0.16, 0.25, 1, 0.4, 1);
+  const lBeacon = landerGlows.add(0, 0.72, 0.6, 0.18, 1, 1, 1, 0);
+  const lEngine = [-0.98, 0.98].map((x) => landerGlows.add(x, -0.05, 2.25, 0.36, 0.6, 0.8, 1, 0.4));
+  const brakeGlow = brakeNozzles.map((n) => landerGlows.add(n.o.x, n.o.y - 0.08, n.o.z, 0.36, 1, 0.9, 0.8, 0));
+  // Warm floodlights under the nose and in the doorway.
+  const flood = [landerGlows.add(0.4, -0.45, -1.6, 0.5, 1, 0.68, 0.36, 1), landerGlows.add(-0.4, -0.45, -1.6, 0.5, 1, 0.68, 0.36, 1)];
+  const door = landerGlows.add(0, 0.05, 1.7, 1.1, 1, 0.66, 0.34, 0);
   lander.add(landerGlows.mesh);
+  let rampOpen = 0;
 
   // ================================================================ exhaust
   const rcsU = new Float32Array(8);
@@ -555,7 +601,17 @@ export function buildShip(opts: ShipBuildOptions): Ship {
     }
     hubGlows.commit();
 
-    // Lander: nav lights, a beacon once it is away, braking jets, legs, cooling engines.
+    // Lander: nav lights, a beacon once it is away, braking jets, legs, cooling engines,
+    // heat on the way down, then the ramp opens onto warm light.
+    heatMat.uniforms.uHeat.value = s.heat;
+    heatMat.uniforms.uTime.value = time;
+    heatShell.visible = s.heat > 0.01;
+    const rampTo = s.landed > 0.99 && !s.reduced ? 1 : s.landed > 0.99 ? 1 : 0;
+    rampOpen += (rampTo - rampOpen) * Math.min(1, dt * (rampTo > rampOpen ? 0.9 : 3));
+    const re = rampOpen * rampOpen * (3 - 2 * rampOpen);
+    rampPivot.rotation.x = re * RAMP_OPEN;
+    landerGlows.setIntensity(door, re * 2.4);
+    for (const i of flood) landerGlows.setIntensity(i, 0.6 + 1.6 * Math.max(s.gear, re));
     landerGlows.setIntensity(navL, 1.6);
     landerGlows.setIntensity(navR, 1.6);
     landerGlows.setIntensity(lBeacon, detach > 0.01 ? Math.pow(Math.max(0, Math.sin(time * 2.8)), 10) * 3.5 : 0);
@@ -613,7 +669,7 @@ export function buildShip(opts: ShipBuildOptions): Ship {
           a = age[h];
           x = hist[o];
           y = hist[o + 1];
-          zz = hist[o + 2] + a * flow;
+          zz = hist[o + 2] + a * flow * s.heading;
         }
         const w = 0.08 + a * 0.35;
         const vi = (base + kk * 2) * 3;
@@ -633,5 +689,5 @@ export function buildShip(opts: ShipBuildOptions): Ship {
 
   void m4;
   void one;
-  return { root, lander, dock, trails, radius: 6.9, landerRadius: 2.0, standHeight: STAND + 0.03, update };
+  return { root, lander, dock, trails, radius: 6.9, landerRadius: 2.3, standHeight: STAND + 0.03, update };
 }

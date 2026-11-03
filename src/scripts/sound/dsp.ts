@@ -34,6 +34,16 @@ export function nm(name: string): number {
 /** "D3 A3 E4" to MIDI note numbers. */
 export const ns = (s: string): number[] => s.trim().split(/\s+/).map(nm);
 
+/** A stable number from a name (FNV-1a), so the same name always sounds the same. */
+export function hashStr(s: string): number {
+  let h = 0x811c9dc5;
+  for (let i = 0; i < s.length; i++) {
+    h ^= s.charCodeAt(i);
+    h = Math.imul(h, 0x01000193);
+  }
+  return h >>> 0;
+}
+
 export type Rng = () => number;
 /** Small seeded generator, so a score can be rendered twice the same way. */
 export function mulberry(seed: number): Rng {

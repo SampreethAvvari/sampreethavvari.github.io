@@ -9,8 +9,14 @@
 //
 // Phones and reduced motion get the plain cards from CSS; only the click
 // on the art runs there.
+//
+// Sound hooks for the score (nothing here plays audio): on window,
+//   writing:hero        { index, slug, accent }  a case study takes over
+//   writing:transition  { from, to, duration }   a change starts; duration
+//                       is an estimate in ms from the current scroll speed
 
 import { onPage } from "../../scripts/lifecycle";
+import { mountCaseGL, type GLHandle } from "./case-gl";
 
 const STAGE = "(min-width: 900px) and (prefers-reduced-motion: no-preference)";
 // Part of each step spent holding still before the change starts.
@@ -23,7 +29,10 @@ const smooth = (v: number) => v * v * (3 - 2 * v);
 const inOut = (v: number) => (v < 0.5 ? 4 * v * v * v : 1 - Math.pow(-2 * v + 2, 3) / 2);
 const outCubic = (v: number) => 1 - Math.pow(1 - v, 3);
 
-type State = { t: number };
+type State = { t: number; x: number };
+
+const emit = (name: string, detail: Record<string, unknown>) =>
+  dispatchEvent(new CustomEvent(name, { detail }));
 
 export function mountCaseHeroes(): void {
   onPage("writing-cases", (signal) => {
@@ -66,7 +75,8 @@ function stage(root: HTMLElement): () => void {
   const heroes = Array.from(root.querySelectorAll<HTMLElement>(".cx-hero"));
   const links = Array.from(root.querySelectorAll<HTMLAnchorElement>(".cx-index a"));
   const n = heroes.length;
-  const state: State = { t: 0 };
+  const state: State = { t: 0, x: 0 };
+  const accentOf = (i: number) => `rgb(${(heroes[i]?.style.getPropertyValue("--a") || "52,211,153").trim()})`;
 
   let top = 0;
   let vh = innerHeight;
@@ -93,10 +103,19 @@ function stage(root: HTMLElement): () => void {
   };
 
   let lastY = NaN;
+  let lastTime = performance.now();
+  let pxPerMs = 0;
   let current = -1;
+  let lastT = 0;
+  let vel = 0;
   const update = (force = false) => {
     const y = scrollY;
     if (!force && y === lastY) return;
+    const now = performance.now();
+    const dy = Number.isNaN(lastY) ? 0 : y - lastY;
+    const dms = Math.max(1, now - lastTime);
+    lastTime = now;
+    pxPerMs += (Math.abs(dy) / dms - pxPerMs) * 0.35;
     lastY = y;
     const rel = y - top;
     put(stageEl, "--dock", Math.max(clamp01(-rel / vh), clamp01((rel - span) / vh)));
@@ -106,6 +125,21 @@ function stage(root: HTMLElement): () => void {
     const f = x - k;
     const t = k >= n - 1 ? n - 1 : k + smooth(clamp01((f - HOLD) / (1 - HOLD)));
     state.t = t;
+    state.x = x;
+
+    // A change starts when t leaves a whole number.
+    const was = lastT;
+    lastT = t;
+    if (Number.isInteger(was) && t !== was) {
+      const to = t > was ? was + 1 : was - 1;
+      const left = seg * (1 - HOLD);
+      const duration = Math.round(Math.max(250, Math.min(2500, pxPerMs > 0.05 ? left / pxPerMs : 900)));
+      if (to >= 0 && to < n) emit("writing:transition", { from: was, to, duration });
+    }
+    // Speed for the colour split on the words: 0 still, 1 fast.
+    vel += (Math.min(1, pxPerMs / 6) - vel) * 0.5;
+    put(stageEl, "--vel", vel < 0.02 ? 0 : vel);
+    put(stageEl, "--head", clamp01((x - 0.16) / 0.26));
 
     heroes.forEach((h, i) => {
       const cin = i === 0 ? 1 : clamp01(t - (i - 1));
@@ -118,16 +152,21 @@ function stage(root: HTMLElement): () => void {
       put(h, "--cin", clamp01((cin - 0.5) / 0.5));
       put(h, "--cout", clamp01(cout / 0.34));
       put(h, "--drift", Math.max(-1, Math.min(1.6, x - i)));
+      // At rest the letters drop their filters.
+      const calm = cin >= 1 && cout <= 0;
+      if (calm !== h.hasAttribute("data-calm")) h.toggleAttribute("data-calm", calm);
     });
 
     links.forEach((a, i) => put(a, "--f", i === 0 ? 1 : clamp01(t - (i - 1))));
-    const now = Math.min(n - 1, Math.round(t));
-    if (now !== current) {
-      current = now;
+    const up = Math.min(n - 1, Math.round(t));
+    if (up !== current) {
+      const first = current === -1;
+      current = up;
       links.forEach((a, i) => {
-        if (i === now) a.setAttribute("aria-current", "true");
+        if (i === up) a.setAttribute("aria-current", "true");
         else a.removeAttribute("aria-current");
       });
+      if (!first) emit("writing:hero", { index: up, slug: heroes[up]?.dataset.slug, accent: accentOf(up) });
     }
   };
 
@@ -135,7 +174,15 @@ function stage(root: HTMLElement): () => void {
   const restOf = (i: number) => top + i * seg + seg * 0.1;
 
   let queued = 0;
+  let settle = 0;
   const onScroll = () => {
+    clearTimeout(settle);
+    // When the scroll stops, let the speed fall back to still.
+    settle = window.setTimeout(() => {
+      pxPerMs = 0;
+      vel = 0;
+      put(stageEl, "--vel", 0);
+    }, 140);
     if (queued) return;
     queued = requestAnimationFrame(() => {
       queued = 0;
@@ -184,16 +231,38 @@ function stage(root: HTMLElement): () => void {
     ),
   );
 
-  const dust = mountDust(root, heroes, state);
+  // The 3D scene. Where WebGL is missing, the masked pictures and the 2D
+  // dust carry the same story.
+  let dust: (() => void) | null = null;
+  let gl: GLHandle | null = null;
+  const glCanvas = root.querySelector<HTMLCanvasElement>(".cx-gl");
+  if (glCanvas) {
+    gl = mountCaseGL(root, glCanvas, heroes, state, () => {
+      if (!signal.aborted) root.classList.add("is-gl");
+    });
+  }
+  if (!gl) dust = mountDust(root, heroes, state);
+
+  // Clicking the 3D art opens the case study that is up.
+  glCanvas?.addEventListener(
+    "click",
+    () => heroes[Math.min(n - 1, Math.round(state.t))]?.querySelector<HTMLAnchorElement>(".cx-read")?.click(),
+    { signal },
+  );
+
+  emit("writing:hero", { index: current, slug: heroes[current]?.dataset.slug, accent: accentOf(current) });
 
   return () => {
     ac.abort();
     ro.disconnect();
     cancelAnimationFrame(queued);
-    dust();
+    clearTimeout(settle);
+    dust?.();
+    gl?.stop();
+    root.classList.remove("is-gl");
     // Back to the plain cards: drop what the stage wrote.
     for (const el of [stageEl, ...heroes, ...links]) {
-      for (const v of ["--dock", "--open", "--zoom", "--out", "--cin", "--cout", "--drift", "--f"]) el.style.removeProperty(v);
+      for (const v of ["--dock", "--open", "--zoom", "--out", "--cin", "--cout", "--drift", "--f", "--vel", "--head"]) el.style.removeProperty(v);
     }
     heroes.forEach((h, i) => {
       h.toggleAttribute("data-live", i === 0);

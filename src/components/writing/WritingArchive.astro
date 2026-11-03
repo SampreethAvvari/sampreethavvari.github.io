@@ -1,8 +1,13 @@
 ---
-// Everything after the six case studies: every post on a horizon of light,
-// with the filters (kind of work) and the order (newest or impact), then
-// the guides. Cards rise into place as they scroll in, and light follows
-// the pointer across the one under it.
+// Everything after the six case studies, as a star map: every post is a
+// small glowing card, and posts that share a tag gather into one
+// constellation, its line drawn in the order they were written. Search,
+// tag, year and kind of work filters move the cards to their new places;
+// hover or focus brings a card forward with its art in depth; a click
+// flies into it. Drag to move around, the buttons or ctrl and scroll to
+// zoom. "List view" shows the same posts as a plain grid, which is also
+// what renders before the script runs, on phones by default, and with
+// reduced motion.
 import Icon from "../common/Icon.astro";
 import Picture from "../common/Picture.astro";
 import type { ArchivePost } from "./types";
@@ -15,25 +20,31 @@ interface Props {
 }
 const { posts, guides } = Astro.props;
 
-// The filters. Plain words on neutral chips: the selected one turns white.
-const filters = [
-  { key: "all", label: "All", title: "Every post" },
+const kinds = [
+  { key: "all", label: "All", title: "Every kind of work" },
   { key: "aie", label: "AIE", title: "AI engineering" },
   { key: "mle", label: "MLE", title: "Machine learning engineering" },
   { key: "fde", label: "FDE", title: "Working on site with the people who use it" },
   { key: "sde", label: "SDE", title: "Software engineering" },
 ];
+const years = [...new Set(posts.map((p) => p.year))].sort((a, b) => b.localeCompare(a));
+const tagCounts = new Map<string, number>();
+for (const p of posts) tagCounts.set(p.tag, (tagCounts.get(p.tag) || 0) + 1);
+const tags = [...tagCounts.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
+
+// Reading time as a ring: a full ring is ten minutes or more.
+const ringOf = (m: number) => Math.min(1, m / 10).toFixed(3);
+const RING = 2 * Math.PI * 9;
 
 const WRITING_RGB = "52,211,153";
 const comets = [
-  { w: 130, top: "6%", pos: "left:3%", rz: 12 },
-  { w: 112, top: "38%", pos: "right:2%", rz: -12 },
-  { w: 118, top: "64%", pos: "left:40%", rz: 8 },
-  { w: 106, top: "86%", pos: "right:28%", rz: -16 },
+  { w: 130, top: "4%", pos: "left:3%", rz: 12 },
+  { w: 112, top: "36%", pos: "right:2%", rz: -12 },
+  { w: 106, top: "80%", pos: "right:28%", rz: -16 },
 ];
 ---
 
-<section class="ax" aria-labelledby="ax-title">
+<section class="ax" id="every-post" aria-labelledby="ax-title" data-view="list">
   <div class="ax-horizon" aria-hidden="true"><span class="ax-planet"></span><span class="ax-haze"></span></div>
   {comets.map((c) => (
     <span class="space-el" style={`width:${c.w}px;height:${Math.round(c.w * 0.27)}px;top:${c.top};${c.pos};`} aria-hidden="true"><span class="comet-glow" style={`--sr-rgb:${WRITING_RGB};`}></span><span class="space-comet" style={`--sr-rgb:${WRITING_RGB};--rz:${c.rz}deg;`}></span></span>
@@ -42,45 +53,136 @@ const comets = [
   <div class="wrap on-top ax-head">
     <p class="kicker">Every post</p>
     <h2 class="t-h2 ax-h2" id="ax-title">
-      The rest of the writing.
-      <span class="t-tail">Pick a kind of work, or read by impact.</span>
+      A map of everything I wrote.
+      <span class="t-tail">Posts that share a tag form one constellation.</span>
     </h2>
+  </div>
 
-    <div class="ax-controls">
-      <div class="lg ax-bar" role="group" aria-label="Filter posts by kind of work">
-        {filters.map((f) => (
-          <button
-            type="button"
-            class={`chip ax-filter ${f.key === "all" ? "is-on" : ""}`}
-            data-filter={f.key}
-            aria-pressed={f.key === "all" ? "true" : "false"}
-            title={f.title}
-          >
-            {f.label}
-          </button>
+  <!-- Controls: one dock for both views. -->
+  <div class="wrap on-top ax-dock-wrap">
+    <div class="ax-dock" role="group" aria-label="Find posts">
+      <label class="lg ax-search">
+        <Icon name="search" size={15} />
+        <span class="sr-only">Search posts</span>
+        <input id="ax-q" type="search" placeholder="Search titles and summaries" autocomplete="off" spellcheck="false" />
+      </label>
+      <div class="lg ax-bar" role="group" aria-label="Kind of work">
+        {kinds.map((f) => (
+          <button type="button" class={`chip ax-kind ${f.key === "all" ? "is-on" : ""}`} data-kind={f.key} aria-pressed={f.key === "all" ? "true" : "false"} title={f.title}>{f.label}</button>
         ))}
       </div>
-      <div class="lg ax-bar" role="group" aria-label="Sort posts">
-        <button type="button" class="chip ax-sort is-on" data-sort="date" aria-pressed="true">Newest</button>
-        <button type="button" class="chip ax-sort" data-sort="impact" aria-pressed="false">Impact</button>
+      <div class="lg ax-bar" role="group" aria-label="Year">
+        <button type="button" class="chip ax-year is-on" data-year="all" aria-pressed="true">Any year</button>
+        {years.map((y) => (
+          <button type="button" class="chip ax-year" data-year={y} aria-pressed="false">{y}</button>
+        ))}
       </div>
-      <p class="t-meta ax-count" id="ax-count" aria-live="polite">{posts.length} posts</p>
+      <div class="lg ax-bar" role="group" aria-label="Order">
+        <button type="button" class="chip ax-sort is-on" data-sort="date" aria-pressed="true">Newest</button>
+        <button type="button" class="chip ax-sort" data-sort="impact" aria-pressed="false" title="Larger on the map, first in the list">Impact</button>
+      </div>
+      <div class="lg ax-bar ax-views" role="group" aria-label="View">
+        <button type="button" class="chip ax-view" data-view="map" aria-pressed="false">Map</button>
+        <button type="button" class="chip ax-view is-on" data-view="list" aria-pressed="true">List view</button>
+      </div>
     </div>
-    <p id="ax-impact-note" class="t-small ax-note" hidden>
-      Posts ranked by how much the project behind each one moved the company.
+    <div class="ax-tags" role="group" aria-label="Tag">
+      <button type="button" class="ax-tag is-on" data-tag="all" aria-pressed="true">All tags <span>{posts.length}</span></button>
+      {tags.map(([t, c]) => (
+        <button type="button" class="ax-tag" data-tag={t} aria-pressed="false">{t} <span>{c}</span></button>
+      ))}
+    </div>
+    <p class="ax-status">
+      <span class="t-meta" id="ax-count" aria-live="polite">{posts.length} posts</span>
+      <span id="ax-impact-note" class="t-meta ax-note" hidden>Ranked by how much the project behind each one moved the company.</span>
     </p>
   </div>
 
-  <div class="wrap on-top">
+  <!-- The map. Cards are real links in date order; the script places them. -->
+  <div class="ax-map" id="ax-map" role="region" aria-label="Map of every post, grouped by tag" tabindex="-1">
+    <div class="ax-glows" aria-hidden="true">
+      {tags.map(([t]) => <span class="ax-glow" data-tag={t}></span>)}
+    </div>
+    <svg class="ax-lines" aria-hidden="true">
+      <defs>
+        <linearGradient id="ax-line-g" x1="0" x2="1" y1="0" y2="0">
+          <stop offset="0" stop-color={`rgb(${WRITING_RGB})`} stop-opacity="0.15" />
+          <stop offset="0.5" stop-color={`rgb(${WRITING_RGB})`} stop-opacity="0.55" />
+          <stop offset="1" stop-color={`rgb(${WRITING_RGB})`} stop-opacity="0.15" />
+        </linearGradient>
+      </defs>
+      {tags.map(([t]) => <polyline class="ax-line" data-tag={t} points="" />)}
+    </svg>
+    <div class="ax-names">
+      {tags.map(([t, c]) => (
+        <button type="button" class="ax-name" data-tag={t} aria-label={`Show only ${t}, ${c} posts`}>
+          <span class="ax-name-dot" aria-hidden="true"></span>{t}<span class="ax-name-n">{c}</span>
+        </button>
+      ))}
+    </div>
+    <ul class="ax-stars" role="list" aria-label="Every post">
+      {posts.map((p) => (
+        <li
+          class="ax-star"
+          data-slug={p.slug}
+          data-tag={p.tag}
+          data-year={p.year}
+          data-dx={p.dx.join(" ")}
+          data-date={p.time}
+          data-impact={p.impact}
+          data-featured={p.featured ? "1" : undefined}
+          data-q={`${p.title} ${p.description} ${p.tag}`.toLowerCase()}
+        >
+          <a class="ax-node" href={p.url}>
+            <span class="ax-node-art" aria-hidden="true">
+              {p.thumb ? (
+                <picture>
+                  <source srcset={`${p.thumb}.avif`} type="image/avif" />
+                  <img class="ax-node-img" src={`${p.thumb}.webp`} alt="" width="560" height="315" loading="lazy" decoding="async" />
+                </picture>
+              ) : (
+                <span class="ax-node-fallback">{p.fallback}</span>
+              )}
+              <span class="ax-node-glint"></span>
+              {p.featured && <span class="ax-node-badge">Case study</span>}
+            </span>
+            <span class="ax-node-body">
+              <span class="ax-node-title">{p.title}</span>
+              <span class="ax-node-meta">
+                <svg class="ax-ring" viewBox="0 0 24 24" aria-hidden="true" style={`--p:${ringOf(p.minutes)};`}>
+                  <circle cx="12" cy="12" r="9" class="ax-ring-bg" />
+                  <circle cx="12" cy="12" r="9" class="ax-ring-fg" stroke-dasharray={`${(Number(ringOf(p.minutes)) * RING).toFixed(2)} ${RING.toFixed(2)}`} />
+                </svg>
+                <span>{p.minutes} min · {p.date}</span>
+              </span>
+              <span class="ax-node-desc">{p.description}</span>
+            </span>
+          </a>
+        </li>
+      ))}
+    </ul>
+    <div class="ax-zoom" role="group" aria-label="Zoom the map">
+      <button type="button" class="lg ax-zbtn" data-zoom="in" aria-label="Zoom in">+</button>
+      <button type="button" class="lg ax-zbtn" data-zoom="out" aria-label="Zoom out">&minus;</button>
+      <button type="button" class="lg ax-zbtn ax-zfit" data-zoom="fit" aria-label="Show the whole map">Fit</button>
+    </div>
+    <p class="ax-hint" aria-hidden="true">Drag to move · ctrl and scroll to zoom · click a tag to see only it</p>
+  </div>
+
+  <!-- List view: the same posts as a grid. -->
+  <div class="wrap on-top ax-listwrap">
     <ul id="ax-grid" class="ax-grid" role="list" aria-label="All posts">
       {posts.map((p) => (
         <li
           class="ax-slot"
           data-slug={p.slug}
+          data-tag={p.tag}
+          data-year={p.year}
           data-date={p.time}
           data-impact={p.impact}
           data-dx={p.dx.join(" ")}
           data-featured={p.featured ? "1" : undefined}
+          data-q={`${p.title} ${p.description} ${p.tag}`.toLowerCase()}
           hidden={p.featured ? true : undefined}
         >
           <a href={p.url} class="ax-card">
@@ -95,7 +197,13 @@ const comets = [
               )}
             </div>
             <div class="ax-body">
-              <p class="ax-meta">{p.date} · {p.minutes} min read</p>
+              <p class="ax-meta">
+                <svg class="ax-ring" viewBox="0 0 24 24" aria-hidden="true">
+                  <circle cx="12" cy="12" r="9" class="ax-ring-bg" />
+                  <circle cx="12" cy="12" r="9" class="ax-ring-fg" stroke-dasharray={`${(Number(ringOf(p.minutes)) * RING).toFixed(2)} ${RING.toFixed(2)}`} />
+                </svg>
+                {p.date} · {p.minutes} min read
+              </p>
               <h3 class="ax-title">{p.title}</h3>
               <p class="ax-desc">{p.description}</p>
               <span class="ax-go" aria-hidden="true">Read <Icon name="arrow-right" size={13} /></span>
@@ -104,8 +212,8 @@ const comets = [
         </li>
       ))}
     </ul>
-    <p id="ax-empty" class="t-body ax-empty" hidden>No posts in this one yet.</p>
   </div>
+  <p id="ax-empty" class="wrap on-top t-body ax-empty" hidden>No posts match. Try another tag, year or search.</p>
 
   <!-- Teaching: guides I wrote, kept beside the posts -->
   <div id="teaching" class="wrap on-top ax-teach" aria-labelledby="ax-teach-title" role="region">
@@ -181,48 +289,296 @@ const comets = [
   .ax-haze {
     position: absolute;
     left: 50%;
-    top: clamp(-40px, -2vw, 0px);
+    top: 0;
     width: min(1400px, 120vw);
     height: clamp(200px, 24vw, 340px);
     transform: translateX(-50%);
     background: radial-gradient(50% 60% at 50% 70%, rgba(var(--c-writing-rgb), 0.16), rgba(var(--c-writing-rgb), 0) 70%);
-    filter: blur(10px);
   }
 
   .ax-head { position: relative; }
-  .ax-h2 { margin-top: 18px; max-width: 18ch; }
-  .ax-controls {
-    margin-top: clamp(28px, 3.5vw, 40px);
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 10px 12px;
-  }
-  .ax-bar {
+  .ax-h2 { margin-top: 18px; max-width: 20ch; }
+
+  /* ---------------- Controls ---------------- */
+  .ax-dock-wrap { position: relative; z-index: 5; margin-top: clamp(28px, 3.5vw, 40px); }
+  .ax-dock { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+  .ax-search {
     display: inline-flex;
     align-items: center;
-    gap: 4px;
-    padding: 5px;
+    gap: 8px;
+    height: 40px;
+    padding: 0 14px;
     border-radius: 9999px;
+    color: var(--ink-faint);
+    flex: 1 1 220px;
+    max-width: 300px;
   }
+  .ax-search input {
+    flex: 1;
+    min-width: 0;
+    height: 100%;
+    background: transparent;
+    border: 0;
+    outline: none;
+    color: var(--ink);
+    font: inherit;
+    font-size: 0.875rem;
+  }
+  .ax-search input::placeholder { color: rgba(245, 245, 247, 0.4); }
+  .ax-search:focus-within { box-shadow: 0 0 0 3px rgba(var(--c-writing-rgb), 0.4); }
+  .ax-bar { display: inline-flex; align-items: center; gap: 4px; padding: 5px; border-radius: 9999px; }
   .ax-bar .chip { cursor: pointer; background: transparent; border-color: transparent; }
-  .ax-bar .chip:hover { transform: none; }
   .ax-bar .chip:not(.is-on):hover { background: var(--wash-strong); border-color: transparent; }
   .ax-bar .chip.is-on { color: #000; background: var(--ink); border-color: var(--ink); }
-  .ax-bar .chip:focus-visible { outline: none; box-shadow: 0 0 0 3px rgba(var(--tone-rgb), 0.45); }
-  .ax-count { margin-left: 4px; }
-  .ax-note { margin-top: 14px; max-width: 40rem; }
-
-  /* The grid: six lanes on wide screens, each card two wide, so a last
-     row of one or two can stretch instead of leaving a gap. */
-  .ax-grid {
-    list-style: none;
-    margin: clamp(28px, 3.5vw, 44px) 0 0;
-    padding: 0;
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: 18px;
+  .ax-bar .chip:focus-visible { outline: none; box-shadow: 0 0 0 3px rgba(var(--c-writing-rgb), 0.5); }
+  .ax-tags { margin-top: 12px; display: flex; flex-wrap: wrap; gap: 6px; }
+  .ax-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    height: 30px;
+    padding: 0 12px;
+    border-radius: 9999px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: rgba(255, 255, 255, 0.03);
+    color: var(--ink-soft);
+    font-size: 0.8125rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: color 150ms var(--ease-glass), border-color 150ms var(--ease-glass), background-color 150ms var(--ease-glass), box-shadow 250ms var(--ease-glass);
   }
+  .ax-tag span { color: rgba(245, 245, 247, 0.4); font-variant-numeric: tabular-nums; }
+  .ax-tag:hover { color: var(--ink); border-color: rgba(255, 255, 255, 0.2); }
+  .ax-tag.is-on {
+    color: var(--ink);
+    border-color: rgba(var(--c-writing-rgb), 0.6);
+    background: rgba(var(--c-writing-rgb), 0.12);
+    box-shadow: 0 0 18px -6px rgba(var(--c-writing-rgb), 0.7);
+  }
+  .ax-tag.is-on span { color: rgba(var(--c-writing-rgb), 0.9); }
+  .ax-tag:focus-visible { outline: none; box-shadow: 0 0 0 3px rgba(var(--c-writing-rgb), 0.5); }
+  .ax-status { margin-top: 12px; display: flex; flex-wrap: wrap; gap: 6px 16px; }
+
+  /* ---------------- The map ---------------- */
+  .ax-map { display: none; }
+  .ax[data-view="map"] .ax-map {
+    display: block;
+    position: relative;
+    z-index: 2;
+    height: 100vh;
+    height: 100svh;
+    min-height: 640px;
+    margin-top: 18px;
+    overflow: hidden;
+    cursor: grab;
+    touch-action: pan-y;
+    outline: none;
+    background:
+      radial-gradient(60% 50% at 50% 50%, rgba(var(--c-writing-rgb), 0.06), rgba(0, 0, 0, 0) 70%);
+  }
+  .ax[data-view="map"] .ax-map.is-dragging { cursor: grabbing; }
+  .ax[data-view="map"] .ax-listwrap { display: none; }
+
+  .ax-glows, .ax-lines, .ax-names, .ax-stars { position: absolute; inset: 0; margin: 0; padding: 0; list-style: none; }
+  .ax-lines { width: 100%; height: 100%; overflow: visible; pointer-events: none; }
+  .ax-line {
+    fill: none;
+    stroke: url(#ax-line-g);
+    stroke: rgba(var(--c-writing-rgb), 0.38);
+    stroke-width: 1;
+    stroke-dasharray: 2 5;
+    transition: opacity 500ms var(--ease-glass);
+    filter: drop-shadow(0 0 4px rgba(var(--c-writing-rgb), 0.7));
+  }
+  .ax-line.is-off { opacity: 0; }
+  .ax-glows { pointer-events: none; }
+  .ax-glow {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: radial-gradient(closest-side, rgba(var(--c-writing-rgb), 0.22), rgba(var(--c-writing-rgb), 0.08) 45%, rgba(var(--c-writing-rgb), 0) 100%);
+    transition: opacity 600ms var(--ease-glass);
+    will-change: transform;
+  }
+  .ax-glow.is-off { opacity: 0; }
+  .ax-names { pointer-events: none; }
+  .ax-name {
+    position: absolute;
+    left: 0;
+    top: 0;
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    height: 26px;
+    padding: 0 10px 0 8px;
+    border-radius: 9999px;
+    border: 1px solid rgba(var(--c-writing-rgb), 0.28);
+    background: rgba(3, 8, 7, 0.72);
+    color: var(--ink);
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.01em;
+    white-space: nowrap;
+    cursor: pointer;
+    pointer-events: auto;
+    transition: opacity 400ms var(--ease-glass), border-color 200ms var(--ease-glass), box-shadow 300ms var(--ease-glass);
+    will-change: transform;
+  }
+  .ax-name:hover, .ax-name.is-on { border-color: rgba(var(--c-writing-rgb), 0.8); box-shadow: 0 0 22px -6px rgba(var(--c-writing-rgb), 0.9); }
+  .ax-name:focus-visible { outline: none; box-shadow: 0 0 0 3px rgba(var(--c-writing-rgb), 0.55); }
+  .ax-name.is-off { opacity: 0; pointer-events: none; }
+  .ax-name-dot { width: 6px; height: 6px; border-radius: 50%; background: rgb(var(--c-writing-rgb)); box-shadow: 0 0 10px rgba(var(--c-writing-rgb), 0.9); }
+  .ax-name-n { color: rgba(var(--c-writing-rgb), 0.9); font-variant-numeric: tabular-nums; }
+
+  .ax-star {
+    position: absolute;
+    left: 0;
+    top: 0;
+    transform-origin: 0 0;
+    opacity: 0;
+    transition: opacity 500ms var(--ease-glass);
+    will-change: transform;
+  }
+  .ax-map.is-live .ax-star { opacity: 1; }
+  .ax-map.is-live .ax-star.is-out { opacity: 0; visibility: hidden; transition: opacity 400ms var(--ease-glass), visibility 0s linear 400ms; }
+  .ax-star.is-open { z-index: 20; }
+
+  .ax-node {
+    --px: 0;
+    --py: 0;
+    display: flex;
+    flex-direction: column;
+    width: 132px;
+    border-radius: 14px;
+    overflow: hidden;
+    text-decoration: none;
+    color: var(--ink);
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.07), rgba(255, 255, 255, 0.02) 50%), #06080b;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    box-shadow:
+      0 0 0 1px rgba(0, 0, 0, 0.6),
+      0 0 26px -8px rgba(var(--c-writing-rgb), 0.55),
+      0 18px 40px -20px rgba(0, 0, 0, 0.9);
+    transform: perspective(700px) rotateX(calc(var(--py) * -9deg)) rotateY(calc(var(--px) * 11deg));
+    transition: width 420ms var(--ease-glass), box-shadow 300ms var(--ease-glass), border-color 300ms var(--ease-glass), transform 200ms linear;
+  }
+  .ax-star[data-featured] .ax-node { border-color: rgba(var(--c-writing-rgb), 0.5); }
+  .ax-star.is-open .ax-node {
+    width: 300px;
+    border-color: rgba(var(--c-writing-rgb), 0.75);
+    box-shadow:
+      0 0 0 1px rgba(0, 0, 0, 0.6),
+      0 0 60px -10px rgba(var(--c-writing-rgb), 0.8),
+      0 40px 80px -30px rgba(0, 0, 0, 1);
+  }
+  .ax-node:focus-visible { outline: none; }
+  .ax-node-art {
+    position: relative;
+    display: block;
+    aspect-ratio: 16 / 9;
+    overflow: hidden;
+    background: #05070a;
+  }
+  .ax-node-img {
+    position: absolute;
+    inset: -8%;
+    width: 116%;
+    height: 116%;
+    object-fit: cover;
+    display: block;
+    transform: translate3d(calc(var(--px) * -10px), calc(var(--py) * -7px), 0);
+    transition: transform 200ms linear, filter 400ms var(--ease-glass);
+    filter: saturate(0.9) brightness(0.9);
+  }
+  .ax-star.is-open .ax-node-img { filter: saturate(1.1) brightness(1.05); }
+  /* The second layer: a glint that moves the other way. */
+  .ax-node-glint {
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(60% 80% at calc(50% + var(--px) * 40%) calc(40% + var(--py) * 40%), rgba(255, 255, 255, 0.22), rgba(255, 255, 255, 0) 60%);
+    mix-blend-mode: soft-light;
+    opacity: 0;
+    transition: opacity 300ms var(--ease-glass);
+  }
+  .ax-star.is-open .ax-node-glint { opacity: 1; }
+  .ax-node-fallback {
+    position: absolute;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    padding: 8px;
+    font-size: 0.875rem;
+    font-weight: 600;
+    text-align: center;
+    color: var(--ink-ghost);
+    background: radial-gradient(70% 90% at 20% 10%, rgba(var(--c-writing-rgb), 0.22), rgba(var(--c-writing-rgb), 0) 70%), #07080b;
+  }
+  .ax-node-badge {
+    position: absolute;
+    left: 6px;
+    top: 6px;
+    padding: 2px 6px;
+    border-radius: 9999px;
+    font-size: 0.5625rem;
+    font-weight: 600;
+    color: #02140d;
+    background: rgb(var(--c-writing-rgb));
+    box-shadow: 0 0 12px rgba(var(--c-writing-rgb), 0.8);
+  }
+  .ax-node-body { display: flex; flex-direction: column; gap: 6px; padding: 8px 9px 9px; }
+  .ax-node-title {
+    font-size: 0.71875rem;
+    line-height: 1.28;
+    font-weight: 600;
+    letter-spacing: -0.005em;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    overflow: hidden;
+  }
+  .ax-node-meta { display: flex; align-items: center; gap: 6px; font-size: 0.625rem; color: rgba(245, 245, 247, 0.55); font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .ax-node-desc { display: none; font-size: 0.8125rem; line-height: 1.5; color: var(--ink-soft); }
+  .ax-star.is-open .ax-node-body { padding: 12px 14px 14px; gap: 8px; }
+  .ax-star.is-open .ax-node-title { font-size: 1rem; line-height: 1.25; -webkit-line-clamp: 3; }
+  .ax-star.is-open .ax-node-meta { font-size: 0.75rem; }
+  .ax-star.is-open .ax-node-desc { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 4; overflow: hidden; }
+
+  .ax-ring { width: 15px; height: 15px; flex: none; transform: rotate(-90deg); }
+  .ax-ring circle { fill: none; stroke-width: 3; }
+  .ax-ring-bg { stroke: rgba(255, 255, 255, 0.14); }
+  .ax-ring-fg { stroke: rgb(var(--c-writing-rgb)); stroke-linecap: round; filter: drop-shadow(0 0 2px rgba(var(--c-writing-rgb), 0.8)); }
+
+  .ax-zoom { position: absolute; right: clamp(14px, 2vw, 28px); bottom: clamp(70px, 10vh, 110px); z-index: 30; display: flex; flex-direction: column; gap: 6px; }
+  .ax-zbtn {
+    width: 40px;
+    height: 40px;
+    border-radius: 9999px;
+    border: 0;
+    color: var(--ink);
+    font-size: 1.125rem;
+    font-weight: 500;
+    line-height: 1;
+    cursor: pointer;
+  }
+  .ax-zfit { font-size: 0.6875rem; font-weight: 600; }
+  .ax-zbtn:focus-visible { outline: none; box-shadow: 0 0 0 3px rgba(var(--c-writing-rgb), 0.55); }
+  .ax-hint {
+    position: absolute;
+    left: 50%;
+    bottom: clamp(36px, 5vh, 56px);
+    transform: translateX(-50%);
+    font-size: 0.75rem;
+    color: rgba(245, 245, 247, 0.42);
+    white-space: nowrap;
+    pointer-events: none;
+  }
+
+  /* ---------------- List view ---------------- */
+  .ax-listwrap { margin-top: clamp(24px, 3vw, 36px); }
+  .ax-grid { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: 1fr; gap: 18px; }
   @media (min-width: 720px) {
     .ax-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     .ax-slot[data-tail2="1"] { grid-column: 1 / -1; }
@@ -248,19 +604,11 @@ const comets = [
     overflow: hidden;
     text-decoration: none;
     color: var(--ink);
-    background:
-      linear-gradient(180deg, rgba(255, 255, 255, 0.045), rgba(255, 255, 255, 0.01) 40%),
-      #07080c;
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.045), rgba(255, 255, 255, 0.01) 40%), #07080c;
     border: 1px solid rgba(255, 255, 255, 0.07);
-    box-shadow:
-      inset 0 1px 0 rgba(255, 255, 255, 0.07),
-      0 30px 60px -40px rgba(0, 0, 0, 0.95);
-    transition:
-      transform 450ms var(--ease-glass),
-      border-color 300ms var(--ease-glass),
-      box-shadow 450ms var(--ease-glass);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.07), 0 30px 60px -40px rgba(0, 0, 0, 0.95);
+    transition: transform 450ms var(--ease-glass), border-color 300ms var(--ease-glass), box-shadow 450ms var(--ease-glass);
   }
-  /* Light that follows the pointer, and a rim that catches it. */
   .ax-light {
     position: absolute;
     inset: 0;
@@ -282,26 +630,14 @@ const comets = [
     -webkit-mask-composite: xor;
     mask-composite: exclude;
   }
-  .ax-card:hover,
-  .ax-card:focus-visible {
+  .ax-card:hover, .ax-card:focus-visible {
     transform: translateY(-4px);
     border-color: rgba(255, 255, 255, 0.12);
-    box-shadow:
-      inset 0 1px 0 rgba(255, 255, 255, 0.1),
-      0 40px 80px -40px rgba(0, 0, 0, 1),
-      0 0 60px -30px rgba(var(--c-writing-rgb), 0.55);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1), 0 40px 80px -40px rgba(0, 0, 0, 1), 0 0 60px -30px rgba(var(--c-writing-rgb), 0.55);
   }
-  .ax-card:hover .ax-light,
-  .ax-card:focus-visible .ax-light { opacity: 1; }
+  .ax-card:hover .ax-light, .ax-card:focus-visible .ax-light { opacity: 1; }
   .ax-card:focus-visible { outline: none; box-shadow: 0 0 0 3px rgba(var(--c-writing-rgb), 0.6); }
-
-  .ax-media {
-    position: relative;
-    aspect-ratio: 16 / 9;
-    overflow: hidden;
-    background: #05060a;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
-  }
+  .ax-media { position: relative; aspect-ratio: 16 / 9; overflow: hidden; background: #05060a; border-bottom: 1px solid rgba(255, 255, 255, 0.06); }
   .ax-media :global(img) {
     position: absolute;
     inset: 0;
@@ -314,48 +650,17 @@ const comets = [
     transition: transform 900ms var(--ease-glass), filter 500ms var(--ease-glass);
   }
   .ax-card:hover .ax-media :global(img) { transform: scale(1.07); filter: saturate(1.08) brightness(1.04); }
-  .ax-media::after {
-    content: "";
-    position: absolute;
-    inset: 0;
-    background: linear-gradient(180deg, rgba(7, 8, 12, 0) 55%, rgba(7, 8, 12, 0.7) 100%);
-    pointer-events: none;
-  }
   .ax-fallback {
     position: absolute;
     inset: 0;
     display: grid;
     place-items: center;
     padding: 24px;
-    background:
-      radial-gradient(70% 90% at 20% 10%, rgba(var(--c-writing-rgb), 0.2), rgba(var(--c-writing-rgb), 0) 70%),
-      radial-gradient(60% 80% at 90% 100%, rgba(var(--c-writing-rgb), 0.09), rgba(var(--c-writing-rgb), 0) 70%),
-      #07080b;
+    background: radial-gradient(70% 90% at 20% 10%, rgba(var(--c-writing-rgb), 0.2), rgba(var(--c-writing-rgb), 0) 70%), #07080b;
   }
-  .ax-fallback span {
-    font-size: clamp(1.375rem, 2vw, 1.75rem);
-    line-height: 1.05;
-    letter-spacing: -0.035em;
-    font-weight: 600;
-    font-variant-numeric: tabular-nums;
-    text-align: center;
-    text-wrap: balance;
-    color: var(--ink-ghost);
-  }
-
-  .ax-body {
-    position: relative;
-    display: flex;
-    flex-direction: column;
-    flex: 1;
-    padding: 20px 22px 22px;
-  }
-  .ax-meta {
-    font-size: 0.8125rem;
-    line-height: 1.4;
-    color: rgba(245, 245, 247, 0.5);
-    font-variant-numeric: tabular-nums;
-  }
+  .ax-fallback span { font-size: clamp(1.375rem, 2vw, 1.75rem); font-weight: 600; letter-spacing: -0.035em; text-align: center; color: var(--ink-ghost); }
+  .ax-body { position: relative; display: flex; flex-direction: column; flex: 1; padding: 20px 22px 22px; }
+  .ax-meta { display: flex; align-items: center; gap: 8px; font-size: 0.8125rem; line-height: 1.4; color: rgba(245, 245, 247, 0.5); font-variant-numeric: tabular-nums; }
   .ax-title {
     margin-top: 10px;
     font-size: 1.1875rem;
@@ -369,86 +674,52 @@ const comets = [
     -webkit-line-clamp: 3;
     overflow: hidden;
   }
-  .ax-desc {
-    margin-top: 10px;
-    font-size: 0.875rem;
-    line-height: 1.55;
-    color: var(--ink-soft);
-    display: -webkit-box;
-    -webkit-box-orient: vertical;
-    -webkit-line-clamp: 2;
-    overflow: hidden;
-  }
-  .ax-go {
-    margin-top: auto;
-    padding-top: 16px;
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    font-size: 0.875rem;
-    font-weight: 500;
-    color: var(--c-writing);
-    opacity: 0.75;
-    transition: opacity 250ms var(--ease-glass);
-  }
-  .ax-go :global(svg) { transition: transform 250ms var(--ease-glass); }
+  .ax-desc { margin-top: 10px; font-size: 0.875rem; line-height: 1.55; color: var(--ink-soft); display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; }
+  .ax-go { margin-top: auto; padding-top: 16px; display: inline-flex; align-items: center; gap: 6px; font-size: 0.875rem; font-weight: 500; color: var(--c-writing); opacity: 0.75; }
   .ax-card:hover .ax-go { opacity: 1; }
-  .ax-card:hover .ax-go :global(svg) { transform: translateX(3px); }
-
-  /* A last card alone in its row lies on its side: art left, words right. */
   @media (min-width: 720px) {
     .ax-slot[data-tail2="1"] .ax-card { flex-direction: row; }
     .ax-slot[data-tail2="1"] .ax-media { flex: 0 0 52%; aspect-ratio: auto; min-height: 280px; border-bottom: 0; border-right: 1px solid rgba(255, 255, 255, 0.06); }
     .ax-slot[data-tail2="1"] .ax-body { justify-content: center; padding: 32px; }
     .ax-slot[data-tail2="1"] .ax-title { font-size: 1.5rem; }
-    .ax-slot[data-tail2="1"] .ax-desc { -webkit-line-clamp: 4; }
   }
   @media (min-width: 1024px) {
     .ax-slot[data-tail2="1"]:not([data-tail3="1"]) .ax-card { flex-direction: column; }
     .ax-slot[data-tail2="1"]:not([data-tail3="1"]) .ax-media { flex: none; aspect-ratio: 16 / 9; min-height: 0; border-right: 0; border-bottom: 1px solid rgba(255, 255, 255, 0.06); }
     .ax-slot[data-tail2="1"]:not([data-tail3="1"]) .ax-body { justify-content: flex-start; padding: 20px 22px 22px; }
     .ax-slot[data-tail2="1"]:not([data-tail3="1"]) .ax-title { font-size: 1.1875rem; }
-    .ax-slot[data-tail2="1"]:not([data-tail3="1"]) .ax-desc { -webkit-line-clamp: 2; }
     .ax-slot[data-tail3="1"] .ax-card { flex-direction: row; }
     .ax-slot[data-tail3="1"] .ax-media { flex: 0 0 58%; aspect-ratio: auto; min-height: 340px; border-bottom: 0; border-right: 1px solid rgba(255, 255, 255, 0.06); }
     .ax-slot[data-tail3="1"] .ax-body { justify-content: center; padding: 40px; }
     .ax-slot[data-tail3="1"] .ax-title { font-size: 1.75rem; }
-    .ax-slot[data-tail3="1"] .ax-desc { -webkit-line-clamp: 4; }
   }
-
   .ax-empty { margin-top: 32px; color: var(--ink-faint); }
+  .ax[data-view="map"] .ax-empty { position: relative; z-index: 3; margin-top: -50vh; text-align: center; }
 
-  /* Cards rise into place as they scroll in: tied to the scroll where the
-     browser can, eased in on arrival where it cannot. */
   @media (prefers-reduced-motion: no-preference) {
     @supports (animation-timeline: view()) {
-      .ax-slot {
-        animation: ax-arrive linear both;
-        animation-timeline: view();
-        animation-range: entry 0% cover 26%;
-      }
+      .ax-slot { animation: ax-arrive linear both; animation-timeline: view(); animation-range: entry 0% cover 26%; }
       .ax-slot[data-col="1"] { animation-range: entry 8% cover 32%; }
       .ax-slot[data-col="2"] { animation-range: entry 16% cover 38%; }
     }
-    @supports not (animation-timeline: view()) {
-      .ax-grid.is-js .ax-slot {
-        opacity: 0;
-        transform: perspective(1400px) translate3d(0, 70px, 0) rotateX(12deg) scale(0.95);
-        transition: opacity 700ms var(--ease-glass), transform 900ms var(--ease-glass);
-        transition-delay: calc(var(--col, 0) * 90ms);
-      }
-      .ax-grid.is-js .ax-slot.is-in { opacity: 1; transform: none; }
-    }
   }
   @keyframes ax-arrive {
-    from {
-      opacity: 0;
-      transform: perspective(1400px) translate3d(0, 90px, 0) rotateX(14deg) scale(0.94);
-    }
+    from { opacity: 0; transform: perspective(1400px) translate3d(0, 90px, 0) rotateX(14deg) scale(0.94); }
     to { opacity: 1; transform: none; }
   }
 
-  /* Guides */
+  /* The fly in after a click on the map. */
+  :global(.ax-fly) {
+    position: fixed;
+    z-index: 90;
+    border-radius: 14px;
+    overflow: hidden;
+    pointer-events: none;
+    background: #05070a center / cover no-repeat;
+    box-shadow: 0 0 80px rgba(var(--c-writing-rgb), 0.6);
+  }
+
+  /* ---------------- Guides ---------------- */
   .ax-teach { padding-block: clamp(80px, 10vw, 140px) clamp(8px, 1vw, 16px); }
   .ax-teach-grid { display: grid; gap: 18px; grid-template-columns: 1fr; }
   @media (min-width: 900px) { .ax-teach-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 22px; } }
@@ -464,9 +735,7 @@ const comets = [
     overflow: hidden;
     text-decoration: none;
     color: var(--ink);
-    background:
-      linear-gradient(180deg, rgba(255, 255, 255, 0.045), rgba(255, 255, 255, 0.01) 40%),
-      #07080c;
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.045), rgba(255, 255, 255, 0.01) 40%), #07080c;
     border: 1px solid rgba(255, 255, 255, 0.07);
     box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.07), 0 30px 60px -40px rgba(0, 0, 0, 0.95);
     transition: transform 450ms var(--ease-glass), border-color 300ms var(--ease-glass);
@@ -475,16 +744,7 @@ const comets = [
   .ax-guide:hover { transform: translateY(-4px); border-color: rgba(255, 255, 255, 0.12); }
   .ax-guide:hover .ax-light { opacity: 1; }
   .ax-guide:focus-visible { outline: none; box-shadow: 0 0 0 3px rgba(var(--c-writing-rgb), 0.6); }
-  .ax-guide-cover {
-    position: relative;
-    border-radius: 12px;
-    overflow: hidden;
-    aspect-ratio: 3 / 4;
-    background: #07080b;
-    border: 1px solid var(--line);
-    box-shadow: 0 20px 40px -24px rgba(var(--c-writing-rgb), 0.45);
-    transition: transform 600ms var(--ease-glass);
-  }
+  .ax-guide-cover { position: relative; border-radius: 12px; overflow: hidden; aspect-ratio: 3 / 4; background: #07080b; border: 1px solid var(--line); box-shadow: 0 20px 40px -24px rgba(var(--c-writing-rgb), 0.45); transition: transform 600ms var(--ease-glass); }
   .ax-guide:hover .ax-guide-cover { transform: rotate(-2deg) translateY(-2px); }
   .ax-guide-cover :global(img) { width: 100%; height: 100%; object-fit: cover; display: block; }
   .ax-guide-body { position: relative; display: flex; flex-direction: column; align-items: flex-start; padding-block: 4px; }
@@ -492,15 +752,18 @@ const comets = [
   .ax-guide-desc { margin-top: 8px; }
   .ax-guide-go { margin-top: auto; padding-top: 20px; }
 
+  @media (max-width: 899px) {
+    .ax-search { max-width: none; flex-basis: 100%; }
+    .ax-hint { display: none; }
+    .ax-node { width: 120px; }
+    .ax-star.is-open .ax-node { width: 250px; }
+  }
   @media (prefers-reduced-motion: reduce) {
-    .ax-card,
-    .ax-guide,
-    .ax-media :global(img),
-    .ax-guide-cover { transition: none; }
-    .ax-card:hover,
-    .ax-guide:hover { transform: none; }
-    .ax-card:hover .ax-media :global(img) { transform: scale(1.02); }
+    .ax-card, .ax-guide, .ax-media :global(img), .ax-guide-cover, .ax-node, .ax-node-img { transition: none; }
+    .ax-card:hover, .ax-guide:hover { transform: none; }
     .ax-guide:hover .ax-guide-cover { transform: none; }
+    .ax-node { transform: none; }
+    .ax-node-img { transform: none; }
   }
 </style>
 

@@ -16,17 +16,7 @@
 import { Movement } from "../movement";
 import { chords, tonesIn, bassOf, type Chord } from "../theory";
 import { Pad, Mono, Sampler, lead, glint } from "../instruments";
-import { bell, BELLS, modal, MODES, fm, pluck, mulberry, dbg, nm, type RoomSpec } from "../dsp";
-
-/** A stable number from a name (FNV-1a). */
-function hash(s: string): number {
-  let h = 0x811c9dc5;
-  for (let i = 0; i < s.length; i++) {
-    h ^= s.charCodeAt(i);
-    h = Math.imul(h, 0x01000193);
-  }
-  return h >>> 0;
-}
+import { bell, BELLS, modal, MODES, fm, pluck, mulberry, hashStr as hash, dbg, nm, type RoomSpec } from "../dsp";
 
 const A = chords("Bq/E F#q/C# C#q/A G#q/B");
 const B = chords("A#q/E D#q/G# C#q/A G#q/B");

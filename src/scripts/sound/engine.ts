@@ -9,7 +9,11 @@
 //   journey:chapter  detail { index, id }  the home flight changed chapter
 //   journey:progress detail { progress, velocity }
 //   journey:words    detail { words, items, wordStagger, itemStagger, delay }
-//   journey:jump     detail { from, to, direction }  a jump between worlds starts
+//   journey:jump     detail { from, to, direction, duration }  a jump between worlds starts
+//   journey:ending   detail { scene, progress, beat }  a scene on the planet: exit, helmet, touch
+//   writing:hero     detail { index, slug, accent } an article hero takes the screen
+//   writing:transition detail { from, to, duration }
+//   writing:hover    detail { slug }
 //   architecture:focus detail { slug, title, discipline }   a system in focus
 //   architecture:flow  detail { intensity }                  its traffic, 0..1
 //   sound:duck       detail { amount, reason }  a clip with its own sound plays
@@ -43,6 +47,7 @@ let jChapter = 0;
 let jP = 0;
 let jV = 0;
 let journeySeen = false;
+let jCount = 9;
 let wordsTimer = 0;
 // the architecture page and film clips, also remembered
 let archFocus: { slug: string; title?: string; discipline?: string } | null = null;
@@ -187,8 +192,8 @@ function frame(now: number) {
   if (intensity > 0.003 || dy !== 0) current.scroll(intensity, vS >= 0 ? 1 : -1, pageP, dy, dt);
   // home without the journey's own events: the page position is the flight
   if (currentId === "home" && !journeySeen) {
-    const p = pageP * 7;
-    current.journey(p, vS * 7 * (h / span));
+    const p = pageP * (jCount - 1);
+    current.journey(p, vS * (jCount - 1) * (h / span));
     const c = Math.round(p);
     if (c !== jChapter) {
       jChapter = c;
@@ -297,6 +302,7 @@ export function mountSound() {
   addEventListener("journey:progress", (e) => {
     const d = (e as CustomEvent).detail || {};
     journeySeen = true;
+    if (Number(d.count) > 1) jCount = Number(d.count);
     jP = Number(d.progress) || 0;
     jV = Number(d.velocity) || 0;
     if (currentId === "home") current?.journey(jP, jV);
@@ -307,7 +313,28 @@ export function mountSound() {
     const to = Number(d.to);
     if (!Number.isFinite(to)) return;
     jChapter = to;
-    current.jump(Number(d.from) || 0, to, Number(d.direction) || 1, jV);
+    current.jump(Number(d.from) || 0, to, Number(d.direction) || 1, jV, Number(d.duration) / 1000 || 1.4);
+  });
+  addEventListener("journey:ending", (e) => {
+    const d = (e as CustomEvent).detail || {};
+    if (currentId === "home") current?.ending(Number(d.progress) || 0, Number(d.beat) || 0, typeof d.scene === "string" ? d.scene : undefined);
+  });
+  // the writing tab's heroes
+  addEventListener("writing:hero", (e) => {
+    const d = (e as CustomEvent).detail;
+    if (d?.slug && currentId === "writing") current?.heroFocus(d);
+  });
+  addEventListener("writing:transition", (e) => {
+    const d = (e as CustomEvent).detail;
+    if (d && currentId === "writing") current?.heroTransition(d);
+  });
+  addEventListener("writing:hover", (e) => {
+    const d = (e as CustomEvent).detail;
+    if (!d?.slug || currentId !== "writing" || !on) return;
+    const t = performance.now();
+    if (t - lastHover < 120) return;
+    lastHover = t;
+    current?.cardHover(String(d.slug));
   });
   addEventListener("journey:words", (e) => {
     const d = (e as CustomEvent).detail;

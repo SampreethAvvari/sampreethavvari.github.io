@@ -8,6 +8,7 @@ import SmartImage from "../components/common/SmartImage.astro";
 import Icon from "../components/common/Icon.astro";
 import Reel from "../components/film/Reel.astro";
 import StillViewer from "../components/film/StillViewer.astro";
+import FilmStrip from "../components/film/FilmStrip.astro";
 import {
   films,
   crafts,
@@ -16,10 +17,8 @@ import {
   filmByTitle,
   filmStills,
   yearLabel,
-  rolesLine,
   photographyUrl,
   reelItems,
-  type Film,
 } from "../data/films";
 import { filmNodes, itemListNode } from "../utils/seo";
 
@@ -35,30 +34,6 @@ const keyCreators = feature.credits?.find((g) => g.label === "Above the line")?.
 // The reel at the top: one film per screen, its clip or its stills.
 const reel = reelItems();
 const reelPreload = reel[0]?.poster.replace(/\.(jpe?g|webp|png)$/i, ".avif");
-
-// The timeline: each film's poster, a frame from it, or a title card. A title
-// card is plainly a card (the title set in type on a red field between
-// letterbox bars), never dressed up as a poster.
-const swechcha = filmBySlug("swechcha")!;
-const swechchaFrame = filmStills(swechcha)[4] ?? filmStills(swechcha)[0];
-const art = (film: Film) =>
-  film.poster ? "poster" : film.slug === "swechcha" && swechchaFrame ? "still" : "card";
-// Where each card's nebula and eclipse sit, so no two cards look alike.
-const SEEDS = [
-  [24, 40, 76, 58],
-  [70, 34, 26, 66],
-  [36, 64, 78, 30],
-  [78, 56, 22, 38],
-  [50, 28, 30, 70],
-  [26, 60, 70, 36],
-  [62, 66, 34, 30],
-  [40, 32, 74, 64],
-  [72, 44, 24, 56],
-];
-const metaLine = (film: Film) =>
-  film.status === "dated"
-    ? yearLabel(film)
-    : `${yearLabel(film)} · ${film.statusNote ?? (film.status === "upcoming" ? "Upcoming" : "Released")}`;
 
 const instagramUrl = (handle?: string) => (handle ? `https://instagram.com/${handle.replace(/^@/, "")}` : "");
 const initials = (name: string) =>
@@ -96,11 +71,11 @@ const base = Astro.site!.toString();
     <!-- The reel: one film per screen -->
     <Reel items={reel} after="#slate" />
 
-    <!-- The slate, one film at a time -->
+    <!-- The slate: one strip of film -->
     <section id="slate" class="section fm-slate" aria-labelledby="slate-title">
       <span class="fm-haze fm-haze-left" aria-hidden="true"></span>
       <div class="wrap on-top">
-        <div class="sec-head" data-reveal>
+        <div class="sec-head fm-slate-head" data-reveal>
           <div class="sec-head-main">
             <h2 id="slate-title" class="t-h2">
               Gray characters and tight spaces.
@@ -113,62 +88,24 @@ const base = Astro.site!.toString();
             </p>
           </div>
         </div>
-
         <div class="fm-group-head" data-reveal>
-          <p class="t-h4">Nine films, in order</p>
-          <p class="t-meta">Some are out, some are in the cut, some are still pages.</p>
+          <div>
+            <p class="t-h4">Nine films, in order</p>
+            <p class="t-meta">Some are out, some are in the cut, some are still pages.</p>
+          </div>
+          <div class="fm-strip-ctrl">
+            <span class="t-meta fm-drag-hint">Drag, swipe or scroll sideways</span>
+            <button type="button" class="strip-btn" data-fs-prev aria-label="Earlier on the strip">
+              <Icon name="arrow-left" size={16} />
+            </button>
+            <button type="button" class="strip-btn" data-fs-next aria-label="Later on the strip">
+              <Icon name="arrow-right" size={16} />
+            </button>
+          </div>
         </div>
-
-        <ol class="tl" data-timeline>
-          {films.map((film, i) => {
-            const [nx, ny, sx, sy] = SEEDS[i % SEEDS.length];
-            const kind = art(film);
-            return (
-              <li class="tl-item" data-side={i % 2 ? "right" : "left"}>
-                <a href={filmPath(film.slug)} class="tl-card">
-                  <div class="tl-frame-wrap">
-                    <span class="tl-mark" aria-hidden="true">
-                      <span class="tl-dot"></span>
-                      <span class="tl-year">{yearLabel(film)}</span>
-                    </span>
-                    <span class="tl-glow" aria-hidden="true"></span>
-                    <div class="tl-frame">
-                      {kind === "poster" ? (
-                        <SmartImage src={film.poster!.src} alt={`${film.title} poster`} class="tl-img" loading="lazy" />
-                      ) : (
-                        <div
-                          class:list={["tc", kind === "still" && "tc-has-still"]}
-                          style={`--nx:${nx}%;--ny:${ny}%;--sx:${sx}%;--sy:${sy}%;`}
-                        >
-                          <span class="tc-bar" aria-hidden="true">{film.year ?? "In development"}</span>
-                          <span class="tc-field">
-                            {kind === "still" ? (
-                              <SmartImage src={swechchaFrame!.src} alt={swechchaFrame!.alt} class="tc-still" loading="lazy" />
-                            ) : (
-                              <span class="tc-sun" aria-hidden="true"></span>
-                            )}
-                            <span class="tc-dust" aria-hidden="true"></span>
-                            <span class="tc-title" aria-hidden="true">{film.title}</span>
-                          </span>
-                          <span class="tc-bar" aria-hidden="true">{rolesLine(film)}</span>
-                        </div>
-                      )}
-                      <span class="tl-veil" aria-hidden="true"></span>
-                    </div>
-                  </div>
-                  <div class="tl-meta">
-                    <div class="min-w-0">
-                      <h3 class="tl-title">{film.title}</h3>
-                      <p class="t-meta tl-when">{metaLine(film)}</p>
-                      <p class="tl-roles">{rolesLine(film)}</p>
-                    </div>
-                    <span class="tl-go" aria-hidden="true"><Icon name="arrow-right" size={16} /></span>
-                  </div>
-                </a>
-              </li>
-            );
-          })}
-        </ol>
+      </div>
+      <div class="on-top">
+        <FilmStrip />
       </div>
     </section>
 
@@ -354,29 +291,8 @@ const base = Astro.site!.toString();
   import { onPage } from "../scripts/lifecycle";
 
   onPage("filmmaking", (signal) => {
-    const timeline = document.querySelector<HTMLElement>("[data-timeline]");
-    if (!timeline) return;
-    const html = document.documentElement;
+    if (!document.querySelector("[data-strip]")) return;
     const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-
-    // The timeline. Browsers with scroll driven animations tie each card's
-    // rise to the scroll in CSS; the rest get the same arrival from an
-    // observer.
-    let io: IntersectionObserver | null = null;
-    const timelines = typeof CSS !== "undefined" && CSS.supports?.("animation-timeline: view()");
-    if (!timelines && !reduce && "IntersectionObserver" in window) {
-      html.classList.add("fm-io");
-      io = new IntersectionObserver(
-        (entries) =>
-          entries.forEach((e) => {
-            if (!e.isIntersecting) return;
-            e.target.classList.add("is-in");
-            io?.unobserve(e.target);
-          }),
-        { rootMargin: "0px 0px -12% 0px", threshold: 0.12 },
-      );
-      timeline.querySelectorAll(".tl-card").forEach((el) => io?.observe(el));
-    }
 
     // The stills strip: arrows step a screen at a time and dim at the ends.
     document.querySelectorAll<HTMLElement>("[data-strip]").forEach((strip) => {
@@ -397,10 +313,6 @@ const base = Astro.site!.toString();
       ends();
     });
 
-    return () => {
-      io?.disconnect();
-      html.classList.remove("fm-io");
-    };
   });
 </script>
 
@@ -435,223 +347,20 @@ const base = Astro.site!.toString();
     background: radial-gradient(closest-side, rgba(var(--crimson), 0.16), rgba(var(--crimson), 0.09) 38%, rgba(var(--crimson), 0.035) 66%, rgba(var(--crimson), 0.008) 86%, rgba(var(--crimson), 0));
   }
 
-  /* The timeline ------------------------------------------------------- */
+  /* The slate head: the strip below it fits in one screen. */
+  .fm-slate { padding-bottom: clamp(48px, 6vw, 80px); }
+  .fm-slate-head { margin-bottom: clamp(20px, 3vw, 32px); }
   .fm-group-head {
     display: flex;
     flex-wrap: wrap;
-    align-items: baseline;
+    align-items: flex-end;
     justify-content: space-between;
-    gap: 6px 20px;
-    padding-bottom: 14px;
-    margin-bottom: clamp(36px, 5vw, 56px);
-    border-bottom: 1px solid var(--line);
+    gap: 12px 20px;
+    margin-bottom: 20px;
   }
-  .tl { position: relative; list-style: none; margin: 0; padding: 0; }
-  /* The spine the films hang from. */
-  .tl::before {
-    content: "";
-    position: absolute;
-    top: 0;
-    bottom: 0;
-    left: 11px;
-    width: 1px;
-    background: linear-gradient(180deg, rgba(var(--crimson), 0) 0%, rgba(var(--crimson), 0.55) 6%, rgba(var(--crimson), 0.3) 70%, rgba(var(--crimson), 0) 100%);
-  }
-  .tl-item { position: relative; display: flex; pointer-events: none; padding-left: 36px; }
-  .tl-item + .tl-item { margin-top: 36px; }
-  .tl-card {
-    pointer-events: auto;
-    display: block;
-    width: 100%;
-    color: var(--ink);
-    text-decoration: none;
-    view-timeline: --tl block;
-  }
-  .tl-frame-wrap { position: relative; }
-  .tl-mark {
-    position: absolute;
-    top: 50%;
-    left: -25px;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    transform: translate(-50%, -50%);
-  }
-  .tl-dot {
-    width: 9px;
-    height: 9px;
-    border-radius: 9999px;
-    background: var(--tone);
-    box-shadow: 0 0 0 4px rgba(var(--crimson), 0.16), 0 0 14px rgba(var(--crimson), 0.9);
-    flex: none;
-  }
-  .tl-year { display: none; font-size: 0.8125rem; font-weight: 500; color: var(--ink-soft); font-variant-numeric: tabular-nums; white-space: nowrap; }
-
-  @media (min-width: 900px) {
-    .tl::before { left: 50%; }
-    .tl-item { padding-left: 0; }
-    .tl-item[data-side="right"] { justify-content: flex-end; }
-    /* Each film starts beside the one before it, so the list reads as a
-       staggered reel rather than rows. */
-    .tl-item + .tl-item { margin-top: calc(-13% - 20px); }
-    .tl-card { width: calc(50% - 56px); }
-    .tl-item[data-side="left"] .tl-mark { left: auto; right: -56px; transform: translate(50%, -50%); }
-    .tl-item[data-side="right"] .tl-mark { left: -56px; transform: translate(-50%, -50%); flex-direction: row-reverse; }
-    .tl-year { display: block; position: absolute; left: 22px; }
-    .tl-item[data-side="right"] .tl-year { left: auto; right: 22px; }
-  }
-
-  .tl-glow {
-    position: absolute;
-    inset: -14% -8%;
-    z-index: -1;
-    border-radius: 50%;
-    background: radial-gradient(closest-side, rgba(var(--crimson), 0.32), rgba(var(--crimson), 0.14) 50%, rgba(var(--crimson), 0.04) 78%, rgba(var(--crimson), 0));
-    opacity: 0.5;
-  }
-  .tl-frame {
-    position: relative;
-    aspect-ratio: 16 / 9;
-    border-radius: 10px;
-    overflow: hidden;
-    background: #050002;
-    box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.08), 0 30px 60px -36px rgba(0, 0, 0, 0.95);
-    transition: transform 600ms var(--ease-glass), box-shadow 400ms var(--ease-glass);
-  }
-  .tl-frame :global(.tl-img) { display: block; width: 100%; height: 100%; object-fit: cover; }
-  .tl-veil { position: absolute; inset: 0; background: #000; opacity: 0; pointer-events: none; }
-  .tl-card:hover .tl-frame { transform: translateY(-4px); box-shadow: 0 0 0 1px rgba(var(--crimson), 0.45), 0 0 40px -6px rgba(var(--crimson), 0.45), 0 30px 60px -36px rgba(0, 0, 0, 0.95); }
-  .tl-card:focus-visible { outline: none; }
-  .tl-card:focus-visible .tl-frame { box-shadow: 0 0 0 3px rgba(var(--crimson), 0.8); }
-
-  .tl-meta { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; padding: 16px 2px 0; }
-  .tl-title { font-size: clamp(1.125rem, 1.6vw, 1.375rem); font-weight: 600; letter-spacing: -0.022em; line-height: 1.2; color: var(--ink); }
-  .tl-when { margin-top: 4px; }
-  .tl-roles { margin-top: 6px; font-size: 0.9375rem; color: var(--ink-soft); }
-  .tl-go {
-    flex: none;
-    display: inline-grid;
-    place-items: center;
-    width: 36px;
-    height: 36px;
-    border-radius: 9999px;
-    color: var(--ink-faint);
-    border: 1px solid var(--line);
-    transition: color 200ms var(--ease-glass), border-color 200ms var(--ease-glass), transform 300ms var(--ease-glass);
-  }
-  .tl-card:hover .tl-go { color: var(--tone); border-color: rgba(var(--crimson), 0.5); transform: translateX(3px); }
-
-  /* Arrival. Tied to scroll where the browser can; an observer otherwise. */
-  @media (prefers-reduced-motion: no-preference) {
-    @supports (animation-timeline: view()) {
-      .tl-card { animation: tl-rise linear both; animation-timeline: --tl; animation-range: entry 0% cover 34%; }
-      .tl-veil { animation: tl-light linear both; animation-timeline: --tl; animation-range: entry 10% cover 46%; }
-      .tl-glow { animation: tl-glow linear both; animation-timeline: --tl; animation-range: entry 20% cover 55%; }
-      .tc-sun { animation: tc-rise linear both; animation-timeline: --tl; animation-range: entry 10% cover 50%; }
-    }
-  }
-  @keyframes tl-rise {
-    from { opacity: 0; transform: translateY(90px) scale(0.9); }
-    to { opacity: 1; transform: none; }
-  }
-  @keyframes tl-light { from { opacity: 0.85; } to { opacity: 0; } }
-  @keyframes tl-glow { from { opacity: 0; } 70% { opacity: 1; } to { opacity: 0.6; } }
-  @keyframes tc-rise {
-    from { opacity: 0.15; transform: translate(-50%, -38%) scale(0.82); }
-    to { opacity: 1; transform: translate(-50%, -50%) scale(1); }
-  }
-  :global(html.fm-io) .tl-card { transition: opacity 900ms var(--ease-glass), transform 900ms var(--ease-glass); }
-  :global(html.fm-io) .tl-card:not(.is-in) { opacity: 0; transform: translateY(70px) scale(0.93); }
-  :global(html.fm-io) .tl-veil { transition: opacity 1200ms var(--ease-glass) 200ms; }
-  :global(html.fm-io) .tl-card:not(.is-in) .tl-veil { opacity: 0.85; }
-
-  /* Title cards. The title set in type on a red field between letterbox
-     bars, the year above and my credits below, like an opening title. */
-  .tc {
-    position: absolute;
-    inset: 0;
-    container-type: inline-size;
-    display: grid;
-    grid-template-rows: 12.8% 1fr 12.8%;
-    background: #000;
-  }
-  .tc-bar {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 0 4%;
-    font-size: max(10px, 1.9cqw);
-    font-weight: 500;
-    letter-spacing: 0.08em;
-    color: rgba(245, 245, 247, 0.6);
-    font-variant-numeric: tabular-nums;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-  .tc-field {
-    position: relative;
-    overflow: hidden;
-    display: grid;
-    place-items: center;
-    background:
-      radial-gradient(42% 70% at var(--nx) var(--ny), rgba(var(--crimson), 0.42) 0%, rgba(var(--crimson), 0.3) 22%, rgba(var(--blood), 0.2) 46%, rgba(var(--blood), 0.07) 72%, rgba(var(--blood), 0) 100%),
-      radial-gradient(34% 60% at calc(100% - var(--nx)) calc(100% - var(--ny)), rgba(var(--blood), 0.32) 0%, rgba(var(--blood), 0.14) 50%, rgba(var(--blood), 0) 100%),
-      radial-gradient(120% 90% at 50% 120%, rgba(90, 8, 26, 0.55) 0%, rgba(90, 8, 26, 0.2) 40%, rgba(90, 8, 26, 0) 70%),
-      #070103;
-  }
-  .tc-dust {
-    position: absolute;
-    inset: 0;
-    pointer-events: none;
-    background-image:
-      radial-gradient(1px 1px at 12% 22%, rgba(255, 235, 238, 0.9), transparent),
-      radial-gradient(1px 1px at 31% 71%, rgba(255, 235, 238, 0.7), transparent),
-      radial-gradient(1.5px 1.5px at 47% 14%, rgba(255, 140, 160, 0.9), transparent),
-      radial-gradient(1px 1px at 63% 83%, rgba(255, 235, 238, 0.8), transparent),
-      radial-gradient(1px 1px at 82% 36%, rgba(255, 235, 238, 0.75), transparent),
-      radial-gradient(1.5px 1.5px at 91% 68%, rgba(255, 140, 160, 0.8), transparent),
-      radial-gradient(1px 1px at 22% 48%, rgba(255, 235, 238, 0.5), transparent),
-      radial-gradient(1px 1px at 72% 58%, rgba(255, 235, 238, 0.5), transparent);
-    background-size: 52% 64%;
-    opacity: 0.8;
-  }
-  .tc-sun {
-    position: absolute;
-    left: var(--sx);
-    top: var(--sy);
-    width: 34cqw;
-    aspect-ratio: 1;
-    border-radius: 50%;
-    transform: translate(-50%, -50%);
-    background: radial-gradient(circle closest-side, #060002 0%, #060002 88%, rgba(255, 180, 192, 0.9) 90%, rgba(var(--ember), 0.6) 92%, rgba(var(--crimson), 0.26) 95%, rgba(var(--crimson), 0.08) 98%, rgba(var(--crimson), 0) 100%);
-    box-shadow: 0 0 7cqw rgba(var(--crimson), 0.22);
-  }
-  .tc-title {
-    position: relative;
-    z-index: 1;
-    padding: 0 8%;
-    text-align: center;
-    font-size: clamp(1.25rem, 8.4cqw, 6rem);
-    font-weight: 600;
-    letter-spacing: -0.045em;
-    line-height: 1;
-    color: #fff;
-    text-wrap: balance;
-    text-shadow: 0 0 2.4cqw rgba(var(--crimson), 0.55), 0 2px 18px rgba(0, 0, 0, 0.7);
-  }
-  /* A frame from the film in place of the field, title low and to the left. */
-  .tc-has-still .tc-field { place-items: end start; }
-  .tc-has-still .tc-field::after {
-    content: "";
-    position: absolute;
-    inset: 0;
-    background: linear-gradient(0deg, rgba(0, 0, 0, 0.72) 0%, rgba(0, 0, 0, 0.18) 45%, rgba(0, 0, 0, 0) 70%), rgba(var(--blood), 0.12);
-  }
-  .tc-has-still .tc-field :global(picture) { position: absolute; inset: 0; }
-  .tc-has-still .tc-field :global(.tc-still) { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
-  .tc-has-still .tc-title { padding: 0 5% 4.5%; text-align: left; font-size: clamp(1.25rem, 6.4cqw, 4.5rem); }
-  .tc-has-still .tc-dust { display: none; }
+  .fm-strip-ctrl { display: flex; align-items: center; gap: 8px; }
+  .fm-drag-hint { margin-right: 6px; }
+  @media (max-width: 639px) { .fm-drag-hint { display: none; } }
 
   /* Stills strip -------------------------------------------------------- */
   .fm-stills { overflow: clip; }
@@ -819,7 +528,6 @@ const base = Astro.site!.toString();
   .link-card:hover .link-arrow { color: var(--tone); transform: translate(1px, -1px); }
 
   @media (prefers-reduced-motion: reduce) {
-    .tl-frame, .tl-go, .strip-still :global(.strip-img), .craft-media :global(.craft-img), .link-arrow { transition: none; }
-    .tl-card:hover .tl-frame, .tl-card:hover .tl-go { transform: none; }
+    .strip-still :global(.strip-img), .craft-media :global(.craft-img), .link-arrow { transition: none; }
   }
 </style>

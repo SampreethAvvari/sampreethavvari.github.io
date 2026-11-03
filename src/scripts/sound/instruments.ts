@@ -108,6 +108,8 @@ export interface PadOpts {
   xfade?: number; // seconds, swap mode
   glide?: number; // seconds, glide mode
   lfo?: number; // Hz, slow breathing of level and brightness
+  lfoDepth?: number; // share of the level the breathing moves (0.18 by default)
+  startAt?: number; // when the breathing starts (to lock a fast pulse to a beat)
 }
 
 interface Bank {
@@ -129,6 +131,8 @@ export class Pad {
   notes: number[] = [];
   private bank: Bank | null = null;
   private two: boolean;
+  private lfos: OscillatorNode[] = [];
+  private depth: GainNode | null = null;
 
   constructor(private m: Movement, dest: AudioNode, readonly o: PadOpts) {
     const ac = m.ac;
@@ -145,16 +149,37 @@ export class Pad {
       const l1 = m.src(ac.createOscillator());
       l1.frequency.value = o.lfo;
       const d1 = m.own(ac.createGain());
-      d1.gain.value = o.level * 0.18;
+      d1.gain.value = o.level * (o.lfoDepth ?? 0.18);
+      this.depth = d1;
       l1.connect(d1).connect(this.out.gain);
       const l2 = m.src(ac.createOscillator());
       l2.frequency.value = o.lfo * 0.71;
       const d2 = m.own(ac.createGain());
       d2.gain.value = o.cutoff * 0.28;
       l2.connect(d2).connect(this.filter.frequency);
-      l1.start();
-      l2.start();
+      l1.start(o.startAt ?? 0);
+      l2.start(o.startAt ?? 0);
+      this.lfos.push(l1, l2);
     }
+  }
+
+  /** Retire the pad: fade from a time, then stop everything it runs. */
+  destroy(at: number, fade = 1.2) {
+    this.out.gain.setTargetAtTime(0, at, fade / 3);
+    this.depth?.gain.setTargetAtTime(0, at, fade / 3);
+    const end = at + fade * 2.5;
+    if (this.bank) this.drop(this.bank, end);
+    this.bank = null;
+    for (const l of this.lfos) l.stop(end);
+    const last = this.lfos[0];
+    const done = () => {
+      this.out.disconnect();
+      this.filter.disconnect();
+      this.depth?.disconnect();
+      for (const l of this.lfos) l.disconnect();
+    };
+    if (last) last.addEventListener("ended", done);
+    else setTimeout(done, (end - this.m.ac.currentTime) * 1000 + 100);
   }
 
   get n() {

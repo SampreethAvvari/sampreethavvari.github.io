@@ -129,9 +129,9 @@ export class FlightPath {
     const right = new Vector3();
     const up = new Vector3();
     const fwd = new Vector3();
-    this.frame(travel(this.n, this.n), pos, quat, right, up, fwd);
+    this.frame(travel(this.n - 1 + REST, this.n), pos, quat, right, up, fwd);
     const park = pos.clone();
-    const pad = park.clone().addScaledVector(fwd, -110).addScaledVector(up, -48).addScaledVector(right, -45);
+    const pad = park.clone().addScaledVector(fwd, -150).addScaledVector(up, -95).addScaledVector(right, -55);
     const touch = pad.clone().addScaledVector(up, stand);
     const last = this.n - 1;
     this._landing = { start: last + LAND_START, end: last + LAND_END, pad, touch, park, quat, right, up, fwd, stand };
@@ -161,8 +161,8 @@ export const REST = 0.35;
 export const JUMP_A = 0.62;
 export const JUMP_B = 1.08;
 export const CROSS = 0.85;
-const LAND_START = 0.4;
-const LAND_END = 0.98;
+const LAND_START = CROSS - 1 + 0.02;
+const LAND_END = 0.3;
 const IN_A = JUMP_B - 1; // where travel inside a world starts
 const IN_RATE = 0.28 / (JUMP_A - IN_A); // path chapters per unit of progress inside a world
 

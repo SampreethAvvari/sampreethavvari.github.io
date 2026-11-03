@@ -1,5 +1,5 @@
 import { useEffect, useId, useRef, useState } from "react";
-import { PLACARDS, CHAPTER_LINES, SUITE } from "./placards";
+import { PLACARDS, CHAPTER_LINES, SCENE_LINES, SUITE } from "./placards";
 import { movementFor } from "./ids";
 
 // The "i" beside the sound toggle: a wall label for the music, like the card
@@ -10,6 +10,7 @@ import { movementFor } from "./ids";
 export default function SoundPlacard({ on }) {
   const [id, setId] = useState("home");
   const [chapter, setChapter] = useState(0);
+  const [scene, setScene] = useState("");
   const [peek, setPeek] = useState(false);
   const [pinned, setPinned] = useState(false);
   const wrap = useRef(null);
@@ -26,13 +27,32 @@ export default function SoundPlacard({ on }) {
     const onSwap = () => {
       read();
       setChapter(0);
+      setScene("");
     };
-    const onChapter = (e) => setChapter(Math.max(0, Math.min(7, Number(e.detail?.index) || 0)));
+    const last = CHAPTER_LINES.length - 1;
+    const onChapter = (e) => {
+      const i = Math.max(0, Math.min(last, Number(e.detail?.index) || 0));
+      setChapter(i);
+      setScene("");
+    };
+    const onJump = (e) => {
+      const to = Number(e.detail?.to);
+      if (Number.isFinite(to)) onChapter({ detail: { index: to } });
+    };
+    // a scene on the planet: show its moment while it plays
+    const onEnding = (e) => {
+      const s = e.detail?.scene;
+      if (s && SCENE_LINES[s]) setScene(s);
+    };
     document.addEventListener("astro:after-swap", onSwap);
     window.addEventListener("journey:chapter", onChapter);
+    window.addEventListener("journey:jump", onJump);
+    window.addEventListener("journey:ending", onEnding);
     return () => {
       document.removeEventListener("astro:after-swap", onSwap);
       window.removeEventListener("journey:chapter", onChapter);
+      window.removeEventListener("journey:jump", onJump);
+      window.removeEventListener("journey:ending", onEnding);
     };
   }, []);
 
@@ -136,7 +156,7 @@ export default function SoundPlacard({ on }) {
         {id === "home" && (
           <p className="sound-card-now" aria-live="polite">
             <span>Now</span>
-            {CHAPTER_LINES[chapter]}
+            {scene ? SCENE_LINES[scene] : CHAPTER_LINES[chapter]}
           </p>
         )}
         <ul className="sound-card-lines">

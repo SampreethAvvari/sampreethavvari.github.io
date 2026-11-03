@@ -69,6 +69,8 @@ export abstract class Movement {
   protected nextT = 0;
   released = false;
   disposed = false;
+  /** While true, the form does not change the chord (a held moment). */
+  protected holdHarmony = false;
 
   // harmony
   chord!: Chord;
@@ -369,7 +371,7 @@ export abstract class Movement {
     }
     if (this.secBar === 0) this.onSection(S, t);
     const per = S.per ?? 1;
-    if (!this.released && this.secBar % per === 0) {
+    if (!this.released && !this.holdHarmony && this.secBar % per === 0) {
       const c = S.prog[Math.floor(this.secBar / per) % S.prog.length];
       if (c !== this.chord) this.harmony(c, t);
     }
@@ -409,6 +411,9 @@ export abstract class Movement {
     if (!this.out || this.disposed) return;
     const t = this.ac.currentTime + 0.004;
     this.place(this.fxPan, x, y, t);
+    this.onHover(t, x, y);
+  }
+  protected onHover(t: number, x: number, _y: number) {
     const tones = tonesIn(this.chord, this.tapLo + 12, this.tapHi + 10);
     if (tones.length) glint(this, this.fx, tones[Math.min(tones.length - 1, Math.floor(x * tones.length))], t, dbg(-44), 0.05);
   }
@@ -477,8 +482,14 @@ export abstract class Movement {
   focus(_d: { slug: string; title?: string; discipline?: string } | null) {}
   /** Architecture: replayed traffic, 0..1. */
   flow(_i: number) {}
-  /** Home: the jump between two worlds; speed in chapters a second. */
-  jump(_from: number, _to: number, _dir: number, _speed: number) {}
+  /** Home: the jump between two worlds; speed in chapters a second, duration in seconds. */
+  jump(_from: number, _to: number, _dir: number, _speed: number, _duration?: number) {}
+  /** Home: a scene on the planet (exit, helmet, touch), progress 0..1 and its beat. */
+  ending(_p: number, _beat: number, _scene?: string) {}
+  /** Writing: a hero takes the screen, a transition between heroes, a card hovered. */
+  heroFocus(_d: { index?: number; slug: string; accent?: string }) {}
+  heroTransition(_d: { from?: number; to?: number; duration?: number }) {}
+  cardHover(_slug: string) {}
   /** Make the next scheduled step the first of a new bar. */
   protected alignBar() {
     const spb = this.spb;

@@ -6,10 +6,16 @@
 // root), then leaves a breath of silence. Far behind the listener a two note
 // signal repeats every few bars, like a light across water. G major moving
 // through E minor, C and D.
+//
+// When the page shows its articles one at a time, each hero gets its own
+// sentence, drawn from its name so the same article always speaks the same
+// way, and later sentences are variations of it. A change of hero turns a
+// page: a breath of paper air that sweeps up and down, and a piano note played
+// backwards that arrives exactly when the new hero lands.
 import { Movement, type Section } from "../movement";
 import { chords, deg, MODES as SCALE, snap, bassOf, tonesIn, type Chord } from "../theory";
 import { Pad, Mono, Sampler, lead } from "../instruments";
-import { piano, dbg, nm, kr, type RoomSpec } from "../dsp";
+import { piano, dbg, nm, kr, mulberry, hashStr, type Rng, type RoomSpec } from "../dsp";
 
 const A = chords("Em9 Cmaj9 G/B D69");
 const B = chords("Cmaj7 Bm7 Am9 D9sus4");
@@ -47,6 +53,10 @@ export class Writing extends Movement {
   private phrase: Note[] = [];
   private phraseStart = -1;
   private stop = false;
+  private voiceRng: Rng | null = null;
+  private heroSeed = 0;
+  private sweep!: BiquadFilterNode;
+  private sweepGain!: GainNode;
 
   protected room(): RoomSpec {
     return { rt60: 1.7, length: 2.3, predelay: 0.016, early: 6, earlyLevel: 0.35, hi: 5000, lo: 900, damp: 0.45, lowCut: 90, bloom: 0, width: 0.85 };
@@ -83,6 +93,19 @@ export class Writing extends Movement {
     src.connect(band).connect(this.paper).connect(this.layer("paper", 0.6, this.air));
     src.start();
 
+    // a page turning: the same paper air, swept and swelled for a transition
+    const turnSrc = this.src(ac.createBufferSource());
+    turnSrc.buffer = this.st.noise;
+    turnSrc.loop = true;
+    this.sweep = this.own(ac.createBiquadFilter());
+    this.sweep.type = "bandpass";
+    this.sweep.frequency.value = 700;
+    this.sweep.Q.value = 0.9;
+    kr(this.sweep.frequency);
+    this.sweepGain = this.gain(0);
+    turnSrc.connect(this.sweep).connect(this.sweepGain).connect(this.air);
+    turnSrc.start(0, 1.7);
+
     this.keys = new Sampler(this, (sr, f) => piano(sr, f, 2.6, r), 24, 14);
     this.tap = new Sampler(this, (sr, f) => piano(sr, f, 0.5, r, 1.4), 12, 5);
     this.grains = this.keys;
@@ -101,14 +124,17 @@ export class Writing extends Movement {
 
   /** Write a sentence: rise toward the middle, fall to the end. */
   private sentence(bar: number) {
-    const rhythm = this.pick(SENTENCES);
-    this.stop = this.rng() < 0.55;
+    // a hero's sentences come from its own name, so each article has a voice
+    const rr = this.voiceRng ?? this.rng;
+    const pick = <T,>(a: T[]) => a[Math.floor(rr() * a.length)];
+    const rhythm = pick(SENTENCES);
+    this.stop = rr() < 0.55;
     const tonic = nm("G4");
-    let d = this.pick([-3, -2, 0, 2]);
+    let d = pick([-3, -2, 0, 2]);
     const n = rhythm.length;
     this.phrase = rhythm.map((at, i) => {
       const x = i / (n - 1);
-      if (i > 0) d += x < 0.45 ? this.pick([1, 1, 2, -1]) : this.pick([-1, -1, -2, 1]);
+      if (i > 0) d += x < 0.45 ? pick([1, 1, 2, -1]) : pick([-1, -1, -2, 1]);
       const arc = Math.sin(Math.PI * Math.min(1, x * 1.2));
       return { at, m: deg(tonic, SCALE.major, d), v: 0.55 + 0.4 * arc };
     });
@@ -160,6 +186,49 @@ export class Writing extends Movement {
       lead(this, this.signal, m, t, pos === 0 ? 0.6 : 1.3, dbg(-20), { wave: this.st.wave("air"), attack: 0.25, release: 1.2, cutoff: 3000 });
     }
     void r;
+  }
+
+  heroFocus(d: { index?: number; slug: string; accent?: string }) {
+    if (!this.out || this.disposed) return;
+    this.heroSeed = hashStr(d.slug);
+    // the first sentence is the hero's own; the ones after vary it a little
+    this.voiceRng = mulberry(this.heroSeed);
+    this.phraseStart = -1;
+    // its name as a chord: a soft roll on the current harmony, starting from its own note
+    const t = this.ac.currentTime + 0.05;
+    const tones = tonesIn(this.chord, nm("G3"), nm("D5"));
+    const start = this.heroSeed % Math.max(1, tones.length - 2);
+    tones.slice(start, start + 3).forEach((m, i) => this.keys.play(m, t + i * 0.05, dbg(-20) * (i ? 0.8 : 1), this.hand));
+    setTimeout(() => {
+      // later sentences wander from the hero's voice
+      if (this.voiceRng && !this.disposed) this.voiceRng = mulberry(this.heroSeed + 1 + Math.floor(Math.random() * 3));
+    }, 9000);
+  }
+
+  heroTransition(d: { from?: number; to?: number; duration?: number }) {
+    if (!this.out || this.disposed) return;
+    const t = this.ac.currentTime + 0.02;
+    const D = Math.max(0.3, Math.min(3, (Number(d.duration) || 900) / 1000));
+    const up = (d.to ?? 1) >= (d.from ?? 0);
+    // a page turning: paper air that sweeps across and settles as the new hero lands
+    const f = this.sweep.frequency, g = this.sweepGain.gain;
+    f.setValueAtTime(up ? 600 : 2400, t);
+    f.exponentialRampToValueAtTime(up ? 2400 : 600, t + D * 0.6);
+    f.exponentialRampToValueAtTime(900, t + D);
+    g.setValueAtTime(0, t);
+    g.linearRampToValueAtTime(dbg(-30), t + D * 0.55);
+    g.setTargetAtTime(0, t + D * 0.6, D * 0.15);
+    // a piano note played backwards, arriving with the new hero, then the hero's low note
+    const tones = tonesIn(this.chord, nm("D5"), nm("D6"));
+    if (tones.length) this.keys.play(tones[(d.to ?? 0) % tones.length], t + D, dbg(-22), this.hand, { rev: true });
+    this.keys.play(this.bassM + 12, t + D, dbg(-21), this.layers.left);
+  }
+
+  cardHover(slug: string) {
+    if (!this.out || this.disposed) return;
+    const tones = tonesIn(this.chord, nm("G4"), nm("G5"));
+    if (!tones.length) return;
+    this.tap.play(tones[hashStr(slug) % tones.length], this.ac.currentTime + 0.004, dbg(-31), this.fx, { dur: 0.25 });
   }
 
   protected onScroll(i: number, _dir: number, _dt: number, t: number) {

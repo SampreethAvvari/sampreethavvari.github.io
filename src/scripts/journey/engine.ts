@@ -3,9 +3,14 @@
 // scrolled and where the pointer is; the engine owns its loop, its sizing and
 // every GPU resource it creates.
 //
-// Progress: each chapter unit i .. i+1 is 80 percent slow travel inside world
-// i and 20 percent jump to world i+1. The last chapter has no jump after it,
-// so progress runs 0 .. chapters.length - 0.2 and the landing finishes there.
+// Progress runs 0 .. chapters.length. Chapter i rests at i + 0.35. The jump
+// to world i+1 runs from i + 0.62 to i + 1.08 and crosses over (flash, new
+// world) at i + 0.85, the middle of a glide between two rest points.
+//
+// The 3D carries the chapters up to the one with id "film" (the landing
+// world). As that world appears, the lander undocks, comes down through the
+// clouds and settles before its rest point: landed(progress) is 1 from
+// about land + 0.29. Chapters after it hold a calm shot of the landed lander.
 //
 // Usage:
 //   const { mountJourney } = await import("./journey/engine");
@@ -39,11 +44,12 @@ import {
   type Texture,
   type WebGLRenderTarget,
 } from "three";
-import { approachU, FlightPath, jumpAt, landingPhase, travel } from "./path";
+import { approachU, CROSS, FlightPath, JUMP_A, JUMP_B, jumpAt, landedAt, landingPhase, travel, worldAt } from "./path";
 import { Post, type PostFrame } from "./post";
 import { buildShip, type ShipInput } from "./ship";
 import { compositeTextures, foilNormal, solarTexture } from "./skin";
-import { buildSpace, chapterColor, type Chapter } from "./space";
+import type { PointerRay } from "./pieces";
+import { buildSpace, type Chapter } from "./space";
 import { cloudTexture, glowTexture } from "./textures";
 
 export interface JourneyChapter {
@@ -62,7 +68,7 @@ export interface ShipScreen {
 }
 
 export interface Journey {
-  /** progress 0 .. chapters.length - 0.2 (continuous). velocity in chapters per second, signed. */
+  /** progress 0 .. chapters.length (continuous). velocity in chapters per second, signed. */
   setScroll(progress: number, velocity: number): void;
   /** -1..1 each. nx: left to right. ny: top to bottom (DOM direction). */
   setPointer(nx: number, ny: number): void;
@@ -86,19 +92,31 @@ export interface JourneyOptions {
  */
 export const CHAPTER_FRAMING: { side: "left" | "right"; v: "top" | "bottom" }[] = [
   { side: "left", v: "bottom" }, // launch: ship right, front three quarter
-  { side: "right", v: "bottom" }, // proof: ship left, side profile
+  { side: "right", v: "bottom" }, // proof: ship left, side on
   { side: "left", v: "bottom" }, // projects: ship right, overhead
   { side: "right", v: "bottom" }, // disciplines: ship left, from below
   { side: "left", v: "bottom" }, // writing: ship right, slow orbit
-  { side: "right", v: "bottom" }, // film: ship left, silhouette on the eclipse
-  { side: "left", v: "bottom" }, // mind: ship right and high, wide
-  { side: "left", v: "top" }, // contact: lander lower right, open sky above
+  { side: "left", v: "top" }, // film: the landing, lander lower right, open sky above
+  { side: "left", v: "top" }, // mind: hold on the landed lander
+  { side: "left", v: "top" }, // contact: hold
+  { side: "left", v: "top" }, // connect: hold
 ];
 
-/** The jump in progress at this progress, or null inside a world. */
-export function jumpState(progress: number, chapters = 8): { from: number; to: number; amount: number } | null {
-  return jumpAt(progress, chapters);
+/** Index of the landing world in the default chapter list. */
+export const LAND_WORLD = 5;
+
+/** The jump in progress at this progress, or null inside a world. There are no jumps after the landing world. */
+export function jumpState(progress: number, landWorld = LAND_WORLD): { from: number; to: number; amount: number } | null {
+  return jumpAt(progress, landWorld + 1);
 }
+
+/** 0 before the lander touches down, 1 once it has settled and the dust is down (from about landWorld + 0.29). */
+export function landed(progress: number, landWorld = LAND_WORLD): number {
+  return landedAt(progress, landWorld + 1);
+}
+
+/** Progress at which each chapter sits at rest. */
+export const REST_POINTS = (chapters = 9) => Array.from({ length: chapters }, (_, i) => i + 0.35);
 
 // ------------------------------------------------------------------ shots
 
@@ -124,15 +142,15 @@ interface Shot {
 
 const SHOTS: Record<string, Shot> = {
   launch: { az: 152, el: 11, size: 0.46, x: 0.4, y: -0.06, roll: -0.03, dAz: -26, dEl: 4, dSize: 0.02, key: [0.65, 0.55, -0.55] },
-  proof: { az: 96, el: 6, size: 0.42, x: -0.4, y: 0.02, roll: 0.0, dAz: 16, dEl: 3, dSize: 0, key: [0.55, 0.7, -0.45] },
+  proof: { az: 62, el: 14, size: 0.42, x: -0.4, y: 0.02, roll: 0.0, dAz: 16, dEl: 3, dSize: 0, key: [0.55, 0.7, -0.45] },
   projects: { az: 18, el: 68, size: 0.44, x: 0.4, y: 0.0, roll: 0.0, dAz: 22, dEl: 6, dSize: 0, key: [0.35, 0.9, 0.25] },
   disciplines: { az: 165, el: -34, size: 0.42, x: -0.4, y: 0.06, roll: 0.04, dAz: -14, dEl: -4, dSize: 0, key: [0.3, -0.55, -0.78] },
   writing: { az: 205, el: 14, size: 0.42, x: 0.42, y: -0.02, roll: 0.0, dAz: 80, dEl: 6, dSize: 0, key: [-0.6, 0.6, 0.5] },
-  film: { az: 270, el: 5, size: 0.4, x: -0.38, y: 0.0, roll: 0.0, dAz: -10, dEl: 0, dSize: 0, key: [1, 0.12, 0.05] },
+  film: { az: 215, el: 12, size: 0.4, x: 0.36, y: 0.05, roll: 0.0, dAz: 0, dEl: 0, dSize: 0, key: [0.3, 0.15, -1] },
   mind: { az: 28, el: 50, size: 0.26, x: 0.36, y: 0.12, roll: 0.0, dAz: 14, dEl: -8, dSize: 0.14, key: [0.4, 0.85, 0.35] },
   contact: { az: 210, el: 16, size: 0.4, x: 0.36, y: 0.05, roll: 0.0, dAz: 0, dEl: 0, dSize: 0, key: [0.2, 0.15, -1] },
 };
-const ORDER = ["launch", "proof", "projects", "disciplines", "writing", "film", "mind", "contact"];
+const ORDER = ["launch", "proof", "projects", "disciplines", "writing", "film"];
 
 // Scratch objects reused every frame so the loop never allocates.
 const _v = new Vector3();
@@ -154,6 +172,7 @@ const _dockQuat = new Quaternion();
 const _a = new Vector3();
 const _b = new Vector3();
 const _landerPos = new Vector3();
+const _yAxis = new Vector3(0, 1, 0);
 
 function clamp(x: number, a: number, b: number) {
   return x < a ? a : x > b ? b : x;
@@ -221,10 +240,14 @@ export function mountJourney(canvas: HTMLCanvasElement, opts: JourneyOptions): J
   const list = opts.chapters && opts.chapters.length ? opts.chapters : [{ id: "launch", color: "#5B8DEF" }];
   const chapters: Chapter[] = list.map((c) => ({ id: c.id, color: new Color(c.color) }));
   const N = chapters.length;
-  const maxP = N - 1 + 0.8;
+  const maxP = N;
+  // The 3D worlds run up to the landing world; later chapters hold its last shot.
+  const filmAt = chapters.findIndex((c) => c.id === "film");
+  const landWorld = filmAt >= 0 ? filmAt : Math.min(LAND_WORLD, N - 1);
+  const W = landWorld + 1;
   const dprCap = low ? 1.25 : 1.75;
-  const shots: Shot[] = chapters.map((c, i) => SHOTS[c.id] ?? SHOTS[ORDER[i % ORDER.length]]);
-  shots[N - 1] = SHOTS.contact;
+  const shots: Shot[] = chapters.slice(0, W).map((c, i) => SHOTS[c.id] ?? SHOTS[ORDER[i % ORDER.length]]);
+  shots[W - 1] = SHOTS.film;
 
   const renderer = new WebGLRenderer({
     canvas,
@@ -278,7 +301,7 @@ export function mountJourney(canvas: HTMLCanvasElement, opts: JourneyOptions): J
   const cloudTex = cloudTexture(low ? 96 : 128);
   const textures: Texture[] = [composite.map, composite.rough, foil, solar, glowTex, cloudTex];
 
-  const path = new FlightPath(N);
+  const path = new FlightPath(W);
   const ship = buildShip({ low, composite, foil, solar, shadows });
   const landing = path.landing(ship.standHeight);
   const rig = new Group();
@@ -286,7 +309,7 @@ export function mountJourney(canvas: HTMLCanvasElement, opts: JourneyOptions): J
   scene.add(rig, ship.lander);
   ship.root.rotation.order = "YXZ";
 
-  const space = buildSpace(path, chapters, low, glowTex, cloudTex, landing);
+  const space = buildSpace(path, chapters, low, glowTex, cloudTex, landing, landWorld);
   scene.add(space.group);
 
   // Multisampling only where the pixel ratio is too low to hide jagged edges.
@@ -332,7 +355,14 @@ export function mountJourney(canvas: HTMLCanvasElement, opts: JourneyOptions): J
   let firstFrame = false;
   let prevL = 0;
   let bounceT = -1;
-  const shipIn: ShipInput = { time: 0, dt: 0, speed: 0, boost: 0, color: _color, reduced, gear: 0, brake: 0, idle: 0, detach: 0 };
+  // Heading: +1 flying forward along the path, -1 after turning back. It
+  // flips on the direction of a jump, and the turn plays out over a second.
+  let heading = 1;
+  let turn = 0;
+  let turnV = 0;
+  let ptrOn = 0;
+  const ptr: PointerRay = { o: new Vector3(), d: new Vector3(0, 0, -1), on: 0 };
+  const shipIn: ShipInput = { time: 0, dt: 0, speed: 0, boost: 0, color: _color, reduced, gear: 0, brake: 0, idle: 0, detach: 0, heading: 1, heat: 0, landed: 0 };
   const screen: ShipScreen = { x: 0.7, y: 0.5, r: 0.2, jump: null };
 
   function applySize() {
@@ -360,10 +390,22 @@ export function mountJourney(canvas: HTMLCanvasElement, opts: JourneyOptions): J
   });
   ro.observe(canvas);
 
+  /** The light of the world on screen, blending quickly at each crossover. */
+  function worldColor(pp: number, out: Color) {
+    const x = pp + 1 - CROSS;
+    const i = Math.floor(x);
+    const f = x - i;
+    const e = 0.04;
+    const at = (k: number) => chapters[clamp(k, 0, N - 1)].color;
+    if (f < e) return out.copy(at(i - 1)).lerp(at(i), smooth(-e, e, f));
+    if (f > 1 - e) return out.copy(at(i)).lerp(at(i + 1), smooth(1 - e, 1 + e, f));
+    return out.copy(at(i));
+  }
+
   // Shot parameters blended across the scroll, written into this object.
   const S = { az: 0, el: 0, size: 0, x: 0, y: 0, roll: 0, kx: 0, ky: 0, kz: 0 };
   function shotAt(i: number, w: number, k: number) {
-    const s = shots[clamp(i, 0, N - 1)];
+    const s = shots[clamp(i, 0, W - 1)];
     const t = w - 0.5;
     S.az += (s.az + s.dAz * t) * k;
     S.el += (s.el + s.dEl * t) * k;
@@ -375,24 +417,26 @@ export function mountJourney(canvas: HTMLCanvasElement, opts: JourneyOptions): J
     S.ky += s.key[1] * k;
     S.kz += s.key[2] * k;
   }
-  /** Fill S for progress pp: hold a world's shot while travelling, swing to the next during the jump. */
+  /** Fill S for progress pp: hold a world's shot inside it, swing to the next during the jump. */
   function blendShots(pp: number) {
     S.az = S.el = S.size = S.x = S.y = S.roll = S.kx = S.ky = S.kz = 0;
-    const i = clamp(Math.floor(pp), 0, N - 1);
-    const f = pp - i;
-    const jump = i < N - 1 && f > 0.8 ? (f - 0.8) / 0.2 : 0;
-    const k = smooth(0.3, 0.7, jump);
-    shotAt(i, clamp(f / 0.8, 0, 1), 1 - k);
-    if (k > 0) {
-      // Take the shortest way round to the next azimuth.
-      const from = shots[i].az + shots[i].dAz * 0.5;
-      const to = shots[i + 1].az - shots[i + 1].dAz * 0.5;
-      let d = to - from;
-      d -= Math.round(d / 360) * 360;
-      const azKeep = S.az;
-      shotAt(i + 1, 0, k);
-      S.az = azKeep + (from + d) * k;
+    const j = jumpAt(pp, W);
+    if (!j) {
+      const w = worldAt(pp, W);
+      const inA = JUMP_B - 1;
+      shotAt(w, clamp((pp - (w + inA)) / (JUMP_A - inA), 0, 1), 1);
+      return;
     }
+    const k = smooth(0.3, 0.7, j.amount);
+    shotAt(j.from, 1, 1 - k);
+    // Take the shortest way round to the next azimuth.
+    const from = shots[j.from].az + shots[j.from].dAz * 0.5;
+    const to = shots[j.to].az - shots[j.to].dAz * 0.5;
+    let d = to - from;
+    d -= Math.round(d / 360) * 360;
+    const azKeep = S.az;
+    shotAt(j.to, 0, k);
+    S.az = azKeep + (from + d) * k;
   }
 
   // ------------------------------------------------------------ frame
@@ -400,7 +444,7 @@ export function mountJourney(canvas: HTMLCanvasElement, opts: JourneyOptions): J
     time += dt;
 
     // Scroll: a critically damped spring toward the page's progress.
-    const w = 4.2;
+    const w = 8;
     const acc = w * w * (targetP - p) - 2 * w * v;
     v += acc * dt;
     p += v * dt;
@@ -413,12 +457,12 @@ export function mountJourney(canvas: HTMLCanvasElement, opts: JourneyOptions): J
     }
 
     // Path position and its speed; jumps move fast, worlds slowly.
-    const q = travel(p, N);
+    const q = travel(p, W);
     qSpeed = damp(qSpeed, (q - prevQ) / Math.max(dt, 1e-3), 10, dt);
     prevQ = q;
     const speed = qSpeed;
     boost = damp(boost, clamp(Math.abs(speed) / 0.9, 0, 1), 5, dt);
-    const jump = jumpAt(p, N);
+    const jump = jumpAt(p, W);
     const ja = jump ? jump.amount : 0;
     const bell = Math.sin(Math.PI * ja);
 
@@ -428,7 +472,22 @@ export function mountJourney(canvas: HTMLCanvasElement, opts: JourneyOptions): J
     py = damp(py, pty, 3.0, dt);
     pVelX = damp(pVelX, (px - prevPx) / Math.max(dt, 1e-3), 6, dt);
 
-    chapterColor(chapters, p, _color);
+    worldColor(p, _color);
+
+    // Turn around when a jump runs backwards, and back again on the next
+    // forward jump. The camera turns with the ship.
+    if (jump && Math.abs(v) > 0.05) heading = v > 0 ? 1 : -1;
+    if (p >= landing.start - 0.3) heading = 1;
+    const turnTo = heading < 0 ? 1 : 0;
+    if (reduced) {
+      if (!jump || (ja > 0.45 && ja < 0.55)) turn = turnTo;
+    } else {
+      const tw = 3.4;
+      turnV += (tw * tw * (turnTo - turn) - 2 * tw * turnV) * dt;
+      turn = clamp(turn + turnV * dt, -0.05, 1.05);
+    }
+    const turnAng = Math.PI * turn;
+    const turnRoll = Math.sin(Math.PI * clamp(turn, 0, 1)) * 0.55 * (heading < 0 ? 1 : -1);
 
     // Rig on the path.
     path.frame(q, _rigPos, _rigQuat, _right, _up, _fwd);
@@ -440,14 +499,14 @@ export function mountJourney(canvas: HTMLCanvasElement, opts: JourneyOptions): J
     const sr = ship.root;
     if (reduced) {
       sr.position.set(0, 0, 0);
-      sr.rotation.set(0, 0, clamp(-bend * 0.02, -0.2, 0.2));
+      sr.rotation.set(0, turnAng, clamp(-bend * 0.02, -0.2, 0.2));
     } else {
       const t = time;
       sr.position.set(px * 0.8 + Math.sin(t * 0.31) * 0.15, -py * 0.5 + Math.sin(t * 0.9) * 0.12, 0);
       const yaw = -px * 0.12 - pVelX * 0.05;
       const pitch = py * 0.06 + Math.sin(t * 0.7) * 0.01 + bell * 0.04;
       const bank = -px * 0.14 - clamp(pVelX * 0.08, -0.25, 0.25) + clamp(-bend * 0.02, -0.25, 0.25) + Math.sin(t * 0.5) * 0.02;
-      sr.rotation.set(pitch, yaw, bank);
+      sr.rotation.set(pitch, yaw + turnAng, bank + turnRoll);
     }
     rig.updateMatrixWorld();
 
@@ -495,6 +554,9 @@ export function mountJourney(canvas: HTMLCanvasElement, opts: JourneyOptions): J
     shipIn.brake = smooth(0.32, 0.5, L) * (1 - smooth(0.8, 0.9, L));
     shipIn.idle = smooth(0.86, 1, L);
     shipIn.detach = smooth(0, 0.1, L);
+    shipIn.heading = Math.cos(turnAng);
+    shipIn.heat = smooth(0.08, 0.25, L) * (1 - smooth(0.42, 0.6, L));
+    shipIn.landed = landedAt(p, W);
     ship.update(shipIn);
 
     // ---- Camera: the chapter's shot around the ship, eased into the landing shot.
@@ -515,26 +577,37 @@ export function mountJourney(canvas: HTMLCanvasElement, opts: JourneyOptions): J
     // The jump lurches back.
     const shakeAmt = reduced ? 0 : bell;
     dist *= 1 + 0.3 * shakeAmt;
-    const az = ((S.az + (reduced ? 0 : px * 4)) * Math.PI) / 180;
-    const el = ((S.el + (reduced ? 0 : -py * 3)) * Math.PI) / 180;
+    // At rest the camera keeps drifting slowly through the world.
+    const drift = reduced ? 0 : 1;
+    dist *= 1 + drift * 0.04 * Math.sin(time * 0.13);
+    const driftAz = drift * (9 * Math.sin(time * 0.09) + 4 * Math.sin(time * 0.23 + 2));
+    const driftEl = drift * 3 * Math.sin(time * 0.11 + 1);
+    const az = ((S.az + 180 * turn + driftAz + (reduced ? 0 : px * 4)) * Math.PI) / 180;
+    const el = ((S.el + driftEl + (reduced ? 0 : -py * 3)) * Math.PI) / 180;
     _camDir.set(Math.sin(az) * Math.cos(el), Math.sin(el), Math.cos(az) * Math.cos(el)).applyQuaternion(_rigQuat);
     camera.position.copy(_target).addScaledVector(_camDir, dist);
     camera.up.copy(_up);
-    // Landing shot: wide and calm from beside the pad, lander lower right.
-    const cb = ease(smooth(0.06, 0.92, L));
+    // Landing: follow the lander down through the cloud, then ease into a
+    // wide calm hold from beside it, lander lower right.
+    const c1 = smooth(0.0, 0.3, L);
+    const cb = ease(smooth(0.5, 0.95, L));
     const k = clamp((aspect - 0.7) / 0.7, 0, 1);
+    if (c1 > 0) {
+      _v.copy(_landerPos).addScaledVector(landing.right, -10).addScaledVector(landing.up, 4.5).addScaledVector(landing.fwd, -15);
+      camera.position.lerp(_v, c1);
+      camera.up.lerp(landing.up, c1).normalize();
+    }
     if (cb > 0) {
       _v.copy(landing.touch)
-        .addScaledVector(landing.right, lerp(-2.0, -6.0, k))
-        .addScaledVector(landing.up, lerp(3.2, 1.6, k))
-        .addScaledVector(landing.fwd, -lerp(19, 13, k));
+        .addScaledVector(landing.right, lerp(-2.0, -6.5, k))
+        .addScaledVector(landing.up, lerp(3.4, 1.9, k))
+        .addScaledVector(landing.fwd, -lerp(20, 14, k));
       camera.position.lerp(_v, cb);
-      camera.up.lerp(landing.up, cb).normalize();
       // Aim past the lander so it sits lower right (upper centre on phones).
       _look
         .copy(landing.touch)
-        .addScaledVector(landing.right, lerp(-1.6, -4.5, k))
-        .addScaledVector(landing.up, lerp(-19, 4.2, k))
+        .addScaledVector(landing.right, lerp(-1.6, -4.8, k))
+        .addScaledVector(landing.up, lerp(-19, 4.6, k))
         .addScaledVector(landing.fwd, 40);
       _v.copy(_target).lerp(_look, cb);
       camera.lookAt(_v);
@@ -542,7 +615,7 @@ export function mountJourney(canvas: HTMLCanvasElement, opts: JourneyOptions): J
       camera.lookAt(_target);
     }
     // Put the focus where the shot wants it on screen, then add roll and shake.
-    const off = 1 - cb;
+    const off = 1 - Math.max(c1, cb);
     camera.rotateY(Math.atan(sx * tanH) * off);
     camera.rotateX(-Math.atan(sy * tanV) * off);
     camera.rotateZ(S.roll * off);
@@ -561,7 +634,7 @@ export function mountJourney(canvas: HTMLCanvasElement, opts: JourneyOptions): J
 
     // Lights: the hard key comes from the shot's sun direction; the rim in
     // the chapter colour comes from behind the ship as the camera sees it.
-    _key.set(S.kx, S.ky, S.kz).normalize().applyQuaternion(_rigQuat);
+    _key.set(S.kx, S.ky, S.kz).normalize().applyAxisAngle(_yAxis, turnAng).applyQuaternion(_rigQuat);
     if (L > 0) {
       _v.copy(landing.fwd).addScaledVector(landing.up, 0.35).addScaledVector(landing.right, 0.45).normalize();
       _key.lerp(_v, smooth(0, 0.5, L)).normalize();
@@ -574,9 +647,16 @@ export function mountJourney(canvas: HTMLCanvasElement, opts: JourneyOptions): J
     rim.target.position.copy(_target);
     rim.target.updateMatrixWorld();
     rim.color.copy(_color);
-    (scene.fog as FogExp2).color.setRGB(0.012, 0.014, 0.03).lerp(_color, 0.04);
+    // The pointer as a ray into the scene, for the things that answer it.
+    ptrOn = damp(ptrOn, hasPointer ? 1 : 0, 3, dt);
+    ptr.o.copy(camera.position);
+    ptr.d.set(ptx, -pty, 0.5).unproject(camera).sub(camera.position).normalize();
+    ptr.on = ptrOn * (1 - bell);
 
-    space.update({ p, q, time, dt, speed, boost, color: _color, camera, fwd: _fwd, reduced, pxScale, dpr, warp: reduced ? 0 : bell });
+    space.update({ p, q, time, dt, speed, boost, color: _color, camera, fwd: _fwd, reduced, pxScale, dpr, warp: reduced ? 0 : bell, ptr, heading: Math.cos(turnAng) });
+    const fog = scene.fog as FogExp2;
+    fog.color.setRGB(0.012, 0.014, 0.03).lerp(_color, 0.04).lerp(space.haze.color, space.haze.weight);
+    fog.density = lerp(0.0008, space.haze.density, space.haze.weight);
 
     // Where the focus sits on screen, for the page and for the lens.
     _v.copy(_target).project(camera);
@@ -636,10 +716,10 @@ export function mountJourney(canvas: HTMLCanvasElement, opts: JourneyOptions): J
     pf.ship.radius = sRad;
     // The jump: split and bend the image and flash at the crossover. Reduced
     // motion gets a quick dip through dark instead.
-    const cross = ja > 0 ? Math.exp(-Math.pow((ja - 0.5) / 0.07, 2)) : 0;
+    const cross = ja > 0 ? Math.exp(-Math.pow((ja - 0.5) / 0.16, 2)) : 0;
     pf.jump = reduced ? 0 : bell;
     pf.flash = reduced ? 0 : cross;
-    pf.dip = reduced && ja > 0 ? 0.92 * Math.exp(-Math.pow((ja - 0.5) / 0.14, 2)) : 0;
+    pf.dip = reduced && ja > 0 ? 0.92 * Math.exp(-Math.pow((ja - 0.5) / 0.2, 2)) : 0;
     pf.flashColor.copy(_color).lerp(_white, 0.55);
     post.render(scene, camera, pf);
   }
@@ -734,7 +814,7 @@ export function mountJourney(canvas: HTMLCanvasElement, opts: JourneyOptions): J
         snapped = true;
         p = targetP;
         v = 0;
-        prevQ = travel(p, N);
+        prevQ = travel(p, W);
       }
     },
     setPointer(nx: number, ny: number) {

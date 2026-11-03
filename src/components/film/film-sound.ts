@@ -63,6 +63,25 @@ export class FilmSound {
     this.fades.set(a, requestAnimationFrame(step));
   }
 
+  /** Play film `i`'s sound from a point (0 to 1 of its length), when the
+   *  site's sound is on. Used while the visitor holds the picture to play. */
+  playFrom(i: number, frac: number, ms = 400) {
+    const a = soundIsOn() ? this.el(i) : undefined;
+    for (const [k, other] of this.els) if (k !== i && !other.paused) this.fade(other, 0, ms, () => other.pause());
+    this.current = i;
+    if (!a) return;
+    const seek = () => {
+      if (Number.isFinite(a.duration) && a.duration > 0) a.currentTime = Math.max(0, Math.min(0.999, frac)) * a.duration;
+    };
+    if (a.readyState >= 1) seek();
+    else a.addEventListener("loadedmetadata", seek, { once: true });
+    this.duck(DUCK);
+    a.play().then(
+      () => this.fade(a, LEVEL, ms),
+      () => this.duck(this.playing() ? DUCK : 0),
+    );
+  }
+
   /** Make film `i` the one that sounds (if sound is on), fading over `ms`. */
   to(i: number, ms = 700) {
     for (const [k, a] of this.els) {
@@ -107,10 +126,9 @@ export class FilmSound {
     }
   }
 
-  /** Follow the site's switch: start the current film's sound or stop it. */
+  /** Follow the site's switch: when it goes off, the film goes quiet. */
   sync(active: boolean) {
-    if (active && soundIsOn() && this.current >= 0) this.to(this.current, 900);
-    else this.stop(400);
+    if (!active || !soundIsOn()) this.stop(400);
   }
 
   destroy() {

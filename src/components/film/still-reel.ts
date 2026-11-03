@@ -1,12 +1,13 @@
 // A reel made from a film's own stills, for films whose clip has not
-// arrived yet. One 2D canvas: each still holds the screen for a few seconds
-// with a slow push in and a drift across the frame, then dissolves into the
-// next, between letterbox bars. It draws only while it plays, and it is a
-// plain canvas, so the reel's cut can read it like a video frame.
+// arrived yet. One 2D canvas, treated like a clip: it has a length (each
+// still leads for a few seconds, with a slow push in and a drift across the
+// frame, then dissolves into the next), it can be scrubbed to any point, and
+// it can play from there at normal speed. It draws only when asked or while
+// playing, and the reel's cut reads the canvas like a video frame.
 //
-// Many stills have letterbox bars baked in. The first time a still loads its
-// dark top and bottom rows are measured, and the picture inside them is what
-// fills the screen.
+// Many stills have letterbox bars baked in. When a still loads its true
+// black top and bottom rows are measured, and the picture inside them is
+// what fills the screen.
 
 type Frame = { img: HTMLImageElement; y0: number; y1: number; ready: boolean };
 
@@ -30,47 +31,54 @@ export class StillReel {
   private playing = false;
   private w = 1;
   private h = 1;
+  private first = false;
 
   constructor(
     readonly canvas: HTMLCanvasElement,
     urls: string[],
-    private opts: { phone: boolean; dprCap: number; onFirstFrame?: () => void },
+    private opts: { phone: boolean; dprCap: number; onFirstFrame?: () => void; onEnd?: () => void },
   ) {
     this.ctx = canvas.getContext("2d", { alpha: false });
     this.frames = urls.map((src) => {
       const img = new Image();
       img.decoding = "async";
-      const f: Frame = { img, y0: 0, y1: 1, ready: false };
       img.dataset.src = src;
-      return f;
+      return { img, y0: 0, y1: 1, ready: false };
     });
-    this.load(0);
-    this.load(1);
+    // A scrub can land anywhere, so every still loads now (five or so).
+    this.frames.forEach((_, i) => this.load(i));
   }
 
-  /** True once the first still can be drawn. */
+  /** Seconds, as if it were a clip. */
+  get duration() {
+    return Math.max(1, this.frames.length) * HOLD;
+  }
+  /** Where it stands, 0 to 1. */
+  get progress() {
+    return this.elapsed / this.duration;
+  }
   get ready() {
     return !!this.frames[0]?.ready;
   }
 
   private load(i: number) {
-    const f = this.frames[i % this.frames.length];
+    const f = this.frames[i];
     if (!f || f.img.src) return;
     f.img.onload = () => {
       this.measure(f);
       f.ready = true;
-      if (i === 0) {
-        this.fit();
-        this.draw();
+      if (i === 0) this.fit();
+      this.draw();
+      if (i === 0 && !this.first) {
+        this.first = true;
         this.opts.onFirstFrame?.();
       }
     };
     f.img.src = f.img.dataset.src || "";
   }
 
-  // Find the picture inside any baked in letterbox: rows at the top and
-  // bottom that are true black (bars, not a night sky) are cut away. Baked
-  // bars here are never more than a fifth of the frame.
+  // Rows at the top and bottom that are true black (bars, not a night sky)
+  // are cut away. Baked bars here are never more than a fifth of the frame.
   private measure(f: Frame) {
     try {
       const c = document.createElement("canvas");
@@ -92,7 +100,6 @@ export class StillReel {
       while (top < 20 && dark(top)) top++;
       let bottom = 95;
       while (bottom > 75 && dark(bottom)) bottom--;
-      // One row in from each edge, so no sliver of bar survives.
       f.y0 = top > 0 ? (top + 1) / 96 : 0;
       f.y1 = bottom < 95 ? bottom / 96 : 1;
     } catch {
@@ -117,7 +124,7 @@ export class StillReel {
     return this.opts.phone ? Math.round(this.h * 0.055) : Math.max(0, Math.round((this.h - this.w / 2.39) / 2));
   }
 
-  private paint(f: Frame, local: number, slot: number, alpha: number) {
+  private paint(f: Frame | undefined, local: number, slot: number, alpha: number) {
     const ctx = this.ctx;
     if (!ctx || !f?.ready) return;
     const { img } = f;
@@ -129,13 +136,14 @@ export class StillReel {
     // whole screen on phones (where it pans across its width).
     const bw = this.w;
     const bh = this.opts.phone ? this.h : this.h - 2 * this.bar();
-    const t = local * local * (3 - 2 * local) * 0.6 + local * 0.4;
-    const zoom = (this.opts.phone ? 1.02 : 1.03) + 0.09 * t;
+    const t = Math.max(0, Math.min(1, local));
+    const e = t * t * (3 - 2 * t) * 0.6 + t * 0.4;
+    const zoom = (this.opts.phone ? 1.02 : 1.03) + 0.09 * e;
     const s = Math.max(bw / iw, bh / ch) * zoom;
     const ox = Math.max(0, (iw * s - bw) / 2);
     const oy = Math.max(0, (ch * s - bh) / 2);
     const [dx, dy] = DRIFTS[slot % DRIFTS.length];
-    const sweep = (t - 0.5) * 2; // -1 to 1 across the hold
+    const sweep = (e - 0.5) * 2; // -1 to 1 across the hold
     const px = this.opts.phone ? dx * ox * 0.85 * sweep : dx * ox * 0.6 * sweep;
     const py = dy * oy * 0.6 * sweep;
     const x = this.w / 2 - (iw / 2) * s + px;
@@ -147,19 +155,17 @@ export class StillReel {
 
   draw() {
     const ctx = this.ctx;
-    if (!ctx) return;
     const n = this.frames.length;
-    const t = this.elapsed;
-    if (!n) return;
-    const slot = Math.max(0, Math.floor(t / HOLD));
+    if (!ctx || !n) return;
+    const t = Math.max(0, Math.min(this.elapsed, this.duration - 0.001));
+    const slot = Math.min(n - 1, Math.floor(t / HOLD));
     const into = t - slot * HOLD;
     const span = HOLD + DISSOLVE;
     ctx.fillStyle = "#050002";
     ctx.fillRect(0, 0, this.w, this.h);
-    this.paint(this.frames[slot % n], into / span, slot, 1);
+    this.paint(this.frames[slot], into / span, slot, 1);
     if (slot > 0 && into < DISSOLVE) {
-      const prev = slot - 1;
-      this.paint(this.frames[prev % n], (into + HOLD) / span, prev, 1 - into / DISSOLVE);
+      this.paint(this.frames[slot - 1], (into + HOLD) / span, slot - 1, 1 - into / DISSOLVE);
     }
     const bar = this.bar();
     if (bar > 0) {
@@ -167,11 +173,15 @@ export class StillReel {
       ctx.fillRect(0, 0, this.w, bar);
       ctx.fillRect(0, this.h - bar, this.w, bar);
     }
-    // Stay one still ahead.
-    this.load(slot + 1);
-    this.load(slot + 2);
   }
 
+  /** Jump to a point, 0 to 1, and draw it. */
+  seek(p: number) {
+    this.elapsed = Math.max(0, Math.min(1, p)) * this.duration;
+    this.draw();
+  }
+
+  /** Play from where it stands at normal speed, stopping at the end. */
   play() {
     if (this.playing) return;
     this.playing = true;
@@ -180,6 +190,13 @@ export class StillReel {
       if (!this.playing) return;
       this.elapsed += Math.max(0, Math.min(0.1, (now - this.last) / 1000));
       this.last = now;
+      if (this.elapsed >= this.duration) {
+        this.elapsed = this.duration;
+        this.draw();
+        this.pause();
+        this.opts.onEnd?.();
+        return;
+      }
       this.draw();
       this.raf = requestAnimationFrame(tick);
     };

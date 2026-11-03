@@ -84,7 +84,7 @@ export type ReelGL = {
   readonly ok: boolean;
 };
 
-export function createReelGL(canvas: HTMLCanvasElement, slices = 12): ReelGL | null {
+export function createReelGL(canvas: HTMLCanvasElement, slices = 12, dprCap = 1.5): ReelGL | null {
   const gl = canvas.getContext("webgl", {
     alpha: false,
     antialias: false,
@@ -180,7 +180,7 @@ export function createReelGL(canvas: HTMLCanvasElement, slices = 12): ReelGL | n
   };
 
   const fit = () => {
-    const dpr = Math.min(window.devicePixelRatio || 1, 1.5);
+    const dpr = Math.min(window.devicePixelRatio || 1, dprCap);
     const w = Math.max(1, Math.round(canvas.clientWidth * dpr));
     const h = Math.max(1, Math.round(canvas.clientHeight * dpr));
     if (canvas.width !== w || canvas.height !== h) {

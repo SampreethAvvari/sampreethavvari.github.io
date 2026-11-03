@@ -124,6 +124,13 @@ export class GlowBatch {
     this.col[i * 4 + 2] = b;
   }
 
+  setPos(i: number, x: number, y: number, z: number) {
+    this.pos[i * 3] = x;
+    this.pos[i * 3 + 1] = y;
+    this.pos[i * 3 + 2] = z;
+    this.aPos.needsUpdate = true;
+  }
+
   setSize(i: number, s: number) {
     this.size[i] = s;
     this.aSize.needsUpdate = true;

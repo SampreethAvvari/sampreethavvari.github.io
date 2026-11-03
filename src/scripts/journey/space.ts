@@ -22,7 +22,7 @@ import {
 import { additive } from "./fx";
 import { NOISE } from "./glsl";
 import { travel, type FlightPath, type Landing } from "./path";
-import { buildPieces, type Piece } from "./pieces";
+import { buildPieces, VIEW, type Piece, type PieceFrame, type PointerRay } from "./pieces";
 import { rng } from "./textures";
 
 export interface SpaceInput {
@@ -31,6 +31,10 @@ export interface SpaceInput {
   q: number;
   /** 0..1, how far into a hyperspace jump. */
   warp: number;
+  /** The pointer as a world ray. */
+  ptr: PointerRay;
+  /** +1 flying forward along the path, -1 after turning back. */
+  heading: number;
   time: number;
   dt: number;
   speed: number;
@@ -51,6 +55,8 @@ export interface Flare {
 }
 
 export interface Space {
+  /** Fog for the world in view, blended by its weight. */
+  haze: { color: Color; density: number; weight: number };
   group: Group;
   update(s: SpaceInput): void;
   /** Brightest light source this frame, for the lens flare in post. */
@@ -240,7 +246,7 @@ void main() {
 }
 `;
 
-export function buildSpace(path: FlightPath, chapters: Chapter[], low: boolean, glowTex: Texture, cloudTex: Texture, landing: Landing): Space {
+export function buildSpace(path: FlightPath, chapters: Chapter[], low: boolean, glowTex: Texture, cloudTex: Texture, landing: Landing, landWorld: number): Space {
   const group = new Group();
   const rand = rng(23);
 
@@ -404,7 +410,7 @@ export function buildSpace(path: FlightPath, chapters: Chapter[], low: boolean, 
       new ShaderMaterial({
         vertexShader: THREAD_VS,
         fragmentShader: THREAD_FS,
-        uniforms: { ...threadUniforms, uGlow: { value: 3.2 }, uPower: { value: 0.6 } },
+        uniforms: { ...threadUniforms, uGlow: { value: 1.5 }, uPower: { value: 0.6 } },
       }),
     ),
   );
@@ -414,7 +420,7 @@ export function buildSpace(path: FlightPath, chapters: Chapter[], low: boolean, 
       new ShaderMaterial({
         vertexShader: THREAD_VS,
         fragmentShader: THREAD_FS,
-        uniforms: { ...threadUniforms, uGlow: { value: 0.32 }, uPower: { value: 3.0 } },
+        uniforms: { ...threadUniforms, uGlow: { value: 0.16 }, uPower: { value: 3.0 } },
       }),
     ),
   );
@@ -423,11 +429,13 @@ export function buildSpace(path: FlightPath, chapters: Chapter[], low: boolean, 
   group.add(threadCore, threadHalo);
 
   // Set pieces.
-  const pieces = buildPieces({ path, chapters, low, glowTex, cloudTex, landing });
+  const pieces = buildPieces({ path, chapters, low, glowTex, cloudTex, landing, landWorld });
   for (const pc of pieces) group.add(pc.group);
 
   const flare: Flare = { pos: new Vector3(), color: new Color(), strength: 0 };
   const skyColor = new Color();
+  const haze = { color: new Color(), density: 0, weight: 0 };
+  const frame: PieceFrame = { time: 0, dt: 0, p: 0, camera: null as unknown as PerspectiveCamera, ptr: { o: new Vector3(), d: new Vector3(), on: 0 } };
 
   function update(s: SpaceInput) {
     const { p, time, dt, camera } = s;
@@ -440,6 +448,17 @@ export function buildSpace(path: FlightPath, chapters: Chapter[], low: boolean, 
     let neb = 0.22;
     let warm = 0;
     flare.strength = 0;
+    haze.weight = 0;
+    VIEW.uPx.value = s.pxScale;
+    VIEW.uDpr.value = s.dpr;
+    VIEW.uRayO.value.copy(s.ptr.o);
+    VIEW.uRayD.value.copy(s.ptr.d);
+    VIEW.uRayOn.value = s.ptr.on;
+    frame.time = time;
+    frame.dt = dt;
+    frame.p = p;
+    frame.camera = camera;
+    frame.ptr = s.ptr;
     for (const pc of pieces) {
       const w = pc.weight(p);
       const on = w > 0.001;
@@ -451,7 +470,12 @@ export function buildSpace(path: FlightPath, chapters: Chapter[], low: boolean, 
         warm += pc.warm.amount * w;
         skyMat.uniforms.uWarmDir.value.copy(pc.warm.dir);
       }
-      pc.update?.(time, dt, p, camera, s.pxScale, s.dpr);
+      pc.update?.(frame);
+      if (pc.haze && w > haze.weight) {
+        haze.weight = w;
+        haze.color.copy(pc.haze.color);
+        haze.density = pc.haze.density;
+      }
       if (pc.flare && pc.flare.strength * w > flare.strength) {
         flare.strength = pc.flare.strength * w;
         flare.pos.copy(pc.flare.pos);
@@ -462,14 +486,13 @@ export function buildSpace(path: FlightPath, chapters: Chapter[], low: boolean, 
     skyMat.uniforms.uWarm.value = warm;
 
     // Stars drift past slowly even at rest, so the ship always feels under way.
-    if (!s.reduced) shared.uDrift.value.addScaledVector(s.fwd, dt * 9);
+    if (!s.reduced) shared.uDrift.value.addScaledVector(s.fwd, dt * 9 * s.heading);
     shared.uCam.value.copy(camera.position);
     starMat.uniforms.uPx.value = s.pxScale;
     starMat.uniforms.uDpr.value = s.dpr;
     starMat.uniforms.uTime.value = time;
     starMat.uniforms.uTint.value.copy(s.color);
 
-    // Warp streaks only when moving fast, and never with reduced motion.
     // Warp streaks only during a jump, and never with reduced motion.
     const warp = s.reduced ? 0 : s.warp;
     streaks.visible = warp > 0.01;
@@ -483,7 +506,7 @@ export function buildSpace(path: FlightPath, chapters: Chapter[], low: boolean, 
     threadUniforms.uTime.value = time;
   }
 
-  return { group, update, flare, pieces };
+  return { group, update, flare, pieces, haze };
 }
 
 /** Chapter light at progress p, eased between neighbours. */

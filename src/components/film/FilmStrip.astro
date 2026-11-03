@@ -1,0 +1,524 @@
+---
+// The slate as one strip of film: nine frames between sprocket rails, each
+// with its number and an edge print of its title. Drag it, swipe it or
+// scroll it sideways. Pointing at a frame lifts it and plays a preview: the
+// film's own stills (or its clip, once there is one); a film with no
+// pictures yet shows its title card, which lights up. Every frame opens the
+// film's page.
+import SmartImage from "../common/SmartImage.astro";
+import { films, filmPath, filmStills, reelItems, yearLabel, rolesLine, type Film } from "../../data/films";
+
+const reel = reelItems();
+const pad = (i: number) => String(i).padStart(2, "0");
+const statusLine = (f: Film) =>
+  f.status === "dated" ? yearLabel(f) : `${yearLabel(f)} · ${f.statusNote ?? (f.status === "upcoming" ? "Upcoming" : "Released")}`;
+// Where each title card's red field and eclipse sit, so no two look alike.
+const SEEDS = [
+  [24, 40, 76, 58],
+  [70, 34, 26, 66],
+  [36, 64, 78, 30],
+  [78, 56, 22, 38],
+  [50, 28, 30, 70],
+  [26, 60, 70, 36],
+  [62, 66, 34, 30],
+  [40, 32, 74, 64],
+  [72, 44, 24, 56],
+];
+
+const items = films.map((f, i) => {
+  const r = reel.find((x) => x.slug === f.slug);
+  const stills = filmStills(f);
+  // The preview: the reel's own frames when the film is in the reel, else
+  // up to five of its stills.
+  const previews = r?.frames ?? stills.slice(0, 5).map((s) => s.src.replace(/\.avif$/i, ".webp"));
+  const still = !f.poster && stills.length ? (stills[4] ?? stills[0]) : undefined;
+  return {
+    f,
+    i,
+    seed: SEEDS[i % SEEDS.length],
+    previews,
+    clip: r?.kind === "video" ? (r.mp4Phone ?? r.mp4) : undefined,
+    still,
+  };
+});
+---
+
+<div class="fs" data-filmstrip>
+  <ol class="fs-track" data-fs-track aria-label="The slate, newest first">
+    {items.map(({ f, i, seed, previews, clip, still }) => (
+      <li class="fs-item">
+        <a
+          href={filmPath(f.slug)}
+          class="fs-cell"
+          data-fs-cell
+          data-previews={previews.length ? JSON.stringify(previews) : undefined}
+          data-clip={clip}
+          draggable="false"
+        >
+          <span class="fs-edge" aria-hidden="true">
+            <span class="fs-no">{pad(i + 1)}</span>
+            <span class="fs-tri">▸</span>
+            <span class="fs-print">{f.title} · {yearLabel(f)}</span>
+          </span>
+          <span class="fs-frame">
+            {f.poster ? (
+              <SmartImage src={f.poster.src} alt={`${f.title} poster`} class="fs-img" loading="lazy" />
+            ) : still ? (
+              <span class="fs-still">
+                <SmartImage src={still.src} alt={still.alt} class="fs-img" loading="lazy" />
+                <span class="fs-still-title" aria-hidden="true">{f.title}</span>
+              </span>
+            ) : (
+              <span class="tc" style={`--nx:${seed[0]}%;--ny:${seed[1]}%;--sx:${seed[2]}%;--sy:${seed[3]}%;`} aria-hidden="true">
+                <span class="tc-bar">{f.year ?? "In development"}</span>
+                <span class="tc-field">
+                  <span class="tc-sun"><span class="tc-corona"></span></span>
+                  <span class="tc-dust"></span>
+                  <span class="tc-sweep"></span>
+                  <span class="tc-title">{f.title}</span>
+                </span>
+                <span class="tc-bar">{rolesLine(f)}</span>
+              </span>
+            )}
+            <span class="fs-live" aria-hidden="true"></span>
+            <span class="fs-run" aria-hidden="true"><span></span></span>
+          </span>
+          <span class="fs-cap">
+            <span class="fs-title">{f.title}</span>
+            <span class="fs-meta">{statusLine(f)}</span>
+            <span class="fs-roles">{rolesLine(f)}</span>
+          </span>
+        </a>
+      </li>
+    ))}
+  </ol>
+</div>
+
+<script>
+  import { onPage } from "../../scripts/lifecycle";
+
+  // Dragging the strip, the preview under the pointer (or, on phones, the
+  // frame in the middle of the screen), and the arrows.
+  onPage("film-strip", (signal) => {
+    const strip = document.querySelector<HTMLElement>("[data-filmstrip]");
+    const track = strip?.querySelector<HTMLElement>("[data-fs-track]");
+    if (!strip || !track) return;
+    const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const touch = matchMedia("(hover: none), (pointer: coarse)").matches;
+    const cells = Array.from(track.querySelectorAll<HTMLAnchorElement>("[data-fs-cell]"));
+
+    // ---- Preview: a short run through the film's stills, or its clip.
+    let live: HTMLAnchorElement | null = null;
+    let timer = 0;
+    const HOLD_MS = 1100;
+    const stopPreview = () => {
+      clearInterval(timer);
+      if (!live) return;
+      live.classList.remove("is-live");
+      live.querySelector("video")?.pause();
+      live = null;
+    };
+    const startPreview = (cell: HTMLAnchorElement) => {
+      if (live === cell) return;
+      stopPreview();
+      live = cell;
+      cell.classList.add("is-live");
+      if (reduce) return;
+      const layer = cell.querySelector<HTMLElement>(".fs-live");
+      const bar = cell.querySelector<HTMLElement>(".fs-run > span");
+      if (!layer) return;
+      const clip = cell.dataset.clip;
+      if (clip) {
+        let v = layer.querySelector("video");
+        if (!v) {
+          v = document.createElement("video");
+          v.muted = true;
+          v.loop = true;
+          v.playsInline = true;
+          v.preload = "auto";
+          v.src = clip;
+          layer.append(v);
+        }
+        v.play().catch(() => {});
+        return;
+      }
+      const urls: string[] = JSON.parse(cell.dataset.previews || "[]");
+      if (!urls.length) return;
+      if (!layer.childElementCount) {
+        urls.forEach((src) => {
+          const img = new Image();
+          img.decoding = "async";
+          img.alt = "";
+          img.src = src;
+          layer.append(img);
+        });
+      }
+      const imgs = Array.from(layer.querySelectorAll("img"));
+      let k = 0;
+      const show = () => {
+        imgs.forEach((im, j) => im.classList.toggle("is-on", j === k));
+        if (bar) {
+          bar.style.transition = "none";
+          bar.style.transform = `scaleX(${k / imgs.length})`;
+          void bar.offsetWidth;
+          bar.style.transition = `transform ${HOLD_MS}ms linear`;
+          bar.style.transform = `scaleX(${(k + 1) / imgs.length})`;
+        }
+        k = (k + 1) % imgs.length;
+      };
+      show();
+      timer = window.setInterval(show, HOLD_MS);
+    };
+
+    if (touch) {
+      // Phones: the frame nearest the middle of the screen previews itself.
+      const io = new IntersectionObserver(
+        (entries) => {
+          for (const e of entries) {
+            const cell = e.target as HTMLAnchorElement;
+            if (e.intersectionRatio >= 0.7) startPreview(cell);
+            else if (live === cell) stopPreview();
+          }
+        },
+        { root: track, threshold: [0, 0.7, 1] },
+      );
+      cells.forEach((c) => io.observe(c));
+      signal.addEventListener("abort", () => io.disconnect());
+    } else {
+      cells.forEach((cell) => {
+        cell.addEventListener("pointerenter", () => !dragging && startPreview(cell), { signal });
+        cell.addEventListener("pointerleave", () => live === cell && stopPreview(), { signal });
+        cell.addEventListener("focus", () => startPreview(cell), { signal });
+        cell.addEventListener("blur", () => live === cell && stopPreview(), { signal });
+      });
+    }
+
+    // ---- Drag with a mouse: the strip follows the hand and glides on.
+    let dragging = false;
+    let moved = 0;
+    let startX = 0;
+    let startLeft = 0;
+    let lastX = 0;
+    let lastT = 0;
+    let vel = 0;
+    let glide = 0;
+    const endGlide = () => {
+      cancelAnimationFrame(glide);
+      glide = 0;
+      track.classList.remove("is-dragging");
+    };
+    track.addEventListener(
+      "pointerdown",
+      (e) => {
+        if (e.pointerType !== "mouse" || e.button !== 0) return;
+        endGlide();
+        dragging = true;
+        moved = 0;
+        startX = lastX = e.clientX;
+        startLeft = track.scrollLeft;
+        lastT = performance.now();
+        vel = 0;
+      },
+      { signal },
+    );
+    window.addEventListener(
+      "pointermove",
+      (e) => {
+        if (!dragging) return;
+        const dx = e.clientX - startX;
+        moved = Math.max(moved, Math.abs(dx));
+        if (moved > 4 && !track.classList.contains("is-dragging")) {
+          track.classList.add("is-dragging");
+          stopPreview();
+        }
+        track.scrollLeft = startLeft - dx;
+        const now = performance.now();
+        vel = (e.clientX - lastX) / Math.max(1, now - lastT);
+        lastX = e.clientX;
+        lastT = now;
+      },
+      { signal },
+    );
+    window.addEventListener(
+      "pointerup",
+      () => {
+        if (!dragging) return;
+        dragging = false;
+        if (moved <= 4 || reduce) return endGlide();
+        let v = -vel * 16;
+        const step = () => {
+          track.scrollLeft += v;
+          v *= 0.92;
+          if (Math.abs(v) > 0.5) glide = requestAnimationFrame(step);
+          else endGlide();
+        };
+        glide = requestAnimationFrame(step);
+      },
+      { signal },
+    );
+    // A drag is not a click.
+    track.addEventListener(
+      "click",
+      (e) => {
+        if (moved > 4) {
+          e.preventDefault();
+          e.stopPropagation();
+          moved = 0;
+        }
+      },
+      { capture: true, signal },
+    );
+
+    // ---- Arrows: a few frames at a time, dimmed at the ends.
+    const prev = document.querySelector<HTMLButtonElement>("[data-fs-prev]");
+    const next = document.querySelector<HTMLButtonElement>("[data-fs-next]");
+    const by = (dir: number) =>
+      track.scrollBy({ left: dir * Math.max(240, track.clientWidth * 0.7), behavior: reduce ? "auto" : "smooth" });
+    const ends = () => {
+      if (prev) prev.disabled = track.scrollLeft < 4;
+      if (next) next.disabled = track.scrollLeft + track.clientWidth > track.scrollWidth - 4;
+    };
+    prev?.addEventListener("click", () => by(-1), { signal });
+    next?.addEventListener("click", () => by(1), { signal });
+    track.addEventListener("scroll", ends, { passive: true, signal });
+    window.addEventListener("resize", ends, { passive: true, signal });
+    ends();
+
+    return () => {
+      stopPreview();
+      endGlide();
+      cells.forEach((c) => c.querySelector("video")?.removeAttribute("src"));
+    };
+  });
+</script>
+
+<style>
+  .fs {
+    --crimson: 244, 63, 94;
+    --blood: 159, 18, 57;
+    --ember: 255, 99, 122;
+    --edge: max(var(--gutter), calc((100vw - var(--max)) / 2));
+    --cell: clamp(250px, 25vw, 360px);
+    position: relative;
+  }
+  /* The film: a dark base with sprocket holes along both rails. The holes
+     ride with the frames as the strip moves. */
+  .fs-track {
+    --hole: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='26' height='14'%3E%3Crect x='6' y='2' width='14' height='10' rx='2.6' fill='%23000'/%3E%3Crect x='6.5' y='2.5' width='13' height='9' rx='2.3' fill='none' stroke='%23ff8a9e' stroke-opacity='0.12'/%3E%3C/svg%3E");
+    list-style: none;
+    margin: 0;
+    display: flex;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scroll-snap-type: x proximity;
+    scroll-padding-inline: var(--edge);
+    padding: 0 var(--edge);
+    scrollbar-width: none;
+    cursor: grab;
+    user-select: none;
+    -webkit-user-select: none;
+    background:
+      var(--hole) 0 9px / 26px 14px repeat-x local,
+      var(--hole) 0 calc(100% - 9px) / 26px 14px repeat-x local,
+      linear-gradient(180deg, rgba(255, 140, 120, 0.05), rgba(255, 140, 120, 0) 18%, rgba(255, 140, 120, 0) 82%, rgba(255, 140, 120, 0.05)),
+      #0b0506;
+    border-block: 1px solid rgba(var(--crimson), 0.18);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04), 0 30px 80px -40px rgba(var(--crimson), 0.35);
+  }
+  .fs-track::-webkit-scrollbar { display: none; }
+  .fs-track.is-dragging { cursor: grabbing; scroll-snap-type: none; }
+  .fs-track.is-dragging .fs-cell { pointer-events: none; }
+  .fs-item { flex: none; scroll-snap-align: start; padding: 34px 0 32px; border-right: 3px solid #050203; }
+  .fs-item:first-child { border-left: 3px solid #050203; }
+
+  .fs-cell {
+    display: block;
+    width: var(--cell);
+    padding: 0 12px;
+    color: var(--ink);
+    text-decoration: none;
+    -webkit-user-drag: none;
+    -webkit-touch-callout: none;
+  }
+  .fs-cell :global(img) { -webkit-user-drag: none; pointer-events: none; }
+  .fs-edge {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    height: 18px;
+    font-size: 0.6875rem;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: rgba(255, 170, 120, 0.55);
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+    overflow: hidden;
+  }
+  .fs-no { color: rgba(255, 190, 150, 0.85); }
+  .fs-tri { font-size: 0.625rem; }
+  .fs-print { overflow: hidden; text-overflow: ellipsis; opacity: 0.8; }
+
+  .fs-frame {
+    position: relative;
+    display: block;
+    margin-top: 8px;
+    aspect-ratio: 16 / 9;
+    border-radius: 4px;
+    overflow: hidden;
+    background: #050002;
+    box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.07), 0 18px 40px -26px rgba(0, 0, 0, 0.9);
+    transition: transform 500ms var(--ease-glass), box-shadow 500ms var(--ease-glass), filter 400ms var(--ease-glass);
+  }
+  .fs-frame :global(picture) { position: absolute; inset: 0; display: block; }
+  .fs-frame :global(.fs-img) { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block; }
+  /* Pointing at a frame lifts it out of the strip; the rest step back. */
+  .fs-track:not(.is-dragging):hover .fs-cell:not(:hover) .fs-frame { filter: brightness(0.55) saturate(0.7); }
+  .fs-cell:hover .fs-frame,
+  .fs-cell:focus-visible .fs-frame,
+  .fs-cell.is-live .fs-frame {
+    transform: translateY(-10px) scale(1.04);
+    box-shadow: 0 0 0 1px rgba(var(--crimson), 0.55), 0 0 40px -6px rgba(var(--crimson), 0.55), 0 30px 50px -24px rgba(0, 0, 0, 0.95);
+  }
+  .fs-cell:focus-visible { outline: none; }
+
+  /* The live preview: stills crossfading over the frame, with a run bar. */
+  .fs-live { position: absolute; inset: 0; z-index: 2; pointer-events: none; }
+  .fs-live :global(img),
+  .fs-live :global(video) {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    opacity: 0;
+    transform: scale(1.18);
+    transition: opacity 500ms var(--ease-glass), transform 1600ms linear;
+  }
+  .fs-live :global(video) { transform: none; }
+  .fs-cell.is-live .fs-live :global(img.is-on) { opacity: 1; transform: scale(1.3); }
+  .fs-cell.is-live .fs-live :global(video) { opacity: 1; }
+  .fs-run { position: absolute; left: 8px; right: 8px; bottom: 8px; z-index: 3; height: 2px; background: rgba(255, 255, 255, 0.18); opacity: 0; transition: opacity 300ms; }
+  .fs-run > span { display: block; height: 100%; background: #f43f5e; transform-origin: 0 50%; transform: scaleX(0); }
+  .fs-cell.is-live[data-previews] .fs-run { opacity: 1; }
+
+  .fs-cap { display: grid; gap: 2px; margin-top: 14px; }
+  .fs-title { font-size: 1rem; font-weight: 600; letter-spacing: -0.015em; line-height: 1.25; color: var(--ink); }
+  .fs-meta { font-size: 0.8125rem; color: rgba(245, 245, 247, 0.55); font-variant-numeric: tabular-nums; }
+  .fs-roles { font-size: 0.8125rem; color: var(--ink-soft); }
+  @media (hover: hover) {
+    .fs-roles { opacity: 0.6; transition: opacity 300ms var(--ease-glass); }
+    .fs-cell:hover .fs-roles, .fs-cell:focus-visible .fs-roles { opacity: 1; }
+  }
+
+  /* A frame from the film with its title low on it. */
+  .fs-still { position: absolute; inset: 0; display: block; }
+  .fs-still::after { content: ""; position: absolute; inset: 0; background: linear-gradient(0deg, rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0) 55%); }
+  .fs-still-title { position: absolute; z-index: 1; left: 12px; bottom: 10px; font-size: 1.375rem; font-weight: 600; letter-spacing: -0.04em; color: #fff; }
+
+  /* Title cards: the title in type on a red field between letterbox bars. */
+  .tc { position: absolute; inset: 0; container-type: inline-size; display: grid; grid-template-rows: 12.8% 1fr 12.8%; background: #000; }
+  .tc-bar {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 4%;
+    font-size: max(9px, 2.6cqw);
+    font-weight: 500;
+    letter-spacing: 0.08em;
+    color: rgba(245, 245, 247, 0.6);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .tc-field {
+    position: relative;
+    overflow: hidden;
+    display: grid;
+    place-items: center;
+    background:
+      radial-gradient(42% 70% at var(--nx) var(--ny), rgba(var(--crimson), 0.42) 0%, rgba(var(--crimson), 0.3) 22%, rgba(var(--blood), 0.2) 46%, rgba(var(--blood), 0.07) 72%, rgba(var(--blood), 0) 100%),
+      radial-gradient(34% 60% at calc(100% - var(--nx)) calc(100% - var(--ny)), rgba(var(--blood), 0.32) 0%, rgba(var(--blood), 0.14) 50%, rgba(var(--blood), 0) 100%),
+      #070103;
+  }
+  .tc-dust {
+    position: absolute;
+    inset: 0;
+    background-image:
+      radial-gradient(1px 1px at 12% 22%, rgba(255, 235, 238, 0.9), transparent),
+      radial-gradient(1px 1px at 31% 71%, rgba(255, 235, 238, 0.7), transparent),
+      radial-gradient(1.5px 1.5px at 47% 14%, rgba(255, 140, 160, 0.9), transparent),
+      radial-gradient(1px 1px at 63% 83%, rgba(255, 235, 238, 0.8), transparent),
+      radial-gradient(1px 1px at 82% 36%, rgba(255, 235, 238, 0.75), transparent),
+      radial-gradient(1.5px 1.5px at 91% 68%, rgba(255, 140, 160, 0.8), transparent);
+    background-size: 52% 64%;
+    opacity: 0.8;
+  }
+  .tc-sun {
+    position: absolute;
+    left: var(--sx);
+    top: var(--sy);
+    width: 36cqw;
+    aspect-ratio: 1;
+    border-radius: 50%;
+    transform: translate(-50%, -50%) scale(0.92);
+    opacity: 0.75;
+    background: radial-gradient(circle closest-side, #060002 0%, #060002 88%, rgba(255, 180, 192, 0.9) 90%, rgba(var(--ember), 0.6) 92%, rgba(var(--crimson), 0.26) 95%, rgba(var(--crimson), 0.08) 98%, rgba(var(--crimson), 0) 100%);
+    box-shadow: 0 0 7cqw rgba(var(--crimson), 0.2);
+    transition: transform 900ms var(--ease-glass), opacity 600ms var(--ease-glass), box-shadow 900ms var(--ease-glass);
+  }
+  .tc-corona {
+    position: absolute;
+    inset: -6%;
+    border-radius: 50%;
+    opacity: 0;
+    background: conic-gradient(from 0deg, rgba(var(--ember), 0) 0deg, rgba(255, 190, 200, 0.6) 24deg, rgba(var(--ember), 0) 60deg, rgba(var(--crimson), 0.45) 120deg, rgba(var(--ember), 0) 170deg, rgba(255, 170, 185, 0.55) 230deg, rgba(var(--ember), 0) 280deg, rgba(var(--crimson), 0.4) 320deg, rgba(var(--ember), 0) 360deg);
+    -webkit-mask: radial-gradient(closest-side, transparent 84%, #000 86.5%, #000 88%, transparent 95%);
+    mask: radial-gradient(closest-side, transparent 84%, #000 86.5%, #000 88%, transparent 95%);
+    transition: opacity 600ms var(--ease-glass);
+  }
+  .tc-sweep {
+    position: absolute;
+    inset: -20% auto -20% -40%;
+    width: 30%;
+    background: linear-gradient(100deg, rgba(255, 200, 210, 0), rgba(255, 200, 210, 0.16), rgba(255, 200, 210, 0));
+    transform: translateX(0) rotate(10deg);
+    opacity: 0;
+  }
+  .tc-title {
+    position: relative;
+    z-index: 1;
+    padding: 0 8%;
+    text-align: center;
+    font-size: clamp(1.25rem, 9cqw, 4rem);
+    font-weight: 600;
+    letter-spacing: -0.045em;
+    line-height: 1;
+    color: #fff;
+    text-wrap: balance;
+    text-shadow: 0 0 2.4cqw rgba(var(--crimson), 0.55), 0 2px 18px rgba(0, 0, 0, 0.7);
+  }
+  /* A title card lights up when you point at it. */
+  .fs-cell.is-live .tc-sun { transform: translate(-50%, -50%) scale(1.06); opacity: 1; box-shadow: 0 0 10cqw rgba(var(--crimson), 0.45); }
+  .fs-cell.is-live .tc-corona { opacity: 1; animation: tc-spin 14s linear infinite; }
+  .fs-cell.is-live .tc-sweep { animation: tc-sweep 1.8s var(--ease-glass) infinite; }
+  @keyframes tc-spin { to { transform: rotate(360deg); } }
+  @keyframes tc-sweep {
+    0% { opacity: 0; transform: translateX(0) rotate(10deg); }
+    20% { opacity: 1; }
+    100% { opacity: 0; transform: translateX(560%) rotate(10deg); }
+  }
+
+  /* Phones: frames nearly the width of the screen, one per swipe. */
+  @media (max-width: 767px) {
+    .fs { --cell: 78vw; }
+    .fs-track { scroll-snap-type: x mandatory; scroll-padding-inline: 0; }
+    .fs-item { scroll-snap-align: center; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .fs-frame, .tc-sun, .tc-corona, .fs-live :global(img), .fs-roles { transition: none; }
+    .fs-cell.is-live .tc-corona, .fs-cell.is-live .tc-sweep { animation: none; }
+    .fs-cell:hover .fs-frame, .fs-cell.is-live .fs-frame { transform: none; }
+  }
+</style>

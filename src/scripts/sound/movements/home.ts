@@ -1,32 +1,40 @@
-// Overture. The Long Flight. Home: the whole suite in eight rooms, one per
-// chapter of the scroll.
+// Overture. The Long Flight. Home: the whole story in nine worlds, one per
+// chapter of the scroll, each with its own instruments, register and space.
 //
-//   01 launch       a breath and a heartbeat; one low D; far away, a plucked
-//                   string thinks of the theme for the first time
-//   02 proof        plucked strings count upward, one more each bar
-//   03 projects     wood and stone struck by hand over a D pedal
+//   01 launch       ignition: a low rumble opens, an organ's open fifth rises
+//                   an octave, a breath and a heartbeat; far away a plucked
+//                   string tries the theme for the first time
+//   02 proof        glass pulses count upward, bouncing from ear to ear
+//   03 projects     two machines interlock, three against four, over an
+//                   engine that pumps in eighths
 //   04 disciplines  four instruments at four corners pass one line around
-//   05 writing      the theme, told in full on a felt piano
-//   06 film         D minor, the lament bass, a bowed string, a far bell
-//   07 mind         D Lydian, the widest room, bells as stars around you
-//   08 contact      the theme returns and resolves; the breath comes back calm
+//   05 writing      the theme in full on a felt piano, the air of paper
+//   06 film         the landing: down through the atmosphere under a red
+//                   eclipse, low bowed strings and a heartbeat, then touchdown
+//   07 mind         the exit: a violet galaxy night, a cosmic choir, first
+//                   footsteps off the ramp, suit servos, a wind that sings
+//   08 contact      the helmet: the seal releases, the first breath of open
+//                   air, the world opens from muffled to wide, and the theme
+//                   plays at its fullest
+//   09 connect      the touch: everything hushes; the hand meets the sapling
+//                   on a warm D major ninth, the theme falls home to D, and a
+//                   shimmer keeps living, then a quiet hold
 //
-// Layers are mixed continuously from the scroll position, so moving between
-// two chapters is a crossfade of two rooms. Harmony changes on the chapter.
-// Scrolling fast makes a high choir of chord tones swell, like stars streaming
-// past. When a chapter's headline arrives word by word, each word gets one
-// soft tuned note, read from left to right.
-//
-// Each world holds for most of its chapter; the last fifth of the scroll is a
-// jump to the next world, and the jump has its own gesture: a swell rising
-// into the new harmony, a tape stop with a sub drop, a moment of muffled
-// silence, then the new world arrives on a struck chord. Scrolling back plays
-// it in reverse: a falling swell, the room muffling as if rewound, a sub that
-// rises, a softer arrival.
+// The flight is stepped: each scroll glides from one world to the next in
+// 1.4 seconds, so the movement runs at 85.7 beats a minute, where 1.4 seconds
+// is exactly two beats, and every jump lands on a downbeat. The jump has its
+// own gesture: a swell that peaks at 0.7 seconds, a tape stop with a sub
+// drop, a moment of muffled silence, then the new world arrives on a struck
+// chord. Backwards, the ship turns around: its hum swings across the field
+// with a doppler bend. Clicks and hovers snap to a fine grid on the same
+// clock. When a headline arrives word by word, each word gets one soft tuned
+// note, read from left to right. The last three worlds are scenes that play
+// in real time; the page reports their progress and the score follows it.
 import { Movement, type Section } from "../movement";
-import { chords, tonesIn, bassOf, type Chord } from "../theory";
+import { chord, chords, tonesIn, bassOf, type Chord } from "../theory";
+import type { PadOpts } from "../instruments";
 import { Pad, Mono, Sampler, Breath, lead, thud, glint } from "../instruments";
-import { pluck, modal, MODES, bell, BELLS, piano, fm, dbg, nm, kr, mtof, type RoomSpec, type ModalSpec } from "../dsp";
+import { pluck, modal, MODES, bell, BELLS, piano, fm, dbg, nm, ns, kr, mtof, type RoomSpec, type ModalSpec } from "../dsp";
 
 interface Chapter { id: string; prog: Chord[]; per: number }
 const CHAPTERS: Chapter[] = [
@@ -38,25 +46,55 @@ const CHAPTERS: Chapter[] = [
   { id: "film", prog: chords("Dm9 Dm/C Bbmaj7 A7b9"), per: 1 },
   { id: "mind", prog: chords("Dmaj7#11 Eadd9/D Bm11 Dmaj7#11"), per: 2 },
   { id: "contact", prog: chords("Gmaj9 Asus4 Bm9 Gadd9 Dadd9 Dadd9"), per: 1 },
+  // the touch waits on the subdominant over a D pedal, so the touch resolves it
+  { id: "connect", prog: chords("Gadd9/D"), per: 4 },
 ];
+const LAST = CHAPTERS.length - 1;
 
-// how present each layer is in each chapter
+// how present each layer is in each world
 const MIX: Record<string, number[]> = {
-  breath: [1, 0.35, 0, 0, 0, 0, 0.25, 0.7],
-  heart: [1, 0.45, 0, 0, 0, 0.8, 0, 0.3],
-  drone: [1, 1, 0.8, 0.6, 0.6, 1, 0.6, 1],
-  pad: [0, 0.55, 0.8, 0.9, 0.75, 0.85, 1, 1],
-  bass: [0, 0.4, 0.9, 0.9, 0.7, 0.9, 0.4, 0.8],
-  tally: [0, 1, 0.35, 0, 0, 0, 0, 0],
-  hands: [0, 0, 1, 0.35, 0, 0, 0, 0],
-  quartet: [0, 0, 0, 1, 0.25, 0, 0, 0.25],
-  theme: [1, 0, 0, 0, 1, 0, 0, 1],
-  strings: [0, 0, 0, 0, 0, 1, 0, 0],
-  toll: [0, 0, 0, 0, 0, 1, 0.3, 0],
-  stars: [0, 0, 0, 0, 0.1, 0, 1, 0.35],
+  breath: [1, 0, 0, 0, 0, 0, 0, 0, 0],
+  heart: [1, 0, 0, 0, 0, 0.85, 0, 0, 0],
+  ignite: [1, 0, 0, 0, 0, 0, 0, 0, 0],
+  drone: [1, 0.5, 0.7, 0.4, 0.4, 1, 0.5, 0.6, 0.45],
+  pad: [1, 1, 1, 1, 1, 1, 1, 1, 0.8],
+  bass: [0, 0.4, 1, 0.9, 0.6, 0.9, 0.3, 0.8, 0.3],
+  tally: [0, 1, 0, 0, 0, 0, 0, 0, 0],
+  tallyR: [0, 1, 0, 0, 0, 0, 0, 0, 0],
+  hands: [0, 0, 1, 0, 0, 0, 0, 0, 0],
+  handsR: [0, 0, 1, 0, 0, 0, 0, 0, 0],
+  paper: [0, 0, 0, 0, 1, 0, 0, 0, 0],
+  quartet: [0, 0, 0, 1, 0, 0, 0, 0, 0],
+  theme: [1, 0, 0, 0, 1, 0, 0, 1, 0],
+  strings: [0, 0, 0, 0, 0, 1, 0, 0.7, 0],
+  toll: [0, 0, 0, 0, 0, 1, 0, 0, 0],
+  stars: [0, 0, 0, 0, 0, 0, 1, 0.2, 0.3],
 };
-const BRIGHT = [1300, 1800, 2300, 3000, 2500, 1100, 3600, 2900];
-const WET = [0.8, 0.8, 0.7, 0.75, 0.85, 1.05, 1.35, 1.0];
+
+// each world's own bed: instrument, register, width and motion
+const BEAT = 1 / 0.7; // beats a second
+const BEDS: (Omit<PadOpts, "wave"> & { wave: string })[] = [
+  // launch: an organ's open fifth, rising an octave at ignition
+  { wave: "organ", voices: 2, lo: 38, hi: 57, detune: 5, cutoff: 900, level: 0.17, mode: "glide", glide: 3.5, lfo: 0.08 },
+  // proof: thin glass, high and narrow
+  { wave: "glass", voices: 3, lo: 67, hi: 86, detune: 3, cutoff: 4200, level: 0.1, mode: "swap", xfade: 1.6, lfo: 0.11 },
+  // projects: a low warm engine that pumps in eighths
+  { wave: "warm", voices: 3, lo: 45, hi: 64, detune: 6, cutoff: 1100, level: 0.19, mode: "swap", xfade: 1.2, lfo: BEAT * 2, lfoDepth: 0.5 },
+  // disciplines: an open reed chord in the middle, wide
+  { wave: "reed", voices: 4, lo: 55, hi: 74, detune: 9, cutoff: 1900, level: 0.13, mode: "swap", xfade: 2, lfo: 0.06 },
+  // writing: soft air, dark and close
+  { wave: "air", voices: 4, lo: 55, hi: 72, detune: 4, cutoff: 1300, level: 0.16, mode: "swap", xfade: 2.6, lfo: 0.05 },
+  // film, the landing: low bowed strings, very dark
+  { wave: "bowed", voices: 4, lo: 41, hi: 62, detune: 10, cutoff: 650, level: 0.18, mode: "swap", xfade: 3, lfo: 0.04 },
+  // mind, the exit: a cosmic choir, high and very wide, sliding between chords
+  { wave: "choir", voices: 5, lo: 60, hi: 84, detune: 14, cutoff: 2600, level: 0.15, mode: "glide", glide: 4, lfo: 0.035 },
+  // contact, the helmet: a full warm choir, open and wide
+  { wave: "choir", voices: 5, lo: 50, hi: 79, detune: 10, cutoff: 2400, level: 0.16, mode: "swap", xfade: 2.8, lfo: 0.045 },
+  // connect, the touch: a thin breath of air, nearly nothing, so the chord can bloom
+  { wave: "air", voices: 3, lo: 57, hi: 76, detune: 5, cutoff: 1500, level: 0.11, mode: "swap", xfade: 3, lfo: 0.04 },
+];
+const BRIGHT = [1300, 1800, 2300, 3000, 2500, 1100, 3400, 3200, 2600];
+const WET = [0.8, 0.8, 0.7, 0.75, 0.85, 1.05, 1.3, 1.05, 1.25];
 
 // the theme: D A G E, the four notes the suite keeps coming back to
 type Ev = [number, number, string, number];
@@ -71,6 +109,7 @@ const THEME: Record<string, { bars: number; ev: Ev[] }> = {
       [3, 0, "E4", 0.75],
     ],
   },
+  // the helmet comes off: the theme at its fullest, piano with strings beneath
   contact: {
     bars: 6,
     ev: [
@@ -83,15 +122,17 @@ const THEME: Record<string, { bars: number; ev: Ev[] }> = {
     ],
   },
 };
-// the bowed line in the film chapter, per bar of its progression
+// the bowed line in the landing, per bar of its progression
 const STRINGS: [string, number, number][][] = [
   [["D3", 0, 6], ["A3", 6, 2], ["G3", 8, 4], ["F3", 12, 4]],
   [["E3", 0, 16]],
   [["D3", 0, 8], ["F3", 8, 8]],
   [["C#3", 0, 16]],
 ];
-// the theme in Lydian, as four stars
+// the theme in Lydian, as four stars over the violet night
 const STAR_THEME = ["D5", "A5", "G#5", "E5"];
+// the chord of the touch: D major with a ninth, warm and open
+const TOUCH = chord("Dmaj9");
 
 // a soft mallet on a tuned bar: the voice of the words
 const WORD: ModalSpec = { ratios: [1, 2.0, 3.99], amps: [1, 0.16, 0.05], decays: [0.42, 0.14, 0.05], strike: 0.07, strikeCut: 1500 };
@@ -101,7 +142,7 @@ const letters = (w: string) => { let s = 0; for (let i = 0; i < w.length; i++) s
 
 export class Home extends Movement {
   readonly id = "home";
-  bpm = 60;
+  bpm = 60 / 0.7; // 85.7: a jump of 1.4 seconds is exactly two beats
   div = 4;
   beats = 4;
   protected bright = 1300;
@@ -143,7 +184,24 @@ export class Home extends Movement {
   private tapeGain!: GainNode;
   private direct!: GainNode;
   private jumpUntil = 0;
+  private gestureUntil = 0;
+  private lastP = 0;
   private stopCurve = new Float32Array(24);
+  // the ending
+  private end: { wind: GainNode; sand: GainNode; sing: GainNode; helmet: GainNode; breath: Breath; air: Breath; steps: GainNode; motif: GainNode } | null = null;
+  private scene = "";
+  private fired = new Set<string>();
+  private endP = 0;
+  private endT = 0;
+  private endDuck = 0;
+  private stepMark = 0.12;
+  private stepCount = 0;
+  private stepSide = 1;
+  private touch: GainNode | null = null;
+  private shimmer = 0;
+  private world: Pad | null = null;
+  private glassS!: Sampler;
+  private igniteLow!: BiquadFilterNode;
 
   protected room(): RoomSpec {
     return { rt60: 3.2, length: 3.2, predelay: 0.03, early: 6, earlyLevel: 0.3, hi: 5200, lo: 1100, damp: 0.8, lowCut: 80, bloom: 0.05, width: 1 };
@@ -164,9 +222,7 @@ export class Home extends Movement {
     this.drone = new Mono(this, L("drone", 0.25), { wave: this.st.wave("organ"), cutoff: 700, level: 0.08, sub: 0.25, lo: 30, hi: 45 });
     this.drone.swell(nm("D2"), t, 1, 3);
     this.bass = new Mono(this, L("bass", 0.15), { wave: this.st.wave("warm"), cutoff: 900, level: 0.2, sub: 0.3, lo: 38, hi: 52 });
-    this.pads.push(new Pad(this, L("pad", 0, this.bed), {
-      wave: this.st.wave("choir"), voices: this.phone ? 3 : 5, lo: 50, hi: 74, detune: 8, cutoff: 1800, level: 0.17, mode: "swap", xfade: 2.8, lfo: 0.045,
-    }));
+    L("pad", 0, this.bed);
     // stars streaming past: chord tones up high, louder the faster you go
     this.vchoir = new Pad(this, this.air, {
       wave: this.st.wave("air"), voices: this.phone ? 2 : 3, lo: 72, hi: 86, detune: 7, cutoff: 4000, level: 0, mode: "glide", glide: 1.5,
@@ -174,8 +230,12 @@ export class Home extends Movement {
     this.pads.push(this.vchoir);
 
     L("heart", 0.2, this.point(0, -0.6, -0.6, 0.2));
-    L("tally", 0, this.point(0.9, 0.1, -1.1, 0.4));
-    L("hands", 0, this.point(-0.9, -0.3, -1.2, 0.35));
+    // proof: glass pulses that bounce left and right as they count
+    L("tally", 0.3, this.point(-1.1, 0.25, -0.9, 0.4));
+    L("tallyR", 0.3, this.point(1.1, 0.25, -0.9, 0.4));
+    // projects: two machines interlocking, one each side
+    L("hands", 0, this.point(-1.0, -0.3, -1.1, 0.3));
+    L("handsR", 0, this.point(1.0, -0.2, -1.1, 0.3));
     L("theme", 0, this.point(-0.3, 0.05, -1.1, 0.45));
     L("strings", 0, this.point(-1.0, -0.1, -1.3, 0.5));
     L("toll", 0, this.point(2.2, 0.6, 3.8, 0.9));
@@ -188,6 +248,7 @@ export class Home extends Movement {
     this.toll = new Sampler(this, (sr, f) => bell(sr, f, 6, BELLS.toll, r), 2, 2);
     this.star = new Sampler(this, (sr, f) => bell(sr, f, 3.0, BELLS.star, r), 16, 8);
     this.wordS = new Sampler(this, (sr, f) => modal(sr, f, 0.7, WORD, r), 20, 12);
+    this.glassS = new Sampler(this, (sr, f) => bell(sr, f, 1.1, BELLS.glass, r), 16, 10);
     this.tap = new Sampler(this, (sr, f) => modal(sr, f, 0.22, MODES.key, r), 12, 5);
     this.grains = this.star;
 
@@ -238,6 +299,33 @@ export class Home extends Movement {
     // the sub drop plays outside the tape, so it carries through the silence
     this.direct = this.gain(1, this.st.bus);
 
+    // launch: ignition, a low rumble that opens as the fifth rises
+    {
+      const src = this.src(ac.createBufferSource());
+      src.buffer = this.st.noise;
+      src.loop = true;
+      this.igniteLow = this.own(ac.createBiquadFilter());
+      this.igniteLow.type = "lowpass";
+      this.igniteLow.frequency.value = 160;
+      this.igniteLow.Q.value = 1.1;
+      kr(this.igniteLow.frequency);
+      src.connect(this.igniteLow).connect(this.gain(dbg(-23), L("ignite", 0.25)));
+      src.start(t, 1.3);
+    }
+    // writing: the air of paper, very low
+    {
+      const src = this.src(ac.createBufferSource());
+      src.buffer = this.st.noise;
+      src.loop = true;
+      const band = this.own(ac.createBiquadFilter());
+      band.type = "bandpass";
+      band.frequency.value = 1600;
+      band.Q.value = 0.6;
+      src.connect(band).connect(this.gain(dbg(-44), L("paper", 0.6, this.air)));
+      src.start(t, 3.1);
+    }
+    this.setWorld(0, t);
+
     this.mix(0, t);
     this.pluckS.warm([nm("D4"), nm("A4"), nm("G4"), nm("E4"), nm("F#4")]);
   }
@@ -245,31 +333,37 @@ export class Home extends Movement {
   // ---- the flight ---------------------------------------------------------
   /** A chapter's world holds, then crosses to the next during the jump (the last fifth). */
   private at(arr: number[], p: number): number {
-    const i = Math.max(0, Math.min(7, Math.floor(p)));
+    const n = arr.length - 1;
+    const i = Math.max(0, Math.min(n, Math.floor(p)));
     const x = Math.max(0, Math.min(1, (p - i - 0.8) / 0.2));
     const f = x * x * (3 - 2 * x);
-    return arr[i] * (1 - f) + arr[Math.min(7, i + 1)] * f;
+    return arr[i] * (1 - f) + arr[Math.min(n, i + 1)] * f;
   }
-  private mix(p: number, t: number) {
+  private mix(p: number, t: number, tau = 0.45) {
     this.lastMix = t;
+    // the ending's scene: the flight's layers step back
+    const duck = 1 - 0.65 * this.endDuck;
     for (const k in MIX) {
-      const v = this.at(MIX[k], p);
+      const v = this.at(MIX[k], p) * duck;
       this.cur[k] = v;
       const g = k === "stars" ? null : this.buses[k];
-      g?.gain.setTargetAtTime(v, t, 0.45);
+      g?.gain.setTargetAtTime(v, t, tau);
     }
-    for (const g of this.skyBuses) g.gain.setTargetAtTime(this.cur.stars, t, 0.45);
+    const sky = Math.max(this.cur.stars, this.touch ? 0.9 : 0);
+    for (const g of this.skyBuses) g.gain.setTargetAtTime(sky, t, tau);
     // the far theme of the first chapter lives only at the very start
-    this.buses.far.gain.setTargetAtTime(this.cur.theme * Math.max(0, 1 - p * 1.5), t, 0.45);
+    this.buses.far.gain.setTargetAtTime(this.cur.theme * Math.max(0, 1 - p * 1.5), t, tau);
     this.bright = this.at(BRIGHT, p);
-    this.brighten(t, 0.3);
-    this.verbOut.gain.setTargetAtTime(this.at(WET, p), t, 0.6);
+    this.brighten(t, Math.min(0.3, tau));
+    this.verbOut.gain.setTargetAtTime(this.at(WET, p), t, Math.max(tau, 0.2));
   }
 
   journey(p: number, v: number) {
     if (!this.out || this.disposed) return;
     const t = this.ac.currentTime;
-    if (t - this.lastMix > 0.09) this.mix(p, t);
+    this.lastP = p;
+    // during a jump the mix is already set for the arrival
+    if (t > this.jumpUntil && t - this.lastMix > 0.09) this.mix(p, t);
     const vi = 1 - Math.exp(-Math.abs(v) / 0.7);
     this.vel = this.vel * 0.75 + vi * 0.25;
     this.vchoir.out.gain.setTargetAtTime(this.vel * 0.07, t, 0.25);
@@ -280,9 +374,35 @@ export class Home extends Movement {
     this.direct?.gain.setTargetAtTime(0, t, 0.3);
   }
 
+  /** A world's bed arrives at a time; the one before fades out under it. */
+  private setWorld(i: number, at: number) {
+    const b = BEDS[i];
+    const old = this.world;
+    const p = new Pad(this, this.buses.pad, {
+      ...b,
+      wave: this.st.wave(b.wave),
+      voices: this.phone ? Math.min(3, b.voices) : b.voices,
+      startAt: at,
+    });
+    if (old) {
+      this.pads = this.pads.filter((x) => x !== old);
+      old.destroy(at, 1.2);
+    }
+    this.pads.unshift(p);
+    this.world = p;
+    if (i === 0) {
+      // ignition: the open fifth starts an octave down and rises; the rumble opens with it
+      p.set([nm("D1"), nm("A1")], at);
+      this.igniteLow.frequency.setValueAtTime(110, at);
+      this.igniteLow.frequency.setTargetAtTime(420, at + 0.2, 1.0);
+      this.igniteLow.frequency.setTargetAtTime(170, at + 3.5, 1.5);
+    }
+  }
+
   chapter(i: number) {
-    if (!this.out || this.disposed || i === this.ch || i < 0 || i > 7) return;
+    if (!this.out || this.disposed || i === this.ch || i < 0 || i > LAST) return;
     this.ch = i;
+    this.setWorld(i, Math.max(this.nextT, this.ac.currentTime + 0.02));
     this.sections = [this.section(i)];
     this.sec = 0;
     this.secBar = -1;
@@ -302,7 +422,12 @@ export class Home extends Movement {
 
   protected onBar(t: number) {
     this.chBar++;
-    if (this.cur.breath > 0.02) this.breath.breathe(t, 1.6, 2.6, 0.5);
+    if (this.cur.breath > 0.02) this.breath.breathe(t, 1.1, 1.6, 0.28);
+    // inside the helmet: faster on the walk, slower kneeling, held at the touch
+    const e = this.end;
+    if (e && (this.scene === "exit" || (this.scene === "helmet" && !this.fired.has("seal")))) {
+      e.breath.breathe(t, 1.0, 1.7, this.scene === "exit" ? 0.6 : 0.45);
+    }
     const id = CHAPTERS[this.ch].id;
     if (id === "film" && this.chBar % 4 === 0 && this.cur.toll > 0.05) this.toll.play(nm("D4"), this.hum(t, 20), dbg(-17), this.buses.toll);
     if (id === "mind" && this.chBar % 4 === 1 && this.cur.stars > 0.1) {
@@ -331,20 +456,20 @@ export class Home extends Movement {
       if (pos === 0) this.bass.hit(this.bassM, t, 0.6, 1.2, 0.12);
       else if (pos === 8) this.bass.hit(this.bassM + 7, t, 0.3, 0.6, 0.08);
     }
-    // counting: one more pluck each bar
+    // proof: glass pulses count up, one more each bar, bouncing left and right
     if (c.tally > 0.02 && pos % 2 === 0) {
       const count = (Math.max(0, this.chBar) % 8) + 1;
       const j = pos / 2;
       if (j < count) {
-        const tones = tonesIn(this.chord, 62, 86);
-        if (tones.length) this.pluckS.play(tones[j % tones.length], this.hum(t, 6), dbg(-15) * (j === 0 ? 1 : 0.7), this.buses.tally);
+        const tones = tonesIn(this.chord, 74, 91);
+        if (tones.length) this.glassS.play(tones[j % tones.length], t, dbg(-17) * (j === 0 ? 1 : 0.72), j % 2 ? this.buses.tallyR : this.buses.tally, { dur: 0.3 });
       }
     }
-    // hands: wood and stone
+    // projects: interlocking machines, three against four, one each side
     if (c.hands > 0.02) {
-      if (pos === 0 || pos === 6 || pos === 10) this.frame.play(pos === 0 ? nm("D3") : nm("A2"), this.hum(t), dbg(-14) * (0.85 + 0.15 * r()), this.buses.hands);
-      if (pos === 4 || pos === 12) this.stone.play(nm("A5"), this.hum(t), dbg(-21), this.buses.hands);
-      else if ((pos === 3 || pos === 9 || pos === 14) && r() < 0.4) this.stone.play(nm("E5"), this.hum(t, 12), dbg(-29), this.buses.hands);
+      if (pos % 3 === 0) this.frame.play(pos === 0 ? nm("D3") : nm("A2"), this.hum(t, 3), dbg(-15) * (pos === 0 ? 1 : 0.8), this.buses.hands);
+      if (pos % 4 === 2) this.stone.play(nm("A5"), this.hum(t, 3), dbg(-21), this.buses.handsR);
+      if (pos % 4 === 1) this.tap.play(nm("E6"), t, dbg(-31) * (0.8 + 0.2 * r()), this.buses.handsR);
     }
     // the quartet: one line passed around four corners
     if (c.quartet > 0.02 && pos % 2 === 0) {
@@ -364,6 +489,9 @@ export class Home extends Movement {
         if (b !== bar || s !== pos) continue;
         if (id === "launch") this.pluckS.play(nm(n), this.hum(t, 15), dbg(-16) * v, this.buses.far);
         else this.keys.play(nm(n), this.hum(t, 14), dbg(-13) * v, this.buses.theme);
+        if (id === "contact" && c.strings > 0.02) {
+          lead(this, this.buses.strings, nm(n) - 12, t, this.stepDur * 5, dbg(-21) * v, { wave: this.st.wave("bowed"), attack: 0.35, release: 1.2, cutoff: 1300, vib: 7, vibRate: 4.8, detune: 7 });
+        }
       }
       // the left hand under the theme
       if (id !== "launch" && pos === 0) this.keys.play(this.bassM + 12, this.hum(t, 10), dbg(-23), this.buses.theme);
@@ -381,31 +509,60 @@ export class Home extends Movement {
       const tones = tonesIn(this.chord, 74, 91);
       if (tones.length) this.starAt(this.pick(tones), this.hum(t, 100), dbg(-18) * (0.5 + 0.5 * r()));
     }
+    // the living shimmer after the touch, settling into a slow glow that stays
+    if (this.shimmer > 0.01 && r() < this.shimmer) {
+      this.starAt(this.pick(tonesIn(TOUCH, 79, 93)), this.hum(t, 40), dbg(-26) * (0.6 + 0.4 * r()));
+      this.shimmer = Math.max(0.1, this.shimmer * 0.985);
+    }
+  }
+
+  // ---- touch, on the grid ----------------------------------------------------
+  /** The next point on a fine grid (a sixth of a beat) of the movement's clock. */
+  private grid(t: number): number {
+    const q = 60 / this.bpm / 6;
+    const ref = this.nextT;
+    return ref + Math.ceil((t - ref) / q - 1e-6) * q;
+  }
+  protected onClick(t: number, x: number, y: number) {
+    super.onClick(this.grid(t), x, y);
+  }
+  protected onHover(t: number, x: number, y: number) {
+    super.onHover(this.grid(t), x, y);
   }
 
   // ---- the jump ------------------------------------------------------------
-  jump(from: number, to: number, dir: number, speed: number) {
-    if (!this.out || this.disposed || this.released || to < 0 || to > 7) return;
+  /**
+   * The jump between worlds lasts exactly as long as the page's glide. The
+   * swell peaks halfway, then a tape stop and a sub drop, a moment of muffled
+   * silence, and the new world lands on the downbeat of arrival.
+   */
+  jump(from: number, to: number, dir: number, _speed: number, duration = 1.4) {
+    if (!this.out || this.disposed || this.released || to < 0 || to > LAST) return;
     const ac = this.ac;
     const now = ac.currentTime;
-    // the new world's harmony starts now; the gesture carries the ear there
-    this.chapter(to);
-    if (now < this.jumpUntil) return;
-    const v = Math.abs(speed);
-    const s = 1 - Math.exp(-v / 1.2); // how hard the visitor is scrolling
-    const total = Math.max(0.7, Math.min(2.0, 0.2 / Math.max(0.1, v)));
+    const D = Math.max(0.6, Math.min(3, duration || 1.4));
+    const t0 = now + 0.01;
+    const P = t0 + D / 2; // the peak
+    const A = t0 + D; // arrival, a downbeat
     const fwd = dir >= 0;
-    const t0 = now + 0.03;
-    const R = total * 0.6;
-    const D = fwd ? Math.min(0.42, total * 0.25) : 0;
-    const S = 0.09 + 0.08 * (1 - s);
-    const tA = t0 + R; // the top of the swell
-    const A = tA + D + S; // arrival
-    this.jumpUntil = A + 0.05;
+    if (from >= 6 && to < 6) this.leaveEnding(now);
+    else if (from === LAST && to < LAST && this.touch) this.letGo(now);
+    // the new world begins on the bar that starts at arrival
+    this.nextT = A;
+    this.chapter(to);
+    this.nextT = A;
+    this.jumpUntil = A + 0.02;
+    this.mix(to, A - 0.02, 0.05);
     const c = CHAPTERS[to].prog[0];
-    const lvl = dbg(-22) * (0.55 + 0.45 * s);
+    // a jump that starts inside another only moves the arrival
+    if (now < this.gestureUntil) {
+      this.land(c, A, 0.5, true);
+      return;
+    }
+    this.gestureUntil = A;
+    const lvl = dbg(-22);
 
-    // the swell: the new chord's top notes, sliding up into tune (or down, in reverse)
+    // the swell: the new chord's top notes, sliding into tune at the peak (down, in reverse)
     const f = ac.createBiquadFilter();
     f.type = "lowpass";
     f.Q.value = 0.8;
@@ -414,17 +571,16 @@ export class Home extends Movement {
     f.connect(g).connect(this.dry);
     g.gain.setValueAtTime(0, t0);
     if (fwd) {
-      g.gain.setTargetAtTime(lvl, t0, R / 2.2);
+      g.gain.setTargetAtTime(lvl, t0, D / 7);
       f.frequency.setValueAtTime(500, t0);
-      f.frequency.exponentialRampToValueAtTime(3600, tA);
+      f.frequency.exponentialRampToValueAtTime(3600, P);
     } else {
-      g.gain.linearRampToValueAtTime(lvl, t0 + 0.1);
-      g.gain.setTargetAtTime(0, t0 + 0.12, R / 2.5);
+      g.gain.linearRampToValueAtTime(lvl, t0 + 0.08);
+      g.gain.setTargetAtTime(0, t0 + 0.1, D / 6);
       f.frequency.setValueAtTime(3600, t0);
-      f.frequency.exponentialRampToValueAtTime(500, tA);
+      f.frequency.exponentialRampToValueAtTime(500, P);
     }
-    g.gain.setTargetAtTime(0, tA + D * 0.6, 0.03);
-    const end = A + 0.1;
+    g.gain.setTargetAtTime(0, P + D * 0.18, 0.03);
     const oscs: OscillatorNode[] = [];
     for (const m of tonesIn(c, 62, 81).slice(-3)) {
       for (const cents of this.phone ? [0] : [-7, 7]) {
@@ -433,12 +589,12 @@ export class Home extends Movement {
         o.setPeriodicWave(this.st.wave("bowed"));
         o.detune.value = cents;
         o.frequency.setValueAtTime(mtof(fwd ? m - 7 : m + 7), t0);
-        o.frequency.exponentialRampToValueAtTime(mtof(m), tA);
+        o.frequency.exponentialRampToValueAtTime(mtof(m), P);
         const og = ac.createGain();
         og.gain.value = this.phone ? 0.5 : 0.28;
         o.connect(og).connect(f);
         o.start(t0);
-        o.stop(end);
+        o.stop(A);
         oscs.push(o);
         o.onended = () => {
           o.disconnect();
@@ -449,34 +605,458 @@ export class Home extends Movement {
     if (oscs.length) oscs[0].addEventListener("ended", () => { f.disconnect(); g.disconnect(); });
 
     const tg = this.tapeGain.gain, dt = this.tape.delayTime, lp = this.tapeLow.frequency;
+    const stop = D * 0.28; // the tape stop, after the peak
+    const hush = P + stop; // the muffled silence, until arrival
     if (fwd) {
       // tape stop: the read head falls behind, so the pitch sinks to nothing
-      for (let k = 0; k < 24; k++) this.stopCurve[k] = 0.5 * D * (k / 23) * (k / 23);
+      for (let k = 0; k < 24; k++) this.stopCurve[k] = 0.5 * stop * (k / 23) * (k / 23);
       dt.cancelScheduledValues(now);
-      dt.setValueAtTime(0, tA - 0.002);
-      dt.setValueCurveAtTime(this.stopCurve, tA, D);
-      lp.setTargetAtTime(700, tA, D / 2);
-      tg.setTargetAtTime(0.0003, tA + D - 0.07, 0.02);
-      thud(this, this.direct, tA, 82, 30, 0.9, dbg(-15) * (0.5 + 0.5 * s));
+      dt.setValueAtTime(0, P - 0.002);
+      dt.setValueCurveAtTime(this.stopCurve, P, stop);
+      lp.setTargetAtTime(700, P, stop / 2);
+      tg.setTargetAtTime(0.0003, hush - 0.06, 0.02);
+      thud(this, this.direct, P, 82, 30, D * 0.6, dbg(-15));
       // back to normal while nothing is heard
-      dt.setValueAtTime(0, tA + D + 0.05);
+      dt.setValueAtTime(0, hush + 0.04);
     } else {
-      // rewinding: the room muffles, then a short silence and a rising sub
-      lp.setTargetAtTime(700, t0, R / 2);
-      tg.setTargetAtTime(0.0003, tA - 0.05, 0.02);
-      thud(this, this.direct, A - 0.3, 34, 74, 0.3, dbg(-17) * (0.5 + 0.5 * s));
+      // the ship turns around: its hum swings across the field, bending as it passes
+      this.turn(t0, P + D * 0.1);
+      // rewinding: the room muffles, a short silence, then a sub that rises into arrival
+      lp.setTargetAtTime(700, t0, D / 5);
+      tg.setTargetAtTime(0.0003, hush - 0.06, 0.02);
+      thud(this, this.direct, A - 0.3, 34, 74, 0.3, dbg(-17));
     }
     lp.setValueAtTime(18000, A - 0.015);
-    tg.setTargetAtTime(1, A, 0.012);
+    tg.setTargetAtTime(1, A, 0.01);
+    this.land(c, A, fwd ? 1 : 0.6, fwd);
+    if (fwd && to === 5) this.descend(A);
+  }
 
-    // arrival: the new world's chord, struck
-    const hit = dbg(-15) * (0.55 + 0.45 * s) * (fwd ? 1 : 0.6);
+  /**
+   * The landing: down through the atmosphere under a red eclipse. A roar of
+   * air rises and darkens, a low burn swells under it, and eight beats after
+   * arrival the lander touches down.
+   */
+  private descend(A: number) {
+    const ac = this.ac;
+    const down = A + 8 * 0.7;
+    const src = ac.createBufferSource();
+    src.buffer = this.st.noise;
+    src.loop = true;
+    const lp = ac.createBiquadFilter();
+    lp.type = "lowpass";
+    lp.Q.value = 0.9;
+    kr(lp.frequency);
+    lp.frequency.setValueAtTime(260, A);
+    lp.frequency.exponentialRampToValueAtTime(1100, A + 3.2);
+    lp.frequency.exponentialRampToValueAtTime(240, down);
+    const g = ac.createGain();
+    g.gain.setValueAtTime(0, A);
+    g.gain.setTargetAtTime(dbg(-22), A, 1.1);
+    g.gain.setTargetAtTime(0, down - 0.05, 0.06);
+    src.connect(lp).connect(g).connect(this.dry);
+    g.connect(this.gain(0.3, this.verbIn));
+    src.start(A, 0.9);
+    src.stop(down + 0.6);
+    src.onended = () => { src.disconnect(); lp.disconnect(); g.disconnect(); };
+    // the retro burn: a low open fifth that swells in the last seconds
+    lead(this, this.dry, nm("D2"), A + 2.2, down - A - 2.3, dbg(-24), { wave: this.st.wave("bowed"), attack: 2.2, release: 0.15, cutoff: 600, detune: 12 });
+    lead(this, this.dry, nm("A2"), A + 2.6, down - A - 2.7, dbg(-27), { wave: this.st.wave("bowed"), attack: 2.0, release: 0.15, cutoff: 600, detune: 12 });
+    // touchdown: weight, dust, and the strings take over
+    thud(this, this.direct, down, 78, 32, 1.0, dbg(-15));
+    this.frame.play(nm("D2"), down, dbg(-17), this.dry);
+    this.dust(down);
+  }
+
+  /** Dust settling: a soft, darkening breath of noise. */
+  private dust(t: number) {
+    const ac = this.ac;
+    const src = ac.createBufferSource();
+    src.buffer = this.st.noise;
+    const lp = ac.createBiquadFilter();
+    lp.type = "lowpass";
+    kr(lp.frequency);
+    lp.frequency.setValueAtTime(1600, t);
+    lp.frequency.exponentialRampToValueAtTime(300, t + 1.6);
+    const g = ac.createGain();
+    g.gain.setValueAtTime(0, t);
+    g.gain.linearRampToValueAtTime(dbg(-27), t + 0.03);
+    g.gain.setTargetAtTime(0, t + 0.1, 0.5);
+    src.connect(lp).connect(g).connect(this.dry);
+    src.start(t, 2.2);
+    src.stop(t + 2.4);
+    src.onended = () => { src.disconnect(); lp.disconnect(); g.disconnect(); };
+  }
+
+  /** A doppler swing from right to left: pitch above as it comes, below as it goes. */
+  private turn(t0: number, t1: number) {
+    const ac = this.ac;
+    const mid = (t0 + t1) / 2;
+    const pan = ac.createStereoPanner();
+    kr(pan.pan);
+    pan.pan.setValueAtTime(0.95, t0);
+    pan.pan.linearRampToValueAtTime(-0.95, t1);
+    const lp = ac.createBiquadFilter();
+    lp.type = "lowpass";
+    kr(lp.frequency);
+    lp.frequency.setValueAtTime(500, t0);
+    lp.frequency.exponentialRampToValueAtTime(2600, mid);
+    lp.frequency.exponentialRampToValueAtTime(450, t1);
+    const g = ac.createGain();
+    g.gain.setValueAtTime(0, t0);
+    g.gain.linearRampToValueAtTime(dbg(-20), mid);
+    g.gain.linearRampToValueAtTime(0, t1 + 0.05);
+    lp.connect(g).connect(pan).connect(this.dry);
+    const nodes: AudioNode[] = [pan, lp, g];
+    for (const [m, lv] of [[nm("D3"), 0.5], [nm("A3"), 0.35], [nm("D4"), 0.2]] as [number, number][]) {
+      const o = ac.createOscillator();
+      kr(o.frequency, o.detune);
+      o.setPeriodicWave(this.st.wave("organ"));
+      o.frequency.value = mtof(m);
+      o.detune.setValueAtTime(70, t0);
+      o.detune.linearRampToValueAtTime(-70, t1);
+      const og = ac.createGain();
+      og.gain.value = lv;
+      o.connect(og).connect(lp);
+      o.start(t0);
+      o.stop(t1 + 0.1);
+      nodes.push(o, og);
+      if (m === nm("D3")) o.onended = () => nodes.forEach((n) => n.disconnect());
+    }
+    // the air it pushes, moving with it
+    const src = ac.createBufferSource();
+    src.buffer = this.st.noise;
+    const bp = ac.createBiquadFilter();
+    bp.type = "bandpass";
+    bp.frequency.value = 900;
+    bp.Q.value = 1.2;
+    const ng = ac.createGain();
+    ng.gain.value = 0.35;
+    src.connect(bp).connect(ng).connect(lp);
+    src.start(t0, this.rng() * 3);
+    src.stop(t1 + 0.1);
+    src.onended = () => {
+      src.disconnect();
+      bp.disconnect();
+      ng.disconnect();
+    };
+  }
+
+  /** Arrival: the new world's chord, struck on the downbeat. */
+  private land(c: Chord, A: number, amt: number, drum: boolean) {
+    const hit = dbg(-15) * amt;
     tonesIn(c, 67, 86).slice(0, 3).forEach((m, i) => this.star.play(m, A + i * 0.012, hit * (i ? 0.7 : 1), this.dry));
-    if (fwd) this.frame.play(nm("D3"), A, hit, this.dry);
+    if (drum) this.frame.play(nm("D3"), A, hit, this.dry);
     thud(this, this.dry, A, 120, 55, 0.35, hit * 0.8);
-    // a reversed bell sucks the ear into the hit
+    // a reversed bell pulls the ear into the hit
     const pull = tonesIn(c, 72, 86)[0];
-    if (pull !== undefined) this.star.play(pull, A, dbg(-25) * (0.5 + 0.5 * s), this.direct, { rev: true });
+    if (pull !== undefined) this.star.play(pull, A, dbg(-25) * amt, this.direct, { rev: true });
+  }
+
+  // ---- the planet: three scenes in real time --------------------------------
+  private buildEnding(t: number) {
+    const ac = this.ac;
+    // wind: two loops of noise, each in its own slowly moving band, with gusts
+    const wind = this.gain(0, this.dry);
+    wind.connect(this.gain(0.35, this.verbIn));
+    const sand = this.gain(0, this.dry);
+    // the alien part: the same air through two narrow bands tuned to F sharp
+    // and C sharp, so the wind sings in the key
+    const sing = this.gain(0, this.dry);
+    sing.connect(this.gain(0.6, this.verbIn));
+    for (const side of [-1, 1]) {
+      const src = this.src(ac.createBufferSource());
+      src.buffer = this.st.noise;
+      src.loop = true;
+      const band = this.own(ac.createBiquadFilter());
+      band.type = "bandpass";
+      band.frequency.value = side < 0 ? 420 : 560;
+      band.Q.value = 0.7;
+      kr(band.frequency);
+      const sweep = this.src(ac.createOscillator());
+      sweep.frequency.value = side < 0 ? 0.07 : 0.051;
+      sweep.connect(this.gain(side < 0 ? 170 : 230, band.frequency));
+      const gust = this.gain(0.7);
+      const gusts = this.src(ac.createOscillator());
+      gusts.frequency.value = side < 0 ? 0.13 : 0.09;
+      gusts.connect(this.gain(0.3, gust.gain));
+      const pan = this.own(ac.createStereoPanner());
+      pan.pan.value = side * 0.75;
+      src.connect(band).connect(gust).connect(pan).connect(wind);
+      const whistle = this.own(ac.createBiquadFilter());
+      whistle.type = "bandpass";
+      whistle.frequency.value = side < 0 ? mtof(nm("F#5")) : mtof(nm("C#6"));
+      whistle.Q.value = 9;
+      kr(whistle.frequency);
+      sweep.connect(this.gain(side < 0 ? 18 : 26, whistle.frequency));
+      const wp = this.own(ac.createStereoPanner());
+      wp.pan.value = -side * 0.6;
+      src.connect(whistle).connect(wp).connect(sing);
+      if (side > 0) {
+        // sand: a thin high band riding the same gusts
+        const hi = this.own(ac.createBiquadFilter());
+        hi.type = "bandpass";
+        hi.frequency.value = 2600;
+        hi.Q.value = 0.9;
+        const sg = this.gain(0.7, sand);
+        gusts.connect(this.gain(0.4, sg.gain));
+        src.connect(hi).connect(sg);
+      }
+      sweep.start(t);
+      gusts.start(t);
+      src.start(t, side > 0 ? 2.7 : 0);
+    }
+    // a breath inside a helmet: close, muffled, one small hard resonance
+    const helmet = this.gain(0);
+    const lp = this.own(ac.createBiquadFilter());
+    lp.type = "lowpass";
+    lp.frequency.value = 1100;
+    lp.Q.value = 0.6;
+    const res = this.own(ac.createBiquadFilter());
+    res.type = "peaking";
+    res.frequency.value = 1350;
+    res.Q.value = 4;
+    res.gain.value = 5;
+    helmet.connect(lp).connect(res).connect(this.dry);
+    res.connect(this.gain(0.06, this.verbIn));
+    const breath = new Breath(this, helmet, 480);
+    // the first breath of open air plays outside the muffle
+    const open = this.gain(0.9, this.direct);
+    const air = new Breath(this, open, 620);
+    const steps = this.gain(1, this.dry);
+    steps.connect(this.gain(0.25, this.verbIn));
+    // the theme comes from ahead, where the sapling is
+    const motif = this.gain(1, this.point(0, 0.2, -3.2, 0.7));
+    this.end = { wind, sand, sing, helmet, breath, air, steps, motif };
+  }
+
+  /** A scene on the planet: exit, helmet or touch, with its progress 0..1. */
+  ending(p: number, beat: number, scene?: string) {
+    if (!this.out || this.disposed || this.released) return;
+    const t = this.ac.currentTime;
+    if (!this.end) this.buildEnding(t);
+    p = Math.max(0, Math.min(1, p || 0));
+    beat = Math.max(0, Math.min(3, Math.round(beat || 0)));
+    const sc = scene === "exit" || scene === "helmet" || scene === "touch" ? scene : this.ch === 6 ? "exit" : this.ch === 7 ? "helmet" : "touch";
+    if (sc !== this.scene) this.enterScene(sc, t);
+    const dt = Math.max(0.016, t - this.endT);
+    const pace = Math.min(1, Math.abs(p - this.endP) / dt / 0.12);
+    this.endP = p;
+    this.endT = t;
+    if (sc === "exit") this.exitScene(p, t, pace);
+    else if (sc === "helmet") this.helmetScene(p, beat, t);
+    else this.touchScene(p, beat, t);
+  }
+
+  private once(key: string, when: boolean, f: () => void) {
+    if (when && !this.fired.has(key)) {
+      this.fired.add(key);
+      f();
+    }
+  }
+
+  private enterScene(sc: string, t: number) {
+    const e = this.end!;
+    this.scene = sc;
+    this.fired.clear();
+    this.endP = 0;
+    this.stepMark = 0.12;
+    this.stepCount = 0;
+    if (this.touch && sc !== "touch") this.letGo(t);
+    const set = (g: GainNode, v: number, tau = 0.6) => g.gain.setTargetAtTime(v, t, tau);
+    if (sc === "exit") {
+      // a violet night: alien wind that sings, a helmet still on
+      set(e.wind, dbg(-26));
+      set(e.sing, dbg(-31));
+      set(e.sand, dbg(-42));
+      set(e.helmet, dbg(-18));
+      this.endDuck = 0.3;
+    } else if (sc === "helmet") {
+      // muffled at first, as heard from inside the helmet
+      set(e.wind, dbg(-27));
+      set(e.sing, dbg(-36));
+      set(e.sand, dbg(-42));
+      set(e.helmet, dbg(-17));
+      this.tapeLow.frequency.setTargetAtTime(650, t, 0.12);
+      this.endDuck = 0;
+    } else {
+      // the touch: everything hushes
+      set(e.wind, dbg(-33), 1);
+      set(e.sing, dbg(-40), 1);
+      set(e.sand, 0, 1);
+      set(e.helmet, 0, 0.3);
+      this.tapeLow.frequency.setTargetAtTime(18000, t, 0.2);
+      this.endDuck = 0.75;
+    }
+    this.mix(this.lastP, t, 0.5);
+  }
+
+  private exitScene(p: number, t: number, pace: number) {
+    // down the ramp: a clank of metal on metal
+    this.once("ramp", p >= 0.06, () => {
+      this.stone.play(nm("A2"), t, dbg(-21), this.end!.steps);
+      this.tap.play(nm("E5"), t + 0.03, dbg(-30), this.end!.steps);
+      thud(this, this.end!.steps, t, 70, 40, 0.3, dbg(-21));
+    });
+    // first footsteps, with the suit's servos answering every other step
+    let k = 0;
+    while (p >= this.stepMark && this.stepMark < 0.97 && k < 3) {
+      this.stepMark += 0.075;
+      const at = t + 0.01 + k++ * 0.08;
+      this.footstep(at, 0.6 + 0.4 * pace);
+      if (this.stepCount++ % 2 === 1) this.servo(at + 0.06);
+    }
+    // far ahead, the four notes again, under the galaxy
+    this.once("theme", p >= 0.35, () => {
+      ["D5", "A5", "G5", "E5"].forEach((n, i) => this.keys.play(nm(n), t + 0.2 + i * 0.7, dbg(-23) * (i ? 0.8 : 1), this.end!.motif));
+    });
+  }
+
+  private helmetScene(p: number, beat: number, t: number) {
+    this.once("seal", p >= 0.12 || beat >= 1, () => this.seal(t));
+    // after the seal the world opens, muffled to full and wide
+    if (this.fired.has("seal")) {
+      const x = Math.max(0, Math.min(1, (p - 0.15) / 0.45));
+      this.tapeLow.frequency.setTargetAtTime(650 * Math.pow(18000 / 650, x * x), t, 0.15);
+    }
+    this.once("open", p >= 0.6, () => this.tapeLow.frequency.setTargetAtTime(18000, t, 0.3));
+  }
+
+  /** The helmet seal releases: a hiss of pressure, a click, then open air. */
+  private seal(t: number) {
+    const ac = this.ac;
+    const e = this.end!;
+    const src = ac.createBufferSource();
+    src.buffer = this.st.noise;
+    const hp = ac.createBiquadFilter();
+    hp.type = "bandpass";
+    hp.frequency.value = 2400;
+    hp.Q.value = 0.7;
+    const g = ac.createGain();
+    g.gain.setValueAtTime(0, t);
+    g.gain.linearRampToValueAtTime(dbg(-27), t + 0.015);
+    g.gain.setTargetAtTime(0, t + 0.05, 0.22);
+    src.connect(hp).connect(g).connect(this.direct);
+    src.start(t, 1.1);
+    src.stop(t + 1.4);
+    src.onended = () => { src.disconnect(); hp.disconnect(); g.disconnect(); };
+    this.tap.play(nm("A4"), t, dbg(-26), this.direct);
+    e.helmet.gain.setTargetAtTime(0, t, 0.15);
+    // the first breath of open air: long, slow, close
+    e.air.breathe(t + 0.45, 2.2, 3.2, 0.55);
+    e.sing.gain.setTargetAtTime(dbg(-30), t + 0.5, 1.2);
+  }
+
+  private touchScene(p: number, beat: number, t: number) {
+    // kneeling: sand and cloth, and the line waits on its open note
+    this.once("kneel", p >= 0.04, () => {
+      this.footstep(t, 0.4);
+      thud(this, this.end!.steps, t + 0.12, 70, 45, 0.25, dbg(-20));
+      this.keys.play(nm("F#5"), t + 0.5, dbg(-24), this.end!.motif);
+    });
+    // the hand meets the sapling
+    this.once("touch", beat >= 2 || p >= 0.45, () => this.touchPlant(t));
+  }
+
+  /** The suit's servos: a short mechanical whirr that rises and settles. */
+  private servo(t: number) {
+    const ac = this.ac;
+    const o = ac.createOscillator();
+    kr(o.frequency);
+    o.setPeriodicWave(this.st.wave("warm"));
+    const f0 = 240 + 60 * this.rng();
+    o.frequency.setValueAtTime(f0, t);
+    o.frequency.exponentialRampToValueAtTime(f0 * 2.1, t + 0.18);
+    o.frequency.exponentialRampToValueAtTime(f0 * 1.6, t + 0.3);
+    const bp = ac.createBiquadFilter();
+    bp.type = "bandpass";
+    bp.frequency.value = 1000;
+    bp.Q.value = 2.2;
+    const g = ac.createGain();
+    g.gain.setValueAtTime(0, t);
+    g.gain.linearRampToValueAtTime(dbg(-33), t + 0.03);
+    g.gain.setTargetAtTime(0, t + 0.22, 0.05);
+    const pan = ac.createStereoPanner();
+    pan.pan.value = (this.rng() - 0.5) * 0.6;
+    o.connect(bp).connect(g).connect(pan).connect(this.end!.steps);
+    o.start(t);
+    o.stop(t + 0.5);
+    o.onended = () => { o.disconnect(); bp.disconnect(); g.disconnect(); pan.disconnect(); };
+  }
+
+  private footstep(t: number, pace: number) {
+    const e = this.end;
+    if (!e) return;
+    const ac = this.ac;
+    this.stepSide = -this.stepSide;
+    const lvl = dbg(-21) * (0.5 + 0.5 * pace) * (0.85 + 0.15 * this.rng());
+    // the crunch: a short burst of sand
+    const src = ac.createBufferSource();
+    src.buffer = this.st.noise;
+    const bp = ac.createBiquadFilter();
+    bp.type = "bandpass";
+    bp.frequency.value = 1400 + 600 * this.rng();
+    bp.Q.value = 1.1;
+    const g = ac.createGain();
+    g.gain.setValueAtTime(0, t);
+    g.gain.linearRampToValueAtTime(lvl, t + 0.012);
+    g.gain.setTargetAtTime(0, t + 0.02, 0.035);
+    const pan = ac.createStereoPanner();
+    pan.pan.value = this.stepSide * 0.18;
+    src.connect(bp).connect(g).connect(pan).connect(e.steps);
+    src.start(t, this.rng() * 4);
+    src.stop(t + 0.25);
+    src.onended = () => {
+      src.disconnect();
+      bp.disconnect();
+      g.disconnect();
+      pan.disconnect();
+    };
+    // and the weight: a soft low press
+    thud(this, e.steps, t + 0.008, 90, 55, 0.09, lvl * 0.9);
+  }
+
+  private touchPlant(t: number) {
+    this.touch?.gain.setTargetAtTime(0, t, 0.3);
+    const g = this.gain(0, this.dry);
+    g.connect(this.gain(0.8, this.verbIn));
+    g.gain.setValueAtTime(0, t);
+    g.gain.setTargetAtTime(1, t, 0.02);
+    this.touch = g;
+    // the whole room moves to the chord and stays there
+    this.holdHarmony = true;
+    this.harmony(TOUCH, t);
+    // struck, rolled from the bottom
+    ns("D2 A2 F#3 C#4 E4 A4").forEach((m, i) => this.keys.play(m, t + i * 0.028, dbg(i < 2 ? -21 : -23), g));
+    // warm strings swell under it and hold
+    ([[nm("D3"), -27], [nm("A3"), -29], [nm("F#4"), -30]] as [number, number][]).forEach(([m, lv]) =>
+      lead(this, g, m, t + 0.05, 9, dbg(lv), { wave: this.st.wave("bowed"), attack: 1.4, release: 4, cutoff: 1500, vib: 5, vibRate: 4.4, detune: 6 }),
+    );
+    // a light opens above
+    ns("A5 D6 F#6").forEach((m, i) => this.starAt(m, t + 0.18 + i * 0.09, dbg(-24) * (i === 2 ? 0.8 : 1)));
+    // and the theme, at last, comes to rest: F sharp falls to D
+    this.keys.play(nm("F#5"), t + 1.4, dbg(-23), g);
+    this.keys.play(nm("D5"), t + 2.1, dbg(-22), g);
+    this.shimmer = 0.45;
+    this.mix(this.lastP, t, 0.3);
+  }
+
+  private letGo(t: number) {
+    this.touch?.gain.setTargetAtTime(0, t, 0.6);
+    this.touch = null;
+    this.shimmer = 0;
+    this.holdHarmony = false;
+    this.harmony(CHAPTERS[this.ch].prog[0], t);
+  }
+
+  private leaveEnding(t: number) {
+    const e = this.end;
+    if (this.touch) this.letGo(t);
+    this.scene = "";
+    this.endP = 0;
+    this.endDuck = 0;
+    if (!e) return;
+    for (const g of [e.wind, e.sand, e.sing, e.helmet]) g.gain.setTargetAtTime(0, t, 0.3);
   }
 
   // ---- the words ----------------------------------------------------------

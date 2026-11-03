@@ -12,26 +12,51 @@ import type { CaseHero } from "./types";
 
 interface Props {
   items: CaseHero[];
+  /** The page's title, its tail, and the line under it. */
+  heading: string;
+  tail: string;
+  lede: string;
 }
-const { items } = Astro.props;
+const { items, heading, tail, lede } = Astro.props;
 const n = items.length;
 const two = (i: number) => String(i).padStart(2, "0");
+// Each title as words of letters with a running index, so the letters can
+// arrive one after another. Screen readers get the plain title instead.
+const spelled = items.map((h) => {
+  let i = 0;
+  const words = h.title.split(/\s+/).map((w) => [...w].map((ch) => ({ ch, i: i++ })));
+  return { words, count: i };
+});
 ---
 
 <section class="cx" id="wx-cases" aria-label="Six case studies" style={`--n:${n};`}>
   <div class="cx-stage">
     <div class="cx-space" aria-hidden="true"></div>
+    <canvas class="cx-gl" aria-hidden="true"></canvas>
+
+    <header class="cx-head">
+      <p class="kicker">Writing</p>
+      <h1 class="cx-h1">
+        {heading}
+        <span class="cx-h1-tail">{tail}</span>
+      </h1>
+      <p class="cx-lede">{lede}</p>
+    </header>
+    <div class="cx-cue" aria-hidden="true"><span class="cx-cue-line"></span><span>Scroll</span></div>
 
     {items.map((h, i) => {
       const words = h.title.split(/\s+/);
+      const ln = spelled[i].count;
       return (
         <article
           class="cx-hero"
           id={`case-${h.slug}`}
           data-i={i}
           data-live={i === 0 ? "" : undefined}
+          data-art={h.art}
+          data-slug={h.slug}
           aria-labelledby={`cx-t-${i}`}
-          style={`--i:${i};--a:${h.rgb};--wn:${words.length};--open:${i === 0 ? 0 : 1};--cin:${i === 0 ? 1 : 0};`}
+          style={`--i:${i};--a:${h.rgb};--wn:${words.length};--ln:${ln};--open:${i === 0 ? 0 : 1};--cin:${i === 0 ? 1 : 0};`}
         >
           <div class="cx-frame">
             <div class="cx-art">
@@ -85,11 +110,14 @@ const two = (i: number) => String(i).padStart(2, "0");
                 </span>
               </p>
               <h2 class="cx-title" id={`cx-t-${i}`}>
-                {words.map((w, wi) => (
-                  <>
-                    <span class="cx-w"><span class="cx-wi" style={`--wi:${wi};`}>{w}</span></span>{" "}
-                  </>
-                ))}
+                <span class="sr-only">{h.title}</span>
+                <span class="cx-letters" aria-hidden="true">
+                  {spelled[i].words.map((w) => (
+                    <>
+                      <span class="cx-w">{w.map((l) => <span class="cx-l" style={`--li:${l.i};`}>{l.ch}</span>)}</span>{" "}
+                    </>
+                  ))}
+                </span>
               </h2>
               <p class="cx-sum">{h.description}</p>
               <div class="cx-act">
@@ -114,6 +142,7 @@ const two = (i: number) => String(i).padStart(2, "0");
          card is a poor snap target. -->
     {items.map((_, i) => <span class="cx-snap" style={`--i:${i};`} aria-hidden="true"></span>)}
 
+    <div class="cx-veil" aria-hidden="true"></div>
     <canvas class="cx-dust" aria-hidden="true"></canvas>
 
     <nav class="cx-index" aria-label="The six case studies">
@@ -128,7 +157,7 @@ const two = (i: number) => String(i).padStart(2, "0");
             >
               <span class="cx-index-name">{h.short}</span>
               <span class="cx-index-no">{two(i + 1)}</span>
-              <span class="cx-index-bar" aria-hidden="true"><i></i></span>
+              <span class="cx-orb" aria-hidden="true"><i></i></span>
             </a>
           </li>
         ))}
@@ -145,9 +174,44 @@ const two = (i: number) => String(i).padStart(2, "0");
   .cx { position: relative; z-index: 1; }
   .cx-stage { position: relative; }
   .cx-space,
+  .cx-gl,
+  .cx-veil,
+  .cx-cue,
   .cx-dust,
   .cx-index,
   .cx-snap { display: none; }
+
+  /* The page title rides on the first case study. */
+  .cx-head {
+    position: absolute;
+    z-index: 50;
+    top: clamp(92px, 12vh, 128px);
+    left: 0;
+    right: 0;
+    width: 100%;
+    max-width: calc(var(--max) + 2 * var(--gutter));
+    margin-inline: auto;
+    padding-inline: var(--gutter);
+    pointer-events: none;
+  }
+  .cx-h1 {
+    margin-top: 14px;
+    max-width: 22ch;
+    font-size: clamp(1.625rem, 2.5vw, 2.375rem);
+    line-height: 1.08;
+    letter-spacing: -0.035em;
+    font-weight: 600;
+    color: var(--ink);
+    text-wrap: balance;
+    text-shadow: 0 2px 24px rgba(0, 0, 0, 0.6);
+  }
+  .cx-h1-tail { display: block; color: rgba(245, 245, 247, 0.5); }
+  .cx-lede {
+    margin-top: 12px;
+    font-size: 0.875rem;
+    color: rgba(245, 245, 247, 0.62);
+    text-shadow: 0 1px 12px rgba(0, 0, 0, 0.7);
+  }
 
   .cx-hero {
     position: relative;
@@ -260,7 +324,7 @@ const two = (i: number) => String(i).padStart(2, "0");
     padding-bottom: 0.12em;
     margin-bottom: -0.12em;
   }
-  .cx-wi { display: inline-block; }
+  .cx-w { white-space: nowrap; }
   .cx-sum {
     margin-top: 16px;
     max-width: 38rem;
@@ -392,6 +456,12 @@ const two = (i: number) => String(i).padStart(2, "0");
     .cx-copy { padding-bottom: clamp(24px, 4vw, 44px); }
     .cx-title { font-size: clamp(2rem, 5vw, 4rem); }
     .cx-nebula { animation: none; }
+    .cx-head {
+      position: static;
+      padding: clamp(112px, 14vw, 160px) 0 clamp(16px, 2vw, 24px);
+      max-width: none;
+    }
+    .cx-h1 { font-size: clamp(2rem, 4.4vw, 3.5rem); }
   }
 
   /* ---------------------------------------------------------------------
@@ -470,10 +540,15 @@ const two = (i: number) => String(i).padStart(2, "0");
     }
     .cx-hero:not([data-live]) .cx-copy-in { pointer-events: none; }
     .cx-title { max-width: 13.5em; font-size: clamp(3rem, 5.5vw, 6.25rem); line-height: 0.98; }
-    /* Each word rises out of its own mask, one after another. */
-    .cx-wi {
-      transform: translate3d(0, calc((1 - clamp(0, var(--cin, 0) * (1 + (var(--wn) - 1) * 0.055) - var(--wi) * 0.055, 1)) * 112%), 0);
+    /* Each letter rises out of its word's mask, sharpening as it lands. */
+    .cx-l {
+      display: inline-block;
+      --r: clamp(0, var(--cin, 0) * (1 + (var(--ln) - 1) * 0.016) - var(--li) * 0.016, 1);
+      opacity: var(--r);
+      transform: translate3d(0, calc((1 - var(--r)) * 0.85em), 0) scale(calc(1.25 - var(--r) * 0.25));
+      filter: blur(calc((1 - var(--r)) * 12px));
     }
+    .cx-hero[data-calm] .cx-l { opacity: 1; transform: none; filter: none; }
     .cx-meta,
     .cx-sum,
     .cx-act {
@@ -482,6 +557,83 @@ const two = (i: number) => String(i).padStart(2, "0");
       transform: translate3d(0, calc((1 - var(--k)) * 26px), 0);
     }
     .cx-meta { --k: clamp(0, var(--cin, 0) * 2.4 - 0.6, 1); }
+
+    /* The title and the cue leave with the first case study. */
+    .cx-head {
+      opacity: calc(1 - var(--head, 0));
+      transform: translate3d(0, calc(var(--head, 0) * -40px), 0);
+    }
+    .cx-cue {
+      display: flex;
+      position: absolute;
+      z-index: 50;
+      right: clamp(14px, 2vw, 30px);
+      top: calc(50% + 130px);
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.6875rem;
+      font-weight: 500;
+      color: rgba(245, 245, 247, 0.5);
+      opacity: calc(1 - var(--head, 0) * 3);
+      pointer-events: none;
+    }
+    .cx-cue-line {
+      width: 1px;
+      height: 40px;
+      background: linear-gradient(180deg, rgba(255, 255, 255, 0), rgba(255, 255, 255, 0.7));
+      transform-origin: 50% 0;
+      animation: cx-cue 2.2s var(--ease-glass) infinite;
+    }
+    @keyframes cx-cue {
+      0% { transform: scaleY(0); opacity: 0; }
+      40% { transform: scaleY(1); opacity: 1; }
+      100% { transform: scaleY(1) translateY(14px); opacity: 0; }
+    }
+
+    /* 3D: one canvas draws every slab, the nebula and the dust. Until it
+       is ready, and where WebGL is missing, the pictures above play the
+       same story with masks. */
+    .cx-gl {
+      display: block;
+      position: absolute;
+      inset: 0;
+      z-index: 1;
+      width: 100%;
+      height: 100%;
+      opacity: 0;
+      transition: opacity 900ms var(--ease-glass);
+      cursor: pointer;
+    }
+    .cx.is-gl .cx-gl { opacity: 1; }
+    .cx.is-gl .cx-frame,
+    .cx.is-gl .cx-rim {
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity 900ms var(--ease-glass), visibility 0s linear 900ms;
+    }
+    .cx.is-gl .cx-dust { display: none; }
+    .cx-veil {
+      display: block;
+      position: absolute;
+      inset: 0;
+      z-index: 25;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 900ms var(--ease-glass);
+      background:
+        linear-gradient(0deg, rgba(1, 2, 5, 0.86) 0%, rgba(1, 2, 5, 0.5) 24%, rgba(1, 2, 5, 0) 52%),
+        linear-gradient(90deg, rgba(1, 2, 5, 0.62) 0%, rgba(1, 2, 5, 0.22) 36%, rgba(1, 2, 5, 0) 58%),
+        linear-gradient(180deg, rgba(1, 2, 5, 0.5) 0%, rgba(1, 2, 5, 0) 22%);
+    }
+    .cx.is-gl .cx-veil { opacity: 1; }
+    /* A fast scroll splits the colour of the words too. */
+    .cx-title {
+      text-shadow:
+        calc(var(--vel, 0) * -5px) 0 0 rgba(255, 50, 110, calc(var(--vel, 0) * 0.75)),
+        calc(var(--vel, 0) * 5px) 0 0 rgba(60, 200, 255, calc(var(--vel, 0) * 0.75)),
+        0 2px 30px rgba(0, 0, 0, 0.45);
+    }
 
     .cx-dust {
       display: block;
@@ -526,29 +678,54 @@ const two = (i: number) => String(i).padStart(2, "0");
       transition: opacity 300ms var(--ease-glass), transform 300ms var(--ease-glass);
       text-shadow: 0 1px 12px rgba(0, 0, 0, 0.8);
     }
-    .cx-index-bar {
-      position: relative;
-      width: 16px;
-      height: 2px;
-      border-radius: 2px;
-      background: rgba(255, 255, 255, 0.2);
-      overflow: hidden;
-      transition: width 400ms var(--ease-glass);
+    .cx-index ol::before {
+      content: "";
+      position: absolute;
+      right: 15px;
+      top: 14px;
+      bottom: 14px;
+      width: 1px;
+      background: linear-gradient(180deg, rgba(255, 255, 255, 0), rgba(255, 255, 255, 0.16) 15%, rgba(255, 255, 255, 0.16) 85%, rgba(255, 255, 255, 0));
     }
-    .cx-index-bar i {
+    .cx-index ol { position: relative; }
+    .cx-orb {
+      position: relative;
+      display: grid;
+      place-items: center;
+      width: 20px;
+      height: 20px;
+    }
+    .cx-orb i {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: rgba(var(--a), calc(0.25 + var(--f, 0) * 0.75));
+      box-shadow:
+        0 0 calc(4px + var(--f, 0) * 10px) rgba(var(--a), calc(0.2 + var(--f, 0) * 0.6)),
+        0 0 0 1px rgba(var(--a), 0.5);
+      transition: width 400ms var(--ease-glass), height 400ms var(--ease-glass);
+    }
+    .cx-orb::after {
+      content: "";
       position: absolute;
       inset: 0;
-      background: rgb(var(--a));
-      box-shadow: 0 0 10px rgba(var(--a), 0.9);
-      transform-origin: 0 50%;
-      transform: scaleX(var(--f, 0));
+      border-radius: 50%;
+      border: 1px solid rgba(var(--a), 0.7);
+      opacity: 0;
+      transform: scale(0.4);
+      transition: opacity 400ms var(--ease-glass), transform 500ms var(--ease-glass);
+    }
+    .cx-index a[aria-current="true"] .cx-orb i { width: 9px; height: 9px; background: rgb(var(--a)); }
+    .cx-index a[aria-current="true"] .cx-orb::after { opacity: 1; transform: scale(1); animation: cx-orb 2.6s ease-out infinite; }
+    @keyframes cx-orb {
+      0% { box-shadow: 0 0 0 0 rgba(var(--a), 0.5); }
+      100% { box-shadow: 0 0 0 10px rgba(var(--a), 0); }
     }
     .cx-index a:hover,
     .cx-index a[aria-current="true"] { color: var(--ink); }
     .cx-index a:hover .cx-index-name,
     .cx-index a:focus-visible .cx-index-name,
     .cx-index a[aria-current="true"] .cx-index-name { opacity: 1; transform: none; }
-    .cx-index a[aria-current="true"] .cx-index-bar { width: 40px; }
     .cx-index a:focus-visible { outline: none; box-shadow: 0 0 0 2px rgba(var(--a), 0.7); }
   }
 </style>
