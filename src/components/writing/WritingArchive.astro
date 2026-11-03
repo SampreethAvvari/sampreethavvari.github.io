@@ -58,17 +58,32 @@ const comets = [
     <span class="space-el" style={`width:${c.w}px;height:${Math.round(c.w * 0.27)}px;top:${c.top};${c.pos};`} aria-hidden="true"><span class="comet-glow" style={`--sr-rgb:${WRITING_RGB};`}></span><span class="space-comet" style={`--sr-rgb:${WRITING_RGB};--rz:${c.rz}deg;`}></span></span>
   ))}
 
+  <!-- One screen: the heading and the controls sit over the sky. -->
+  <div class="ax-screen">
+  <div class="ax-overlay">
   <div class="wrap on-top ax-head">
     <p class="kicker">Every post</p>
-    <h2 class="t-h2 ax-h2" id="ax-title">
+    <h2 class="ax-h2" id="ax-title">
       A map of everything I wrote.
-      <span class="t-tail">Posts that share a tag form one constellation.</span>
+      <span class="ax-h2-tail">Posts that share a tag form one constellation.</span>
     </h2>
+    <button type="button" class="lg ax-fpill" aria-controls="ax-fsheet" aria-expanded="false">
+      <Icon name="search" size={14} />
+      Filters
+      <span class="ax-fpill-n" id="ax-fcount">{posts.length} posts</span>
+    </button>
   </div>
 
-  <!-- Controls: one dock for both views. -->
-  <div class="wrap on-top ax-dock-wrap">
-    <div class="ax-dock" role="group" aria-label="Find posts">
+  <div class="ax-fscrim" aria-hidden="true"></div>
+  <!-- Controls: one dock for both views; a sheet on phones. -->
+  <div class="wrap on-top ax-dock-wrap" id="ax-fsheet" role="group" aria-label="Find posts">
+    <div class="ax-fsheet-head">
+      <p class="ax-fsheet-title">Filters</p>
+      <button type="button" class="ax-fsheet-x" aria-label="Close filters">
+        <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" /></svg>
+      </button>
+    </div>
+    <div class="ax-dock">
       <label class="lg ax-search">
         <Icon name="search" size={15} />
         <span class="sr-only">Search posts</span>
@@ -93,6 +108,7 @@ const comets = [
         <button type="button" class="chip ax-view" data-view="map" aria-pressed="false">Sky</button>
         <button type="button" class="chip ax-view is-on" data-view="list" aria-pressed="true">List view</button>
       </div>
+      <span class="t-meta ax-count" id="ax-count" aria-live="polite">{posts.length} posts</span>
     </div>
     <div class="ax-tags" role="group" aria-label="Tag">
       <button type="button" class="ax-tag is-on" data-tag="all" aria-pressed="true">All tags <span>{posts.length}</span></button>
@@ -100,10 +116,9 @@ const comets = [
         <button type="button" class="ax-tag" data-tag={t} aria-pressed="false">{t} <span>{c}</span></button>
       ))}
     </div>
-    <p class="ax-status">
-      <span class="t-meta" id="ax-count" aria-live="polite">{posts.length} posts</span>
-      <span id="ax-impact-note" class="t-meta ax-note" hidden>Ranked by how much the project behind each one moved the company.</span>
-    </p>
+    <p id="ax-impact-note" class="t-meta ax-note" hidden>Ranked by how much the project behind each one moved the company.</p>
+    <button type="button" class="btn btn-primary ax-fsheet-done">Show the posts</button>
+  </div>
   </div>
 
   <!-- The sky. Each tag is a constellation of its posts. The stars are
@@ -199,6 +214,7 @@ const comets = [
         ))}
       </ul>
     </section>
+  </div>
   </div>
 
   <!-- List view: the same posts as a grid. -->
@@ -331,22 +347,42 @@ const comets = [
   }
 
   .ax-head { position: relative; }
-  .ax-h2 { margin-top: 18px; max-width: 20ch; }
+  .ax-h2 {
+    margin-top: 14px;
+    font-size: clamp(28px, 3vw, 44px);
+    line-height: 1.06;
+    letter-spacing: -0.035em;
+    font-weight: 600;
+    color: var(--ink);
+  }
+  .ax-h2-tail {
+    display: block;
+    margin-top: 6px;
+    font-size: clamp(15px, 1.35vw, 21px);
+    line-height: 1.3;
+    letter-spacing: -0.015em;
+    color: var(--ink-faint);
+    white-space: nowrap;
+  }
 
   /* ---------------- Controls ---------------- */
-  .ax-dock-wrap { position: relative; z-index: 5; margin-top: clamp(28px, 3.5vw, 40px); }
-  .ax-dock { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+  .ax-dock-wrap { position: relative; z-index: 5; margin-top: 18px; }
+  .ax-dock { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+  .ax-count { margin-left: 4px; white-space: nowrap; }
   .ax-search {
     display: inline-flex;
     align-items: center;
     gap: 8px;
-    height: 40px;
+    height: 38px;
     padding: 0 14px;
     border-radius: 9999px;
     color: var(--ink-faint);
-    flex: 1 1 220px;
-    max-width: 300px;
+    flex: 1 1 200px;
+    max-width: 260px;
   }
+  /* Phone only: the pill that opens the controls, and the sheet's own head,
+     button and scrim. */
+  .ax-fpill, .ax-fsheet-head, .ax-fsheet-done, .ax-fscrim { display: none; }
   .ax-search input {
     flex: 1;
     min-width: 0;
@@ -360,7 +396,8 @@ const comets = [
   }
   .ax-search input::placeholder { color: rgba(245, 245, 247, 0.4); }
   .ax-search:focus-within { box-shadow: 0 0 0 3px rgba(var(--c-writing-rgb), 0.4); }
-  .ax-bar { display: inline-flex; align-items: center; gap: 4px; padding: 5px; border-radius: 9999px; }
+  .ax-bar { display: inline-flex; align-items: center; gap: 2px; padding: 4px; border-radius: 9999px; }
+  .ax-bar .chip { height: 28px; padding: 0 11px; }
   .ax-bar .chip { cursor: pointer; background: transparent; border-color: transparent; }
   .ax-bar .chip:not(.is-on):hover { background: var(--wash-strong); border-color: transparent; }
   .ax-bar .chip.is-on { color: #000; background: var(--ink); border-color: var(--ink); }
@@ -391,7 +428,46 @@ const comets = [
   }
   .ax-tag.is-on span { color: rgba(var(--c-writing-rgb), 0.9); }
   .ax-tag:focus-visible { outline: none; box-shadow: 0 0 0 3px rgba(var(--c-writing-rgb), 0.5); }
-  .ax-status { margin-top: 12px; display: flex; flex-wrap: wrap; gap: 6px 16px; }
+  .ax-note { margin-top: 10px; }
+
+  /* ---------------- One screen: heading and controls over the sky -------- */
+  .ax[data-view="map"] { padding-top: 0; scroll-margin-top: -88px; }
+  /* A sheet sits over the chat and back to top buttons, which step aside. */
+  .ax.is-sheet { z-index: 40; }
+  :global(body:has(.ax.is-sheet) .chat-launcher),
+  :global(body:has(.ax.is-sheet) .to-top) { opacity: 0; pointer-events: none; }
+  .ax[data-view="map"] .ax-tags { display: none; }
+  .ax[data-view="map"] .ax-screen {
+    position: relative;
+    height: 100vh;
+    height: 100svh;
+    min-height: 640px;
+    max-height: 1100px;
+  }
+  .ax[data-view="map"] .ax-overlay {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 0;
+    z-index: 6;
+    padding-top: 92px;
+    pointer-events: none;
+    transition: opacity 500ms var(--ease-glass), visibility 0s linear 0s;
+  }
+  .ax[data-view="map"] .ax-overlay > * > * { pointer-events: auto; }
+  .ax[data-view="map"] .ax-h2 { text-shadow: 0 2px 18px rgba(0, 0, 0, 0.8); }
+  /* A constellation that opens takes the screen; the heading steps away. */
+  .ax-screen:has(.ax-map[data-state="open"]) .ax-overlay {
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 400ms var(--ease-glass), visibility 0s linear 400ms;
+  }
+  /* The planet rim stays as a soft edge at the top of the sky. */
+  .ax[data-view="map"] .ax-horizon { opacity: 0.6; }
+  .ax[data-view="map"] .ax-planet { top: 22px; }
+  @media (min-width: 1100px) {
+    .ax[data-view="map"] .ax-dock { flex-wrap: nowrap; }
+  }
 
   /* ---------------- The sky ----------------
      data-state on the map: "sky" (every constellation) or "open" (one
@@ -399,13 +475,9 @@ const comets = [
   .ax-map { display: none; }
   .ax[data-view="map"] .ax-map {
     display: block;
-    position: relative;
+    position: absolute;
+    inset: 0;
     z-index: 2;
-    height: 100vh;
-    height: 100svh;
-    min-height: 640px;
-    max-height: 1100px;
-    margin-top: 18px;
     overflow: hidden;
     outline: none;
     perspective: 1500px;
@@ -421,7 +493,7 @@ const comets = [
     transform: rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg));
     will-change: transform;
   }
-  .ax-par { position: absolute; inset: 0; transform: translate3d(var(--px, 0px), var(--py, 0px), 40px); will-change: transform; }
+  .ax-par { position: absolute; inset: 0; transform: translate3d(var(--px, 0px), var(--py, 0px), 0); will-change: transform; }
   .ax[data-view="map"] .ax-listwrap { display: none; }
 
   .ax-sky {
@@ -431,10 +503,11 @@ const comets = [
     width: 108%;
     height: 108%;
     pointer-events: none;
+    transform: translateZ(-60px);
     transition: transform 900ms var(--ease-glass), opacity 700ms var(--ease-glass);
     transform-origin: 50% 50%;
   }
-  .ax-map[data-state="open"] .ax-sky { transform: scale(1.06); opacity: 0.7; }
+  .ax-map[data-state="open"] .ax-sky { transform: translateZ(-60px) scale(1.06); opacity: 0.7; }
 
   /* The camera: the script moves and scales this layer to glide toward a
      constellation. */
@@ -538,7 +611,8 @@ const comets = [
   .ax-name { translate: 0 0; transition: opacity 600ms var(--ease-glass), background-color 250ms var(--ease-glass), translate 400ms var(--ease-glass); }
   .ax-name:hover, .ax-name.is-hot { background: rgba(var(--tint), 0.08); translate: 0 -5px; }
   .ax-name:focus-visible { outline: none; box-shadow: 0 0 0 2px rgba(var(--tint), 0.7); }
-  .ax-name.is-dim { opacity: 0.2; }
+  /* During a dive the other names leave; their stars stay, dim. */
+  .ax-name.is-dim { opacity: 0; visibility: hidden; transition: opacity 400ms var(--ease-glass), visibility 0s linear 400ms; }
   .ax-name.is-out { opacity: 0; pointer-events: none; }
 
   .ax-tip {
@@ -616,8 +690,8 @@ const comets = [
   .ax-cards {
     --cols: 3;
     list-style: none;
-    margin: 16px -4px 0;
-    padding: 4px;
+    margin: 12px -8px 0;
+    padding: 8px 8px 10px;
     display: grid;
     grid-template-columns: repeat(var(--cols), minmax(0, 1fr));
     gap: 16px;
@@ -720,10 +794,84 @@ const comets = [
   .ax-page:not(:disabled):hover { background: rgba(255, 255, 255, 0.1); }
   .ax-page:focus-visible { outline: none; box-shadow: 0 0 0 3px rgba(var(--c-writing-rgb), 0.55); }
 
-  /* Phones: the cards come up in a sheet from the bottom, one list. */
+  /* Phones: the heading and a Filters pill over the sky; the controls come
+     up in a sheet. */
   @media (max-width: 899px) {
+    .ax[data-view="map"] .ax-overlay { padding-top: 84px; }
+    .ax-h2-tail { white-space: normal; }
+    .ax-fpill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 14px;
+      height: 38px;
+      padding: 0 16px;
+      border: 0;
+      border-radius: 9999px;
+      color: var(--ink);
+      font-size: 0.875rem;
+      font-weight: 500;
+      cursor: pointer;
+      background: rgba(12, 15, 20, 0.92);
+      box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.14);
+      -webkit-backdrop-filter: none;
+      backdrop-filter: none;
+    }
+    .ax-fpill-n { color: rgba(245, 245, 247, 0.5); font-variant-numeric: tabular-nums; }
+    .ax-fpill:focus-visible { outline: none; box-shadow: 0 0 0 3px rgba(var(--c-writing-rgb), 0.55); }
+    .ax-dock-wrap {
+      position: fixed;
+      z-index: 85;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      margin: 0;
+      max-width: none;
+      max-height: 82svh;
+      overflow: auto;
+      overscroll-behavior: contain;
+      padding: 16px 16px calc(18px + env(safe-area-inset-bottom));
+      border-radius: 24px 24px 0 0;
+      background: #07090d;
+      border-top: 1px solid rgba(255, 255, 255, 0.1);
+      box-shadow: 0 -30px 60px rgba(0, 0, 0, 0.7);
+      transform: translate3d(0, 105%, 0);
+      visibility: hidden;
+      transition: transform 450ms var(--ease-glass), visibility 0s linear 450ms;
+      pointer-events: auto;
+    }
+    .ax-dock-wrap.is-open { transform: none; visibility: visible; transition: transform 450ms var(--ease-glass); }
+    .ax-fsheet-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+    .ax-fsheet-title { font-size: 1.125rem; font-weight: 600; color: var(--ink); }
+    .ax-fsheet-x {
+      display: grid;
+      place-items: center;
+      width: 36px;
+      height: 36px;
+      border-radius: 9999px;
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      background: rgba(255, 255, 255, 0.04);
+      color: var(--ink);
+    }
+    .ax-dock { gap: 10px; }
+    .ax-search { flex-basis: 100%; max-width: none; }
+    .ax-bar { flex-wrap: wrap; }
+    .ax[data-view="map"] .ax-tags { display: none; }
+    .ax-fsheet-done { display: inline-flex; width: 100%; margin-top: 16px; }
+    .ax-fscrim {
+      display: block;
+      position: fixed;
+      inset: 0;
+      z-index: 84;
+      background: rgba(0, 0, 0, 0.55);
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity 300ms var(--ease-glass), visibility 0s linear 300ms;
+    }
+    .ax-fscrim.is-open { opacity: 1; visibility: visible; pointer-events: auto; transition: opacity 300ms var(--ease-glass); }
+    .ax-dock .lg { -webkit-backdrop-filter: none; backdrop-filter: none; }
     /* No perspective here: it would pin the fixed sheet to the map. */
-    .ax[data-view="map"] .ax-map { height: 82svh; min-height: 560px; perspective: none; }
+    .ax[data-view="map"] .ax-map { perspective: none; }
     .ax-dome { transform: none; }
     .ax-name-t { font-size: 0.8125rem; }
     .ax-hint { white-space: normal; text-align: center; width: 80%; }
@@ -735,7 +883,7 @@ const comets = [
       top: auto;
       bottom: 0;
       width: auto;
-      max-height: 84svh;
+      max-height: 72svh;
       padding: 18px 16px calc(16px + env(safe-area-inset-bottom));
       border-radius: 24px 24px 0 0;
       background: #07090d;

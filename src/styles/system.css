@@ -1342,7 +1342,7 @@ html.has-fx-cursor, html.has-fx-cursor * { cursor: none !important; }
   .nav-tab { width: 29px; }
   .nav-sound-pair { gap: 0; }
 }
-@media (max-width: 380px) {
+@media (max-width: 389px) {
   .nav-tab { width: 27px; }
   .nav-info { display: none !important; }
   .nav-brand .nav-mark, .nav-brand img, .nav-brand svg { width: 34px !important; }
@@ -1351,4 +1351,18 @@ html.has-fx-cursor, html.has-fx-cursor * { cursor: none !important; }
   .nav-tab { width: 25px; }
   .nav-actions .nav-icon { width: 28px; }
   .nav-sound { width: 26px; }
+}
+/* The bar condensed after a scroll keeps the phone sizes, so search and the
+   menu stay on screen. */
+@media (max-width: 520px) {
+  .nav-condensed .nav-bar { gap: 2px; padding: 0 6px; }
+  .nav-condensed .nav-tabs { margin: 0; }
+  .nav-condensed .nav-tab { width: 29px; }
+  .nav-condensed .nav-actions { gap: 0; }
+}
+@media (max-width: 389px) {
+  .nav-condensed .nav-tab { width: 27px; }
+}
+@media (max-width: 330px) {
+  .nav-condensed .nav-tab { width: 25px; }
 }
