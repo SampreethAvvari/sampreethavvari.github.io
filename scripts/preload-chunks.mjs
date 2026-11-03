@@ -23,6 +23,7 @@ const DIST = process.argv[2] || "dist";
 const ASTRO = path.join(DIST, "_astro");
 // The chunks that start a page's world, by the name of the source file.
 const WORLD = /^(engine|world|rail-gl|opening-gl|case-gl|holo-gl)\.[\w-]+\.js$/;
+const WIDE = "(min-width: 900px) and (prefers-reduced-motion: no-preference)";
 
 const walk = (d) =>
   readdirSync(d, { withFileTypes: true }).flatMap((e) =>
@@ -80,9 +81,17 @@ for (const file of walk(DIST).filter((f) => f.endsWith(".html"))) {
   const later = [...closure([...roots])].filter((n) => !now.has(n));
   const already = (n) => html.includes(`href="/_astro/${n}"`);
 
+  // The Writing index only starts its scene on wide screens (STAGE in case-stage.ts).
+  const when = roots.size && [...roots].every((n) => /^case-gl\./.test(n)) ? ` media="${WIDE}"` : "";
+  // The stylesheets too: named here at the top they keep the priority of stylesheets in
+  // the head, where a browser can rank one in the body below the pictures around it, and
+  // everything after it on the page waits for it.
+  const sheets = [...html.slice(0, end).matchAll(/<link\b[^>]*\brel="stylesheet"[^>]*\bhref="([^"]+)"[^>]*>/g)].map((m) => m[1]);
+
   const tags = [
+    ...sheets.map((href) => `<link rel="preload" as="style" href="${href}" />`),
     ...[...now].filter((n) => !entries.includes(n) && !already(n)).map((n) => `<link rel="modulepreload" href="/_astro/${n}" />`),
-    ...later.filter((n) => !already(n)).map((n) => `<link rel="preload" as="script" crossorigin href="/_astro/${n}" fetchpriority="low" />`),
+    ...later.filter((n) => !already(n)).map((n) => `<link rel="preload" as="script" crossorigin href="/_astro/${n}" fetchpriority="low"${when} />`),
   ];
   if (!tags.length) continue;
   writeFileSync(file, html.slice(0, end) + tags.join("") + html.slice(end));
