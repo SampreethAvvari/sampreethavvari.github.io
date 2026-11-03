@@ -70,6 +70,8 @@ clauses.append(acl)
 
 In the demo, a leadership document exists only for members of the leadership group.
 
+<div class="pfx-slot" data-post-fig="permission-gate"></div>
+
 **When two documents disagree, rules decide.** Each document gets an authority score from its class, its uploader's role and its source. Superseded versions drop out, and the rest sort by authority, then effective date. If the top two are within one point and dated differently, the API adds a conflict note that Gemini must address and the chat shows in a callout. The demo set has two office hours schedules that disagree, <span class="egg" tabindex="0" data-egg="Same authority, different dates. Friday wins on recency, and both get cited, so nobody turns up on Thursday.">Thursday at 3 PM and Friday at 11 AM</span>. The newer one wins and both are cited.
 
 **The breakages were plumbing.** The bug that blocked every sign in was a Google SDK that had to be set up before its first token check; the fix went in at 11:57 PM on June 30. Later, the reranking library was missing from the image for a week, and the wrapper around the reranker fell back to the fused order and logged why.

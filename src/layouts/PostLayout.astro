@@ -21,6 +21,7 @@ import path from "node:path";
 // Article styles live in their own sheet so only post pages download them.
 import "../styles/post-article.css";
 import "../components/post-fx/post-fx.css";
+import "../components/post-fx/figures.css";
 
 const { frontmatter, headings = [] } = Astro.props;
 const { title, date, description, img_path, img_alt, tag, stats, demo, architecture, facts } = frontmatter;

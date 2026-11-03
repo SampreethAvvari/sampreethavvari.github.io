@@ -91,9 +91,11 @@ export function mountOpening(signal: AbortSignal): void | (() => void) {
       const copyBottom = c.y + c.h;
       const margin = phone ? 28 : Math.max(44, vh * 0.075);
       dyCopy = vh - margin - copyBottom;
-      // On a phone the words stay clear of the slab above them.
+      // On a phone the slab hangs in the middle of the room above the words.
       if (phone && state.from.h > 1) {
         const headTop = c.y + dyCopy - liftTop;
+        const room = Math.max(headTop, 84 + state.from.h + 28);
+        state.from.cy = (84 + room) / 2 + 8;
         const slabBottom = state.from.cy + state.from.h / 2 + 14;
         if (headTop < slabBottom) dyCopy += slabBottom - headTop;
       }

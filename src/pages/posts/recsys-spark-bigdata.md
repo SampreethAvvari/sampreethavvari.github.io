@@ -45,6 +45,8 @@ We were a team of three. Teammates built the Spark side: a per user time split w
 
 Each user becomes the set of movies they rated. datasketch turns that set into <span class="egg" tabindex="0" data-egg="A whole viewing history squeezed into 30 integers. Taste, as a barcode.">30 MinHash numbers</span>, and an LSH index with 6 bands drops users whose numbers agree into the same buckets, so a query only compares a user with likely matches. A correlation check then tests whether the twins really rate alike. [Open the drawing](/architecture/recsys-spark-bigdata).
 
+<div class="pfx-slot" data-post-fig="minhash"></div>
+
 ## The sprint
 
 The twins search started in Spark and stalled there. A teammate's commit titled "segmentation last try" went in at 1:21 AM on May 12, 2024. My notebook landed at 8:05 PM on May 14 and was merged two minutes later. The report followed at 11:43 PM the next night.

@@ -45,6 +45,8 @@ Each problem is small. Solving each one where the data already lives is how a pr
 
 45 live services in 14 Google Cloud projects, <span class="egg" tabindex="0" data-egg="Counted from read only gcloud listings that afternoon. The on call rotation for all of them fits on one line.">listed with gcloud on October 29</span>. Three shared services carry the most weight: the Denticon sync keeps a copy of Denticon, the CDF registry serves it to other apps, and the PDF renderer turns surveys into reports. A fourth, the request relay, lets six apps file feature requests into one list. [Open the drawing](/architecture/platform), or browse [every drawing](/architecture).
 
+<div class="pfx-slot" data-post-fig="day-sky"></div>
+
 ## Patient forms and surveys
 
 Drawing: [Hybridge Forms](/architecture/hybridge-forms).

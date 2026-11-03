@@ -61,6 +61,8 @@ The crop is the whole referee, and a spike at 13:07 proved it. Maya's sheet agai
 
 The voice bar sits at 0.62, between the best impostor line at 0.613 and real lines at 0.647 and up. A score that cannot be computed reads "no score", because a referee that silently approves everything is the most expensive kind of theater.
 
+<div class="pfx-slot" data-post-fig="referee-line"></div>
+
 ## Screenwriter: the twist that got spoiled on line three
 
 Each character speaks through its own subagent. In the first run one read the shared scene brief and spoiled a twist on line three. The model did nothing wrong. The context did.

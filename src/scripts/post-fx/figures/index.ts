@@ -16,6 +16,12 @@ export type FigureCtx = {
 export type Figure = (ctx: FigureCtx) => void | (() => void) | Promise<void | (() => void)>;
 
 const LOAD: Record<string, () => Promise<{ default: Figure }>> = {
+  "cost-stacks": () => import("./cost-stacks"),
+  "referee-line": () => import("./referee-line"),
+  minhash: () => import("./minhash"),
+  "zero-params": () => import("./zero-params"),
+  "day-sky": () => import("./day-sky"),
+  "permission-gate": () => import("./permission-gate"),
 };
 
 export function mountFigures(signal: AbortSignal): void | (() => void) {

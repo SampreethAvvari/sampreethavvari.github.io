@@ -143,10 +143,10 @@ export function mountEndSky(signal: AbortSignal): void | (() => void) {
     }
     const f = posOf(here);
     const t = posOf(a);
-    reach.setAttribute("x1", String(f.x));
-    reach.setAttribute("y1", String(f.y));
-    reach.setAttribute("x2", String(t.x));
-    reach.setAttribute("y2", String(t.y));
+    reach.setAttribute("x1", `${f.x}%`);
+    reach.setAttribute("y1", `${f.y}%`);
+    reach.setAttribute("x2", `${t.x}%`);
+    reach.setAttribute("y2", `${t.y}%`);
     reach.classList.remove("is-on");
     void reach.getBoundingClientRect();
     reach.classList.add("is-on");

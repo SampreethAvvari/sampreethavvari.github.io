@@ -116,9 +116,9 @@ const sub = widened
     </div>
     <div class="pfx-sky-field" data-count={others}>
       <div class="pfx-sky-dome">
-        <svg class="pfx-sky-lines" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
-          {edges.map(([a, b]) => <line pathLength="1" x1={stars[a].x} y1={stars[a].y} x2={stars[b].x} y2={stars[b].y} />)}
-          <line class="pfx-sky-reach" pathLength="1" x1="50" y1="50" x2="50" y2="50" />
+        <svg class="pfx-sky-lines" aria-hidden="true">
+          {edges.map(([a, b]) => <line pathLength="1" x1={`${stars[a].x}%`} y1={`${stars[a].y}%`} x2={`${stars[b].x}%`} y2={`${stars[b].y}%`} />)}
+          <line class="pfx-sky-reach" pathLength="1" x1="50%" y1="50%" x2="50%" y2="50%" />
         </svg>
         <ol class="pfx-sky-stars">
           {stars.map((s) => (

@@ -515,7 +515,6 @@ a.pfx-sky-star { color: var(--ink); text-decoration: underline; text-underline-o
     pointer-events: none;
   }
   .pfx-sky-lines line {
-    vector-effect: non-scaling-stroke;
     stroke: rgba(var(--tint), 0.36);
     stroke-width: 1;
   }
@@ -668,6 +667,132 @@ a.pfx-sky-star { color: var(--ink); text-decoration: underline; text-underline-o
     background: #07080c;
     overflow: hidden;
   }
+}
+
+/* The shared parts. Figures sit in the reading column, on solid glass. */
+.pfx-fig { font-size: 1rem; line-height: 1.45; color: var(--ink); letter-spacing: -0.006em; }
+.pfx-fig p { margin: 0; }
+.pfx-fig-head { display: grid; gap: 4px; padding: 18px 20px 0; }
+.pfx-fig-title { font-size: 1.0625rem; font-weight: 600; letter-spacing: -0.016em; color: var(--ink); }
+.pfx-fig-hint { font-size: 0.8125rem; color: var(--ink-soft); }
+.pfx-seg {
+  display: inline-flex;
+  flex-wrap: wrap;
+  justify-self: start;
+  gap: 2px;
+  margin-top: 10px;
+  padding: 3px;
+  border-radius: 18px;
+  border: 1px solid var(--line-strong);
+  background: #0e1014;
+}
+.pfx-seg-b {
+  min-height: 34px;
+  padding: 0 13px;
+  border: 0;
+  border-radius: 9999px;
+  background: transparent;
+  color: var(--ink-soft);
+  font-size: 0.8125rem;
+  font-weight: 500;
+  white-space: nowrap;
+  transition: background-color 180ms ease, color 180ms ease;
+}
+.pfx-seg-b:hover { color: var(--ink); }
+.pfx-seg-b.is-on { background: var(--ink); color: #000; }
+.pfx-seg-b:focus-visible { outline: none; box-shadow: 0 0 0 2px rgba(var(--tone-rgb), 0.8); }
+.pfx-read { display: grid; gap: 8px; padding: 12px 14px 14px; }
+.pfx-read-c {
+  min-width: 0;
+  padding: 11px 13px 12px;
+  border-radius: 12px;
+  border: 1px solid var(--line);
+  background: #0e1014;
+  outline: none;
+  transition: border-color 180ms ease, background-color 180ms ease;
+}
+.pfx-read-c.is-line:hover, .pfx-read-c.is-line:focus-visible { border-color: rgba(245, 165, 36, 0.55); background: #13110d; }
+.pfx-read-v { font-size: 1.1875rem; font-weight: 600; line-height: 1.15; letter-spacing: -0.024em; font-variant-numeric: tabular-nums; color: var(--ink); }
+.pfx-read-k { margin-top: 3px !important; font-size: 0.8125rem; line-height: 1.35; color: var(--ink-soft); }
+.pfx-read-why { margin-top: 4px !important; font-size: 0.75rem; line-height: 1.38; color: var(--ink-faint); }
+
+/* The coins. */
+@media screen and (scripting: enabled) {
+  [data-post-fig="cost-stacks"] { height: 730px; }
+}
+@media screen and (scripting: enabled) and (max-width: 639px) {
+  [data-post-fig="cost-stacks"] { height: 800px; }
+}
+.pfx-cost-stage {
+  position: relative;
+  height: 440px;
+  touch-action: pan-y;
+  overflow: hidden;
+  background: radial-gradient(70% 60% at 50% 88%, rgba(245, 165, 36, 0.1), rgba(245, 165, 36, 0) 70%);
+}
+.pfx-cost-gl { position: absolute; inset: 0; width: 100%; height: 100%; display: block; touch-action: pan-y; }
+.pfx-cost-labels { position: absolute; inset: 0; pointer-events: none; }
+.pfx-cost-label {
+  position: absolute;
+  left: 0;
+  top: 0;
+  display: grid;
+  justify-items: center;
+  gap: 1px;
+  padding: 5px 7px;
+  border: 0;
+  border-radius: 9px;
+  background: transparent;
+  color: var(--ink-soft);
+  font-size: 0.75rem;
+  line-height: 1.2;
+  white-space: nowrap;
+  pointer-events: auto;
+  transition: background-color 160ms ease, color 160ms ease;
+}
+.pfx-cost-label:hover { color: var(--ink); background: var(--wash-strong); }
+.pfx-cost-label.is-on { color: #000; background: var(--ink); }
+.pfx-cost-label:focus-visible { outline: none; box-shadow: 0 0 0 2px rgba(245, 165, 36, 0.8); }
+.pfx-cost-label-v { font-size: 0.8125rem; font-weight: 600; font-variant-numeric: tabular-nums; color: var(--ink); }
+.pfx-cost-label.is-on .pfx-cost-label-v { color: #000; }
+[data-mode="never"] .pfx-cost-label { opacity: 0; pointer-events: none; }
+[data-mode="apps"] .pfx-cost-label { opacity: 0.62; }
+.pfx-cost-pool {
+  position: absolute;
+  left: 0;
+  top: 0;
+  font-size: 1.625rem;
+  font-weight: 600;
+  letter-spacing: -0.03em;
+  font-variant-numeric: tabular-nums;
+  color: #ffe2ad;
+  text-shadow: 0 0 22px rgba(245, 165, 36, 0.8);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 320ms ease;
+}
+.pfx-cost-tip {
+  position: absolute;
+  left: 0;
+  top: 0;
+  padding: 5px 9px;
+  border-radius: 8px;
+  border: 1px solid var(--line-strong);
+  background: #0e1014;
+  font-size: 0.75rem;
+  font-weight: 500;
+  white-space: nowrap;
+  color: var(--ink);
+  pointer-events: none;
+}
+.pfx-cost-read { grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); }
+.pfx-read-c.is-small .pfx-read-v { font-size: 1rem; }
+.pfx-cost-read[data-n="6"] { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+@media (max-width: 639px) {
+  .pfx-cost-stage { height: 340px; }
+  .pfx-cost-label { padding: 4px 2px; font-size: 0.6875rem; }
+  .pfx-cost-label-v { font-size: 0.6875rem; }
+  .pfx-cost-read { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 
 /* ---------------------------------------------------------------------------

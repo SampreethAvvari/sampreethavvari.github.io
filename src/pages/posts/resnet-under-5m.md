@@ -61,6 +61,8 @@ transforms.RandomHorizontalFlip(p=0.5),
 transforms.RandomPerspective(distortion_scale=0.6, p=0.5),
 ```
 
+<div class="pfx-slot" data-post-fig="zero-params"></div>
+
 **Spending the budget.** With the data settled, the parameters went where they helped. Channels of 128, 100, 164 and 200 came out of sweeping widths under the cap. The plain 16, 32, 64, 128 ladder scored 79%, and ResNet34's 3, 4, 6, 3 blocks scored 91% while needing 5.3 million. The final model has four stages of three blocks, 3 by 3 kernels, 1 by 1 shortcuts and 4,978,810 parameters, with <span class="egg" tabindex="0" data-egg="Enough for one more 3 by 3 convolution from 48 channels to 48. We let it go.">21,190 to spare</span>.
 
 ## What I said no to

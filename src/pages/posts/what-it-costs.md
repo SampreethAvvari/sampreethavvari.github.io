@@ -54,6 +54,8 @@ Net of credits, in US dollars, October 1 to 28, from the standard billing export
 
 Forms is a partial month, since its first cost landed on October 6. The Doctor Portal went live on the 28th, a day that was still loading when I queried, so its own month is not in this number.
 
+<div class="pfx-slot" data-post-fig="cost-stacks"></div>
+
 ## Why is the database most of the bill?
 
 A Cloud SQL instance bills every hour it exists. The apps beside it bill only while they answer a request.
