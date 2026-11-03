@@ -8,12 +8,7 @@
 //    included, so nothing runs against an unstyled page. BaseLayout's head script
 //    moves them back to the head once parsed, for the router.
 //
-// 2. Names the 3D code of a page with a world, in a meta tag, so BaseLayout's head
-//    script can start it down the wire as soon as the HTML arrives, instead of
-//    after the page has laid out and its scripts have run. It is left to the head
-//    script because it can check first that this visitor will use it.
-//
-// 3. Minifies inline scripts and styles, which Astro leaves exactly as written,
+// 2. Minifies inline scripts and styles, which Astro leaves exactly as written,
 //    comments and all, in every page.
 //
 // Runs before scripts/csp.mjs, which hashes the inline scripts as they end up.
@@ -42,45 +37,6 @@ function moveStyles(html) {
   const moved = part.match(IN_HEAD) ?? [];
   const rest = part.replace(IN_HEAD, "");
   return (html.slice(0, first) + rest + html.slice(end)).replace(MARKER, () => moved.map(late).join(""));
-}
-
-// The chunks a page's script imports when its world starts: the entry engine and
-// what it needs, three among them. Found by following the page's script through
-// its static imports to the dynamic import of the engine.
-const ASTRO = path.join(DIST, "_astro");
-const WORLD = /^(engine|world)\./;
-const engineMemo = new Map();
-function engineChunks(script) {
-  if (engineMemo.has(script)) return engineMemo.get(script);
-  engineMemo.set(script, []);
-  let text = "";
-  try {
-    text = readFileSync(path.join(ASTRO, script), "utf8");
-  } catch {
-    return [];
-  }
-  const deps = (text.match(/viteFileDeps = \[([^\]]*)\]/) || [, ""])[1].split(",").map((s) => s.trim().replace(/^"|"$/g, ""));
-  const out = new Set();
-  for (const m of text.matchAll(/import\("\.\/([^"]+)"\),__vite__mapDeps\(\[([\d,]+)\]\)/g)) {
-    if (!WORLD.test(m[1])) continue;
-    out.add(`/_astro/${m[1]}`);
-    for (const i of m[2].split(",")) {
-      const dep = deps[+i] ?? "";
-      if (/\.js$/.test(dep) && !/\/(hoisted|preload-helper|router|ids|index)\./.test(dep)) out.add(`/${dep}`);
-    }
-  }
-  for (const m of text.matchAll(/(?:from|import)\s*"\.\/(hoisted\.[^"]+)"/g)) for (const c of engineChunks(m[1])) out.add(c);
-  const list = [...out];
-  engineMemo.set(script, list);
-  return list;
-}
-
-function nameWorldCode(html) {
-  const entry = (html.match(/<script type="module" src="\/_astro\/(hoisted\.[^"]+)"/) || [])[1];
-  if (!entry || !MARKER.test(html)) return html;
-  const code = engineChunks(entry);
-  if (!code.length) return html;
-  return html.replace("</head>", `<meta name="world-code" content="${code.join(" ")}"></head>`);
 }
 
 const memo = new Map();
@@ -115,7 +71,7 @@ let before = 0;
 let after = 0;
 for (const file of walk(DIST).filter((f) => f.endsWith(".html"))) {
   const html = readFileSync(file, "utf8");
-  const out = minify(moveStyles(nameWorldCode(html)));
+  const out = minify(moveStyles(html));
   before += Buffer.byteLength(html);
   after += Buffer.byteLength(out);
   if (out !== html) {

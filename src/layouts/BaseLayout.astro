@@ -298,25 +298,6 @@ const pageComets = hasOwnComets
         if (window.__lateCss) return;
         window.__lateCss = true;
         var LATE = "body [data-late]";
-        // A page with a 3D world names its code in a meta tag (scripts/late-css.mjs).
-        // It starts down the wire now, at low priority so everything the page needs
-        // to read goes first, wherever it will be used. The browser keeps it, and the
-        // world does not wait for the page to finish laying out.
-        function worldCode(page) {
-          var names = page.querySelector('meta[name="world-code"]');
-          var net = navigator.connection;
-          if (!names || (net && (net.saveData || /2g/.test(net.effectiveType))) || !("WebGL2RenderingContext" in window)) return;
-          if (matchMedia("(prefers-reduced-motion: reduce)").matches) return;
-          names.content.split(" ").forEach(function (href) {
-            fetch(href, { priority: "low" }).then(function (res) { return res.text(); }).catch(function () {});
-          });
-        }
-        var parsed = new MutationObserver(function () {
-          if (!document.body) return;
-          parsed.disconnect();
-          worldCode(document);
-        });
-        parsed.observe(document.documentElement, { childList: true });
         function settle() {
           document.querySelectorAll(LATE).forEach(function (el) {
             var copy = el.cloneNode(true);
@@ -345,7 +326,6 @@ const pageComets = hasOwnComets
             }).then(function () {
               var next = e.newDocument;
               if (!next || next === document) return;
-              worldCode(next);
               var waits = [];
               next.querySelectorAll(LATE).forEach(function (el) {
                 next.head.appendChild(el);
