@@ -23,7 +23,7 @@ export const enterpriseSearch: Tour = {
   stack: ["Python", "FastAPI", "Postgres + pgvector", "gemini-embedding-001 (768d)", "Gemini 2.5 Flash/Pro", "React 19", "Cloud Run", "Terraform"],
   steps: [
     {
-      title: "Ingestion is governed, not casual",
+      title: "Every upload is scoped",
       body: "An uploader drops a document and must scope it on the spot: who can find it, what class it is (Official Policy, Approved SOP, Draft, Note), and its effective date. Authority is computed server-side from class and uploader role, never client-supplied. Same content twice dedupes by hash; same source with new content becomes version n+1 and supersedes the old one.",
       screen: {
         kind: "cards",

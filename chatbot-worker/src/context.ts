@@ -221,8 +221,7 @@ Filmmaking credits, nine films:
 - Strangers (2019): Cinematographer, Music.
 
 Sampreeth treats filmmaking and engineering as the same craft: working with
-non engineers, telling the story, cutting to the bone. He's interested in
-engineering roles that ship ML and software alongside the people who use it.
+non engineers, telling the story, cutting to the bone.
 
 Tech stack he reaches for: Python, TypeScript, Go. FastAPI, Next.js, Astro,
 Drizzle. PostgreSQL, pgvector, Firestore, BigQuery. GCP (Cloud Run, Cloud SQL,

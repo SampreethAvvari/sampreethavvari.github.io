@@ -42,7 +42,7 @@ const ALIAS = { demos: "projects", teaching: "posts" };
 // The room with no tab of its own. The menu carries it at every width, in the
 // colour of the tab it belongs to, with the first words of its page.
 const ROOMS = [
-  { name: "Live demos", href: "/demos", seg: "demos", tone: "projects", hint: "Click through the systems.", glyph: "M10 8.5v7l6-3.5-6-3.5ZM12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18Z" },
+  { name: "Demos", href: "/demos", seg: "demos", tone: "projects", hint: "Click through the systems.", glyph: "M10 8.5v7l6-3.5-6-3.5ZM12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18Z" },
 ];
 
 // The resume link comes in as a prop: importing the whole site data file here
@@ -207,7 +207,7 @@ export default function Nav({ cv = "/resume" }) {
                 aria-label={open ? "Close menu" : "Open menu"}
                 aria-expanded={open}
                 aria-haspopup="dialog"
-                title={open ? undefined : "Live demos and more"}
+                title={open ? undefined : "Demos and more"}
               >
                 <svg className="nav-menu-glyph" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                   {open ? (

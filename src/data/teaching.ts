@@ -45,7 +45,7 @@ export const teaching: TeachingMaterial[] = [
     stream: "aie",
     title: "The RAG Compass",
     description:
-      "A visual, first principles masterclass on retrieval: one mental model that runs from a bare baseline to what the best companies ship in production.",
+      "A visual, first principles guide to retrieval: one mental model that runs from a bare baseline to what the best companies ship in production.",
     whatToExpect:
       "Everything in retrieval maps to one mental model, the five station compass, and this volume walks it end to end. It moves from the simplest baseline to agentic retrieval, weighs vector, graph, and vectorless approaches, tears down how real companies run RAG in healthcare, legal, and finance, and names the places where people usually go wrong. It closes with a 45 question interview dojo so you can test yourself on all of it.",
     cover: "/teaching/the-rag-compass.png",
@@ -61,7 +61,7 @@ export const teaching: TeachingMaterial[] = [
     description:
       "A working guide to building AI systems that ship: retrieval, agents, evaluation, and everything around them.",
     whatToExpect:
-      "Written for engineers who have to put AI in front of real users. It covers retrieval that stays grounded, deciding when an agent earns its complexity, evaluating systems you cannot fully predict, and the habits that keep them reliable once people depend on them. Everything here is drawn from work that runs in production.",
+      "Written for engineers who have to put AI in front of real users. It covers retrieval that stays grounded, deciding when an agent earns its complexity, evaluating systems you cannot fully predict, and the habits that keep them reliable once people depend on them.",
     cover: "/teaching/ai-engineers-handbook.png",
     addedAt: "2026-06-30",
     file: "/teaching/ai-engineers-handbook.pdf",

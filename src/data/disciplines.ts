@@ -222,7 +222,7 @@ export const disciplines: Discipline[] = [
   {
     slug: "fde",
     acronym: "FDE",
-    name: "Forward-Deployed Engineering",
+    name: "Forward Deployed Engineering",
     accent: "#F5A524",
     rgb: "245, 165, 36",
     icon: "fa-solid fa-compass",
@@ -322,7 +322,7 @@ export const disciplines: Discipline[] = [
         demo: "/demos/cowork-dashboard",
         status: "In production",
         oneLiner:
-          "The operations dashboard leadership runs the business on: Monday.com boards turned into a full funnel view.",
+          "The operations dashboard for leadership: Monday.com boards turned into a full funnel view.",
         img: "/cowork-dashboard.png",
         href: "/posts/cowork-dashboard",
         highlights: [
@@ -508,7 +508,7 @@ export const disciplines: Discipline[] = [
     tagline:
       "The foundation under everything else: schemas with invariants, test pyramids, infrastructure as code, and systems that survive their author.",
     summary:
-      "Every AI system I ship sits in software built to last: databases that enforce their rules, strict typing, tests that run before a deploy, and runbooks.",
+      "Every AI system I ship sits in software built to last: append only records, strict typing, tests that run before a deploy, and runbooks.",
     narrative: [
       "My favorite class of bug is the one the database makes impossible. The treatment estimator keeps four fields on every saved line (price, tier, label and price book version) and reads them back as saved, because a patient quoted in March deserves the same number in September, and a policy memo is weaker than a constraint.",
       "I hold solo projects to team standards, because when you're the only engineer there is no one else to catch it: strict typing, golden tests against the system being replaced, idempotency at every boundary so replays never duplicate, and deploys that run from a clean checkout.",
@@ -524,7 +524,7 @@ export const disciplines: Discipline[] = [
     ],
     strengths: [
       {
-        title: "Invariants in the database",
+        title: "Invariants in the code",
         body: "Captured prices stored with the quote, append only ledgers, revision snapshots.",
       },
       {

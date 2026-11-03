@@ -16,7 +16,7 @@ export const npcCoach: Tour = {
   metrics: [
     { label: "Calls graded", value: "690", sub: "real calls since June 17" },
     { label: "Call end to grade", value: "14 min", sub: "median, October" },
-    { label: "Tests", value: "1,000+" },
+    { label: "Hard gates", value: "3", sub: "of six criteria, a miss raises a red flag" },
     { label: "Built in", value: "16 days", sub: "including the React dashboard" },
   ],
   concepts: ["Speech-to-text + diarization", "Structured LLM scoring", "Hard gates vs weighted scores", "Idempotent ingestion", "Ports and adapters", "Evidence-quoted evals"],

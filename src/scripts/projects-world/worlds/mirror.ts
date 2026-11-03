@@ -4,8 +4,8 @@
 // The world is built out of rows: thousands of small plates laid in latitude
 // lines. Below a still plane of light hangs its exact reflection, turning a
 // little behind the real one (the mirror trails). 453 field lines tie plates in
-// the world to their twins in the reflection: the record links. A ring of 103
-// beads with 81 lit (intakes that linked on their own) and 259 ticks on the
+// the world to their twins in the reflection: the record links. A ring of
+// beads, most lit (intakes that linked on their own) and 259 ticks on the
 // plane (the first backfill) are the real counts. Four moons are the four ids
 // one patient used to have.
 
@@ -241,16 +241,16 @@ void main() {
   threads.frustumCulled = false;
   spinA.add(threads);
 
-  // ---- 103 beads, 81 lit: intakes that linked on their own
+  // ---- beads, most lit: intakes that linked on their own
   const ringGroup = new Group();
   const beadMat = surface(shared, sun, { color: "#ffffff", metal: 0.5, rough: 0.35, data: true, uniforms: { uHeat: { value: 0 } }, fragHead: "uniform float uHeat;", frag: "glowCol = vec3(0.9, 1.4, 2.6); glow *= 1.0 + uHeat * 1.6;" });
   const beadHeat = beadMat.uniforms.uHeat;
   const beadR = 21;
   const beadGeo = ball(0.13, 10, 8);
-  const beads = instanced(beadGeo, beadMat, 103, (i, m, d) => {
-    const a = (i / 103) * Math.PI * 2;
+  const beads = instanced(beadGeo, beadMat, 100, (i, m, d) => {
+    const a = (i / 100) * Math.PI * 2;
     m.setPosition(Math.cos(a) * beadR, 0, Math.sin(a) * beadR);
-    if (i < 81) {
+    if (i < 80) {
       d[3] = 1.3;
     } else {
       d[0] = d[1] = d[2] = 0.15;

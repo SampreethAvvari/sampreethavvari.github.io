@@ -114,5 +114,5 @@ export const docCoach: Tour = {
     { lane: "Deliver and audit", items: ["Archive · 49 column ledger", "Audit rows in BigQuery", "Gmail delivery · 5-min retry sweeper · Terraform"] },
   ],
   outcome:
-    "Every consultation is now reviewed within minutes, against the same bar, with evidence quotes a coach can act on. Leadership reads one weekly report instead of watching hours of recordings, and the rubric itself is versioned so scoring changes are deliberate, not drift. The seven criteria shown here carry generic names; the real playbook is company IP and stays private.",
+    "Every consultation is now reviewed within minutes, against the same bar, with evidence quotes a coach can act on. Leadership reads one weekly report instead of watching hours of recordings, and the rubric itself is versioned, so every scoring change is on record. The seven criteria shown here carry generic names; the real playbook is company IP and stays private.",
 };

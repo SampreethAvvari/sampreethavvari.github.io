@@ -15,8 +15,8 @@ export const scanValidator: Tour = {
     "Bad scans were slipping through: movement blur, cut-off fields of view, scanner artifacts. Each one discovered late costs a design-queue slot and a patient recall. A vendor had quoted a six figure build and a monthly fee to run it. The bet: build it in house on commodity cloud.",
   metrics: [
     { label: "Google Cloud", value: "$62", sub: "October 1 to 28, measured, vs a six figure quote plus a monthly fee" },
-    { label: "Best AUROC", value: "0.82", sub: "patient-grouped, leakage-free eval, 191 scans" },
-    { label: "Inference", value: "2.2 s", sub: "OpenVINO on CPU, scale-to-zero Cloud Run" },
+    { label: "Best AUROC", value: "0.82", sub: "best benchmarked model, a frozen ConvNeXt probe, patient grouped, 191 scans" },
+    { label: "Inference", value: "2.2 s", sub: "OpenVINO, measured on a laptop CPU" },
     { label: "CI gate", value: "85%", sub: "accuracy on a fixed holdout or the build fails" },
   ],
   concepts: ["3D medical imaging", "Anomaly detection", "Active learning", "Train/inference parity", "Model benchmarking", "Continuous training gates", "Honest evals"],
@@ -116,5 +116,5 @@ export const scanValidator: Tour = {
     { lane: "Guardrails", items: ["Header rules for defects the model cannot see", "Confidence gates: 0.80 auto, 0.50 review", "85% CT gate in CI · tag-triggered releases"] },
   ],
   outcome:
-    "The integration work landed in April, ahead of a June plan, and it ran at $62 of Google Cloud in October, against a six figure vendor quote plus a monthly fee. The honest part: after cleaning label leakage the best model sits at 0.82 AUROC, the benchmark showed the ceiling is training data rather than architecture, and the system is framed accordingly, a workflow quality gate with a human in the loop, not a diagnostic device. Every scan, name, and number in this tour is synthetic.",
+    "The integration work landed in April, ahead of a June plan, and it ran at $62 of Google Cloud in October, against a six figure vendor quote plus a monthly fee. The honest part: after cleaning label leakage the best benchmarked model sits at 0.82 AUROC, the benchmark showed the ceiling is training data rather than architecture, and the system is framed accordingly, a workflow quality gate with a human in the loop, not a diagnostic device. Every scan, name, and number in this tour is synthetic.",
 };

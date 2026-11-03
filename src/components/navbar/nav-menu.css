@@ -1,7 +1,7 @@
 /* The menu at every width. Under 960px it is what it always was: the button at
    the end of the bar and a sheet the width of the bar, listing every tab. From
    960px, where the tabs are in the bar, it is one quiet icon that opens a small
-   sheet with only what has no tab: Live demos and Contact.
+   sheet with only what has no tab: Demos and Contact.
 
    The button adds nothing to the bar's width at rest. Its margins cancel its
    size, so it hangs in the free space before the sound control and no tab moves.

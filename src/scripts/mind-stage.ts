@@ -1759,7 +1759,7 @@ export function mountMind(): (() => void) | undefined {
   const STEPS: TourStep[] = [
     {
       title: "Welcome to the Mind",
-      text: "A star map of everything I have built. Here is how to read it.",
+      text: "A star map of my work. Here is how to read it.",
       panel: false, kinds: null, axes: false,
       beats: [{ hold: Infinity, go: () => wide() }],
     },

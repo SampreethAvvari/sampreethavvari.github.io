@@ -100,8 +100,8 @@ Specialists. None of them wrong. One person whose job is to make it add up.
 
 **The postmortem is part of the work.** I rewatch every film a year later with a list of what didn't work and why. My systems keep a backlog of deferred items with the trigger to revisit each one. Same instinct: name the loose ends out loud.
 
-## The version a hiring manager wants
+## The short version
 
-If you're hiring an engineer who can sit with a customer until the system you ship is the system they needed, that's the work I want. Treat every project like a small film: a spec before the schema, department heads who all get heard, a scene that has to work, and a cut that gets shorter every week until it's the right length.
+Treat every project like a small film: a spec before the schema, department heads who all get heard, a scene that has to work, and a cut that gets shorter every week until it's the right length.
 
 Two crafts, same muscle.

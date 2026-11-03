@@ -12,7 +12,7 @@ export const reconciliation: Tour = {
   pitch:
     "Takes a dental practice's three daily exports, the schedule, the production ledger, and the clinical notes, and proves that every patient who was seen got both documented and billed. Staff review only the patients who disagree instead of eyeballing three spreadsheets.",
   problem:
-    "The insurance team spent about 70 hours a week cross checking three exports by hand: did everyone on the schedule get a note? Did every note get billed? Did the right provider bill it? Misses meant either lost revenue or compliance risk.",
+    "The insurance team spent about 70 hours a week cross checking three exports by hand: did everyone on the schedule get a note? Did every note get billed? Did the right provider bill it? Misses meant lost revenue or a charge with no note.",
   metrics: [
     { label: "Spec to live", value: "8.75 hours", sub: "first commit to the first live revision" },
     { label: "Verified without review", value: "30 of 41", sub: "patients on one June day, first engine version" },

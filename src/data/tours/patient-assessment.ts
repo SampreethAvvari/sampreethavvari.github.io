@@ -113,5 +113,5 @@ export const patientAssessment: Tour = {
     { lane: "Platform", items: ["Firestore + Cloud Storage + Firebase Auth", "Audit log that only appends", "Keyless deploys via Workload Identity Federation on version tags"] },
   ],
   outcome:
-    "One schema-driven system replaced three vendor questionnaires and an entire manual routing ritual, and turned raw answers into a document staff actually use in the consult room. The honest boundary is stated in the product itself: this phase produces context and a risk score, never a diagnosis or treatment recommendation. The patient and profile shown here are entirely synthetic.",
+    "One schema-driven system replaced three vendor questionnaires and an entire manual routing ritual, and turned raw answers into a document for the consult room. The honest boundary is stated in the product itself: this phase produces context and a risk score, never a diagnosis or treatment recommendation. The patient and profile shown here are entirely synthetic.",
 };

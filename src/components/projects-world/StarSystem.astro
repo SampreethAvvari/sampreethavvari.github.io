@@ -130,7 +130,7 @@ const stageTop = (i: number) => SPANS.slice(0, i).reduce((a, b) => a + b, 0);
               )}
               {w.demo && (
                 <a href={w.demo} class="jb">
-                  <span>Live demo</span><i class="jb-arrow"><Icon name="arrow-right" size={13} /></i>
+                  <span>{w.demo === "/demos/jobpilot" ? "Live demo" : "Guided tour"}</span><i class="jb-arrow"><Icon name="arrow-right" size={13} /></i>
                 </a>
               )}
               {w.link && (
@@ -158,7 +158,7 @@ const stageTop = (i: number) => SPANS.slice(0, i).reduce((a, b) => a + b, 0);
         <p class="pw-kick"><b>{bodies.length}</b><i></i>More, in the belt</p>
         <p class="pw-belttitle">The rest of the system.</p>
         <p class="pw-line">Each one shaped by what it does. Click to open.</p>
-        <a class="jb is-ghost pw-beltskip" href="#all"><span>Every project in cards</span><i class="jb-arrow"><Icon name="arrow-right" size={13} /></i></a>
+        <a class="jb is-ghost pw-beltskip" href="#all"><span>The projects in cards</span><i class="jb-arrow"><Icon name="arrow-right" size={13} /></i></a>
       </div>
       <nav class="pw-bodies" aria-label="More projects, in the belt" data-pw-bodies>
         <ol>

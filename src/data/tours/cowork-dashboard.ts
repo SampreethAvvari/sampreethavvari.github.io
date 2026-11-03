@@ -81,7 +81,7 @@ export const coworkDashboard: Tour = {
       },
     },
     {
-      title: "Data quality is a feature, not a footnote",
+      title: "Bad data gets its own panel",
       body: "Patients that cannot be linked to a lead show in their own panel, with what to fix in Monday.",
       screen: {
         kind: "table",

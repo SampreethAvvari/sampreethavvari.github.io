@@ -27,9 +27,9 @@ const STAR_PARTS = [
   <span class="ax-anchor" id="open-source"></span>
   <div class="wrap">
     <div class="ax-head" data-ax-head>
-      <h2 class="ax-title">Every project.</h2>
+      <h2 class="ax-title">The projects.</h2>
       <div class="ax-side">
-        <a class="ax-demos" href="/demos" data-ax-demos><span>Live demos</span><i><Icon name="arrow-right" size={13} /></i></a>
+        <a class="ax-demos" href="/demos" data-ax-demos><span>Demos</span><i><Icon name="arrow-right" size={13} /></i></a>
         <p class="ax-count" aria-live="polite"><b data-ax-n>{cards.length}</b> of {cards.length}</p>
       </div>
     </div>
@@ -122,7 +122,7 @@ const STAR_PARTS = [
                 {hasLinks && (
                   <div class="am-links">
                     {c.post && <a href={c.post} class="ac-go">Read the write up <Icon name="arrow-right" size={14} /></a>}
-                    {c.demo && <a href={c.demo} class="am-x">Live demo <Icon name="arrow-right" size={13} /></a>}
+                    {c.demo && <a href={c.demo} class="am-x">{c.demo === "/demos/jobpilot" ? "Live demo" : "Guided tour"} <Icon name="arrow-right" size={13} /></a>}
                     {c.link && (
                       <a href={c.link} target="_blank" rel="noopener" class="am-x">
                         {c.linkLabel} <Icon name="arrow-up-right" size={13} />
@@ -142,7 +142,7 @@ const STAR_PARTS = [
     <div class="ax-close" data-ax-close>
       <div>
         <h2 class="ax-close-t">Let's build something.</h2>
-        <p class="ax-close-s">Hiring for applied AI, or for the last mile where software meets the people who use it? I'd love to hear about it.</p>
+        <p class="ax-close-s">Tell me what you're working on.</p>
       </div>
       <div class="ax-close-a">
         <a href="/#ch-connect" class="btn btn-primary">Get in touch</a>
