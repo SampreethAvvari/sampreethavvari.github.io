@@ -1,0 +1,687 @@
+---
+// The resume as an object in zero gravity. One pinned stage; the page scrolls
+// behind it and each stretch of scroll is a stop. Every word and every PDF
+// link is real HTML from the first byte. The 3D world (scripts/resume-world)
+// arrives after first paint and draws over it. Without JavaScript or WebGL,
+// or with reduced motion, this same markup is a plain, complete document.
+import Icon from "../common/Icon.astro";
+import { STOPS, type RoleData, type WorldData } from "../../scripts/resume-world/types";
+
+interface Sheet { acronym: string; name: string; file: string; blurb: string }
+interface Role { title: string; date: string; location: string; logo?: string; highlights?: string[] }
+interface Edu { title: string; date: string; location: string; logo?: string; gpa?: string }
+interface Skill { label: string; items: string[] }
+interface Props {
+  name: string;
+  location: string;
+  sheets: Sheet[];
+  experience: Role[];
+  education: Edu[];
+  skills: Skill[];
+}
+const { name, location, sheets, experience, education, skills } = Astro.props;
+
+// How many screens of scroll between two stops.
+const SPAN = 1.15;
+
+// Highlights carry inline [text](url) links and `code`. Escape first, then
+// turn those two into markup.
+const esc = (s: string) =>
+  s.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]!);
+const md = (s: string) =>
+  esc(s)
+    .replace(/\[([^\]]+)\]\(([^)\s]+)\)/g, '<a class="ilink" href="$2">$1</a>')
+    .replace(/`([^`]+)`/g, "<code>$1</code>");
+const plain = (s: string) => s.replace(/\[([^\]]+)\]\([^)\s]+\)/g, "$1").replace(/`([^`]+)`/g, "$1");
+const split = (h: string) => {
+  const m = h.match(/^\[([^\]]+)\]\(([^)\s]+)\)\.?\s*(.*)$/s);
+  return m ? { name: m[1], href: m[2], text: plain(m[3]) } : { name: "", href: "", text: plain(h) };
+};
+
+// "Sept 2025 - Present" reads as "Sept 2025 to present".
+const span = (d: string) => d.replace(/\s+-\s+/, " to ").replace(/\bPresent\b/, "present");
+
+// Logos as quiet monochrome marks, so no brand colour competes with the tabs.
+// Shure's is a light mark made for dark backgrounds; the rest are inverted.
+const DARK_READY = new Set(["/logos/shure.svg"]);
+const logoClass = (src: string) => (DARK_READY.has(src) ? "rw-logo is-light" : "rw-logo");
+
+const ROLE_IDS = ["hybridge", "research", "video", "shure"];
+const EDU_IDS = ["nyu", "jntu"];
+const LANE = ["left", "right", "under", "over"];
+const sheetId = (s: Sheet) => s.acronym.toLowerCase();
+
+const roles = experience.map((r, i) => ({ ...r, id: ROLE_IDS[i] ?? `role-${i}`, stop: 2 + i, items: (r.highlights ?? []).map(split) }));
+const keyed = roles.find((r) => r.items.some((it) => it.name));
+
+const world: WorldData = {
+  person: { name, location },
+  sheets: sheets.map((s) => ({ id: sheetId(s), acronym: s.acronym, name: s.name, file: s.file, blurb: s.blurb })),
+  roles: roles.map((r): RoleData => ({ id: r.id, title: r.title, org: r.location, date: span(r.date), logo: r.logo ?? "", items: r.items })),
+  education: education.map((e, i) => ({ id: EDU_IDS[i] ?? `edu-${i}`, title: e.title, school: e.location, date: span(e.date), gpa: e.gpa ?? "", logo: e.logo ?? "" })),
+  skills,
+};
+const worldJson = JSON.stringify(world).replace(/</g, "\\u003c");
+const [firstName, ...restName] = name.split(" ");
+const pad = (n: number) => String(n).padStart(2, "0");
+const STOP_LABELS = ["Sheets", "The page", "Hybridge", "Research", "Video", "Shure", "Skills", "Education"];
+const skillsStop = STOPS.indexOf("skills");
+const eduStop = STOPS.indexOf("education");
+---
+
+<section class="rw" data-rw data-span={SPAN} data-at="sheets" aria-label={`${name}, resume`} style={`--stops:${STOPS.length};--span:${SPAN};`}>
+  <script is:inline>
+    (function () {
+      var el = document.currentScript && document.currentScript.parentElement;
+      if (el && "WebGL2RenderingContext" in window && !matchMedia("(prefers-reduced-motion: reduce)").matches) el.classList.add("is-live");
+    })();
+  </script>
+  <script type="application/json" id="rw-data" set:html={worldJson}></script>
+
+  <div class="rw-stage">
+    <div class="rw-sky" aria-hidden="true"></div>
+    <canvas class="rw-canvas" aria-hidden="true"></canvas>
+
+    <!-- Invisible links that ride on the 3D objects. The real ones, for
+         keyboards and screen readers, are in the words below. -->
+    <div class="rw-hits">
+      {sheets.map((s) => <a class="rw-hit" data-hit={sheetId(s)} href={s.file} target="_blank" rel="noopener" tabindex="-1" aria-hidden="true" draggable="false"></a>)}
+      <a class="rw-hit" data-section="experience" href="#experience" tabindex="-1" aria-hidden="true"></a>
+      <a class="rw-hit" data-section="skills" href="#skills" tabindex="-1" aria-hidden="true"></a>
+      <a class="rw-hit" data-section="education" href="#education" tabindex="-1" aria-hidden="true"></a>
+      {keyed?.items.filter((it) => it.name).map((it, i) => <a class="rw-hit" data-key={i} data-name={it.name} href={it.href} tabindex="-1" aria-hidden="true"></a>)}
+    </div>
+
+    <!-- 01 the four sheets -->
+    <div class="rw-stop rw-s-hero" data-stop="0">
+      <p class="rw-kicker">Resume</p>
+      <h1 class="rw-h1">
+        <span class="rw-h1-name"><span>{firstName}</span> <span>{restName.join(" ")}</span></span>
+        <span class="rw-tail">AI engineer in New York.</span>
+      </h1>
+      <p class="rw-lede">
+        Same person, four lenses. Open the one that fits the role. Each opens in a new tab.
+        <span class="rw-hint">Drag a sheet to turn it. Scroll to take one apart.</span>
+      </p>
+      <ul class="rw-versions" id="versions">
+        {sheets.map((s, i) => (
+          <li>
+            <a
+              class="rw-version"
+              data-cell={sheetId(s)}
+              href={s.file}
+              target="_blank"
+              rel="noopener"
+              aria-label={`Open the ${s.name} resume in a new tab`}
+              style={`--i:${i}`}
+            >
+              <span class="rw-paper" aria-hidden="true">
+                <span class="rw-paper-top"><b>{name}</b><i>{s.acronym}</i></span>
+                <span class="rw-paper-name">{s.name}</span>
+                <span class="rw-paper-rule"></span>
+                {experience.map((r) => <span class="rw-paper-line"><b>{r.title}</b><i>{span(r.date)}</i></span>)}
+                <span class="rw-paper-rule"></span>
+                {education.map((e) => <span class="rw-paper-line"><b>{e.title}</b></span>)}
+              </span>
+              <span class="rw-cell">
+                <span class="rw-acr">{s.acronym}</span>
+                <span class="rw-cell-name">{s.name}</span>
+                <span class="rw-cell-blurb">{s.blurb}</span>
+                <span class="rw-open">Open PDF <Icon name="arrow-up-right" size={13} /></span>
+              </span>
+            </a>
+          </li>
+        ))}
+      </ul>
+    </div>
+
+    <!-- 02 one page, large, whole, about to come apart -->
+    <div class="rw-stop rw-s-page" data-stop="1">
+      <div class="rw-copy rw-slide">
+        <p class="rw-kick">One page</p>
+        <p class="rw-title" data-page-name>{sheets[0].name}</p>
+        <p class="rw-org" data-page-blurb>{sheets[0].blurb}</p>
+        <a class="rw-cta" data-page-open href={sheets[0].file} target="_blank" rel="noopener" aria-label={`Open the ${sheets[0].name} resume in a new tab`}>
+          <span>Open this PDF</span><i><Icon name="arrow-up-right" size={13} /></i>
+        </a>
+        <p class="rw-jumps">
+          <a href="#experience" data-jump="experience">Experience</a>
+          <a href="#skills" data-jump="skills">Skills</a>
+          <a href="#education" data-jump="education">Education</a>
+        </p>
+        <p class="rw-small">Keep scrolling and it comes apart.</p>
+      </div>
+    </div>
+
+    <h2 class="rw-section" id="experience">Experience</h2>
+
+    {roles.map((r, ri) => {
+      const hasKeys = r.items.some((it) => it.name);
+      return (
+        <article class:list={["rw-stop rw-role", `rw-s-${r.id}`, { "has-keys": hasKeys }]} data-stop={r.stop} data-lane={LANE[ri % LANE.length]}>
+          <div class="rw-copy rw-slide">
+            <p class="rw-kick">Experience · {ri + 1} of {roles.length}</p>
+            {r.logo && <span class={logoClass(r.logo)}><img src={r.logo} alt="" loading="lazy" decoding="async" /></span>}
+            <h3 class="rw-title" data-sound-hover="role" data-id={r.id}>{r.title}</h3>
+            <p class="rw-org">{r.location}</p>
+            <p class="rw-date">{span(r.date)}</p>
+            <ul class="rw-items">
+              {(r.highlights ?? []).map((h, i) => (
+                hasKeys
+                  ? <li data-item={i} class:list={[{ "is-shown": i === 0 }]} set:html={md(h)} />
+                  : <li set:html={md(h)} />
+              ))}
+            </ul>
+            {hasKeys && <p class="rw-small rw-keyhint"><span class="rw-fine">Hover a line to read it, click to open its post.</span><span class="rw-coarse">Tap a line to read it, tap again to open its post.</span></p>}
+          </div>
+        </article>
+      );
+    })}
+
+    <!-- skills: the cloud is drawn, the list stays here for everything that reads -->
+    <section class="rw-stop rw-s-skills" data-stop={skillsStop}>
+      <div class="rw-copy rw-slide" data-avoid>
+        <p class="rw-kick">Skills</p>
+        <h2 class="rw-title" id="skills">Skills</h2>
+        <p class="rw-small"><span class="rw-fine">Sweep the pointer through the cloud. Hover a group to gather it.</span><span class="rw-coarse">Tap a group to gather it.</span></p>
+      </div>
+      <ul class="rw-skill-list">
+        {skills.map((g) => (
+          <li class="rw-skill">
+            <h3 class="rw-skill-label">{g.label}</h3>
+            <ul class="rw-skill-words">
+              {g.items.map((w) => <li class="chip">{w}</li>)}
+            </ul>
+          </li>
+        ))}
+      </ul>
+      <div class="rw-chips" data-avoid-row role="group" aria-label="Gather one group of skills">
+        {skills.map((g, i) => <button type="button" class="rw-chip" data-group={i} aria-pressed="false">{g.label}</button>)}
+      </div>
+    </section>
+
+    <!-- education comes last, and all four PDFs are one click away again -->
+    <section class="rw-stop rw-s-edu" data-stop={eduStop}>
+      <div class="rw-copy rw-slide">
+        <p class="rw-kick">Education</p>
+        <h2 class="rw-title" id="education">Education</h2>
+      </div>
+      <div class="rw-edu">
+        {education.map((e) => (
+          <article class="rw-edu-card" data-sound-hover="education" data-id={e.title}>
+            {e.logo && <span class={logoClass(e.logo)}><img src={e.logo} alt="" loading="lazy" decoding="async" /></span>}
+            <h3 class="rw-edu-title">{e.title}</h3>
+            <p class="rw-org">{e.location}</p>
+            <p class="rw-date">{span(e.date)}{e.gpa ? ` · GPA ${e.gpa}` : ""}</p>
+          </article>
+        ))}
+      </div>
+      <p class="rw-last">
+        <span class="rw-last-label">Open a PDF</span>
+        {sheets.map((s) => <a class="rw-pill" href={s.file} target="_blank" rel="noopener" aria-label={`Open the ${s.name} resume in a new tab`}>{s.acronym} <Icon name="arrow-up-right" size={12} /></a>)}
+      </p>
+    </section>
+
+    <!-- where you are, and the PDFs from every stop -->
+    <nav class="rw-rail" aria-label="Stops">
+      <ol>
+        {STOP_LABELS.map((label, i) => (
+          <li><a href={i === 0 ? "#versions" : i === skillsStop ? "#skills" : i === eduStop ? "#education" : "#experience"} data-go={i} aria-current={i === 0 ? "step" : undefined} aria-label={label}><span class="rw-rail-label">{label}</span><i></i></a></li>
+        ))}
+      </ol>
+    </nav>
+    <p class="rw-count" aria-hidden="true"><b data-now>01</b><i>/</i><span>{pad(STOPS.length)}</span></p>
+    <p class="rw-dock">
+      <span>PDF</span>
+      {sheets.map((s) => <a href={s.file} target="_blank" rel="noopener" aria-label={`Open the ${s.name} resume in a new tab`}>{s.acronym}</a>)}
+    </p>
+  </div>
+</section>
+
+<script>
+  import { onPage } from "../../scripts/lifecycle";
+  import { startResumeWorld } from "../../scripts/resume-world/page";
+  onPage("resume-world", (signal) => startResumeWorld(signal));
+</script>
+
+<style>
+  .rw { position: relative; z-index: 1; color: var(--ink); }
+
+  /* ------------------------------------------------------------------
+     The document: what shows without JavaScript or WebGL, and with
+     reduced motion. A calm, complete resume on the same paper.
+     ------------------------------------------------------------------ */
+  .rw-stage { width: min(100%, calc(var(--max) + 2 * var(--gutter))); margin-inline: auto; padding: clamp(104px, 14vh, 148px) var(--gutter) clamp(64px, 8vw, 104px); }
+  .rw-sky, .rw-canvas, .rw-hits, .rw-rail, .rw-dock, .rw-count, .rw-chips, .rw-s-page, .rw-kick, .rw-hint, .rw-keyhint, .rw-s-skills .rw-small { display: none; }
+  .rw-kicker { display: inline-flex; align-items: center; gap: 8px; margin: 0; font-size: 0.875rem; font-weight: 500; color: var(--ink); }
+  .rw-kicker::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: #fff; box-shadow: 0 0 10px #fff; }
+  .rw-h1 { margin: 18px 0 0; font-size: clamp(2.6rem, 7.2vw, 5.4rem); font-weight: 600; letter-spacing: -0.042em; line-height: 1.02; }
+  .rw-h1-name { display: block; }
+  .rw-tail { display: block; color: var(--ink-faint); }
+  .rw-lede { margin: 22px 0 0; max-width: 38rem; font-size: 1.0625rem; line-height: 1.6; color: var(--ink-soft); }
+
+  .rw-versions { list-style: none; margin: 40px 0 0; padding: 0; display: grid; gap: 16px; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  @media (min-width: 900px) { .rw-versions { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 20px; } }
+  .rw-version { display: grid; gap: 14px; color: inherit; text-decoration: none; height: 100%; align-content: start; }
+  .rw-version:focus-visible { outline: 1.5px solid #fff; outline-offset: 4px; border-radius: 6px; }
+
+  /* a sheet painted with CSS: real words on paper */
+  .rw-paper {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    aspect-ratio: 8.5 / 11;
+    padding: 9%;
+    overflow: hidden;
+    background: linear-gradient(155deg, #f4f5f7 0%, #d9dce2 55%, #aeb3bc 100%);
+    color: #0b0d12;
+    border-radius: 2px;
+    box-shadow: 0 30px 60px -24px rgba(0, 0, 0, 0.9), inset 0 0 0 1px rgba(255, 255, 255, 0.5);
+    font-size: clamp(6.5px, 0.72vw, 9.5px);
+    line-height: 1.3;
+    transition: transform 0.5s var(--ease-glass), box-shadow 0.5s ease;
+  }
+  .rw-version:hover .rw-paper { transform: translateY(-6px); box-shadow: 0 40px 70px -24px rgba(255, 255, 255, 0.16), inset 0 0 0 1px #fff; }
+  .rw-paper-top { display: flex; justify-content: space-between; gap: 8px; font-size: 1.5em; font-weight: 640; letter-spacing: -0.02em; }
+  .rw-paper-top i { font-style: normal; font-weight: 300; }
+  .rw-paper-name { font-size: 1.15em; font-weight: 560; }
+  .rw-paper-rule { height: 1px; margin: 4px 0; background: rgba(0, 0, 0, 0.25); flex: none; }
+  .rw-paper-line { display: flex; justify-content: space-between; gap: 8px; }
+  .rw-paper-line b { font-weight: 560; }
+  .rw-paper-line i { font-style: normal; opacity: 0.6; white-space: nowrap; }
+
+  .rw-cell { display: grid; gap: 4px; align-content: start; }
+  .rw-acr { font-size: 0.75rem; font-weight: 600; letter-spacing: 0.04em; color: var(--ink-faint); }
+  .rw-cell-name { font-size: 1rem; font-weight: 580; letter-spacing: -0.01em; line-height: 1.25; }
+  .rw-cell-blurb { font-size: 0.8125rem; line-height: 1.45; color: var(--ink-soft); }
+  .rw-open { display: inline-flex; align-items: center; gap: 4px; margin-top: 4px; font-size: 0.8125rem; font-weight: 560; color: #fff; }
+
+  .rw-section { margin: clamp(56px, 8vw, 96px) 0 20px; font-size: clamp(1.8rem, 3.2vw, 2.6rem); font-weight: 600; letter-spacing: -0.03em; }
+  .rw-role { margin-top: 16px; padding: clamp(22px, 3vw, 36px); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 18px; background: rgba(255, 255, 255, 0.025); }
+  .rw-role .rw-copy { display: grid; gap: 4px; }
+  .rw-title { margin: 12px 0 0; font-size: clamp(1.3rem, 2.3vw, 1.75rem); font-weight: 600; letter-spacing: -0.02em; line-height: 1.15; }
+  .rw-org { margin: 0; font-size: 0.9375rem; line-height: 1.5; color: var(--ink-soft); }
+  .rw-date { margin: 0; font-size: 0.8125rem; color: var(--ink-faint); font-variant-numeric: tabular-nums; }
+  .rw-items { list-style: none; margin: 14px 0 0; padding: 0; display: grid; gap: 12px; }
+  .rw-items li { position: relative; padding-left: 18px; max-width: 48rem; font-size: 0.9375rem; line-height: 1.6; color: var(--ink-soft); overflow-wrap: anywhere; }
+  .rw-items li::before { content: ""; position: absolute; left: 2px; top: 0.7em; width: 4px; height: 4px; border-radius: 50%; background: var(--ink-ghost); }
+  .rw-items :global(.ilink) { font-weight: 560; color: #fff; }
+  .rw-items :global(code) { font-size: 0.875em; padding: 1px 6px; border-radius: 6px; background: var(--wash-strong); color: var(--ink); }
+
+  /* logos as quiet monochrome marks */
+  .rw-logo { display: inline-flex; align-items: center; height: 24px; }
+  .rw-logo img { display: block; height: 100%; width: auto; max-width: 128px; object-fit: contain; object-position: left center; filter: grayscale(1) invert(1) contrast(1.15); mix-blend-mode: screen; opacity: 0.82; }
+  .rw-logo.is-light img { filter: grayscale(1) brightness(1.15); mix-blend-mode: normal; }
+
+  .rw-s-skills { margin-top: clamp(56px, 8vw, 96px); }
+  .rw-s-skills .rw-title, .rw-s-edu .rw-title { margin: 0 0 20px; font-size: clamp(1.8rem, 3.2vw, 2.6rem); letter-spacing: -0.03em; }
+  .rw-skill-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 18px; }
+  .rw-skill { display: grid; gap: 8px; }
+  @media (min-width: 768px) { .rw-skill { grid-template-columns: 170px minmax(0, 1fr); gap: 24px; align-items: baseline; } }
+  .rw-skill-label { margin: 0; font-size: 0.9375rem; font-weight: 600; }
+  .rw-skill-words { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 8px; }
+  .rw-skill-words :global(.chip), .rw-skill-words li { white-space: normal; height: auto; min-height: 28px; padding-block: 6px; line-height: 1.2; }
+
+  .rw-s-edu { margin-top: clamp(56px, 8vw, 96px); }
+  .rw-edu { display: grid; gap: 16px; }
+  @media (min-width: 768px) { .rw-edu { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; } }
+  .rw-edu-card { display: grid; gap: 4px; align-content: start; padding: clamp(20px, 2.6vw, 30px); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 18px; background: rgba(255, 255, 255, 0.025); }
+  .rw-edu-title { margin: 12px 0 0; font-size: 1.125rem; font-weight: 600; letter-spacing: -0.015em; line-height: 1.25; }
+  .rw-last { margin: 28px 0 0; display: flex; flex-wrap: wrap; align-items: center; gap: 8px; font-size: 0.875rem; color: var(--ink-soft); }
+  .rw-last-label { margin-right: 6px; }
+  .rw-pill { display: inline-flex; align-items: center; gap: 4px; height: 34px; padding: 0 14px; border-radius: 999px; border: 1px solid rgba(255, 255, 255, 0.2); color: #fff; text-decoration: none; font-weight: 560; font-size: 0.8125rem; transition: background 0.25s ease, color 0.25s ease, border-color 0.25s ease; }
+  .rw-pill:hover { background: #fff; color: #05070b; border-color: #fff; }
+  .rw-pill:focus-visible { outline: 1.5px solid #fff; outline-offset: 3px; }
+
+  /* ------------------------------------------------------------------
+     The world: one pinned stage, each stop laid over the last.
+     ------------------------------------------------------------------ */
+  .rw.is-live { height: calc(((var(--stops) - 1) * var(--span) + 1) * 100svh); }
+  .rw.is-live .rw-stage {
+    position: sticky;
+    top: 0;
+    width: 100%;
+    max-width: none;
+    height: 100svh;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+    isolation: isolate;
+    touch-action: pinch-zoom;
+    --gx: max(24px, var(--gutter));
+  }
+  :global(html.in-rw .orbit), :global(html.in-rw .to-top) { opacity: 0 !important; pointer-events: none !important; transition: opacity 0.4s ease; }
+  /* no blue comets here: this tab's light is white */
+  :global(body:has([data-rw]) .page-comets) { display: none; }
+
+  .is-live .rw-sky {
+    display: block;
+    position: absolute;
+    inset: 0;
+    background:
+      radial-gradient(58% 46% at 50% 54%, rgba(205, 214, 228, 0.09), transparent 72%),
+      radial-gradient(40% 30% at 18% 86%, rgba(205, 214, 228, 0.05), transparent 72%);
+    pointer-events: none;
+  }
+  .is-live .rw-canvas { display: block; position: absolute; inset: 0; width: 100%; height: 100%; z-index: 1; opacity: 0; transition: opacity 1.1s ease; pointer-events: none; }
+  .is-3d .rw-canvas { opacity: 1; }
+
+  .is-live .rw-hits { display: block; position: absolute; inset: 0; z-index: 2; pointer-events: none; overflow: hidden; }
+  .rw-hit { position: absolute; left: 0; top: 0; width: 100px; height: 100px; transform: translate3d(-300vw, 0, 0); transform-origin: 0 0; display: block; pointer-events: none; user-select: none; -webkit-user-drag: none; -webkit-tap-highlight-color: transparent; }
+  .is-3d .rw-hit[data-on="1"] { pointer-events: auto; }
+
+  .is-live .rw-stop { position: absolute; inset: 0; z-index: 3; margin: 0; padding: 0; border: 0; border-radius: 0; background: none; pointer-events: none; opacity: 0; will-change: opacity; }
+  .is-live .rw-s-hero { opacity: 1; }
+  .is-live .rw-stop.is-on :is(a, button) { pointer-events: auto; }
+  .is-live .rw-section { position: absolute; width: 1px; height: 1px; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+  .is-live .rw-slide { transform: translate3d(calc(var(--d, 0) * var(--mx, 0px)), calc(var(--d, 0) * var(--my, -150px)), 0); }
+
+  .is-live .rw-kick { display: block; margin: 0 0 10px; font-size: 0.75rem; font-weight: 560; letter-spacing: 0.02em; color: var(--ink-faint); }
+  .is-live .rw-small, .is-live .rw-keyhint { display: block; margin: 12px 0 0; font-size: 0.75rem; line-height: 1.5; color: var(--ink-faint); }
+  .rw-coarse { display: none; }
+  @media (pointer: coarse) { .rw-coarse { display: inline; } .rw-fine { display: none; } }
+  .is-live .rw-title { margin: 0; font-size: clamp(2rem, 3.9vw, 3.5rem); font-weight: 600; letter-spacing: -0.038em; line-height: 1.02; text-wrap: balance; }
+  .is-live .rw-org { margin-top: 12px; font-size: 1rem; }
+  .is-live .rw-date { margin-top: 2px; font-size: 0.875rem; }
+  .is-live .rw-copy { text-shadow: 0 1px 18px rgba(0, 0, 0, 0.75); }
+  .is-3d .rw-logo { display: none; }
+
+  /* ---- 01 the four sheets */
+  .is-live .rw-kicker { position: absolute; top: 88px; left: var(--gx); font-size: 0.8125rem; }
+  .is-live .rw-h1 { position: static; margin: 0; }
+  .is-live .rw-h1-name {
+    position: absolute;
+    top: 96px;
+    left: 2.3vw;
+    right: 2.3vw;
+    font-size: 11.55vw;
+    font-weight: 620;
+    letter-spacing: -0.042em;
+    line-height: 0.98;
+    white-space: nowrap;
+    color: rgba(226, 229, 235, 0.9);
+    transition: color 0.8s ease;
+  }
+  .is-3d .rw-h1-name { color: transparent; }
+  .is-live .rw-tail { position: absolute; top: 88px; left: calc(var(--gx) + 74px); font-size: 0.8125rem; font-weight: 450; letter-spacing: 0; line-height: 1.5; color: var(--ink-soft); }
+  .is-live .rw-lede { position: absolute; top: 88px; right: var(--gx); margin: 0; max-width: 40vw; font-size: 0.8125rem; line-height: 1.5; text-align: right; color: var(--ink-soft); }
+  .is-live .rw-hint { display: block; color: var(--ink-faint); }
+  .is-live .rw-versions { position: absolute; left: var(--gx); right: var(--gx); bottom: 18px; margin: 0; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; }
+  .is-live .rw-version { position: relative; display: block; height: auto; pointer-events: auto; }
+  .is-live .rw-paper {
+    position: absolute;
+    left: 50%;
+    bottom: calc(100% + 16px);
+    width: min(100%, calc((100svh - 330px) * 0.7727));
+    transform: translateX(-50%) rotate(calc((var(--i) - 1.5) * 1.6deg)) translateY(calc((var(--i) - 1.5) * -3px));
+    transition: opacity 0.7s ease, transform 0.5s var(--ease-glass);
+    animation: rw-float 7s ease-in-out infinite;
+    animation-delay: calc(var(--i) * -1.7s);
+  }
+  @keyframes rw-float { 50% { translate: 0 -9px; } }
+  .is-live .rw-version:hover .rw-paper { transform: translateX(-50%) translateY(-8px); }
+  .is-3d .rw-paper { opacity: 0; visibility: hidden; transition: opacity 0.7s ease, visibility 0s linear 0.7s; animation: none; }
+  .is-live .rw-cell {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    column-gap: 12px;
+    row-gap: 2px;
+    padding-top: 10px;
+    border-top: 1px solid rgba(255, 255, 255, 0.16);
+    transition: border-color 0.3s ease;
+  }
+  .is-live .rw-version::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 1px;
+    background: #fff;
+    box-shadow: 0 0 12px rgba(255, 255, 255, 0.8);
+    transform: scaleX(0);
+    transform-origin: left;
+    transition: transform 0.55s var(--ease-glass);
+  }
+  .is-live .rw-version:hover::before, .is-live .rw-version:focus-visible::before, .is-live .rw-version.is-near::before { transform: scaleX(1); }
+  .is-live .rw-acr { grid-column: 1; }
+  .is-live .rw-cell-name { grid-column: 1; font-size: 0.9375rem; }
+  .is-live .rw-cell-blurb { grid-column: 1; font-size: 0.75rem; line-height: 1.4; }
+  .is-live .rw-open { grid-column: 2; grid-row: 1 / span 3; align-self: start; margin: 0; height: 28px; padding: 0 11px; border-radius: 999px; background: #fff; color: #05070b; font-size: 0.75rem; white-space: nowrap; transition: transform 0.3s var(--ease-glass), box-shadow 0.3s ease; }
+  .is-live .rw-version:hover .rw-open, .is-live .rw-version.is-near .rw-open { box-shadow: 0 0 22px rgba(255, 255, 255, 0.55); transform: translateY(-1px); }
+
+  /* ---- 02 the page */
+  .is-live .rw-s-page { display: block; }
+  .rw-s-page .rw-copy { position: absolute; left: var(--gx); bottom: clamp(36px, 8vh, 72px); width: min(420px, 31vw); --mx: -60px; --my: -60px; }
+  .rw-s-page .rw-title { font-size: clamp(2rem, 3.5vw, 3.2rem); }
+  .rw-cta {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    height: 42px;
+    margin-top: 18px;
+    padding: 0 7px 0 18px;
+    border-radius: 999px;
+    background: #fff;
+    color: #05070b;
+    font-size: 0.875rem;
+    font-weight: 580;
+    text-decoration: none;
+    text-shadow: none;
+    box-shadow: 0 10px 34px -10px rgba(255, 255, 255, 0.6);
+    transition: transform 0.25s var(--ease-glass), box-shadow 0.25s ease;
+  }
+  .rw-cta i { display: grid; place-items: center; width: 28px; height: 28px; border-radius: 50%; background: rgba(5, 7, 11, 0.1); font-style: normal; transition: transform 0.3s var(--ease-glass); }
+  .rw-cta:hover { transform: translateY(-2px); box-shadow: 0 16px 44px -10px rgba(255, 255, 255, 0.8); }
+  .rw-cta:hover i { transform: translate(2px, -2px); }
+  .rw-cta:focus-visible, .rw-jumps a:focus-visible, .rw-chip:focus-visible, .rw-dock a:focus-visible, .rw-rail a:focus-visible { outline: 1.5px solid #fff; outline-offset: 3px; }
+  .rw-jumps { display: flex; flex-wrap: wrap; gap: 6px 16px; margin: 18px 0 0; font-size: 0.875rem; }
+  .rw-jumps a { color: rgba(255, 255, 255, 0.82); text-decoration: none; border-bottom: 1px solid rgba(255, 255, 255, 0.25); padding-bottom: 2px; transition: color 0.2s ease, border-color 0.2s ease; }
+  .rw-jumps a:hover { color: #fff; border-color: #fff; }
+
+  /* ---- the four roles, each framed its own way */
+  .is-live .rw-role { padding: 0; border: 0; border-radius: 0; background: none; }
+  .is-live .rw-items { margin-top: 18px; gap: 10px; }
+  .is-live .rw-items li { padding-left: 14px; font-size: 0.9375rem; line-height: 1.55; color: rgba(255, 255, 255, 0.78); }
+  .rw-role .rw-copy { position: relative; }
+  .is-live .rw-role .rw-copy { position: absolute; display: block; }
+
+  .is-live .rw-s-hybridge .rw-copy { left: var(--gx); top: 50%; width: min(460px, 36vw); margin-top: -170px; --mx: -220px; --my: 0px; }
+  .is-live .has-keys .rw-items { position: relative; min-height: 196px; display: block; }
+  .is-live .has-keys .rw-items li { position: absolute; left: 0; right: 0; top: 0; padding-left: 0; opacity: 0; transform: translateY(8px); transition: opacity 0.28s ease, transform 0.4s var(--ease-glass); }
+  .is-live .has-keys .rw-items li::before { display: none; }
+  .is-live .has-keys .rw-items li.is-shown { opacity: 1; transform: none; }
+  .is-live .has-keys .rw-items :global(.ilink) { display: inline; font-size: 1.0625rem; }
+
+  .is-live .rw-s-research .rw-copy { right: var(--gx); top: 50%; width: min(440px, 33vw); margin-top: -150px; --mx: 240px; --my: 0px; }
+  .is-live .rw-s-video .rw-copy { left: var(--gx); right: var(--gx); bottom: clamp(28px, 6vh, 56px); display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); column-gap: 40px; align-items: end; --mx: 0px; --my: 160px; }
+  .is-live .rw-s-video .rw-copy > :not(.rw-items) { grid-column: 1; }
+  .is-live .rw-s-video .rw-items { grid-column: 2; grid-row: 1 / span 5; margin: 0; align-self: end; }
+  .is-live .rw-s-shure .rw-copy { right: var(--gx); top: 120px; width: min(460px, 34vw); --mx: 180px; --my: -60px; }
+
+  /* ---- skills */
+  .is-live .rw-s-skills { display: block; }
+  .is-live .rw-s-skills .rw-copy { position: absolute; left: var(--gx); top: 90px; width: min(300px, 24vw); --mx: -120px; --my: 0px; }
+  .is-live .rw-s-skills .rw-small { display: block; }
+  .is-live .rw-s-skills .rw-title { margin: 0; font-size: clamp(2rem, 3.9vw, 3.5rem); }
+  .is-live .rw-s-skills .rw-kick { display: none; }
+  .is-3d .rw-skill-list, .is-live .rw-skill-list { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+  .is-live .rw-chips {
+    display: flex;
+    justify-content: center;
+    gap: 6px;
+    position: absolute;
+    left: var(--gx);
+    right: max(var(--gx), 84px);
+    bottom: 22px;
+    flex-wrap: wrap;
+    --mx: 0px;
+    --my: 90px;
+    transform: translate3d(0, calc(var(--d, 0) * 90px), 0);
+  }
+  .rw-chip {
+    height: 34px;
+    padding: 0 13px;
+    border-radius: 999px;
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    background: rgba(8, 10, 14, 0.82);
+    color: rgba(255, 255, 255, 0.78);
+    font: inherit;
+    font-size: 0.8125rem;
+    font-weight: 500;
+    white-space: nowrap;
+    cursor: pointer;
+    transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+  }
+  .rw-chip:hover { border-color: rgba(255, 255, 255, 0.5); color: #fff; }
+  .rw-chip.is-on { background: #fff; color: #05070b; border-color: #fff; }
+
+  /* ---- education */
+  .is-live .rw-s-edu { margin: 0; }
+  .is-live .rw-s-edu .rw-copy { position: absolute; left: var(--gx); right: var(--gx); top: 92px; text-align: center; --mx: 0px; --my: -90px; }
+  .is-live .rw-s-edu .rw-title { margin: 0; font-size: clamp(2rem, 3.9vw, 3.5rem); }
+  .is-live .rw-s-edu .rw-kick { display: none; }
+  .is-live .rw-edu { position: absolute; left: var(--gx); right: var(--gx); top: 26%; }
+  .is-live .rw-edu-card { padding: 0; border: 0; background: none; text-align: center; justify-items: center; }
+  .is-3d .rw-edu { width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+  .is-live .rw-last { position: absolute; left: var(--gx); right: var(--gx); bottom: 28px; margin: 0; justify-content: center; }
+
+  /* ---- where you are */
+  .is-live .rw-rail { display: block; position: absolute; right: 12px; top: 50%; transform: translateY(-50%); z-index: 4; }
+  .rw-rail ol { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; justify-items: end; }
+  .rw-rail a { display: flex; align-items: center; justify-content: flex-end; gap: 8px; height: 18px; color: var(--ink-faint); text-decoration: none; font-size: 0.6875rem; }
+  .rw-rail i { display: block; width: 12px; height: 1px; background: rgba(255, 255, 255, 0.34); transition: width 0.35s var(--ease-glass), background 0.3s ease; }
+  .rw-rail-label { opacity: 0; transform: translateX(6px); transition: opacity 0.2s ease, transform 0.3s var(--ease-glass); white-space: nowrap; text-shadow: 0 1px 10px #000; }
+  .rw-rail a:hover i { width: 18px; background: #fff; }
+  .rw-rail a:hover .rw-rail-label, .rw-rail a:focus-visible .rw-rail-label { opacity: 1; transform: none; color: #fff; }
+  .rw-rail a[aria-current] i { width: 24px; background: #fff; box-shadow: 0 0 8px rgba(255, 255, 255, 0.8); }
+  .rw-rail a[aria-current] .rw-rail-label { opacity: 1; transform: none; color: #fff; }
+
+  .is-live .rw-dock {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    position: absolute;
+    top: 84px;
+    right: var(--gx);
+    z-index: 4;
+    margin: 0;
+    padding: 3px 3px 3px 12px;
+    border-radius: 999px;
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    background: rgba(8, 10, 14, 0.86);
+    font-size: 0.75rem;
+    color: var(--ink-faint);
+    opacity: 1;
+    transition: opacity 0.4s ease, transform 0.5s var(--ease-glass);
+  }
+  .rw-dock span { margin-right: 4px; }
+  .rw-dock a { display: grid; place-items: center; height: 26px; min-width: 36px; padding: 0 8px; border-radius: 999px; color: rgba(255, 255, 255, 0.86); text-decoration: none; font-weight: 560; transition: background 0.2s ease, color 0.2s ease; }
+  .rw-dock a:hover { background: #fff; color: #05070b; }
+  .is-live[data-at="sheets"] .rw-dock, .is-live[data-at="education"] .rw-dock { opacity: 0; transform: translateY(-6px); pointer-events: none; }
+  .is-live[data-at="shure"] .rw-s-shure .rw-copy { top: 132px; }
+
+  /* ---- phones: the object above, the words below on solid glass (no blur
+     over a canvas on iPhone) */
+  @media (max-width: 767px) {
+    .is-live .rw-kicker { top: 78px; left: 16px; font-size: 0.75rem; }
+    .is-live .rw-tail { top: 78px; left: 84px; font-size: 0.75rem; }
+    .is-live .rw-lede { display: none; }
+    .is-live .rw-h1-name { top: 92px; left: 3.5vw; right: 3.5vw; font-size: 21.5vw; white-space: normal; line-height: 0.92; }
+    .is-live .rw-h1-name > span { display: block; }
+    .is-live .rw-versions { left: 12px; right: 12px; bottom: 10px; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
+    .is-live .rw-paper { width: min(92%, calc((100svh - 480px) / 2 * 0.7727)); bottom: auto; top: 0; display: none; }
+    .is-live .rw-cell { padding: 7px 8px 7px 10px; border: 1px solid rgba(255, 255, 255, 0.14); border-radius: 12px; background: rgba(10, 12, 17, 0.94); grid-template-columns: minmax(0, 1fr) auto; align-items: center; min-height: 48px; }
+    .is-live .rw-version::before { display: none; }
+    .is-live .rw-acr { font-size: 0.625rem; }
+    .is-live .rw-cell-name { font-size: 0.75rem; line-height: 1.15; }
+    .is-live .rw-cell-blurb { display: none; }
+    .is-live .rw-open { grid-row: 1 / span 2; align-self: center; width: 26px; height: 26px; padding: 0; justify-content: center; font-size: 0; gap: 0; }
+
+    .is-live .rw-stop .rw-copy,
+    .is-live .rw-role .rw-copy,
+    .is-live .rw-s-video .rw-copy,
+    .is-live .rw-s-page .rw-copy {
+      left: 0;
+      right: 0;
+      top: auto;
+      bottom: 0;
+      width: auto;
+      margin: 0;
+      display: block;
+      padding: 16px 16px max(16px, env(safe-area-inset-bottom));
+      border-top: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 18px 18px 0 0;
+      background: #07090d;
+      text-shadow: none;
+      --mx: 0px;
+      --my: 120px;
+    }
+    .is-live .rw-title { font-size: 1.75rem; }
+    .is-live .rw-org { margin-top: 6px; font-size: 0.875rem; }
+    .is-live .rw-date { font-size: 0.75rem; }
+    .is-live .rw-items { margin-top: 10px; }
+    .is-live .rw-items li { font-size: 0.8125rem; line-height: 1.5; }
+    .is-live .has-keys .rw-items { min-height: 148px; }
+    .is-live .has-keys .rw-items :global(.ilink) { font-size: 0.9375rem; }
+    .rw-s-page .rw-title { font-size: 1.75rem; }
+    .rw-cta { margin-top: 10px; height: 38px; }
+    .rw-jumps { margin-top: 10px; font-size: 0.8125rem; }
+    .is-live .rw-small, .is-live .rw-keyhint { margin-top: 8px; font-size: 0.6875rem; }
+    .is-live .rw-s-video .rw-items { margin-top: 10px; }
+    .is-live .rw-s-skills .rw-copy { top: 72px; bottom: auto; padding: 6px 16px 0; background: none; border: 0; }
+    .is-live .rw-s-skills .rw-title { font-size: 1.75rem; }
+    .is-live .rw-chips { left: 0; right: 0; bottom: 14px; justify-content: flex-start; flex-wrap: nowrap; overflow-x: auto; padding: 0 16px; scrollbar-width: none; touch-action: pan-x pinch-zoom; }
+    .is-live .rw-chips::-webkit-scrollbar { display: none; }
+    .is-live .rw-s-edu .rw-copy { top: 66px; bottom: auto; padding: 8px 16px 0; background: none; border: 0; text-align: left; }
+    .is-live .rw-s-edu .rw-title { font-size: 1.75rem; }
+    .is-live .rw-last { bottom: 14px; left: 12px; right: 12px; }
+    .is-live .rw-rail { display: none; }
+    .is-live .rw-dock { top: 72px; right: 12px; padding: 2px 2px 2px 10px; }
+    .is-live .rw-dock a { height: 24px; min-width: 32px; padding: 0 6px; font-size: 0.6875rem; }
+    :global(html.in-rw .chat-launcher) { opacity: 0 !important; pointer-events: none !important; }
+  }
+
+  /* ---- print: a clean document on white */
+  @media print {
+    :global(body > *:not(main)) { display: none !important; }
+    :global(body), :global(html) { background: #fff !important; color: #000 !important; }
+    .rw, .rw.is-live { height: auto !important; color: #000; }
+    .rw .rw-stage, .rw.is-live .rw-stage { position: static !important; height: auto !important; overflow: visible !important; padding: 0 !important; width: 100% !important; }
+    .rw-sky, .rw-canvas, .rw-hits, .rw-rail, .rw-dock, .rw-count, .rw-chips, .rw-s-page, .rw-paper, .rw-kick, .rw-small, .rw-keyhint, .rw-hint, .rw-logo { display: none !important; }
+    .rw-stop, .is-live .rw-stop { position: static !important; opacity: 1 !important; transform: none !important; }
+    .rw-slide, .is-live .rw-slide { transform: none !important; }
+    .rw-copy, .is-live .rw-role .rw-copy, .is-live .rw-s-skills .rw-copy, .is-live .rw-s-edu .rw-copy { position: static !important; width: auto !important; margin: 0 !important; display: block !important; color: #000 !important; text-shadow: none !important; text-align: left !important; }
+    .rw-section, .is-live .rw-section { position: static !important; width: auto !important; height: auto !important; margin: 18pt 0 6pt !important; overflow: visible !important; clip-path: none !important; white-space: normal !important; font-size: 16pt !important; color: #000 !important; }
+    .rw-h1-name, .is-live .rw-h1-name, .is-3d .rw-h1-name { position: static !important; font-size: 26pt !important; color: #000 !important; white-space: normal !important; }
+    .rw-kicker, .is-live .rw-kicker { display: none !important; }
+    .rw-tail, .is-live .rw-tail { position: static !important; color: #333 !important; font-size: 11pt !important; }
+    .rw-lede, .is-live .rw-lede { position: static !important; max-width: none !important; text-align: left !important; font-size: 10pt !important; color: #333 !important; display: block !important; }
+    .rw-versions, .is-live .rw-versions { position: static !important; display: block !important; margin: 6pt 0 0 !important; }
+    .rw-version, .is-live .rw-version { color: #000 !important; }
+    .rw-cell, .is-live .rw-cell { display: block !important; border: 0 !important; padding: 0 0 4pt !important; background: none !important; }
+    .rw-acr, .rw-open { display: none !important; }
+    .rw-cell-name, .is-live .rw-cell-name { display: inline !important; font-size: 10pt !important; font-weight: 600; color: #000 !important; }
+    .rw-cell-blurb, .is-live .rw-cell-blurb { display: inline !important; font-size: 10pt !important; color: #333 !important; margin-left: 6pt; }
+    .rw-role, .is-live .rw-role { margin: 0 0 8pt !important; padding: 0 !important; border: 0 !important; background: none !important; break-inside: avoid; }
+    .rw-title, .is-live .rw-title, .is-live .rw-s-skills .rw-title, .is-live .rw-s-edu .rw-title { font-size: 12pt !important; margin: 0 !important; color: #000 !important; }
+    .rw-s-skills .rw-title, .rw-s-edu .rw-title, .is-live .rw-s-skills .rw-title, .is-live .rw-s-edu .rw-title { font-size: 16pt !important; margin: 18pt 0 6pt !important; }
+    .rw-org, .rw-date, .is-live .rw-org, .is-live .rw-date { font-size: 10pt !important; color: #333 !important; margin: 0 !important; }
+    .rw-items, .is-live .rw-items, .is-live .has-keys .rw-items { position: static !important; min-height: 0 !important; display: block !important; margin: 4pt 0 0 !important; }
+    .rw-items li, .is-live .rw-items li, .is-live .has-keys .rw-items li, .is-live .has-keys .rw-items li.is-shown { position: static !important; opacity: 1 !important; transform: none !important; padding-left: 10pt !important; margin-bottom: 3pt; color: #000 !important; font-size: 10pt !important; line-height: 1.35 !important; }
+    .rw-items :global(.ilink), .is-live .has-keys .rw-items :global(.ilink) { color: #000 !important; font-size: 10pt !important; text-decoration: none; font-weight: 600; }
+    .rw-items li::before { background: #000 !important; display: block !important; }
+    .rw-skill-list, .is-live .rw-skill-list, .is-3d .rw-skill-list { position: static !important; width: auto !important; height: auto !important; overflow: visible !important; clip-path: none !important; white-space: normal !important; gap: 3pt !important; }
+    .rw-skill { display: block !important; }
+    .rw-skill-label { display: inline; font-size: 10pt !important; color: #000 !important; }
+    .rw-skill-label::after { content: ": "; }
+    .rw-skill-words { display: inline !important; }
+    .rw-skill-words li { display: inline; padding: 0 !important; border: 0 !important; background: none !important; min-height: 0 !important; font-size: 10pt !important; color: #000 !important; }
+    .rw-skill-words li:not(:last-child)::after { content: ", "; }
+    .rw-edu, .is-live .rw-edu, .is-3d .rw-edu { position: static !important; width: auto !important; height: auto !important; overflow: visible !important; clip-path: none !important; display: block !important; }
+    .rw-edu-card, .is-live .rw-edu-card { display: block !important; padding: 0 0 6pt !important; border: 0 !important; background: none !important; text-align: left !important; }
+    .rw-edu-title { font-size: 11pt !important; margin: 0 !important; color: #000 !important; }
+    .rw-last, .is-live .rw-last { display: none !important; }
+  }
+</style>
