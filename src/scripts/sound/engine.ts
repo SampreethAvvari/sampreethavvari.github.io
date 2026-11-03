@@ -340,7 +340,9 @@ export function mountSound() {
   // A choice remembered from an earlier visit: browsers only let sound start
   // from a tap or a key, so wait for the first one. The suite loads now.
   if (on) {
-    loadSuite();
+    const rest = (window as Window & { requestIdleCallback?: (cb: () => void, o?: { timeout: number }) => number }).requestIdleCallback;
+    if (rest) rest(() => void loadSuite(), { timeout: 4000 });
+    else setTimeout(() => void loadSuite(), 1500);
     const kinds = ["pointerdown", "keydown", "touchend"];
     const wake = () => {
       if (!on) return kinds.forEach((k) => removeEventListener(k, wake, true));
