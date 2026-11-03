@@ -690,14 +690,14 @@ export function mountJourney(canvas: HTMLCanvasElement, opts: JourneyOptions): J
     }
     if (cb > 0) {
       _v.copy(landing.touch)
-        .addScaledVector(landing.right, lerp(-2.0, -4.2, k))
+        .addScaledVector(landing.right, lerp(-2.0, -3, k))
         .addScaledVector(landing.up, lerp(3.4, 1.7, k))
         .addScaledVector(landing.fwd, -lerp(20, 14.5, k));
       camera.position.lerp(_v, cb);
       // Aim past the lander so it sits lower right (upper centre on phones).
       _look
         .copy(landing.touch)
-        .addScaledVector(landing.right, lerp(-1.6, -6.0, k))
+        .addScaledVector(landing.right, lerp(-1.6, -7.8, k))
         .addScaledVector(landing.up, lerp(-11, 3.6, k))
         .addScaledVector(landing.fwd, 40);
       _v.copy(_target).lerp(_look, cb);
@@ -804,7 +804,7 @@ export function mountJourney(canvas: HTMLCanvasElement, opts: JourneyOptions): J
     ptr.d.set(ptx, -pty, 0.5).unproject(camera).sub(camera.position).normalize();
     ptr.on = ptrOn * (1 - bell);
 
-    space.update({ p, q, time, dt, speed, boost, color: _color, camera, fwd: _fwd, reduced, pxScale, dpr, warp: reduced ? 0 : bell, ptr, heading: Math.cos(turnAng), land: L, s: sNow });
+    space.update({ p, q, time, dt, speed, boost, color: _color, camera, fwd: _fwd, reduced, pxScale, dpr, warp: reduced ? 0 : bell, ptr, heading: Math.cos(turnAng), land: L, s: sNow, width, height });
     const fog = scene.fog as FogExp2;
     fog.color.setRGB(0.012, 0.014, 0.03).lerp(_color, 0.04).lerp(space.haze.color, space.haze.weight);
     fog.density = lerp(0.0008, space.haze.density, space.haze.weight);
@@ -877,7 +877,7 @@ export function mountJourney(canvas: HTMLCanvasElement, opts: JourneyOptions): J
     if (scene.environment !== wantEnv) scene.environment = wantEnv;
     // The reflections dim with the evening.
     scene.environmentIntensity = groundK > 0.5 ? lerp(1, 0.12, smooth(0.8, 2.6, sNow)) : 1;
-    const nearNow = sNow > 2.5 ? 0.04 : 0.3;
+    const nearNow = sNow > 2.5 ? 0.03 : 0.3;
     if (camera.near !== nearNow) {
       camera.near = nearNow;
       camera.updateProjectionMatrix();
@@ -886,10 +886,10 @@ export function mountJourney(canvas: HTMLCanvasElement, opts: JourneyOptions): J
     const closeK = smooth(2.75, 3, sNow);
     if (closeK > 0 && surface) {
       pf.dof = pf.dof ?? [0, 0, 0, 0];
-      pf.dof[0] = portrait ? 0.56 : 0.68;
-      pf.dof[1] = 0.2;
+      pf.dof[0] = portrait ? 0.56 : 0.6;
+      pf.dof[1] = portrait ? 0.56 : 0.2;
       pf.dof[2] = closeK * (low ? 0.6 : 1);
-      pf.dof[3] = portrait ? 0.3 : 0.24;
+      pf.dof[3] = portrait ? 0.16 : 0.14;
       // Where the horizon is on screen.
       _v2.copy(camera.position).addScaledVector(landing.fwd, 3000).addScaledVector(landing.up, -camera.position.clone().sub(landing.pad).dot(landing.up)).project(camera);
       pf.dofH = _v2.y * 0.5 + 0.5;
@@ -903,7 +903,7 @@ export function mountJourney(canvas: HTMLCanvasElement, opts: JourneyOptions): J
       const onScreen = _v.z < 1 && Math.abs(_v.x) < 1.3 && Math.abs(_v.y) < 1.3;
       pf.rays[0] = _v.x * 0.5 + 0.5;
       pf.rays[1] = _v.y * 0.5 + 0.5;
-      pf.rays[2] = onScreen ? 1 - smooth(1.2, 1.9, sNow) : 0;
+      pf.rays[2] = onScreen ? 0.45 * (1 - smooth(1.2, 1.9, sNow)) : 0;
       pf.heat = pf.heat ?? [0.5, 0];
       _v2.copy(camera.position).addScaledVector(landing.fwd, 3000).addScaledVector(landing.up, -camera.position.clone().sub(landing.pad).dot(landing.up)).project(camera);
       pf.heat[0] = _v2.y * 0.5 + 0.5;

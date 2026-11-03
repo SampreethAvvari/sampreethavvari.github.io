@@ -184,7 +184,7 @@ void main() {
     float fr = length((vUv - uDof.xy) * asp);
     float blur = smoothstep(uDof.w, uDof.w + 0.42, fr) * uDof.z;
     // The stars stay sharp; only the near and far sand go soft.
-    blur *= 1.0 - smoothstep(uDofH - 0.03, uDofH + 0.005, uv.y);
+    blur *= 1.0 - smoothstep(uDofH + 0.005, uDofH + 0.05, uv.y);
     if (blur > 0.01) {
       vec3 acc = col;
       float rad = blur * 0.012;

@@ -359,6 +359,59 @@ export function buildShip(opts: ShipBuildOptions): Ship {
     return { o: new Vector3(x, y - 0.05, z), d: new Vector3(0, -1, 0), r: 0.08, kind: 1 };
   });
   addParts(lander, lp);
+  // Its own skin: a ceramic grey hull that takes the sky, bright trim, dark seals, small lights.
+  const hullMat = comp.clone();
+  hullMat.color = new Color(0xa4a6ab);
+  hullMat.metalness = 0.62;
+  hullMat.roughness = 0.68;
+  hullMat.envMapIntensity = 1.15;
+  const trimMat = new MeshStandardMaterial({ color: 0xc6c9cf, metalness: 1, roughness: 0.27, envMapIntensity: 1.25 });
+  const ledMat = new MeshBasicMaterial({ color: new Color(1.5, 1.05, 0.62) });
+  lander.traverse((o) => {
+    const mm = o as Mesh;
+    if (mm.isMesh && mm.material === comp) mm.material = hullMat;
+  });
+  {
+    const trim: BufferGeometry[] = [];
+    const dark: BufferGeometry[] = [];
+    const led: BufferGeometry[] = [];
+    const Z = LZ1;
+    // A proper frame around the hatch: outer trim, a dark seal inside it, a light strip over the door.
+    trim.push(new BoxGeometry(1.0, 0.1, 0.11).translate(0, 0.46, Z + 0.045));
+    trim.push(new BoxGeometry(1.0, 0.07, 0.11).translate(0, -0.47, Z + 0.045));
+    for (const sx of [1, -1]) {
+      trim.push(new BoxGeometry(0.09, 0.96, 0.11).translate(sx * 0.455, -0.01, Z + 0.045));
+      dark.push(new BoxGeometry(0.035, 0.86, 0.13).translate(sx * 0.4, -0.02, Z + 0.035));
+      // Ribs and a grab rail either side of the hatch.
+      trim.push(new BoxGeometry(0.04, 0.72, 0.05).translate(sx * 0.6, 0.02, Z + 0.02));
+      trim.push(new BoxGeometry(0.02, 0.52, 0.02).translate(sx * 0.53, -0.04, Z + 0.11));
+      dark.push(new BoxGeometry(0.1, 0.2, 0.03).translate(sx * 0.68, 0.24, Z + 0.012));
+      dark.push(new BoxGeometry(0.1, 0.1, 0.03).translate(sx * 0.68, -0.26, Z + 0.012));
+      led.push(new BoxGeometry(0.045, 0.012, 0.01).translate(sx * 0.68, 0.24, Z + 0.03));
+    }
+    dark.push(new BoxGeometry(0.8, 0.035, 0.13).translate(0, 0.405, Z + 0.035));
+    led.push(new BoxGeometry(0.62, 0.012, 0.012).translate(0, 0.38, Z + 0.1));
+    // Along the flanks: vents, a conduit, a band of small ports.
+    for (const sx of [1, -1]) {
+      for (let k = 0; k < 7; k++) dark.push(new BoxGeometry(0.014, 0.05, 0.11).translate(sx * 0.785, 0.1 - (k % 2) * 0.0, -0.7 + k * 0.15));
+      trim.push(rod(new Vector3(sx * 0.7, 0.42, -1.4), new Vector3(sx * 0.7, 0.42, 1.65), 0.012, 5));
+      trim.push(rod(new Vector3(sx * 0.52, 0.56, -1.0), new Vector3(sx * 0.52, 0.56, 1.5), 0.016, 6));
+      for (let k = 0; k < 4; k++) led.push(new BoxGeometry(0.008, 0.012, 0.03).translate(sx * 0.792, 0.27, -0.5 + k * 0.3));
+      // Thruster quads at the corners.
+      for (const sz of [1.5, -1.3]) {
+        dark.push(new BoxGeometry(0.12, 0.12, 0.12).translate(sx * 0.72, 0.36, sz));
+        trim.push(new CylinderGeometry(0.018, 0.03, 0.05, 8).rotateZ(sx * -Math.PI * 0.5).translate(sx * 0.8, 0.36, sz));
+      }
+      // Collars and a fin on the engine pods.
+      trim.push(new CylinderGeometry(0.25, 0.25, 0.04, 18).rotateX(Math.PI / 2).translate(sx * 0.98, -0.05, 1.56));
+      trim.push(new CylinderGeometry(0.25, 0.25, 0.03, 18).rotateX(Math.PI / 2).translate(sx * 0.98, -0.05, 0.9));
+      dark.push(new BoxGeometry(0.03, 0.14, 0.7).translate(sx * 0.98, 0.2, 1.05));
+    }
+    // A small dish and mast on the roof.
+    trim.push(new CylinderGeometry(0.1, 0.02, 0.05, 14).translate(-0.28, 0.74, 0.5));
+    trim.push(rod(new Vector3(-0.28, 0.62, 0.5), new Vector3(-0.28, 0.72, 0.5), 0.012, 6));
+    lander.add(new Mesh(mergeAll(trim), trimMat), new Mesh(mergeAll(dark), carbon), new Mesh(mergeAll(led), ledMat));
+  }
 
   // The ramp: closed it is the back wall, open it slides out to a long easy
   // slope down to the ground. Treads and side rails give it scale.
@@ -370,11 +423,16 @@ export function buildShip(opts: ShipBuildOptions): Ship {
   const railParts: BufferGeometry[] = [];
   for (const sx of [1, -1]) railParts.push(new BoxGeometry(0.05, RAMP_LEN, 0.1).translate(sx * 0.47, RAMP_LEN / 2, 0.02));
   for (let k = 0; k < 12; k++) railParts.push(new BoxGeometry(0.82, 0.035, 0.03).translate(0, 0.12 + (k / 12) * (RAMP_LEN - 0.2), -0.035));
-  const ramp = new Mesh(boxUV(mergeAll(rampParts), 2.2), comp);
+  for (const sx of [1, -1]) railParts.push(new BoxGeometry(0.03, RAMP_LEN * 0.62, 0.05).translate(sx * 0.47, RAMP_LEN * 0.33, 0.08));
+  const rampMat = new MeshStandardMaterial({ color: 0x3b3d42, metalness: 0.8, roughness: 0.5, envMapIntensity: 0.9 });
+  const ramp = new Mesh(boxUV(mergeAll(rampParts), 2.2), rampMat);
   ramp.castShadow = shadows;
   const rampRails = new Mesh(mergeAll(railParts), metal);
   rampRails.castShadow = shadows;
-  rampPivot.add(ramp, rampRails);
+  const rampLed: BufferGeometry[] = [];
+  for (const sx of [1, -1]) rampLed.push(new BoxGeometry(0.012, RAMP_LEN * 0.9, 0.012).translate(sx * 0.44, RAMP_LEN * 0.5, -0.05));
+  const rampLight = new Mesh(mergeAll(rampLed), new MeshBasicMaterial({ color: new Color(1.3, 0.8, 0.42) }));
+  rampPivot.add(ramp, rampRails, rampLight);
   lander.add(rampPivot);
   const RAMP_CLOSED = 0.95 / RAMP_LEN;
   const RAMP_OPEN = Math.PI - Math.acos(Math.min(1, (STAND - 0.44) / RAMP_LEN));
@@ -450,9 +508,13 @@ export function buildShip(opts: ShipBuildOptions): Ship {
     ];
     const pivot = new Group();
     pivot.position.set(x, y, z);
+    lg.push(new CylinderGeometry(0.1, 0.12, 0.05, 12).translate(0, -len + 0.08, 0));
+    lg.push(new CylinderGeometry(0.018, 0.018, len * 0.62, 6).translate(0.075, -len * 0.42, 0));
     const mesh = new Mesh(mergeAll(lg), metal);
     mesh.castShadow = shadows;
-    pivot.add(mesh);
+    const sleeve = new Mesh(mergeAll([new BoxGeometry(0.15, len * 0.34, 0.15).translate(0, -len * 0.17, 0), new BoxGeometry(0.1, 0.06, 0.1).translate(0, -len * 0.36, 0), new CylinderGeometry(0.03, 0.03, 0.12, 8).rotateZ(Math.PI / 2).translate(0, -0.02, 0)]), carbon);
+    sleeve.castShadow = shadows;
+    pivot.add(mesh, sleeve);
     pivot.rotation.order = "ZXY";
     pivot.visible = false;
     lander.add(pivot);
@@ -476,7 +538,7 @@ export function buildShip(opts: ShipBuildOptions): Ship {
   const rcsGlow = rcsNozzles.map((n) => hubGlows.add(n.o.x + n.d.x * 0.1, n.o.y + n.d.y * 0.1, n.o.z, 0.32, 0.85, 0.92, 1, 0));
   const portGlow = hubGlows.add(0, 0, -2.08, 0.5, 1, 1, 1, 1);
   root.add(hubGlows.mesh);
-  const landerGlows = new GlowBatch(16);
+  const landerGlows = new GlowBatch(22);
   const navL = landerGlows.add(-1.2, 0.1, 0.2, 0.16, 1, 0.15, 0.2, 1);
   const navR = landerGlows.add(1.2, 0.1, 0.2, 0.16, 0.25, 1, 0.4, 1);
   const lBeacon = landerGlows.add(0, 0.72, 0.6, 0.14, 1, 0.3, 0.25, 0);
@@ -485,6 +547,13 @@ export function buildShip(opts: ShipBuildOptions): Ship {
   // Warm floodlights under the nose and in the doorway.
   const flood = [landerGlows.add(0.4, -0.45, -1.6, 0.5, 1, 0.68, 0.36, 1), landerGlows.add(-0.4, -0.45, -1.6, 0.5, 1, 0.68, 0.36, 1)];
   const door = landerGlows.add(0, 0.05, 1.7, 1.1, 1, 0.66, 0.34, 0);
+  for (const [gx, gy, gz, gs, gr, gg, gb] of [
+    [0.72, 0.5, 1.75, 0.05, 1, 0.8, 0.5],
+    [-0.72, 0.5, 1.75, 0.05, 1, 0.8, 0.5],
+    [0.47, 0.53, 1.92, 0.04, 1, 0.9, 0.7],
+    [-0.47, 0.53, 1.92, 0.04, 1, 0.9, 0.7],
+  ])
+    landerGlows.add(gx, gy, gz, gs, gr, gg, gb, 0.9);
   lander.add(landerGlows.mesh);
   let rampOpen = 0;
 
