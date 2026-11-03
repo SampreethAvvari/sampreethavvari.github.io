@@ -10,6 +10,7 @@
 // The words stay in the HTML. This module draws, and moves the invisible
 // links that sit over what it draws.
 
+import { layoutBox } from "../layout-box";
 import { Governor } from "../gl-governor";
 import { prelink, quietShaderChecks } from "../gl-warm";
 import {
@@ -785,14 +786,16 @@ export async function mountWorld(
 
     // ---- the sheets line up over their links
     const cells = hits.sheets.map((el) => document.querySelector<HTMLElement>(`[data-cell="${el.dataset.hit}"]`));
-    const rects = cells.map((c) => c?.getBoundingClientRect());
-    const stage = canvas.getBoundingClientRect();
+    // By layout, not by rect: on the way in the page's blocks are still flying.
+    const stageEl = canvas.parentElement;
+    const rects = cells.map((c) => (c ? layoutBox(c, stageEl) : undefined));
+    const stage = { left: 0, top: 0 };
     rects.forEach((r, i) => {
       cellRects[i] = r ? { x: r.left + r.width / 2 - stage.left, y: r.top - stage.top } : null;
     });
     hits.endLinks.forEach((el, i) => {
-      const r = el.getBoundingClientRect();
-      const row = el.parentElement?.getBoundingClientRect();
+      const r = layoutBox(el, stageEl);
+      const row = el.parentElement ? layoutBox(el.parentElement, stageEl) : null;
       endRects[i] = { x: r.left + r.width / 2 - stage.left, y: (row ? row.top : r.top) - stage.top };
     });
     const cellTop = Math.min(...rects.map((r) => (r ? r.top - stage.top : H * 0.86)));
@@ -1003,8 +1006,9 @@ export async function mountWorld(
       });
       const top = 112;
       // above the PDF links and the small print, however tall they wrap
-      const endBlock = hits.endLinks[0]?.closest(".rw-end")?.getBoundingClientRect();
-      const bottom = (endBlock ? endBlock.top - stage.top : H - 96) - 6;
+      const endEl = hits.endLinks[0]?.closest<HTMLElement>(".rw-end");
+      const endBlock = endEl ? layoutBox(endEl, canvas.parentElement) : null;
+      const bottom = (endBlock ? endBlock.top : H - 96) - 6;
       const total = rows.reduce((a0, r) => a0 + r.mh + r.ch, 0);
       const gap = Math.max(4, (bottom - top - total) / (rows.length * 2 + 1));
       let y = top + gap * 0.6;

@@ -7,6 +7,7 @@
 // touch the finger drives the scroll and a fling of our own follows it, so a
 // glide never fights the phone's native momentum.
 
+import { layoutBox } from "../layout-box";
 export type Motion = {
   /** Stop position, 0 to count - 1, from the current scroll. */
   progress(): number;
@@ -43,7 +44,7 @@ export function mountMotion(o: MotionOpts): Motion {
   // there is: the last one sits at the very bottom, whatever the address bar does.
   const measure = () => {
     const sh = stage.offsetHeight || innerHeight;
-    top0 = root.getBoundingClientRect().top + scrollY;
+    top0 = layoutBox(root).top;
     const room = document.documentElement.scrollHeight - innerHeight - top0;
     step = room > sh ? room / LAST : span * sh;
   };

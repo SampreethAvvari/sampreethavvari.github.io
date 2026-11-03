@@ -479,8 +479,9 @@ export function startResumeWorld(visit: AbortSignal): void | (() => void) {
       el.classList.remove("is-on");
     });
     pane?.style.removeProperty("min-height");
+    pane?.style.removeProperty("max-height");
     document.documentElement.classList.remove("in-rw");
-    root.classList.remove("is-live", "is-3d");
+    root.classList.remove("is-live", "is-3d", "is-phone-3d");
   };
 
   // ------------------------------------------------------------ the 3D world
@@ -508,9 +509,12 @@ export function startResumeWorld(visit: AbortSignal): void | (() => void) {
             onMarkHover: (id, note) => fire("resume:hover", { kind: "mark", id, note }),
             onLineHover: (id, note) => fire("resume:hover", { kind: "line", id, note }),
             onLost: () => {
+              const at = Math.round(P);
               world?.destroy();
               world = null;
               toDocument();
+              // The reader stays with the words they were reading.
+              stops[at]?.scrollIntoView({ block: "start", behavior: "instant" as ScrollBehavior });
             },
           },
           () => motion.progress(),

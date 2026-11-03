@@ -16,6 +16,7 @@
 // One clip decodes at a time and the next is fetched ahead. Everything
 // stops when the reel is off screen, the tab is hidden, or the page goes.
 
+import { layoutBox } from "../../scripts/layout-box";
 import { onPage } from "../../scripts/lifecycle";
 import { createReelGL, type ReelGL } from "./reel-gl";
 import { StillReel } from "./still-reel";
@@ -276,7 +277,7 @@ onPage("film-reel", (signal) => {
   let top = 0;
   let vh = 1;
   const measure = () => {
-    top = root.getBoundingClientRect().top + window.scrollY;
+    top = layoutBox(root).top;
     vh = stage.clientHeight || window.innerHeight;
   };
   measure();

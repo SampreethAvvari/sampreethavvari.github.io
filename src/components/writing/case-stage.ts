@@ -16,6 +16,7 @@
 //                       to, duration }  a change starts; duration is an
 //                       estimate in ms from the current scroll speed
 
+import { layoutBox } from "../../scripts/layout-box";
 import { onPage } from "../../scripts/lifecycle";
 import type { GLHandle } from "./case-gl";
 
@@ -164,7 +165,7 @@ function stage(root: HTMLElement): () => void {
   const measure = () => {
     vh = innerHeight;
     seg = vh * STEP;
-    top = root.getBoundingClientRect().top + scrollY;
+    top = layoutBox(root).top;
     span = Math.max(1, root.offsetHeight - vh);
   };
 
@@ -236,7 +237,8 @@ function stage(root: HTMLElement): () => void {
       const cin = i === 0 ? 1 : clamp01(t - (i - 1));
       const cout = clamp01(t - i);
       const live = cin > 0 && cout < 1;
-      if (live !== h.hasAttribute("data-live")) h.toggleAttribute("data-live", live);
+      const wasLive = h.hasAttribute("data-live");
+      if (live !== wasLive) h.toggleAttribute("data-live", live);
       const p = parts[i];
       if (!picturesHidden) {
         const open = 1 - inOut(cin);
@@ -247,8 +249,9 @@ function stage(root: HTMLElement): () => void {
         put(p.art, "--zoom", 0.5 * (1 - outCubic(cin)));
         put(p.art, "--drift", Math.max(-1, Math.min(1.6, x - i)));
       }
-      // Nothing of the words shows outside a hero that is live, and they stay as they were.
-      if (live || force) {
+      // Nothing of the words shows outside a hero that is live: once it has
+      // written itself out, it has nothing more to write.
+      if (live || wasLive || force) {
         put(p.copy, "--cin", clamp01((cin - 0.5) / 0.5));
         put(p.copy, "--cout", clamp01(cout / 0.34));
         put(p.copy, "--exit", state.exit);
