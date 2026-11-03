@@ -13,6 +13,7 @@ import { info } from "../info";
 import { disciplines } from "../disciplines";
 import { architectures } from "../architecture";
 import repoGraphSnapshot from "./repo-graph.json";
+import { readPosts } from "../../utils/postFiles";
 
 export type MindNodeType =
   | "discipline"
@@ -56,12 +57,11 @@ export interface MindGraph {
 }
 
 // Each post's frontmatter, for its drawing and demo.
-const postFiles = import.meta.glob<{ frontmatter: { architecture?: string; demo?: string } }>("../../pages/posts/*.md", { eager: true });
 const postMeta = (url?: string) => {
   if (!url || !url.startsWith("/posts/")) return null;
   const slug = url.replace(/^\/posts\//, "").replace(/\/$/, "");
-  const hit = Object.entries(postFiles).find(([file]) => file.endsWith(`/${slug}.md`));
-  return hit ? hit[1].frontmatter : null;
+  const hit = readPosts().find((p) => p.url === `/posts/${slug}`);
+  return hit ? (hit.frontmatter as { architecture?: string; demo?: string }) : null;
 };
 // Where a star leads on this site: its post, its architecture drawing, its
 // demo, and an outside link when there is one.

@@ -15,6 +15,7 @@ import { info } from "../../data/info";
 import { RESUME, bayStopCount, groupCards } from "../../components/work-world/world-data";
 import { disciplines } from "../../data/disciplines";
 import { readingTime } from "../../utils/readingTime";
+import { readPosts } from "../../utils/postFiles";
 
 export function getStaticPaths() {
   return disciplines.map((d) => ({ params: { slug: d.slug }, props: { d } }));
@@ -51,7 +52,7 @@ function splitTagline(t: string): [string, string] {
 const [tail, bringTail] = splitTagline(d.tagline);
 
 // Date and reading time for each article, read from the post itself.
-const posts = await Astro.glob("../posts/*.md");
+const posts = readPosts();
 const postByUrl = new Map(posts.map((p) => [p.url, p]));
 const monthYear = (iso?: string) =>
   iso
@@ -128,7 +129,7 @@ const resume = RESUME[d.slug];
           {g.map((p, k) => (
             <article class="ww-card" data-note={gi * 3 + k} data-id={`card-${gi * 3 + k}`}>
               <span class="ww-card-art" aria-hidden="true">
-                {hasPublic(p.img) ? <Picture src={p.img ?? ""} alt="" width={640} height={360} /> : <span class="ww-card-fallback">{p.name}</span>}
+                {hasPublic(p.img) ? <Picture src={p.img ?? ""} alt="" width={640} height={360} sizes="(min-width: 1024px) 430px, 310px" /> : <span class="ww-card-fallback">{p.name}</span>}
               </span>
               <div class="ww-card-body">
                 <span class:list={["ww-badge", { "is-live": isLive(p.status) }]}>{p.status}</span>
@@ -157,7 +158,7 @@ const resume = RESUME[d.slug];
           {articles.map((a, k) => (
             <a href={a.href} style={`--w:${shelfWidth(k)}`} data-note={k} data-id={`article-${k}`}>
               <span class="ww-shelf-art" aria-hidden="true">
-                {hasPublic(a.img) ? <Picture src={a.img ?? ""} alt="" width={160} height={108} /> : <span class="ww-card-fallback"></span>}
+                {hasPublic(a.img) ? <Picture src={a.img ?? ""} alt="" width={160} height={108} sizes="120px" /> : <span class="ww-card-fallback"></span>}
               </span>
               <span><b>{a.title}</b>{a.meta && <small>{a.meta}</small>}</span>
             </a>

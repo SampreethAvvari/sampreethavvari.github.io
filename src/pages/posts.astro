@@ -10,6 +10,7 @@ import type { CaseHero, ArchivePost } from "../components/writing/types";
 import { readingTime } from "../utils/readingTime";
 import { teaching } from "../data/teaching";
 import { itemListNode } from "../utils/seo";
+import { readPosts } from "../utils/postFiles";
 import {
   disciplinesFor,
   impactRank,
@@ -18,7 +19,7 @@ import {
   hasPublic,
 } from "../utils/postTopics";
 
-const allPosts = await Astro.glob("../pages/posts/*.md");
+const allPosts = readPosts();
 
 // Teaching left the top bar and lives here: the guides are writing too.
 const guides = [...teaching].sort((a, b) => b.addedAt.localeCompare(a.addedAt));
@@ -139,7 +140,9 @@ const firstArt = heroes[0]?.art;
 <BaseLayout
   title="SA: Writing"
   description="Notes from the systems Sampreeth Avvari builds: real numbers, real screwups, real fixes."
-  preloadImage={firstArt ? `${firstArt}-2560.avif` : undefined}
+  preloadImage={firstArt ? `${firstArt}-1280.avif` : undefined}
+  preloadSrcset={firstArt ? `${firstArt}-1280.avif 1280w, ${firstArt}-2560.avif 2560w` : undefined}
+  preloadSizes={firstArt ? "100vw" : undefined}
   schema={[
     itemListNode(
       Astro.site!.toString(),
