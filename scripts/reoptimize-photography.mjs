@@ -10,7 +10,7 @@ import path from "node:path";
 
 const SRC = "image-originals";
 const OUT = "public";
-const FOLDERS = ["Crew Photos", "Photo Gallery", "Creative Roles", "gallery"];
+const FOLDERS = ["Crew Photos", "Photo Gallery", "Creative Roles"];
 const RASTER = /\.(png|jpe?g)$/i;
 
 const walk = (d) =>

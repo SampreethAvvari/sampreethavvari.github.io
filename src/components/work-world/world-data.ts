@@ -194,14 +194,6 @@ export const TRAIL: TrailStop[] = [
   },
 ];
 
-/** Resume files, one per discipline, the same ones the resume page offers. */
-export const RESUME: Record<Discipline["slug"], string> = {
-  aie: "/Sampreeth_Avvari_AIE.pdf",
-  fde: "/Sampreeth_Avvari_FDE.pdf",
-  mle: "/Sampreeth_Avvari_MLE.pdf",
-  sde: "/Sampreeth_Avvari_SDE.pdf",
-};
-
 /** How many cards go in each screen, so no card is ever alone on a last row. */
 export function groupCards<T>(list: T[]): T[][] {
   const out: T[][] = [];

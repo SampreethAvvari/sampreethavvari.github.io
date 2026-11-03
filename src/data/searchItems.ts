@@ -14,7 +14,7 @@ export type SearchItem = {
 
 const pages: SearchItem[] = [
   { title: "Home", description: "Landing, hero, and quick intro.", url: "/", type: "page" },
-  { title: "Resume", description: "Experience, education, skills, and the PDFs.", url: "/resume", type: "page" },
+  { title: "Resume", description: "Experience, education and skills.", url: "/resume", type: "page" },
   { title: "Work", description: "Four disciplines: AI, forward-deployed, ML, and software engineering.", url: "/work", type: "page" },
   { title: "Projects", description: "AI, research, and industry projects.", url: "/projects", type: "page" },
   { title: "Architecture", description: "The drawing of each system.", url: "/architecture", type: "page" },

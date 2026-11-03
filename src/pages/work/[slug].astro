@@ -12,7 +12,7 @@ import Icon from "../../components/common/Icon.astro";
 import WorldFoot from "../../components/work-world/WorldFoot.astro";
 import WorldStage from "../../components/work-world/WorldStage.astro";
 import { info } from "../../data/info";
-import { RESUME, bayStopCount, groupCards } from "../../components/work-world/world-data";
+import { bayStopCount, groupCards } from "../../components/work-world/world-data";
 import { disciplines } from "../../data/disciplines";
 import { readingTime } from "../../utils/readingTime";
 import { readPosts } from "../../utils/postFiles";
@@ -82,7 +82,6 @@ const LAYS = ["lay-left", "lay-fan", "lay-right"];
 const SIDES = ["at-bl", "at-bc", "at-br"];
 const SHADES = ["b", "b", "b"];
 const shopCount = 3;
-const resume = RESUME[d.slug];
 ---
 
 <BaseLayout title={`${d.name} · Sampreeth Avvari`} description={d.summary} footerVariant="minimal">
@@ -184,7 +183,7 @@ const resume = RESUME[d.slug];
         <div class="ww-actions">
           <a class="jb is-solid" href={`mailto:${info.contact.email}`}><span>Get in touch</span><i class="jb-arrow"><Icon name="mail" size={13} /></i></a>
           <a class="jb" href="/projects"><span>Every project</span><i class="jb-arrow"><Icon name="arrow-right" size={13} /></i></a>
-          <a class="jb is-ghost" href={resume} target="_blank" rel="noopener noreferrer"><span>Resume</span><i class="jb-arrow"><Icon name="arrow-up-right" size={13} /></i></a>
+          <a class="jb is-ghost" href="/resume"><span>Resume</span><i class="jb-arrow"><Icon name="arrow-up-right" size={13} /></i></a>
           <a class="jb is-ghost" href="/work"><span>The station</span><i class="jb-arrow"><Icon name="arrow-right" size={13} /></i></a>
         </div>
       </div>

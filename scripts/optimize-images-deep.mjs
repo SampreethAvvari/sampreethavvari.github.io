@@ -1,9 +1,9 @@
-// Optimize the heavy SUBFOLDER images under /public (gallery + photography).
+// Optimize the heavy SUBFOLDER images under /public (photography).
 // Two strategies, chosen per file so we never break a reference or lose
 // visible quality:
 //
 //   ADDITIVE  - png/jpg/jpeg rendered by Astro components (Crew Photos, Photo
-//               Gallery, Creative Roles, gallery/*). Generates .avif/.webp
+//               Gallery, Creative Roles). Generates .avif/.webp
 //               siblings; originals are left untouched and used as the
 //               <picture> fallback.
 //   IN-PLACE  - files we can't add a sibling for safely: the React about-page

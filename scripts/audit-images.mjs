@@ -1,7 +1,7 @@
 // Audit which SUBFOLDER source images are actually referenced by the site.
 // A file counts as USED if either:
 //   - it lives under a folder the code enumerates with fs.readdirSync
-//     ("Photo Gallery", "Photo Gallery/Swechcha", "gallery/<slug>"), or
+//     ("Photo Gallery", "Photo Gallery/Swechcha"), or
 //   - its filename (bare or URL-encoded) appears anywhere in src/.
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import path from "node:path";
@@ -18,7 +18,7 @@ const srcBlob = walk("src")
   .join("\n");
 
 // Folders the code reads dynamically -> every file inside is used.
-const DYNAMIC = ["Photo Gallery/", "gallery/"];
+const DYNAMIC = ["Photo Gallery/"];
 
 // Source images (originals), excluding the .avif/.webp WE generate as siblings.
 const isGeneratedSibling = (rel) => {
