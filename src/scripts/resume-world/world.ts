@@ -83,16 +83,16 @@ export type World = {
   destroy(): void;
 };
 
-type Tier = { dpr: number; page: number; atlas: number; words: number; layers: number; samples: number; bloom: number; dust: number; field: number; sheetSeg: [number, number] };
+type Tier = { dpr: number; page: number; atlas: [number, number]; words: number; layers: number; samples: number; bloom: number; dust: number; field: number; sheetSeg: [number, number] };
 
 function pickTier(): Tier {
   const coarse = matchMedia("(pointer: coarse)").matches;
   const small = matchMedia("(max-width: 767px)").matches;
   const cores = navigator.hardwareConcurrency || 4;
   const mem = (navigator as Navigator & { deviceMemory?: number }).deviceMemory || 8;
-  if (coarse || small) return { dpr: 1.5, page: 1100, atlas: 1536, words: 1536, layers: 10, samples: 4, bloom: 3, dust: 700, field: 768, sheetSeg: [18, 24] };
-  if (cores >= 8 && mem >= 8) return { dpr: 2, page: 1400, atlas: 2048, words: 2048, layers: 26, samples: 4, bloom: 5, dust: 2200, field: 1400, sheetSeg: [26, 34] };
-  return { dpr: 1.5, page: 1400, atlas: 2048, words: 2048, layers: 16, samples: 4, bloom: 4, dust: 1400, field: 1024, sheetSeg: [20, 26] };
+  if (coarse || small) return { dpr: 1.5, page: 1100, atlas: [2048, 1024], words: 1536, layers: 10, samples: 4, bloom: 3, dust: 700, field: 768, sheetSeg: [18, 24] };
+  if (cores >= 8 && mem >= 8) return { dpr: 2, page: 1400, atlas: [4096, 1536], words: 2048, layers: 26, samples: 4, bloom: 5, dust: 2200, field: 1400, sheetSeg: [26, 34] };
+  return { dpr: 1.5, page: 1400, atlas: [3072, 1280], words: 2048, layers: 16, samples: 4, bloom: 4, dust: 1400, field: 1024, sheetSeg: [20, 26] };
 }
 
 const clamp = (x: number, a = 0, b = 1) => (x < a ? a : x > b ? b : x);
@@ -223,6 +223,7 @@ type PieceRT = {
   destQ: Quaternion;
   destS: number;
   destFlexK: number;
+  hoop: { center: Vector3; tilt: Quaternion; radius: number; k: number; dir: number; phase: number } | null;
   exit: Vector3;
   exitQ: Quaternion;
   entry: Vector3;
@@ -378,7 +379,8 @@ export async function mountWorld(
   const backs = paintBacks(data, Math.round(tier.page / 2));
   const backTex = tex(backs.canvas);
   renderer.initTexture(backTex);
-  const atlas = paintAtlas(layoutData, tier.atlas);
+  const maxTex = renderer.capabilities.maxTextureSize;
+  const atlas = paintAtlas(layoutData, Math.min(maxTex, tier.atlas[0]), Math.min(maxTex, tier.atlas[1]));
   const atlasTex = tex(atlas.canvas);
   renderer.initTexture(atlasTex);
   await nextFrame();
@@ -416,7 +418,8 @@ export async function mountWorld(
 
   // ------------------------------------------------------------- objects
   const sheetGeo = paperGeometry(tier.sheetSeg[0], tier.sheetSeg[1]);
-  const pieceGeo = paperGeometry(10, 4);
+  const pieceGeo = paperGeometry(56, 2);
+  const scrapGeo = paperGeometry(10, 2);
   const slipGeo = paperGeometry(2, 1);
   const n = data.sheets.length;
   const sheets: SheetRT[] = data.sheets.map((_, i) => {
@@ -482,6 +485,7 @@ export async function mountWorld(
       destQ: new Quaternion(),
       destS: 1,
       destFlexK: 0,
+      hoop: null,
       exit: new Vector3(),
       exitQ: new Quaternion(),
       entry: new Vector3(),
@@ -527,7 +531,7 @@ export async function mountWorld(
 
   // Scraps of the page hanging along the way. You only see them in motion.
   const scrapCount = tier.dust > 1000 ? 130 : 60;
-  const scrapBatch = new Batch(pieceGeo, pieceMat, scrapCount);
+  const scrapBatch = new Batch(scrapGeo, pieceMat, scrapCount);
   scene.add(scrapBatch.mesh);
   type Scrap = { i: number; u: number; off: Vector3; base: Vector3; axis: Vector3; rate: number; phase: number; size: number };
   const scraps: Scrap[] = [];
@@ -802,10 +806,10 @@ export async function mountWorld(
         const regionTop = Math.max(H * 0.2, nameBottom() - 26);
         const regionH = cellTop - regionTop - 8;
         const rowH = regionH / 2;
-        const hpx = Math.min(rowH * 1.04, (W * 0.46 * PAGE_H) / PAGE_W);
+        const hpx = Math.min(rowH * 0.98, (W * 0.43 * PAGE_H) / PAGE_W);
         const col = i % 2;
         const row = Math.floor(i / 2);
-        s.sx = (col ? 0.745 : 0.255) + (row ? 0.012 : -0.012);
+        s.sx = (col ? 0.74 : 0.26) + (row ? 0.008 : -0.008);
         s.sy = (regionTop + rowH * (row + 0.5)) / H + sg.dy * 0.5;
         s.worldW = pxWorld((hpx / PAGE_H) * PAGE_W, 9);
       }
@@ -873,11 +877,37 @@ export async function mountWorld(
       mk.worldW = pxWorld(px, d);
     };
 
+    // A strip closed into a hoop around a mark. Its length sets its scale, so
+    // the words read larger the wider the hoop.
+    const hoop = (c: PieceRT, sx: number, sy: number, d: number, radiusPx: number, pitch: number, roll: number, dir: number, phase: number) => {
+      const center = at(c.destK, sx, sy, d, new Vector3());
+      const tilt = qFrom(c.destK, pitch, 0, roll, new Quaternion());
+      const radius = pxWorld(radiusPx, d);
+      const L = c.p.rect.w / PAGE_W;
+      c.destS = (Math.PI * 2 * radius) / L;
+      c.hoop = { center, tilt, radius, k: (Math.PI * 2) / L, dir, phase };
+      c.destFlexK = c.hoop.k;
+      c.dest.copy(center);
+      c.destQ.copy(tilt);
+      const f = frames[c.destK];
+      const side = c.seed > 0.5 ? 1 : -1;
+      c.entry.copy(f.pos).addScaledVector(f.fwd, -2 + c.seed * 3).addScaledVector(f.right, side * (3 + c.seed * 4)).addScaledVector(f.up, (hash(c.seed * 13) - 0.5) * 7);
+      c.entryQ.copy(f.q);
+    };
+    pieces.forEach((c) => (c.hoop = null));
+    // On phones the object takes the middle of what the words leave free.
+    const free = (stop: number) => {
+      const el = document.querySelector<HTMLElement>(`[data-stop="${stop}"] .rw-copy`);
+      const panel = el ? el.offsetHeight : H * 0.42;
+      const top = 112;
+      const bottom = H - panel - 8;
+      return { top: top / H, bottom: bottom / H, mid: (top + bottom) / 2 / H, room: bottom - top };
+    };
     const [hy, re, vi, sh] = data.roles;
     const K = (rid: string) => pieces.filter((c) => c.p.dest === rid).sort((a, b) => a.p.slot - b.p.slot);
     if (isWide) {
       // Hybridge: a tall run of keys under the mark, on the right.
-      const keyScale = Math.min(W * 0.4, 620) / 608; // screen px per page unit
+      const keyScale = Math.min(W * 0.4, H * 0.72) / 608; // screen px per page unit
       const top = 0.345;
       const bot = 0.915;
       K(hy.id).forEach((c, i, all) => {
@@ -886,22 +916,21 @@ export async function mountWorld(
         // every strip starts on the same left edge
         destine(c, c.destK, 0.5 + t * 0.012 + wpx / (2 * W), lerp(top, bot, t), 7.2 + t * 0.5, wpx, 0.03, -0.26, 0);
       });
-      mark(`role-${hy.id}`, 0.67, 0.2, 7, Math.min(W * 0.32, 480), -0.22, 0.04);
-      // Research: the mark on the left, its line wrapped around it.
-      K(re.id).forEach((c) => destine(c, c.destK, 0.325, 0.66, 7, Math.min(W * 0.55, 800), 0.3, 0.04, -0.07, -1.25));
-      mark(`role-${re.id}`, 0.32, 0.4, 7.2, Math.min(W * 0.38, 560), 0.26, -0.03, -0.03);
-      // Video: two long strips hinged like a slate, with the copy under them.
-      K(vi.id).forEach((c, i) => {
-        const wpx = (c.p.rect.w / 1320) * Math.min(W * 0.84, 1240);
-        destine(c, c.destK, 0.1 + wpx / (2 * W), 0.6 + i * 0.12, 6.6, wpx, 0.12, 0.09, 0);
-      });
-      mark(`role-${vi.id}`, 0.71, 0.3, 7, Math.min(W * 0.32, 470), -0.22, 0.08, 0.02);
-      // Shure: the word itself, very large, with the copy above it on the right.
+      mark(`role-${hy.id}`, 0.66, 0.2, 7, Math.min(W * 0.32, H * 0.55), -0.22, 0.04);
+      // Research: the sentence closed into one wide hoop around the mark.
+      const hoopPx = Math.min(W * 0.235, H * 0.37);
+      K(re.id).forEach((c) => hoop(c, 0.33, 0.5, 7.4, hoopPx, 0.42, -0.1, -1, 0.4));
+      mark(`role-${re.id}`, 0.33, 0.5, 7.4, hoopPx * 1.42, 0.14, -0.02, -0.03);
+      // Video: two hoops, tilted against each other, like a gimbal.
+      const gimbal = Math.min(W * 0.21, H * 0.34);
+      K(vi.id).forEach((c, i) => hoop(c, 0.66, 0.5, 7.2, i === 0 ? gimbal * 1.22 : gimbal, i === 0 ? 0.5 : -0.46, i === 0 ? 0.2 : -0.16, i === 0 ? -1 : 1, 1.1 + i * 2));
+      mark(`role-${vi.id}`, 0.66, 0.5, 7.2, gimbal * 1.18, -0.1, 0.03, 0.02);
+      // Shure: the word itself, very large, with two flat strips under it.
       K(sh.id).forEach((c, i) => {
-        const wpx = (c.p.rect.w / 1320) * Math.min(W * 0.78, 1150);
-        destine(c, c.destK, 0.06 + wpx / (2 * W), 0.79 + i * 0.08, 7, wpx, 0.14, 0.1, -0.03);
+        const wpx = (c.p.rect.w / 1320) * Math.min(W * 0.8, H * 1.34);
+        destine(c, c.destK, 0.05 + wpx / (2 * W), 0.79 + i * 0.085, 7, wpx, 0.14, 0.1, -0.03);
       });
-      mark(`role-${sh.id}`, 0.4, 0.5, 7, Math.min(W * 0.68, 1000), 0.2, 0.06, -0.035);
+      mark(`role-${sh.id}`, 0.4, 0.5, 7, Math.min(W * 0.68, H * 1.15), 0.2, 0.06, -0.035);
     } else {
       const keyScale = (W * 0.82) / 608;
       const top = 0.245;
@@ -912,18 +941,18 @@ export async function mountWorld(
         destine(c, c.destK, 0.09 + wpx / (2 * W), lerp(top, bot, t), 7, wpx, 0.02, -0.08, 0);
       });
       mark(`role-${hy.id}`, 0.5, 0.17, 7, W * 0.56, -0.08, 0.05);
-      K(re.id).forEach((c) => destine(c, c.destK, 0.5, 0.425, 7, W * 0.98, 0.25, 0.0, -0.05, -1.2));
-      mark(`role-${re.id}`, 0.5, 0.27, 7.2, W * 0.62, 0.16, -0.02);
-      K(vi.id).forEach((c, i) => {
-        const wpx = (c.p.rect.w / 1320) * W * 0.96;
-        destine(c, c.destK, 0.02 + wpx / (2 * W), 0.345 + i * 0.05, 7, wpx, 0.1, 0.05, 0);
-      });
-      mark(`role-${vi.id}`, 0.5, 0.21, 7, W * 0.56, 0.05, 0.06);
-      K(sh.id).forEach((c, i) => {
-        const wpx = (c.p.rect.w / 1320) * W * 0.96;
-        destine(c, c.destK, 0.02 + wpx / (2 * W), 0.39 + i * 0.05, 7, wpx, 0.1, 0.05, -0.02);
-      });
-      mark(`role-${sh.id}`, 0.5, 0.26, 7, W * 0.84, 0.12, 0.05, -0.02);
+      const frR = free(3);
+      const hoopR = Math.min(W * 0.44, frR.room * 0.46);
+      K(re.id).forEach((c) => hoop(c, 0.5, frR.mid, 7, hoopR, 0.42, -0.08, -1, 0.4));
+      mark(`role-${re.id}`, 0.5, frR.mid, 7, hoopR * 1.25, 0.1, -0.02);
+      const frV = free(4);
+      const hoopV = Math.min(W * 0.44, frV.room * 0.42);
+      K(vi.id).forEach((c, i) => hoop(c, 0.5, frV.mid, 7, i === 0 ? hoopV : hoopV * 0.82, i === 0 ? 0.5 : -0.48, i === 0 ? 0.16 : -0.14, i === 0 ? -1 : 1, 1.1 + i * 2));
+      mark(`role-${vi.id}`, 0.5, frV.mid, 7, hoopV * 1.1, 0.05, 0.02);
+      const frS = free(5);
+      const hoopS = Math.min(W * 0.45, frS.room * 0.44);
+      K(sh.id).forEach((c, i) => hoop(c, 0.5, frS.mid, 7, i === 0 ? hoopS : hoopS * 0.84, i === 0 ? 0.48 : -0.46, i === 0 ? 0.14 : -0.12, i === 0 ? -1 : 1, 0.8 + i * 2));
+      mark(`role-${sh.id}`, 0.5, frS.mid, 7, hoopS * 1.42, 0.08, 0.03, -0.02);
     }
 
     // Education: two cards, two marks, equal lanes.
@@ -932,8 +961,8 @@ export async function mountWorld(
       const id = `${e.id}-card`;
       if (isWide) {
         const sx = i === 0 ? 0.285 : 0.715;
-        place(id, sx, 0.545, 7, Math.min(W * 0.39, 590), 0.03, i === 0 ? 0.14 : -0.14);
-        mark(`edu-${e.id}`, sx, 0.355, 7, i === 0 ? Math.min(W * 0.21, 320) : Math.min(W * 0.27, 400), i === 0 ? 0.16 : -0.16, 0.03);
+        place(id, sx, 0.545, 7, Math.min(W * 0.39, H * 0.68), 0.03, i === 0 ? 0.14 : -0.14);
+        mark(`edu-${e.id}`, sx, 0.345, 7, i === 0 ? Math.min(W * 0.21, H * 0.36) : Math.min(W * 0.27, H * 0.46), i === 0 ? 0.16 : -0.16, 0.03);
       } else {
         place(id, 0.5, i === 0 ? 0.3 : 0.5, 7, W * 0.88, 0.02, 0);
         mark(`edu-${e.id}`, 0.5, i === 0 ? 0.195 : 0.4, 7, i === 0 ? W * 0.42 : W * 0.6, 0, 0.02);
@@ -1387,7 +1416,7 @@ export async function mountWorld(
 
     if (pieceBatch.mesh.visible) {
       // the blank sheet the lines lifted from drifts off behind them
-      const be = ease(clamp((P - 1.02) / 0.5));
+      const be = ease(clamp((P - 1.02) / 0.34));
       if (be >= 1) {
         sV.setScalar(0);
         mat.compose(vA.set(0, 0, 0), qA.identity(), sV);
@@ -1399,8 +1428,8 @@ export async function mountWorld(
         mat.compose(vA, qA, sV);
       }
       pieceBatch.mesh.setMatrixAt(0, mat);
-      pieceBatch.state.set([0, 1 - be * 0.5, smooth(1.0, 1.05, P), 0.5], 0);
-      pieceBatch.flex.set([be * 0.9, 0, be * 0.2, be * 0.01], 0);
+      pieceBatch.state.set([0, 1 - be * 0.8, smooth(1.0, 1.05, P), 0.5], 0);
+      pieceBatch.flex.set([be * 0.25, 0, be * 0.1, be * 0.006], 0);
 
       for (const pc of pieces) {
         const i = pc.i;
@@ -1443,6 +1472,13 @@ export async function mountWorld(
         } else if (stopK >= 3 && P > stopK - 0.88 && P < stopK + 0.92) {
           // arriving at its stop
           const e = ease(clamp((P - (stopK - 0.88)) / 0.84));
+          if (pc.hoop) {
+            const H0 = pc.hoop;
+            const theta = H0.phase + H0.dir * (time * 0.16 + (P - stopK) * 1.2) + spx * 0.5;
+            qC.copy(H0.tilt).multiply(qB.setFromAxisAngle(up, theta));
+            pc.dest.copy(H0.center).add(vC.set(0, 0, H0.radius).applyQuaternion(qC));
+            pc.destQ.copy(qC);
+          }
           vB.lerpVectors(pc.entry, pc.dest, e);
           axis.set(pc.seed - 0.5, hash(pc.seed * 2) - 0.5, hash(pc.seed * 4) - 0.5).normalize();
           vB.addScaledVector(axis, Math.sin(Math.PI * e) * 0.6);
@@ -1451,7 +1487,7 @@ export async function mountWorld(
           morph = pc.p.hi > 0 ? 1 : 0;
           rim = 1;
           ripple = Math.sin(Math.PI * e) * 0.01;
-          bendK = pc.destFlexK * e + Math.sin(Math.PI * e) * (pc.seed - 0.5) * 1.5;
+          bendK = pc.hoop ? pc.destFlexK * Math.max(e, 0.02) : pc.destFlexK * e + Math.sin(Math.PI * e) * (pc.seed - 0.5) * 1.5;
         } else if (direct && P < stopK + 0.92) {
           vB.copy(pc.dest);
           qA.copy(pc.destQ);
@@ -1465,7 +1501,7 @@ export async function mountWorld(
           const onStop = 1 - smooth(0.0, 0.4, Math.abs(P - stopK));
           if (onStop > 0) {
             const sway = time * 0.5 + pc.seed * 9;
-            const amp = isKey ? 0.005 : 0.02;
+            const amp = isKey ? 0.005 : pc.hoop ? 0 : 0.02;
             vB.addScaledVector(frames[stopK].up, Math.sin(sway) * amp * onStop);
             vB.addScaledVector(frames[stopK].right, Math.cos(sway * 0.8) * amp * 0.7 * onStop);
             if (isKey) {
@@ -1484,24 +1520,11 @@ export async function mountWorld(
               lit = 0.56 + pc.active * 0.5 + pc.near * 0.3;
               ripple = 0.001 + pc.near * 0.003;
             } else {
-              lit = isWide ? 1 : 0.62;
-              ripple = Math.max(ripple, 0.0016);
+              lit = 1;
+              ripple = pc.hoop ? 0 : Math.max(ripple, 0.0016);
             }
             bendK = Math.max(Math.abs(bendK), 0) === 0 ? pc.destFlexK : bendK;
           } else if (pc.destFlexK) bendK = pc.destFlexK;
-          if (stopK === 4 && P > stopK - 0.88) {
-            // the slate: the top strip opens and shuts as you arrive
-            const open = pc.p.slot === 0 ? smooth(0.0, 0.5, Math.abs(P - stopK)) * 0.2 + 0.018 + Math.sin(time * 0.6) * 0.006 : 0;
-            if (open) {
-              // hinge at the strip's left end
-              vC.set(-(pc.p.rect.w / PAGE_W) * pc.destS * 0.5, 0, 0);
-              const hinge = vC.clone().applyQuaternion(qA).add(vB);
-              qB.setFromAxisAngle(Z, open);
-              qA.multiply(qB);
-              vC.applyQuaternion(qA).negate();
-              vB.copy(hinge).add(vC);
-            }
-          }
         }
 
         sV.setScalar(scale);
@@ -1845,6 +1868,7 @@ export async function mountWorld(
       fieldGeo.dispose();
       sheetGeo.dispose();
       pieceGeo.dispose();
+      scrapGeo.dispose();
       slipGeo.dispose();
       pointGeo.dispose();
       pointMat.dispose();

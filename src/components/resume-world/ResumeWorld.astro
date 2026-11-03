@@ -360,10 +360,10 @@ const eduStop = STOPS.indexOf("education");
   .is-live .rw-sky {
     display: block;
     position: absolute;
-    inset: 0;
-    background:
-      radial-gradient(58% 46% at 50% 54%, rgba(205, 214, 228, 0.09), transparent 72%),
-      radial-gradient(40% 30% at 18% 86%, rgba(205, 214, 228, 0.05), transparent 72%);
+    inset: -30%;
+    background: radial-gradient(34% 34% at 50% 50%, rgba(205, 214, 228, 0.13), rgba(205, 214, 228, 0.04) 55%, transparent 74%);
+    transform: translate3d(0, 4%, 0);
+    transition: transform 1.3s cubic-bezier(0.32, 0.72, 0, 1);
     pointer-events: none;
   }
   .is-live .rw-canvas { display: block; position: absolute; inset: 0; width: 100%; height: 100%; z-index: 1; opacity: 0; transition: opacity 1.1s ease; pointer-events: none; }
@@ -383,9 +383,9 @@ const eduStop = STOPS.indexOf("education");
   .is-live .rw-small, .is-live .rw-keyhint { display: block; margin: 12px 0 0; font-size: 0.75rem; line-height: 1.5; color: var(--ink-faint); }
   .rw-coarse { display: none; }
   @media (pointer: coarse) { .rw-coarse { display: inline; } .rw-fine { display: none; } }
-  .is-live .rw-title { margin: 0; font-size: clamp(2rem, 3.6vw, 3.25rem); font-weight: 600; letter-spacing: -0.038em; line-height: 1.02; text-wrap: balance; }
-  .is-live .rw-org { margin-top: 12px; font-size: 1rem; }
-  .is-live .rw-date { margin-top: 2px; font-size: 0.875rem; }
+  .is-live .rw-title { margin: 0; font-size: clamp(2rem, 3.6vw, 4.4rem); font-weight: 600; letter-spacing: -0.038em; line-height: 1.02; text-wrap: balance; }
+  .is-live .rw-org { margin-top: 12px; font-size: clamp(1rem, 1.05vw, 1.25rem); }
+  .is-live .rw-date { margin-top: 2px; font-size: clamp(0.875rem, 0.9vw, 1.0625rem); }
   .is-live .rw-copy { text-shadow: 0 1px 18px rgba(0, 0, 0, 0.75); }
   .is-3d .rw-logo { display: none; }
 
@@ -455,7 +455,7 @@ const eduStop = STOPS.indexOf("education");
 
   /* ---- 02 the page */
   .is-live .rw-s-page { display: block; }
-  .rw-s-page .rw-copy { position: absolute; left: var(--gx); bottom: clamp(36px, 8vh, 72px); width: min(420px, 31vw); --mx: -60px; --my: -60px; }
+  .rw-s-page .rw-copy { position: absolute; left: var(--gx); bottom: clamp(36px, 8vh, 72px); width: min(31vw, 560px); --mx: -60px; --my: -60px; }
   .rw-s-page .rw-title { font-size: clamp(2rem, 3.5vw, 3.2rem); }
   .rw-cta {
     position: relative;
@@ -486,24 +486,23 @@ const eduStop = STOPS.indexOf("education");
   /* ---- the four roles, each framed its own way */
   .is-live .rw-role { padding: 0; border: 0; border-radius: 0; background: none; }
   .is-live .rw-items { margin-top: 18px; gap: 10px; }
-  .is-live .rw-items li { padding-left: 14px; font-size: 0.9375rem; line-height: 1.55; color: rgba(255, 255, 255, 0.78); }
+  .is-live .rw-items li { padding-left: 14px; font-size: clamp(0.9375rem, 0.95vw, 1.125rem); line-height: 1.55; color: rgba(255, 255, 255, 0.78); }
   .rw-role .rw-copy { position: relative; }
   .is-live .rw-role .rw-copy { position: absolute; display: block; }
 
-  .is-live .rw-s-hybridge .rw-copy { left: var(--gx); top: 50%; width: min(460px, 36vw); margin-top: -170px; --mx: -220px; --my: 0px; }
+  .is-live .rw-s-hybridge .rw-copy { left: var(--gx); top: 50%; width: min(36vw, 620px); margin-top: -170px; --mx: -220px; --my: 0px; }
   .is-live .has-keys .rw-items { position: relative; min-height: 180px; display: block; }
   .is-live .has-keys .rw-items li { position: absolute; left: 0; right: 0; top: 0; padding-left: 0; opacity: 0; transform: translateY(8px); transition: opacity 0.28s ease, transform 0.4s var(--ease-glass); }
   .is-live .has-keys .rw-items li::before { display: none; }
   .is-live .has-keys .rw-items li.is-shown { opacity: 1; transform: none; }
   .is-live .has-keys .rw-items :global(.ilink) { display: inline; font-size: 1.0625rem; }
 
-  .is-live .rw-s-research .rw-copy { right: var(--gx); top: 50%; width: min(440px, 33vw); margin-top: -150px; --mx: 240px; --my: 0px; }
-  .is-live .rw-s-video .rw-copy { left: 10vw; top: 110px; width: min(520px, 44vw); --mx: 0px; --my: -160px; }
+  .is-live .rw-s-research .rw-copy { right: calc(var(--gx) + 24px); top: 50%; width: min(36vw, 620px); margin-top: -170px; --mx: 240px; --my: 0px; }
+  .is-live .rw-s-video .rw-copy { left: var(--gx); bottom: clamp(36px, 8vh, 84px); width: min(36vw, 620px); --mx: -160px; --my: 0px; }
   .is-live .rw-s-shure .rw-copy { right: calc(var(--gx) + 20px); top: 132px; width: min(460px, 34vw); text-align: right; --mx: 180px; --my: -60px; }
   /* on wide screens the two strips of paper carry these words themselves */
   @media (min-width: 768px) {
-    :is(.rw-s-video, .rw-s-shure).rw-role :global(.rw-items) { transition: none; }
-    .is-3d :is(.rw-s-video, .rw-s-shure) .rw-items { position: absolute; width: 1px; height: 1px; margin: 0; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+    .is-3d .rw-s-shure .rw-items { position: absolute; width: 1px; height: 1px; margin: 0; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
   }
 
   /* ---- skills */

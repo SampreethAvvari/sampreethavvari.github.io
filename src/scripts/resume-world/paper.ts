@@ -207,7 +207,7 @@ export function layoutPage(m: CanvasRenderingContext2D, d: WorldData, masks: Map
           dest: role.id,
           slot: i,
           rect: { x: rx - 14, y: ry, w: fit, h: KEY_H - 4 },
-          hi: 3.2,
+          hi: 3.6,
           draw: (c) => {
             text(c, it.name, rx + 10, ry + 28, { font: font(540, 24), track: -0.2 });
           },
@@ -227,7 +227,7 @@ export function layoutPage(m: CanvasRenderingContext2D, d: WorldData, masks: Map
           dest: role.id,
           slot: i,
           rect: { x: MX - PX, y: top2, w: Math.min(CW + PX * 2, widest + PX * 2), h },
-          hi: 1.45,
+          hi: 2.4,
           draw: (c) => {
             lines.forEach((ln, k) => text(c, ln, MX, top2 + 22 + k * LH, { font: BODY, ink: INK(46) }));
           },
@@ -290,7 +290,7 @@ export function layoutPage(m: CanvasRenderingContext2D, d: WorldData, masks: Map
       dest: e.id,
       slot: 0,
       rect: { x: ex - 18, y: eduTop, w: eduW + 18, h: blockH },
-      hi: 2.2,
+      hi: 2.6,
       draw: (c) => {
         titleLines.forEach((ln, k) => text(c, ln, ex, eduTop + 30 + k * 31, { font: font(590, 25), track: -0.25 }));
         const by = eduTop + 30 + titleLines.length * 31;
@@ -373,8 +373,8 @@ export function paintBacks(d: WorldData, cellW: number): { canvas: HTMLCanvasEle
 export type AtlasEntry = [number, number, number, number];
 
 /** Pack sharp copies of the pieces that grow. Returns uv rects by piece id. */
-export function paintAtlas(layout: Layout, size: number): { canvas: HTMLCanvasElement; rects: Map<string, AtlasEntry> } {
-  const { cv, c } = blank(size, size);
+export function paintAtlas(layout: Layout, size: number, tall: number): { canvas: HTMLCanvasElement; rects: Map<string, AtlasEntry> } {
+  const { cv, c } = blank(size, tall);
   const rects = new Map<string, AtlasEntry>();
   const big = layout.pieces.filter((p) => p.hi > 0).sort((a, b) => b.rect.h * b.hi - a.rect.h * a.hi);
   // Find the largest overall scale that fits, shelf by shelf.
@@ -393,14 +393,14 @@ export function paintAtlas(layout: Layout, size: number): { canvas: HTMLCanvasEl
         y += shelf + 3;
         shelf = 0;
       }
-      if (y + h + 2 > size) return null;
+      if (y + h + 2 > tall) return null;
       spots.push({ p, x, y, s });
       x += w + 3;
       shelf = Math.max(shelf, h);
     }
     return spots;
   };
-  let k = 1.4;
+  let k = 1;
   let spots = place(k);
   while (!spots && k > 0.2) {
     k *= 0.94;
@@ -417,7 +417,7 @@ export function paintAtlas(layout: Layout, size: number): { canvas: HTMLCanvasEl
     c.clip();
     sp.p.draw(c, 0);
     c.restore();
-    rects.set(sp.p.id, [sp.x / size, sp.y / size, (r.w * sp.s) / size, (r.h * sp.s) / size]);
+    rects.set(sp.p.id, [sp.x / size, sp.y / tall, (r.w * sp.s) / size, (r.h * sp.s) / tall]);
   }
   return { canvas: cv, rects };
 }

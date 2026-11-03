@@ -167,11 +167,13 @@ void main() {
   vec3 H = normalize(lc + V);
   float nh = max(dot(Np, H), 0.0);
   col += cAtt * (pow(nh, 26.0) * 0.08 + pow(nh, 240.0) * 0.5) * inkKeep;
+  // the page itself stops at white, so only cut edges and glints bloom
+  col = min(col, vec3(1.0));
 
   // stamped foil: gloss black. Only the pointer's light makes it flash.
   float foil = 1.0 - pr.g;
   if (foil > 0.01) {
-    vec3 f = vec3(0.012) + min(env * 0.2, vec3(0.12)) + min(cAtt * pow(nh, 110.0) * 1.2, 0.3);
+    vec3 f = vec3(0.012) + min(env * 0.12, vec3(0.05)) + min(cAtt * pow(nh, 110.0), 0.14);
     col = mix(col, f, foil);
   }
 

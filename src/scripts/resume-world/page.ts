@@ -119,6 +119,13 @@ export function startResumeWorld(signal: AbortSignal): void | (() => void) {
   const HASH: Record<string, number> = { "#versions": 0, "#experience": 2, "#skills": 6, "#education": 7 };
   if (HASH[location.hash] !== undefined) motion.go(HASH[location.hash], true);
 
+  // A soft pool of light stands behind each stop's subject.
+  const sky = root.querySelector<HTMLElement>(".rw-sky");
+  const wideScreen = innerWidth >= 768;
+  const POOL: Record<string, [number, number]> = wideScreen
+    ? { sheets: [50, 56], page: [58, 52], hybridge: [68, 50], research: [33, 50], video: [66, 50], shure: [40, 52], skills: [50, 50], education: [50, 48] }
+    : { sheets: [50, 50], page: [50, 34], hybridge: [50, 34], research: [50, 28], video: [50, 28], shure: [50, 28], skills: [50, 50], education: [50, 38] };
+
   // ------------------------------------------------------------ the words of each stop
   const shown = stops.map(() => -1);
   const applyCopy = (p: number) => {
@@ -141,7 +148,11 @@ export function startResumeWorld(signal: AbortSignal): void | (() => void) {
       if (i === near) a.setAttribute("aria-current", "step");
       else a.removeAttribute("aria-current");
     });
-    root.dataset.at = STOPS[near];
+    if (root.dataset.at !== STOPS[near]) {
+      root.dataset.at = STOPS[near];
+      const [px, py] = POOL[STOPS[near]] ?? [50, 50];
+      sky?.style.setProperty("transform", `translate3d(${px - 50}%, ${py - 50}%, 0)`);
+    }
     root.classList.toggle("is-moving", p > 0.03);
   };
 
