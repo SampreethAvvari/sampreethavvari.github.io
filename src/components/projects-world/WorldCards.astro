@@ -1,0 +1,317 @@
+---
+// Where the flight lands: every project as a card, with the filters and a search.
+// A card opens in place into its case study. Links like /projects#some-project
+// and /projects#academic keep working.
+import Picture from "../common/Picture.astro";
+import Icon from "../common/Icon.astro";
+
+interface Props {
+  cards: any[];
+  filters: { id: string; label: string; n: number }[];
+}
+const { cards, filters } = Astro.props;
+
+const STAR_PARTS = [
+  ["problem", "Problem"],
+  ["solution", "Solution"],
+  ["process", "Process"],
+  ["result", "Result"],
+] as const;
+---
+
+<section id="all" class="ax" data-ax>
+  <span class="ax-anchor" id="industry"></span>
+  <span class="ax-anchor" id="more"></span>
+  <span class="ax-anchor" id="academic"></span>
+  <span class="ax-anchor" id="open-source"></span>
+  <div class="wrap">
+    <div class="ax-head">
+      <h2 class="ax-title">Every project.</h2>
+      <p class="ax-count" aria-live="polite"><b data-ax-n>{cards.length}</b> of {cards.length}</p>
+    </div>
+    <div class="ax-tools">
+      <div class="ax-chips" role="group" aria-label="Filter projects">
+        {filters.map((f, i) => (
+          <button type="button" class="ax-chip" data-ax-f={f.id} aria-pressed={i === 0 ? "true" : "false"}>
+            {f.label} <span>{f.n}</span>
+          </button>
+        ))}
+      </div>
+      <label class="ax-search">
+        <span class="ax-sr">Search projects</span>
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-3.5-3.5"></path></svg>
+        <input type="search" placeholder="Search by name or tool" data-ax-q autocomplete="off" spellcheck="false" />
+      </label>
+    </div>
+
+    <div class="ax-grid" data-ax-grid>
+      {cards.map((c) => {
+        const face = c.stats[0];
+        const hasLinks = !!(c.post || c.demo || c.gallery || c.link);
+        const q = [c.title, c.line, c.status.label, ...(c.tech || [])].join(" ").toLowerCase();
+        return (
+          <article id={c.id} class="ac" data-group={c.group} data-live={c.status.live ? "1" : "0"} data-q={q}>
+            <div class="ac-art">
+              {c.cover ? (
+                <Picture src={c.cover} alt={c.alt} width={640} height={400} style={c.imageStyle} />
+              ) : (
+                <div class="ac-fallback" aria-hidden="true"><span>{c.title}</span></div>
+              )}
+            </div>
+            <div class="ac-body">
+              <p class="ac-meta"><span class:list={["ac-badge", c.status.live && "is-live"]}>{c.status.label}</span>{c.date && <span>{c.date}</span>}</p>
+              <h3 class="ac-name">{c.post ? <a href={c.post}>{c.title}</a> : c.title}</h3>
+              <p class="ac-line">{c.line}</p>
+              {face && (
+                <p class="ac-stat"><b>{face.value}</b><span title={face.label}>{face.label}</span></p>
+              )}
+              {c.post && (
+                <a href={c.post} class="ac-go">Read the write up <Icon name="arrow-right" size={14} /></a>
+              )}
+            </div>
+            <details class="ac-more">
+              <summary>
+                <span>{c.star ? "Case study" : "Details"}</span>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"></path></svg>
+              </summary>
+              <div class="am">
+                {c.description && <p class="am-lede">{c.description}</p>}
+                {c.stats.length > 0 && (
+                  <ul class="am-stats" aria-label="In numbers">
+                    {c.stats.map((s: any) => (
+                      <li><b>{s.value}</b><span>{s.label}</span></li>
+                    ))}
+                  </ul>
+                )}
+                {c.star ? (
+                  <div class="am-star">
+                    {STAR_PARTS.map(([k, label]) =>
+                      c.star && c.star[k] ? (
+                        <div>
+                          <p class="am-label">{label}</p>
+                          <p class="am-text">{c.star[k]}</p>
+                        </div>
+                      ) : null,
+                    )}
+                  </div>
+                ) : (
+                  c.summary && <p class="am-text">{c.summary}</p>
+                )}
+                {c.highlights.length > 0 && (
+                  <div>
+                    <p class="am-label">Highlights</p>
+                    <ul class="am-hl">
+                      {c.highlights.map((h: string) => <li>{h}</li>)}
+                    </ul>
+                  </div>
+                )}
+                {c.tech.length > 0 && (
+                  <div>
+                    <p class="am-label">Built with</p>
+                    <ul class="am-tech">
+                      {c.tech.map((t: string) => <li>{t}</li>)}
+                    </ul>
+                  </div>
+                )}
+                {hasLinks && (
+                  <div class="am-links">
+                    {c.post && <a href={c.post} class="ac-go">Read the write up <Icon name="arrow-right" size={14} /></a>}
+                    {c.demo && <a href={c.demo} class="am-x">Live demo <Icon name="arrow-right" size={13} /></a>}
+                    {c.gallery && <a href={`/gallery#p-${c.gallery}`} class="am-x">Screenshots</a>}
+                    {c.link && (
+                      <a href={c.link} target="_blank" rel="noopener" class="am-x">
+                        {c.linkLabel} <Icon name="arrow-up-right" size={13} />
+                      </a>
+                    )}
+                  </div>
+                )}
+              </div>
+            </details>
+          </article>
+        );
+      })}
+    </div>
+    <p class="ax-none" data-ax-none hidden>Nothing matches. Try another word, or <button type="button" data-ax-clear>show them all</button>.</p>
+
+    <div class="ax-close">
+      <div>
+        <h2 class="ax-close-t">Let's build something.</h2>
+        <p class="ax-close-s">Hiring for applied AI, or for the last mile where software meets the people who use it? I'd love to hear about it.</p>
+      </div>
+      <div class="ax-close-a">
+        <a href="/#contact" class="btn btn-primary">Get in touch</a>
+        <a href="/posts" class="btn btn-glass">Read the writing <Icon name="arrow-right" size={15} class="arrow-r" /></a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<style>
+  .ax { position: relative; padding: clamp(72px, 9vw, 128px) 0 clamp(56px, 7vw, 96px); background: #04060c; }
+  .ax-anchor { position: absolute; top: 0; left: 0; width: 1px; height: 1px; }
+  .ax-head { display: flex; align-items: baseline; justify-content: space-between; gap: 16px; }
+  .ax-title { margin: 0; font-size: clamp(2.4rem, 5.4vw, 5rem); font-weight: 300; letter-spacing: -0.05em; line-height: 1; color: #fff; }
+  .ax-count { margin: 0; font-size: 0.8125rem; font-variant-numeric: tabular-nums; color: var(--ink-faint); }
+  .ax-count b { font-weight: 500; color: #5b8def; }
+  .ax-tools { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px 24px; margin-top: 24px; padding-bottom: 24px; }
+  .ax-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+  .ax-chip { all: unset; display: inline-flex; align-items: center; gap: 6px; height: 34px; padding: 0 14px; border-radius: 9999px; border: 1px solid var(--line-strong); font-size: 0.8125rem; color: var(--ink-soft); cursor: pointer; transition: color 0.2s ease, border-color 0.2s ease, background-color 0.2s ease; }
+  .ax-chip span { font-variant-numeric: tabular-nums; color: var(--ink-faint); transition: color 0.2s ease; }
+  .ax-chip:hover { color: #fff; border-color: rgba(255, 255, 255, 0.34); }
+  .ax-chip[aria-pressed="true"] { color: #fff; border-color: rgba(91, 141, 239, 0.8); background: rgba(91, 141, 239, 0.16); }
+  .ax-chip[aria-pressed="true"] span { color: #9ec1ff; }
+  .ax-chip:focus-visible { outline: 1.5px solid #5b8def; outline-offset: 3px; }
+  .ax-search { display: inline-flex; align-items: center; gap: 8px; height: 38px; padding: 0 14px; width: min(100%, 280px); border-radius: 9999px; border: 1px solid var(--line-strong); color: var(--ink-faint); transition: border-color 0.2s ease; }
+  .ax-search:focus-within { border-color: rgba(91, 141, 239, 0.8); color: #fff; }
+  .ax-search input { all: unset; flex: 1; min-width: 0; font-size: 0.875rem; color: #fff; }
+  .ax-search input::placeholder { color: var(--ink-faint); }
+  .ax-sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+
+  /* six columns, so a short last row can always fill the width */
+  .ax-grid { display: grid; gap: 16px; grid-template-columns: minmax(0, 1fr); grid-auto-flow: row dense; }
+  @media (min-width: 640px) { .ax-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  @media (min-width: 1024px) { .ax-grid { grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 18px; } .ac { grid-column: span 2; } .ac.is-w3 { grid-column: span 3; } .ac.is-w6 { grid-column: 1 / -1; } }
+  @media (min-width: 640px) and (max-width: 1023px) { .ac.is-w2 { grid-column: 1 / -1; } }
+  .ac { display: flex; flex-direction: column; min-width: 0; border-radius: 18px; overflow: hidden; border: 1px solid var(--line); background: rgba(255, 255, 255, 0.025); scroll-margin-top: 96px; transition: border-color 0.25s ease; }
+  .ac:hover { border-color: var(--line-strong); }
+  .ac[hidden] { display: none; }
+  .ac:has(> .ac-more[open]) { grid-column: 1 / -1; }
+  .ac-art { position: relative; aspect-ratio: 16 / 9; overflow: hidden; background: #07080b; }
+  .ac-art :global(img) { display: block; width: 100%; height: 100%; object-fit: cover; }
+  .ac-fallback { display: grid; place-items: center; width: 100%; height: 100%; padding: 16px; text-align: center; background: radial-gradient(70% 90% at 20% 10%, rgba(91, 141, 239, 0.2), transparent 70%), #07080b; }
+  .ac-fallback span { font-size: 0.9375rem; font-weight: 500; color: var(--ink-faint); }
+  .ac-body { display: flex; flex: 1; flex-direction: column; align-items: flex-start; gap: 8px; padding: 18px 20px 20px; }
+  .ac-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 0; font-size: 0.75rem; color: var(--ink-faint); }
+  .ac-badge { padding: 2px 8px; border-radius: 9999px; border: 1px solid var(--line-strong); color: var(--ink-soft); }
+  .ac-badge.is-live { border-color: rgba(91, 141, 239, 0.7); color: #cfe0ff; }
+  .ac-name { margin: 0; font-size: 1.125rem; font-weight: 500; letter-spacing: -0.015em; line-height: 1.25; color: #fff; text-wrap: balance; }
+  .ac-name a { color: inherit; text-decoration: none; }
+  .ac-name a:hover { color: #9ec1ff; }
+  .ac-line { margin: 0; font-size: 0.875rem; line-height: 1.5; color: var(--ink-soft); display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+  .ac-stat { display: flex; flex-direction: column; gap: 2px; margin: 6px 0 0; padding-left: 12px; border-left: 1px solid rgba(91, 141, 239, 0.7); min-width: 0; width: 100%; }
+  .ac-stat b { font-size: 1.0625rem; font-weight: 500; letter-spacing: -0.015em; color: #fff; font-variant-numeric: tabular-nums; }
+  .ac-stat span { font-size: 0.8125rem; line-height: 1.38; color: var(--ink-faint); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .ac-go { display: inline-flex; align-items: center; gap: 5px; margin-top: auto; padding-top: 10px; font-size: 0.875rem; font-weight: 500; color: #9ec1ff; text-decoration: none; }
+  .ac-go:hover { color: #fff; }
+  .ac-more { border-top: 1px solid var(--line); }
+  .ac-more > summary { display: flex; align-items: center; justify-content: space-between; min-height: 46px; padding: 10px 20px; list-style: none; cursor: pointer; font-size: 0.875rem; font-weight: 500; color: var(--ink-soft); transition: color 0.15s ease, background-color 0.15s ease; }
+  .ac-more > summary::-webkit-details-marker { display: none; }
+  .ac-more > summary:hover { color: #fff; background: var(--wash); }
+  .ac-more > summary:focus-visible { outline: none; box-shadow: inset 0 0 0 2px rgba(91, 141, 239, 0.55); }
+  .ac-more > summary svg { transition: transform 0.25s ease; }
+  .ac-more[open] > summary svg { transform: rotate(180deg); }
+  .am { display: grid; gap: 24px; padding: 8px 20px 24px; }
+  .am-lede { margin: 0; max-width: 60ch; font-size: 0.9375rem; line-height: 1.6; color: var(--ink); }
+  .am-label { margin: 0 0 4px; font-size: 0.75rem; font-weight: 500; color: var(--ink-soft); }
+  .am-text { margin: 0; max-width: 60ch; font-size: 0.875rem; line-height: 1.6; color: var(--ink-soft); }
+  .am-star { display: grid; gap: 24px 48px; }
+  @media (min-width: 900px) { .am-star { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  .am-stats { list-style: none; margin: 0; padding: 0; display: grid; gap: 16px 24px; grid-template-columns: repeat(auto-fill, minmax(min(100%, 200px), 1fr)); }
+  .am-stats li { display: flex; flex-direction: column; gap: 4px; padding-left: 12px; border-left: 1px solid var(--line-strong); }
+  .am-stats b { font-size: 1rem; font-weight: 500; letter-spacing: -0.012em; color: #fff; font-variant-numeric: tabular-nums; }
+  .am-stats span { font-size: 0.8125rem; line-height: 1.45; color: var(--ink-faint); }
+  .am-hl { list-style: none; margin: 8px 0 0; padding: 0; column-gap: 48px; font-size: 0.875rem; line-height: 1.55; color: var(--ink-soft); }
+  @media (min-width: 1024px) { .am-hl { columns: 2; } }
+  .am-hl li { position: relative; padding-left: 16px; margin-bottom: 6px; break-inside: avoid; }
+  .am-hl li::before { content: ""; position: absolute; left: 2px; top: 0.68em; width: 4px; height: 4px; border-radius: 50%; background: var(--ink-ghost); }
+  .am-tech { list-style: none; margin: 8px 0 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px; }
+  .am-tech li { padding: 3px 9px; border-radius: 9999px; border: 1px solid var(--line-strong); font-size: 0.75rem; color: var(--ink-soft); }
+  .am-links { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 24px; padding-top: 16px; border-top: 1px solid var(--line); }
+  .am-links .ac-go { margin: 0; padding: 0; }
+  .am-x { display: inline-flex; align-items: center; gap: 5px; font-size: 0.875rem; font-weight: 500; color: var(--ink-soft); text-decoration: none; white-space: nowrap; }
+  .am-x:hover { color: #fff; }
+  .ax-none { margin: 48px 0; font-size: 1rem; color: var(--ink-soft); text-align: center; }
+  .ax-none button { all: unset; cursor: pointer; color: #9ec1ff; border-bottom: 1px solid rgba(91, 141, 239, 0.6); }
+  .ax-close { display: grid; gap: 24px; align-items: end; margin-top: clamp(40px, 6vw, 72px); padding: clamp(24px, 3.4vw, 40px); border-radius: 22px; border: 1px solid var(--line); background: rgba(255, 255, 255, 0.025); }
+  @media (min-width: 900px) { .ax-close { grid-template-columns: minmax(0, 1fr) auto; gap: 40px; } }
+  .ax-close-t { margin: 0; font-size: clamp(1.75rem, 3vw, 2.5rem); font-weight: 400; letter-spacing: -0.03em; line-height: 1.1; color: #fff; }
+  .ax-close-s { margin: 12px 0 0; max-width: 34rem; font-size: 0.9375rem; line-height: 1.55; color: var(--ink-soft); }
+  .ax-close-a { display: flex; flex-wrap: wrap; gap: 12px; }
+  @media (max-width: 639px) { .ax-tools { flex-direction: column; align-items: stretch; } .ax-search { width: 100%; } }
+</style>
+
+<script>
+  import { onPage } from "../../scripts/lifecycle";
+
+  onPage("projects-archive", (signal) => {
+    const root = document.querySelector<HTMLElement>("[data-ax]");
+    if (!root) return;
+    const grid = root.querySelector<HTMLElement>("[data-ax-grid]")!;
+    const cards = Array.from(grid.querySelectorAll<HTMLElement>(".ac"));
+    const chips = Array.from(root.querySelectorAll<HTMLButtonElement>("[data-ax-f]"));
+    const input = root.querySelector<HTMLInputElement>("[data-ax-q]")!;
+    const count = root.querySelector<HTMLElement>("[data-ax-n]")!;
+    const none = root.querySelector<HTMLElement>("[data-ax-none]")!;
+    let filter = "all";
+
+    // No orphan on a short last row: at three across, one left over takes the
+    // whole row and two left over share it.
+    const tidy = () => {
+      const shown = cards.filter((c) => !c.hidden);
+      cards.forEach((c) => c.classList.remove("is-w2", "is-w3", "is-w6"));
+      const three = shown.length % 3;
+      if (three === 1) shown[shown.length - 1]?.classList.add("is-w6");
+      if (three === 2) shown.slice(-2).forEach((c) => c.classList.add("is-w3"));
+      if (shown.length % 2 === 1) shown[shown.length - 1]?.classList.add("is-w2");
+    };
+    const apply = () => {
+      const q = input.value.trim().toLowerCase();
+      let n = 0;
+      cards.forEach((c) => {
+        const inGroup = filter === "all" || (filter === "live" ? c.dataset.live === "1" : c.dataset.group === filter);
+        const hit = !q || q.split(/\s+/).every((w) => (c.dataset.q || "").includes(w));
+        const on = inGroup && hit;
+        c.hidden = !on;
+        if (on) n++;
+      });
+      count.textContent = String(n);
+      none.hidden = n > 0;
+      chips.forEach((b) => b.setAttribute("aria-pressed", b.dataset.axF === filter ? "true" : "false"));
+      tidy();
+    };
+    chips.forEach((b) =>
+      b.addEventListener(
+        "click",
+        () => {
+          filter = b.dataset.axF || "all";
+          apply();
+        },
+        { signal },
+      ),
+    );
+    input.addEventListener("input", apply, { signal });
+    root.querySelector("[data-ax-clear]")?.addEventListener(
+      "click",
+      () => {
+        filter = "all";
+        input.value = "";
+        apply();
+      },
+      { signal },
+    );
+
+    // old links: #academic and friends set the filter; a project's own id opens its card
+    const readHash = () => {
+      const h = decodeURIComponent(location.hash.slice(1));
+      if (!h) return;
+      if (h === "more") filter = "industry";
+      else if (chips.some((b) => b.dataset.axF === h)) filter = h;
+      else {
+        const card = cards.find((c) => c.id === h);
+        if (card) {
+          filter = "all";
+          input.value = "";
+          apply();
+          card.querySelector("details")?.setAttribute("open", "");
+          card.scrollIntoView({ block: "start", behavior: "instant" as ScrollBehavior });
+        }
+        return;
+      }
+      apply();
+      root.scrollIntoView({ block: "start", behavior: "instant" as ScrollBehavior });
+    };
+    addEventListener("hashchange", readHash, { signal });
+    apply();
+    readHash();
+  });
+</script>

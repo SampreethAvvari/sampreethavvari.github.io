@@ -3,9 +3,10 @@ import fs from "node:fs";
 import path from "node:path";
 import BaseLayout from "../layouts/BaseLayout.astro";
 import { info } from "../data/info";
-import Picture from "../components/common/Picture.astro";
-import Icon from "../components/common/Icon.astro";
 import { itemListNode } from "../utils/seo";
+import StarSystem, { type WorldView, type BodyView, type StarView } from "../components/projects-world/StarSystem.astro";
+import WorldCards from "../components/projects-world/WorldCards.astro";
+import { WORLD_COPY, STAR_MATCH, BELT_ORDER } from "../components/projects-world/world-copy";
 
 const title = "SA: Projects";
 
@@ -234,44 +235,91 @@ const academic = projects.filter((p) => p.tier === "academic");
 const personal = projects.filter((p) => p.tier === "personal");
 const liveCount = [...flagships, ...rest].filter((c) => c.status.live).length;
 
-const WORDS = ["zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten", "eleven", "twelve"];
-const numWord = (n: number) => WORDS[n] ?? String(n);
 
-type Section = { id: string; variant: "flag" | "tile"; title: string; tail?: string; items: Card[] };
-const sections: Section[] = [
-  {
-    id: "industry",
-    variant: "flag",
-    title: "At Hybridge Implants.",
-    tail: `The ${numWord(flagships.length)} I'd walk you through first.`,
-    items: flagships,
-  },
-  { id: "more", variant: "tile", title: "More from Hybridge.", tail: "From daily tools to ones still in build.", items: rest },
-  {
-    id: "academic",
-    variant: "tile",
-    title: "From the NYU days.",
-    tail: "The work that taught me how.",
-    items: [...research, ...academic].map(card),
-  },
-  { id: "open-source", variant: "flag", title: "Built in the open.", tail: "The one I build for myself.", items: personal.map(card) },
-].filter((s) => s.items.length > 0) as Section[];
+// ---- the worlds: each flagship by rank, its copy from copy.ts, its numbers
+// from its own stats. A value that is not a stat has to appear in the project's
+// own entry, or the build says so.
+const findRaw = (match: string) => projects.find((p) => p.title.includes(match));
+const checkValue = (raw: any, value: string, where: string) => {
+  const hay = JSON.stringify(raw).toLowerCase();
+  const need = value.toLowerCase().replace(/^the /, "");
+  if (!hay.includes(need)) console.warn(`[projects] "${value}" for ${where} is not in the site's data`);
+};
+const worldViews: WorldView[] = WORLD_COPY.map((w) => {
+  const raw = findRaw(w.match);
+  if (!raw) throw new Error(`No project matches ${w.match}`);
+  const c = card(raw);
+  if (w.hero) checkValue(raw, w.hero.value, w.id);
+  return {
+    id: w.id,
+    anchor: `world-${c.id}`,
+    name: w.name,
+    title: c.title,
+    accent: w.accent,
+    line: w.line,
+    kicker: [c.status.label, c.date].filter(Boolean).join(" · "),
+    hero: w.hero,
+    shown: w.shown,
+    parts: w.parts.map((p) => {
+      if (p.stat != null) {
+        const st = c.stats[p.stat];
+        if (!st) throw new Error(`${w.id}: no stat ${p.stat}`);
+        return { key: p.key, value: st.value, label: p.label };
+      }
+      checkValue(raw, p.value!, w.id);
+      return { key: p.key, value: p.value!, label: p.label };
+    }),
+    post: c.post,
+    demo: c.demo,
+    link: raw.tier === "personal" ? c.link : null,
+  };
+});
 
-const counts = [
-  { n: industry.length, label: "industry", href: "#industry" },
-  { n: academic.length, label: "academic", href: "#academic" },
-  { n: research.length, label: "research", href: "#academic" },
-  { n: personal.length, label: "open source", href: "#open-source" },
-].filter((c) => c.n > 0);
+// The star stands for the platform all of it runs on.
+const starRaw = findRaw(STAR_MATCH);
+const starCard = card(starRaw);
+const starView: StarView = {
+  title: starCard.title,
+  value: starCard.stats[0].value,
+  label: starCard.stats[0].label,
+  href: starCard.post ?? `/projects#${starCard.id}`,
+};
 
-const STAR_PARTS = [
-  ["problem", "Problem"],
-  ["solution", "Solution"],
-  ["process", "Process"],
-  ["result", "Result"],
-] as const;
-// Numbers shown on a closed card. The case study lists them all in full.
-const FACE_STATS = { flag: 2, tile: 1 };
+// ---- the belt: every other project, as a small body
+const worldIds = new Set(WORLD_COPY.map((w) => findRaw(w.match)?.title));
+const beltRaw = projects.filter((p) => !worldIds.has(p.title) && !p.title.includes(STAR_MATCH));
+const beltBySlug = new Map(beltRaw.map((p) => [slug(p.title), p]));
+const bodyViews: BodyView[] = BELT_ORDER.filter((id) => beltBySlug.has(id)).map((id) => {
+  const c = card(beltBySlug.get(id));
+  const st = c.stats[0];
+  return {
+    id,
+    title: c.title,
+    value: st ? st.value : c.status.label,
+    label: st ? shortCaption(st.label) : c.date,
+    line: c.line,
+    status: c.status.label,
+    href: c.post ?? `/projects#${c.id}`,
+  };
+});
+for (const p of beltRaw) if (!BELT_ORDER.includes(slug(p.title))) console.warn(`[projects] ${p.title} has no body in the belt`);
+
+// ---- the cards at the end: all of them, flagships first
+const allCards = [
+  ...flagships.map((c) => ({ ...c, group: "industry", flag: true })),
+  ...rest.map((c) => ({ ...c, group: "industry", flag: false })),
+  ...research.map(card).map((c) => ({ ...c, group: "research", flag: false })),
+  ...academic.map(card).map((c) => ({ ...c, group: "academic", flag: false })),
+  ...personal.map(card).map((c) => ({ ...c, group: "open-source", flag: false })),
+];
+const filters = [
+  { id: "all", label: "All", n: allCards.length },
+  { id: "live", label: "Live", n: liveCount },
+  { id: "industry", label: "Industry", n: industry.length },
+  { id: "academic", label: "Academic", n: academic.length },
+  { id: "research", label: "Research", n: research.length },
+  { id: "open-source", label: "Open source", n: personal.length },
+].filter((f) => f.n > 0);
 ---
 
 <BaseLayout
@@ -287,489 +335,6 @@ const FACE_STATS = { flag: 2, tile: 1 };
   ]}
   crumbs={[{ name: "Home", path: "/" }, { name: "Projects", path: "/projects" }]}
 >
-  <!-- ── Page top ─────────────────────────────────────────────────────── -->
-  <section id="projects-top" class="page-top proj-top relative overflow-hidden">
-    <div class="tone-atmos" aria-hidden="true"></div>
-    <div class="wrap on-top">
-      <p class="kicker">Projects</p>
-      <h1 class="t-title proj-title">
-        Things I've built.
-        <span class="t-tail">Most of them run a dental practice every day.</span>
-      </h1>
-      <p class="t-lede proj-lede">
-        Tools I built on my own at Hybridge, plus the research and class
-        projects that taught me how.
-      </p>
-      <nav class="proj-counts" aria-label="Jump to a group">
-        {liveCount > 0 && <span class="chip chip-live">{liveCount} live in production</span>}
-        {counts.map((c) => (
-          <a href={c.href} class="chip">
-            <span class="chip-n">{c.n}</span> {c.label}
-          </a>
-        ))}
-      </nav>
-    </div>
-  </section>
-
-  <!-- ── Groups ───────────────────────────────────────────────────────── -->
-  {sections.map((sec) => (
-    <section id={sec.id} class="section-tight proj-sec">
-      <div class="wrap">
-        <div class="sec-head">
-          <div class="sec-head-main">
-            <h2 class="t-h2 proj-h2">
-              {sec.title}
-              {sec.tail && <span class="t-tail">{sec.tail}</span>}
-            </h2>
-          </div>
-          <p class="t-meta">
-            {sec.items.length} {sec.items.length === 1 ? "project" : "projects"}
-          </p>
-        </div>
-
-        <div class={sec.variant === "flag" ? "flags" : "tiles"}>
-          {sec.items.map((c) => {
-            const flag = sec.variant === "flag";
-            const nFace = FACE_STATS[sec.variant];
-            const faceStats = c.stats.slice(0, nFace);
-            const hasLinks = !!(c.post || c.demo || c.gallery || c.link);
-            return (
-              <article id={c.id} class={`surface pcard ${flag ? "pflag" : "ptile"}`} data-reveal>
-                <div class="pc-main">
-                  <div class={flag ? "pc-media pc-media-inset" : "surface-media pc-media"}>
-                    {c.cover ? (
-                      <Picture
-                        src={c.cover}
-                        alt={c.alt}
-                        width={flag ? 800 : 640}
-                        height={flag ? 500 : 400}
-                        style={c.imageStyle}
-                      />
-                    ) : (
-                      <div class="media-fallback" aria-hidden="true">
-                        <span>{c.title}</span>
-                      </div>
-                    )}
-                  </div>
-
-                  <div class="pc-body">
-                    <p class="t-meta pc-meta">
-                      <span class={`badge ${c.status.cls}`}>{c.status.label}</span>
-                      {c.date && <span>{c.date}</span>}
-                    </p>
-                    <h3 class="pc-title">
-                      {c.post ? <a href={c.post}>{c.title}</a> : c.title}
-                    </h3>
-                    <p class="pc-line">{c.line}</p>
-
-                    {faceStats.length > 0 && (
-                      <ul class="pc-stats" aria-label="In numbers">
-                        {faceStats.map((s) => (
-                          <li>
-                            <span class="pc-stat-v">{s.value}</span>
-                            <span class="pc-stat-l" title={s.label}>{shortCaption(s.label)}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    )}
-
-                    {c.post && (
-                      <a href={c.post} class="tlink pc-go">
-                        Read the write up <Icon name="arrow-right" size={14} />
-                      </a>
-                    )}
-                  </div>
-                </div>
-
-                <details class="pmore">
-                  <summary>
-                    <span class="pmore-label">{c.star ? "Case study" : "Details"}</span>
-                    {flag && c.star && (
-                      <span class="t-meta pmore-hint">Problem, solution, process, result</span>
-                    )}
-                    <svg class="pmore-chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"></path></svg>
-                  </summary>
-                  <div class="pm">
-                    {c.description && <p class="pm-lede">{c.description}</p>}
-
-                    {c.stats.length > 0 && (
-                      <ul class="pm-stats" aria-label="In numbers">
-                        {c.stats.map((s) => (
-                          <li>
-                            <span class="pm-stat-v">{s.value}</span>
-                            <span class="pm-stat-l">{s.label}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    )}
-
-                    {c.star ? (
-                      <div class="pm-star">
-                        {STAR_PARTS.map(([k, label]) =>
-                          c.star && c.star[k] ? (
-                            <div>
-                              <p class="t-meta pm-label">{label}</p>
-                              <p class="t-small pm-text">{c.star[k]}</p>
-                            </div>
-                          ) : null,
-                        )}
-                      </div>
-                    ) : (
-                      c.summary && <p class="t-small pm-text">{c.summary}</p>
-                    )}
-
-                    {c.highlights.length > 0 && (
-                      <div>
-                        <p class="t-meta pm-label">Highlights</p>
-                        <ul class="pm-hl">
-                          {c.highlights.map((h) => <li class="t-small">{h}</li>)}
-                        </ul>
-                      </div>
-                    )}
-
-                    {c.tech.length > 0 && (
-                      <div>
-                        <p class="t-meta pm-label">Built with</p>
-                        <ul class="pm-tech">
-                          {c.tech.map((t) => <li class="badge">{t}</li>)}
-                        </ul>
-                      </div>
-                    )}
-
-                    {hasLinks && (
-                      <div class="pm-links">
-                        {c.post && (
-                          <a href={c.post} class="tlink">
-                            Read the write up <Icon name="arrow-right" size={14} />
-                          </a>
-                        )}
-                        {c.demo && (
-                          <a href={c.demo} class="xlink">
-                            Live demo <Icon name="arrow-right" size={13} />
-                          </a>
-                        )}
-                        {c.gallery && <a href={`/gallery#p-${c.gallery}`} class="xlink">Screenshots</a>}
-                        {c.link && (
-                          <a href={c.link} target="_blank" rel="noopener" class="xlink">
-                            {c.linkLabel} <Icon name="arrow-up-right" size={13} />
-                          </a>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                </details>
-              </article>
-            );
-          })}
-        </div>
-      </div>
-    </section>
-  ))}
-
-  <!-- ── Closer ───────────────────────────────────────────────────────── -->
-  <section class="section-tight proj-close">
-    <div class="wrap">
-      <div class="surface surface-pad close-card" data-reveal>
-        <div>
-          <h2 class="t-h2 proj-h2">
-            Let's build something.
-            <span class="t-tail">Tell me what you're working on.</span>
-          </h2>
-          <p class="t-body close-text">
-            Hiring for applied AI, or for the last mile where software meets the
-            people who use it? I'd love to hear about it.
-          </p>
-        </div>
-        <div class="close-actions">
-          <a href="/#contact" class="btn btn-primary">Get in touch</a>
-          <a href="/posts" class="btn btn-glass">
-            Read the writing <Icon name="arrow-right" size={15} class="arrow-r" />
-          </a>
-        </div>
-      </div>
-    </div>
-  </section>
+  <StarSystem worlds={worldViews} bodies={bodyViews} star={starView} total={allCards.length} live={liveCount} />
+  <WorldCards cards={allCards} filters={filters} />
 </BaseLayout>
-
-<style>
-  /* Page top */
-  .proj-top { padding-bottom: clamp(16px, 3vw, 40px); }
-  .proj-title { margin-top: 24px; }
-  .proj-lede { margin-top: 24px; max-width: 34rem; }
-  .proj-counts { margin-top: 32px; display: flex; flex-wrap: wrap; gap: 8px; }
-  .chip-n { color: var(--ink); font-weight: 600; font-variant-numeric: tabular-nums; }
-
-  /* Section heads one step quieter than the page title. */
-  .proj-h2 { font-size: clamp(1.75rem, 3vw, 2.5rem); }
-  .proj-sec .sec-head { margin-bottom: clamp(24px, 3vw, 32px); }
-
-  /* ── Card shell ────────────────────────────────────────────────────────
-     A closed card is what a reader takes in at a glance: status and date,
-     the name, one sentence, a number or two, and the write up. Everything
-     else is in the case study, flush along the card's bottom edge. */
-  .pcard { overflow: hidden; display: flex; flex-direction: column; }
-  .pc-main { display: flex; flex-direction: column; flex: 1; }
-  .pc-body { display: flex; flex-direction: column; align-items: flex-start; flex: 1; min-width: 0; }
-
-  .pc-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
-  .pc-title {
-    margin-top: 8px;
-    font-weight: 600;
-    color: var(--ink);
-    text-wrap: balance;
-  }
-  .pc-title a { color: inherit; text-decoration: none; }
-  .pc-title a:hover {
-    transform: none;
-    text-decoration: underline;
-    text-underline-offset: 4px;
-    text-decoration-thickness: 1px;
-    text-decoration-color: var(--ink-ghost);
-  }
-  .pc-line {
-    margin-top: 8px;
-    max-width: 36rem;
-    color: var(--ink-soft);
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
-  }
-
-  .pc-stats {
-    list-style: none;
-    margin: 16px 0 0;
-    padding: 0;
-    width: 100%;
-    max-width: 36rem;
-    display: grid;
-    grid-auto-flow: column;
-    grid-auto-columns: minmax(0, 1fr);
-    gap: 16px;
-  }
-  .pc-stats > li {
-    min-width: 0;
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-    padding-left: 12px;
-    border-left: 1px solid var(--line-strong);
-  }
-  .pc-stat-v {
-    font-size: 1.0625rem;
-    line-height: 1.25;
-    letter-spacing: -0.015em;
-    font-weight: 600;
-    font-variant-numeric: tabular-nums;
-    color: var(--ink);
-  }
-  .pc-stat-l {
-    font-size: 0.8125rem;
-    line-height: 1.4;
-    color: var(--ink-faint);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-  .pc-go { margin-top: 16px; font-size: 0.875rem; }
-  .ptile .pc-go { margin-top: auto; padding-top: 16px; }
-
-  /* ── Flagships: one per row, the cover in a 16:10 frame at about 40% ── */
-  .flags { display: grid; gap: 16px; }
-  @media (min-width: 1024px) { .flags { gap: 20px; } }
-  .pflag { --pad: 16px; }
-  @media (min-width: 640px) { .pflag { --pad: 24px; } }
-  @media (min-width: 900px) { .pflag { --pad: 28px; } }
-  .pflag .pc-main { display: grid; gap: 16px; padding: var(--pad); }
-  .pflag .pc-body { padding: 0 4px 4px; }
-  @media (min-width: 900px) {
-    .pflag .pc-main { grid-template-columns: minmax(0, 2fr) minmax(0, 3fr); gap: 40px; align-items: center; }
-    .pflag .pc-body { padding: 0; }
-  }
-  .pc-media-inset {
-    position: relative;
-    overflow: hidden;
-    aspect-ratio: 16 / 10;
-    border-radius: 14px;
-    border: 1px solid var(--line);
-    background: #07080b;
-  }
-  .pc-media :global(img) { display: block; width: 100%; height: 100%; object-fit: cover; }
-  .pflag .pc-title { font-size: 1.5rem; line-height: 1.25; letter-spacing: -0.022em; }
-  .pflag .pc-line { font-size: 0.9375rem; line-height: 1.6; }
-  .pflag .pc-stats { max-width: 40rem; gap: 24px; }
-  /* On a phone two numbers side by side leave no room for their captions. */
-  @media (max-width: 519px) { .pc-stats { grid-auto-flow: row; gap: 12px; } }
-
-  /* ── The rest: a grid of quieter tiles ────────────────────────────────
-     An open tile becomes a row the full width of the grid, laid out like a
-     flagship, and the tiles after it close the gap (dense flow). */
-  .tiles {
-    display: grid;
-    gap: 16px;
-    grid-template-columns: minmax(0, 1fr);
-    grid-auto-flow: row dense;
-  }
-  @media (min-width: 640px) { .tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
-  @media (min-width: 1024px) { .tiles { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px; } }
-  .ptile { --pad: 20px; }
-  .ptile .pc-media { aspect-ratio: 16 / 9; }
-  .ptile .pc-body { padding: var(--pad); }
-  .ptile .pc-title { font-size: 1.0625rem; line-height: 1.3; letter-spacing: -0.012em; }
-  .ptile .pc-line { font-size: 0.875rem; line-height: 1.55; }
-  .ptile .pc-stat-v { font-size: 1rem; }
-
-  .ptile:has(> .pmore[open]) { grid-column: 1 / -1; }
-  @media (min-width: 640px) { .ptile:has(> .pmore[open]) { --pad: 24px; } }
-  @media (min-width: 900px) {
-    .ptile:has(> .pmore[open]) { --pad: 28px; }
-    .ptile:has(> .pmore[open]) > .pc-main {
-      display: grid;
-      grid-template-columns: minmax(0, 2fr) minmax(0, 3fr);
-      gap: 40px;
-      align-items: center;
-      padding: var(--pad);
-    }
-    .ptile:has(> .pmore[open]) .pc-media {
-      aspect-ratio: 16 / 10;
-      border-radius: 14px;
-      border: 1px solid var(--line);
-    }
-    .ptile:has(> .pmore[open]) .pc-body { padding: 0; }
-    .ptile:has(> .pmore[open]) .pc-title { font-size: 1.5rem; line-height: 1.25; letter-spacing: -0.022em; }
-    .ptile:has(> .pmore[open]) .pc-line { font-size: 0.9375rem; line-height: 1.6; }
-    .ptile:has(> .pmore[open]) .pc-go { margin-top: 16px; padding-top: 0; }
-  }
-
-  /* ── The case study ───────────────────────────────────────────────────── */
-  .pmore { border-top: 1px solid var(--line); }
-  .pmore > summary {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    min-height: 48px;
-    padding: 12px var(--pad);
-    list-style: none;
-    cursor: pointer;
-    font-size: 0.875rem;
-    font-weight: 500;
-    color: var(--ink-soft);
-    transition: color 150ms var(--ease-glass), background-color 150ms var(--ease-glass);
-  }
-  .pmore > summary::-webkit-details-marker { display: none; }
-  .pmore > summary::marker { content: ""; }
-  .pmore > summary:hover { color: var(--ink); background: var(--wash); }
-  .pmore > summary:focus-visible { outline: none; box-shadow: inset 0 0 0 2px rgba(var(--tone-rgb), 0.45); }
-  .pmore-hint { display: none; }
-  @media (min-width: 640px) { .pmore-hint { display: inline; } }
-  .pmore-chev { margin-left: auto; flex: none; transition: transform 250ms var(--ease-glass); }
-  .pmore[open] > summary { color: var(--ink); }
-  .pmore[open] .pmore-chev { transform: rotate(180deg); }
-
-  /* Calm small text in short measures, not walls. */
-  .pm { display: grid; gap: 24px; padding: 8px var(--pad) calc(var(--pad) + 8px); }
-  .pm-lede { max-width: 60ch; font-size: 0.9375rem; line-height: 1.6; color: var(--ink); }
-  .pm-label { color: var(--ink-soft); font-weight: 500; }
-  .pm-text { max-width: 60ch; margin-top: 4px; line-height: 1.6; }
-  .pm-star { display: grid; gap: 24px 48px; }
-  @media (min-width: 900px) { .pm-star { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
-
-  .pm-stats {
-    list-style: none;
-    margin: 0;
-    padding: 0;
-    display: grid;
-    gap: 16px 24px;
-    grid-template-columns: repeat(auto-fill, minmax(min(100%, 200px), 1fr));
-  }
-  .pm-stats > li { display: flex; flex-direction: column; gap: 4px; padding-left: 12px; border-left: 1px solid var(--line-strong); }
-  .pm-stat-v { font-size: 1rem; line-height: 1.25; font-weight: 600; letter-spacing: -0.012em; font-variant-numeric: tabular-nums; color: var(--ink); }
-  .pm-stat-l { font-size: 0.8125rem; line-height: 1.45; color: var(--ink-faint); }
-
-  .pm-hl { list-style: none; margin: 8px 0 0; padding: 0; column-gap: 48px; }
-  @media (min-width: 1024px) { .pm-hl { columns: 2; } }
-  .pm-hl > li { position: relative; max-width: 60ch; padding-left: 16px; margin-bottom: 4px; break-inside: avoid; }
-  .pm-hl > li::before {
-    content: "";
-    position: absolute;
-    left: 2px;
-    top: 0.68em;
-    width: 4px;
-    height: 4px;
-    border-radius: 9999px;
-    background: var(--ink-ghost);
-  }
-
-  .pm-tech { list-style: none; margin: 8px 0 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px; }
-  .pm-links { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 24px; padding-top: 16px; border-top: 1px solid var(--line); }
-  .pm-links .tlink { font-size: 0.875rem; }
-  .xlink {
-    display: inline-flex;
-    align-items: center;
-    gap: 5px;
-    font-size: 0.875rem;
-    font-weight: 500;
-    color: var(--ink-soft);
-    text-decoration: none;
-    white-space: nowrap;
-    transition: color 150ms var(--ease-glass);
-  }
-  .xlink:hover { color: var(--ink); transform: none; }
-  .xlink :global(svg) { width: 13px; height: 13px; }
-
-  /* A calm tone panel where a cover has not been made yet. */
-  .media-fallback {
-    width: 100%;
-    height: 100%;
-    display: grid;
-    place-items: center;
-    padding: 16px;
-    text-align: center;
-    background:
-      radial-gradient(70% 90% at 20% 10%, rgba(var(--tone-rgb), 0.22) 0%, rgba(var(--tone-rgb), 0.2146) 7%, rgba(var(--tone-rgb), 0.199) 14%, rgba(var(--tone-rgb), 0.1747) 21%, rgba(var(--tone-rgb), 0.144) 28%, rgba(var(--tone-rgb), 0.11) 35%, rgba(var(--tone-rgb), 0.076) 42%, rgba(var(--tone-rgb), 0.0453) 49%, rgba(var(--tone-rgb), 0.021) 56%, rgba(var(--tone-rgb), 0.0054) 63%, rgba(var(--tone-rgb), 0) 70%),
-      radial-gradient(60% 80% at 90% 100%, rgba(var(--tone-rgb), 0.1) 0%, rgba(var(--tone-rgb), 0.0976) 7%, rgba(var(--tone-rgb), 0.0905) 14%, rgba(var(--tone-rgb), 0.0794) 21%, rgba(var(--tone-rgb), 0.0655) 28%, rgba(var(--tone-rgb), 0.05) 35%, rgba(var(--tone-rgb), 0.0345) 42%, rgba(var(--tone-rgb), 0.0206) 49%, rgba(var(--tone-rgb), 0.0095) 56%, rgba(var(--tone-rgb), 0.0024) 63%, rgba(var(--tone-rgb), 0) 70%),
-      #07080b;
-  }
-  .media-fallback span { font-size: 0.9375rem; font-weight: 500; color: var(--ink-faint); }
-
-  /* Closer */
-  .proj-close { padding-top: 8px; padding-bottom: clamp(56px, 7vw, 96px); }
-  .close-card { display: grid; gap: 24px; align-items: end; }
-  @media (min-width: 900px) {
-    .close-card { grid-template-columns: minmax(0, 1fr) auto; gap: 40px; padding: 40px; }
-  }
-  .close-text { margin-top: 16px; max-width: 34rem; }
-  .close-actions { display: flex; flex-wrap: wrap; gap: 12px; }
-
-  @media (prefers-reduced-motion: reduce) {
-    .pmore-chev, .pmore > summary, .xlink { transition: none; }
-  }
-</style>
-
-<script>
-  import { onPage } from "../scripts/lifecycle";
-
-  // An open tile moves into a row of its own (and moves back when closed).
-  // Keep the line that was clicked where it was on screen, so the reader
-  // never loses their place when the grid reflows. Runs each time the page
-  // is shown; the listeners are on its own tiles, so they go with the page.
-  onPage("projects", () => {
-    document.querySelectorAll<HTMLDetailsElement>(".ptile > .pmore").forEach((d) => {
-      const summary = d.querySelector("summary");
-      if (!summary) return;
-      let before: number | null = null;
-      summary.addEventListener("click", () => {
-        before = summary.getBoundingClientRect().top;
-      });
-      d.addEventListener("toggle", () => {
-        if (before === null) return;
-        const was = before;
-        before = null;
-        requestAnimationFrame(() => {
-          const shift = summary.getBoundingClientRect().top - was;
-          if (Math.abs(shift) > 2) window.scrollBy({ top: shift, behavior: "instant" as ScrollBehavior });
-        });
-      });
-    });
-  });
-</script>
