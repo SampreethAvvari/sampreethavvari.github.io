@@ -183,7 +183,7 @@ const eduStop = STOPS.indexOf("education");
 
     <!-- skills: the cloud is drawn, the list stays here for everything that reads -->
     <section class="rw-stop rw-s-skills" data-stop={skillsStop}>
-      <div class="rw-copy rw-slide" data-avoid>
+      <div class="rw-copy rw-slide">
         <p class="rw-kick">Skills</p>
         <h2 class="rw-title" id="skills">Skills</h2>
         <p class="rw-small"><span class="rw-fine">Sweep the pointer through the cloud. Hover a group to gather it.</span><span class="rw-coarse">Tap a group to gather it.</span></p>
@@ -198,7 +198,7 @@ const eduStop = STOPS.indexOf("education");
           </li>
         ))}
       </ul>
-      <div class="rw-chips" data-avoid-row role="group" aria-label="Gather one group of skills">
+      <div class="rw-chips" role="group" aria-label="Gather one group of skills">
         {skills.map((g, i) => <button type="button" class="rw-chip" data-group={i} aria-pressed="false">{g.label}</button>)}
       </div>
     </section>
@@ -273,7 +273,7 @@ const eduStop = STOPS.indexOf("education");
     display: flex;
     flex-direction: column;
     gap: 5px;
-    aspect-ratio: 8.5 / 11;
+    aspect-ratio: 8.5 / 7.6;
     padding: 9%;
     overflow: hidden;
     background: linear-gradient(155deg, #f4f5f7 0%, #d9dce2 55%, #aeb3bc 100%);
@@ -413,6 +413,7 @@ const eduStop = STOPS.indexOf("education");
   .is-live .rw-versions { position: absolute; left: var(--gx); right: var(--gx); bottom: 18px; margin: 0; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; }
   .is-live .rw-version { position: relative; display: block; height: auto; pointer-events: auto; }
   .is-live .rw-paper {
+    aspect-ratio: 8.5 / 11;
     position: absolute;
     left: 50%;
     bottom: calc(100% + 16px);
@@ -500,7 +501,7 @@ const eduStop = STOPS.indexOf("education");
 
   .is-live .rw-s-research .rw-copy { right: calc(var(--gx) + 24px); top: 50%; width: min(36vw, 620px); margin-top: -170px; --mx: 240px; --my: 0px; }
   .is-live .rw-s-video .rw-copy { left: var(--gx); bottom: clamp(36px, 8vh, 84px); width: min(36vw, 620px); --mx: -160px; --my: 0px; }
-  .is-live .rw-s-shure .rw-copy { right: calc(var(--gx) + 20px); top: 132px; width: min(460px, 34vw); text-align: right; --mx: 180px; --my: -60px; }
+  .is-live .rw-s-shure .rw-copy { right: calc(var(--gx) + 20px); top: 132px; width: min(44vw, 900px); text-align: right; --mx: 180px; --my: -60px; }
   /* on wide screens the two strips of paper carry these words themselves */
   @media (min-width: 768px) and (min-aspect-ratio: 21 / 20) {
     .is-3d .rw-s-shure .rw-items { position: absolute; width: 1px; height: 1px; margin: 0; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }

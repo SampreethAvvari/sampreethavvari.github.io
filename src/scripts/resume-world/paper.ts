@@ -359,7 +359,7 @@ export function paintBacks(d: WorldData, cellW: number): { canvas: HTMLCanvasEle
       y += 54;
     });
     y += 8;
-    wrap(c, sh.blurb, font(400, 27), 700 - L * 2).forEach((ln) => {
+    wrap(c, sh.blurb, font(400, 27), 700 - L * 2 - 44).forEach((ln) => {
       text(c, ln, L, y, { font: font(400, 27), ink: INK(70) });
       y += 38;
     });

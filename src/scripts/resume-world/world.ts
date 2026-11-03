@@ -63,6 +63,7 @@ export type WorldEvents = {
   onSkillTouch?: (index: number, slip: Slip) => void;
   onMarkHover?: (id: string, note: number) => void;
   onLineHover?: (id: string, note: number) => void;
+  onLost?: () => void;
 };
 
 export type World = {
@@ -80,7 +81,6 @@ export type World = {
   hoverSection(name: string | null): void;
   setKey(i: number): void;
   hoverGroup(g: number | null): void;
-  setAvoid(rects: DOMRect[]): void;
   slips(): Slip[];
   destroy(): void;
 };
@@ -92,7 +92,7 @@ function pickTier(): Tier {
   const small = matchMedia("(max-width: 767px)").matches;
   const cores = navigator.hardwareConcurrency || 4;
   const mem = (navigator as Navigator & { deviceMemory?: number }).deviceMemory || 8;
-  if (coarse || small) return { dpr: 1.5, page: 1100, atlas: [2048, 1024], words: 1536, layers: 10, samples: 4, bloom: 3, dust: 700, field: 768, sheetSeg: [18, 24] };
+  if (coarse || small) return { dpr: 1.5, page: 900, atlas: [2048, 1024], words: 1280, layers: 10, samples: 4, bloom: 3, dust: 700, field: 768, sheetSeg: [18, 24] };
   if (cores >= 8 && mem >= 8) return { dpr: 2, page: 1400, atlas: [4096, 1536], words: 2048, layers: 26, samples: 4, bloom: 5, dust: 2200, field: 1400, sheetSeg: [26, 34] };
   return { dpr: 1.5, page: 1400, atlas: [3072, 1280], words: 2048, layers: 16, samples: 4, bloom: 4, dust: 1400, field: 1024, sheetSeg: [20, 26] };
 }
@@ -371,26 +371,33 @@ export async function mountWorld(
     textures.push(t);
     return t;
   };
+  // Upload now and let go of the canvas: the GPU holds the picture.
+  const upload = (t: Texture) => {
+    renderer.initTexture(t);
+    const cv = t.image as HTMLCanvasElement;
+    cv.width = 1;
+    cv.height = 1;
+  };
 
   const measure = document.createElement("canvas").getContext("2d")!;
   const layoutData: Layout = layoutPage(measure, data, masks);
   const pageTex: Texture[] = [];
   for (let i = 0; i < data.sheets.length; i++) {
     pageTex.push(tex(paintPage(layoutData, i, tier.page)));
-    renderer.initTexture(pageTex[i]);
+    upload(pageTex[i]);
     await nextFrame();
   }
   const backs = paintBacks(data, Math.round(tier.page / 2));
   const backTex = tex(backs.canvas);
-  renderer.initTexture(backTex);
+  upload(backTex);
   const maxTex = renderer.capabilities.maxTextureSize;
   const atlas = paintAtlas(layoutData, Math.min(maxTex, tier.atlas[0]), Math.min(maxTex, tier.atlas[1]));
   const atlasTex = tex(atlas.canvas);
-  renderer.initTexture(atlasTex);
+  upload(atlasTex);
   await nextFrame();
   const words = paintWords(layoutData, tier.words);
   const wordsTex = tex(words.canvas);
-  renderer.initTexture(wordsTex);
+  upload(wordsTex);
   await nextFrame();
 
   // ------------------------------------------------------------- shared
@@ -625,6 +632,7 @@ export async function mountWorld(
     const f = fieldsBySrc.get(r.logo);
     if (f) marks.push(makeMark(`role-${r.id}`, f, 2 + i, r.logo.includes("hybridge") ? 0.05 : 0.09, 0.2, f.spread * 0.5));
   });
+  masks.clear();
   data.education.forEach((e) => {
     const f = fieldsBySrc.get(e.logo);
     if (f) marks.push(makeMark(`edu-${e.id}`, f, STOPS.indexOf("education"), e.logo.endsWith(".png") ? 0.008 : 0.06, e.logo.endsWith(".png") ? 0.36 : 0.2, e.logo.endsWith(".png") ? 2.5 : f.spread * 0.5));
@@ -1042,9 +1050,9 @@ export async function mountWorld(
       [0, -0.86],
     ];
     const seats = isWide ? wideSeats : tallSeats;
-    const unit = isWide ? clamp(H / 900, 0.8, 1.25) * 0.84 : clamp((W / 390) * 0.445, 0.4, 0.66); // screen px per page unit
+    const unit = isWide ? clamp(H / 900, 0.8, 1.25) * 0.84 : clamp((W / 390) * 0.5, 0.42, 0.7) * clamp(H / 844, 0.72, 1); // screen px per page unit
     const counts = new Array(G).fill(0);
-    const topEdge = isWide ? 82 : 128;
+    const topEdge = isWide ? 82 : 150;
     const botEdge = H - (isWide ? 78 : 66);
     const leftEdge = W * 0.03;
     const rightEdge = W - (isWide ? 56 : W * 0.03);
@@ -1063,13 +1071,13 @@ export async function mountWorld(
       const cx = midX + seat[0] * halfX * 0.86 + Math.cos(golden) * rad * halfX * (isWide ? 0.2 : 0.42) * tall;
       const cy = midY - seat[1] * halfY * 0.88 + Math.sin(golden) * rad * halfY * (isWide ? 0.2 : 0.13) * tall;
       const mul = sl.s.label ? 1.24 : 0.92 + hash(sl.i + 3) * 0.24;
-      return { sl, cx, cy, tx: cx, ty: cy, w: sl.s.rect.w * unit * mul + (isWide ? 16 : 7), h: sl.s.rect.h * unit * mul + (isWide ? 13 : 7), mul };
+      return { sl, cx, cy, tx: cx, ty: cy, w: sl.s.rect.w * unit * mul + 18, h: sl.s.rect.h * unit * mul + 16, mul };
     });
     // the heading and the PDF links keep their ground
     const keepOut = isWide
       ? [{ l: 0, t: 0, r: Math.min(380, W * 0.3), b: 220 }, { l: W - 250, t: 0, r: W, b: 128 }]
-      : [{ l: 0, t: 0, r: W, b: 124 }];
-    for (let it = 0; it < 240; it++) {
+      : [{ l: 0, t: 0, r: W, b: 146 }];
+    for (let it = 0; isWide && it < 320; it++) {
       for (let a0 = 0; a0 < boxes.length; a0++) {
         const A = boxes[a0];
         for (let b0 = a0 + 1; b0 < boxes.length; b0++) {
@@ -1098,15 +1106,56 @@ export async function mountWorld(
         }
         A.cx = clamp(A.cx, leftEdge + A.w / 2, rightEdge - A.w / 2);
         A.cy = clamp(A.cy, topEdge + A.h / 2, botEdge - A.h / 2);
-        if (it < 60) {
+        if (it < 40) {
           A.cx += (A.tx - A.cx) * 0.01;
           A.cy += (A.ty - A.cy) * 0.01;
         }
       }
     }
+    if (!isWide) {
+      const gapX = 6;
+      const rows: { items: typeof boxes; h: number; group: number }[] = [];
+      for (let g = 0; g < G; g++) {
+        const members = boxes.filter((b0) => b0.sl.s.group === g);
+        let row: typeof boxes = [];
+        let used = 0;
+        const flush = () => {
+          if (row.length) rows.push({ items: row, h: Math.max(...row.map((m) => m.sl.s.rect.h * unit * m.mul)), group: g });
+          row = [];
+          used = 0;
+        };
+        members.forEach((m) => {
+          const w = m.sl.s.rect.w * unit * m.mul;
+          if (used + w > rightEdge - leftEdge && row.length) flush();
+          row.push(m);
+          used += w + gapX;
+        });
+        flush();
+      }
+      const inkH = rows.reduce((a0, r) => a0 + r.h, 0);
+      const groupsGaps = G - 1;
+      const room = botEdge - topEdge - inkH;
+      const rowGap = Math.max(2, Math.min(12, (room * 0.6) / Math.max(1, rows.length - 1)));
+      const groupGap = Math.max(0, (room - rowGap * (rows.length - 1)) / Math.max(1, groupsGaps));
+      let y = topEdge;
+      rows.forEach((r, ri) => {
+        if (ri && r.group !== rows[ri - 1].group) y += Math.min(groupGap, 26);
+        const total = r.items.reduce((a0, m) => a0 + m.sl.s.rect.w * unit * m.mul, 0);
+        const spare = rightEdge - leftEdge - total;
+        const gapRow = r.items.length > 1 ? Math.min(gapX + 16, spare / (r.items.length - 1)) : 0;
+        let x = leftEdge + Math.max(0, spare - gapRow * (r.items.length - 1)) * hash(ri + 31);
+        r.items.forEach((m) => {
+          const w = m.sl.s.rect.w * unit * m.mul;
+          m.cx = x + w / 2;
+          m.cy = y + r.h / 2;
+          x += w + gapRow;
+        });
+        y += r.h + rowGap;
+      });
+    }
     for (const b0 of boxes) {
       const sl = b0.sl;
-      const hz = (hash(sl.i + 40) - 0.5) * 3.2 + (sl.s.label ? 0.8 : 0);
+      const hz = (hash(sl.i + 40) - 0.5) * (isWide ? 3.2 : 1.2) + (sl.s.label ? 0.8 : 0);
       const d = CLOUD_D - hz;
       at(6, b0.cx / W, b0.cy / H, d, sl.home);
       sl.homeS = pxWorld(unit * b0.mul * PAGE_W, d);
@@ -1179,7 +1228,6 @@ export async function mountWorld(
   const sectionLift: Record<string, number> = { experience: 0, skills: 0, education: 0 };
   let activeKey = 0;
   let groupHover: number | null = null;
-  let avoid: DOMRect[] = [];
   let groupDim = 0;
 
   // ------------------------------------------------------------- frame
@@ -1294,7 +1342,6 @@ export async function mountWorld(
     shared.uCursorI.value = 1.45 + speed * 0.6;
 
     // ---- the four sheets
-    const onHero = P < 1.02;
     const leave = clamp(P * 6);
     sheets.forEach((s, i) => {
       const b = s.batch;
@@ -1335,9 +1382,9 @@ export async function mountWorld(
         const a = (time - s.autoFrom) / 9;
         if (a >= 1 || s.hoverT || s.dragging || P > 0.02) s.auto = -1;
         else autoYaw = ease(a) * Math.PI * 2;
-      } else if (P < 0.02 && !s.hoverT && !s.dragging && hash(i + Math.floor(time / 11)) < 0.1 && Math.floor(time / 11) !== s.seed * 1e6) {
-        const slot = Math.floor(time / 11);
-        if (slot > 0 && (slot + i) % 4 === 0 && s.autoFrom < slot * 11) {
+      } else {
+        const slot = Math.floor(time / 13);
+        if (slot > 0 && slot % n === i && s.autoFrom < slot * 13 && P < 0.02 && !s.hoverT && !s.dragging) {
           s.auto = 0;
           s.autoFrom = time;
         }
@@ -1359,10 +1406,7 @@ export async function mountWorld(
       const pitch = s.pitch + (1 - entered) * 0.7 + (s.base.pitch + Math.sin(sway * 0.77 + 1.2) * 0.07) * hr * (1 - pk) + spy * 0.12;
       const rl = (s.base.roll + Math.sin(sway * 0.5) * 0.03) * hr * (1 - pk);
       qFrom(0, pitch, yaw, rl, qA);
-      heroPos[i].copy(vA);
-      heroQ[i].copy(qA);
       heroS[i] = s.worldW;
-      void 0;
 
       let bendK = (0.62 + Math.sin(sway * 1.3) * 0.34) * (i % 2 ? -1 : 1) * hr + s.vy * 0.14 + speed * 0.5;
       let ripple = 0.0028 + speed * 0.008;
@@ -1447,7 +1491,7 @@ export async function mountWorld(
 
     if (pieceBatch.mesh.visible) {
       // the blank sheet the lines lifted from drifts off behind them
-      const be = ease(clamp((P - 1.02) / 0.34));
+      const be = ease(clamp((P - 1.02) / 0.24));
       if (be >= 1) {
         sV.setScalar(0);
         mat.compose(vA.set(0, 0, 0), qA.identity(), sV);
@@ -1455,11 +1499,11 @@ export async function mountWorld(
         vA.copy(chosenPos).addScaledVector(frames[1].fwd, 0.002 + be * 10).addScaledVector(frames[1].right, be * 2.2).addScaledVector(frames[1].up, be * -1.2);
         axis.set(0.4, 1, 0.2).normalize();
         qA.copy(chosenQ).multiply(qB.setFromAxisAngle(axis, be * 1.5));
-        sV.setScalar(chosenS);
+        sV.setScalar(chosenS * (1 - be * 0.45));
         mat.compose(vA, qA, sV);
       }
       pieceBatch.mesh.setMatrixAt(0, mat);
-      pieceBatch.state.set([1, 1 - be * 0.8, smooth(1.0, 1.05, P), 0.5], 0);
+      pieceBatch.state.set([1, 1 - be * 0.92, smooth(1.0, 1.05, P), 0.5], 0);
       pieceBatch.flex.set([be * 0.25, 0, be * 0.1, be * 0.006], 0);
 
       for (const pc of pieces) {
@@ -1677,8 +1721,9 @@ export async function mountWorld(
           vB.addScaledVector(frames[6].up, -sl.dy * wpp);
           sl.spin *= Math.exp(-dt * 1.4);
           const t = time * 0.22 + sl.seed * 20;
-          vB.addScaledVector(frames[6].up, Math.sin(t) * 0.05);
-          vB.addScaledVector(frames[6].right, Math.cos(t * 0.8) * 0.05);
+          const drift = isWide ? 0.03 : 0.012;
+          vB.addScaledVector(frames[6].up, Math.sin(t) * drift);
+          vB.addScaledVector(frames[6].right, Math.cos(t * 0.8) * drift);
 
           const isG = groupHover === sl.s.group;
           sl.mix = damp(sl.mix, isG && cloudOn ? 1 : 0, 8, dt);
@@ -1686,7 +1731,7 @@ export async function mountWorld(
           if (dim > 0) vB.addScaledVector(frames[6].fwd, dim * 1.6);
           if (sl.mix > 0.001) vB.lerp(sl.grid, ease(sl.mix));
 
-          const wob = (1 - sl.mix) * (1 + Math.min(3, Math.abs(sl.spin)));
+          const wob = (1 - sl.mix) * ((isWide ? 1 : 0.5) + Math.min(3, Math.abs(sl.spin)));
           const py2 = (Math.sin(t * 1.3) * 0.2 + (sl.seed - 0.5) * 0.3) * wob;
           const yw2 = (Math.sin(t * 0.9 + 2) * 0.32 + (hash(sl.seed * 8) - 0.5) * 0.4) * wob + sl.spin;
           const rl2 = (Math.sin(t * 0.7 + 4) * 0.03 + (hash(sl.seed * 6) - 0.5) * 0.06) * wob;
@@ -1843,9 +1888,6 @@ export async function mountWorld(
         slowFrames = 0;
       }
     }
-    if (onHero) {
-      /* nothing more: the hero loop is all above */
-    }
   }
 
   const rtAxis = new Vector3(1, 0, 0);
@@ -1855,7 +1897,10 @@ export async function mountWorld(
   renderer.compile(scene, camera);
   await nextFrame();
 
-  const lost = (e: Event) => e.preventDefault();
+  const lost = (e: Event) => {
+    e.preventDefault();
+    events.onLost?.();
+  };
   canvas.addEventListener("webglcontextlost", lost);
 
   let dead = false;
@@ -1864,10 +1909,7 @@ export async function mountWorld(
       if (!dead) frame(now, p, v);
     },
     layout() {
-      if (dead) return;
-      const was = wide();
-      void was;
-      layout();
+      if (!dead) layout();
     },
     setPointer(nx, ny, seen) {
       pnx = nx;
@@ -1922,9 +1964,6 @@ export async function mountWorld(
     },
     hoverGroup(g) {
       groupHover = g;
-    },
-    setAvoid(rects) {
-      avoid = rects;
     },
     slips: () => slipsList,
     destroy() {

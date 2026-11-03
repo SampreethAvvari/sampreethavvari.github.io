@@ -269,6 +269,7 @@ void main() {
   float wash = 0.75 + 0.25 * sin((vUv.x * 3.1 + vUv.y * 1.4) + uEnv * 6.0);
   vec3 body = vec3(0.84, 0.87, 0.92) * uBase * key * wash;
   vec3 col = body + env * (front > 0.5 ? mix(0.62, 0.22, bevel) : 0.8);
+  if (front > 0.5) col = min(col, vec3(1.02));
   col += cAtt * (ndc * 0.24 + pow(nh, 40.0) * 0.9 + pow(nh, 300.0) * 3.0);
   // a band of light crosses it on arrival
   float band = exp(-pow((vUv.x + vUv.y * 0.35 - uSweep) * 9.0, 2.0));

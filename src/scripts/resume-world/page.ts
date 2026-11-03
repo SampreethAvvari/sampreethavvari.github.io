@@ -425,12 +425,6 @@ export function startResumeWorld(visit: AbortSignal): void | (() => void) {
 
   // ------------------------------------------------------------ the skills
   const chips = Array.from(root.querySelectorAll<HTMLElement>("[data-group]"));
-  const skillCopy = root.querySelector<HTMLElement>("[data-avoid]");
-  const skillRow = root.querySelector<HTMLElement>("[data-avoid-row]");
-  const setAvoid = () => {
-    const rects = [skillCopy, skillRow].filter(Boolean).map((el) => (el as HTMLElement).getBoundingClientRect());
-    world?.setAvoid(rects);
-  };
   let pinned: number | null = null;
   chips.forEach((chip) => {
     const g = Number(chip.dataset.group);
@@ -480,7 +474,6 @@ export function startResumeWorld(visit: AbortSignal): void | (() => void) {
     motion.measure();
     sizePane();
     world?.layout();
-    setAvoid();
   };
   addEventListener("resize", onResize, { passive: true, ...on });
 
@@ -521,6 +514,11 @@ export function startResumeWorld(visit: AbortSignal): void | (() => void) {
             onSkillTouch: (i, s) => fire("resume:hover", { kind: s.label ? "group" : "skill", id: s.text, note: s.label ? s.group : i % 24 }),
             onMarkHover: (id, note) => fire("resume:hover", { kind: "mark", id, note }),
             onLineHover: (id, note) => fire("resume:hover", { kind: "line", id, note }),
+            onLost: () => {
+              world?.destroy();
+              world = null;
+              toDocument();
+            },
           },
           () => motion.progress(),
         );
@@ -536,7 +534,6 @@ export function startResumeWorld(visit: AbortSignal): void | (() => void) {
         w.setChosen(chosen);
         w.setKey(activeKey);
         if (hovered >= 0) w.hoverSheet(hovered);
-        setAvoid();
         // Draw one frame first, so the canvas never fades in empty.
         w.frame(performance.now(), P, 0);
         requestAnimationFrame(() => {
