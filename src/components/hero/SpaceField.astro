@@ -125,7 +125,20 @@
       },
       { passive: true },
     );
-    document.addEventListener("visibilitychange", () => send({ type: "hidden", hidden: document.hidden }));
+    // Rest while the tab is hidden, or while an opaque world covers this sky
+    // (the home flight, the Projects system, the Work station): two scenes
+    // drawing at once would only cost phones their frame rate.
+    const COVERED = ["in-journey", "in-pw", "in-ww"];
+    let told: boolean | null = null;
+    const tellHidden = () => {
+      const root = document.documentElement.classList;
+      const hide = document.hidden || COVERED.some((c) => root.contains(c));
+      if (hide === told) return;
+      told = hide;
+      send({ type: "hidden", hidden: hide });
+    };
+    document.addEventListener("visibilitychange", tellHidden);
+    new MutationObserver(tellHidden).observe(document.documentElement, { attributes: true, attributeFilter: ["class"] });
 
     // Either way the sky starts after the page's first paint: compiling the
     // shaders keeps the browser's graphics process busy, and that process
@@ -143,6 +156,8 @@
         };
         send = (m) => worker.postMessage(m);
         worker.postMessage({ type: "init", canvas: off, isMobile, ...size(), input }, [off]);
+        told = null;
+        tellHidden();
       });
       return;
     }
@@ -161,6 +176,8 @@
         if (m.type === "resize") resize();
         else if (m.type === "hidden") hidden = !!m.hidden;
       };
+      told = null;
+      tellHidden();
       sky.whenReady((ok) => {
         if (!ok) return;
         on();

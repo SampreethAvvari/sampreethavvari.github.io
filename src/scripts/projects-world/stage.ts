@@ -236,7 +236,7 @@ export function mountProjectsWorld() {
       glideRaf = requestAnimationFrame(frame);
     };
     const settle = () => {
-      if (gliding || pointerDown || flying || (window as Window & { __pwHold?: boolean }).__pwHold) return;
+      if (gliding || pointerDown || flying) return;
       const here = gFromY(scrollY);
       if (here >= N - 1 + BELT_IN + 0.01 || here < 0) return; // the belt and the cards scroll freely
       const st = Math.floor(here);
@@ -645,7 +645,6 @@ export function mountProjectsWorld() {
     let pxS = 0;
     let pyS = 0;
     const onFrame = (f: FrameInfo) => {
-      (window as Window & { __pwG?: number }).__pwG = f.g;
       if (!coarse && !reduced) {
         const tx3 = mOn ? (mx / vw) * 2 - 1 : 0;
         const ty3 = mOn ? (my / vh) * 2 - 1 : 0;
@@ -906,8 +905,6 @@ export function mountProjectsWorld() {
           io.observe(stage);
           signal.addEventListener("abort", () => io.disconnect());
           document.addEventListener("visibilitychange", () => s.setPaused(document.hidden), { signal });
-          // test hook: the camera's stage position
-          (window as Window & { __pwReady?: boolean }).__pwReady = true;
         })
         .catch((err) => {
           // the painted sky and the HTML still show every project
@@ -929,7 +926,6 @@ export function mountProjectsWorld() {
       sys?.destroy();
       sys = null;
       document.documentElement.classList.remove("in-pw", "pw-touring");
-      (window as Window & { __pwReady?: boolean }).__pwReady = false;
     };
   });
 }
