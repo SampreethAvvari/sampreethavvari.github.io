@@ -111,7 +111,7 @@ const anchorAt = (i: number) => yOf(restAt(i));
       <article class="jc" data-jc="1" style={`--cc:${chapters[1].rgb}`}>
         <p class="jc-kicker"><span>02</span><i></i><span>Chapter</span></p>
         <h2 class="jc-title"><span class="jc-line">{words("What the work changed").map((w, k) => <span class="jw" style={`--w:${k}`}>{w} </span>)}</span></h2>
-        <p class="jc-lede">Each number opens the record it comes from.</p>
+        <p class="jc-lede">Each number links to the work behind it.</p>
         <ul class="jc-stats">
           {proof.map((s, k) => (
             <li style={`--w:${k + 3}`}>
@@ -124,7 +124,7 @@ const anchorAt = (i: number) => yOf(restAt(i));
       <article class="jc" data-jc="2" style={`--cc:${chapters[2].rgb}`}>
         <p class="jc-kicker"><span>03</span><i></i><span>Chapter</span></p>
         <h2 class="jc-title"><span class="jc-line">{words("Software a practice runs on").map((w, k) => <span class="jw" style={`--w:${k}`}>{w} </span>)}</span></h2>
-        <p class="jc-lede">What the front desk, finance, marketing and clinical teams open every day. {projectCount} projects, each with its own case study and architecture drawing.</p>
+        <p class="jc-lede">What the front desk, finance, marketing and clinical teams work with. {projectCount} projects. 29 have a case study and an architecture drawing.</p>
         <ul class="jc-cards">
           {projects.map((p, k) => (
             <li style={`--w:${k + 3}`}>
@@ -159,7 +159,7 @@ const anchorAt = (i: number) => yOf(restAt(i));
       <article class="jc" data-jc="4" style={`--cc:${chapters[4].rgb}`}>
         <p class="jc-kicker"><span>05</span><i></i><span>Chapter</span></p>
         <h2 class="jc-title"><span class="jc-line">{words("Written down as it happened").map((w, k) => <span class="jw" style={`--w:${k}`}>{w} </span>)}</span></h2>
-        <p class="jc-lede">{postCount} case studies: the problem, what I built, what changed. The latest:</p>
+        <p class="jc-lede">{postCount} posts, most of them case studies: the problem, what I built, what changed. The latest:</p>
         <ul class="jc-cards is-three">
           {posts.map((p, k) => (
             <li style={`--w:${k + 3}`}>
@@ -199,7 +199,7 @@ const anchorAt = (i: number) => yOf(restAt(i));
       </article>
 
       <article class="jc" data-jc="7" style={`--cc:${chapters[7].rgb}`}>
-        <p class="jc-kicker"><span>08</span><i></i><span>Open to new work · {year}</span></p>
+        <p class="jc-kicker"><span>08</span><i></i><span>What's next · {year}</span></p>
         <h2 class="jc-title"><span class="jc-line">{words("Let's build").map((w, k) => <span class="jw" style={`--w:${k}`}>{w} </span>)}</span><span class="jc-line jc-dim">{words("what's next.").map((w, k) => <span class="jw" style={`--w:${k + 2}`}>{w} </span>)}</span></h2>
         <p class="jc-lede">I find the problem next to the people who have it, build the fix and keep it running. If that is the kind of engineer your team needs, the resume has the rest.</p>
         <div class="jc-actions">
