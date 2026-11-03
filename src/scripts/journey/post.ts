@@ -23,6 +23,7 @@ import {
   type Scene,
   type WebGLRenderer,
 } from "three";
+import { prelinkPasses } from "../gl-warm";
 import { FULLSCREEN_VS, NOISE } from "./glsl";
 
 const PREFILTER_FS = /* glsl */ `
@@ -343,6 +344,17 @@ export class Post {
     });
     this.quad = new Mesh(geo, this.final);
     this.quad.frustumCulled = false;
+  }
+
+  /** Link the passes in the background, so the first frame finds them ready. */
+  warm() {
+    const m0 = this.mips[0];
+    return prelinkPasses(this.renderer, this.quad, this.cam, [
+      [this.prefilter, m0],
+      [this.down, m0],
+      [this.up, m0],
+      [this.final, null],
+    ]);
   }
 
   setSize(w: number, h: number) {

@@ -71,7 +71,7 @@ const chapters = [
         canvas.addEventListener("journeyready", () => ((window as unknown as { __ready: number }).__ready = performance.now()));
         const max = w.__chapters.length;
         let current = fixedP ?? 0;
-        const j = engine.mountJourney(canvas, {
+        const j = await engine.mountJourney(canvas, {
           chapters: w.__chapters,
           quality,
           reducedMotion: reduced,

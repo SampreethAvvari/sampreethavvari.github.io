@@ -7,8 +7,10 @@
 // and indexes without the scene.
 import Icon from "../common/Icon.astro";
 
+// How wide a chapter's small cards show their pictures, at any screen.
+const THUMB = "280px";
 interface Stat { value: string; label: string; href: string }
-interface Art { avif?: string; webp?: string; alt: string }
+interface Art { avif?: string; webp?: string; avifSet?: string; webpSet?: string; alt: string }
 interface Proj { title: string; line: string; href: string; art?: Art }
 interface Disc { slug: string; short: string; name: string; line: string; art?: Art }
 interface PostLink { title: string; url: string; date?: string; art?: Art }
@@ -138,7 +140,7 @@ const ENDING = 0;
           {projects.map((p, k) => (
             <li style={`--w:${k + 3}`}>
               <a class="jart" href={p.href}>
-                {p.art && <picture>{p.art.avif && <source srcset={p.art.avif} type="image/avif" />}<img src={p.art.webp} alt="" loading="lazy" decoding="async" /></picture>}
+                {p.art && <picture>{p.art.avif && <source srcset={p.art.avifSet ?? p.art.avif} sizes={THUMB} type="image/avif" />}{p.art.webpSet && <source srcset={p.art.webpSet} sizes={THUMB} type="image/webp" />}<img src={p.art.webp} alt="" loading="lazy" decoding="async" /></picture>}
                 <span class="jart-glare" aria-hidden="true"></span>
                 <span class="jart-text"><b>{p.title}</b><span>{p.line}</span></span>
               </a>
@@ -156,7 +158,7 @@ const ENDING = 0;
           {disciplines.map((d, k) => (
             <li style={`--w:${k + 3}`}>
               <a class="jart" href={`/work/${d.slug}`}>
-                {d.art && <picture>{d.art.avif && <source srcset={d.art.avif} type="image/avif" />}<img src={d.art.webp} alt="" loading="lazy" decoding="async" /></picture>}
+                {d.art && <picture>{d.art.avif && <source srcset={d.art.avifSet ?? d.art.avif} sizes={THUMB} type="image/avif" />}{d.art.webpSet && <source srcset={d.art.webpSet} sizes={THUMB} type="image/webp" />}<img src={d.art.webp} alt="" loading="lazy" decoding="async" /></picture>}
                 <span class="jart-glare" aria-hidden="true"></span>
                 <span class="jart-text"><i class="jq-short">{d.short}</i><b>{d.name}</b><span>{d.line}</span></span>
               </a>
@@ -173,7 +175,7 @@ const ENDING = 0;
           {posts.map((p, k) => (
             <li style={`--w:${k + 3}`}>
               <a class="jart" href={p.url}>
-                {p.art && <picture>{p.art.avif && <source srcset={p.art.avif} type="image/avif" />}<img src={p.art.webp} alt="" loading="lazy" decoding="async" /></picture>}
+                {p.art && <picture>{p.art.avif && <source srcset={p.art.avifSet ?? p.art.avif} sizes={THUMB} type="image/avif" />}{p.art.webpSet && <source srcset={p.art.webpSet} sizes={THUMB} type="image/webp" />}<img src={p.art.webp} alt="" loading="lazy" decoding="async" /></picture>}
                 <span class="jart-glare" aria-hidden="true"></span>
                 <span class="jart-text"><b>{p.title}</b>{p.date && <span>{p.date}</span>}</span>
               </a>
@@ -190,7 +192,7 @@ const ENDING = 0;
         <p class="jc-lede">My feature, an independent crime drama shot in New York, written and directed as Sampreeth Sharma. Eight more films on the slate, behind the camera and in the edit.</p>
         {poster && (
           <a class="jart is-poster" href="/filmmaking/among-monsters" style="--w:3">
-            <picture>{poster.avif && <source srcset={poster.avif} type="image/avif" />}<img src={poster.webp} alt={poster.alt} loading="lazy" decoding="async" /></picture>
+            <picture>{poster.avif && <source srcset={poster.avifSet ?? poster.avif} sizes="(min-width: 768px) 460px, 92vw" type="image/avif" />}{poster.webpSet && <source srcset={poster.webpSet} sizes="(min-width: 768px) 460px, 92vw" type="image/webp" />}<img src={poster.webp} alt={poster.alt} loading="lazy" decoding="async" /></picture>
             <span class="jart-glare" aria-hidden="true"></span>
           </a>
         )}
@@ -399,6 +401,20 @@ const ENDING = 0;
   .journey.is-moving .journey-cue { opacity: 0; }
   @keyframes j-cue { 0% { transform: scaleY(0); opacity: 1; } 60% { transform: scaleY(1); opacity: 1; } 100% { transform: scaleY(1); opacity: 0; } }
 
+  /* A chapter's pictures load as it comes near (Journey's script adds is-near).
+     Stacked in the pinned stage they all count as on screen, so without this
+     lazy loading would fetch every one of them with the first chapter. */
+  .jc:not(.is-near) img { display: none; }
+  :global(html.no-stage) .jc img { display: revert; }
+  /* The page's script failed or never came: every chapter as plain reading. */
+  :global(html.no-stage) .journey { height: auto; }
+  :global(html.no-stage) .journey-stage { position: relative; height: auto; overflow: visible; padding: 96px 0 48px; }
+  :global(html.no-stage) .journey-sky { position: fixed; }
+  :global(html.no-stage) .journey-canvas, :global(html.no-stage) .journey-ending, :global(html.no-stage) .journey-count, :global(html.no-stage) .journey-index, :global(html.no-stage) .journey-rail, :global(html.no-stage) .journey-cue { display: none; }
+  :global(html.no-stage) .journey-copy { position: relative; inset: auto; display: grid; gap: 72px; pointer-events: auto; }
+  :global(html.no-stage) .jc { position: relative; inset: auto; left: auto; right: auto; bottom: auto; top: auto; margin-inline: max(24px, var(--gutter, 24px)); opacity: 1; visibility: visible; transform: none; translate: none; filter: none; pointer-events: auto; transition: none; }
+  :global(html.no-stage) .jw { opacity: 1; transform: none; filter: none; transition: none; }
+
   /* the words: each chapter sits bottom left and arrives word by word */
   .journey-copy { position: absolute; inset: 0; z-index: 2; pointer-events: none; }
   .jc {
@@ -605,6 +621,7 @@ const ENDING = 0;
 </style>
 
 <script>
+  import { hasWebGL2 } from "../../scripts/gl-probe";
   type Chapter = { id: string; color: string; scene: string | null };
   type Journey = { setScroll(p: number, v: number): void; setPointer(x: number, y: number): void; setPaused(p: boolean): void; destroy(): void };
   type Ending = { setScene(id: string): void; setProgress(p: number): void; setPaused(b: boolean): void; destroy(): void; duration?(id: string): number; ready?(id: string): boolean };
@@ -616,7 +633,7 @@ const ENDING = 0;
   // home page; everything it adds is removed when the page is swapped away.
   function mount() {
     const root = document.querySelector<HTMLElement>("[data-journey]");
-    if (!root || root.dataset.mounted) return;
+    if (!root || root.dataset.mounted || document.documentElement.classList.contains("no-stage")) return;
     root.dataset.mounted = "1";
     const visit = new AbortController();
     const sig = { signal: visit.signal };
@@ -631,6 +648,7 @@ const ENDING = 0;
     const panes = Array.from(root.querySelectorAll<HTMLElement>("[data-jc]"));
     const now = root.querySelector<HTMLElement>("[data-j-now]");
     const fill = root.querySelector<HTMLElement>("[data-j-fill]");
+    const tinted = Array.from(root.querySelectorAll<HTMLElement>(".journey-sky, .jr-fill"));
     const label = root.querySelector<HTMLElement>("[data-j-label]");
     const links = Array.from(root.querySelectorAll<HTMLAnchorElement>(".journey-index [data-j-go]"));
     const names = links.map((a) => a.querySelector(".ji-name")?.textContent || "");
@@ -642,6 +660,9 @@ const ENDING = 0;
     let progress = 0, ending = 0, lastP = 0, lastT = performance.now(), velocity = 0, active = -1, ticking = false;
     let journey: Journey | null = null;
     let player: Ending | null = null;
+    // The flight rests while it cannot be seen: off screen, in a hidden tab, or under a film.
+    let onScreen = true, underFilm = false;
+    const rest = () => journey?.setPaused(document.hidden || !onScreen || underFilm);
     let landed: ((p: number) => number) | null = null;
     // the filmed chapters' state (declared before anything can call show)
     const firstScene = chapters.findIndex((c) => c.scene);
@@ -652,8 +673,11 @@ const ENDING = 0;
 
     // ---- geometry: the flight is LAST * SPAN screens, the closing film ENDING screens after it
     const flightPx = () => LAST * SPAN * innerHeight;
+    let rootBottom = 0;
     const measure = () => {
-      const y = Math.max(0, -root.getBoundingClientRect().top);
+      const r = root.getBoundingClientRect();
+      rootBottom = r.bottom;
+      const y = Math.max(0, -r.top);
       return { p: Math.min(LAST, (y / Math.max(1, flightPx())) * LAST), e: 0 };
     };
     // A free world scrolls from arriveAt to travelEnd under the reader's own hand;
@@ -704,14 +728,18 @@ const ENDING = 0;
       playScene(scene);
       // on the planet the words wait for the moment in the film (only when a film is playing)
       const filmOn = !!scene && root.classList.contains("show-film");
-      panes.forEach((p, k) => p.classList.toggle("is-active", k === i && !filmOn));
+      panes.forEach((p, k) => {
+        p.classList.toggle("is-active", k === i && !filmOn);
+        if (Math.abs(k - i) <= 1) p.classList.add("is-near");
+      });
       if (scene && filmOn) wordsLater = window.setTimeout(() => { if (active === i) panes[i].classList.add("is-active"); }, Math.min(2600, sceneLength(scene) * 450));
       if (i < 0) return;
       place(i);
       links.forEach((a, k) => (k === i ? a.setAttribute("aria-current", "step") : a.removeAttribute("aria-current")));
       if (now) now.textContent = pad(i + 1);
       if (label) label.textContent = `${pad(i + 1)} ${names[i] || ""}`;
-      root.style.setProperty("--jc", hexRgb(chapters[i].color));
+      // Only the sky and the rail read this: on the root it would restyle every word of every world.
+      for (const el of tinted) el.style.setProperty("--jc", hexRgb(chapters[i].color));
       panes[i].querySelectorAll<HTMLElement>("[data-count]").forEach((el) => countUp(el));
       // the score follows the flight, and speaks the words as they arrive
       window.dispatchEvent(new CustomEvent("journey:chapter", { detail: { index: i, id: chapters[i].id, count: N } }));
@@ -873,7 +901,7 @@ const ENDING = 0;
       if (label) label.style.top = `${f * 100}%`;
       root.classList.toggle("is-moving", progress > 0.04);
       root.classList.toggle("on-surface", landWorldAt >= 0 && progress > landWorldAt - 0.2);
-      document.documentElement.classList.toggle("in-journey", root.getBoundingClientRect().bottom > innerHeight * 0.5);
+      document.documentElement.classList.toggle("in-journey", rootBottom > innerHeight * 0.5);
       journey?.setScroll(progress, velocity);
       if (firstScene >= 0 && progress > firstScene - 1.6) bootEnding();
       window.dispatchEvent(new CustomEvent("journey:progress", { detail: { progress, velocity, count: N } }));
@@ -916,9 +944,10 @@ const ENDING = 0;
     const canvas = root.querySelector<HTMLCanvasElement>(".journey-canvas");
     const engines = import.meta.glob("../../scripts/journey/engine.ts");
     const loadEngine = Object.values(engines)[0] as undefined | (() => Promise<any>);
-    const hasGL = (() => { try { return !!document.createElement("canvas").getContext("webgl2"); } catch { return false; } })();
-    if (canvas && loadEngine && hasGL) {
-      const boot = () => loadEngine().then((m) => {
+    if (canvas && loadEngine && hasWebGL2()) {
+      // The code starts down the wire now; the flight starts when there is a moment.
+      const code = loadEngine();
+      const boot = () => code.then(async (m) => {
         if (visit.signal.aborted) return; // left the page while it loaded
         // the ship reports where it is on screen; the words step aside if it drifts into them
         let shipT = 0;
@@ -938,7 +967,9 @@ const ENDING = 0;
           dx = Math.max(dx, 16 - (b.left - was));
           pane.style.setProperty("--nx", `${dx.toFixed(0)}px`);
         };
-        journey = m.mountJourney(canvas, { chapters, quality: low ? "low" : "high", reducedMotion: reduced, onShip }) as Journey;
+        const mounted = (await m.mountJourney(canvas, { chapters, quality: low ? "low" : "high", reducedMotion: reduced, onShip })) as Journey;
+        if (visit.signal.aborted) { mounted.destroy(); return; }
+        journey = mounted;
         if (typeof m.landed === "function") landed = m.landed;
         const plan = m.CHAPTER_FRAMING as Framing[] | undefined;
         if (Array.isArray(plan) && plan.length) {
@@ -948,10 +979,14 @@ const ENDING = 0;
         }
         journey.setScroll(progress, 0);
         root.classList.add("is-3d");
-        const io = new IntersectionObserver(([e]) => journey?.setPaused(!e.isIntersecting));
+        const io = new IntersectionObserver(([e]) => { onScreen = e.isIntersecting; rest(); });
         io.observe(root);
         visit.signal.addEventListener("abort", () => io.disconnect());
-        document.addEventListener("visibilitychange", () => journey?.setPaused(document.hidden), sig);
+        document.addEventListener("visibilitychange", rest, sig);
+        // A phone can take the GPU back at any time: the painted sky holds the
+        // screen and the words and the scroll carry on until it comes back.
+        canvas.addEventListener("webglcontextlost", () => root.classList.remove("is-3d"), sig);
+        canvas.addEventListener("webglcontextrestored", () => root.classList.add("is-3d"), sig);
       }).catch(() => { /* the painted sky stays */ });
       if ("requestIdleCallback" in window) (window as any).requestIdleCallback(boot, { timeout: 1500 });
       else setTimeout(boot, 600);
@@ -964,7 +999,8 @@ const ENDING = 0;
       // only a player that knows scenes and has this one loaded may cover the flight
       const ready = !!(id && player && typeof player.setScene === "function" && (player.ready ? player.ready(id) : false));
       root.classList.toggle("show-film", ready);
-      journey?.setPaused(false);
+      underFilm = false;
+      rest();
       if (!id || !player || !ready) { player?.setPaused(true); return; }
       player.setPaused(false);
       player.setScene(id);
@@ -974,7 +1010,7 @@ const ENDING = 0;
         if (sceneNow !== id || visit.signal.aborted) return;
         const k = Math.min(1, (t - t0) / dur);
         player?.setProgress(k);
-        if (k > 0.25) journey?.setPaused(true); // the film covers the flight
+        if (k > 0.25 && !underFilm) { underFilm = true; rest(); } // the film covers the flight
         if (k < 1) sceneRaf = requestAnimationFrame(tick);
       };
       sceneRaf = requestAnimationFrame(tick);

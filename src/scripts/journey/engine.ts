@@ -46,13 +46,15 @@ import {
   type Texture,
   type WebGLRenderTarget,
 } from "three";
+import { Governor } from "../gl-governor";
+import { breathe, prelink, quietShaderChecks, warmAhead } from "../gl-warm";
 import { approachU, CROSS, FlightPath, JUMP_A, JUMP_B, jumpAt, REST, travel, worldAt } from "./path";
 import { Post, type PostFrame } from "./post";
 import { buildShip, type ShipInput } from "./ship";
 import { compositeTextures, foilNormal, solarTexture } from "./skin";
 import type { PointerRay } from "./pieces";
 import { buildSpace, type Chapter } from "./space";
-import type { SurfaceShot } from "./surface";
+import { prepareSurface, type SurfaceShot } from "./surface";
 import { cloudTexture, glowTexture } from "./textures";
 
 export interface JourneyChapter {
@@ -281,7 +283,7 @@ function environment(renderer: WebGLRenderer): WebGLRenderTarget {
   return rt;
 }
 
-export function mountJourney(canvas: HTMLCanvasElement, opts: JourneyOptions): Journey {
+export async function mountJourney(canvas: HTMLCanvasElement, opts: JourneyOptions): Promise<Journey> {
   const low = opts.quality === "low";
   const reduced = !!opts.reducedMotion;
   const list = opts.chapters && opts.chapters.length ? opts.chapters : [{ id: "launch", color: "#5B8DEF" }];
@@ -306,6 +308,7 @@ export function mountJourney(canvas: HTMLCanvasElement, opts: JourneyOptions): J
     preserveDrawingBuffer: false,
     powerPreference: low ? "default" : "high-performance",
   });
+  quietShaderChecks(renderer);
   renderer.autoClear = false;
   renderer.setClearColor(0x000000, 1);
   renderer.toneMapping = NoToneMapping;
@@ -318,9 +321,14 @@ export function mountJourney(canvas: HTMLCanvasElement, opts: JourneyOptions): J
   scene.fog = new FogExp2(0x03040a, 0.0008);
   const camera = new PerspectiveCamera(42, 1, 0.3, 9000);
 
+  // The world is built in steps, with the page's turn between them, so a scroll
+  // that starts while it loads is never held up.
+  await breathe();
   let envRT = environment(renderer);
+  await breathe();
   let envGround = groundEnvironment(renderer);
   scene.environment = envRT.texture;
+  await breathe();
 
   // Lighting like a space photograph: one hard sun, a soft rim in the
   // chapter colour, almost no fill so the shadows stay deep.
@@ -348,9 +356,12 @@ export function mountJourney(canvas: HTMLCanvasElement, opts: JourneyOptions): J
   const glowTex = glowTexture();
   const cloudTex = cloudTexture(low ? 96 : 128);
   const textures: Texture[] = [composite.map, composite.rough, foil, solar, glowTex, cloudTex];
+  await breathe();
 
   const path = new FlightPath(W);
   const ship = buildShip({ low, composite, foil, solar, shadows });
+  await breathe();
+  await prepareSurface(low);
   const landing = path.landing(ship.standHeight);
   const rig = new Group();
   rig.add(ship.root, ship.trails);
@@ -361,6 +372,7 @@ export function mountJourney(canvas: HTMLCanvasElement, opts: JourneyOptions): J
   scene.add(space.group);
   const surface = space.surface;
   const sshot: SurfaceShot = { pos: new Vector3(), look: new Vector3(), fov: 42, parallax: 0 };
+  await breathe();
   // Progress at which each chapter from the landing on comes to rest. The
   // surface progress s counts them: 0 landed, 1 first steps, 2 helmet, 3 touch.
   const restKnots: number[] = [];
@@ -428,15 +440,27 @@ export function mountJourney(canvas: HTMLCanvasElement, opts: JourneyOptions): J
   let ptrOn = 0;
   let shipLift = 0;
   let shadowWide = false;
+  let warmedAhead = false;
+  let stopWarm: (() => void) | null = null;
   const ptr: PointerRay = { o: new Vector3(), d: new Vector3(0, 0, -1), on: 0 };
   const shipIn: ShipInput = { time: 0, dt: 0, speed: 0, boost: 0, color: _color, reduced, gear: 0, brake: 0, idle: 0, detach: 0, heading: 1, heat: 0, landed: 0 };
   const screen: ShipScreen = { x: 0.7, y: 0.5, r: 0.2, jump: null };
+
+  // Fewer pixels when frames run slow and that helps, and back again when there is room.
+  let pixelScale = 1;
+  const governor = new Governor({
+    steps: low ? [1, 0.88, 0.78] : [1, 0.85, 0.72],
+    apply: (scale) => {
+      pixelScale = scale;
+      resizeDirty = true;
+    },
+  });
 
   function applySize() {
     resizeDirty = false;
     const cw = canvas.clientWidth || canvas.width || 1;
     const ch = canvas.clientHeight || canvas.height || 1;
-    dpr = Math.min(window.devicePixelRatio || 1, dprCap);
+    dpr = Math.min(window.devicePixelRatio || 1, dprCap) * pixelScale;
     const w = Math.max(1, Math.round(cw * dpr));
     const h = Math.max(1, Math.round(ch * dpr));
     if (w !== width || h !== height) {
@@ -891,7 +915,7 @@ export function mountJourney(canvas: HTMLCanvasElement, opts: JourneyOptions): J
       pf.dof[2] = closeK * (low ? 0.6 : 1);
       pf.dof[3] = 0.07;
       // Where the horizon is on screen.
-      _v2.copy(camera.position).addScaledVector(landing.fwd, 3000).addScaledVector(landing.up, -camera.position.clone().sub(landing.pad).dot(landing.up)).project(camera);
+      _v2.copy(camera.position).addScaledVector(landing.fwd, 3000).addScaledVector(landing.up, -_a.copy(camera.position).sub(landing.pad).dot(landing.up)).project(camera);
       pf.dofH = _v2.y * 0.5 + 0.5;
     } else {
       pf.dof = undefined;
@@ -899,7 +923,7 @@ export function mountJourney(canvas: HTMLCanvasElement, opts: JourneyOptions): J
     // Hot air over the horizon, only while the sun is up.
     if (surface && groundK > 0.5 && !reduced && !low && sNow < 1.9) {
       pf.heat = pf.heat ?? [0.5, 0];
-      _v2.copy(camera.position).addScaledVector(landing.fwd, 3000).addScaledVector(landing.up, -camera.position.clone().sub(landing.pad).dot(landing.up)).project(camera);
+      _v2.copy(camera.position).addScaledVector(landing.fwd, 3000).addScaledVector(landing.up, -_a.copy(camera.position).sub(landing.pad).dot(landing.up)).project(camera);
       pf.heat[0] = _v2.y * 0.5 + 0.5;
       pf.heat[1] = 0.0007 * (1 - smooth(1.4, 1.9, sNow));
     } else {
@@ -931,6 +955,7 @@ export function mountJourney(canvas: HTMLCanvasElement, opts: JourneyOptions): J
     raf = 0;
     if (paused || disposed || lost) return;
     raf = requestAnimationFrame(loop);
+    if (last) governor.frame(now - last, Math.abs(v) > 0.03);
     if (resizeDirty || !sized) applySize();
     const dt = last ? Math.min(0.05, Math.max(0, (now - last) / 1000)) : 1 / 60;
     last = now;
@@ -944,7 +969,36 @@ export function mountJourney(canvas: HTMLCanvasElement, opts: JourneyOptions): J
   function start() {
     if (raf || paused || disposed || lost || !ready) return;
     last = 0;
+    governor.reset();
     raf = requestAnimationFrame(loop);
+    // Once the first frames are up, everything the story has not shown yet goes
+    // to the GPU a piece at a time, so no world arrives with a stall.
+    if (!warmedAhead) {
+      warmedAhead = true;
+      const jobs: Object3D[] = [ship.lander, ...space.group.children.filter((c) => !space.pieces.some((pc) => pc.group === c))];
+      const late: Texture[] = [];
+      for (const pc of space.pieces) {
+        const surf = pc.surface?.group ?? null;
+        if (!surf) {
+          jobs.push(pc.group);
+          continue;
+        }
+        // The planet is a lot at once: its parts go one by one.
+        const add = (o: Object3D) => {
+          if (o === surf) {
+            jobs.push(...o.children);
+            return;
+          }
+          let holds = false;
+          for (let up = surf.parent; up; up = up.parent) if (up === o) holds = true;
+          if (holds) o.children.forEach(add);
+          else jobs.push(o);
+        };
+        pc.group.children.forEach(add);
+        late.push(...pc.surface!.lateTextures);
+      }
+      stopWarm = warmAhead(renderer, scene, camera, jobs, late);
+    }
   }
 
   function stop() {
@@ -959,27 +1013,30 @@ export function mountJourney(canvas: HTMLCanvasElement, opts: JourneyOptions): J
   camera.position.copy(_rigPos).add(_v.set(0, 5, 30));
   camera.lookAt(_rigPos);
   camera.updateMatrixWorld();
-  const hidden: Object3D[] = [];
-  for (const pc of space.pieces) {
-    if (!pc.group.visible) hidden.push(pc.group);
-    pc.group.visible = true;
-  }
-  const afterCompile = () => {
-    for (const g of hidden) g.visible = false;
-    if (disposed) return;
-    ready = true;
-    start();
+  const warm = () => {
+    const hidden: Object3D[] = [];
+    for (const pc of space.pieces) {
+      if (!pc.group.visible) hidden.push(pc.group);
+      pc.group.visible = true;
+    }
+    const afterCompile = () => {
+      for (const g of hidden) g.visible = false;
+      if (disposed || lost) return;
+      ready = true;
+      start();
+    };
+    // Against the target the scene is really drawn to: the shaders differ by what they output to.
+    Promise.all([prelink(renderer, scene, camera, post.sceneTarget), post.warm()]).then(afterCompile, afterCompile);
   };
-  // Against the target the scene is really drawn to: the shaders differ by what they output to.
-  renderer.setRenderTarget(post.sceneTarget);
-  const warming = renderer.compileAsync(scene, camera);
-  renderer.setRenderTarget(null);
-  warming.then(afterCompile, afterCompile);
+  warm();
 
   const onLost = (e: Event) => {
     e.preventDefault();
     lost = true;
+    ready = false;
     stop();
+    stopWarm?.();
+    stopWarm = null;
   };
   const onRestored = () => {
     lost = false;
@@ -991,7 +1048,10 @@ export function mountJourney(canvas: HTMLCanvasElement, opts: JourneyOptions): J
     width = 0;
     height = 0;
     resizeDirty = true;
-    start();
+    // Every program went with the context: warm them again, off this thread, before the next frame.
+    warmedAhead = false;
+    applySize();
+    warm();
   };
   canvas.addEventListener("webglcontextlost", onLost);
   canvas.addEventListener("webglcontextrestored", onRestored);
@@ -1032,6 +1092,7 @@ export function mountJourney(canvas: HTMLCanvasElement, opts: JourneyOptions): J
       if (disposed) return;
       disposed = true;
       stop();
+      stopWarm?.();
       ro.disconnect();
       canvas.removeEventListener("webglcontextlost", onLost);
       canvas.removeEventListener("webglcontextrestored", onRestored);

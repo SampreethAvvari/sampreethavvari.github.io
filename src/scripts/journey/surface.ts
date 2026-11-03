@@ -42,6 +42,7 @@ import {
   type WebGLRenderer,
 } from "three";
 import type { Landing } from "./path";
+import { breathe } from "../gl-warm";
 import { buildFigure, FIGURE_H } from "./figure";
 import { PlateBank, type PlateMeta } from "./plates";
 import { rng } from "./textures";
@@ -1019,6 +1020,8 @@ export interface SurfaceInput {
 
 export interface Surface {
   group: Group;
+  /** Made ahead of when the story needs them, so they can go to the GPU ahead too. */
+  lateTextures: Texture[];
   /** 1 to 0 as the ground goes out of focus in the closeup: softens the moons. */
   setSoft(v: number): void;
   /** Unit vector toward the sun, in world space. */
@@ -1037,6 +1040,20 @@ export interface Surface {
   /** Where the camera should be at surface progress s, in world space. */
   shot(s: number, portrait: boolean, out: SurfaceShot): SurfaceShot;
   update(f: SurfaceInput): void;
+}
+
+// The two slowest pictures to compute, made ahead of the rest with the page's
+// turn between them. buildSurface takes them from here.
+let readyGround: ReturnType<typeof bakeGround> | null = null;
+let readyRipple: DataTexture | null = null;
+let readyGrain: DataTexture | null = null;
+export async function prepareSurface(low: boolean) {
+  readyGround = bakeGround(low);
+  await breathe();
+  readyRipple = rippleTexture(low ? 256 : 512);
+  await breathe();
+  readyGrain = grainTexture(low ? 384 : 512, low ? 40 : 52);
+  await breathe();
 }
 
 export function buildSurface(o: { low: boolean; landing: Landing; cloudTex: Texture }): Surface {
@@ -1174,7 +1191,8 @@ export function buildSurface(o: { low: boolean; landing: Landing; cloudTex: Text
   const nor = new Float32Array(VN * 3);
   const shadeA = new Float32Array(VN);
   const H = 0.6;
-  const baked = bakeGround(low);
+  const baked = readyGround ?? bakeGround(low);
+  readyGround = null;
   // How far ahead the land blocks a low sun: the long shadows behind each dune.
   const sunAz = (8 * Math.PI) / 180;
   const sdx = Math.sin(sunAz);
@@ -1223,7 +1241,8 @@ export function buildSurface(o: { low: boolean; landing: Landing; cloudTex: Text
   tg.setIndex(idx);
   tg.computeBoundingSphere();
 
-  const ripple = rippleTexture(low ? 256 : 512);
+  const ripple = readyRipple ?? rippleTexture(low ? 256 : 512);
+  readyRipple = null;
   const sand = new MeshStandardMaterial({ color: 0xffffff, roughness: 0.94, metalness: 0, envMapIntensity: 0.0, transparent: true, fog: false });
   const sandU = { tRipple: { value: ripple }, uCamSite: camSite, uCover: cover, uHazeD: { value: 2400 }, uAmbient: { value: new Color() }, uSunK: { value: 1 }, uFormK: { value: 1 }, uNight: { value: 0 }, uLampSite: { value: new Vector3() }, uLampCol: { value: new Color(0, 0, 0) }, uRipK: { value: 1 }, uLongK: { value: 0 }, uSapO: { value: new Vector3() }, uLampDir: { value: new Vector3(0, -1, 0) }, tGrain: { value: null as DataTexture | null }, tSapShadow: { value: null as Texture | null }, uSapPatch: { value: 0.09 }, tHand: { value: null as Texture | null }, uHandOn: { value: 0 }, uHandC: { value: new Vector3() }, uHandR: { value: new Vector3() }, uHandU: { value: new Vector3() }, uHandN: { value: new Vector3() }, uHandK: { value: new Vector2() } };
   sand.onBeforeCompile = (shader) => {
@@ -1818,7 +1837,8 @@ export function buildSurface(o: { low: boolean; landing: Landing; cloudTex: Text
   sapShadowScene.add(sapShadow);
   const sapShadowCam = new Camera();
   let sapRT: WebGLRenderTarget | null = null;
-  let grain: DataTexture | null = null;
+  const grain = readyGrain ?? grainTexture(low ? 384 : 512, low ? 40 : 52);
+  readyGrain = null;
   const focusWorld = new Vector3();
 
   // Sand motes in the air around him: dark until they cross the lamp's light.
@@ -2248,7 +2268,6 @@ export function buildSurface(o: { low: boolean; landing: Landing; cloudTex: Text
     beamMat.uniforms.uPx.value = f.pxScale;
     beamMat.uniforms.uDpr.value = f.dpr;
     if (s > 2.2 && !sapRT) {
-      grain = grainTexture(low ? 384 : 512, low ? 40 : 52);
       sandU.tGrain.value = grain;
       sapRT = new WebGLRenderTarget(low ? 128 : 256, low ? 128 : 256, { depthBuffer: false });
       sandU.tSapShadow.value = sapRT.texture;
@@ -2387,6 +2406,7 @@ export function buildSurface(o: { low: boolean; landing: Landing; cloudTex: Text
     shot,
     update,
     focusWorld,
+    lateTextures: [grain],
     lampPass(r: WebGLRenderer) {
       if (!sapRT || !sapling.visible || shared.uLampCol.value.r < 0.0005) return;
       const was = r.getRenderTarget();
@@ -2402,7 +2422,7 @@ export function buildSurface(o: { low: boolean; landing: Landing; cloudTex: Text
     dispose() {
       bank.destroy();
       figure.dispose();
-      grain?.dispose();
+      grain.dispose();
       sapRT?.dispose();
       sapShadowMat.dispose();
       beamG.dispose();
