@@ -31,6 +31,7 @@ import {
   SphereGeometry,
   UnsignedByteType,
   Vector3,
+  Vector4,
   type PerspectiveCamera,
   type Texture,
 } from "three";
@@ -70,9 +71,10 @@ function fbm2(x: number, z: number) {
 /** Where he stands for the helmet and the touch, far out on the flat. */
 export const STAND = { x: -1, z: -124 };
 
-/** Ground height in site space: a flat plain, low long dunes, a low ridge far off. */
+/** Ground height in site space: broad soft swells on the plain, long dunes beyond it, low ridges far off. */
 export function groundHeight(x: number, z: number) {
   const r = Math.hypot(x, z);
+  const toStand = Math.hypot(x - STAND.x, z - STAND.z);
   const n = fbm2(x * 0.0016, z * 0.0016);
   const w = x * 0.0075 + z * 0.0031 + n * 5.5;
   const crest = Math.pow(0.5 + 0.5 * Math.sin(w), 3);
@@ -80,16 +82,42 @@ export function groundHeight(x: number, z: number) {
   const n2 = fbm2(x * 0.0009 + 11.0, z * 0.0009 + 4.0);
   const w2 = x * -0.0031 + z * 0.0062 + n2 * 7.0;
   const crest2 = Math.pow(0.5 + 0.5 * Math.sin(w2), 2.4);
-  let h = crest * (0.8 + 5.8 * n) + crest2 * (0.5 + 7.5 * n2);
-  h += fbm2(x * 0.021, z * 0.021) * 0.5;
-  // Flat where the lander stands and where he walks out to.
-  h *= smooth(10, 70, r);
-  const toStand = Math.hypot(x - STAND.x, z - STAND.z);
-  h *= smooth(16, 90, toStand);
+  let h = (crest * (0.8 + 5.8 * n) + crest2 * (0.5 + 7.5 * n2)) * smooth(30, 300, r) * smooth(24, 150, toStand);
+  // Soft swells across the plain, flat only right where the lander and he stand.
+  const swell = fbm2(x * 0.0093 + 2.3, z * 0.0141 + 8.1) - 0.5;
+  h += swell * 3.0 * smooth(6, 34, r) * smooth(2.5, 24, toStand);
   // Low ridges that break the far horizon.
   const far = smooth(500, 2200, r);
   if (far > 0) h += far * (Math.pow(fbm2(x * 0.0009 + 3.1, z * 0.0009 + 7.7), 2.2) * 70 + crest * 8);
   return h - (r * r) / (2 * 90000);
+}
+
+/** The ground baked to two grids, one fine around the story and one for the far land. */
+function bakeGround(low: boolean) {
+  const N = low ? 128 : 256;
+  const mk = (cx: number, cz: number, half: number) => {
+    const d = new Float32Array((N + 1) * (N + 1));
+    const cell = (half * 2) / N;
+    for (let j = 0; j <= N; j++) for (let i = 0; i <= N; i++) d[j * (N + 1) + i] = groundHeight(cx - half + i * cell, cz - half + j * cell);
+    return { d, cx, cz, half, cell };
+  };
+  const fine = mk(0, -110, 210);
+  const wide = mk(0, 0, 6400);
+  const at = (g: typeof fine, x: number, z: number) => {
+    const u = clamp((x - g.cx + g.half) / g.cell, 0, N - 0.001);
+    const v = clamp((z - g.cz + g.half) / g.cell, 0, N - 0.001);
+    const i = Math.floor(u);
+    const j = Math.floor(v);
+    const fu = u - i;
+    const fv = v - j;
+    const m = N + 1;
+    const a = g.d[j * m + i];
+    const b = g.d[j * m + i + 1];
+    const c = g.d[(j + 1) * m + i];
+    const e = g.d[(j + 1) * m + i + 1];
+    return a + (b - a) * fu + (c - a) * fv + (a - b - c + e) * fu * fv;
+  };
+  return (x: number, z: number) => (Math.abs(x) < 200 && Math.abs(z + 110) < 200 ? at(fine, x, z) : at(wide, x, z));
 }
 
 /** A tiling map of wind ripples: RG hold the slope, B the height, for the raking light to catch. */
@@ -136,7 +164,9 @@ function rippleTexture(size: number): DataTexture {
       data[k] = clamp(128 + (hR - hL) * 300, 0, 255);
       data[k + 1] = clamp(128 + (hU - hD) * 300, 0, 255);
       data[k + 2] = clamp(h[j * size + i] * 255, 0, 255);
-      data[k + 3] = 255;
+      const u = i / size;
+      const v = j / size;
+      data[k + 3] = clamp((pn(u, v, 5, 7) * 0.6 + pn(u, v, 13, 8) * 0.3 + pn(u, v, 29, 9) * 0.1) * 255, 0, 255);
     }
   }
   const t = new DataTexture(data, size, size, RGBAFormat, UnsignedByteType);
@@ -177,7 +207,7 @@ function moonTexture(w: number, seed: number): DataTexture {
       hgt[k] = f * 0.03;
     }
   }
-  const CR = Math.round(170 + (w / 768) * 170);
+  const CR = Math.round(40 + (w / 512) * 50);
   for (let c = 0; c < CR; c++) {
     const u = r() * 2 - 1;
     const a = r() * TAU;
@@ -276,9 +306,11 @@ const MOON_FS = /* glsl */ `
   uniform vec3 uLight;
   uniform float uSoft;
   uniform float uCover;
-  uniform float uBody;
   uniform vec3 uArc;
   uniform vec3 uShade;
+  // x crescent width, y arc strength, z rim softness, w how far the dark side reaches
+  uniform vec4 uLook;
+  uniform float uBody;
   varying vec2 vUv;
   varying vec3 vN;
   varying vec3 vSite;
@@ -287,16 +319,16 @@ const MOON_FS = /* glsl */ `
     vec3 v = normalize(-vSite);
     // The light comes from behind the moon and to the side, so what reads is an arc.
     float lit = dot(n, uLight);
-    float arc = smoothstep(0.0, 0.34, lit);
-    arc = pow(arc, 1.3);
+    float arc = pow(smoothstep(0.0, uLook.x, lit), 1.3);
     float hint = texture2D(tMoon, vUv, 1.5 + uSoft * 3.0).z;
     arc *= 0.9 + (hint - 0.5) * 0.3;
     // No hard outline: the disc thins out toward its rim, and its night side
-    // fades away from the arc into the sky.
+    // fades away from the arc into the sky over its own length.
     float facing = max(dot(n, v), 0.0);
-    float edge = smoothstep(0.0, 0.2 + uSoft * 0.5, facing);
-    float night = uBody * smoothstep(-1.0, 0.1, lit) * edge;
-    float a = max(arc * 0.66 * smoothstep(0.0, 0.1 + uSoft * 0.4, facing), night) * uCover;
+    float soft = uLook.z + uSoft * 0.5;
+    float edge = smoothstep(0.0, soft, facing);
+    float night = uBody * smoothstep(-uLook.w, 0.1, lit) * edge;
+    float a = max(arc * uLook.y * smoothstep(0.0, soft * 0.6, facing), night) * uCover;
     vec3 col = mix(uShade, uArc, smoothstep(0.0, 0.25, arc));
     gl_FragColor = vec4(col, a);
   }
@@ -524,7 +556,7 @@ export interface SurfaceShot {
 
 /** Camera path through the world. Index 1 is the first steps, 2 the helmet, 3 the touch. */
 const EXIT_POS = new Vector3(0, 1.3, 12.5);
-const EXIT_LOOK = new Vector3(0, 4.6, -60);
+const EXIT_LOOK = new Vector3(-7.6, 4.6, -60);
 const WIDE_POS = new Vector3(0, 0, -80); // height comes from the ground below
 const WIDE_YAW = (-8 * Math.PI) / 180;
 const WIDE_PITCH = (6.4 * Math.PI) / 180;
@@ -569,26 +601,6 @@ export function buildSurface(o: { low: boolean; landing: Landing; cloudTex: Text
   const inv = new Quaternion().copy(l.quat).invert();
   const r = rng(4242);
 
-  function moon(radius: number, dist: number, azDeg: number, elDeg: number, seed: number, texW: number, drift: number, body: number) {
-    const map = moonTexture(texW, seed);
-    const m = new ShaderMaterial({
-      vertexShader: MOON_VS,
-      fragmentShader: MOON_FS,
-      uniforms: { tMoon: { value: map }, uLight: moonLight, uSoft: moonSoft, uCover: cover, uBody: { value: body }, uArc: moonArc, uShade: moonShade },
-      transparent: true,
-      depthWrite: false,
-      fog: false,
-    });
-    const mesh = new Mesh(new SphereGeometry(radius, low ? 48 : 80, low ? 32 : 56), m);
-    mesh.frustumCulled = false;
-    mesh.renderOrder = -58;
-    mesh.rotation.set(0.5 + seed, seed * 2.1, 0.3);
-    group.add(mesh);
-    const az = (azDeg * Math.PI) / 180;
-    const el = (elDeg * Math.PI) / 180;
-    return { mesh, map, mat: m, dist, az, el, drift };
-  }
-
   // Shared by the sky and the ground.
   const sun = new Vector3(0, 0.1, -1).normalize();
   const skyU = {
@@ -632,55 +644,83 @@ export function buildSurface(o: { low: boolean; landing: Landing; cloudTex: Text
   group.add(dome);
 
   // ------------------------------------------------------------ moons
-  // Two real spheres, large and close, lit from the sun's side. They are far
-  // enough to feel huge and near enough that the camera's travel moves them.
-  const moonLight = { value: new Vector3(0.78, -0.16, -0.6).normalize() };
+  // Two real spheres, wide apart, each with its own crescent, tilt, fade and
+  // tint. The large far one is soft and thin; the small near one is crisper
+  // and moves more with the camera. Both stay right of the words.
   const moonSoft = { value: 0 };
-  const moonArc = { value: new Color() };
-  const moonShade = { value: new Color() };
-  // Both on the right of the frame, clear of the words on the left.
+  const moon = (o: { radius: number; dist: number; az: number; el: number; seed: number; tex: number; drift: number; body: number; light: [number, number, number]; look: [number, number, number, number]; pale: number; shade: number }) => {
+    const map = moonTexture(o.tex, o.seed);
+    const uArc = { value: new Color() };
+    const uShade = { value: new Color() };
+    const mat = new ShaderMaterial({
+      vertexShader: MOON_VS,
+      fragmentShader: MOON_FS,
+      uniforms: {
+        tMoon: { value: map },
+        uLight: { value: new Vector3(o.light[0], o.light[1], o.light[2]).normalize() },
+        uSoft: moonSoft,
+        uCover: cover,
+        uBody: { value: o.body },
+        uArc,
+        uShade,
+        uLook: { value: new Vector4(o.look[0], o.look[1], o.look[2], o.look[3]) },
+      },
+      transparent: true,
+      depthWrite: false,
+      fog: false,
+    });
+    const mesh = new Mesh(new SphereGeometry(o.radius, low ? 48 : 80, low ? 32 : 56), mat);
+    mesh.frustumCulled = false;
+    mesh.renderOrder = -58;
+    mesh.rotation.set(0.5 + o.seed, o.seed * 2.1, 0.3);
+    group.add(mesh);
+    return { mesh, map, mat, uArc, uShade, pale: o.pale, shade: o.shade, dist: o.dist, az: (o.az * Math.PI) / 180, el: (o.el * Math.PI) / 180, drift: o.drift };
+  };
   const moonList = [
-    moon(120, 1500, 1.5, 15.5, 7, low ? 256 : 512, 0.0009, 0.2),
-    moon(30, 700, 9.5, 10.5, 19, low ? 128 : 256, -0.0016, 0.15),
+    // Far: large, pale, thin arc tilted over, a long fade on its dark side.
+    moon({ radius: 132, dist: 1500, az: -2.5, el: 16.5, seed: 7, tex: low ? 128 : 256, drift: 0.0009, body: 0.13, light: [0.56, -0.5, -0.66], look: [0.2, 0.46, 0.34, 1.0], pale: 0.62, shade: 0.78 }),
+    // Near: small, warmer, a thicker crisp arc, a short fade.
+    moon({ radius: 27, dist: 700, az: 13.2, el: 6.2, seed: 19, tex: low ? 96 : 128, drift: -0.0016, body: 0.2, light: [0.86, 0.26, -0.44], look: [0.42, 0.8, 0.14, 0.3], pale: 0.85, shade: 0.6 }),
   ];
 
   // ------------------------------------------------------------ ground
   const NR = low ? 92 : 170;
   const NS = low ? 120 : 240;
-  const RK = low ? 0.105 : 0.057;
-  const pos = new Float32Array((NR + 1) * NS * 3 + 3);
-  const nor = new Float32Array(pos.length);
+  const RK = low ? 0.1 : 0.0535;
+  const VN = (NR + 1) * NS + 1;
+  const pos = new Float32Array(VN * 3);
+  const nor = new Float32Array(VN * 3);
+  const shadeA = new Float32Array(VN);
   const H = 0.6;
-  const heightN = (x: number, z: number, out: number[], at: number) => {
-    const e = Math.max(0.4, Math.hypot(x, z) * 0.01);
-    const h0 = groundHeight(x, z);
-    const hx = groundHeight(x + e, z);
-    const hz = groundHeight(x, z + e);
-    const nx = -(hx - h0) / e;
-    const nz = -(hz - h0) / e;
+  const baked = bakeGround(low);
+  // How far ahead the land blocks a low sun: the long shadows behind each dune.
+  const sunAz = (8 * Math.PI) / 180;
+  const sdx = Math.sin(sunAz);
+  const sdz = -Math.cos(sunAz);
+  const SUN_TAN = Math.tan(0.07);
+  const setVertex = (k: number, x: number, z: number) => {
+    const e = Math.max(0.5, Math.hypot(x, z) * 0.012);
+    const h0 = baked(x, z);
+    const nx = -(baked(x + e, z) - h0) / e;
+    const nz = -(baked(x, z + e) - h0) / e;
     const len = Math.hypot(nx, 1, nz);
-    out[at] = nx / len;
-    out[at + 1] = 1 / len;
-    out[at + 2] = nz / len;
-    return h0;
+    pos.set([x, h0, z], k * 3);
+    nor.set([nx / len, 1 / len, nz / len], k * 3);
+    let top = -1;
+    let t = 3;
+    for (let q = 0; q < 12; q++) {
+      const sl = (baked(x + sdx * t, z + sdz * t) - h0) / t;
+      if (sl > top) top = sl;
+      t *= 1.55;
+    }
+    shadeA[k] = 1 - smooth(SUN_TAN - 0.012, SUN_TAN + 0.03, top);
   };
-  const tmpN = [0, 0, 0];
-  pos[1] = groundHeight(0, 0);
-  nor[1] = 1;
+  setVertex(0, 0, 0);
   for (let i = 0; i <= NR; i++) {
     const rad = H * (Math.exp((i + 1) * RK) - 1);
     for (let j = 0; j < NS; j++) {
       const a = ((j + (i % 2) * 0.5) / NS) * Math.PI * 2;
-      const x = Math.cos(a) * rad;
-      const z = Math.sin(a) * rad;
-      const k = 3 + (i * NS + j) * 3;
-      const h = heightN(x, z, tmpN, 0);
-      pos[k] = x;
-      pos[k + 1] = h;
-      pos[k + 2] = z;
-      nor[k] = tmpN[0];
-      nor[k + 1] = tmpN[1];
-      nor[k + 2] = tmpN[2];
+      setVertex(1 + i * NS + j, Math.cos(a) * rad, Math.sin(a) * rad);
     }
   }
   const idx: number[] = [];
@@ -697,22 +737,25 @@ export function buildSurface(o: { low: boolean; landing: Landing; cloudTex: Text
   const tg = new BufferGeometry();
   tg.setAttribute("position", new BufferAttribute(pos, 3));
   tg.setAttribute("normal", new BufferAttribute(nor, 3));
+  tg.setAttribute("aShade", new BufferAttribute(shadeA, 1));
   tg.setIndex(idx);
   tg.computeBoundingSphere();
 
   const ripple = rippleTexture(low ? 256 : 512);
   const sand = new MeshStandardMaterial({ color: 0xffffff, roughness: 0.94, metalness: 0, envMapIntensity: 0.0, transparent: true, fog: false });
-  const sandU = { tRipple: { value: ripple }, uCamSite: camSite, uCover: cover, uHazeD: { value: 2600 }, uAmbient: { value: new Color() } };
+  const sandU = { tRipple: { value: ripple }, uCamSite: camSite, uCover: cover, uHazeD: { value: 2400 }, uAmbient: { value: new Color() } };
   sand.onBeforeCompile = (shader) => {
     Object.assign(shader.uniforms, skyU, sandU);
     shader.vertexShader = shader.vertexShader
-      .replace("#include <common>", "#include <common>\nvarying vec3 vSite;")
-      .replace("#include <begin_vertex>", "#include <begin_vertex>\nvSite = position;");
+      .replace("#include <common>", "#include <common>\nvarying vec3 vSite;\nattribute float aShade;\nvarying float vShade;\nvarying vec3 vSiteN;")
+      .replace("#include <begin_vertex>", "#include <begin_vertex>\nvSite = position;\nvShade = aShade;\nvSiteN = normal;");
     shader.fragmentShader = shader.fragmentShader
       .replace(
         "#include <common>",
         /* glsl */ `#include <common>
         varying vec3 vSite;
+        varying float vShade;
+        varying vec3 vSiteN;
         uniform sampler2D tRipple;
         uniform vec3 uCamSite;
         uniform float uCover;
@@ -728,37 +771,42 @@ export function buildSurface(o: { low: boolean; landing: Landing; cloudTex: Text
         "#include <color_fragment>",
         /* glsl */ `#include <color_fragment>
         {
-          float dist = length(vSite - uCamSite);
+          vec3 toFrag = vSite - uCamSite;
+          float dist = length(toFrag);
+          // How steeply this bit of ground is seen. At a low angle ripples turn
+          // into long streaks, so far and middle ground stays smooth.
+          float steep = abs(toFrag.y) / max(dist, 1e-3);
+          float seen = smoothstep(0.035, 0.17, steep);
           vec2 uv = vSite.xz;
           // Slow fields decide where the ripples run, how big they are and where the sand lies smooth.
-          vec4 f1 = texture2D(tRipple, uv * 0.00173 + 0.13);
-          vec4 f2 = texture2D(tRipple, uv.yx * 0.00071 + 0.57);
-          float field = f1.z * 0.6 + f2.z * 0.4;
-          vec2 warp = (vec2(f1.x, f2.y) - 0.5) * 14.0;
-          float ang = (f2.x - 0.5) * 1.1 + (f1.y - 0.5) * 0.7;
+          float f1 = texture2D(tRipple, uv * 0.00173 + 0.13).a;
+          float f2 = texture2D(tRipple, uv.yx * 0.00071 + 0.57).a;
+          float f3 = texture2D(tRipple, uv * 0.0127 + 0.31).a;
+          float field = f1 * 0.6 + f2 * 0.4;
+          vec2 warp = (vec2(f1, f3) - 0.5) * 14.0;
+          float ang = (f2 - 0.5) * 2.2 + (f3 - 0.5) * 0.5;
           float ca = cos(ang);
           float sa = sin(ang);
           vec2 ruv = mat2(ca, -sa, sa, ca) * (uv + warp);
-          float scale = mix(0.7, 1.5, smoothstep(0.3, 0.7, field));
-          float patchy = smoothstep(0.28, 0.62, f2.z * 0.5 + f1.y * 0.5);
-          // Three sizes of ripple, the finer ones gone by the middle distance.
+          float scale = mix(0.7, 1.5, smoothstep(0.35, 0.65, field));
+          float patchy = smoothstep(0.38, 0.62, f3);
           vec4 a = texture2D(tRipple, ruv * 0.21 * scale);
           vec4 b = texture2D(tRipple, ruv * vec2(0.067, 0.061) * scale + 0.37);
-          vec4 c = texture2D(tRipple, (uv + warp) * 0.0127 + 0.71);
-          float fa = (1.0 - smoothstep(8.0, 60.0, dist)) * mix(0.35, 1.0, patchy);
-          float fb = (1.0 - smoothstep(50.0, 300.0, dist)) * mix(0.25, 1.0, patchy);
-          float fc = (1.0 - smoothstep(200.0, 900.0, dist)) * 0.42;
-          // From high up the ripples blur into plain sand.
           float high = 1.0 - 0.7 * smoothstep(6.0, 60.0, uCamSite.y);
-          fa *= high;
-          fb *= high;
-          fc *= high;
+          float fa = seen * (1.0 - smoothstep(4.0, 40.0, dist)) * mix(0.35, 1.0, patchy) * high;
+          float fb = seen * (1.0 - smoothstep(14.0, 120.0, dist)) * mix(0.2, 1.0, patchy) * high;
+          // Sand grain, right at the lens only.
+          float gn = texture2D(tRipple, uv * 2.7).a - 0.5;
+          float fg = 1.0 - smoothstep(0.3, 5.0, dist);
           // Rotate the slopes back into site space.
           vec2 g1 = (a.xy - 0.5) * 1.0 * fa + (b.xy - 0.5) * 1.5 * fb;
-          vec2 g = vec2(ca * g1.x + sa * g1.y, -sa * g1.x + ca * g1.y) + (c.xy - 0.5) * 1.1 * fc;
+          vec2 g = vec2(ca * g1.x + sa * g1.y, -sa * g1.x + ca * g1.y);
           sandGrad = vec3(g.x, 0.0, g.y) * 1.9;
-          sandH = (a.z - 0.5) * fa * 0.5 + (b.z - 0.5) * fb * 0.8 + (c.z - 0.5) * fc * 0.9 + (field - 0.5) * 0.35;
+          sandH = (a.z - 0.5) * fa * 0.5 + (b.z - 0.5) * fb * 0.8 + (field - 0.5) * 0.7 + gn * fg * 0.5;
           diffuseColor.rgb = mix(vec3(0.44, 0.2, 0.085), vec3(0.72, 0.38, 0.16), clamp(0.5 + sandH * 0.8, 0.0, 1.0));
+          // Broad forms: faces toward the low sun lift, lee sides and long shadows sink.
+          float face = dot(normalize(vSiteN.xz + 1e-4) * length(vSiteN.xz), normalize(uSun.xz + 1e-4));
+          diffuseColor.rgb *= clamp(0.84 + face * 7.5, 0.5, 1.45) * mix(0.46, 1.0, vShade);
         }`,
       )
       .replace(
@@ -784,7 +832,7 @@ export function buildSurface(o: { low: boolean; landing: Landing; cloudTex: Text
           // Sun glints on the ripple faces, a path of light toward the sun.
           vec3 ss = normalize(vec3(dir.x, 0.0, dir.z));
           float toward = pow(max(dot(ss, normalize(uSun)), 0.0), 18.0);
-          float glitter = toward * smoothstep(-0.12, 0.34, sandH) * (1.0 - smoothstep(60.0, 900.0, dist));
+          float glitter = toward * smoothstep(-0.1, 0.3, sandH) * (1.0 - smoothstep(30.0, 300.0, dist));
           gl_FragColor.rgb += uSunCol * glitter * 0.5;
           gl_FragColor.rgb = mix(gl_FragColor.rgb, air, k);
           gl_FragColor.a = uCover;
@@ -915,7 +963,7 @@ export function buildSurface(o: { low: boolean; landing: Landing; cloudTex: Text
   // ------------------------------------------------------------ camera path
   const site = (x: number, y: number, z: number) => new Vector3(x, y, z);
   const gh = (x: number, z: number) => groundHeight(x, z);
-  const widePos = site(WIDE_POS.x, gh(WIDE_POS.x, WIDE_POS.z) + 0.95, WIDE_POS.z);
+  const widePos = site(WIDE_POS.x, Math.max(gh(STAND.x, STAND.z), gh(WIDE_POS.x, WIDE_POS.z)) + 0.95, WIDE_POS.z);
   const wideDir = site(Math.sin(WIDE_YAW) * Math.cos(WIDE_PITCH), Math.sin(WIDE_PITCH), -Math.cos(WIDE_YAW) * Math.cos(WIDE_PITCH));
   const wideLook = widePos.clone().addScaledVector(wideDir, 60);
   const standY = gh(STAND.x, STAND.z);
@@ -1011,9 +1059,11 @@ export function buildSurface(o: { low: boolean; landing: Landing; cloudTex: Text
     hazeColor.copy(skyU.uHorSun.value).lerp(skyU.uMid.value, 0.5).multiplyScalar(0.8);
     sandU.uAmbient.value.copy(skyLight).multiplyScalar(0.3);
 
-    // The moons take the colour of the air they hang in.
-    moonArc.value.copy(skyU.uHorSun.value).lerp(c1.setRGB(1.25, 0.84, 0.56), 0.72);
-    moonShade.value.copy(skyU.uMid.value).multiplyScalar(0.66);
+    // The moons take the colour of the air they hang in, each by its own amount.
+    for (const m of moonList) {
+      m.uArc.value.copy(skyU.uHorSun.value).lerp(c1.setRGB(1.25, 0.84, 0.56), m.pale);
+      m.uShade.value.copy(skyU.uMid.value).multiplyScalar(m.shade);
+    }
     // They drift very slowly; the camera's own travel moves them far more.
     for (const m of moonList) {
       const az = m.az + (f.reduced ? 0 : time * m.drift * 0.02);
