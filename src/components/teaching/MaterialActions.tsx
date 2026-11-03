@@ -8,7 +8,7 @@ import {
   type Stat,
 } from "../../lib/teachingApi";
 
-// Styles for this island live in src/pages/teaching/[slug].astro. The review
+// Styles for this island live in src/styles/teaching.css. The review
 // gate is a modal, so it is glass (navigation layer) and is portalled to
 // <body> so no stacking context on the page can sit above it.
 

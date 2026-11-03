@@ -8,7 +8,7 @@ import {
 } from "../../data/teaching";
 import { getStats, type Stat } from "../../lib/teachingApi";
 
-// Styles for this island live in src/pages/teaching.astro. Streams are plain
+// Styles for this island live in src/styles/teaching.css. Streams are plain
 // filters and neutral badges: the only colour on the page is the Teaching tab.
 
 type SortKey = "newest" | "views" | "downloads" | "rating";
@@ -19,6 +19,10 @@ const SORTS: { key: SortKey; label: string }[] = [
   { key: "downloads", label: "Most downloaded" },
   { key: "rating", label: "Top rated" },
 ];
+
+// A little over the card's width on a phone, so it takes the copy the opening
+// has already loaded and not a second, smaller one.
+const CARD_SIZES = "(min-width: 1024px) 720px, (min-width: 640px) 50vw, 112vw";
 
 const fmt = (n: number) => (n >= 1000 ? `${(n / 1000).toFixed(1)}k` : String(n));
 
@@ -31,10 +35,19 @@ function cover(c: string) {
 
 export default function TeachingBrowser({
   entries,
+  covers = {},
 }: {
   entries: TeachingMaterial[];
+  // The smaller copies of each cover that exist, worked out at build time.
+  covers?: Record<string, { avifSet?: string; webpSet?: string }>;
 }) {
   const [stream, setStream] = useState<Stream | "all">("all");
+  // Until the filter is first used the cards arrive with the scroll (data-depth).
+  const [filtered, setFiltered] = useState(false);
+  const pick = (s: Stream | "all") => {
+    setStream(s);
+    setFiltered(true);
+  };
   const [sort, setSort] = useState<SortKey>("newest");
   const [stats, setStats] = useState<Record<string, Stat> | null>(null);
 
@@ -67,9 +80,9 @@ export default function TeachingBrowser({
 
   return (
     <div>
-      <div className="tb-bar">
+      <div className="tb-bar" data-depth>
         <div className="tb-filter lg" role="group" aria-label="Filter by discipline">
-          <Chip active={stream === "all"} onClick={() => setStream("all")}>
+          <Chip active={stream === "all"} onClick={() => pick("all")}>
             All
           </Chip>
           {STREAM_ORDER.map((s) => (
@@ -77,7 +90,7 @@ export default function TeachingBrowser({
               key={s}
               active={stream === s}
               quiet={!streamsWithContent.has(s)}
-              onClick={() => setStream(s)}
+              onClick={() => pick(s)}
               title={streamMeta[s].label}
             >
               {streamMeta[s].acronym}
@@ -113,8 +126,8 @@ export default function TeachingBrowser({
           </p>
         </div>
       ) : (
-        <div className="tb-grid">
-          {visible.map((m) => {
+        <div className={`tb-grid${filtered ? " is-filtered" : ""}`} data-ts-cards data-n={visible.length}>
+          {visible.map((m, i) => {
             const c = cover(m.cover);
             const s = stats?.[m.slug];
             const meta = streamMeta[m.stream];
@@ -126,12 +139,20 @@ export default function TeachingBrowser({
                   ? `${m.durationMin} min`
                   : "";
             return (
-              <a key={m.slug} href={`/teaching/${m.slug}`} className="surface tb-card">
+              // Keyed by the filter too, so a change of filter brings them in again.
+              <a
+                key={`${stream}:${m.slug}`}
+                href={`/teaching/${m.slug}`}
+                className="surface tb-card"
+                data-slug={m.slug}
+                data-depth
+                style={{ "--i": i } as React.CSSProperties}
+              >
                 <div className="surface-media tb-cover">
                   <picture>
-                    <source srcSet={c.avif} type="image/avif" />
-                    <source srcSet={c.webp} type="image/webp" />
-                    <img src={c.webp} alt={m.title} loading="lazy" decoding="async" />
+                    <source srcSet={covers[m.slug]?.avifSet ?? c.avif} sizes={CARD_SIZES} type="image/avif" />
+                    <source srcSet={covers[m.slug]?.webpSet ?? c.webp} sizes={CARD_SIZES} type="image/webp" />
+                    <img src={c.webp} alt={m.title} width={1344} height={768} loading="lazy" decoding="async" />
                   </picture>
                 </div>
                 <div className="surface-pad tb-body">

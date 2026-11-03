@@ -1,0 +1,147 @@
+/* ===========================================================================
+   The Teaching pages: the hub and a material. A cover hangs in space as light,
+   sections come up out of the distance, and a book opens into sheets of paper
+   with the sky flying behind them.
+
+   The plain page comes first. Everything that moves only exists once the script
+   has run (is-live, is-open), so no script, no GPU and reduced motion all read
+   as a designed, still page.
+   =========================================================================== */
+
+/* The opening has its own sky, and the sheets want a calm one. */
+.page-comets { display: none !important; }
+
+/* Below the first screen, laid out after the first paint (scripts/teaching/index.ts)
+   so the first layout stays short. Their room is held. A script that fails sets
+   no-stage, and with no script at all this never applies. */
+@media (scripting: enabled) {
+  html:not(.no-stage) .teach-browse:not(.is-laid) { content-visibility: hidden; contain-intrinsic-size: auto 1200px; }
+  html:not(.no-stage) .tm-flap:not(.is-laid) { content-visibility: hidden; contain-intrinsic-size: auto 900px; }
+  html:not(.no-stage) .tr:not(.is-laid) { content-visibility: hidden; contain-intrinsic-size: auto 900px; }
+  html:not(.no-stage) .tm-other:not(.is-laid) { content-visibility: hidden; contain-intrinsic-size: auto 700px; }
+  html:not(.no-stage) .tb-brand-sec:not(.is-laid) { content-visibility: hidden; contain-intrinsic-size: auto 380px; }
+  html:not(.no-stage) .site-foot:not(.is-laid) { display: none; }
+}
+
+/* ---------------------------------------------------------------------------
+   The opening, shared by both pages.
+   --------------------------------------------------------------------------- */
+.ts-hero { position: relative; }
+.ts-stage {
+  position: relative;
+  min-height: 100svh;
+  display: flex;
+  flex-direction: column;
+  overflow: clip;
+}
+.ts-art {
+  position: absolute;
+  left: var(--ax, 50%);
+  top: var(--ay, 40%);
+  width: var(--aw, 100vw);
+  aspect-ratio: 7 / 4;
+  margin: 0;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  /* The ground of the picture goes: no frame, no edge, only what is lit. */
+  -webkit-mask-image: radial-gradient(ellipse 50% 46% at 50% 50%, #000 52%, transparent 100%);
+  mask-image: radial-gradient(ellipse 50% 46% at 50% 50%, #000 52%, transparent 100%);
+}
+.ts-art img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.ts-gl {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  width: 100%;
+  height: 100%;
+  display: none;
+  pointer-events: none;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 620ms ease;
+}
+.ts-scrim {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  background:
+    linear-gradient(90deg, rgba(1, 2, 5, 0.74) 0%, rgba(1, 2, 5, 0.46) 34%, rgba(1, 2, 5, 0) 60%),
+    linear-gradient(0deg, rgba(1, 2, 5, 0.62) 0%, rgba(1, 2, 5, 0) 44%);
+}
+.ts-copy {
+  position: relative;
+  z-index: 2;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding-top: clamp(88px, 12vh, 112px);
+  padding-bottom: clamp(30px, 6.4vh, 68px);
+}
+.ts-cue { display: none; }
+
+.ts-hero.is-live .ts-gl { display: block; }
+.ts-hero.is-live .ts-gl.is-up { opacity: 1; visibility: visible; }
+.ts-hero.is-live .ts-gl.is-rest { visibility: hidden; }
+.ts-hero.is-live .ts-art { will-change: transform; }
+.ts-hero.is-live .ts-art.is-handed { visibility: hidden; will-change: auto; }
+.ts-hero.is-live .ts-copy { transform-origin: 0% 100%; will-change: transform, opacity; }
+.ts-hero.is-live .ts-copy.is-gone { visibility: hidden; }
+
+/* The runway. A spacer and not padding: sticky stays inside the content box. */
+.ts-hero.is-live::after { content: ""; display: block; height: 110svh; }
+.ts-hero.is-live .ts-stage { position: sticky; top: 0; height: 100svh; min-height: 0; }
+/* What follows comes up through the end of the flight, so the screen is never
+   empty between the two. It sits above the stage, whose words are gone by then. */
+.ts-hero.is-live:not(.is-tall) + * { margin-top: -62svh; }
+.ts-hero.is-live.is-tall::after { display: none; }
+.ts-hero.is-live.is-tall .ts-stage { position: relative; height: auto; min-height: 100svh; }
+@media (max-width: 899px) {
+  .ts-hero.is-live::after { height: 72svh; }
+  .ts-hero.is-live:not(.is-tall) + * { margin-top: -40svh; }
+  .ts-scrim { background: linear-gradient(0deg, rgba(1, 2, 5, 0.9) 0%, rgba(1, 2, 5, 0.74) 34%, rgba(1, 2, 5, 0) 62%); }
+}
+@media (min-width: 900px) {
+  .ts-hero.is-live .ts-cue {
+    display: block;
+    position: absolute;
+    z-index: 2;
+    left: 50%;
+    bottom: 22px;
+    width: 1px;
+    height: 44px;
+    margin-left: -0.5px;
+    overflow: hidden;
+    background: rgba(255, 255, 255, 0.12);
+    pointer-events: none;
+  }
+  .ts-hero.is-live .ts-cue i {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 1px;
+    height: 16px;
+    background: var(--tone);
+    animation: ts-cue 2.2s cubic-bezier(0.6, 0, 0.3, 1) infinite;
+  }
+}
+@keyframes ts-cue {
+  0% { transform: translateY(-16px); }
+  100% { transform: translateY(44px); }
+}
+
+/* What comes up out of the distance. */
+[data-depth] { transform-origin: 50% 40%; }
+[data-depth].is-moving { will-change: transform, opacity; }
+
+/* ---------------------------------------------------------------------------
+   Stillness: the same layout, with nothing moving by itself.
+   --------------------------------------------------------------------------- */
+@media (prefers-reduced-motion: reduce) {
+  .ts-gl { transition: none; }
+  .nav { transition: none; }
+}
+@media print {
+  .ts-gl, .ts-scrim, .ts-cue { display: none !important; }
+  .ts-art { position: static; transform: none; width: 100%; -webkit-mask-image: none; mask-image: none; }
+}

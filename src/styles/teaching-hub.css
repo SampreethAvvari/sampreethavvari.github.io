@@ -1,0 +1,192 @@
+/* The Teaching hub: its opening and the materials. Shared parts are in teaching.css. */
+
+/* ---------------------------------------------------------------------------
+   The hub.
+   --------------------------------------------------------------------------- */
+.teach-art-a { --ax: 69%; --ay: 31%; --aw: min(76vw, 122vh); }
+.teach-art-b { --ax: 30%; --ay: 25%; --aw: min(54vw, 84vh); }
+@media (max-width: 899px) {
+  .teach-art-a { --ax: 66%; --ay: 20%; --aw: max(150vw, 74svh); }
+  .teach-art-b { --ax: 22%; --ay: 35%; --aw: max(106vw, 52svh); }
+}
+.teach-main { margin-top: auto; max-width: 76rem; }
+.teach-title {
+  margin-top: clamp(14px, 2vh, 22px);
+  font-size: clamp(2.6rem, min(6.2vw, 10.4vh), 5.5rem);
+  line-height: 1.02;
+  letter-spacing: -0.045em;
+  font-weight: 600;
+  text-wrap: balance;
+  color: var(--ink);
+}
+.teach-lede { margin-top: clamp(14px, 2.2vh, 22px); }
+/* Beside the chat button, not under it. */
+@media (max-width: 479px) { .teach-lede { padding-right: 56px; } }
+.teach-browse {
+  position: relative;
+  z-index: 1;
+  padding-top: clamp(24px, 5vh, 56px);
+  padding-bottom: clamp(72px, 9vw, 120px);
+}
+/* Toolbar: the stream filter is a glass bar, the sort a glass pill. */
+.tb-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px 16px;
+  margin-bottom: clamp(24px, 3vw, 32px);
+}
+.tb-filter {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+  padding: 5px;
+  border-radius: 9999px;
+  max-width: 100%;
+}
+.tb-filter .chip {
+  height: 32px;
+  padding: 0 14px;
+  border-color: transparent;
+  background: transparent;
+  cursor: pointer;
+  font-family: inherit;
+}
+.tb-filter .chip:not(.is-on):hover { background: var(--wash-strong); }
+.tb-filter .chip.is-on { color: #000; background: var(--ink); border-color: var(--ink); }
+.tb-filter .chip.is-quiet:not(.is-on) { color: var(--ink-faint); }
+.teach-browse .chip:focus-visible { outline: none; box-shadow: 0 0 0 3px rgba(var(--tone-rgb), 0.45); }
+.tb-sort {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+.tb-sort-select {
+  appearance: none;
+  -webkit-appearance: none;
+  height: 42px;
+  padding: 0 38px 0 16px;
+  border-radius: 9999px;
+  border: 0;
+  font: inherit;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--ink);
+  cursor: pointer;
+}
+.tb-sort-select:focus-visible { outline: none; box-shadow: 0 0 0 3px rgba(var(--tone-rgb), 0.45); }
+.tb-sort-select option { background: #0e0f14; color: var(--ink); }
+.tb-sort-chev {
+  position: absolute;
+  right: 15px;
+  top: 50%;
+  width: 12px;
+  height: 12px;
+  margin-top: -6px;
+  pointer-events: none;
+  color: var(--ink-soft);
+  z-index: 1;
+}
+
+/* The materials. As many equal lanes as there are, up to three, so a card is
+   never left on its own beside a hole. */
+.tb-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 16px;
+  perspective: 1500px;
+}
+@media (min-width: 640px) {
+  .tb-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .tb-grid[data-n="1"] { grid-template-columns: 1fr; }
+}
+@media (min-width: 1024px) {
+  .tb-grid { gap: 22px; }
+  .tb-grid[data-n="3"], .tb-grid[data-n="5"], .tb-grid[data-n="6"] { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+.tb-card {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border-radius: 24px;
+  background: linear-gradient(180deg, rgba(var(--tone-rgb), 0.05), rgba(255, 255, 255, 0.012) 44%), #07080b;
+  transform: rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg));
+  transform-style: preserve-3d;
+}
+/* A change of filter brings the cards in again. */
+.tb-grid.is-filtered .tb-card {
+  animation: tb-arrive 900ms cubic-bezier(0.22, 1, 0.3, 1) backwards;
+  animation-delay: calc(var(--i, 0) * 90ms);
+}
+a.tb-card:hover { transform: rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg)); }
+@keyframes tb-arrive {
+  from { opacity: 0; transform: translate3d(0, 46px, -220px) rotateX(12deg); }
+  to { opacity: 1; transform: none; }
+}
+.tb-card::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  opacity: 0;
+  background: radial-gradient(46% 46% at var(--mx, 50%) var(--my, 30%), rgba(var(--tone-rgb), 0.16), rgba(var(--tone-rgb), 0) 72%);
+  transition: opacity 300ms ease;
+}
+.tb-card.is-near::after, .tb-card:hover::after { opacity: 1; }
+/* The cover has no frame here either: only its light, on the card's own dark. */
+.tb-cover { aspect-ratio: 16 / 9; border: 0; border-radius: 0; background: transparent; overflow: visible; }
+.tb-cover img {
+  -webkit-mask-image: radial-gradient(ellipse 54% 54% at 50% 50%, #000 58%, transparent 100%);
+  mask-image: radial-gradient(ellipse 54% 54% at 50% 50%, #000 58%, transparent 100%);
+  transform: translateZ(30px) scale(1.04);
+  transition: transform 700ms var(--ease-glass);
+}
+a.tb-card:hover .tb-cover img { transform: translateZ(60px) scale(1.14); }
+.tb-grid[data-n="1"] .tb-cover { aspect-ratio: 21 / 9; }
+.tb-body { display: flex; flex-direction: column; flex: 1; position: relative; }
+.tb-badges { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; }
+.tb-badges .t-meta { margin-left: 2px; }
+.tb-title { margin-top: 14px; font-size: clamp(1.5rem, 2.4vw, 2.125rem); letter-spacing: -0.03em; }
+.tb-desc {
+  margin-top: 8px;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.tb-foot {
+  margin-top: auto;
+  padding-top: 20px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 16px;
+}
+.tb-foot .tlink svg { transition: transform 250ms var(--ease-glass); }
+a.tb-card:hover .tb-foot .tlink svg { transform: translateX(3px); }
+/* Nothing in this stream yet */
+.tb-empty {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 22px 24px;
+  animation: tb-arrive 700ms cubic-bezier(0.22, 1, 0.3, 1) backwards;
+}
+.tb-empty-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 9999px;
+  background: var(--tone);
+  box-shadow: 0 0 12px rgba(var(--tone-rgb), 0.7);
+  flex: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tb-grid.is-filtered .tb-card, .tb-empty { animation: none; }
+  .tb-cover img { transition: none; }
+}

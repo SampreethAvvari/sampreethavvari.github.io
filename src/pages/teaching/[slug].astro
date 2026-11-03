@@ -3,9 +3,16 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
 import MaterialActions from "../../components/teaching/MaterialActions.tsx";
 import TeachingBranding from "../../components/teaching/TeachingBranding.astro";
 import { teaching, streamMeta, typeMeta } from "../../data/teaching";
+import books from "../../data/teaching-pages.json";
 import Picture from "../../components/common/Picture.astro";
 import Icon from "../../components/common/Icon.astro";
 import { info } from "../../data/info";
+import fs from "node:fs";
+import path from "node:path";
+// Only these pages download these stylesheets.
+import "../../styles/teaching.css";
+import "../../styles/teaching-material.css";
+import "../../styles/solid-glass.css";
 
 export function getStaticPaths() {
   return teaching.map((m) => ({ params: { slug: m.slug }, props: { m } }));
@@ -43,20 +50,47 @@ function embedUrl(url: string): string {
   if (vm) return `https://player.vimeo.com/video/${vm[1]}`;
   return url;
 }
+
+// The cover is the largest paint. No preload: the browser finds it soon enough, it
+// cannot paint before the styles arrive anyway, and on a slow connection it would
+// only hold the styles up.
+const artSizes = "(min-width: 1024px) 96vw, 175vw";
+const artBase = m.cover.replace(/\.(png|jpe?g|webp|avif)$/i, "");
+const longTitle = m.title.length > 20;
+
+// The stack at the reader's place: real pages, made by scripts/make-teaching-pages.mjs.
+const book = (books as Record<string, { pages: number; w: number; h: number; odd: Record<string, number[]> }>)[m.slug];
+const leafPages = [1, 3, 9].map((n) => `/teaching/pages/${m.slug}-${n}.webp`);
+const leaves = leafPages.filter((p) => fs.existsSync(path.join(process.cwd(), "public", p)));
 ---
 
-<BaseLayout title={`SA: ${m.title}`} description={m.description}>
-  <article class="tm-page">
-    <section class="page-top tm-top relative overflow-hidden">
-      <div class="tone-atmos" aria-hidden="true"></div>
-      <div class="wrap on-top">
-        <div class="tm-head">
+<BaseLayout
+  title={`SA: ${m.title}`}
+  description={m.description}
+>
+  <article class="tm-page" data-teaching>
+    <header class="ts-hero tm-hero" data-ts-hero data-ts-section="opening" data-rgb="52,211,153" data-seed={(m.slug.length % 13) / 13}>
+      <div class="ts-stage">
+        <figure class="ts-art tm-art" data-art={artBase}>
+          <Picture
+            src={m.cover}
+            alt={m.title}
+            width={1344}
+            height={768}
+            loading="eager"
+            fetchpriority="high"
+            sizes={artSizes}
+          />
+        </figure>
+        <canvas class="ts-gl" aria-hidden="true"></canvas>
+        <div class="ts-scrim" aria-hidden="true"></div>
+        <div class="wrap ts-copy">
+          <a href="/teaching" class="tm-back">
+            <Icon name="arrow-right" size={14} class="tm-back-arrow" /> All teaching
+          </a>
           <div class="tm-main">
-            <a href="/teaching" class="tm-back">
-              <Icon name="arrow-right" size={14} class="tm-back-arrow" /> All teaching
-            </a>
             <p class="kicker tm-kicker">Teaching</p>
-            <h1 class="t-title tm-title">{m.title}</h1>
+            <h1 class:list={["tm-title", longTitle && "is-long"]}>{m.title}</h1>
             <p class="t-lede tm-lede">{m.description}</p>
             <div class="tm-facts">
               <span class="badge">{tm.label}</span>
@@ -64,76 +98,108 @@ function embedUrl(url: string): string {
               <span class="t-meta">{facts}</span>
             </div>
             <MaterialActions client:load slug={m.slug} file={m.file} title={m.title} />
+            {m.type === "pdf" && m.file && (
+              <a href="#read" class="tlink tm-jump" data-read-jump>
+                Read it here
+                <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14m0 0 6-6m-6 6-6-6"></path></svg>
+              </a>
+            )}
           </div>
-
-          <figure class="tm-cover">
-            <Picture
-              src={m.cover}
-              alt={m.title}
-              width={1344}
-              height={768}
-              class="tm-cover-img"
-              loading="eager"
-              fetchpriority="high"
-            />
-          </figure>
         </div>
+        <div class="ts-cue" aria-hidden="true"><i></i></div>
       </div>
-    </section>
+    </header>
 
-    <section class="tm-detail">
+    <section class="tm-flap" data-ts-section="expect">
       <div class="wrap">
-        <div class="tm-grid">
-          <div class="tm-expect">
-            <h2 class="t-h3">What to expect</h2>
-            {expect.map((p) => <p class="t-body tm-expect-p">{p}</p>)}
-          </div>
+        <div class="tm-expect" data-depth>
+          <h2 class="t-h3 tm-expect-h">What to expect</h2>
+          {expect.map((p) => <p class="tm-expect-p" data-words>{p}</p>)}
+        </div>
 
-          <aside class="surface surface-pad tm-connect" aria-label="About the author">
-            <div class="tm-connect-id">
+        <aside class="tm-colophon" aria-label="About the author" data-depth>
+          <div class="tm-connect-id">
+            <div class="tm-planet">
               <div class="tm-connect-ava">
                 <Picture src={info.picture} alt={info.picture_alt} width={96} height={96} loading="lazy" />
               </div>
-              <div class="min-w-0">
-                <p class="t-h4">{info.name}</p>
-                <p class="t-meta">{info.role} · {info.location}</p>
-              </div>
+              <span class="tm-moon" aria-hidden="true"><i></i></span>
             </div>
-            <p class="t-small tm-connect-note">Questions, or ideas for what I should cover next? Reach out.</p>
-            <div class="tm-connect-links">
-              <a class="btn btn-glass btn-sm" href={info.contact.linkedin} target="_blank" rel="noreferrer">
-                <Icon name="linkedin" size={14} /> Connect on LinkedIn
-              </a>
-              <a class="btn btn-glass btn-sm" href={`mailto:${info.contact.email}`}>
-                <Icon name="mail" size={15} /> Email me
-              </a>
-              <a class="btn btn-glass btn-sm" href={info.contact.github} target="_blank" rel="noreferrer">
-                <Icon name="github" size={14} /> GitHub
-              </a>
-            </div>
-          </aside>
-        </div>
-
-        {m.type === "pdf" && m.file && (
-          <div class="tm-viewer">
-            <div class="tm-viewer-head">
-              <h2 class="t-h3">Read it here</h2>
-              <a href={m.file} target="_blank" rel="noopener" class="tlink">
-                Open in a new tab <Icon name="arrow-up-right" size={14} />
-              </a>
-            </div>
-            <div class="tm-frame">
-              <iframe
-                src={`${m.file}#toolbar=0&navpanes=0&view=FitH`}
-                title={m.title}
-                class="tm-viewer-pdf"
-                loading="lazy"
-              />
+            <div class="min-w-0">
+              <p class="t-h4">{info.name}</p>
+              <p class="t-meta">{info.role} · {info.location}</p>
             </div>
           </div>
-        )}
-        {m.type === "video" && m.videoUrl && (
-          <div class="tm-viewer">
+          <p class="t-small tm-connect-note">Questions, or ideas for what I should cover next? Reach out.</p>
+          <div class="tm-connect-links">
+            <a class="btn btn-glass btn-sm" href={info.contact.linkedin} target="_blank" rel="noreferrer">
+              <Icon name="linkedin" size={14} /> Connect on LinkedIn
+            </a>
+            <a class="btn btn-glass btn-sm" href={`mailto:${info.contact.email}`}>
+              <Icon name="mail" size={15} /> Email me
+            </a>
+            <a class="btn btn-glass btn-sm" href={info.contact.github} target="_blank" rel="noreferrer">
+              <Icon name="github" size={14} /> GitHub
+            </a>
+          </div>
+        </aside>
+      </div>
+    </section>
+
+    {m.type === "pdf" && m.file && (
+      <section
+        class="tr"
+        id="read"
+        data-reader
+        data-ts-section="read"
+        data-file={m.file}
+        data-slug={m.slug}
+        data-title={m.title}
+        data-dims={book ? JSON.stringify(book) : undefined}
+      >
+        <div class="wrap tr-rest">
+          <div class="tr-head">
+            <h2 class="tr-title">
+              <a href={m.file} target="_blank" rel="noopener" class="tr-open">
+                Read it here
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14m0 0-6-6m6 6-6 6"></path></svg>
+              </a>
+            </h2>
+            <a href={m.file} target="_blank" rel="noopener" class="tlink tr-tab">
+              Open in a new tab <Icon name="arrow-up-right" size={14} />
+            </a>
+          </div>
+          <div class="tr-deck" data-depth>
+            <a href={m.file} target="_blank" rel="noopener" class="tr-stack" aria-label={`Read ${m.title} here`}>
+              <span class="tr-leaf tr-leaf-blank" style="--i:4" aria-hidden="true"></span>
+              <span class="tr-leaf tr-leaf-blank" style="--i:3" aria-hidden="true"></span>
+              {[2, 1, 0].map((i) => (
+                <span class:list={["tr-leaf", i === 0 && "tr-leaf-top"]} style={`--i:${i}`}>
+                  {leaves[i] && (i === 0 ? (
+                    <Picture src={leaves[i]} alt="" width={800} height={1131} loading="lazy" decoding="async" />
+                  ) : (
+                    <img data-later={leaves[i]} alt="" width="800" height="1131" decoding="async" />
+                  ))}
+                </span>
+              ))}
+              <span class="tr-press" aria-hidden="true">
+                <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 7c-2-1.6-4.6-2-8-2v13c3.400 0 6 .4 8 2 2-1.600 4.600-2 8-2V5c-3.400 0-6 .4-8 2Zm0 0v13"></path></svg>
+              </span>
+            </a>
+          </div>
+        </div>
+        <noscript>
+          <div class="tr-fallback wrap">
+            <iframe src={`${m.file}#toolbar=0&navpanes=0&view=FitH`} title={m.title} loading="lazy"></iframe>
+          </div>
+        </noscript>
+      </section>
+    )}
+
+    {m.type === "video" && m.videoUrl && (
+      <section class="tm-other" data-ts-section="watch">
+        <div class="wrap">
+          <div class="tm-viewer" data-depth>
             <div class="tm-viewer-head">
               <h2 class="t-h3">Watch it here</h2>
             </div>
@@ -147,217 +213,21 @@ function embedUrl(url: string): string {
               />
             </div>
           </div>
-        )}
-        {m.type === "blog" && m.body && (
+        </div>
+      </section>
+    )}
+    {m.type === "blog" && m.body && (
+      <section class="tm-other" data-ts-section="read">
+        <div class="wrap">
           <div class="tm-viewer tm-viewer-blog" set:html={m.body} />
-        )}
-      </div>
-    </section>
+        </div>
+      </section>
+    )}
 
     <TeachingBranding />
   </article>
+
+  <script>
+    import "../../scripts/teaching/index";
+  </script>
 </BaseLayout>
-
-<style>
-  /* Page top: copy on the left, the cover in a frame on the right. */
-  .tm-head {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr);
-    gap: 40px;
-    align-items: center;
-  }
-  @media (min-width: 1024px) {
-    .tm-head { grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); gap: 64px; }
-  }
-  .tm-back {
-    display: inline-flex;
-    align-items: center;
-    gap: 7px;
-    margin-bottom: 28px;
-    font-size: 0.875rem;
-    font-weight: 500;
-    color: var(--ink-soft);
-    text-decoration: none;
-    transition: color 150ms var(--ease-glass);
-  }
-  .tm-back:hover { color: var(--ink); transform: none; }
-  .tm-back :global(.tm-back-arrow) { transform: rotate(180deg); transition: transform 250ms var(--ease-glass); }
-  .tm-back:hover :global(.tm-back-arrow) { transform: rotate(180deg) translateX(3px); }
-  .tm-kicker { display: flex; }
-  .tm-title { margin-top: 22px; }
-  .tm-lede { margin-top: 22px; }
-  .tm-facts {
-    margin-top: 22px;
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 8px;
-  }
-  .tm-facts .t-meta { margin-left: 4px; }
-
-  .tm-cover {
-    margin: 0;
-    padding: 10px;
-    border-radius: 28px;
-    background: linear-gradient(180deg, rgba(255, 255, 255, 0.09), rgba(255, 255, 255, 0.02));
-    border: 1px solid rgba(255, 255, 255, 0.12);
-    box-shadow:
-      inset 0 1px 0 rgba(255, 255, 255, 0.2),
-      0 40px 80px -40px rgba(0, 0, 0, 1),
-      0 0 80px -30px rgba(var(--tone-rgb), 0.35);
-  }
-  .tm-cover :global(.tm-cover-img) {
-    display: block;
-    width: 100%;
-    height: auto;
-    aspect-ratio: 16 / 10;
-    object-fit: cover;
-    border-radius: 20px;
-    background: #07080b;
-  }
-
-  /* Actions (React island) */
-  .tm-main :global(.tm-actions) { margin-top: 32px; display: grid; gap: 14px; justify-items: start; }
-  .tm-main :global(.tm-actions-btns) { display: flex; flex-wrap: wrap; gap: 12px; }
-  .tm-main :global(.tm-stats) { margin: 0; }
-
-  /* What to expect, with the author beside it. */
-  .tm-detail { position: relative; z-index: 1; padding-top: clamp(56px, 7vw, 88px); }
-  .tm-grid {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr);
-    gap: 32px;
-    align-items: start;
-  }
-  @media (min-width: 1024px) {
-    .tm-grid { grid-template-columns: minmax(0, 7fr) minmax(0, 4fr); gap: 64px; }
-  }
-  .tm-expect { max-width: 42rem; }
-  .tm-expect-p { margin-top: 14px; font-size: 1.0625rem; line-height: 1.7; }
-  .tm-connect-id { display: flex; align-items: center; gap: 14px; }
-  .tm-connect-ava {
-    width: 48px;
-    height: 48px;
-    border-radius: 9999px;
-    overflow: hidden;
-    flex: none;
-    border: 1px solid var(--line-strong);
-  }
-  /* The portrait is a wide street shot: frame the face. */
-  .tm-connect-ava :global(img) { width: 100%; height: 100%; object-fit: cover; object-position: 64% 50%; transform: translate(-28.6%, 35.7%) scale(2.1); display: block; }
-  .tm-connect-note { margin-top: 16px; }
-  .tm-connect-links { margin-top: 18px; display: flex; flex-wrap: wrap; gap: 8px; }
-
-  /* The reader */
-  .tm-viewer { margin-top: clamp(56px, 7vw, 88px); }
-  .tm-viewer-head {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: baseline;
-    justify-content: space-between;
-    gap: 8px 24px;
-    margin-bottom: 20px;
-  }
-  .tm-frame {
-    border-radius: 20px;
-    overflow: hidden;
-    border: 1px solid var(--line);
-    background: var(--surface-solid);
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06), 0 30px 60px -42px rgba(0, 0, 0, 0.95);
-  }
-  .tm-viewer-pdf { display: block; width: 100%; height: 82vh; min-height: 30rem; border: 0; background: #0b0c10; }
-  .tm-viewer-video { position: relative; aspect-ratio: 16 / 9; }
-  .tm-viewer-video iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
-  .tm-viewer-blog { max-width: 42rem; font-size: 1.0625rem; line-height: 1.7; color: var(--ink-soft); }
-  .tm-viewer-blog :global(h2), .tm-viewer-blog :global(h3) { color: var(--ink); font-weight: 600; letter-spacing: -0.02em; margin: 1.8em 0 0.6em; }
-  .tm-viewer-blog :global(p) { margin: 0 0 1em; color: var(--ink-soft); }
-  .tm-viewer-blog :global(a) { color: var(--ink); text-decoration: underline; text-underline-offset: 3px; text-decoration-color: var(--ink-ghost); }
-
-  /* The review gate, portalled to <body>. Glass, because it is a modal. */
-  :global(.tm-modal) {
-    position: fixed;
-    inset: 0;
-    z-index: 95;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 16px;
-  }
-  :global(.tm-modal-backdrop) {
-    position: absolute;
-    inset: 0;
-    background: rgba(0, 0, 0, 0.6);
-    -webkit-backdrop-filter: blur(6px);
-    backdrop-filter: blur(6px);
-  }
-  :global(.tm-modal-card) {
-    position: relative;
-    z-index: 1;
-    width: 100%;
-    max-width: 30rem;
-    padding: 28px 24px 24px;
-    border-radius: 24px;
-    color: var(--ink);
-    animation: glass-in 260ms var(--ease-glass);
-  }
-  :global(.tm-modal-x) {
-    position: absolute;
-    top: 14px;
-    right: 14px;
-    z-index: 2;
-    display: grid;
-    place-items: center;
-    width: 32px;
-    height: 32px;
-    border-radius: 9999px;
-    border: 0;
-    color: var(--ink-soft);
-    background: var(--wash-strong);
-    cursor: pointer;
-    transition: color 150ms var(--ease-glass), background-color 150ms var(--ease-glass);
-  }
-  :global(.tm-modal-x svg) { width: 15px; height: 15px; }
-  :global(.tm-modal-x:hover) { color: var(--ink); background: rgba(255, 255, 255, 0.14); }
-  :global(.tm-modal-title) { margin-top: 8px; padding-right: 32px; }
-  :global(.tm-modal-sub) { margin-top: 8px; }
-  :global(.tm-stars) { display: flex; gap: 4px; margin: 20px 0 16px; }
-  :global(.tm-star) {
-    display: grid;
-    place-items: center;
-    width: 40px;
-    height: 40px;
-    padding: 0;
-    border: 0;
-    border-radius: 12px;
-    background: transparent;
-    color: var(--ink-ghost);
-    cursor: pointer;
-    transition: color 150ms var(--ease-glass), background-color 150ms var(--ease-glass);
-  }
-  :global(.tm-star svg) { width: 24px; height: 24px; fill: currentColor; }
-  :global(.tm-star:hover) { background: var(--wash); }
-  :global(.tm-star.is-on) { color: var(--ink); }
-  :global(.tm-star:focus-visible) { outline: none; box-shadow: 0 0 0 3px rgba(var(--tone-rgb), 0.45); }
-  :global(.tm-textarea) {
-    display: block;
-    width: 100%;
-    min-height: 6rem;
-    resize: vertical;
-    margin-bottom: 16px;
-    padding: 12px 14px;
-    border-radius: 14px;
-    font: inherit;
-    font-size: 0.9375rem;
-    line-height: 1.5;
-    color: var(--ink);
-    background: var(--wash);
-    border: 1px solid var(--line-strong);
-  }
-  :global(.tm-textarea::placeholder) { color: var(--ink-faint); }
-  :global(.tm-textarea:focus) { outline: none; border-color: rgba(255, 255, 255, 0.3); box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.06); }
-  :global(.tm-submit) { width: 100%; }
-  :global(.tm-submit:disabled) { opacity: 0.4; cursor: not-allowed; transform: none; box-shadow: none; }
-  @media (prefers-reduced-motion: reduce) {
-    :global(.tm-modal-card) { animation: none; }
-  }
-</style>
