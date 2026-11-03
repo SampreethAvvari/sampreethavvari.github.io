@@ -1,58 +1,71 @@
 // Overture. The Long Flight. Home: the whole story in nine worlds, one per
 // chapter of the scroll, each with its own instruments, register and space.
 //
-//   01 launch       ignition: a low rumble opens, an organ's open fifth rises
-//                   an octave, a breath and a heartbeat; far away a plucked
-//                   string tries the theme for the first time
-//   02 proof        glass pulses count upward, bouncing from ear to ear
-//   03 projects     two machines interlock, three against four, over an
-//                   engine that pumps in eighths
-//   04 disciplines  four instruments at four corners pass one line around
-//   05 writing      the theme in full on a felt piano, the air of paper
-//   06 film         the landing at sunset: down through the atmosphere, low
-//                   bowed strings and a heartbeat, then touchdown
-//   07 mind         the exit, the last of the sun: a high choir, soft steps on
-//                   a metal ramp, then sand, one of the four notes on each step
-//                   on the sand, and a wind that sings
-//   08 contact      the helmet at dusk: the seal releases, the world opens from
-//                   muffled to wide, a first breath of cold air, and the theme
-//                   a long way off, a note at a time
-//   09 connect      the touch, under the Milky Way: nearly nothing, no third in
-//                   the chord at all, until the hand meets the sapling on a warm
-//                   D major ninth, the theme falls home to D, and a few stars
+//   01 launch       D, open fifths. Ignition: a low rumble opens, an organ's
+//                   fifth rises an octave, a breath and a heartbeat; far away a
+//                   plucked string tries the theme for the first time
+//   02 proof        A major, quick. Glass pulses count upward, bouncing from ear
+//                   to ear
+//   03 projects     G mixolydian. Two machines interlock, three against four,
+//                   over an engine that pumps in eighths
+//   04 disciplines  E major, walking. Four instruments at four corners pass one
+//                   line around
+//   05 writing      B minor, slow. The theme in full on a felt piano, the air of
+//                   paper
+//   06 film         D minor, a heartbeat. The landing at sunset: down through
+//                   the atmosphere on low bowed strings, an engine, then
+//                   touchdown. Going back up is the lift off.
+//   07 mind         A mixolydian. The exit, the last of the sun: a high choir,
+//                   steps on a metal ramp, then sand, one of the four notes on
+//                   each step on the sand, and a wind that sings
+//   08 contact      G minor, very slow. The helmet at dusk: the seal releases,
+//                   the world opens from muffled to wide, a first breath of cold
+//                   air, and the theme a long way off, a note at a time
+//   09 connect      D again, almost still. The touch, under the Milky Way: nearly
+//                   nothing, no third in the chord at all, until the hand meets
+//                   the sapling on a warm D major ninth, the theme falls home to
+//                   D, and a few stars
+//
+// So no world shares a key, a pace or a floor with the one before it (places.ts
+// has each world's deep layer).
 //
 // From 06 to 09 the sky falls from sunset to full night, and the score follows
 // it: fewer notes, less low end, a bigger and emptier room. The touch is the one
 // warm moment in it.
 //
-// The flight is stepped: each scroll glides from one world to the next in
-// 1.4 seconds, so the movement runs at 85.7 beats a minute, where 1.4 seconds
-// is exactly two beats, and every jump lands on a downbeat. The jump has its
-// own gesture: a swell that peaks at 0.7 seconds, a tape stop with a sub
-// drop, a moment of muffled silence, then the new world arrives on a struck
-// chord. Backwards, the ship turns around: its hum swings across the field
-// with a doppler bend. Clicks and hovers snap to a fine grid on the same
-// clock. When a headline arrives word by word, each word gets one soft tuned
-// note, read from left to right. The last three worlds are scenes that play
-// in real time; the page reports their progress and the score follows it.
+// The flight is stepped: each scroll glides from one world to the next in about
+// 1.4 seconds, and the new world's clock starts on the arrival, a downbeat at its
+// own tempo. The jump has its own gesture: a swell that peaks at the halfway
+// point, a tape stop as the floor falls away, a moment of muffled silence, then
+// the new world arrives on a struck chord with the biggest low hit on the site.
+// Backwards, the ship turns around: its hum swings across the field with a
+// doppler bend. Clicks and hovers snap to a fine grid on the same clock. When a
+// headline arrives word by word, each word gets one soft tuned note, read from
+// left to right.
+//
+// The last four worlds are scenes the visitor scrubs: the page reports their
+// progress as it follows the scroll, in either direction, and it can stop dead.
+// So nothing here runs on a timer. A footfall sounds when progress crosses it,
+// either way, and the seal, the touch and the touchdown each have a reverse.
 import { Movement, type Section } from "../movement";
 import { chord, chords, tonesIn, bassOf, type Chord } from "../theory";
 import type { PadOpts } from "../instruments";
-import { Pad, Mono, Sampler, Breath, lead, thud, glint } from "../instruments";
+import { Pad, Mono, Sampler, Breath, lead, thud, glint, rush } from "../instruments";
 import { pluck, modal, MODES, bell, BELLS, piano, fm, dbg, nm, ns, kr, mtof, type RoomSpec, type ModalSpec } from "../dsp";
+import { HOME_WORLDS } from "../places";
 
-interface Chapter { id: string; prog: Chord[]; per: number }
+interface Chapter { id: string; prog: Chord[]; per: number; bpm: number }
 const CHAPTERS: Chapter[] = [
-  { id: "launch", prog: chords("D5"), per: 4 },
-  { id: "proof", prog: chords("Dsus2 Bm7 Gmaj9 Asus4"), per: 2 },
-  { id: "projects", prog: chords("Dadd9 Cadd9/D G/D Dadd9"), per: 2 },
-  { id: "disciplines", prog: chords("Dmaj9 F#m7 Gmaj9 A6"), per: 1 },
-  { id: "writing", prog: chords("Bm9 Gmaj7 Dmaj9/F# Asus4"), per: 1 },
-  { id: "film", prog: chords("Dm9 Dm/C Bbmaj7 A7b9"), per: 1 },
-  { id: "mind", prog: chords("Dmaj7#11 Eadd9/D Bm11 Dmaj7#11"), per: 2 },
-  { id: "contact", prog: chords("Em11 Bm11 Asus4 Bm11"), per: 2 },
+  { id: "launch", prog: chords("D5"), per: 4, bpm: 60 / 0.7 },
+  { id: "proof", prog: chords("Asus2 F#m7 Dmaj9/A Esus4"), per: 2, bpm: 118 },
+  { id: "projects", prog: chords("Gadd9 Fadd9/G C/G Gadd9"), per: 2, bpm: 98 },
+  { id: "disciplines", prog: chords("Emaj9 G#m7 Amaj9 B6"), per: 1, bpm: 76 },
+  { id: "writing", prog: chords("Bm9 Gmaj7 Dmaj9/F# Asus4"), per: 1, bpm: 62 },
+  { id: "film", prog: chords("Dm9 Dm/C Bbmaj7 A7b9"), per: 1, bpm: 52 },
+  { id: "mind", prog: chords("Aadd9 G6/A Em7/A Aadd9"), per: 2, bpm: 72 },
+  { id: "contact", prog: chords("Gm11 Dm11 Csus4 Dm11"), per: 2, bpm: 46 },
   // the night holds D with no third: the third arrives with the touch
-  { id: "connect", prog: chords("Dsus2"), per: 4 },
+  { id: "connect", prog: chords("Dsus2"), per: 4, bpm: 40 },
 ];
 const LAST = CHAPTERS.length - 1;
 
@@ -77,14 +90,14 @@ const MIX: Record<string, number[]> = {
 };
 
 // each world's own bed: instrument, register, width and motion
-const BEAT = 1 / 0.7; // beats a second
+const ENGINE = 98 / 60; // the machines' beats a second
 const BEDS: (Omit<PadOpts, "wave"> & { wave: string })[] = [
   // launch: an organ's open fifth, rising an octave at ignition
   { wave: "organ", voices: 2, lo: 38, hi: 57, detune: 5, cutoff: 900, level: 0.17, mode: "glide", glide: 3.5, lfo: 0.08 },
   // proof: thin glass, high and narrow
   { wave: "glass", voices: 3, lo: 67, hi: 86, detune: 3, cutoff: 4200, level: 0.08, mode: "swap", xfade: 1.6, lfo: 0.11 },
   // projects: a low warm engine that pumps in eighths
-  { wave: "warm", voices: 3, lo: 45, hi: 64, detune: 6, cutoff: 1100, level: 0.13, mode: "swap", xfade: 1.2, lfo: BEAT * 2, lfoDepth: 0.5 },
+  { wave: "warm", voices: 3, lo: 45, hi: 64, detune: 6, cutoff: 1100, level: 0.13, mode: "swap", xfade: 1.2, lfo: ENGINE * 2, lfoDepth: 0.5 },
   // disciplines: an open reed chord in the middle, wide
   { wave: "reed", voices: 4, lo: 55, hi: 74, detune: 9, cutoff: 1900, level: 0.13, mode: "swap", xfade: 2, lfo: 0.06 },
   // writing: soft air, dark and close
@@ -120,9 +133,9 @@ const THEME: Record<string, { bars: number; ev: Ev[] }> = {
       [3, 0, "E4", 0.75],
     ],
   },
-  // dusk: the four notes a long way off, each on its own, starting as the helmet
-  // clears, about 5.6 seconds after arrival. Then a long rest.
-  contact: { bars: 12, ev: [[2, 0, "D5", 0.8], [2, 12, "A5", 0.6], [3, 8, "G5", 0.6], [4, 4, "E5", 0.7]] },
+  // dusk: the four notes a long way off, each on its own, a bar after arrival.
+  // Then a long rest.
+  contact: { bars: 7, ev: [[1, 0, "D5", 0.8], [1, 12, "A5", 0.6], [2, 8, "G5", 0.6], [3, 4, "E5", 0.7]] },
 };
 // the bowed line in the landing, per bar of its progression
 const STRINGS: [string, number, number][][] = [
@@ -131,22 +144,28 @@ const STRINGS: [string, number, number][][] = [
   [["D3", 0, 8], ["F3", 8, 8]],
   [["C#3", 0, 16]],
 ];
-// the theme in Lydian, as four stars in the last of the sun
-const STAR_THEME = ["D5", "A5", "G#5", "E5"];
+// the theme as four stars in the last of the sun
+const STAR_THEME = ["D5", "A5", "G5", "E5"];
 // the chord of the touch: D major with a ninth, warm and open
 const TOUCH = chord("Dmaj9");
 
-// The planet's scenes, as the page plays them (scripts/journey/surface.ts and
-// figure.ts): each runs in real time and reports about every 1% of its length.
-const LEN = { exit: 7.77, helmet: 8, touch: 8 };
+// The planet's scenes, as the page reports them. Each one's progress follows the
+// scroll, both ways, and these are the moments along it.
+const SCENE_CHAPTER: Record<string, number> = { land: 5, exit: 6, helmet: 7, touch: 8 };
+// The landing's beats, as the page sends them: undock, braking, touchdown, the ramp opening.
+const BRAKING = 1, TOUCHDOWN = 2, RAMP = 3;
+// The touch: the finger meets the sapling.
+const CONTACT = 2;
 // Where each foot lands, walking out: six on the ramp, then four on the sand.
 const FOOTFALLS = [0.122, 0.22, 0.318, 0.416, 0.514, 0.611, 0.701, 0.792, 0.882, 1];
 const ON_RAMP = 6;
 const SAND_NOTES = ["D5", "A5", "G5", "E5"];
 const HELMET_RELEASE = 0.42, HELMET_LIFT = 0.56, HELMET_OFF = 0.68;
-const HAND_MOVES = 0.03, HAND_TOUCHES = 0.375; // 3 seconds of the 8
-// A note this soon is scheduled ahead, so it lands with the picture.
-const AHEAD = 0.1;
+const HAND_MOVES = 0.03;
+const smooth = (a: number, b: number, x: number) => {
+  const u = Math.max(0, Math.min(1, (x - a) / (b - a)));
+  return u * u * (3 - 2 * u);
+};
 
 // a soft mallet on a tuned bar: the voice of the words
 const WORD: ModalSpec = { ratios: [1, 2.0, 3.99], amps: [1, 0.16, 0.05], decays: [0.42, 0.14, 0.05], strike: 0.07, strikeCut: 1500 };
@@ -158,7 +177,7 @@ const letters = (w: string) => { let s = 0; for (let i = 0; i < w.length; i++) s
 
 export class Home extends Movement {
   readonly id = "home";
-  bpm = 60 / 0.7; // 85.7: a jump of 1.4 seconds is exactly two beats
+  bpm = 60 / 0.7;
   div = 4;
   beats = 4;
   protected bright = 1300;
@@ -167,11 +186,13 @@ export class Home extends Movement {
   protected tapHi = 88;
 
   private ch = 0;
+  private skyLevel = 1;
   private chBar = -1;
   private cur: Record<string, number> = {};
   private lastMix = -1;
   private vel = 0;
   private bassM = nm("D2");
+  private droneM = nm("D2");
 
   private breath!: Breath;
   private drone!: Mono;
@@ -204,13 +225,26 @@ export class Home extends Movement {
   private lastP = 0;
   private stopCurve = new Float32Array(24);
   // the ending
-  private end: { wind: GainNode; sand: GainNode; sing: GainNode; helmet: GainNode; breath: Breath; air: Breath; steps: GainNode; motif: GainNode } | null = null;
+  private end: { wind: GainNode; sand: GainNode; sing: GainNode; helmet: GainNode; breath: Breath; air: Breath; steps: GainNode; motif: GainNode; whistles: BiquadFilterNode[] } | null = null;
   private scene = "";
-  private fired = new Set<string>();
   private endP = 0;
+  private endV = 0;
+  private endDir = 1;
+  private endT = 0;
+  private endBeat = 0;
   private endDuck = 0;
-  private stepIdx = 0;
+  private lastStep = -1;
   private stepSide = 1;
+  // the lander's engine, and the timed landing used when the page sends no scene
+  private roarBus: GainNode | null = null;
+  private roarF!: BiquadFilterNode;
+  private roarG!: GainNode;
+  private roarTone!: GainNode;
+  private roarOsc: OscillatorNode[] = [];
+  private roarOn = 0;
+  private landSeen = false;
+  private fallback: GainNode | null = null;
+  private fallbackDown = -1;
   private treadS: Sampler | null = null;
   private touch: GainNode | null = null;
   private shimmer = 0;
@@ -330,6 +364,7 @@ export class Home extends Movement {
     this.paperBand.Q.value = 0.6;
     this.paperBand.connect(this.gain(dbg(-44), L("paper", 0.6, this.air)));
     this.setWorld(0, t);
+    this.st.deep.place(HOME_WORLDS[0], t, 0.4);
 
     this.mix(0, t);
     this.pluckS.warm([nm("D4"), nm("A4"), nm("G4"), nm("E4"), nm("F#4")]);
@@ -440,8 +475,15 @@ export class Home extends Movement {
   chapter(i: number) {
     if (!this.out || this.disposed || i === this.ch || i < 0 || i > LAST) return;
     this.ch = i;
+    if (this.skyLevel < 1) {
+      this.skyLevel = 1;
+      if (this.st.deep.owner === this) this.st.deep.leanOn({}, this.ac.currentTime, 1.5);
+    }
     this.arrivalBar = this.bar + 1;
-    this.setWorld(i, Math.max(this.nextT, this.ac.currentTime + 0.02));
+    const at = Math.max(this.nextT, this.ac.currentTime + 0.02);
+    this.setWorld(i, at);
+    this.bpm = CHAPTERS[i].bpm;
+    if (this.st.deep.owner === this) this.st.deep.place(HOME_WORLDS[i], at, 0.9);
     this.sections = [this.section(i)];
     this.sec = 0;
     this.secBar = -1;
@@ -456,6 +498,8 @@ export class Home extends Movement {
 
   protected onChord(c: Chord, t: number) {
     this.bassM = bassOf(c, this.bassM, 38, 50);
+    this.droneM = bassOf(c, this.droneM, 38, 49);
+    this.drone.glide(this.droneM, t, 1.2);
     if (CHAPTERS[this.ch].id === "launch") this.bass.release(t, 2);
   }
 
@@ -464,7 +508,7 @@ export class Home extends Movement {
     if (this.cur.breath > 0.02) this.breath.breathe(t, 1.1, 1.6, 0.28);
     // inside the helmet: faster on the walk, slower kneeling, held at the touch
     const e = this.end;
-    if (e && (this.scene === "exit" || (this.scene === "helmet" && !this.fired.has("seal")))) {
+    if (e && (this.scene === "exit" || (this.scene === "helmet" && this.endP < HELMET_RELEASE))) {
       e.breath.breathe(t, 1.0, 1.7, this.scene === "exit" ? 0.6 : 0.45);
     }
     const id = CHAPTERS[this.ch].id;
@@ -513,9 +557,9 @@ export class Home extends Movement {
     }
     // projects: interlocking machines, three against four, one each side
     if (c.hands > 0.02) {
-      if (pos % 3 === 0) this.frame.play(pos === 0 ? nm("D3") : nm("A2"), this.hum(t, 3), dbg(-13) * (pos === 0 ? 1 : 0.8), this.buses.hands);
-      if (pos % 4 === 2) this.stone.play(nm("A5"), this.hum(t, 3), dbg(-18), this.buses.handsR);
-      if (pos % 4 === 1) this.tap.play(nm("E6"), t, dbg(-31) * (0.8 + 0.2 * r()), this.buses.handsR);
+      if (pos % 3 === 0) this.frame.play(pos === 0 ? nm("G2") : nm("D3"), this.hum(t, 3), dbg(-13) * (pos === 0 ? 1 : 0.8), this.buses.hands);
+      if (pos % 4 === 2) this.stone.play(nm("D6"), this.hum(t, 3), dbg(-18), this.buses.handsR);
+      if (pos % 4 === 1) this.tap.play(nm("A6"), t, dbg(-31) * (0.8 + 0.2 * r()), this.buses.handsR);
     }
     // the quartet: one line passed around four corners
     if (c.quartet > 0.02 && pos % 2 === 0) {
@@ -588,12 +632,13 @@ export class Home extends Movement {
     const P = t0 + D / 2; // the peak
     const A = t0 + D; // arrival, a downbeat
     const fwd = dir >= 0;
-    if (from >= 6 && to < 6) this.leaveEnding(now);
+    if (from >= 5 && to < 5) this.leaveEnding(now);
     else {
       if (from === LAST && to < LAST && this.touch) this.letGo(now);
       // the next scene's first report sets its own levels; one already played sends none
       if (this.scene) {
         this.end?.helmet.gain.setTargetAtTime(0, now, 0.3);
+        this.quietEngine(now);
         this.scene = "";
       }
     }
@@ -604,9 +649,11 @@ export class Home extends Movement {
     this.jumpUntil = A + 0.02;
     this.mix(to, A - 0.02, 0.05);
     const c = CHAPTERS[to].prog[0];
+    const deep = this.st.deep;
     // a jump that starts inside another only moves the arrival
     if (now < this.gestureUntil) {
       this.land(c, A, 0.5, true);
+      deep.impact(A, 0.5, c);
       return;
     }
     this.gestureUntil = A;
@@ -667,6 +714,8 @@ export class Home extends Movement {
       lp.setTargetAtTime(700, P, stop / 2);
       tg.setTargetAtTime(0.0003, hush - 0.06, 0.02);
       thud(this, this.direct, P, 82, 30, D * 0.6, dbg(-15) * night);
+      // the floor falls with the tape
+      deep.swoop(P, A - P, false, night);
       // back to normal while nothing is heard
       dt.setValueAtTime(0, hush + 0.04);
     } else {
@@ -676,11 +725,15 @@ export class Home extends Movement {
       lp.setTargetAtTime(700, t0, D / 5);
       tg.setTargetAtTime(0.0003, hush - 0.06, 0.02);
       thud(this, this.direct, A - 0.3, 34, 74, 0.3, dbg(-17));
+      deep.swoop(t0, D, true, 0.7 * night);
     }
+    // something passes the ship: from ahead to behind going forward, the other way going back
+    this.st.pass(fwd ? 1 : -1, D, deep.where.pass, deep.rootOf(c), night, this.rng() < 0.5 ? -1 : 1);
+    deep.impact(A, (fwd ? 1 : 0.7) * night, c);
     lp.setValueAtTime(this.tapeOpen, A - 0.015);
     tg.setTargetAtTime(1, A, 0.01);
     this.land(c, A, (fwd ? 1 : 0.6) * night, fwd);
-    if (fwd && to === 5) this.descend(A);
+    if (fwd && to === 5 && !this.landSeen) this.descend(A);
   }
 
   /**
@@ -690,7 +743,10 @@ export class Home extends Movement {
    */
   private descend(A: number) {
     const ac = this.ac;
-    const down = A + 8 * 0.7;
+    const down = A + 5.6;
+    // the page may start reporting the landing itself: then all of this steps aside
+    const bus = (this.fallback = this.gain(1, this.front));
+    this.fallbackDown = down;
     const src = ac.createBufferSource();
     src.buffer = this.st.noise;
     src.loop = true;
@@ -705,22 +761,22 @@ export class Home extends Movement {
     g.gain.setValueAtTime(0, A);
     g.gain.setTargetAtTime(dbg(-22), A, 1.1);
     g.gain.setTargetAtTime(0, down - 0.05, 0.06);
-    src.connect(lp).connect(g).connect(this.front);
+    src.connect(lp).connect(g).connect(bus);
     g.connect(this.gain(0.3, this.frontVerb));
     src.start(A, 0.9);
     src.stop(down + 0.6);
     src.onended = () => { src.disconnect(); lp.disconnect(); g.disconnect(); };
     // the retro burn: a low open fifth that swells in the last seconds
-    lead(this, this.front, nm("D2"), A + 2.2, down - A - 2.3, dbg(-24), { wave: this.st.wave("bowed"), attack: 2.2, release: 0.15, cutoff: 600, detune: 12 });
-    lead(this, this.front, nm("A2"), A + 2.6, down - A - 2.7, dbg(-27), { wave: this.st.wave("bowed"), attack: 2.0, release: 0.15, cutoff: 600, detune: 12 });
+    lead(this, bus, nm("D2"), A + 2.2, down - A - 2.3, dbg(-24), { wave: this.st.wave("bowed"), attack: 2.2, release: 0.15, cutoff: 600, detune: 12 });
+    lead(this, bus, nm("A2"), A + 2.6, down - A - 2.7, dbg(-27), { wave: this.st.wave("bowed"), attack: 2.0, release: 0.15, cutoff: 600, detune: 12 });
     // touchdown: weight, dust, and the strings take over
-    thud(this, this.direct, down, 78, 32, 1.0, dbg(-15));
-    this.frame.play(nm("D2"), down, dbg(-17), this.front, { force: true });
-    this.dust(down);
+    thud(this, bus, down, 78, 32, 1.0, dbg(-15));
+    this.frame.play(nm("D2"), down, dbg(-17), bus, { force: true });
+    this.dust(down, bus);
   }
 
   /** Dust settling: a soft, darkening breath of noise. */
-  private dust(t: number) {
+  private dust(t: number, dest: AudioNode = this.front) {
     const ac = this.ac;
     const src = ac.createBufferSource();
     src.buffer = this.st.noise;
@@ -733,7 +789,7 @@ export class Home extends Movement {
     g.gain.setValueAtTime(0, t);
     g.gain.linearRampToValueAtTime(dbg(-27), t + 0.03);
     g.gain.setTargetAtTime(0, t + 0.1, 0.5);
-    src.connect(lp).connect(g).connect(this.front);
+    src.connect(lp).connect(g).connect(dest);
     src.start(t, 2.2);
     src.stop(t + 2.4);
     src.onended = () => { src.disconnect(); lp.disconnect(); g.disconnect(); };
@@ -797,7 +853,7 @@ export class Home extends Movement {
   private land(c: Chord, A: number, amt: number, drum: boolean) {
     const hit = dbg(-17) * amt;
     tonesIn(c, 67, 86).slice(0, 3).forEach((m, i) => this.star.play(m, A + i * 0.012, hit * (i ? 0.7 : 1), this.front));
-    if (drum) this.frame.play(nm("D3"), A, hit, this.front, { force: true });
+    if (drum) this.frame.play(bassOf(c, null, 45, 57), A, hit, this.front, { force: true });
     thud(this, this.front, A, 120, 55, 0.35, hit * 0.8);
     // a reversed bell pulls the ear into the hit
     const pull = tonesIn(c, 72, 86)[0];
@@ -822,6 +878,7 @@ export class Home extends Movement {
     // and C sharp, so the wind sings in the key
     const sing = this.gain(0, this.dry);
     sing.connect(this.gain(0.6, this.verbIn));
+    const whistles: BiquadFilterNode[] = [];
     for (const side of [-1, 1]) {
       const src = this.src(ac.createBufferSource());
       src.buffer = this.st.noise;
@@ -846,6 +903,7 @@ export class Home extends Movement {
       whistle.frequency.value = side < 0 ? mtof(nm("F#5")) : mtof(nm("C#6"));
       whistle.Q.value = 9;
       kr(whistle.frequency);
+      whistles.push(whistle);
       sweep.connect(this.gain(side < 0 ? 18 : 26, whistle.frequency));
       const wp = this.own(ac.createStereoPanner());
       wp.pan.value = -side * 0.6;
@@ -890,50 +948,105 @@ export class Home extends Movement {
     steps.connect(this.gain(0.25, this.frontVerb));
     // the theme comes from ahead, where the sapling is
     const motif = this.gain(1, this.point(0, 0.2, -3.2, 0.7, 1, false, true));
-    this.end = { wind, sand, sing, helmet, breath, air, steps, motif };
+    this.end = { wind, sand, sing, helmet, breath, air, steps, motif, whistles };
     this.treadS = new Sampler(this, (sr, f) => modal(sr, f, 0.5, TREAD, this.rng), 8, 4);
     this.treadS.warm([nm("A3"), nm("A3") - 1, nm("A3") - 2, nm("A3") - 3, nm("A3") - 4, nm("A3") - 5]);
   }
 
-  /** A scene on the planet: exit, helmet or touch, with its progress 0..1. */
-  ending(p: number, beat: number, scene?: string) {
+  /**
+   * The last chapter's sky turns over minutes. With the galaxy under the land the
+   * floor thins and darkens, and it fills again as the galaxy rises.
+   */
+  skyUp(up: number) {
+    if (!this.out || this.disposed || this.released || this.ch !== LAST || this.st.deep.owner !== this) return;
+    const u = Math.max(0, Math.min(1, up));
+    if (Math.abs(u - this.skyLevel) < 0.02) return;
+    this.skyLevel = u;
+    const dark = 1 - u;
+    this.st.deep.leanOn({ rumble: -6 * dark, growl: -5 * dark, harm: -3 * dark, cut: 1 - 0.35 * dark, hall: -2 * dark }, this.ac.currentTime, 4);
+  }
+
+  /**
+   * A scene on the planet, with its progress 0..1. Progress follows the scroll,
+   * so it can run either way and stop anywhere: everything below is decided by
+   * where it is now and where it was a moment ago.
+   */
+  ending(p: number, beat: number, scene?: string, dir = 0, vel = 0) {
     if (!this.out || this.disposed || this.released) return;
     const t = this.ac.currentTime;
     if (!this.end) this.buildEnding(t);
     p = Math.max(0, Math.min(1, p || 0));
-    beat = Math.max(0, Math.min(3, Math.round(beat || 0)));
-    const sc = scene === "exit" || scene === "helmet" || scene === "touch" ? scene : this.ch === 6 ? "exit" : this.ch === 7 ? "helmet" : "touch";
-    // a scene the page starts over, after the visitor went back, plays over too
-    if (sc !== this.scene || p < this.endP - 0.25) this.enterScene(sc, t);
+    const sc = scene && scene in SCENE_CHAPTER ? scene : this.ch === 5 ? "land" : this.ch === 6 ? "exit" : this.ch === 7 ? "helmet" : "touch";
+    const going0 = dir || 1;
+    // a scene that has just run out at its far end is not one being entered
+    if (sc !== this.scene && ((going0 < 0 && p <= 0.002) || (going0 > 0 && p >= 0.998))) return;
+    // a scene plays in its own world, whichever event got here first
+    if (SCENE_CHAPTER[sc] !== this.ch) {
+      this.chapter(SCENE_CHAPTER[sc]);
+      this.lastP = SCENE_CHAPTER[sc];
+      this.mix(this.lastP, t, 0.5);
+    }
+    const entering = sc !== this.scene;
+    const going = dir || (entering ? 1 : Math.sign(p - this.endP) || this.endDir);
+    // coming in going back up, it starts from the end of the scene
+    const prev = entering ? (going < 0 ? 1 : 0) : this.endP;
+    const prevBeat = entering ? (going < 0 ? 9 : -1) : this.endBeat;
+    if (entering) this.enterScene(sc, t, p);
+    // the page's velocity is in its own unit, so also read the speed off the progress
+    const seen = entering ? 0 : Math.abs(p - prev) / Math.max(0.01, t - this.endT);
+    this.endV = 1 - Math.exp(-Math.max(Math.abs(vel), seen) * 2.2);
+    this.endT = t;
     this.endP = p;
-    if (sc === "exit") this.exitScene(p, t);
-    else if (sc === "helmet") this.helmetScene(p, beat, t);
-    else this.touchScene(p, beat, t);
+    this.endDir = going;
+    this.endBeat = beat;
+    if (sc === "land") this.landScene(p, beat, prevBeat, t);
+    else if (sc === "exit") this.exitScene(p, prev, t);
+    else if (sc === "helmet") this.helmetScene(p, prev, t);
+    else this.touchScene(p, prev, beat, prevBeat, t);
   }
 
-  /** When a moment in a scene is due, if it comes before the page reports again. */
-  private due(at: number, p: number, len: number, t: number): number {
-    const left = (at - p) * len;
-    return left > AHEAD ? -1 : t + Math.max(0.005, left);
-  }
-
-  private once(key: string, when: boolean, f: () => void) {
-    if (when && !this.fired.has(key)) {
-      this.fired.add(key);
-      f();
+  /** The visitor stopped, so the engine falls to its idle. */
+  tick(until: number) {
+    super.tick(until);
+    if (this.disposed || !this.out) return;
+    const now = this.ac.currentTime;
+    // the timed landing: its low hit is only committed just before it lands
+    if (this.fallbackDown > 0 && now > this.fallbackDown - 0.6) {
+      this.st.deep.impact(this.fallbackDown, 1);
+      this.fallbackDown = -1;
+    }
+    if (this.scene === "land" && this.endV > 0 && now - this.endT > 0.18) {
+      this.endV = 0;
+      this.engine(now);
     }
   }
 
-  private enterScene(sc: string, t: number) {
+  private enterScene(sc: string, t: number, p: number) {
     const e = this.end!;
+    const was = this.scene;
     this.scene = sc;
-    this.fired.clear();
-    this.endP = 0;
-    this.stepIdx = 0;
+    this.endP = p;
     if (this.touch) this.letGo(t);
+    if (was === "land" || sc === "land") this.quietEngine(t);
     const set = (g: GainNode, v: number, tau = 0.6) => g.gain.setTargetAtTime(v, t, tau);
-    if (sc === "exit") {
+    if (sc === "land") {
+      // only the engine and the strings: the air of the planet comes later
+      set(e.wind, 0);
+      set(e.sing, 0);
+      set(e.sand, 0);
+      set(e.helmet, 0, 0.2);
+      this.endDuck = 0;
+      this.landSeen = true;
+      this.buildEngine(t);
+      // the timed landing steps aside
+      if (this.fallback) {
+        this.fallback.gain.setTargetAtTime(0, t, 0.08);
+        this.fallback = null;
+        this.fallbackDown = -1;
+      }
+    } else if (sc === "exit") {
       // the last of the sun: a wind that sings, a helmet still on
+      this.windSings("F#5", "C#6", t);
       set(e.wind, dbg(-28));
       set(e.sing, dbg(-32));
       set(e.sand, dbg(-42));
@@ -941,14 +1054,14 @@ export class Home extends Movement {
       this.endDuck = 0.3;
     } else if (sc === "helmet") {
       // muffled at first, as heard from inside the helmet
+      this.windSings("D5", "A5", t);
       set(e.wind, dbg(-29));
       set(e.sing, dbg(-36));
       set(e.sand, dbg(-44));
-      set(e.helmet, dbg(-20));
-      this.tapeLow.frequency.setTargetAtTime(650, t, 0.12);
       this.endDuck = 0;
     } else {
       // the night: everything hushes, and only a thread of the wind still sings
+      this.windSings("A5", "D6", t);
       set(e.wind, dbg(-37), 1);
       set(e.sing, dbg(-44), 1);
       set(e.sand, 0, 1);
@@ -959,15 +1072,121 @@ export class Home extends Movement {
     this.mix(this.lastP, t, 0.5);
   }
 
-  private exitScene(p: number, t: number) {
-    // six soft steps on the metal ramp, then four on the sand, each in time with the foot
-    while (this.stepIdx < FOOTFALLS.length) {
-      const left = (FOOTFALLS[this.stepIdx] - p) * LEN.exit;
-      if (left > AHEAD) break;
-      const i = this.stepIdx++;
-      // a step the page went past long ago stays unplayed, so they never pile up
-      if (left < -0.25) continue;
-      const at = t + Math.max(0.005, left);
+  /** The wind sings in the key of whichever world it is blowing through. */
+  private windSings(a: string, b: string, t: number) {
+    const w = this.end!.whistles;
+    w[0].frequency.setTargetAtTime(mtof(nm(a)), t, 1.2);
+    w[1].frequency.setTargetAtTime(mtof(nm(b)), t, 1.2);
+  }
+
+  // ---- the landing ----------------------------------------------------------
+  private buildEngine(t: number) {
+    if (this.roarBus) return;
+    const ac = this.ac;
+    const bus = (this.roarBus = this.gain(1, this.front));
+    bus.connect(this.gain(0.3, this.frontVerb));
+    this.roarF = this.own(ac.createBiquadFilter());
+    this.roarF.type = "lowpass";
+    this.roarF.Q.value = 0.9;
+    this.roarF.frequency.value = 200;
+    kr(this.roarF.frequency);
+    this.roarG = this.gain(0, bus);
+    this.roarF.connect(this.roarG);
+    const src = this.src(ac.createBufferSource());
+    src.buffer = this.st.noise;
+    src.loop = true;
+    src.connect(this.roarF);
+    src.start(t, 0.9);
+    // the burn: a low open fifth with a hard edge
+    this.roarTone = this.gain(0, bus);
+    const lp = this.own(ac.createBiquadFilter());
+    lp.type = "lowpass";
+    lp.frequency.value = 620;
+    lp.connect(this.roarTone);
+    const notes = this.phone ? [nm("D2")] : [nm("D2"), nm("A2")];
+    for (const m of notes) {
+      const o = this.src(ac.createOscillator());
+      kr(o.frequency, o.detune);
+      o.setPeriodicWave(this.st.wave("bowed"));
+      o.frequency.value = mtof(m);
+      o.connect(lp);
+      o.start(t);
+      this.roarOsc.push(o);
+    }
+  }
+
+  /** Set the engine from where the lander is and how fast it is moving. */
+  private engine(t: number) {
+    if (!this.roarBus) return;
+    const v = this.endV, up = this.endDir < 0, on = this.roarOn;
+    // it hangs on a low idle when the visitor stops, and going up it strains
+    const level = on * (0.34 + 0.66 * v) * (up ? 1.2 : 1);
+    this.roarG.gain.setTargetAtTime(dbg(-18) * level, t, v > 0 ? 0.1 : 0.3);
+    this.roarF.frequency.setTargetAtTime(170 + (up ? 1600 : 950) * on * (0.2 + 0.8 * v), t, 0.12);
+    this.roarTone.gain.setTargetAtTime(dbg(-23) * level, t, v > 0 ? 0.12 : 0.35);
+    const bend = up ? 90 * v : -45 * v;
+    for (const o of this.roarOsc) o.detune.setTargetAtTime(bend, t, 0.15);
+    this.st.deep.leanOn({ sub: 5 * level, rumble: 15 * level, growl: 9 * level, harm: 5 * level, cut: 1 + 1.4 * level }, t, 0.16);
+  }
+
+  private quietEngine(t: number) {
+    if (!this.roarBus) return;
+    this.roarOn = 0;
+    this.roarG.gain.setTargetAtTime(0, t, 0.25);
+    this.roarTone.gain.setTargetAtTime(0, t, 0.25);
+    this.st.deep.leanOn({}, t, 0.5);
+  }
+
+  private landScene(p: number, beat: number, prevBeat: number, t: number) {
+    // the engine lights near the top, leans in when braking, and cuts at the ground
+    this.roarOn = beat >= TOUCHDOWN ? 0 : smooth(0, 0.04, p) * (beat >= BRAKING ? 1 : 0.62);
+    this.engine(t);
+    if (prevBeat < TOUCHDOWN && beat >= TOUCHDOWN) this.touchdown(t);
+    else if (prevBeat >= TOUCHDOWN && prevBeat <= RAMP && beat < TOUCHDOWN) this.liftOff(t);
+    if ((prevBeat < RAMP && beat >= RAMP) || (prevBeat === RAMP && beat < RAMP)) this.ramp(t);
+  }
+
+  /** The ramp, down or back up: hydraulics, and the weight of it coming to rest. */
+  private ramp(t: number) {
+    this.servo(t);
+    this.servo(t + 0.24);
+    this.treadS?.play(nm("A2"), t + 0.5, dbg(-26), this.front, { force: true });
+    this.st.deep.hit(t + 0.5, dbg(-14), { oct: 1, from: 1.9, sweep: 0.07, dur: 0.5 });
+  }
+
+  /** Weight, dust, a frame ringing, and the strings take over. */
+  private touchdown(t: number) {
+    this.st.deep.impact(t + 0.005, 1.05);
+    thud(this, this.direct, t, 78, 32, 1.0, dbg(-15));
+    this.frame.play(nm("D2"), t, dbg(-17), this.front, { force: true });
+    this.dust(t);
+  }
+
+  /** The other way: the engine catches, and the ground lets go. */
+  private liftOff(t: number) {
+    this.st.deep.impact(t + 0.005, 1);
+    this.frame.play(nm("D2"), t, dbg(-19), this.front, { force: true });
+    rush(this, this.front, t, 1.1, true, dbg(-20));
+    this.dust(t);
+  }
+
+  // ---- the walk -------------------------------------------------------------
+  /** A foot lands when progress crosses it, either way, and never when it is still. */
+  private exitScene(p: number, prev: number, t: number) {
+    if (p === prev) return;
+    const lo = Math.min(p, prev), hi = Math.max(p, prev);
+    let crossed: number[] = [];
+    FOOTFALLS.forEach((f, i) => {
+      if (f > lo && f <= hi) crossed.push(i);
+    });
+    if (!crossed.length) return;
+    if (p < prev) crossed.reverse();
+    // a fast scrub walks fast, but the steps never pile up
+    crossed = crossed.slice(-2);
+    crossed.forEach((i, k) => {
+      const at = t + 0.004 + k * 0.08;
+      if (at - this.lastStep < 0.075) return;
+      this.lastStep = at;
       if (i < ON_RAMP) {
         this.rampStep(at, i);
         if (i % 2 === 1) this.servo(at + 0.06);
@@ -976,20 +1195,21 @@ export class Home extends Movement {
         // far ahead, the four notes, one for each step on the sand
         this.keys.play(nm(SAND_NOTES[i - ON_RAMP]), at, dbg(-28), this.end!.motif, { force: true });
       }
-    }
+    });
   }
 
-  private helmetScene(p: number, beat: number, t: number) {
-    const release = beat >= 1 ? t + 0.005 : this.due(HELMET_RELEASE, p, LEN.helmet, t);
-    this.once("seal", release >= 0, () => this.seal(release));
-    // as the helmet lifts clear, the world opens, muffled to full and wide
-    if (this.fired.has("seal")) {
-      const x = Math.max(0, Math.min(1, (p - HELMET_RELEASE) / (HELMET_OFF - HELMET_RELEASE)));
-      this.tapeLow.frequency.setTargetAtTime(650 * Math.pow(this.tapeOpen / 650, x * x), t, 0.15);
-    }
+  // ---- the helmet -----------------------------------------------------------
+  private helmetScene(p: number, prev: number, t: number) {
+    const e = this.end!;
+    // how open the world is depends only on how far the helmet has come
+    const x = Math.max(0, Math.min(1, (p - HELMET_RELEASE) / (HELMET_OFF - HELMET_RELEASE)));
+    const open = p < HELMET_RELEASE ? 650 : p >= HELMET_OFF ? this.tapeOpen : 650 * Math.pow(this.tapeOpen / 650, x * x);
+    this.tapeLow.frequency.setTargetAtTime(open, t, 0.12);
+    e.helmet.gain.setTargetAtTime(p < HELMET_RELEASE ? dbg(-20) : 0, t, 0.15);
+    if (prev < HELMET_RELEASE && p >= HELMET_RELEASE) this.seal(t + 0.004);
+    else if (prev >= HELMET_RELEASE && p < HELMET_RELEASE) this.reseal(t + 0.004);
     // the first breath of open air starts as it lifts, and it is cold
-    this.once("air", beat >= 2 || p >= HELMET_LIFT + 0.04, () => this.end!.air.breathe(t + 0.02, 2.2, 3.2, 0.3));
-    this.once("open", beat >= 3 || p >= HELMET_OFF, () => this.tapeLow.frequency.setTargetAtTime(this.tapeOpen, t, 0.3));
+    if (prev < HELMET_LIFT + 0.04 && p >= HELMET_LIFT + 0.04) e.air.breathe(t + 0.02, 2.2, 3.2, 0.3);
   }
 
   /** The helmet seal releases: a hiss of pressure, a click, then open air. */
@@ -1011,19 +1231,54 @@ export class Home extends Movement {
     src.stop(t + 1.4);
     src.onended = () => { src.disconnect(); hp.disconnect(); g.disconnect(); };
     this.tap.play(nm("A4"), t, dbg(-26), this.direct);
+    this.st.deep.hit(t, dbg(-17), { oct: 1, from: 2.1, sweep: 0.05, dur: 0.3 });
     e.helmet.gain.setTargetAtTime(0, t, 0.15);
     e.sing.gain.setTargetAtTime(dbg(-31), t + 0.5, 1.2);
   }
 
-  private touchScene(p: number, beat: number, t: number) {
+  /** The helmet going back on: the air drawn in, the collar locks, and the world closes. */
+  private reseal(t: number) {
+    const ac = this.ac;
+    const e = this.end!;
+    const lock = t + 0.32;
+    const src = ac.createBufferSource();
+    src.buffer = this.st.noise;
+    const bp = ac.createBiquadFilter();
+    bp.type = "bandpass";
+    bp.Q.value = 0.7;
+    kr(bp.frequency);
+    bp.frequency.setValueAtTime(1300, t);
+    bp.frequency.exponentialRampToValueAtTime(3300, lock);
+    const g = ac.createGain();
+    g.gain.setValueAtTime(0, t);
+    g.gain.linearRampToValueAtTime(dbg(-27), lock - 0.01);
+    g.gain.setTargetAtTime(0, lock, 0.012);
+    src.connect(bp).connect(g).connect(this.direct);
+    src.start(t, 1.1);
+    src.stop(lock + 0.2);
+    src.onended = () => { src.disconnect(); bp.disconnect(); g.disconnect(); };
+    this.tap.play(nm("A3"), lock, dbg(-24), this.direct);
+    this.st.deep.hit(lock, dbg(-15), { oct: 1, from: 1.9, sweep: 0.05, dur: 0.34 });
+    e.sing.gain.setTargetAtTime(dbg(-36), t, 0.4);
+  }
+
+  // ---- the touch ------------------------------------------------------------
+  private touchScene(p: number, prev: number, beat: number, prevBeat: number, t: number) {
     // the arm starts to come in: cloth on sand, and the line waits on its last note
-    this.once("kneel", beat >= 1 || p >= HAND_MOVES, () => {
+    if (prev < HAND_MOVES && p >= HAND_MOVES) {
       this.sandStep(t, 0.45);
       this.keys.play(nm("E5"), t + 0.5, dbg(-29), this.end!.motif, { force: true });
-    });
-    // the hand meets the sapling, three seconds in, as the finger comes to rest
-    const touch = beat >= 2 ? t + 0.005 : this.due(HAND_TOUCHES, p, LEN.touch, t);
-    this.once("touch", touch >= 0, () => this.touchPlant(touch));
+    }
+    // the hand meets the sapling as the finger comes to rest
+    if (prevBeat < CONTACT && beat >= CONTACT) this.touchPlant(t + 0.005);
+    else if (prevBeat >= CONTACT && beat < CONTACT && this.touch) this.fallAway(t + 0.005);
+  }
+
+  /** Going back: the warm moment falls away. */
+  private fallAway(t: number) {
+    this.letGo(t);
+    this.st.deep.swoop(t, 1.8, false, 0.7);
+    this.keys.play(nm("A4"), t, dbg(-33), this.end!.motif, { force: true });
   }
 
   /** The suit's servos: a short mechanical whirr that rises and settles. */
@@ -1065,6 +1320,8 @@ export class Home extends Movement {
     if (src) src.addEventListener("ended", () => pan.disconnect());
     else pan.disconnect();
     thud(this, e.steps, t + 0.004, 82, 52, 0.08, dbg(-40));
+    // metal, and a suit's weight on it
+    this.st.deep.hit(t, dbg(-22), { oct: 1, from: 1.6, sweep: 0.04, dur: 0.17 });
   }
 
   /** A soft step on sand: a short breath of grit and a low press. */
@@ -1098,6 +1355,7 @@ export class Home extends Movement {
     };
     // and the weight: a soft low press
     thud(this, e.steps, t + 0.008, 90, 55, 0.09, lvl * 0.9);
+    this.st.deep.hit(t + 0.006, dbg(-27) * amt, { oct: 1, from: 1.3, sweep: 0.03, dur: 0.14 });
   }
 
   private touchPlant(t: number) {
@@ -1110,6 +1368,10 @@ export class Home extends Movement {
     // the whole room moves to the chord and stays there
     this.holdHarmony = true;
     this.harmony(TOUCH, t);
+    // and the floor comes up under it, warm: the only time at night there is any
+    const deep = this.st.deep;
+    deep.leanOn({ sub: 10, growl: 36, rumble: 6, harm: 18, cut: 1 }, t, 0.8);
+    deep.hit(t, dbg(-13), { from: 1.5, sweep: 0.35, dur: 2.6 });
     // struck, rolled from the bottom
     ns("D2 A2 F#3 C#4 E4 A4").forEach((m, i) => this.keys.play(m, t + i * 0.028, dbg(i < 2 ? -33 : -35), g, { force: true }));
     // warm strings swell under it and hold: the first low notes and the first third in a long while
@@ -1131,11 +1393,13 @@ export class Home extends Movement {
     this.shimmer = 0;
     this.holdHarmony = false;
     this.harmony(CHAPTERS[this.ch].prog[0], t);
+    this.st.deep.leanOn({}, t, 0.9);
   }
 
   private leaveEnding(t: number) {
     const e = this.end;
     if (this.touch) this.letGo(t);
+    this.quietEngine(t);
     this.scene = "";
     this.endP = 0;
     this.endDuck = 0;

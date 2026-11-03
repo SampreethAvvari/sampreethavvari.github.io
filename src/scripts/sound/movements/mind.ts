@@ -8,10 +8,17 @@
 // forever without getting higher (octaves fading in at the bottom as they
 // fade out at the top). The room has no walls and no echoes, only a long
 // slow bloom.
+//
+// The map is the main thing here, so the music stays calm and follows it. Flying
+// is this page's scroll: a rush of air and an opening filter that settle when the
+// visitor stops. Toward the centre of the map the bed gets fuller and warmer.
+// Choosing a star plays a tone of its kind and the world leans in for a moment. A
+// pointer crossing the map touches stars very softly, and filters thin or fill
+// the stars a little.
 import { Movement } from "../movement";
 import { chords, tonesIn, bassOf, type Chord } from "../theory";
-import { Pad, Mono, Sampler, lead } from "../instruments";
-import { bell, BELLS, dbg, nm, kr, mtof, type RoomSpec } from "../dsp";
+import { Pad, Mono, Sampler, Flutter, lead } from "../instruments";
+import { bell, BELLS, dbg, nm, kr, mtof, hashStr, type RoomSpec } from "../dsp";
 
 const A = chords("Bmaj9#11 C#9/B G#m9 F#maj9");
 const B = chords("D#m7 G#m9 C#9 Bmaj9#11");
@@ -44,6 +51,13 @@ export class Mind extends Movement {
   private shep: { o: OscillatorNode; g: GainNode; end: number; base: number }[] = [];
   private shepBus!: GainNode;
   private window = new Float32Array(64);
+  private rushG: GainNode | null = null;
+  private rushF!: BiquadFilterNode;
+  private near = 0;
+  private sparkle = 1;
+  private filters = new Set<string>();
+  private soft = new Flutter(0.14, 0.05, 0.7, 0.8, 4);
+  private touch!: GainNode;
 
   /** Stars are written for the far distance they ring at. */
   themeLevel(): number {
@@ -108,6 +122,93 @@ export class Mind extends Movement {
     this.tap = new Sampler(this, (sr, f) => bell(sr, f, 0.7, BELLS.spark, r), 12, 5);
     this.grains = this.star;
     this.star.warm([nm("B5"), nm("D#6"), nm("F#5"), nm("A#5"), nm("C#6")]);
+    this.touch = this.bus(1, 0.6, undefined, true);
+  }
+
+  // ---- the map ---------------------------------------------------------------
+  pageEvent(name: string, d: Record<string, unknown>, x: number) {
+    if (!this.out || this.disposed) return;
+    if (name === "mind:fly") this.fly(Number(d.i) || 0);
+    else if (name === "mind:depth") this.depth(Number(d.near) || 0);
+    else if (name === "mind:focus") this.focusOn(String(d.kind ?? ""), String(d.id ?? ""));
+    else if (name === "mind:hover") this.brushStar(String(d.kind ?? ""), String(d.id ?? ""), x);
+    else if (name === "mind:filter") this.filter(String(d.kind ?? ""), !!d.on);
+  }
+
+  /** Flying: air and light with the speed, gone again when the visitor stops. */
+  private fly(i: number) {
+    const ac = this.ac;
+    const t = ac.currentTime;
+    if (!this.rushG) {
+      const src = this.src(ac.createBufferSource());
+      src.buffer = this.st.noise;
+      src.loop = true;
+      this.rushF = this.own(ac.createBiquadFilter());
+      this.rushF.type = "bandpass";
+      this.rushF.Q.value = 0.7;
+      kr(this.rushF.frequency);
+      this.rushG = this.gain(0, this.air);
+      src.connect(this.rushF).connect(this.rushG);
+      src.start(t, 2.1);
+    }
+    this.rushG.gain.setTargetAtTime(dbg(-27) * Math.pow(i, 1.3), t, i > 0 ? 0.2 : 0.55);
+    this.rushF.frequency.setTargetAtTime(420 + 2600 * i, t, 0.2);
+    this.scrollI = i;
+    this.brighten(t, i > 0 ? 0.2 : 0.6);
+    this.shepBus.gain.setTargetAtTime(Math.max(this.lv("shepard"), 0.4) * (1 + i), t, 0.4);
+  }
+
+  /** Nearer the centre: a fuller bed, warmer on top, a closer room, more floor. */
+  private depth(near: number) {
+    const n = (this.near = Math.max(0, Math.min(1, near)));
+    const t = this.ac.currentTime;
+    this.bed.gain.setTargetAtTime(0.8 + 0.5 * n, t, 0.5);
+    this.bright = 3400 - 1500 * n;
+    this.brighten(t, 0.6);
+    this.verbOut.gain.setTargetAtTime(this.wet * (1 - 0.22 * n), t, 0.8);
+    this.st.deep.leanOn({ sub: 5 * n, growl: 14 * n, rumble: 5 * n, harm: 6 * n, hall: -3 * n }, t, 0.7);
+  }
+
+  private kindTone(kind: string, lo: number, hi: number, id = ""): number {
+    const tones = tonesIn(this.chord, lo, hi);
+    const k = hashStr(kind + id);
+    return tones.length ? tones[k % tones.length] : lo;
+  }
+
+  /** A star or a planet chosen: a tone of its kind, and the world leans in. */
+  private focusOn(kind: string, id: string) {
+    const t = this.ac.currentTime + 0.01;
+    const m = this.kindTone(kind, 72, 86);
+    this.star.play(m, t, dbg(-21), this.touch, { force: true });
+    this.star.play(this.kindTone(kind + id, 79, 91), t + 0.09, dbg(-29), this.touch, { force: true });
+    lead(this, this.touch, m - 24, t, 1.1, dbg(-29), { wave: this.st.wave("air"), attack: 0.08, release: 1, cutoff: 1500 });
+    this.st.deep.hit(t, dbg(-19), { oct: 1, from: 1.3, sweep: 0.12, dur: 0.9 });
+    const g = this.bed.gain, f = this.bedLow.frequency;
+    const base = 0.8 + 0.5 * this.near;
+    g.setTargetAtTime(base * 0.62, t, 0.12);
+    g.setTargetAtTime(base, t + 1.3, 0.7);
+    f.setTargetAtTime(this.brightNow() * 0.5, t, 0.12);
+    f.setTargetAtTime(this.brightNow(), t + 1.3, 0.8);
+  }
+
+  /** The pointer crossing the map: barely there, and it thins out as it goes. */
+  private brushStar(kind: string, id: string, x: number) {
+    const now = this.ac.currentTime;
+    const v = this.soft.next(now);
+    if (v <= 0) return;
+    this.place(this.fxPan, x, 0.4, now);
+    this.tap.play(this.kindTone(kind, 79, 93, id), now + 0.005, dbg(-34) * v, this.fx, { dur: 0.28, force: true });
+  }
+
+  /** A filter: a small change in how many stars there are, and two quiet notes. */
+  private filter(kind: string, on: boolean) {
+    if (on) this.filters.add(kind);
+    else this.filters.delete(kind);
+    this.sparkle = Math.max(0.5, 1 - 0.1 * this.filters.size);
+    const t = this.ac.currentTime + 0.01;
+    const m = this.kindTone(kind, 74, 86);
+    this.tap.play(on ? m : m + 5, t, dbg(-31), this.fx, { dur: 0.3, force: true });
+    this.tap.play(on ? m + 5 : m, t + 0.09, dbg(-33), this.fx, { dur: 0.35, force: true });
   }
 
   /** Keep each rising sine scheduled a cycle ahead. */
@@ -175,13 +276,14 @@ export class Mind extends Movement {
 
   protected step(_pos: number, t: number) {
     const L = this.S.layers;
-    if (L.stars && this.rng() < 0.2 * L.stars) {
+    if (L.stars && this.rng() < 0.2 * L.stars * this.sparkle) {
       const tones = tonesIn(this.chord, 74, 91);
       if (tones.length) this.starAt(this.pick(tones), this.hum(t, 120), dbg(-11) * L.stars * (0.5 + 0.5 * this.rng()));
     }
   }
 
   protected onScroll(i: number, _dir: number, _dt: number, t: number) {
+    if (i <= 0 && !this.scrollI) return;
     // scrolling brightens the endless rise, like stars streaming past
     this.shepBus.gain.setTargetAtTime(Math.max(this.lv("shepard"), 0.4) * (1 + 1.5 * i), t, 0.3);
   }

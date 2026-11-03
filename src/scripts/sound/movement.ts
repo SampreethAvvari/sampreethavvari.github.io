@@ -279,6 +279,8 @@ export abstract class Movement {
   // ---- life ---------------------------------------------------------------
   start(t: number, fadeIn: number, from: number[] | null) {
     const ac = this.ac;
+    // the floor is the studio's: it slides under this piece and follows its chords
+    this.st.deep.enter(this, this.id, t, fadeIn, !!from);
     this.out = this.gain(0, this.st.bus);
     this.out.gain.setValueAtTime(0, t);
     this.out.gain.setTargetAtTime(this.trim, t, fadeIn / 3.5);
@@ -334,6 +336,9 @@ export abstract class Movement {
     this.fxPan.connect(this.gain(0.3, this.frontVerb));
     this.air = this.phone ? this.bus(0.8, 0.6, undefined, true) : this.orbit(2.4, 31, 0.9, 0.5, 0.65, 0.8, true, true);
     this.atmo = this.bus(0.6, 1.1);
+    // the long hall takes the far shimmer and a little of what is struck in front
+    this.atmo.connect(this.gain(0.5, this.st.hallIn));
+    this.front.connect(this.gain(dbg(-11), this.st.hallIn));
 
     const r = this.rng;
     this.tap = new Sampler(this, (sr, f) => modal(sr, f, 0.22, MODES.key, r), 14, 6);
@@ -390,6 +395,7 @@ export abstract class Movement {
     while (this.nextT < until && guard++ < 96) {
       const pos = this.stepI % this.spb;
       if (pos === 0) this.barStart(this.nextT);
+      if (this.st.deep.owner === this) this.st.deep.step(pos / this.div, this.nextT);
       this.step(pos, this.nextT);
       this.stepI++;
       this.nextT += sd;
@@ -447,6 +453,7 @@ export abstract class Movement {
       const prev = from ? fit(from, p.n) : p.notes.length ? p.notes : null;
       p.set(voice(c, p.n, prev, p.o.lo, p.o.hi), t);
     }
+    if (this.st.deep.owner === this) this.st.deep.chord(c, t);
     this.onChord(c, t);
   }
 
@@ -461,6 +468,23 @@ export abstract class Movement {
     const A = t + 1.1;
     if (m !== undefined) this.grains.play(m, A, dbg(-24), this.air, { rev: true, force: true });
     tonesIn(this.chord, 64, 84).slice(0, 3).forEach((n, i) => this.grains.play(n, A + i * 0.03, dbg(-26) * (i ? 0.75 : 1), this.front, { force: true }));
+    // something goes past on the way in, and the new floor lands
+    const deep = this.st.deep;
+    deep.impact(A, 0.8);
+    this.st.pass(1, A - t + 0.2, deep.where.pass, deep.note, 0.9);
+  }
+
+  /**
+   * A move between places on the page, D seconds long: the note climbs or falls,
+   * something passes the listener, the world goes quiet, and the low end lands
+   * on the chord it is arriving at.
+   */
+  protected transit(D: number, dir: number, size = 1, c?: Chord) {
+    const t = this.ac.currentTime + 0.01;
+    const deep = this.st.deep;
+    deep.swoop(t, D, dir >= 0, size);
+    deep.impact(t + D, size, c);
+    this.st.pass(dir >= 0 ? 1 : -1, Math.max(0.5, D), deep.where.pass, deep.note, size);
   }
 
   /**
@@ -579,8 +603,9 @@ export abstract class Movement {
   flow(_i: number) {}
   /** Home: the jump between two worlds; speed in chapters a second, duration in seconds. */
   jump(_from: number, _to: number, _dir: number, _speed: number, _duration?: number) {}
-  /** Home: a scene on the planet (exit, helmet, touch), progress 0..1 and its beat. */
-  ending(_p: number, _beat: number, _scene?: string) {}
+  /** Home: a scene on the planet (land, exit, helmet, touch). Progress follows the scroll both ways. */
+  skyUp(_up: number) {}
+  ending(_p: number, _beat: number, _scene?: string, _dir?: number, _vel?: number) {}
   /** Writing: a hero takes the screen, a transition between heroes. */
   heroFocus(_d: { index?: number; slug: string; accent?: string }) {}
   heroTransition(_d: { kind?: string; direction?: string; from?: number; to?: number; duration?: number }) {}

@@ -346,6 +346,7 @@ onPage("film-reel", (signal) => {
     }
     paintInk(to);
     announce(to);
+    window.dispatchEvent(new CustomEvent("film:cut", { detail: { from, to, direction: dir } }));
     const g = shader();
     const ready = g ? await waitFor(() => b.ready() && a.ready(), 300, signal) : false;
     if (signal.aborted) return;

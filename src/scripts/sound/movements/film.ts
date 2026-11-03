@@ -111,6 +111,11 @@ export class Film extends Movement {
         const lvl = dbg(-17);
         thud(this, this.heart, at, 98, 56, 0.16, lvl);
         thud(this, this.heart, at + 0.27, 86, 50, 0.13, lvl * 0.62);
+        // the floor of the theatre moves with it
+        if (this.st.deep.owner === this) {
+          this.st.deep.pulseAt(at, 1);
+          this.st.deep.pulseAt(at + 0.27, 0.6);
+        }
         this.nextBeat += 60 / (52 + 26 * this.scrollI);
       }
     } else this.nextBeat = t + this.stepDur;
@@ -122,6 +127,13 @@ export class Film extends Movement {
         });
       }
     }
+  }
+
+  /** A cut between films in the reel: the floor drops, the bell answers from far back. */
+  pageEvent(name: string, d: Record<string, unknown>) {
+    if (!this.out || this.disposed || name !== "film:cut") return;
+    this.transit(0.7, Number(d.direction) >= 0 ? 1 : -1, 0.8);
+    this.toll.play(nm("C4"), this.ac.currentTime + 0.72, dbg(-20), this.tollBus, { force: true });
   }
 
   protected onClick(t: number, x: number) {

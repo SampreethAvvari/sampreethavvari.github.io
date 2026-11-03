@@ -8,9 +8,9 @@
 // E flat major in a small warm room, and before each lesson a phrase plays
 // backwards, swelling in, like a memory rewinding.
 import { Movement, type Section } from "../movement";
-import { chords, deg, MODES as SCALE, bassOf, type Chord } from "../theory";
-import { Pad, Mono, Sampler } from "../instruments";
-import { bell, BELLS, dbg, nm, type RoomSpec } from "../dsp";
+import { chords, deg, MODES as SCALE, bassOf, tonesIn, type Chord } from "../theory";
+import { Pad, Mono, Sampler, Flutter, ringAt, rush } from "../instruments";
+import { bell, BELLS, dbg, nm, hashStr, type RoomSpec } from "../dsp";
 
 const A = chords("Ebmaj9 Cm9 Abmaj9 Bb69");
 const B = chords("Fm9 Bb9sus4 Gm7 Cm9");
@@ -39,6 +39,8 @@ export class Teaching extends Movement {
   private rhythm = RHYTHMS[0];
   private slip = -1; // index of the wrong note, if the student slips
   private lesson = 0;
+  private sweep = new Flutter();
+  private touch!: GainNode;
 
   protected room(): RoomSpec {
     return { rt60: 1.1, length: 1.6, predelay: 0.008, early: 10, earlyLevel: 0.5, hi: 5500, lo: 1400, damp: 0.25, lowCut: 110, bloom: 0, width: 0.8 };
@@ -64,6 +66,7 @@ export class Teaching extends Movement {
     this.box = new Sampler(this, (sr, f) => bell(sr, f, 1.6, BELLS.tine, r), 24, 10, "lesson");
     this.tap = new Sampler(this, (sr, f) => bell(sr, f, 0.45, BELLS.tine, r), 12, 5);
     this.grains = this.box;
+    this.touch = this.bus(1, 0.3, undefined, true);
     this.newPhrase();
     this.celesta.warm(this.phrase.map((d) => this.note(d)));
   }
@@ -135,6 +138,35 @@ export class Teaching extends Movement {
       // together: the student a third above, now with every note right
       if (L.together) student(deg(nm("Eb4"), SCALE.major, this.majorDegree(m) + 2), this.hum(t + 0.01, 10), v * 0.8);
       else student(m, this.hum(t + 0.015, 10), v * 0.85);
+    }
+  }
+
+  // ---- the page --------------------------------------------------------------
+  pageEvent(name: string, d: Record<string, unknown>, x: number) {
+    if (!this.out || this.disposed) return;
+    const t = this.ac.currentTime + 0.01;
+    if (name === "teaching:section") {
+      // a new section of a guide is a new lesson: the form moves on and the chord is struck
+      const n = this.sections.length - 1;
+      this.sec = 1 + (Math.max(0, Math.round(Number(d.index) || 0)) % n);
+      this.secBar = -1;
+      this.alignBar();
+      this.arrivalBar = this.bar + 1;
+      const tones = tonesIn(this.S.prog[0], 72, 88);
+      tones.slice(0, 3).forEach((m, i) => ringAt(this, this.tap, this.touch, m, t + i * 0.04, dbg(-26) * (i ? 0.75 : 1), -0.3 + i * 0.3, 1));
+      this.st.deep.hit(t, dbg(-19), { oct: 1, from: 1.5, sweep: 0.05, dur: 0.4 });
+    } else if (name === "teaching:hover") {
+      const v = this.sweep.next(t);
+      if (v <= 0) return;
+      const tones = tonesIn(this.chord, 72, 91);
+      if (tones.length) ringAt(this, this.tap, this.touch, tones[hashStr(String(d.id ?? d.kind ?? "")) % tones.length], t, dbg(-30) * v, (x - 0.5) * 1.4, 0.3);
+    } else if (name === "teaching:page") {
+      // a page turning, a little higher the further through the guide
+      const u = Math.max(0, Math.min(1, (Number(d.page) || 0) / Math.max(1, Number(d.total) || 1)));
+      rush(this, this.touch, t, 0.28, true, dbg(-26));
+      const tones = tonesIn(this.chord, 67, 88);
+      if (tones.length) ringAt(this, this.box, this.touch, tones[Math.floor(u * (tones.length - 1))], t + 0.2, dbg(-27), 0.3, 0.8);
+      this.st.deep.hit(t + 0.2, dbg(-21), { oct: 1, from: 1.3, sweep: 0.04, dur: 0.22 });
     }
   }
 

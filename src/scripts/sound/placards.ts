@@ -18,8 +18,8 @@ export const PLACARDS: Record<MovementId, Placard> = {
     subtitle: "Nine worlds, each with its own instruments · a landing at sunset, a night sky, one touch",
     lines: [
       "A ship crosses nine worlds, one for each chapter, and every scroll is a jump to the next. Each world sounds like itself: ignition, glass that counts, machines, four voices, felt piano.",
-      "The music runs at 85.7 beats a minute, so each 1.4 second jump is exactly two beats: a swell, a tape stop, a breath of silence, then the new world lands on the downbeat.",
-      "The landing comes down at sunset on low strings and a heartbeat, and touches down eight beats later.",
+      "Each jump takes 1.4 seconds: a swell, a tape stop, a breath of silence, then the new world lands on the downbeat, in its own key and at its own pace.",
+      "The landing comes down at sunset on low strings and a heartbeat, with the engine burning until it touches down.",
       "From there the sky falls to full night, and the music gets sparser and colder with it. The explorer walks down a metal ramp onto sand, in soft steps, while a wind sings in the key.",
       "The helmet comes off. You hear it from inside first, muffled, until the seal breaks and thin, cold air opens up.",
       "Four notes, D A G E, have followed you since launch. Under the Milky Way almost nothing plays, so when the hand touches the sapling, the D major chord is the one warm moment.",
@@ -32,7 +32,7 @@ export const PLACARDS: Record<MovementId, Placard> = {
     lines: [
       "Before anything else, people made tools for each other. These projects are tools too, used every day at a dental practice.",
       "The system is the home key: a low drone like a fire, wood and stone struck by hand, and a plucked motif that gets one note closer to right on every pass.",
-      "Each world has its own colour. Mirror answers every glass note with its reflection in the other ear. Ring turns slowly around you. Listener is two voices over a drum.",
+      "Each world has its own key and pace. Mirror answers every glass note with its reflection in the other ear. Ring turns slowly around you. Listener is two voices over a drum.",
       "Disk is a deep bowed pull. Geode breaks one chord across the room. Arch sweeps over 32 stones, up and over. Nets catches sparks on a climbing line. Comet has a long rushing tail.",
       "Flying between worlds, the rhythm holds and the new chord slides into tune, then lands on arrival. The belt at the end is sparse and rocky.",
       "Scroll inside a world and a swell of its chord follows your speed. Touch a part or a body and it answers with one note.",
@@ -114,6 +114,17 @@ export const PLACARDS: Record<MovementId, Placard> = {
       "Each stop has its own chord, and the page comes apart in a flutter as the camera flies to the next one.",
       "Find a sheet and it drifts. Pick it and it snaps. Turn it and it rustles over in zero gravity.",
       "Sweep across the skills and they flutter like loose slips.",
+    ],
+  },
+  demos: {
+    number: "Interlude",
+    title: "The Working Model",
+    subtitle: "A clocked bass, soft keys, one line that climbs a step at a time · tight, dry, running",
+    lines: [
+      "A demo is a model running in front of you, so the music runs too.",
+      "F sharp minor on a steady clock, in a small dry room, with a bass that ticks over on the eighths.",
+      "Each step of a demo moves the line up one note and lands on the floor.",
+      "Touch anything and it answers with a key of the current chord.",
     ],
   },
   teaching: {

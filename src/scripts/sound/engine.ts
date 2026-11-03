@@ -1,6 +1,7 @@
 // Site sound: a suite in eight movements, one per tab, synthesised in the
 // browser (no audio files). Off until the visitor turns it on: the loading
-// screen asks once per visit, the nav toggle changes it any time.
+// screen asks once per visit, the nav toggle changes it any time. While it is
+// off, this file is all that is loaded and nothing here listens to the pointer.
 //
 // The page talks to it through window events, so the loader and the React
 // nav need no import:
@@ -10,7 +11,10 @@
 //   journey:progress detail { progress, velocity }
 //   journey:words    detail { words, items, wordStagger, itemStagger, delay }
 //   journey:jump     detail { from, to, direction, duration }  a jump between worlds starts
-//   journey:ending   detail { scene, progress, beat }  a scene on the planet: exit, helmet, touch
+//   journey:ending   detail { scene, progress, beat, direction, velocity }  a scene on the
+//                    planet, following the scroll both ways: land, exit, helmet, touch
+//   journey:interact detail { id, kind, x, y, strength }  hover, press, drag, release
+//   journey:sky      detail { angle, up }  the night sky turning: how much of the galaxy is above the land
 //   writing:hero     detail { index, slug, accent } an article hero takes the screen
 //   writing:transition detail { kind: "hero", direction, from, to, duration }
 //                    or { kind: "dive", direction: "in" | "out", tag }
@@ -36,11 +40,17 @@
 //   post:hover       detail { kind, id, note }
 //   post:figure      detail { id, action }
 //   post:transition  detail { direction: "out" | "in", slug }
+//   film:cut         detail { from, to, direction }
+//   mind:fly         detail { speed }    mind:depth detail { near }
+//   mind:focus       detail { id, kind } mind:hover detail { id, kind }   mind:filter detail { kind, on }
+//   teaching:section detail { index, id } teaching:hover detail { kind, id } teaching:page detail { page, total }
+//   demos:section, demos:hover, demos:step detail { index, total }
 //   astro:after-swap (document)            a new page is in: crossfade to its movement
 //
-// This file stays small: the instruments and movements load on first use.
+// This file stays small: the instruments, the movements and everything that
+// answers the visitor (touch.ts) load on first use.
 import { movementFor } from "./ids";
-import type { Movement, Studio } from "./suite";
+import type { Movement, Studio, Touch, Flight } from "./suite";
 
 type Suite = typeof import("./suite");
 
@@ -62,11 +72,9 @@ const leaving: { m: Movement; until: number }[] = [];
 let ticker = 0;
 
 // the home flight, remembered so a movement built later can catch up
-let jChapter = 0;
-let jP = 0;
-let jV = 0;
-let journeySeen = false;
-let jCount = 9;
+const flight: Flight = { chapter: 0, p: 0, v: 0, seen: false, t: 0, count: 9 };
+let touch: Touch | null = null;
+const touches = { hover: 0, click: 0, sky: 0, page: 0 };
 let wordsTimer = 0;
 // the architecture page and film clips, also remembered
 let archFocus: { slug: string; title?: string; discipline?: string } | null = null;
@@ -74,11 +82,11 @@ let archFlow = 0;
 let resumeStop = -1;
 let projectsStage = -1;
 let workStop: { index: number; id: string } | null = null;
-let linkWait = 0;
 let duckAmount = 0;
 
 const loadSuite = () => (suiteP ??= import("./suite").then((s) => (suite = s)));
 const pageId = () => movementFor(document.body?.dataset.tone, location.pathname);
+const px = () => touch?.px ?? 0.5;
 
 function readPref(): boolean {
   try { return localStorage.getItem(PREF) === "on"; } catch { return false; }
@@ -119,7 +127,16 @@ async function boot() {
   if (!studio) {
     studio = new suite.Studio(ctx, phone);
     if (duckAmount) studio.duck(duckAmount);
+    touch = new suite.Touch({
+      movement: () => current,
+      id: () => currentId,
+      studio: () => studio,
+      running: () => on && ctx?.state === "running",
+      flight,
+      counts: touches,
+    });
   }
+  if (on) touch?.attach();
   if (on && !current) play(pageId(), false);
 }
 
@@ -143,8 +160,8 @@ function play(id: string, handover: boolean) {
   current = m;
   currentId = id;
   if (id === "home") {
-    m.chapter(jChapter);
-    m.journey(jP, 0);
+    m.chapter(flight.chapter);
+    m.journey(flight.p, 0);
   }
   if (id === "resume" && resumeStop >= 0) m.pageEvent("resume:stop", { index: resumeStop, quiet: true }, 0.5);
   if (id === "projects" && projectsStage >= 0) m.pageEvent("projects:world", { index: projectsStage, quiet: true }, 0.5);
@@ -180,6 +197,7 @@ function start(seconds: number) {
 }
 
 function stop() {
+  touch?.detach();
   studio?.fade(0, 0.6);
   setTimeout(() => { if (!on && ctx) ctx.suspend().catch(() => {}); }, 700);
 }
@@ -192,134 +210,6 @@ export function setSound(v: boolean) {
   announce();
 }
 
-// ---- the visitor ---------------------------------------------------------------
-
-let px = 0.5, py = 0.5, pt = 0, speed = 0, lastM = 0, yawNow = 0;
-let jT = 0;
-const touches = { hover: 0, click: 0, sky: 0, page: 0 };
-let lastY = 0, vS = 0, lastFrame = 0, raf = 0, lastHover = 0;
-
-function kick() {
-  if (!raf && on && current) {
-    lastFrame = performance.now();
-    raf = requestAnimationFrame(frame);
-  }
-}
-
-/** One frame of pointer and scroll, only while something is moving. */
-function frame(now: number) {
-  raf = 0;
-  if (!on || !current || !ctx || ctx.state !== "running") return;
-  const dt = Math.min(0.1, Math.max(0.001, (now - lastFrame) / 1000));
-  lastFrame = now;
-  const h = Math.max(1, innerHeight);
-
-  // scroll: speed in screens per second, smoothed; jumps (anchors, a new page) ignored
-  const y = scrollY;
-  let dy = (y - lastY) / h;
-  lastY = y;
-  if (Math.abs(dy) > 1.2) dy = 0;
-  vS = vS * 0.8 + (dy / dt) * 0.2;
-  if (Math.abs(vS) < 0.01) vS = 0;
-  const intensity = 1 - Math.exp(-Math.abs(vS) / 2.2);
-  const span = Math.max(1, document.documentElement.scrollHeight - h);
-  const pageP = Math.min(1, Math.max(0, y / span));
-  if (intensity > 0.003 || dy !== 0) current.scroll(intensity, vS >= 0 ? 1 : -1, pageP, dy, dt);
-  // home without the journey's own events: the page position is the flight
-  if (currentId === "home" && !journeySeen) {
-    const p = pageP * (jCount - 1);
-    current.journey(p, vS * (jCount - 1) * (h / span));
-    const c = Math.round(p);
-    if (c !== jChapter) {
-      jChapter = c;
-      current.chapter(c);
-    }
-  }
-
-  // the flight stopped: let the scroll swell fall quiet
-  if (currentId === "home" && journeySeen && jV !== 0 && now - jT > 160) {
-    jV = 0;
-    current.journey(jP, 0);
-  }
-
-  // pointer: speed opens the sound, height tilts it, x turns the listener's head
-  speed *= Math.pow(0.04, dt);
-  const m = Math.min(1, speed / 1.8);
-  if (Math.abs(m - lastM) > 0.004 || (m === 0 && lastM !== 0)) {
-    lastM = m < 0.004 ? 0 : m;
-    current.pointer(lastM, px, py);
-  }
-  const yaw = (px - 0.5) * 0.6;
-  yawNow += (yaw - yawNow) * Math.min(1, dt * 4);
-  studio?.yaw(yawNow);
-
-  if (intensity > 0.003 || lastM > 0 || Math.abs(yaw - yawNow) > 0.003) raf = requestAnimationFrame(frame);
-}
-
-function onMove(e: PointerEvent) {
-  const t = performance.now();
-  const x = e.clientX / Math.max(1, innerWidth), y = e.clientY / Math.max(1, innerHeight);
-  if (pt) {
-    const v = Math.hypot((x - px) * innerWidth, (y - py) * innerHeight) / Math.max(8, t - pt);
-    speed = speed * 0.7 + v * 0.3;
-  }
-  px = x;
-  py = y;
-  pt = t;
-  kick();
-}
-
-const INTERACTIVE = "a, button, [role=button], summary, label, input, select, textarea";
-// Elements that announce their own hover with a page event, so the generic tap
-// would only double them: the writing sky, the post rail, sky and figures, the
-// resume's sheets, sections, keys and chips, the parts on the star system, the
-// cards, chips, doors and shelf on the ring station.
-const OWN_HOVER = ".ax-s, .ax-slot, .ax-c, .pw-c, .ww-card, .ww-chip, .ww-door, .ww-shelf a, #post-toc a, .pfx-sky-star, .pfx-day-star, .pfx-zp-run, [data-rw] [data-cell], [data-rw] [data-section], [data-rw] [data-jump], [data-rw] [data-key], [data-rw] [data-group]";
-// A click that plays its own sound in place of the generic tap.
-const OWN_CLICK = "[data-rw] [data-cell]";
-
-function onDown(e: PointerEvent) {
-  if (!on || !current) return;
-  const el = (e.target as Element | null)?.closest?.(INTERACTIVE);
-  if (el && !el.closest(OWN_CLICK)) {
-    touches.click++;
-    current.click(e.clientX / Math.max(1, innerWidth), e.clientY / Math.max(1, innerHeight));
-  }
-}
-function onKeyClick(e: MouseEvent) {
-  // keyboard activation (Enter or Space) arrives as a click with no detail
-  if (!on || !current || e.detail !== 0) return;
-  const el = (e.target as Element | null)?.closest?.(INTERACTIVE);
-  if (!el) return;
-  const r = el.getBoundingClientRect();
-  current.click((r.left + r.width / 2) / Math.max(1, innerWidth), (r.top + r.height / 2) / Math.max(1, innerHeight));
-}
-function onOver(e: PointerEvent) {
-  // a button held down is a drag: passing over a link on the way is not a hover
-  if (!on || !current || e.pointerType !== "mouse" || e.buttons) return;
-  const el = (e.target as Element | null)?.closest?.("a, button, [role=button], summary, .journey-rail, [data-sound-hover]");
-  if (!el || (e.relatedTarget instanceof Node && el.contains(e.relatedTarget))) return;
-  if (el.closest(OWN_HOVER)) return;
-  const t = performance.now();
-  if (t - lastHover < 110) return;
-  lastHover = t;
-  const x = e.clientX / Math.max(1, innerWidth), y = e.clientY / Math.max(1, innerHeight);
-  // A post's internal link may show a card and speak for itself about 110 ms
-  // later, and only some have one, so wait to see before tapping.
-  clearTimeout(linkWait);
-  if (el.matches("a[href^='/']") && el.closest("#post-prose-body")) {
-    linkWait = window.setTimeout(() => {
-      if (el.matches(":hover")) {
-        touches.hover++;
-        current?.hover(x, y);
-      }
-    }, 150);
-    return;
-  }
-  touches.hover++;
-  current.hover(x, y);
-}
-
 // ---- mount -------------------------------------------------------------------
 
 export function mountSound() {
@@ -329,12 +219,12 @@ export function mountSound() {
   if (import.meta.env.DEV) {
     (window as unknown as { __sound: unknown }).__sound = {
       movement: () => current,
-      state: () => ({ ctx: ctx?.state ?? null, on, current: currentId, leaving: leaving.length, chapter: jChapter, reading: !!(current as unknown as { reading?: boolean } | null)?.reading, scrollI: (current as unknown as { scrollI?: number } | null)?.scrollI ?? 0, stage: (current as unknown as { stage?: number } | null)?.stage ?? -1, ...touches }),
+      studio: () => studio,
+      state: () => ({ ctx: ctx?.state ?? null, on, current: currentId, leaving: leaving.length, chapter: flight.chapter, reading: !!(current as unknown as { reading?: boolean } | null)?.reading, scrollI: (current as unknown as { scrollI?: number } | null)?.scrollI ?? 0, stage: (current as unknown as { stage?: number } | null)?.stage ?? -1, ...touches }),
     };
   }
   on = readPref();
   announce();
-  lastY = scrollY;
   window.addEventListener("sound:set", (e) => setSound(!!(e as CustomEvent).detail));
 
   // A choice remembered from an earlier visit: browsers only let sound start
@@ -357,38 +247,35 @@ export function mountSound() {
     kinds.forEach((k) => addEventListener(k, wake, true));
   }
 
-  addEventListener("pointermove", onMove, { passive: true });
-  addEventListener("pointerdown", onDown, { passive: true });
-  addEventListener("pointerover", onOver, { passive: true });
-  document.addEventListener("click", onKeyClick);
-  addEventListener("scroll", kick, { passive: true });
-
   // the home flight
   addEventListener("journey:chapter", (e) => {
     const d = (e as CustomEvent).detail || {};
-    jChapter = Number(d.index) || 0;
-    if (currentId === "home") current?.chapter(jChapter);
+    flight.chapter = Number(d.index) || 0;
+    if (currentId === "home") current?.chapter(flight.chapter);
   });
   addEventListener("journey:progress", (e) => {
     const d = (e as CustomEvent).detail || {};
-    journeySeen = true;
-    jT = performance.now();
-    if (Number(d.count) > 1) jCount = Number(d.count);
-    jP = Number(d.progress) || 0;
-    jV = Number(d.velocity) || 0;
-    if (currentId === "home") current?.journey(jP, jV);
+    flight.seen = true;
+    flight.t = performance.now();
+    if (Number(d.count) > 1) flight.count = Number(d.count);
+    flight.p = Number(d.progress) || 0;
+    flight.v = Number(d.velocity) || 0;
+    if (currentId === "home") current?.journey(flight.p, flight.v);
   });
   addEventListener("journey:jump", (e) => {
     const d = (e as CustomEvent).detail || {};
     if (currentId !== "home" || !current) return;
     const to = Number(d.to);
     if (!Number.isFinite(to)) return;
-    jChapter = to;
-    current.jump(Number(d.from) || 0, to, Number(d.direction) || 1, jV, Number(d.duration) / 1000 || 1.4);
+    flight.chapter = to;
+    current.jump(Number(d.from) || 0, to, Number(d.direction) || 1, flight.v, Number(d.duration) / 1000 || 1.4);
+  });
+  addEventListener("journey:sky", (e) => {
+    if (currentId === "home") current?.skyUp(Number((e as CustomEvent).detail?.up) || 0);
   });
   addEventListener("journey:ending", (e) => {
     const d = (e as CustomEvent).detail || {};
-    if (currentId === "home") current?.ending(Number(d.progress) || 0, Number(d.beat) || 0, typeof d.scene === "string" ? d.scene : undefined);
+    if (currentId === "home") current?.ending(Number(d.progress) || 0, Number(d.beat) || 0, typeof d.scene === "string" ? d.scene : undefined, Number(d.direction) || 0, Number(d.velocity) || 0);
   });
   // the writing tab's heroes
   addEventListener("writing:hero", (e) => {
@@ -414,7 +301,7 @@ export function mountSound() {
     if (t - lastSky < (d.kind === "star" ? 55 : 110)) return;
     lastSky = t;
     touches.sky++;
-    current?.skyHover(d, px);
+    current?.skyHover(d, px());
   });
   addEventListener("journey:words", (e) => {
     const d = (e as CustomEvent).detail;
@@ -423,7 +310,7 @@ export function mountSound() {
     current.hush();
     // only the chapter the visitor settles on speaks: when they are flying
     // through, wait a moment and speak only if nothing newer came
-    if (Math.abs(jV) < 0.9) current.words(d, 0);
+    if (Math.abs(flight.v) < 0.9) current.words(d, 0);
     else wordsTimer = window.setTimeout(() => currentId === "home" && current?.words(d, 0.25), 250);
   });
 
@@ -435,7 +322,7 @@ export function mountSound() {
       if (name === "projects:world") projectsStage = Number(d.index);
       if (currentId === "projects") {
         if (name === "projects:hover") touches.page++;
-        current?.pageEvent(name, d, px);
+        current?.pageEvent(name, d, px());
       }
     });
   }
@@ -448,7 +335,7 @@ export function mountSound() {
       if (name === "work:stop") workStop = { index: Number(d.index), id: String(d.id) };
       if (currentId === "work") {
         if (name === "work:hover") touches.page++;
-        current?.pageEvent(name, d, px);
+        current?.pageEvent(name, d, px());
       }
     });
   }
@@ -461,7 +348,7 @@ export function mountSound() {
       if (name === "resume:stop") resumeStop = Number(d.index);
       if (currentId === "resume") {
         if (name === "resume:hover" || name === "resume:sheet") touches.page++;
-        current?.pageEvent(name, d, px);
+        current?.pageEvent(name, d, px());
       }
     });
   }
@@ -470,9 +357,9 @@ export function mountSound() {
       const d = (e as CustomEvent).detail;
       if (!d) return;
       // the link spoke for itself, so the waiting tap is not needed
-      if (name === "post:hover" && d.kind === "link") clearTimeout(linkWait);
+      if (name === "post:hover" && d.kind === "link") touch?.spoke();
       if (name === "post:hover") touches.page++;
-      current?.post(name, d, px);
+      current?.post(name, d, px());
     });
   }
 
@@ -495,18 +382,16 @@ export function mountSound() {
   // a new page came in without a reload: hand over to its movement
   document.addEventListener("astro:after-swap", () => {
     announce(); // the swap resets attributes on <html>
-    lastY = scrollY;
-    vS = 0;
-    journeySeen = false;
+    touch?.swapped();
+    flight.seen = false;
     clearTimeout(wordsTimer);
     const id = pageId();
-    if (id !== "home") { jChapter = 0; jP = 0; }
+    if (id !== "home") { flight.chapter = 0; flight.p = 0; }
     archFocus = null;
     archFlow = 0;
     resumeStop = -1;
     projectsStage = -1;
     workStop = null;
-    clearTimeout(linkWait);
     if (duckAmount) { duckAmount = 0; studio?.duck(0); }
     if (!on || !ctx || !studio) {
       // silent: drop the old movement; the right one is built when sound comes on

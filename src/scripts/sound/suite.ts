@@ -11,9 +11,11 @@ import { Film } from "./movements/film";
 import { Mind } from "./movements/mind";
 import { Teaching } from "./movements/teaching";
 import { Resume } from "./movements/resume";
+import { Demos } from "./movements/demos";
+import { Touch, type Flight } from "./touch";
 
-export { Studio };
-export type { Movement };
+export { Studio, Touch };
+export type { Movement, Flight };
 
 const MOVEMENTS: Record<string, new (st: Studio, seed?: number) => Movement> = {
   home: Home,
@@ -25,6 +27,7 @@ const MOVEMENTS: Record<string, new (st: Studio, seed?: number) => Movement> = {
   mind: Mind,
   teaching: Teaching,
   resume: Resume,
+  demos: Demos,
 };
 
 export function createMovement(id: string, st: Studio, seed?: number): Movement {

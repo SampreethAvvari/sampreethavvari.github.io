@@ -20,6 +20,9 @@
 // bell in the dark, and every year forward adds a player, a harmony of its own
 // and more of the time, so Now, in the home key, is the fullest moment.
 //
+// No stop shares a key, a tempo or a floor with the one before it (places.ts has
+// each stop's deep layer).
+//
 // The layers are the same as the home flight: a bed for each stop, a flight that
 // lands on arrival, a theme that plays whole for two bars and then comes and
 // goes, and interaction in front. Scrolling or dragging turns the ring: a low
@@ -29,6 +32,7 @@ import { Movement, type Section } from "../movement";
 import { chords, deg, MODES as SCALE, snap, bassOf, tonesIn, type Chord } from "../theory";
 import { Pad, Mono, Sampler, Flutter, lead, thud, ringAt, rush, type PadOpts } from "../instruments";
 import { pluck, modal, MODES, fm, WAVES, dbg, kr, mtof, nm, type ModalSpec, type RoomSpec } from "../dsp";
+import { WORK_STOPS } from "../places";
 
 const RHYTHMS = [
   [0, 3, 6, 8, 10, 12, 14],
@@ -48,6 +52,7 @@ interface Stop {
   id: string;
   prog: Chord[];
   per: number;
+  bpm: number;
   tonic: string; // the key the line moves in
   crafts: number[]; // who plays the line
   fill: number; // how much of the line sounds
@@ -64,33 +69,33 @@ interface Stop {
 
 const STOPS: Stop[] = [
   // the hub
-  { id: "station", prog: chords("Fmaj9 Dm9 Bbmaj9 C9sus4"), per: 1, tonic: "F4", crafts: [SE, FDE], fill: 0.7, density: 0.38, fig: "", theme: dbg(-3), arrive: dbg(-27), bass: 0.6, bright: 2400, wet: 0.7,
+  { id: "station", prog: chords("Fmaj9 Dm9 Bbmaj9 C9sus4"), per: 1, bpm: 80, tonic: "F4", crafts: [SE, FDE], fill: 0.7, density: 0.38, fig: "", theme: dbg(-3), arrive: dbg(-27), bass: 0.6, bright: 2400, wet: 0.7,
     bed: { wave: "warm", voices: 4, lo: 48, hi: 72, detune: 6, cutoff: 1500, level: 0.11, mode: "swap", xfade: 1.6, lfo: 0.07 } },
   // the bays
-  { id: "aie", prog: chords("Am9 Fmaj9"), per: 2, tonic: "C4", crafts: [AIE], fill: 0.4, density: 0.5, fig: "stream", theme: dbg(-10), arrive: dbg(-27), bass: 0.5, bright: 3000, wet: 0.6,
+  { id: "aie", prog: chords("C#m9 Amaj9"), per: 2, bpm: 92, tonic: "E4", crafts: [AIE], fill: 0.4, density: 0.5, fig: "stream", theme: dbg(-10), arrive: dbg(-27), bass: 0.5, bright: 3000, wet: 0.6,
     bed: { wave: "air", voices: 4, lo: 60, hi: 79, detune: 5, cutoff: 2400, level: 0.1, mode: "glide", glide: 2, lfo: 0.06 } },
-  { id: "fde", prog: chords("Cadd9 G6/B Am7 Fmaj9"), per: 1, tonic: "C4", crafts: [FDE], fill: 0.6, density: 0.5, fig: "boom", theme: dbg(-5), arrive: dbg(-27), bass: 0.7, bright: 2200, wet: 0.9,
+  { id: "fde", prog: chords("Bbadd9 F6/A Gm7 Ebmaj9"), per: 1, bpm: 72, tonic: "Bb3", crafts: [FDE], fill: 0.6, density: 0.5, fig: "boom", theme: dbg(-5), arrive: dbg(-27), bass: 0.7, bright: 2200, wet: 0.9,
     bed: { wave: "warm", voices: 3, lo: 50, hi: 69, detune: 6, cutoff: 1300, level: 0.1, mode: "swap", xfade: 1.6, lfo: 0.07 } },
-  { id: "mle", prog: chords("Dm9 Bbmaj7#11"), per: 2, tonic: "F4", crafts: [MLE], fill: 0.5, density: 0.5, fig: "rings", theme: dbg(-13), arrive: dbg(-27), bass: 0.5, bright: 2400, wet: 0.6,
+  { id: "mle", prog: chords("Ebm9 Bmaj7#11"), per: 2, bpm: 100, tonic: "Gb4", crafts: [MLE], fill: 0.5, density: 0.5, fig: "rings", theme: dbg(-13), arrive: dbg(-27), bass: 0.5, bright: 2400, wet: 0.6,
     bed: { wave: "reed", voices: 3, lo: 52, hi: 71, detune: 4, cutoff: 1500, level: 0.085, mode: "glide", glide: 2, lfo: 0.3, lfoDepth: 0.25 } },
-  { id: "sde", prog: chords("Bbmaj9 Gm9 Dm9 C9sus4"), per: 1, tonic: "F4", crafts: [SE], fill: 0.4, density: 0.5, fig: "wave", theme: dbg(-10), arrive: dbg(-27), bass: 0.7, bright: 1800, wet: 0.45,
+  { id: "sde", prog: chords("Cm9 Abmaj9 Ebmaj9 Bb9sus4"), per: 1, bpm: 64, tonic: "Eb4", crafts: [SE], fill: 0.4, density: 0.5, fig: "wave", theme: dbg(-10), arrive: dbg(-27), bass: 0.7, bright: 1800, wet: 0.45,
     bed: { wave: "bowed", voices: 3, lo: 41, hi: 62, detune: 7, cutoff: 800, level: 0.13, mode: "swap", xfade: 1.6, lfo: 0.05 } },
   // the whole ring: everyone, at a distance
-  { id: "trail", prog: chords("Am7 Bbmaj7#11 Gm9 C9sus4"), per: 1, tonic: "F4", crafts: [SE, FDE, AIE, MLE], fill: 0.85, density: 0.5, fig: "", theme: dbg(-8), arrive: dbg(-27), bass: 0.7, bright: 2600, wet: 1,
+  { id: "trail", prog: chords("Em7 Fmaj7#11 Dm9 G9sus4"), per: 1, bpm: 76, tonic: "C4", crafts: [SE, FDE, AIE, MLE], fill: 0.85, density: 0.5, fig: "", theme: dbg(-8), arrive: dbg(-27), bass: 0.7, bright: 2600, wet: 1,
     bed: { wave: "choir", voices: 4, lo: 57, hi: 81, detune: 10, cutoff: 2300, level: 0.09, mode: "glide", glide: 2.5, lfo: 0.05 } },
   // the years: a player and a harmony of their own, and more of the time, each one forward
-  { id: "t2017", prog: chords("Dm9 Bbmaj7"), per: 4, tonic: "F4", crafts: [AIE], fill: 0.3, density: 0.3, fig: "eclipse", theme: dbg(-13.5), arrive: dbg(-32), bass: 0, bright: 1100, wet: 1.15,
+  { id: "t2017", prog: chords("Bbm9 Gbmaj7"), per: 4, bpm: 48, tonic: "Db4", crafts: [AIE], fill: 0.3, density: 0.3, fig: "eclipse", theme: dbg(-13.5), arrive: dbg(-32), bass: 0, bright: 1100, wet: 1.15,
     bed: { wave: "air", voices: 3, lo: 50, hi: 69, detune: 4, cutoff: 1000, level: 0.055, mode: "swap", xfade: 3.5, lfo: 0.03 } },
-  { id: "t2021", prog: chords("Am9 Cmaj9"), per: 2, tonic: "C4", crafts: [AIE, SE], fill: 0.45, density: 0.38, fig: "tuned", theme: dbg(-10.5), arrive: dbg(-30), bass: 0.3, bright: 2800, wet: 0.95,
+  { id: "t2021", prog: chords("Am9 Cmaj9"), per: 2, bpm: 66, tonic: "C4", crafts: [AIE, SE], fill: 0.45, density: 0.38, fig: "tuned", theme: dbg(-10.5), arrive: dbg(-30), bass: 0.3, bright: 2800, wet: 0.95,
     bed: { wave: "glass", voices: 4, lo: 60, hi: 81, detune: 3, cutoff: 2600, level: 0.085, mode: "glide", glide: 3, lfo: 0.06 } },
-  { id: "t2023", prog: chords("Gm9 Ebmaj9"), per: 2, tonic: "Bb3", crafts: [AIE, SE, FDE], fill: 0.6, density: 0.46, fig: "giant", theme: dbg(-12), arrive: dbg(-29), bass: 0.6, bright: 1200, wet: 1,
+  { id: "t2023", prog: chords("Fm9 Dbmaj9"), per: 2, bpm: 58, tonic: "Ab3", crafts: [AIE, SE, FDE], fill: 0.6, density: 0.46, fig: "giant", theme: dbg(-12), arrive: dbg(-29), bass: 0.6, bright: 1200, wet: 1,
     bed: { wave: "bowed", voices: 4, lo: 38, hi: 62, detune: 9, cutoff: 650, level: 0.15, mode: "swap", xfade: 3.5, lfo: 0.03 } },
-  { id: "t2024v", prog: chords("Dmaj9 Bm9"), per: 2, tonic: "D4", crafts: [AIE, SE, FDE, MLE], fill: 0.75, density: 0.55, fig: "iris", theme: dbg(-10), arrive: dbg(-28), bass: 0.6, bright: 3200, wet: 0.85,
+  { id: "t2024v", prog: chords("Dmaj9 Bm9"), per: 2, bpm: 88, tonic: "D4", crafts: [AIE, SE, FDE, MLE], fill: 0.75, density: 0.55, fig: "iris", theme: dbg(-10), arrive: dbg(-28), bass: 0.6, bright: 3200, wet: 0.85,
     bed: { wave: "air", voices: 4, lo: 62, hi: 86, detune: 6, cutoff: 3200, level: 0.1, mode: "glide", glide: 2, lfo: 0.06 } },
-  { id: "t2024r", prog: chords("Am9 Dm9 Bbmaj9 C9sus4"), per: 1, tonic: "F4", crafts: [SE, FDE, AIE, MLE], fill: 0.9, density: 0.7, fig: "binary", theme: dbg(-10.5), arrive: dbg(-27), bass: 0.85, bright: 2400, wet: 0.8,
+  { id: "t2024r", prog: chords("Bbm9 Ebm9 Gbmaj9 Ab9sus4"), per: 1, bpm: 96, tonic: "Db4", crafts: [SE, FDE, AIE, MLE], fill: 0.9, density: 0.7, fig: "binary", theme: dbg(-10.5), arrive: dbg(-27), bass: 0.85, bright: 2400, wet: 0.8,
     bed: { wave: "warm", voices: 4, lo: 50, hi: 74, detune: 6, cutoff: 1700, level: 0.1, mode: "swap", xfade: 1.8, lfo: 0.07 } },
   // Now: the home key, the station lit whole, everyone playing
-  { id: "t2025", prog: chords("Fmaj9 C/E Dm9 Bbmaj9"), per: 1, tonic: "F4", crafts: [SE, FDE, AIE, MLE], fill: 1, density: 0.9, fig: "now", theme: dbg(-10), arrive: dbg(-27), bass: 0.85, counter: 1, bright: 3000, wet: 0.9,
+  { id: "t2025", prog: chords("Fmaj9 C/E Dm9 Bbmaj9"), per: 1, bpm: 80, tonic: "F4", crafts: [SE, FDE, AIE, MLE], fill: 1, density: 0.9, fig: "now", theme: dbg(-10), arrive: dbg(-27), bass: 0.85, counter: 1, bright: 3000, wet: 0.9,
     bed: { wave: "warm", voices: 5, lo: 45, hi: 81, detune: 7, cutoff: 2300, level: 0.13, mode: "swap", xfade: 1.8, lfo: 0.07 } },
 ];
 const STOP_OF: Record<string, number> = Object.fromEntries(STOPS.map((s, i) => [s.id, i]));
@@ -181,6 +186,8 @@ export class Work extends Movement {
     this.loopFrom = 0;
     this.density = STOPS[this.stage].density;
     this.bright = STOPS[this.stage].bright;
+    this.bpm = STOPS[this.stage].bpm;
+    this.st.deep.place(WORK_STOPS[this.stage], t, 0.4);
     // the first stop's theme plays whole too, past the fade in
     this.arrivalBar = 1;
     this.layer("pad", 0, this.bed);
@@ -247,7 +254,9 @@ export class Work extends Movement {
     this.alignBar();
     this.arrivalBar = this.bar + 1;
     this.density = s.density;
+    this.bpm = s.bpm;
     this.setBed(i, at);
+    if (this.st.deep.owner === this) this.st.deep.place(WORK_STOPS[i], at, 0.9);
     const L = this.S.layers;
     for (const k in this.layers) this.layers[k].gain.setTargetAtTime(L[k] ?? 0, at, 0.35);
     this.verbOut.gain.setTargetAtTime(s.wet, at, 0.6);
@@ -580,7 +589,10 @@ export class Work extends Movement {
     if (k === this.stage) return;
     const at = Math.max(this.nextT, now + 0.02);
     this.applyStage(k, at);
-    if (!quiet) this.land(k, at, 0.7);
+    if (!quiet) {
+      this.land(k, at, 0.7);
+      this.st.deep.impact(at, 0.6, STOPS[k].prog[0]);
+    }
   }
 
   private voiceOf(stage: number): Sampler {
@@ -618,6 +630,7 @@ export class Work extends Movement {
     this.nextT = A;
     this.applyStage(k, A);
     this.arrivalBar = this.bar + 1;
+    this.transit(D, back || direction === "rewind" ? -1 : 1, 1, c);
     if (direction === "rewind") {
       // the trail's first turn may already have started it
       if (now - this.rewindAt > 3) this.rewind(t, D);
@@ -711,6 +724,8 @@ export class Work extends Movement {
     } else {
       thud(this, this.touch, t, 94, 44, 0.36, level);
       this.sweepAir(t + 0.02, 0.2, 5200, 2200, level * 0.45, 0, 0, 0.8);
+      // a door this size lands on the floor of the hall
+      this.st.deep.hit(t, level * 6, { from: 2.4, sweep: 0.08, dur: 0.6 });
     }
   }
 

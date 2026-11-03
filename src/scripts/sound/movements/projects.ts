@@ -4,17 +4,21 @@
 // The system itself is the home key: A Dorian in a slow 12/8, a low drone that
 // flickers like a fire, wood and stone struck by hand, and a plucked motif that
 // starts rough and gets one note closer to right on every pass. Each world then
-// has its own colour, so flying from one to the next is arriving somewhere new:
+// has its own key, tempo, floor and colour, so flying from one to the next is
+// arriving somewhere new:
 //
-//   mirror    glass, and every note answered by its reflection in the other ear
-//   ring      a slow mechanical turning that goes round the listener
-//   listener  two voices taking turns over a hand drum
-//   disk      a deep low pull: bowed notes sliding down over very little else
-//   geode     crystal, one chord refracted across octaves and across the room
-//   arch      a sweep of light over 32 stones, up and over, left to right
-//   nets      sparks caught on the steps of a climbing line
-//   comet     one bright head and a long rushing tail
-//   belt      sparse, rocky, wide
+//   mirror    D flat Lydian, slow. Glass, and every note answered by its
+//             reflection in the other ear
+//   ring      quartal, a machine's tempo. A turning that goes round the listener
+//   listener  E flat major. Two voices taking turns over a hand drum
+//   disk      F sharp Phrygian, hardly moving. A deep low pull: bowed notes
+//             sliding down over very little else
+//   geode     B flat Lydian, fast. Crystal, one chord refracted across octaves
+//             and across the room
+//   arch      E major. A sweep of light over 32 stones, up and over
+//   nets      A minor, quick. Sparks caught on the steps of a climbing line
+//   comet     F minor, slow. One bright head and a long rushing tail
+//   belt      E Dorian, slow. Sparse, rocky, wide
 //
 // The layers are the same as the home flight. A bed for each world, a flight
 // between them that holds the rhythm and lands on arrival, a theme that plays
@@ -26,11 +30,13 @@ import { Movement, type Section } from "../movement";
 import { chords, deg, MODES as SCALE, snap, tonesIn, bassOf, type Chord } from "../theory";
 import { Pad, Mono, Sampler, Flutter, lead, thud, ringAt, rush, type PadOpts } from "../instruments";
 import { pluck, modal, MODES, bell, BELLS, dbg, nm, type RoomSpec, type ModalSpec } from "../dsp";
+import { PROJECT_WORLDS } from "../places";
 
 interface Stage {
   id: string;
   prog: Chord[];
   per: number;
+  bpm: number;
   bed: Omit<PadOpts, "wave"> & { wave: string };
   fire: number; // how much of the low drone
   bass: number; // how much of the plucked bass
@@ -40,25 +46,25 @@ interface Stage {
 }
 
 const STAGES: Stage[] = [
-  { id: "system", theme: dbg(-12.5), prog: chords("Am9 D9/F# Cadd9 Em11"), per: 2, fire: 1, bass: 0.8, bright: 2100, wet: 0.8,
+  { id: "system", theme: dbg(-12.5), prog: chords("Am9 D9/F# Cadd9 Em11"), per: 2, bpm: 72, fire: 1, bass: 0.8, bright: 2100, wet: 0.8,
     bed: { wave: "warm", voices: 4, lo: 55, hi: 76, detune: 7, cutoff: 1500, level: 0.1, mode: "swap", xfade: 2.6, lfo: 0.06 } },
-  { id: "mirror", theme: dbg(-13), prog: chords("Fmaj7#11 Cmaj9"), per: 2, fire: 0, bass: 0.4, bright: 3400, wet: 1.0,
+  { id: "mirror", theme: dbg(-13), prog: chords("Dbmaj7#11 Abmaj9"), per: 2, bpm: 54, fire: 0, bass: 0.4, bright: 3400, wet: 1.0,
     bed: { wave: "glass", voices: 4, lo: 62, hi: 84, detune: 3, cutoff: 3400, level: 0.09, mode: "glide", glide: 2, lfo: 0.05 } },
-  { id: "ring", theme: dbg(-12), prog: chords("Aq Bq"), per: 2, fire: 0.4, bass: 0.5, bright: 1800, wet: 0.7,
+  { id: "ring", theme: dbg(-12), prog: chords("Aq Bq"), per: 2, bpm: 66, fire: 0.4, bass: 0.5, bright: 1800, wet: 0.7,
     bed: { wave: "warm", voices: 3, lo: 50, hi: 67, detune: 5, cutoff: 1100, level: 0.09, mode: "glide", glide: 1.6, lfo: 0.3, lfoDepth: 0.3 } },
-  { id: "listener", theme: dbg(-21), prog: chords("Cmaj7 Am7 Fmaj9 G6"), per: 1, fire: 0.5, bass: 0.7, bright: 2400, wet: 0.75,
+  { id: "listener", theme: dbg(-21), prog: chords("Ebmaj7 Cm7 Abmaj9 Bb6"), per: 1, bpm: 96, fire: 0.5, bass: 0.7, bright: 2400, wet: 0.75,
     bed: { wave: "reed", voices: 4, lo: 55, hi: 72, detune: 6, cutoff: 1700, level: 0.08, mode: "swap", xfade: 2, lfo: 0.06 } },
-  { id: "disk", theme: dbg(-13.5), prog: chords("Am9 Bbmaj7/A"), per: 4, fire: 0.8, bass: 0, bright: 900, wet: 1.1,
+  { id: "disk", theme: dbg(-13.5), prog: chords("F#m9 Gmaj7/F#"), per: 4, bpm: 40, fire: 0.8, bass: 0, bright: 900, wet: 1.1,
     bed: { wave: "bowed", voices: 4, lo: 38, hi: 58, detune: 10, cutoff: 520, level: 0.155, mode: "swap", xfade: 3.5, lfo: 0.03 } },
-  { id: "geode", theme: dbg(-15), prog: chords("Dmaj7#11 Eadd9/D"), per: 2, fire: 0, bass: 0, bright: 4000, wet: 1.2,
+  { id: "geode", theme: dbg(-15), prog: chords("Bbmaj7#11 Cadd9/Bb"), per: 2, bpm: 110, fire: 0, bass: 0, bright: 4000, wet: 1.2,
     bed: { wave: "glass", voices: 4, lo: 72, hi: 91, detune: 4, cutoff: 4000, level: 0.085, mode: "glide", glide: 3, lfo: 0.09 } },
-  { id: "arch", theme: dbg(-9), prog: chords("Cadd9 G6/B Am9 Fmaj9"), per: 2, fire: 0.3, bass: 0.5, bright: 2600, wet: 0.95,
+  { id: "arch", theme: dbg(-9), prog: chords("Eadd9 B6/D# C#m9 Amaj9"), per: 2, bpm: 60, fire: 0.3, bass: 0.5, bright: 2600, wet: 0.95,
     bed: { wave: "air", voices: 4, lo: 57, hi: 79, detune: 5, cutoff: 2200, level: 0.11, mode: "swap", xfade: 3, lfo: 0.05 } },
-  { id: "nets", theme: dbg(-16), prog: chords("Am9 G6 Fmaj9 Em11"), per: 1, fire: 0.3, bass: 0.6, bright: 2200, wet: 0.8,
+  { id: "nets", theme: dbg(-16), prog: chords("Am9 G6 Fmaj9 Em11"), per: 1, bpm: 120, fire: 0.3, bass: 0.6, bright: 2200, wet: 0.8,
     bed: { wave: "warm", voices: 3, lo: 52, hi: 69, detune: 5, cutoff: 1200, level: 0.08, mode: "swap", xfade: 1.6, lfo: 0.08 } },
-  { id: "comet", theme: dbg(-17), prog: chords("Bm11 Gmaj9"), per: 4, fire: 0, bass: 0, bright: 3000, wet: 1.2,
+  { id: "comet", theme: dbg(-17), prog: chords("Fm11 Dbmaj9"), per: 4, bpm: 46, fire: 0, bass: 0, bright: 3000, wet: 1.2,
     bed: { wave: "choir", voices: 4, lo: 60, hi: 84, detune: 12, cutoff: 2400, level: 0.13, mode: "glide", glide: 4, lfo: 0.035 } },
-  { id: "belt", theme: dbg(-9), prog: chords("Em11 Asus4"), per: 4, fire: 0.5, bass: 0, bright: 1200, wet: 0.9,
+  { id: "belt", theme: dbg(-9), prog: chords("Em11 Asus4"), per: 4, bpm: 50, fire: 0.5, bass: 0, bright: 1200, wet: 0.9,
     bed: { wave: "air", voices: 3, lo: 48, hi: 64, detune: 4, cutoff: 900, level: 0.125, mode: "swap", xfade: 3.5, lfo: 0.03 } },
 ];
 
@@ -157,6 +163,7 @@ export class Projects extends Movement {
     this.grains = this.spark;
     this.gut.warm([57, 59, 60, 62, 64, 66, 67, 69, 71]);
     this.setBed(0, t);
+    this.st.deep.place(PROJECT_WORLDS[0], t, 0.4);
     this.draft = this.final.map((d) => (r() < 0.4 ? d + this.pick([-2, -1, 1, 2]) : d));
     this.layers.fire.gain.value = STAGES[0].fire;
     this.layers.bass.gain.value = STAGES[0].bass;
@@ -197,7 +204,9 @@ export class Projects extends Movement {
     this.stageBar = -1;
     this.alignBar();
     this.arrivalBar = this.bar + 1;
+    this.bpm = s.bpm;
     this.setBed(i, at);
+    if (this.st.deep.owner === this) this.st.deep.place(PROJECT_WORLDS[i], at, 0.9);
     this.layers.fire.gain.setTargetAtTime(s.fire, at, 0.5);
     this.layers.bass.gain.setTargetAtTime(s.bass, at, 0.3);
     this.verbOut.gain.setTargetAtTime(s.wet, at, 0.6);
@@ -310,8 +319,8 @@ export class Projects extends Movement {
 
   /** Two voices taking turns over a hand drum. */
   private figListener(pos: number, t: number) {
-    if (pos === 0 || pos === 6) this.note(this.frame, pos === 0 ? nm("C3") : nm("G2"), this.hum(t), dbg(-14), 0);
-    if (pos === 3 || pos === 9) this.note(this.stone, nm("G5"), this.hum(t), dbg(-21), 0);
+    if (pos === 0 || pos === 6) this.note(this.frame, pos === 0 ? nm("Eb3") : nm("Bb2"), this.hum(t), dbg(-14), 0);
+    if (pos === 3 || pos === 9) this.note(this.stone, nm("Bb5"), this.hum(t), dbg(-21), 0);
     const tones = tonesIn(this.chord, 62, 79);
     if (!tones.length) return;
     if (this.bar % 2 === 0) {
@@ -410,6 +419,7 @@ export class Projects extends Movement {
     const at = Math.max(this.nextT, now + 0.02);
     this.applyStage(k, at);
     this.land(k, at, 0.6);
+    this.st.deep.impact(at, 0.55, STAGES[k].prog[0]);
   }
 
   /** The flight between stages. The rhythm holds, and the new world lands on arrival. */
@@ -427,6 +437,7 @@ export class Projects extends Movement {
     this.wanted = to;
     this.nextT = A;
     this.applyStage(to, A);
+    this.transit(D, up ? 1 : -1, size, c);
     // the air of the flight
     rush(this, this.touch, t, D, up, dbg(-17) * size);
     // the new world's notes, sliding into tune as it arrives
