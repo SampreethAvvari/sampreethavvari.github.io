@@ -27,6 +27,8 @@ type Svc = {
   every?: "minute" | "five" | "ten" | "hour";
   window?: [number, number];
   warm?: boolean;
+  /** Kept warm only for these minutes of the day. */
+  warmDuring?: [number, number];
   day?: Day;
   /** Lit softly for a stretch the post names without a time. */
   soft?: [number, number];
@@ -59,10 +61,10 @@ const SERVICES: Svc[] = [
   { id: "forms-dashboard", name: "Forms dashboard", group: 0, when: "When staff sign in", x: 0.1, y: 0.19 },
   { id: "delivery-worker", name: "Delivery worker", group: 0, when: "A sweep runs every minute", every: "minute", x: 0.155, y: 0.075 },
   { id: "nightly-checks", name: "Nightly checks", group: 0, when: "At 2 AM", at: [m(2)], x: 0.215, y: 0.18 },
-  { id: "patient-surveys", name: "Patient surveys", group: 0, when: "When a patient fills one in", x: 0.27, y: 0.08 },
+  { id: "patient-surveys", name: "Patient surveys", group: 0, when: "One instance stays warm · when a patient fills one in", warm: true, x: 0.27, y: 0.08 },
   // The shared core
   { id: "denticon-sync", name: "Denticon sync", group: 1, when: "One instance stays warm · a worker every ten minutes · a 4 AM poll", warm: true, every: "ten", at: [m(4)], x: 0.43, y: 0.135 },
-  { id: "cdf", name: "CDF dashboard and registry", group: 1, when: "When a person or an app calls it", x: 0.5, y: 0.045 },
+  { id: "cdf", name: "CDF dashboard and registry", group: 1, when: "One instance stays warm · when a person or an app calls it", warm: true, x: 0.5, y: 0.045 },
   { id: "pdf-renderer", name: "PDF renderer", group: 1, when: "An hourly sweep behind its queue", every: "hour", x: 0.57, y: 0.135 },
   // Estimator and planner
   { id: "estimator", name: "Treatment estimator", group: 2, when: "When a coordinator opens it", x: 0.78, y: 0.14 },
@@ -86,15 +88,15 @@ const SERVICES: Svc[] = [
   { id: "morning-email", name: "Morning email", group: 4, when: "At 6:30", at: [m(6, 30)], x: 0.5, y: 0.62 },
   { id: "health-check", name: "Health check", group: 4, when: "At 6:45", at: [m(6, 45)], x: 0.595, y: 0.575 },
   { id: "question-quiz", name: "Question quiz", group: 4, when: "Mondays at 8 AM", at: [m(8)], day: "monday", x: 0.66, y: 0.45 },
-  { id: "data-connector", name: "Data connector", group: 4, when: "When staff ask Claude", x: 0.625, y: 0.32 },
+  { id: "data-connector", name: "Data connector", group: 4, when: "One instance stays warm · when staff ask Claude", warm: true, x: 0.625, y: 0.32 },
   { id: "status-page", name: "Status page", group: 4, when: "When someone opens it", x: 0.5, y: 0.265 },
   // Coaching
-  { id: "doc-coach", name: "Doc Coach", group: 5, when: "Zoom's webhook wakes it", x: 0.8, y: 0.385 },
+  { id: "doc-coach", name: "Doc Coach", group: 5, when: "Kept warm from 7 AM to 7 PM · Zoom's webhook wakes it", warmDuring: [m(7), m(19)], x: 0.8, y: 0.385 },
   { id: "npc-poller", name: "NPC call poller", group: 5, when: "Every five minutes in the work day", every: "five", window: [m(6), m(18)], x: 0.905, y: 0.33 },
   { id: "npc-summary", name: "NPC daily summary", group: 5, when: "At 5 PM on weekdays", at: [m(17)], x: 0.955, y: 0.455 },
   { id: "npc-dashboard", name: "NPC Coach dashboard", group: 5, when: "When managers open it", x: 0.85, y: 0.5 },
   // The lab
-  { id: "cbct", name: "CBCT validator", group: 6, when: "A storage event wakes it", x: 0.05, y: 0.74 },
+  { id: "cbct", name: "CBCT validator", group: 6, when: "When a scan arrives", x: 0.05, y: 0.74 },
   { id: "sftp", name: "SFTP drop box", group: 6, when: "A small always on VM", warm: true, x: 0.125, y: 0.83 },
   { id: "training-job", name: "Training data job", group: 6, when: "At 6 AM", at: [m(6)], x: 0.2, y: 0.72 },
   { id: "review-app", name: "CBCT review app", group: 6, when: "When the testing team uploads a study", x: 0.275, y: 0.83 },
@@ -102,7 +104,7 @@ const SERVICES: Svc[] = [
   // Money and operations
   { id: "cowork-ingest", name: "Cowork ingest", group: 7, when: "A scheduler checks it every five minutes", every: "five", x: 0.37, y: 0.8 },
   { id: "cowork", name: "Cowork Dashboard", group: 7, when: "When someone opens it", x: 0.44, y: 0.895 },
-  { id: "dsr-pipeline", name: "DSR pipeline", group: 7, when: "Weekday mornings", soft: [m(5), m(9)], x: 0.5, y: 0.78 },
+  { id: "dsr-pipeline", name: "DSR pipeline", group: 7, when: "Weekday mornings, built by 6:25", soft: [m(6, 5), m(6, 25)], x: 0.5, y: 0.78 },
   { id: "dsr-dashboard", name: "DSR dashboard", group: 7, when: "When someone opens it", x: 0.57, y: 0.895 },
   { id: "reconciliation", name: "Reconciliation", group: 7, when: "When staff upload a day's exports", x: 0.63, y: 0.8 },
   // Websites
@@ -136,7 +138,7 @@ const clock = (t: number) => {
 };
 
 const render: Figure = ({ root, signal, still }) => {
-  const { head } = frame(root, "One weekday, 45 stars", "Drag along the day. A star lights when that service runs.");
+  const { head } = frame(root, "One weekday, 45 stars", "Drag along the day. A star lights when that service is on a timer, firing or kept warm.");
   let day: Day = "monday";
   const dayName: Record<Day, string> = { monday: "Monday", wednesday: "Wednesday", other: "Other weekdays" };
   const seg = segmented<Day>(
@@ -159,7 +161,7 @@ const render: Figure = ({ root, signal, still }) => {
 
   const legend = h("div", "pfx-day-legend");
   [
-    ["warm", "Always on"],
+    ["warm", "Kept warm"],
     ["run", "Runs through the day"],
     ["fire", "Fires on the clock"],
     ["wait", "Waiting"],
@@ -295,7 +297,7 @@ const render: Figure = ({ root, signal, still }) => {
     if (firedAt(s, t)) return "fire";
     if (s.soft && t >= s.soft[0] && t <= s.soft[1]) return "soft";
     if (running(s, t)) return `run-${s.every}`;
-    if (s.warm) return "warm";
+    if (s.warm || (s.warmDuring && t >= s.warmDuring[0] && t <= s.warmDuring[1])) return "warm";
     return "";
   };
   const eventTimes = () => {
@@ -324,11 +326,11 @@ const render: Figure = ({ root, signal, still }) => {
     fill.style.width = `${pct}%`;
     track.setAttribute("aria-valuenow", String(Math.round(t)));
     track.setAttribute("aria-valuetext", `${clock(t)}, ${dayName[day]}`);
-    let awake = 0;
+    let lit = 0;
     const firing: Svc[] = [];
     for (const st of stars) {
       const next = stateOf(st.s, t);
-      if (next) awake++;
+      if (next) lit++;
       if (next === "fire") firing.push(st.s);
       if (next !== st.state || force) {
         if (next === "fire" && st.state !== "fire" && !force) fig("day-sky", `fire:${st.s.id}`);
@@ -337,7 +339,7 @@ const render: Figure = ({ root, signal, still }) => {
       }
     }
     nowT.textContent = clock(t);
-    nowK.textContent = `${awake} of 45 awake`;
+    nowK.textContent = `${lit} of 45 on a timer or kept warm`;
     const key = firing.map((f) => f.id).join("|");
     if (key !== lastFired || force) {
       lastFired = key;
