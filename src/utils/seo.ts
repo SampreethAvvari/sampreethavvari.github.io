@@ -76,7 +76,7 @@ function movieNode(base: string, f: (typeof FILMS)[number]) {
     ...(f.roles.includes("Director") ? { director: me } : {}),
     ...(f.roles.includes("Writer") ? { author: me } : {}),
     ...(f.roles.includes("Editor") ? { editor: me } : {}),
-    ...(f.roles.includes("Music") ? { musicBy: me } : {}),
+    ...(f.roles.includes("Music") || f.roles.includes("Background score") ? { musicBy: me } : {}),
     ...(f.roles.some((r) => r === "Cinematographer" || r === "Assistant Director") ? { contributor: me } : {}),
   };
 }

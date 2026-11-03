@@ -103,7 +103,7 @@ const amCredits: CreditGroup[] = [
     ],
   },
   {
-    label: "Music",
+    label: "Songs",
     people: [
       { name: "Sai Charan Thota", role: "PRO-JECT 53", instagram: "@charan_af" },
       { name: "Eknath Sravanam", role: "PRO-JECT 53", instagram: "@eknath_sravanam" },
@@ -119,7 +119,7 @@ export const films: Film[] = [
     year: "2026",
     status: "upcoming",
     statusNote: "Premiering in NYC",
-    roles: ["Director", "Writer", "Editor", "Music"],
+    roles: ["Director", "Writer", "Cinematographer", "Editor", "Background score"],
     genre: "Independent crime drama",
     shot: { place: "New York City", when: "2024 and 2025" },
     logline:
@@ -140,8 +140,8 @@ export const films: Film[] = [
     },
     credits: amCredits,
   },
-  { slug: "l-immigrata", title: "L'immigrata", year: "2026", status: "dated", roles: ["Assistant Director", "Editor"], reel: { category: "Film", card: true } },
-  { slug: "office-plant", title: "Office Plant", year: "2026", status: "dated", roles: ["Assistant Director", "Editor"], reel: { category: "Film", card: true } },
+  { slug: "l-immigrata", title: "L'immigrata", year: "2026", status: "dated", roles: ["Assistant Director", "Editor"], reel: { category: "Short", card: true } },
+  { slug: "office-plant", title: "Office Plant", year: "2026", status: "dated", roles: ["Assistant Director", "Editor"], reel: { category: "Short", card: true } },
   { slug: "extraordinary-lives", title: "Extraordinary Lives", status: "upcoming", statusNote: "In development", roles: ["Director", "Writer"] },
   { slug: "pupa", title: "Pupa", status: "upcoming", statusNote: "In development", roles: ["Writer"] },
   { slug: "solstice", title: "Solstice", year: "2025", status: "released", roles: ["Editor"] },
@@ -156,8 +156,8 @@ export const films: Film[] = [
     stills: { dir: "Swechcha", alt: (_file, i) => `Swechcha still ${i + 1}`, letterboxed: true },
     reel: { category: "Short", stills: ["1.35.07", "1.30.28", "1.29.54", "1.31.05", "1.30.48"] },
   },
-  { slug: "tiger-man", title: "Tiger Man", year: "2022", status: "released", roles: ["Director", "Writer", "Editor"], reel: { category: "Film", card: true } },
-  { slug: "strangers", title: "Strangers", year: "2019", status: "released", roles: ["Cinematographer", "Music"], reel: { category: "Film", card: true } },
+  { slug: "tiger-man", title: "Tiger Man", year: "2022", status: "released", roles: ["Director", "Writer", "Editor"], reel: { category: "Short", card: true } },
+  { slug: "strangers", title: "Strangers", year: "2019", status: "released", roles: ["Cinematographer", "Music"], reel: { category: "Short", card: true } },
 ];
 
 // The same films seen by the job I did on each.
@@ -185,7 +185,7 @@ export const statusLabel = (f: Film) =>
   f.status === "upcoming" ? "Upcoming" : f.status === "released" ? "Released" : (f.year ?? "");
 export const rolesLine = (f: Film) => f.roles.join(" · ");
 
-const ROLE_PROSE: Record<string, string> = { Music: "composer" };
+const ROLE_PROSE: Record<string, string> = { Music: "composer", "Background score": "background score composer" };
 const listProse = (items: string[]) =>
   items.length < 2 ? items.join("") : `${items.slice(0, -1).join(", ")} and ${items[items.length - 1]}`;
 /** "director, writer and editor" */
