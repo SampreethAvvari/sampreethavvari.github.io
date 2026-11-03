@@ -717,8 +717,8 @@ export function mountJourney(canvas: HTMLCanvasElement, opts: JourneyOptions): J
       if (!reduced) {
         const par = sshot.parallax * k;
         camera.position
-          .addScaledVector(landing.right, px * par + Math.sin(time * 0.21) * par * 0.14)
-          .addScaledVector(landing.up, -py * par * 0.45 + Math.sin(time * 0.33 + 1) * par * 0.09);
+          .addScaledVector(landing.right, px * par + Math.sin(time * 0.21) * par * 0.08)
+          .addScaledVector(landing.up, -py * par * 0.45 + Math.sin(time * 0.33 + 1) * par * 0.045);
       }
     }
     camera.lookAt(_v);
@@ -970,7 +970,11 @@ export function mountJourney(canvas: HTMLCanvasElement, opts: JourneyOptions): J
     ready = true;
     start();
   };
-  renderer.compileAsync(scene, camera).then(afterCompile, afterCompile);
+  // Against the target the scene is really drawn to: the shaders differ by what they output to.
+  renderer.setRenderTarget(post.sceneTarget);
+  const warming = renderer.compileAsync(scene, camera);
+  renderer.setRenderTarget(null);
+  warming.then(afterCompile, afterCompile);
 
   const onLost = (e: Event) => {
     e.preventDefault();

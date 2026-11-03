@@ -254,6 +254,10 @@ export interface PostFrame {
 export class Post {
   private readonly renderer: WebGLRenderer;
   private readonly scene: WebGLRenderTarget;
+  /** Where the scene is drawn. Shaders must be warmed against this target to be the ones actually used. */
+  get sceneTarget() {
+    return this.scene;
+  }
   private readonly mips: WebGLRenderTarget[] = [];
   private readonly quad: Mesh;
   private readonly cam = new Camera();

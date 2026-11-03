@@ -191,28 +191,40 @@ function rippleTexture(size: number): DataTexture {
 function grainTexture(size: number, cells: number): DataTexture {
   const h = new Float32Array(size * size);
   const tone = new Float32Array(size * size);
+  // One grain per cell: where it sits, how big it is, its tone. Baked first, so each pixel only looks them up.
+  const pts = new Float32Array(cells * cells * 4);
+  for (let cy = 0; cy < cells; cy++) {
+    for (let cx = 0; cx < cells; cx++) {
+      const k = (cy * cells + cx) * 4;
+      pts[k] = hash2(cx + 0.31, cy + 0.17);
+      pts[k + 1] = hash2(cx + 7.13, cy + 3.71);
+      pts[k + 2] = hash2(cx + 2.41, cy + 9.23);
+      pts[k + 3] = hash2(cx + 5.57, cy + 1.93);
+    }
+  }
   for (let j = 0; j < size; j++) {
+    const v = (j / size) * cells;
+    const iv = Math.floor(v);
     for (let i = 0; i < size; i++) {
       const u = (i / size) * cells;
-      const v = (j / size) * cells;
       const iu = Math.floor(u);
-      const iv = Math.floor(v);
       let best = 0;
       let t = 0.5;
       for (let b = -1; b <= 1; b++) {
+        const cy = (iv + b + cells) % cells;
         for (let a = -1; a <= 1; a++) {
-          const cx = ((iu + a) % cells + cells) % cells;
-          const cy = ((iv + b) % cells + cells) % cells;
-          const px = iu + a + hash2(cx + 0.31, cy + 0.17);
-          const py = iv + b + hash2(cx + 7.13, cy + 3.71);
-          const big = hash2(cx + 2.41, cy + 9.23);
+          const cx = (iu + a + cells) % cells;
+          const k = (cy * cells + cx) * 4;
+          const big = pts[k + 2];
           const rad = 0.5 + 0.42 * big;
-          const d2 = ((u - px) * (u - px) + (v - py) * (v - py)) / (rad * rad);
+          const dx = u - (iu + a + pts[k]);
+          const dy = v - (iv + b + pts[k + 1]);
+          const d2 = (dx * dx + dy * dy) / (rad * rad);
           if (d2 < 1) {
             const dome = Math.sqrt(1 - d2) * (0.55 + 0.45 * big);
             if (dome > best) {
               best = dome;
-              t = hash2(cx + 5.57, cy + 1.93);
+              t = pts[k + 3];
             }
           }
         }
@@ -511,7 +523,7 @@ const DOME_FS = (layers: number) => /* glsl */ `
       float tint = vnoise(vec2(lon * 9.0, g * 26.0) + 21.0);
       mw = mix(mw, vec3(0.95, 0.5, 0.56), smoothstep(0.6, 0.86, tint) * 0.3 * body);
       float above = smoothstep(-0.02, 0.1, d.y);
-      c += mw * glow * 0.115 * uMilky * above * copyDim;
+      c += mw * mw * glow * 0.2 * uMilky * above * copyDim;
       // Star dust: thousands of tiny points, thickest in the band, thinner in the lanes.
       float dustK = clamp(dens * 1.3 + halo * 0.06, 0.0, 1.0) * (1.0 - lane * 0.5);
       for (int k = 0; k < DUST_LAYERS; k++) {
@@ -710,7 +722,7 @@ const HAND_PU = 0.0002;
 const CLOSE_H = 0.06;
 const CLOSE_D = 0.48;
 /** The hand leans over, turned in the frame around the fingertip, in radians. */
-const HAND_TILT = (-26 * Math.PI) / 180;
+const HAND_TILT = (-29 * Math.PI) / 180;
 /** How far the lamp sits in front of the hand, along the view, so it can throw the hand's shadow. */
 const LAMP_FRONT = 0.07;
 /** One tile of close sand, how high a grain stands, and the small ripples. */
@@ -720,8 +732,8 @@ const GRAIN_SLOPE = 1.4;
 /** The small lamp on the wrist ring in the night plate, in source pixels. */
 const WRIST_LED = [1365, 272];
 /** The arm past the edge of the night plate, in source pixels: two points just inside its edges, where it heads, how far. */
-const ARM_L = [1530, 60];
-const ARM_R = [1690, 300];
+const ARM_L = [1465, 120];
+const ARM_R = [1615, 365];
 const ARM_DIR = [0.7, -0.714];
 const ARM_LEN = 2600;
 /** Seconds for the hand to come down to the leaf. */
@@ -1314,7 +1326,7 @@ export function buildSurface(o: { low: boolean; landing: Landing; cloudTex: Text
           sandSlope = vec2(0.0);
           sandGrain = 0.0;
           sandTone = 0.5;
-          float gk = (1.0 - calm) * (1.0 - smoothstep(0.7, 2.2, dist));
+          float gk = (1.0 - smoothstep(0.1, 0.24, abs(toFrag.y))) * (1.0 - smoothstep(0.55, 1.5, dist)) * smoothstep(0.05, 0.16, dist);
           float rk = 1.0 - smoothstep(0.9, 2.4, dist);
           if (rk > 0.002) {
             vec4 gt = textureGrad(tGrain, sandQ / GRAIN_T, sandQx / GRAIN_T, sandQy / GRAIN_T);
@@ -2177,10 +2189,10 @@ export function buildSurface(o: { low: boolean; landing: Landing; cloudTex: Text
     const night = smooth(1.15, 3, s);
     sandU.uNight.value = night;
     sandU.uFormK.value = blend1(s, FORM_K);
-    sandU.uRipK.value = blend1(s, RIP_K);
+    sandU.uRipK.value = blend1(s, RIP_K) * (f.height > f.width ? 0.55 : 1);
     sandU.uLongK.value = blend1(s, LONG_K);
     sandU.uHazeD.value = blend1(s, HAZE_D);
-    sandU.uAmbient.value.copy(skyLight).multiplyScalar(0.3 + 0.32 * night * night);
+    sandU.uAmbient.value.copy(skyLight).multiplyScalar(0.3 + 0.16 * night * night);
     blend(s, SKY.dust, dustCol);
     for (const m of veils) m.uniforms.uColor.value.copy(dustCol);
     devilMat.uniforms.uColor.value.copy(dustCol).multiplyScalar(0.62);
@@ -2237,7 +2249,7 @@ export function buildSurface(o: { low: boolean; landing: Landing; cloudTex: Text
     beamMat.uniforms.uPx.value = f.pxScale;
     beamMat.uniforms.uDpr.value = f.dpr;
     if (s > 2.2 && !sapRT) {
-      grain = grainTexture(low ? 256 : 512, low ? 26 : 52);
+      grain = grainTexture(low ? 384 : 512, low ? 40 : 52);
       sandU.tGrain.value = grain;
       sapRT = new WebGLRenderTarget(low ? 128 : 256, low ? 128 : 256, { depthBuffer: false });
       sandU.tSapShadow.value = sapRT.texture;

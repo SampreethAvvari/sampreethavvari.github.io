@@ -454,7 +454,7 @@ export function buildShip(opts: ShipBuildOptions): Ship {
         vec2 q = vUv - vec2(0.5, 0.5);
         float room = smoothstep(0.5, 0.18, abs(q.x)) * smoothstep(-0.52, 0.28, q.y);
         float ceiling = exp(-pow((q.y - 0.42) / 0.09, 2.0)) * smoothstep(0.42, 0.08, abs(q.x));
-        float ribs = 0.86 + 0.14 * sin(vUv.y * 40.0);
+        float ribs = 0.95 + 0.05 * sin(vUv.y * 40.0);
         vec3 c = vec3(0.012, 0.009, 0.008) + vec3(0.7, 0.36, 0.14) * room * ribs + vec3(1.5, 0.92, 0.5) * ceiling;
         gl_FragColor = vec4(c * uOpen, 1.0);
       }`,
