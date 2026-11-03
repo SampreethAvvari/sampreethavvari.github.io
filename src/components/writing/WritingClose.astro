@@ -58,7 +58,7 @@ const MOTION: Record<string, "compass" | "sphere"> = {
                   <img class="wc-img" src={`/writing/guides/${g.slug}.webp`} alt="" width="1100" height="640" loading="lazy" decoding="async" />
                 </picture>
               ) : hasPublic(g.cover) ? (
-                <Picture src={g.cover} alt="" class="wc-img" width={1344} height={768} />
+                <Picture src={g.cover} alt="" class="wc-img" width={1344} height={768} sizes="(min-width: 1024px) 590px, 92vw" />
               ) : (
                 <div class="wc-empty" aria-hidden="true"></div>
               )}
@@ -122,11 +122,12 @@ const MOTION: Record<string, "compass" | "sphere"> = {
     height: calc(100% + 1024px);
     background-repeat: repeat;
     background-size: 1024px 1024px;
-    will-change: transform;
     /* They come in from the sky above and go out into what is below. */
     -webkit-mask-image: linear-gradient(180deg, transparent 0, #000 14vh, #000 calc(100% - 1024px - 24vh), transparent calc(100% - 1024px));
     mask-image: linear-gradient(180deg, transparent 0, #000 14vh, #000 calc(100% - 1024px - 24vh), transparent calc(100% - 1024px));
   }
+  /* Each sheet is taller than two screens: its own layer only while it shows. */
+  .wc[data-near] .wc-stars { will-change: transform; }
   .wc-stars-far { opacity: 0.6; background-image: url(/writing/stars-far.webp); transform: translate3d(0, var(--wc-far, 0px), 0); }
   .wc-stars-near { opacity: 0.85; background-image: url(/writing/stars-near.webp); transform: translate3d(0, var(--wc-near, 0px), 0); }
 
@@ -354,7 +355,7 @@ const MOTION: Record<string, "compass" | "sphere"> = {
     .wc-card:hover .wc-meridian, .wc-card:focus-visible .wc-meridian { animation: none; opacity: 0; }
     .wc-card[data-motion="sphere"]:hover .wc-art :global(img),
     .wc-card[data-motion="sphere"]:focus-visible .wc-art :global(img) { transform: scale(1.07); }
-    .wc-stars { will-change: auto; }
+    .wc[data-near] .wc-stars { will-change: auto; }
   }
 </style>
 

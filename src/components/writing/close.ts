@@ -25,6 +25,8 @@ export function mountWritingClose(): void {
     const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
     if (reduce) return;
     const aurora = wc.querySelector<HTMLElement>(".wc-aurora");
+    const far = wc.querySelector<HTMLElement>(".wc-stars-far");
+    const near = wc.querySelector<HTMLElement>(".wc-stars-near");
     const note = wc.querySelector<HTMLElement>(".next-card");
 
     // Grows from when the section's top comes up the screen until it has
@@ -34,8 +36,8 @@ export function mountWritingClose(): void {
     const write = () => {
       queued = 0;
       const y = scrollY;
-      wc.style.setProperty("--wc-far", `${(-(y * 0.1) % TILE).toFixed(1)}px`);
-      wc.style.setProperty("--wc-near", `${(-(y * 0.34) % TILE).toFixed(1)}px`);
+      far?.style.setProperty("--wc-far", `${(-(y * 0.1) % TILE).toFixed(1)}px`);
+      near?.style.setProperty("--wc-near", `${(-(y * 0.34) % TILE).toFixed(1)}px`);
       const top = wc.getBoundingClientRect().top;
       const grow = clamp01((innerHeight - top) / (innerHeight * 1.5));
       aurora?.style.setProperty("--grow", (grow * grow * (3 - 2 * grow)).toFixed(3));
@@ -46,6 +48,7 @@ export function mountWritingClose(): void {
     addEventListener("scroll", onScroll, { passive: true, signal });
     const io = new IntersectionObserver(([en]) => {
       onScreen = en.isIntersecting;
+      wc.toggleAttribute("data-near", onScreen);
       if (onScreen) onScroll();
     });
     io.observe(wc);

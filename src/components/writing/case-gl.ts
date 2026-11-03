@@ -32,6 +32,7 @@ import {
   Vector3,
   WebGLRenderer,
 } from "three";
+import { Governor } from "../../scripts/gl-governor";
 
 export type FlightState = {
   /** Which case study is up, 0 to n - 1, with holds at whole numbers. */
@@ -278,6 +279,7 @@ export function mountCaseGL(
   heroes: HTMLElement[],
   state: FlightState,
   onReady: () => void,
+  onLost: () => void,
 ): GLHandle | null {
   const tier = pickTier();
   let renderer: WebGLRenderer;
@@ -297,6 +299,8 @@ export function mountCaseGL(
   renderer.setClearColor(0x010205, 1);
   let dpr = Math.min(devicePixelRatio || 1, tier.dpr);
   renderer.setPixelRatio(dpr);
+  let disposed = false;
+  let lost = false;
 
   const n = heroes.length;
   const scene = new Scene();
@@ -381,34 +385,80 @@ export function mountCaseGL(
   });
 
   let readyFired = false;
+  let warmed = false;
   // The same file the page already chose for the first picture, so the
   // first texture comes from the cache.
   const first = heroes[0]?.querySelector<HTMLImageElement>(".cx-img");
   const ext = first?.currentSrc?.endsWith(".avif") ? "avif" : "webp";
+  // Pictures decode away from the page's thread and go up to the GPU one per
+  // quiet moment, so a slab arriving never holds up the scroll.
+  const uploads: { tex: Texture; i: number }[] = [];
+  let uploading = false;
+  const idle = (cb: () => void) => {
+    const w = window as Window & { requestIdleCallback?: (cb: () => void, o?: { timeout: number }) => number };
+    if (w.requestIdleCallback) w.requestIdleCallback(cb, { timeout: 180 });
+    else window.setTimeout(cb, 60);
+  };
+  const tryReady = () => {
+    // The first slab goes up as soon as the shaders are warm: it is what takes over from the picture.
+    if (readyFired || !warmed || !slabs[0].mat.uniforms.uHasTex.value) return;
+    readyFired = true;
+    // Draw once with the art, then let the page swap the layers.
+    draw(performance.now());
+    onReady();
+  };
+  const nextUpload = () => {
+    if (disposed || uploading) return;
+    const job = uploads.shift();
+    if (!job) return;
+    uploading = true;
+    idle(() => {
+      uploading = false;
+      if (disposed) return;
+      if (!lost) renderer.initTexture(job.tex);
+      slabs[job.i].mat.uniforms.uTex.value = job.tex;
+      slabs[job.i].mat.uniforms.uHasTex.value = 1;
+      if (job.i === 0) tryReady();
+      nextUpload();
+    });
+  };
+  const arrived = (tex: Texture, i: number) => {
+    tex.generateMipmaps = true;
+    tex.minFilter = LinearMipmapLinearFilter;
+    tex.magFilter = LinearFilter;
+    tex.anisotropy = Math.min(8, renderer.capabilities.getMaxAnisotropy());
+    textures.push(tex);
+    // The first one jumps the queue, the others go in the order they came.
+    if (i === 0) uploads.unshift({ tex, i });
+    else uploads.push({ tex, i });
+    nextUpload();
+  };
+  const decode = async (url: string) => {
+    const res = await fetch(url);
+    const bmp = await createImageBitmap(await res.blob(), { imageOrientation: "flipY", premultiplyAlpha: "none", colorSpaceConversion: "none" });
+    const tex = new Texture(bmp);
+    tex.flipY = false;
+    tex.needsUpdate = true;
+    return tex;
+  };
   heroes.forEach((h, i) => {
     const art = h.dataset.art;
     const img = h.querySelector<HTMLImageElement>(".cx-img");
     const url = art ? `${art}-${tier.tex}.${ext}` : img?.currentSrc || img?.src;
     if (!url) return;
-    loader.load(url, (tex) => {
-      if (disposed) {
-        tex.dispose();
-        return;
-      }
-      tex.generateMipmaps = true;
-      tex.minFilter = LinearMipmapLinearFilter;
-      tex.magFilter = LinearFilter;
-      tex.anisotropy = Math.min(8, renderer.capabilities.getMaxAnisotropy());
-      textures.push(tex);
-      slabs[i].mat.uniforms.uTex.value = tex;
-      slabs[i].mat.uniforms.uHasTex.value = 1;
-      if (i === 0 && !readyFired) {
-        readyFired = true;
-        // Draw once with the art, then let the page swap the layers.
-        draw(performance.now());
-        onReady();
-      }
-    });
+    decode(url)
+      .catch(() => loader.loadAsync(url))
+      .then((tex) => {
+        if (disposed) {
+          (tex.image as ImageBitmap | null)?.close?.();
+          tex.dispose();
+          return;
+        }
+        arrived(tex, i);
+      })
+      .catch(() => {
+        /* that slab stays a coloured plate */
+      });
   });
 
   // Star dust, as points, and as streaks when the flight is fast.
@@ -508,6 +558,13 @@ export function mountCaseGL(
   ro.observe(canvas);
   resize();
 
+  // The shaders compile away from this thread before the first frame needs them.
+  const warmDone = () => {
+    warmed = true;
+    tryReady();
+  };
+  renderer.compileAsync(scene, camera).then(warmDone, warmDone);
+
   // Pointer parallax.
   let mx = 0;
   let my = 0;
@@ -531,10 +588,18 @@ export function mountCaseGL(
   // A short arrival when the page opens at the top.
   const arrive = scrollY < 40 ? 1 : 0;
 
-  // Governor: if frames run slow, step down once or twice.
-  let slowFrames = 0;
-  let sampled = 0;
-  let steps = 0;
+  // Fewer pixels when frames run slow and that helps, and back again when there is room.
+  const baseDpr = dpr;
+  const governor = new Governor({
+    steps: [1, 0.85, 0.72],
+    apply: (scale) => {
+      dpr = Math.max(0.75, baseDpr * scale);
+      renderer.setPixelRatio(dpr);
+      dustUniforms.uDpr.value = dpr;
+      skyMat.uniforms.uDpr.value = dpr;
+      resize();
+    },
+  });
   let skyX = state.sky;
 
   function draw(now: number) {
@@ -639,38 +704,21 @@ export function mountCaseGL(
 
     renderer.render(scene, camera);
 
-    // Governor
-    if (sampled < 240) {
-      sampled++;
-      if (dtMs > 26) slowFrames++;
-      if (sampled === 120 || sampled === 240) {
-        if (slowFrames > 40 && steps < 2) {
-          steps++;
-          dpr = Math.max(0.75, dpr * 0.72);
-          renderer.setPixelRatio(dpr);
-          dustUniforms.uDpr.value = dpr;
-          skyMat.uniforms.uDpr.value = dpr;
-          resize();
-          pointGeo.setDrawRange(0, Math.floor(count * 0.6));
-          lineGeo.setDrawRange(0, Math.floor(count * 0.6) * 2);
-        }
-        slowFrames = 0;
-      }
-    }
+    governor.frame(dtMs, speed > 0.02);
   }
 
   let raf = 0;
   let running = false;
-  let disposed = false;
   const loop = (now: number) => {
     raf = requestAnimationFrame(loop);
     draw(now);
   };
   const start = () => {
-    if (running || disposed || document.hidden) return;
+    if (running || disposed || lost || document.hidden) return;
     running = true;
     lastNow = performance.now();
     lastX = state.x;
+    governor.reset();
     raf = requestAnimationFrame(loop);
   };
   const halt = () => {
@@ -686,11 +734,28 @@ export function mountCaseGL(
   io.observe(root);
   const onVis = () => (document.hidden ? halt() : onScreen && start());
   document.addEventListener("visibilitychange", onVis);
-  const onLost = (e: Event) => {
+  // The GPU can be taken away at any time. The pictures underneath carry on
+  // until it comes back; everything re-uploads from what the page still holds.
+  const lostContext = (e: Event) => {
     e.preventDefault();
+    lost = true;
     halt();
+    onLost();
   };
-  canvas.addEventListener("webglcontextlost", onLost);
+  const restored = () => {
+    lost = false;
+    renderer.compileAsync(scene, camera).then(
+      () => {
+        if (disposed || lost) return;
+        draw(performance.now());
+        onReady();
+        if (onScreen) start();
+      },
+      () => {},
+    );
+  };
+  canvas.addEventListener("webglcontextlost", lostContext);
+  canvas.addEventListener("webglcontextrestored", restored);
 
   return {
     stop() {
@@ -700,8 +765,12 @@ export function mountCaseGL(
       ro.disconnect();
       removeEventListener("pointermove", onMove);
       document.removeEventListener("visibilitychange", onVis);
-      canvas.removeEventListener("webglcontextlost", onLost);
-      textures.forEach((t) => t.dispose());
+      canvas.removeEventListener("webglcontextlost", lostContext);
+      canvas.removeEventListener("webglcontextrestored", restored);
+      textures.forEach((t) => {
+        (t.image as ImageBitmap | null)?.close?.();
+        t.dispose();
+      });
       slabs.forEach((s) => s.mat.dispose());
       slabGeo.dispose();
       skyGeo.dispose();

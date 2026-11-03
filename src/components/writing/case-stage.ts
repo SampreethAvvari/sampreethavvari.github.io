@@ -17,7 +17,7 @@
 //                       estimate in ms from the current scroll speed
 
 import { onPage } from "../../scripts/lifecycle";
-import { mountCaseGL, type GLHandle } from "./case-gl";
+import type { GLHandle } from "./case-gl";
 
 const STAGE = "(min-width: 900px) and (prefers-reduced-motion: no-preference)";
 const CALM = "(prefers-reduced-motion: reduce)";
@@ -55,6 +55,13 @@ export function mountCaseHeroes(): void {
       { signal },
     );
 
+    // The cards snap on phones, from the first touch. Switched on with the page
+    // itself, the browser snaps while everything is still arriving and the page
+    // moves by itself as it loads.
+    const snapOn = () => document.documentElement.classList.add("cx-snap-on");
+    for (const ev of ["touchstart", "wheel", "keydown"]) addEventListener(ev, snapOn, { passive: true, once: true, signal });
+    signal.addEventListener("abort", () => document.documentElement.classList.remove("cx-snap-on"), { once: true });
+
     const mq = matchMedia(STAGE);
     let stop: (() => void) | null = null;
     const run = () => {
@@ -71,26 +78,55 @@ export function mountCaseHeroes(): void {
 }
 
 // Phones and the no WebGL fallback: two tiled star sheets inside each picture.
-// A transform moves them, wrapped at the tile, so nothing repaints.
+// A transform moves them, wrapped at the tile, so nothing repaints. Each scroll
+// frame writes only to the sheets near the screen, and those are the only ones
+// held as their own layers, so a long page of pictures costs what one does.
 const TILE = 1024;
 function starDrift(root: HTMLElement): () => void {
+  const heroes = Array.from(root.querySelectorAll<HTMLElement>(".cx-hero"));
+  const sheets = heroes.map((h) => ({
+    far: h.querySelector<HTMLElement>(".cx-stars-far"),
+    near: h.querySelector<HTMLElement>(".cx-stars-near"),
+  }));
+  const close = new Set<number>();
   let queued = 0;
   const write = () => {
     queued = 0;
     const y = scrollY;
-    root.style.setProperty("--star-far", `${(-(y * 0.1) % TILE).toFixed(1)}px`);
-    root.style.setProperty("--star-near", `${(-(y * 0.34) % TILE).toFixed(1)}px`);
+    const f = `${(-(y * 0.1) % TILE).toFixed(1)}px`;
+    const n = `${(-(y * 0.34) % TILE).toFixed(1)}px`;
+    for (const i of close) {
+      sheets[i].far?.style.setProperty("--star-far", f);
+      sheets[i].near?.style.setProperty("--star-near", n);
+    }
   };
   const onScroll = () => {
     if (!queued) queued = requestAnimationFrame(write);
   };
   addEventListener("scroll", onScroll, { passive: true });
-  write();
+  const io = new IntersectionObserver(
+    (entries) => {
+      for (const e of entries) {
+        const i = heroes.indexOf(e.target as HTMLElement);
+        if (i < 0) continue;
+        if (e.isIntersecting) close.add(i);
+        else close.delete(i);
+        (e.target as HTMLElement).toggleAttribute("data-near", e.isIntersecting);
+      }
+      write();
+    },
+    { rootMargin: "25% 0px" },
+  );
+  heroes.forEach((h) => io.observe(h));
   return () => {
     removeEventListener("scroll", onScroll);
     cancelAnimationFrame(queued);
-    root.style.removeProperty("--star-far");
-    root.style.removeProperty("--star-near");
+    io.disconnect();
+    heroes.forEach((h) => h.removeAttribute("data-near"));
+    for (const sh of sheets) {
+      sh.far?.style.removeProperty("--star-far");
+      sh.near?.style.removeProperty("--star-near");
+    }
   };
 }
 
@@ -102,6 +138,21 @@ function stage(root: HTMLElement): () => void {
   const links = Array.from(root.querySelectorAll<HTMLAnchorElement>(".cx-index a"));
   const n = heroes.length;
   const state: State = { t: 0, x: 0, sky: 0, exit: 0 };
+  // A custom property written on an element makes the browser restyle everything
+  // under it, and the stage holds every letter of every title. So each variable
+  // goes only to the elements that read it.
+  const headParts = Array.from(root.querySelectorAll<HTMLElement>(".cx-head, .cx-cue"));
+  const exitParts = Array.from(root.querySelectorAll<HTMLElement>(".cx-veil, .cx-join, .cx-index"));
+  const parts = heroes.map((h) => ({
+    frame: h.querySelector<HTMLElement>(".cx-frame")!,
+    rim: h.querySelector<HTMLElement>(".cx-rim")!,
+    art: h.querySelector<HTMLElement>(".cx-art")!,
+    copy: h.querySelector<HTMLElement>(".cx-copy")!,
+    title: h.querySelector<HTMLElement>(".cx-title")!,
+  }));
+  // Once the 3D has taken over, the pictures underneath are hidden, and nothing moves them.
+  let picturesHidden = false;
+  let coversSky = false;
   const accentOf = (i: number) => `rgb(${(heroes[i]?.style.getPropertyValue("--a") || "52,211,153").trim()})`;
 
   let top = 0;
@@ -150,7 +201,14 @@ function stage(root: HTMLElement): () => void {
     // of it has left, so nothing is still lit when its bottom edge comes up.
     state.exit = clamp01((rel - (span - vh * 0.3)) / (vh * 0.8));
     state.sky = Math.max(0, rel) / seg;
-    put(stageEl, "--exit", state.exit);
+    // Once the 3D has taken over it is opaque and fills the screen, so the
+    // page's sky behind it can rest (SpaceField).
+    const covers = picturesHidden && rel >= 0 && state.exit === 0;
+    if (covers !== coversSky) {
+      coversSky = covers;
+      document.documentElement.classList.toggle("in-cx", covers);
+    }
+    for (const el of exitParts) put(el, "--exit", state.exit);
 
     x = Math.max(0, Math.min(rel, span)) / seg;
     const k = Math.floor(x);
@@ -170,20 +228,32 @@ function stage(root: HTMLElement): () => void {
     }
     // Speed for the colour split on the words: 0 still, 1 fast.
     vel += (Math.min(1, pxPerMs / 6) - vel) * 0.5;
-    put(stageEl, "--vel", vel < 0.02 ? 0 : vel);
-    put(stageEl, "--head", clamp01((x - 0.16) / 0.26));
+    const shownVel = vel < 0.02 ? 0 : Math.round(vel * 50) / 50;
+    const head = clamp01((x - 0.16) / 0.26);
+    for (const el of headParts) put(el, "--head", head);
 
     heroes.forEach((h, i) => {
       const cin = i === 0 ? 1 : clamp01(t - (i - 1));
       const cout = clamp01(t - i);
       const live = cin > 0 && cout < 1;
       if (live !== h.hasAttribute("data-live")) h.toggleAttribute("data-live", live);
-      put(h, "--open", 1 - inOut(cin));
-      put(h, "--zoom", 0.5 * (1 - outCubic(cin)));
-      put(h, "--out", inOut(cout));
-      put(h, "--cin", clamp01((cin - 0.5) / 0.5));
-      put(h, "--cout", clamp01(cout / 0.34));
-      put(h, "--drift", Math.max(-1, Math.min(1.6, x - i)));
+      const p = parts[i];
+      if (!picturesHidden) {
+        const open = 1 - inOut(cin);
+        const out = inOut(cout);
+        put(p.frame, "--open", open);
+        put(p.rim, "--open", open);
+        put(p.frame, "--out", out);
+        put(p.art, "--zoom", 0.5 * (1 - outCubic(cin)));
+        put(p.art, "--drift", Math.max(-1, Math.min(1.6, x - i)));
+      }
+      // Nothing of the words shows outside a hero that is live, and they stay as they were.
+      if (live || force) {
+        put(p.copy, "--cin", clamp01((cin - 0.5) / 0.5));
+        put(p.copy, "--cout", clamp01(cout / 0.34));
+        put(p.copy, "--exit", state.exit);
+      }
+      put(p.title, "--vel", live ? shownVel : 0);
       // At rest the letters drop their filters.
       const calm = cin >= 1 && cout <= 0;
       if (calm !== h.hasAttribute("data-calm")) h.toggleAttribute("data-calm", calm);
@@ -239,7 +309,7 @@ function stage(root: HTMLElement): () => void {
     settle = window.setTimeout(() => {
       pxPerMs = 0;
       vel = 0;
-      put(stageEl, "--vel", 0);
+      for (const p of parts) put(p.title, "--vel", 0);
       finish();
     }, 140);
     if (queued) return;
@@ -291,18 +361,49 @@ function stage(root: HTMLElement): () => void {
     ),
   );
 
-  // The 3D scene. Where WebGL is missing, the masked pictures and the 2D
+  // The 3D scene, loaded only here, so phones and the plain cards never fetch
+  // three. Until it is up the masked pictures hold the screen. Where WebGL is
+  // missing, the scene cannot load, or the GPU is taken back, they and the 2D
   // dust carry the same story.
   let dust: (() => void) | null = null;
+  let drift: (() => void) | null = null;
   let gl: GLHandle | null = null;
+  let hideLater = 0;
+  const flat = () => {
+    if (signal.aborted) return;
+    clearTimeout(hideLater);
+    picturesHidden = false;
+    root.classList.remove("is-gl");
+    update(true);
+    if (!dust) dust = mountDust(root, heroes, state);
+    if (!drift) drift = starDrift(root);
+  };
+  const showGL = () => {
+    if (signal.aborted) return;
+    root.classList.add("is-gl");
+    dust?.();
+    dust = null;
+    drift?.();
+    drift = null;
+    // The fade to the canvas takes 900 ms in the stylesheet.
+    clearTimeout(hideLater);
+    hideLater = window.setTimeout(() => {
+      picturesHidden = true;
+      update(true);
+    }, 950);
+  };
   const glCanvas = root.querySelector<HTMLCanvasElement>(".cx-gl");
   if (glCanvas) {
-    gl = mountCaseGL(root, glCanvas, heroes, state, () => {
-      if (!signal.aborted) root.classList.add("is-gl");
-    });
+    import("./case-gl")
+      .then(({ mountCaseGL }) => {
+        if (signal.aborted) return;
+        gl = mountCaseGL(root, glCanvas, heroes, state, showGL, flat);
+        if (!gl) flat();
+      })
+      .catch(flat);
+  } else {
+    flat();
   }
-  if (!gl) dust = mountDust(root, heroes, state);
-  const drift = gl ? null : starDrift(root);
 
   // Clicking the 3D art opens the case study that is up.
   glCanvas?.addEventListener(
@@ -318,12 +419,16 @@ function stage(root: HTMLElement): () => void {
     ro.disconnect();
     cancelAnimationFrame(queued);
     clearTimeout(settle);
+    clearTimeout(hideLater);
     dust?.();
     drift?.();
     gl?.stop();
     root.classList.remove("is-gl");
+    document.documentElement.classList.remove("in-cx");
     // Back to the plain cards: drop what the stage wrote.
-    for (const el of [stageEl, ...heroes, ...links]) {
+    const written = [stageEl, ...heroes, ...links, ...headParts, ...exitParts];
+    for (const p of parts) written.push(p.frame, p.rim, p.art, p.copy, p.title);
+    for (const el of written) {
       for (const v of ["--exit", "--open", "--zoom", "--out", "--cin", "--cout", "--drift", "--f", "--vel", "--head"]) el.style.removeProperty(v);
     }
     heroes.forEach((h, i) => {

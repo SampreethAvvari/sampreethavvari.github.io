@@ -222,7 +222,7 @@ const firstSentence = (d: string) => (d.match(/^.*?[.!?](?=\s|$)/) || [d])[0];
             <span class="ax-light" aria-hidden="true"></span>
             <div class="ax-media">
               {p.img ? (
-                <Picture src={p.img} alt={p.alt} width={640} height={360} />
+                <Picture src={p.img} alt={p.alt} width={640} height={360} sizes="(min-width: 768px) 460px, 92vw" />
               ) : (
                 <div class="ax-fallback" aria-hidden="true">
                   <span>{p.fallback}</span>
@@ -251,6 +251,10 @@ const firstSentence = (d: string) => (d.match(/^.*?[.!?](?=\s|$)/) || [d])[0];
 </section>
 
 <style>
+  @property --ax-rx { syntax: "<angle>"; inherits: false; initial-value: 0deg; }
+  @property --ax-ry { syntax: "<angle>"; inherits: false; initial-value: 0deg; }
+  @property --ax-px { syntax: "<length>"; inherits: false; initial-value: 0px; }
+  @property --ax-py { syntax: "<length>"; inherits: false; initial-value: 0px; }
   .ax {
     position: relative;
     z-index: 1;
@@ -408,15 +412,17 @@ const firstSentence = (d: string) => (d.match(/^.*?[.!?](?=\s|$)/) || [d])[0];
     background: #010205;
   }
   /* The dome: tilts a little with the pointer and the scroll. The script
-     writes --rx and --ry; the far sky and the constellations move apart. */
+     writes these every frame; the far sky and the constellations move apart.
+     They do not inherit, so a frame restyles the one element, not the sky under it. */
   .ax-dome {
     position: absolute;
     inset: 0;
     transform-style: preserve-3d;
-    transform: rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg));
-    will-change: transform;
+    transform: rotateX(var(--ax-rx, 0deg)) rotateY(var(--ax-ry, 0deg));
   }
-  .ax-par { position: absolute; inset: 0; transform: translate3d(var(--px, 0px), var(--py, 0px), 0); will-change: transform; }
+  /* Full screen layers only while the sky is on screen. */
+  .ax-map[data-on] .ax-dome, .ax-map[data-on] .ax-par { will-change: transform; }
+  .ax-par { position: absolute; inset: 0; transform: translate3d(var(--ax-px, 0px), var(--ax-py, 0px), 0); }
   .ax[data-view="map"] .ax-listwrap { display: none; }
 
   .ax-sky {
@@ -801,6 +807,7 @@ const firstSentence = (d: string) => (d.match(/^.*?[.!?](?=\s|$)/) || [d])[0];
     /* No perspective here: it would pin the fixed sheet to the map. */
     .ax[data-view="map"] .ax-map { perspective: none; }
     .ax-dome { transform: none; }
+    .ax-map[data-on] .ax-dome { will-change: auto; }
     .ax-name-t { font-size: 0.8125rem; }
     .ax-hint { white-space: normal; text-align: center; width: 80%; }
     .ax-panel {

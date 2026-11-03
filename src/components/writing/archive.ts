@@ -644,6 +644,7 @@ function mountMap(mapEl: HTMLElement): MapHandle {
     ctx.globalCompositeOperation = "destination-out";
     clear(false);
     ctx.globalCompositeOperation = "source-over";
+    skyDirty = true;
     paint(lastOx, lastOy, performance.now());
   };
 
@@ -654,6 +655,9 @@ function mountMap(mapEl: HTMLElement): MapHandle {
   let lastPaint = performance.now();
   let lastOx = 0;
   let lastOy = 0;
+  let paintedX = NaN;
+  let paintedY = NaN;
+  let skyDirty = true;
   const paint = (ox: number, oy: number, now: number) => {
     const ctx = canvas?.getContext("2d");
     if (!canvas || !ctx) return;
@@ -661,9 +665,17 @@ function mountMap(mapEl: HTMLElement): MapHandle {
     lastOy = oy;
     const dt = Math.min(50, now - lastPaint) / 16.67;
     lastPaint = now;
+    // The whole sky is one image: while it has not moved and no star is
+    // falling, what is on the canvas is already right.
+    const atX = Math.round(ox * DPR);
+    const atY = Math.round(oy * DPR);
+    if (atX === paintedX && atY === paintedY && !shots.length && now <= nextShot && !skyDirty) return;
+    paintedX = atX;
+    paintedY = atY;
+    skyDirty = false;
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    ctx.drawImage(bg, Math.round(ox * DPR), Math.round(oy * DPR));
+    ctx.drawImage(bg, atX, atY);
     if (reduce) return;
     ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
     if (now > nextShot) {
@@ -1334,12 +1346,12 @@ function mountMap(mapEl: HTMLElement): MapHandle {
     const sf = Math.max(-1, Math.min(1, (r.top + r.height / 2 - innerHeight / 2) / innerHeight));
     const rx = (sf * 6 - psy * 3 + Math.sin(t * 0.11) * 0.6) * free;
     const ry = (psx * 4 + Math.cos(t * 0.09) * 0.6) * free;
-    dome.style.setProperty("--rx", `${rx.toFixed(3)}deg`);
-    dome.style.setProperty("--ry", `${ry.toFixed(3)}deg`);
+    dome.style.setProperty("--ax-rx", `${rx.toFixed(3)}deg`);
+    dome.style.setProperty("--ax-ry", `${ry.toFixed(3)}deg`);
     const px = (-psx * 16 + Math.sin(t * 0.07) * 6) * free;
     const py = (-psy * 10 + Math.cos(t * 0.05) * 4) * free;
-    par.style.setProperty("--px", `${px.toFixed(2)}px`);
-    par.style.setProperty("--py", `${py.toFixed(2)}px`);
+    par.style.setProperty("--ax-px", `${px.toFixed(2)}px`);
+    par.style.setProperty("--ax-py", `${py.toFixed(2)}px`);
     paint(-psx * 6 - CW * 0.0, -psy * 4, now);
     // Stars near the pointer lean toward it.
     for (const s of stars) {
@@ -1374,6 +1386,7 @@ function mountMap(mapEl: HTMLElement): MapHandle {
   };
   const io = new IntersectionObserver(([en]) => {
     onScreen = en.isIntersecting;
+    mapEl.toggleAttribute("data-on", onScreen);
     run();
   });
   io.observe(mapEl);
