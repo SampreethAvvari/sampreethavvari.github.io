@@ -70,6 +70,8 @@ export interface Space {
   pieces: Piece[];
   /** The live surface world. */
   surface: Surface | null;
+  /** 1 while the planet's sky fills the view (last frame's value). */
+  cover: number;
 }
 
 export interface Chapter {
@@ -502,6 +504,7 @@ export function buildSpace(path: FlightPath, chapters: Chapter[], low: boolean, 
     stars.visible = open;
     threadCore.visible = open;
     threadHalo.visible = open;
+    out.cover = cover;
     skyMat.uniforms.uNebula.value = neb;
     skyMat.uniforms.uWarm.value = warm;
 
@@ -526,8 +529,9 @@ export function buildSpace(path: FlightPath, chapters: Chapter[], low: boolean, 
     threadUniforms.uTime.value = time;
   }
 
-  const surface = pieces.find((pc) => pc.surface)?.surface ?? null;
-  return { group, update, flare, pieces, haze, surface };
+  const out: Space = { group, update, flare, pieces, haze, surface: null, cover: 0 };
+  out.surface = pieces.find((pc) => pc.surface)?.surface ?? null;
+  return out;
 }
 
 /** Chapter light at progress p, eased between neighbours. */

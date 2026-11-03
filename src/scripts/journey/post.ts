@@ -209,6 +209,11 @@ export interface PostFrame {
   flash: number;
   dip: number;
   flashColor: Color;
+  /** Bloom, fringing, grain and exposure scales for the world in view (1 = as built). */
+  bloom?: number;
+  ca?: number;
+  grain?: number;
+  exposure?: number;
 }
 
 export class Post {
@@ -222,6 +227,8 @@ export class Post {
   private readonly up: ShaderMaterial;
   private readonly final: ShaderMaterial;
   private readonly levels: number;
+  private readonly bloomBase: number;
+  private readonly grainBase: number;
   private readonly start: number;
   private readonly bloom: boolean;
   private w = 1;
@@ -232,6 +239,8 @@ export class Post {
     const hdr = renderer.extensions.has("EXT_color_buffer_float") || renderer.extensions.has("EXT_color_buffer_half_float");
     const type = hdr ? HalfFloatType : UnsignedByteType;
     this.bloom = true;
+    this.bloomBase = opts.low ? 0.7 : 0.62;
+    this.grainBase = opts.low ? 0.028 : 0.034;
     // Low quality starts the bloom chain at a quarter size and uses fewer levels.
     this.start = opts.low ? 4 : 2;
     this.levels = opts.low ? 4 : 5;
@@ -340,6 +349,10 @@ export class Post {
 
     const u = this.final.uniforms;
     u.uTime.value = f.time;
+    u.uBloom.value = this.bloomBase * (f.bloom ?? 1);
+    u.uCA.value = 0.018 * (f.ca ?? 1);
+    u.uGrain.value = this.grainBase * (f.grain ?? 1);
+    u.uExposure.value = f.exposure ?? 1;
     u.uFade.value = f.fade;
     u.uFlare.value.x = f.flare.x;
     u.uFlare.value.y = f.flare.y;

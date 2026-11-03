@@ -717,18 +717,16 @@ export function mountJourney(canvas: HTMLCanvasElement, opts: JourneyOptions): J
     // Lights: the hard key comes from the shot's sun direction; the rim in
     // the chapter colour comes from behind the ship as the camera sees it.
     _key.set(S.kx, S.ky, S.kz).normalize().applyAxisAngle(_yAxis, turnAng).applyQuaternion(_rigQuat);
-    const groundK = surface ? smooth(0.2, 0.55, L) : 0;
-    if (L > 0) {
-      if (surface) {
-        // The sun as the ground sees it, held just above the horizon so the
-        // light still rakes the sand once the disc is going down.
-        _sunKey.copy(surface.sunWorld);
-        const lift = 0.085 - _sunKey.dot(landing.up);
-        if (lift > 0) _sunKey.addScaledVector(landing.up, lift);
-        _v.copy(_sunKey).normalize();
-      } else {
-        _v.copy(landing.fwd).addScaledVector(landing.up, 0.35).addScaledVector(landing.right, 0.45).normalize();
-      }
+    // In the planet's world the light is its low sun, from the moment we arrive.
+    const groundK = surface ? space.cover : 0;
+    if (surface && groundK > 0) {
+      // Held just above the horizon so the light still rakes the sand once the disc is going down.
+      _sunKey.copy(surface.sunWorld);
+      const lift = 0.085 - _sunKey.dot(landing.up);
+      if (lift > 0) _sunKey.addScaledVector(landing.up, lift);
+      _key.lerp(_v.copy(_sunKey).normalize(), groundK).normalize();
+    } else if (L > 0) {
+      _v.copy(landing.fwd).addScaledVector(landing.up, 0.35).addScaledVector(landing.right, 0.45).normalize();
       _key.lerp(_v, smooth(0, 0.5, L)).normalize();
     }
     key.position.copy(_target).addScaledVector(_key, shadowWide ? 80 : 30);
@@ -747,7 +745,7 @@ export function mountJourney(canvas: HTMLCanvasElement, opts: JourneyOptions): J
       fill.groundColor.copy(_spaceFillGround);
     }
     // The low sun throws long shadows, so the shadow camera opens up on the ground.
-    const wantWide = shadows && L > 0.7;
+    const wantWide = shadows && L > 0.5;
     if (wantWide !== shadowWide) {
       shadowWide = wantWide;
       const sc = key.shadow.camera;
@@ -844,6 +842,10 @@ export function mountJourney(canvas: HTMLCanvasElement, opts: JourneyOptions): J
     pf.flash = reduced ? 0 : cross;
     pf.dip = reduced && ja > 0 ? 0.92 * Math.exp(-Math.pow((ja - 0.5) / 0.2, 2)) : 0;
     pf.flashColor.copy(_color).lerp(_white, 0.55);
+    pf.bloom = lerp(1, 0.32, groundK);
+    pf.ca = lerp(1, 0.3, groundK);
+    pf.grain = lerp(1, 0.55, groundK);
+    pf.exposure = lerp(1, 0.9, groundK);
     post.render(scene, camera, pf);
   }
 

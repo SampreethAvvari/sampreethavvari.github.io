@@ -145,6 +145,86 @@ function rippleTexture(size: number): DataTexture {
   return t;
 }
 
+// ------------------------------------------------------------------ moons
+
+/** A moon's surface, baked once: RG hold the slope, B the brightness. Maria, craters and rays. */
+function moonTexture(w: number, seed: number): DataTexture {
+  const h = w >> 1;
+  const hgt = new Float32Array(w * h);
+  const alb = new Float32Array(w * h);
+  const r = rng(seed * 991 + 7);
+  const TAU = Math.PI * 2;
+  // Unit sphere direction per texel, so nothing pinches at the poles.
+  const dx = new Float32Array(w * h);
+  const dy = new Float32Array(w * h);
+  const dz = new Float32Array(w * h);
+  for (let j = 0; j < h; j++) {
+    const th = ((j + 0.5) / h) * Math.PI;
+    for (let i = 0; i < w; i++) {
+      const ph = ((i + 0.5) / w) * TAU;
+      const k = j * w + i;
+      dx[k] = Math.sin(th) * Math.cos(ph);
+      dy[k] = Math.cos(th);
+      dz[k] = Math.sin(th) * Math.sin(ph);
+      // Broad dark seas and fine mottling.
+      const n = fbm2(dx[k] * 1.7 + dz[k] * 1.1 + seed, dy[k] * 1.9 + dz[k] * 0.8 + seed * 2);
+      const f = fbm2(dx[k] * 9 + dy[k] * 4 + seed, dz[k] * 9 - dy[k] * 3);
+      alb[k] = 0.62 + 0.3 * f - 0.42 * smooth(0.46, 0.62, n);
+      hgt[k] = f * 0.03;
+    }
+  }
+  const CR = Math.round(170 + (w / 768) * 170);
+  for (let c = 0; c < CR; c++) {
+    const u = r() * 2 - 1;
+    const a = r() * TAU;
+    const s = Math.sqrt(1 - u * u);
+    const cx = s * Math.cos(a);
+    const cy = u;
+    const cz = s * Math.sin(a);
+    const big = r() > 0.94;
+    const rad = big ? 0.1 + r() * 0.14 : 0.012 + Math.pow(r(), 2.6) * 0.09;
+    const depth = rad * 0.5;
+    const cosR = Math.cos(rad * 2.6);
+    const bright = 0.05 + r() * 0.1;
+    for (let k = 0; k < w * h; k++) {
+      const dot = dx[k] * cx + dy[k] * cy + dz[k] * cz;
+      if (dot < cosR) continue;
+      const q = Math.acos(Math.min(1, dot)) / rad;
+      if (q < 1) {
+        hgt[k] += -depth * (1 - q * q) + depth * 0.5 * Math.pow(q, 8);
+        alb[k] -= 0.05 * (1 - q);
+      } else if (q < 1.5) {
+        hgt[k] += depth * 0.5 * (1 - (q - 1) * 2);
+        alb[k] += bright * 0.6 * (1 - (q - 1) * 2);
+      } else {
+        alb[k] += (big ? bright : bright * 0.3) * (1 - (q - 1.5) / 1.1) * 0.5;
+      }
+    }
+  }
+  const data = new Uint8Array(w * h * 4);
+  for (let j = 0; j < h; j++) {
+    for (let i = 0; i < w; i++) {
+      const k = j * w + i;
+      const hl = hgt[j * w + ((i + w - 1) % w)];
+      const hr = hgt[j * w + ((i + 1) % w)];
+      const hd = hgt[Math.max(0, j - 1) * w + i];
+      const hu = hgt[Math.min(h - 1, j + 1) * w + i];
+      const scale = w / 4;
+      data[k * 4] = clamp(128 + (hl - hr) * scale * 127, 0, 255);
+      data[k * 4 + 1] = clamp(128 + (hd - hu) * scale * 127, 0, 255);
+      data[k * 4 + 2] = clamp(alb[k] * 255, 0, 255);
+      data[k * 4 + 3] = 255;
+    }
+  }
+  const t = new DataTexture(data, w, h, RGBAFormat, UnsignedByteType);
+  t.wrapS = RepeatWrapping;
+  t.magFilter = LinearFilter;
+  t.minFilter = LinearMipmapLinearFilter;
+  t.generateMipmaps = true;
+  t.needsUpdate = true;
+  return t;
+}
+
 // ------------------------------------------------------------------ sky
 
 const SKY_UNIFORMS = /* glsl */ `
@@ -164,11 +244,54 @@ const SKY_FN = /* glsl */ `
     vec2 hs = normalize(uSun.xz + 1e-5);
     float az = 0.5 + 0.5 * dot(hd, hs);
     vec3 hor = mix(uHorAway, uHorSun, pow(az, 1.6));
-    vec3 c = mix(hor, uMid, smoothstep(0.0, 0.2, y));
-    c = mix(c, uTop, smoothstep(0.1, 0.8, y));
-    float mu = max(dot(d, uSun), 0.0);
-    c += uSunCol * (0.1 * pow(mu, 5.0) + 0.3 * pow(mu, 40.0) + 0.9 * pow(mu, 500.0));
+    vec3 c = mix(hor, uMid, smoothstep(0.0, 0.16, y));
+    c = mix(c, uTop, smoothstep(0.12, 0.7, y));
+    // A thin band of haze lying on the horizon.
+    c = mix(c, hor * vec3(0.92, 0.82, 0.7), exp(-y * 46.0) * 0.55);
+    float mu = clamp(dot(d, uSun), 0.0, 1.0);
+    c += uSunCol * (0.12 * pow(mu, 6.0) + 0.3 * pow(mu, 48.0) + 0.55 * pow(mu, 420.0));
     return c;
+  }
+`;
+
+const MOON_VS = /* glsl */ `
+  varying vec2 vUv;
+  varying vec3 vN;
+  varying vec3 vSite;
+  void main() {
+    vUv = uv;
+    vN = normalize(mat3(modelMatrix) * normal);
+    vec4 sp = modelMatrix * vec4(position, 1.0);
+    vSite = (viewMatrix * sp).xyz;
+    gl_Position = projectionMatrix * viewMatrix * sp;
+  }
+`;
+
+const MOON_FS = /* glsl */ `
+  ${SKY_UNIFORMS}
+  uniform sampler2D tMoon;
+  uniform vec3 uLight;
+  uniform float uSoft;
+  uniform float uCover;
+  varying vec2 vUv;
+  varying vec3 vN;
+  varying vec3 vSite;
+  ${SKY_FN}
+  void main() {
+    vec4 t = texture2D(tMoon, vUv, uSoft * 3.0);
+    // Bump in the surface tangent plane, close enough at this distance.
+    vec3 n = normalize(vN);
+    vec3 tx = normalize(cross(vec3(0.0, 1.0, 0.0), n) + vec3(1e-4, 0.0, 0.0));
+    vec3 ty = cross(n, tx);
+    vec3 bn = normalize(n + (tx * (t.x - 0.5) + ty * (t.y - 0.5)) * 1.5);
+    float lit = dot(bn, uLight);
+    float term = smoothstep(-0.04, 0.26, lit);
+    vec3 lightCol = vec3(1.02, 0.66, 0.42);
+    vec3 day = lightCol * (0.4 + 0.74 * t.z) * term * pow(max(lit, 0.0), 0.8) * 1.05;
+    // The air in front of the moon: its night side sinks into a darker sky colour.
+    vec3 air = skyColor(normalize(vec3(0.0, 0.3, -1.0)));
+    vec3 col = air * 0.46 + day;
+    gl_FragColor = vec4(col, 1.0);
   }
 `;
 
@@ -186,6 +309,9 @@ const DOME_FS = /* glsl */ `
   uniform float uStars;
   uniform float uTime;
   uniform float uSunCos;
+  uniform vec3 uRingN;
+  uniform vec3 uRingA;
+  uniform vec3 uRingB;
   varying vec3 vDir;
   ${SKY_FN}
   float hash13(vec3 p) {
@@ -212,12 +338,23 @@ const DOME_FS = /* glsl */ `
     float band = vnoise(sp) * 0.6 + vnoise(sp * vec2(2.3, 3.1) + 4.0) * 0.4;
     band = smoothstep(0.5, 0.86, band) * smoothstep(0.0, 0.05, yy) * (1.0 - smoothstep(0.2, 0.5, yy));
     c = mix(c, c * vec3(1.32, 1.16, 1.04), band * 0.65);
-    // The sun.
+    // A faint ring around the planet, a thin arc high across the sky, with
+    // something catching the light as it travels along it.
+    float rr = dot(d, uRingN);
+    float ringFade = smoothstep(0.015, 0.16, yy);
+    float ringW = abs(rr + 0.012);
+    float ring = smoothstep(0.016, 0.0, ringW) * (0.45 + 0.55 * sin(rr * 620.0) * sin(rr * 240.0 + 1.0));
+    ring += smoothstep(0.0028, 0.0, abs(rr - 0.006)) * 0.9;
+    float along = atan(dot(d, uRingA), dot(d, uRingB));
+    float glint = pow(0.5 + 0.5 * sin(along * 26.0 - uTime * 0.05), 900.0) * smoothstep(0.004, 0.0, abs(rr - 0.006));
+    c += (vec3(1.0, 0.6, 0.32) * max(ring, 0.0) * 0.075 + vec3(1.1, 0.85, 0.6) * glint * 0.35) * ringFade;
+    // The sun: low, dim, a disc you could almost look at. It reddens toward the horizon.
     float mu = dot(d, uSun);
-    float disc = smoothstep(uSunCos - 0.00006, uSunCos + 0.00006, mu);
+    float disc = smoothstep(uSunCos - 0.00012, uSunCos + 0.00012, mu);
     float limb = smoothstep(uSunCos, 1.0, mu);
-    c += disc * vec3(4.6, 2.5, 0.95) * (0.6 + 0.4 * pow(limb, 0.3));
-    // The first stars, where the sky has gone dark.
+    vec3 sunDisc = mix(vec3(1.02, 0.42, 0.1), vec3(1.42, 0.8, 0.3), smoothstep(-0.01, 0.12, d.y));
+    c = mix(c, sunDisc * (0.86 + 0.14 * pow(limb, 0.4)), disc);
+    // The first stars, through the upper sky first.
     if (uStars > 0.001 && yy > 0.02) {
       vec3 sd = d * 190.0;
       vec3 id = floor(sd);
@@ -226,7 +363,7 @@ const DOME_FS = /* glsl */ `
         vec3 f = fract(sd) - 0.5;
         float s = smoothstep(0.32, 0.0, length(f));
         float tw = 0.75 + 0.25 * sin(uTime * (1.0 + h * 4.0) + h * 60.0);
-        c += vec3(1.0, 0.93, 0.85) * s * s * tw * (h - 0.985) * 180.0 * uStars * smoothstep(0.02, 0.2, yy);
+        c += vec3(1.0, 0.9, 0.78) * s * s * tw * (h - 0.985) * 180.0 * uStars * smoothstep(0.1, 0.5, yy);
       }
     }
     gl_FragColor = vec4(c, uCover);
@@ -376,10 +513,11 @@ export interface SurfaceShot {
 
 /** Camera path through the world. Index 1 is the first steps, 2 the helmet, 3 the touch. */
 const EXIT_POS = new Vector3(0, 1.3, 12.5);
-const EXIT_LOOK = new Vector3(0, 2.1, -60);
+const EXIT_LOOK = new Vector3(0, 4.6, -60);
 const WIDE_POS = new Vector3(0, 0, -80); // height comes from the ground below
 const WIDE_YAW = (-8 * Math.PI) / 180;
 const WIDE_PITCH = (6.4 * Math.PI) / 180;
+const MOON_ANCHOR = new Vector3(0, 0, -80);
 
 export interface SurfaceInput {
   time: number;
@@ -396,6 +534,8 @@ export interface SurfaceInput {
 
 export interface Surface {
   group: Group;
+  /** 1 to 0 as the ground goes out of focus in the closeup: softens the moons. */
+  setSoft(v: number): void;
   /** Unit vector toward the sun, in world space. */
   sunWorld: Vector3;
   sunColor: Color;
@@ -418,6 +558,23 @@ export function buildSurface(o: { low: boolean; landing: Landing; cloudTex: Text
   const inv = new Quaternion().copy(l.quat).invert();
   const r = rng(4242);
 
+  function moon(radius: number, dist: number, azDeg: number, elDeg: number, seed: number, texW: number, drift: number) {
+    const map = moonTexture(texW, seed);
+    const m = new ShaderMaterial({
+      vertexShader: MOON_VS,
+      fragmentShader: MOON_FS,
+      uniforms: { ...skyU, tMoon: { value: map }, uLight: moonLight, uSoft: moonSoft, uCamSite: camSite, uCover: cover },
+    });
+    const mesh = new Mesh(new SphereGeometry(radius, low ? 48 : 80, low ? 32 : 56), m);
+    mesh.frustumCulled = false;
+    mesh.renderOrder = -58;
+    mesh.rotation.set(0.5 + seed, seed * 2.1, 0.3);
+    group.add(mesh);
+    const az = (azDeg * Math.PI) / 180;
+    const el = (elDeg * Math.PI) / 180;
+    return { mesh, map, mat: m, dist, az, el, drift };
+  }
+
   // Shared by the sky and the ground.
   const sun = new Vector3(0, 0.1, -1).normalize();
   const skyU = {
@@ -433,10 +590,23 @@ export function buildSurface(o: { low: boolean; landing: Landing; cloudTex: Text
   const uTime = { value: 0 };
 
   // ------------------------------------------------------------ sky dome
+  // The plane of the ring, tilted so the arc crosses the upper sky on the sun's side.
+  const ringN = new Vector3(0.14, 0.92, 0.37).normalize();
+  const ringA = new Vector3(1, 0, 0).addScaledVector(ringN, -ringN.x).normalize();
+  const ringB = new Vector3().crossVectors(ringN, ringA);
   const domeMat = new ShaderMaterial({
     vertexShader: DOME_VS,
     fragmentShader: DOME_FS,
-    uniforms: { ...skyU, uCover: cover, uStars: { value: 0 }, uTime, uSunCos: { value: Math.cos((2.3 * Math.PI) / 180) } },
+    uniforms: {
+      ...skyU,
+      uCover: cover,
+      uStars: { value: 0 },
+      uTime,
+      uSunCos: { value: Math.cos((2.6 * Math.PI) / 180) },
+      uRingN: { value: ringN },
+      uRingA: { value: ringA },
+      uRingB: { value: ringB },
+    },
     side: 1, // back side
     transparent: true,
     depthWrite: false,
@@ -446,6 +616,16 @@ export function buildSurface(o: { low: boolean; landing: Landing; cloudTex: Text
   dome.frustumCulled = false;
   dome.renderOrder = -60;
   group.add(dome);
+
+  // ------------------------------------------------------------ moons
+  // Two real spheres, large and close, lit from the sun's side. They are far
+  // enough to feel huge and near enough that the camera's travel moves them.
+  const moonLight = { value: new Vector3(0.95, -0.1, 0.26).normalize() };
+  const moonSoft = { value: 0 };
+  const moonList = [
+    moon(120, 1500, 3, 14.5, 7, low ? 384 : 768, 0.0009),
+    moon(24, 700, -10, 8.6, 19, low ? 192 : 384, -0.0016),
+  ];
 
   // ------------------------------------------------------------ ground
   const NR = low ? 92 : 170;
@@ -543,7 +723,7 @@ export function buildSurface(o: { low: boolean; landing: Landing; cloudTex: Text
           vec2 g = (a.xy - 0.5) * 1.0 * fa + (b.xy - 0.5) * 1.5 * fb + (c.xy - 0.5) * 1.1 * fc;
           sandGrad = vec3(g.x, 0.0, g.y) * 1.9;
           sandH = (a.z - 0.5) * fa * 0.5 + (b.z - 0.5) * fb * 0.8 + (c.z - 0.5) * fc * 0.9;
-          diffuseColor.rgb = mix(vec3(0.47, 0.25, 0.135), vec3(0.72, 0.44, 0.25), clamp(0.5 + sandH * 0.8, 0.0, 1.0));
+          diffuseColor.rgb = mix(vec3(0.44, 0.2, 0.085), vec3(0.72, 0.38, 0.16), clamp(0.5 + sandH * 0.8, 0.0, 1.0));
         }`,
       )
       .replace(
@@ -570,7 +750,7 @@ export function buildSurface(o: { low: boolean; landing: Landing; cloudTex: Text
           vec3 ss = normalize(vec3(dir.x, 0.0, dir.z));
           float toward = pow(max(dot(ss, normalize(uSun)), 0.0), 18.0);
           float glitter = toward * smoothstep(-0.12, 0.34, sandH) * (1.0 - smoothstep(60.0, 900.0, dist));
-          gl_FragColor.rgb += uSunCol * glitter * 0.22;
+          gl_FragColor.rgb += uSunCol * glitter * 0.5;
           gl_FragColor.rgb = mix(gl_FragColor.rgb, air, k);
           gl_FragColor.a = uCover;
         }`,
@@ -712,7 +892,6 @@ export function buildSurface(o: { low: boolean; landing: Landing; cloudTex: Text
   const approachLook = new CatmullRomCurve3([wideLook, site(-1.1, standY + 3.0, -140), site(-0.9, standY + 1.1, -128), touchLook], false, "centripetal");
   const landedLook = site(0, 2.0, -60);
   const landedPos = site(-6.5, l.stand + 1.9, 14);
-  const tmp = new Vector3();
 
   function shot(s: number, portrait: boolean, out: SurfaceShot) {
     const fovExit = 30;
@@ -779,31 +958,51 @@ export function buildSurface(o: { low: boolean; landing: Landing; cloudTex: Text
     // The evening moves on with the story: golden at the lander, sun on the
     // horizon for the helmet, the last light and the first stars for the touch.
     const dusk = clamp(s < 2 ? lerp(0.1, 0.5, smooth(0, 2, s)) : lerp(0.5, 0.95, smooth(2, 3, s)), 0, 1);
-    const el = lerp(0.1, -0.006, smooth(0.05, 0.98, dusk));
+    const el = lerp(0.082, -0.004, smooth(0.05, 0.98, dusk));
     const az = (8 * Math.PI) / 180;
     sun.set(Math.sin(az) * Math.cos(el), Math.sin(el), -Math.cos(az) * Math.cos(el)).normalize();
     sunWorld.copy(sun).applyQuaternion(l.quat);
 
-    key3(dusk, [1.16, 0.4, 0.075], [1.2, 0.33, 0.045], [0.8, 0.19, 0.04], skyU.uHorSun.value);
-    key3(dusk, [0.6, 0.22, 0.08], [0.52, 0.16, 0.055], [0.2, 0.06, 0.05], skyU.uHorAway.value);
-    key3(dusk, [0.88, 0.3, 0.06], [0.82, 0.235, 0.045], [0.36, 0.09, 0.045], skyU.uMid.value);
-    key3(dusk, [0.56, 0.17, 0.065], [0.46, 0.115, 0.055], [0.075, 0.026, 0.05], skyU.uTop.value);
-    key3(dusk, [0.7, 0.3, 0.07], [0.72, 0.25, 0.04], [0.5, 0.14, 0.03], skyU.uSunCol.value);
-    domeMat.uniforms.uStars.value = smooth(0.55, 0.95, dusk);
+    key3(dusk, [0.86, 0.3, 0.04], [0.82, 0.25, 0.03], [0.5, 0.13, 0.024], skyU.uHorSun.value);
+    key3(dusk, [0.5, 0.15, 0.03], [0.42, 0.115, 0.026], [0.15, 0.04, 0.028], skyU.uHorAway.value);
+    key3(dusk, [0.86, 0.26, 0.032], [0.8, 0.21, 0.027], [0.36, 0.08, 0.028], skyU.uMid.value);
+    key3(dusk, [0.58, 0.145, 0.034], [0.46, 0.1, 0.034], [0.09, 0.026, 0.042], skyU.uTop.value);
+    key3(dusk, [0.34, 0.14, 0.025], [0.32, 0.11, 0.018], [0.2, 0.055, 0.01], skyU.uSunCol.value);
+    domeMat.uniforms.uStars.value = 0.22 + 0.78 * smooth(0.4, 0.95, dusk);
 
-    key3(dusk, [3.4, 1.9, 1.0], [3.2, 1.5, 0.72], [1.5, 0.6, 0.3], sunColor);
-    key3(dusk, [0.86, 0.46, 0.27], [0.74, 0.34, 0.2], [0.26, 0.12, 0.11], skyLight);
-    key3(dusk, [0.2, 0.1, 0.055], [0.16, 0.07, 0.04], [0.05, 0.022, 0.016], groundLight);
+    key3(dusk, [2.3, 1.06, 0.42], [2.1, 0.84, 0.3], [1.0, 0.35, 0.13], sunColor);
+    key3(dusk, [0.82, 0.32, 0.09], [0.72, 0.25, 0.065], [0.24, 0.075, 0.04], skyLight);
+    key3(dusk, [0.2, 0.08, 0.03], [0.16, 0.06, 0.022], [0.05, 0.018, 0.012], groundLight);
     hazeColor.copy(skyU.uHorSun.value).lerp(skyU.uMid.value, 0.5).multiplyScalar(0.8);
     sandU.uAmbient.value.copy(skyLight).multiplyScalar(0.3);
 
+    // The moons drift very slowly; the camera's own travel moves them far more.
+    for (const m of moonList) {
+      const az = m.az + (f.reduced ? 0 : time * m.drift * 0.02);
+      const ce = Math.cos(m.el);
+      // Centred on the wide shot's camera so they sit where the frame wants them.
+      m.mesh.position.set(MOON_ANCHOR.x + Math.sin(az) * ce * m.dist, MOON_ANCHOR.y + Math.sin(m.el) * m.dist, MOON_ANCHOR.z - Math.cos(az) * ce * m.dist);
+      if (!f.reduced) m.mesh.rotation.y += dt * 0.004;
+    }
+
     // The dust takes the light of the hour.
     const lit = 0.32 + 0.68 * (1 - dusk);
-    for (const m of veils) m.uniforms.uColor.value.setRGB(0.95, 0.52, 0.27).multiplyScalar(lit);
-    devilMat.uniforms.uColor.value.setRGB(0.62, 0.3, 0.16).multiplyScalar(lit);
-    moteMat.uniforms.uColor.value.setRGB(1.0, 0.72, 0.46).multiplyScalar(lit);
-    tmp.copy(sun);
+    for (const m of veils) m.uniforms.uColor.value.setRGB(0.86, 0.38, 0.13).multiplyScalar(lit);
+    devilMat.uniforms.uColor.value.setRGB(0.5, 0.2, 0.08).multiplyScalar(lit);
+    moteMat.uniforms.uColor.value.setRGB(1.0, 0.62, 0.32).multiplyScalar(lit);
   }
 
-  return { group, sunWorld, sunColor, skyLight, groundLight, hazeColor, shot, update };
+  return {
+    group,
+    setSoft(v: number) {
+      moonSoft.value = v;
+    },
+    sunWorld,
+    sunColor,
+    skyLight,
+    groundLight,
+    hazeColor,
+    shot,
+    update,
+  };
 }
