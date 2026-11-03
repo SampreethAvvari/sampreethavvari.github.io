@@ -230,7 +230,7 @@ Vertex AI, Eventarc, Cloud Tasks), AWS (EC2, S3, ECR, RDS). Docker, Terraform.
 PyTorch, MONAI, OpenVINO, Transformers, TRL. MLflow, W&B.
 
 Contact: spa9659@nyu.edu. Portfolio: https://sampreethavvari.com.
-LinkedIn: https://hi.switchy.io/MMTw. GitHub: https://github.com/SampreethAvvari.
+LinkedIn: https://www.linkedin.com/in/sampreethavvari/. GitHub: https://github.com/SampreethAvvari.
 
 Known URLs on his portfolio site. ALWAYS link to the most specific one that
 matches the question, never just the bare homepage:

@@ -17,3 +17,16 @@ binding = "AI"
 
 [observability]
 enabled = true
+
+# A few questions a minute per visitor IP, counted exactly by one small
+# Durable Object per IP (src/rate-gate.ts). SQLite backed, so it runs on the
+# free plan.
+[[durable_objects.bindings]]
+name = "RATE_GATE"
+class_name = "RateGate"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["RateGate"]
+
+# CHAT_SIGNING_KEY is a secret: wrangler secret put CHAT_SIGNING_KEY
