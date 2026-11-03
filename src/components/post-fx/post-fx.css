@@ -825,7 +825,7 @@ a.pfx-sky-star { color: var(--ink); text-decoration: underline; text-underline-o
    --------------------------------------------------------------------------- */
 @media print {
   html, body, main, .post { background: #fff !important; color: #000 !important; }
-  body > *:not(main) { display: none !important; }
+  body > *:not(main), body::after, body::before { display: none !important; }
   .pfx-veil, .pfx-gl, .pfx-scrim, .pfx-cue, .pfx-link, .pfx-view, .pfx-codecopy, .pfx-slot, .pfx-sky, .pfx-rail,
   .post-toc-wrap, .post-progress, .post-back, .post-next, .tone-atmos { display: none !important; }
   .pfx-stage { position: static !important; min-height: 0 !important; overflow: visible !important; }
