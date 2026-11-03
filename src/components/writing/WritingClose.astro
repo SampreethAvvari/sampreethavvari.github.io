@@ -107,8 +107,8 @@ const MOTION: Record<string, "compass" | "sphere"> = {
     background: #010205;
     overflow-x: clip;
     /* A crossfade with the sky above, as dim as the stars here. */
-    --join-top: -20vh;
-    --join-h: 42vh;
+    --join-top: -11vh;
+    --join-h: 24vh;
     --join-o: 0.72;
   }
 
@@ -124,8 +124,8 @@ const MOTION: Record<string, "compass" | "sphere"> = {
     background-size: 1024px 1024px;
     will-change: transform;
     /* They come in from the sky above and go out into what is below. */
-    -webkit-mask-image: linear-gradient(180deg, transparent 0, #000 22vh, #000 calc(100% - 1024px - 24vh), transparent calc(100% - 1024px));
-    mask-image: linear-gradient(180deg, transparent 0, #000 22vh, #000 calc(100% - 1024px - 24vh), transparent calc(100% - 1024px));
+    -webkit-mask-image: linear-gradient(180deg, transparent 0, #000 14vh, #000 calc(100% - 1024px - 24vh), transparent calc(100% - 1024px));
+    mask-image: linear-gradient(180deg, transparent 0, #000 14vh, #000 calc(100% - 1024px - 24vh), transparent calc(100% - 1024px));
   }
   .wc-stars-far { opacity: 0.6; background-image: url(/writing/stars-far.webp); transform: translate3d(0, var(--wc-far, 0px), 0); }
   .wc-stars-near { opacity: 0.85; background-image: url(/writing/stars-near.webp); transform: translate3d(0, var(--wc-near, 0px), 0); }

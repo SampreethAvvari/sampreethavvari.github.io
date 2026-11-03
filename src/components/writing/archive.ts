@@ -435,7 +435,12 @@ function mountMap(mapEl: HTMLElement): MapHandle {
   // one each frame with the far parallax and any shooting star on top. The
   // stars have the same count, sizes and colours as the sheets over the case
   // studies, so the night reads as one across the join.
+  const SPARE_MAG = 0.46;
+  const SPARE_SHARE = 0.06;
   const field = document.createElement("canvas");
+  // The stars that leave where the constellations are: every bright one, and a
+  // share of the rest.
+  const spare = document.createElement("canvas");
   const bg = document.createElement("canvas");
   let CW = 1;
   let CH = 1;
@@ -449,12 +454,18 @@ function mountMap(mapEl: HTMLElement): MapHandle {
     canvas.height = Math.round(CH * DPR);
     field.width = canvas.width;
     field.height = canvas.height;
+    spare.width = canvas.width;
+    spare.height = canvas.height;
     bg.width = canvas.width;
     bg.height = canvas.height;
     const ctx = field.getContext("2d");
-    if (!ctx) return;
+    const sc = spare.getContext("2d");
+    if (!ctx || !sc) return;
     ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
     ctx.clearRect(0, 0, CW, CH);
+    sc.setTransform(DPR, 0, 0, DPR, 0, 0);
+    sc.clearRect(0, 0, CW, CH);
+    sc.globalCompositeOperation = "lighter";
     let seed = 7;
     const rnd = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
     // A faint Milky Way, corner to corner, low left to high right.
@@ -498,6 +509,7 @@ function mountMap(mapEl: HTMLElement): MapHandle {
       { n: 44, s0: 1.3, s1: 2.2, gain: 1, halo: 0 },
       { n: 5, s0: 2, s1: 2.8, gain: 1, halo: 10 },
     ];
+    let count = 0;
     for (const sh of SHEETS) {
       for (let i = 0; i < Math.round(sh.n * area); i++) {
         const x = rnd() * CW;
@@ -510,51 +522,54 @@ function mountMap(mapEl: HTMLElement): MapHandle {
         const mix = (warm: number, cool: number) => Math.round(255 * (1 + ((warm + (cool - warm) * b) - 1) * 0.6));
         const rgb = `${mix(1, 0.78)},${mix(0.88, 0.87)},${mix(0.76, 1)}`;
         const R = sig * 3.2;
-        const g = ctx.createRadialGradient(x, y, 0, x, y, R);
+        // Which stars can leave comes from the star's place in the list, so
+        // the sky itself stays the same.
+        count++;
+        const out = mag > SPARE_MAG || sig > 1.15 || (count * 0.618034) % 1 < SPARE_SHARE ? sc : ctx;
+        const g = out.createRadialGradient(x, y, 0, x, y, R);
         g.addColorStop(0, `rgba(${rgb},${mag.toFixed(3)})`);
         g.addColorStop(0.32, `rgba(${rgb},${(mag * 0.6).toFixed(3)})`);
         g.addColorStop(0.62, `rgba(${rgb},${(mag * 0.15).toFixed(3)})`);
         g.addColorStop(1, `rgba(${rgb},0)`);
-        ctx.fillStyle = g;
-        ctx.fillRect(x - R, y - R, R * 2, R * 2);
+        out.fillStyle = g;
+        out.fillRect(x - R, y - R, R * 2, R * 2);
         if (sh.halo) {
           const HR = sh.halo * 3;
-          const h = ctx.createRadialGradient(x, y, 0, x, y, HR);
+          const h = out.createRadialGradient(x, y, 0, x, y, HR);
           h.addColorStop(0, `rgba(${rgb},${(mag * 0.2).toFixed(3)})`);
           h.addColorStop(0.4, `rgba(${rgb},${(mag * 0.06).toFixed(3)})`);
           h.addColorStop(1, `rgba(${rgb},0)`);
-          ctx.fillStyle = h;
-          ctx.fillRect(x - HR, y - HR, HR * 2, HR * 2);
+          out.fillStyle = h;
+          out.fillRect(x - HR, y - HR, HR * 2, HR * 2);
         }
       }
     }
     // The sky has no top or bottom edge: its stars fade out there, and the
     // stars laid over each join carry on across it.
-    ctx.globalCompositeOperation = "destination-out";
     const fade = CH * 0.2;
-    let g = ctx.createLinearGradient(0, 0, 0, fade);
-    g.addColorStop(0, "rgba(0,0,0,1)");
-    g.addColorStop(1, "rgba(0,0,0,0)");
-    ctx.fillStyle = g;
-    ctx.fillRect(0, 0, CW, fade);
-    g = ctx.createLinearGradient(0, CH - fade, 0, CH);
-    g.addColorStop(0, "rgba(0,0,0,0)");
-    g.addColorStop(1, "rgba(0,0,0,1)");
-    ctx.fillStyle = g;
-    ctx.fillRect(0, CH - fade, CW, fade);
-    ctx.globalCompositeOperation = "source-over";
+    const fadeLow = CH * 0.12;
+    for (const c of [ctx, sc]) {
+      c.globalCompositeOperation = "destination-out";
+      let g = c.createLinearGradient(0, 0, 0, fade);
+      g.addColorStop(0, "rgba(0,0,0,1)");
+      g.addColorStop(1, "rgba(0,0,0,0)");
+      c.fillStyle = g;
+      c.fillRect(0, 0, CW, fade);
+      g = c.createLinearGradient(0, CH - fadeLow, 0, CH);
+      g.addColorStop(0, "rgba(0,0,0,0)");
+      g.addColorStop(1, "rgba(0,0,0,1)");
+      c.fillStyle = g;
+      c.fillRect(0, CH - fadeLow, CW, fadeLow);
+      c.globalCompositeOperation = "source-over";
+    }
   };
 
-  // The stars thin out where the constellations are, most of all right around
-  // their stars, lines and names, and stay rich toward the edges of the sky.
+  // Where the constellations are, the spare stars leave and the rest dim, most
+  // of all right around their stars, lines and names. The edges of the sky keep
+  // every star.
   const carve = () => {
     const ctx = bg.getContext("2d");
     if (!ctx || !field.width) return;
-    ctx.setTransform(1, 0, 0, 1, 0, 0);
-    ctx.clearRect(0, 0, bg.width, bg.height);
-    ctx.drawImage(field, 0, 0);
-    ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
-    ctx.globalCompositeOperation = "destination-out";
     // A point of the map on this canvas: the canvas is oversized and sits a
     // little back in the dome.
     const back = phone ? 1 : 1500 / 1440;
@@ -562,52 +577,72 @@ function mountMap(mapEl: HTMLElement): MapHandle {
     const oy = H * 0.45;
     const px = (x: number) => ox + (x - ox) * back + (CW - W) / 2;
     const py = (y: number) => oy + (y - oy) * back + (CH - H) / 2;
-    const oval = (x: number, y: number, rx: number, ry: number, a: number) => {
+    const oval = (x: number, y: number, rx: number, ry: number, a: number, solid: boolean) => {
       ctx.save();
       ctx.translate(x, y);
       ctx.scale(rx, ry);
       const g = ctx.createRadialGradient(0, 0, 0, 0, 0, 1);
       g.addColorStop(0, `rgba(0,0,0,${a})`);
-      g.addColorStop(0.55, `rgba(0,0,0,${(a * 0.7).toFixed(3)})`);
+      if (solid) g.addColorStop(0.62, `rgba(0,0,0,${a})`);
+      else g.addColorStop(0.55, `rgba(0,0,0,${(a * 0.7).toFixed(3)})`);
       g.addColorStop(1, "rgba(0,0,0,0)");
       ctx.fillStyle = g;
       ctx.fillRect(-1, -1, 2, 2);
       ctx.restore();
     };
-    const reach = phone ? 0.62 : 1;
     const mr = mapEl.getBoundingClientRect();
     const words = overlay ? Array.from(overlay.querySelectorAll<HTMLElement>(".ax-h2, .ax-dock, .ax-fpill, .ax-head .kicker")) : [];
-    for (const el of words) {
-      const r = el.getBoundingClientRect();
-      if (!r.width || getComputedStyle(el).visibility === "hidden") continue;
-      // Measured against the map, so it holds wherever the page is scrolled.
-      const x = r.left - mr.left + r.width / 2;
-      const y = r.top - mr.top + r.height / 2;
-      if (y > H) continue;
-      oval(px(x), py(y), r.width * 0.68, r.height * 1.25, 0.82);
-    }
-    for (const g of groups) {
-      const vis = g.stars.filter((s) => s.on);
-      if (!vis.length) continue;
-      // The area of the whole figure, broad and gentle.
-      const cx = (g.x0 + g.x1) / 2;
-      const cy = (g.y0 + g.y1) / 2;
-      oval(px(cx), py(cy), (g.x1 - g.x0) / 2 + 150 * reach, (g.y1 - g.y0) / 2 + 150 * reach, 0.5);
-      // Tight around each star.
-      for (const s of vis) oval(px(s.x), py(s.y), 58 * reach, 58 * reach, 0.72);
-      // Along each line.
-      for (const [a, b] of g.edges) {
-        const steps = Math.max(1, Math.round(Math.hypot(b.x - a.x, b.y - a.y) / 22));
-        for (let i = 0; i <= steps; i++) {
-          const t = i / steps;
-          oval(px(a.x + (b.x - a.x) * t), py(a.y + (b.y - a.y) * t), 26 * reach, 26 * reach, 0.34);
-        }
+    // Solid clears the spare stars right out. Otherwise the stars left dim.
+    const clear = (solid: boolean) => {
+      const reach = phone ? (solid ? 0.85 : 0.62) : 1;
+      for (const el of words) {
+        const r = el.getBoundingClientRect();
+        if (!r.width || getComputedStyle(el).visibility === "hidden") continue;
+        // Measured against the map, so it holds wherever the page is scrolled.
+        const x = r.left - mr.left + r.width / 2;
+        const y = r.top - mr.top + r.height / 2;
+        if (y > H) continue;
+        oval(px(x), py(y), r.width * (solid ? 0.72 : 0.68), r.height * (solid ? 1.5 : 1.25), solid ? 1 : 0.82, solid);
       }
-      // Behind the name.
-      const nw = g.name.offsetWidth || 100;
-      const nh = g.name.offsetHeight || 46;
-      oval(px(g.nx + nw / 2), py(g.ny + nh / 2), nw * 0.85, nh * 1.15, 0.9);
-    }
+      for (const g of groups) {
+        const vis = g.stars.filter((s) => s.on);
+        if (!vis.length) continue;
+        // The area of the whole figure, broad and gentle.
+        const cx = (g.x0 + g.x1) / 2;
+        const cy = (g.y0 + g.y1) / 2;
+        const pad = (solid ? 170 : 150) * reach;
+        oval(px(cx), py(cy), (g.x1 - g.x0) / 2 + pad, (g.y1 - g.y0) / 2 + pad, solid ? 1 : 0.5, solid);
+        // Tight around each star.
+        const near = (solid ? 110 : 58) * reach;
+        for (const s of vis) oval(px(s.x), py(s.y), near, near, solid ? 1 : 0.72, solid);
+        // Along each line.
+        const along = (solid ? 40 : 26) * reach;
+        for (const [a, b] of g.edges) {
+          const steps = Math.max(1, Math.round(Math.hypot(b.x - a.x, b.y - a.y) / 22));
+          for (let i = 0; i <= steps; i++) {
+            const t = i / steps;
+            oval(px(a.x + (b.x - a.x) * t), py(a.y + (b.y - a.y) * t), along, along, solid ? 1 : 0.34, solid);
+          }
+        }
+        // Behind the name.
+        const nw = g.name.offsetWidth || 100;
+        const nh = g.name.offsetHeight || 46;
+        oval(px(g.nx + nw / 2), py(g.ny + nh / 2), nw * (solid ? 0.95 : 0.85), nh * (solid ? 1.4 : 1.15), solid ? 1 : 0.9, solid);
+      }
+    };
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.globalCompositeOperation = "source-over";
+    ctx.clearRect(0, 0, bg.width, bg.height);
+    ctx.drawImage(spare, 0, 0);
+    ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+    ctx.globalCompositeOperation = "destination-out";
+    clear(true);
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.globalCompositeOperation = "lighter";
+    ctx.drawImage(field, 0, 0);
+    ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+    ctx.globalCompositeOperation = "destination-out";
+    clear(false);
     ctx.globalCompositeOperation = "source-over";
     paint(lastOx, lastOy, performance.now());
   };

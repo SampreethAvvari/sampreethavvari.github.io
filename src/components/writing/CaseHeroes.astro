@@ -650,7 +650,9 @@ const spelled = items.map((h) => {
         linear-gradient(90deg, rgba(1, 2, 5, 0.62) 0%, rgba(1, 2, 5, 0.22) 36%, rgba(1, 2, 5, 0) 58%),
         linear-gradient(180deg, rgba(1, 2, 5, 0.5) 0%, rgba(1, 2, 5, 0) 22%);
     }
-    .cx.is-gl .cx-veil { opacity: 1; }
+    /* The shade for the words leaves with the words, so the stars run on at
+       full strength into the sky. */
+    .cx.is-gl .cx-veil { opacity: clamp(0, calc(1 - var(--exit, 0) * 2), 1); transition-duration: 240ms; }
     /* The way out: the bottom of the stage melts into the night below, so it
        has no edge when it comes up the screen. */
     .cx-join {

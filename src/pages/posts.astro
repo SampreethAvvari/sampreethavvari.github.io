@@ -171,6 +171,10 @@ const firstArt = heroes[0]?.art;
   /* clip, not hidden: hidden would make this a scroll box and stop the
      pinned heroes from sticking. */
   .wx-page { position: relative; overflow-x: clip; }
+  /* On a phone the chat's hello would sit on the first card's button. */
+  @media (max-width: 899px) {
+    :global(body:has(.wx-page) .chat-nudge) { display: none; }
+  }
   /* Laid over a join between two sections: stars that carry on across it
      while each side's own stars fade, so the night has no line in it. */
   .wx-page :global(.wx-joinstars) {
