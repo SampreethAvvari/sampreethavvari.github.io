@@ -20,6 +20,8 @@ interface Props {
 const { items, heading, tail, lede } = Astro.props;
 const n = items.length;
 const two = (i: number) => String(i).padStart(2, "0");
+// Phones show the first sentence of a summary, whole, never cut mid word.
+const firstSentence = (d: string) => (d.match(/^.*?[.!?](?=\s|$)/) || [d])[0];
 // Each title as words of letters with a running index, so the letters can
 // arrive one after another. Screen readers get the plain title instead.
 const spelled = items.map((h) => {
@@ -56,9 +58,11 @@ const spelled = items.map((h) => {
           data-art={h.art}
           data-slug={h.slug}
           aria-labelledby={`cx-t-${i}`}
-          style={`--i:${i};--a:${h.rgb};--wn:${words.length};--ln:${ln};--open:${i === 0 ? 0 : 1};--cin:${i === 0 ? 1 : 0};`}
+          style={`--i:${i};--a:${h.rgb};--art-x:${h.artX ?? 66}%;--wn:${words.length};--ln:${ln};--open:${i === 0 ? 0 : 1};--cin:${i === 0 ? 1 : 0};`}
         >
           <div class="cx-frame">
+            <div class="cx-stars cx-stars-far" aria-hidden="true"></div>
+            <div class="cx-stars cx-stars-near" aria-hidden="true"></div>
             <div class="cx-art">
               {h.art ? (
                 <picture>
@@ -94,7 +98,6 @@ const spelled = items.map((h) => {
                 />
               ) : null}
             </div>
-            <div class="cx-nebula" aria-hidden="true"></div>
             <div class="cx-shade" aria-hidden="true"></div>
             <div class="cx-dim" aria-hidden="true"></div>
           </div>
@@ -119,7 +122,7 @@ const spelled = items.map((h) => {
                   ))}
                 </span>
               </h2>
-              <p class="cx-sum">{h.description}</p>
+              <p class="cx-sum">{firstSentence(h.description)}<span class="cx-sum-rest">{h.description.slice(firstSentence(h.description).length)}</span></p>
               <div class="cx-act">
                 <a class="btn btn-primary cx-read" href={h.url}>
                   Read the post<span class="sr-only">: {h.title}</span>
@@ -143,6 +146,7 @@ const spelled = items.map((h) => {
     {items.map((_, i) => <span class="cx-snap" style={`--i:${i};`} aria-hidden="true"></span>)}
 
     <div class="cx-veil" aria-hidden="true"></div>
+    <div class="cx-join" aria-hidden="true"></div>
     <canvas class="cx-dust" aria-hidden="true"></canvas>
 
     <nav class="cx-index" aria-label="The six case studies">
@@ -176,6 +180,7 @@ const spelled = items.map((h) => {
   .cx-space,
   .cx-gl,
   .cx-veil,
+  .cx-join,
   .cx-cue,
   .cx-dust,
   .cx-index,
@@ -219,7 +224,7 @@ const spelled = items.map((h) => {
     height: 100svh;
     min-height: 560px;
     overflow: hidden;
-    background: #020306;
+    background: #010205;
     color: var(--ink);
   }
   .cx-frame { position: absolute; inset: 0; overflow: hidden; cursor: pointer; }
@@ -234,21 +239,24 @@ const spelled = items.map((h) => {
     object-position: 66% 50%;
     display: block;
   }
-  /* Nebula light in the post's colour, drifting slowly over the art. */
-  .cx-nebula {
+  /* Where the 3D scene is not drawing them: two tiled star sheets behind the
+     art, which is a subject on black, so its black lets them through. The
+     script moves them with the scroll. */
+  .cx-frame { isolation: isolate; background: #010205; }
+  .cx-art { mix-blend-mode: screen; }
+  .cx-stars {
     position: absolute;
-    inset: -12%;
-    background:
-      radial-gradient(38% 46% at 16% 80%, rgba(var(--a), 0.26), rgba(var(--a), 0.1) 45%, rgba(var(--a), 0) 72%),
-      radial-gradient(30% 40% at 84% 18%, rgba(var(--a), 0.16), rgba(var(--a), 0) 70%);
-    mix-blend-mode: screen;
+    left: 0;
+    right: 0;
+    top: 0;
+    height: calc(100% + 1024px);
+    background-repeat: repeat;
+    background-size: 1024px 1024px;
     pointer-events: none;
-    animation: cx-nebula 26s ease-in-out infinite alternate;
+    will-change: transform;
   }
-  @keyframes cx-nebula {
-    from { transform: translate3d(-2%, 1%, 0) scale(1); }
-    to { transform: translate3d(3%, -2%, 0) scale(1.08); }
-  }
+  .cx-stars-far { background-image: url(/writing/stars-far.webp); transform: translate3d(0, var(--star-far, 0px), 0); }
+  .cx-stars-near { background-image: url(/writing/stars-near.webp); transform: translate3d(0, var(--star-near, 0px), 0); }
   /* Darkness where the words sit. */
   .cx-shade {
     position: absolute;
@@ -276,6 +284,9 @@ const spelled = items.map((h) => {
     margin-inline: auto;
     padding-inline: var(--gutter);
     pointer-events: auto;
+  }
+  .cx-meta, .cx-sum, .cx-stat-l, .cx-stat-v, .cx-lede {
+    text-shadow: 0 0 10px rgba(1, 2, 5, 0.95), 0 0 3px rgba(1, 2, 5, 0.9);
   }
   .cx-meta {
     display: flex;
@@ -387,7 +398,14 @@ const spelled = items.map((h) => {
         linear-gradient(0deg, rgba(1, 2, 5, 0.96) 0%, rgba(1, 2, 5, 0.82) 34%, rgba(1, 2, 5, 0.2) 62%, rgba(1, 2, 5, 0) 74%),
         linear-gradient(180deg, rgba(1, 2, 5, 0.6) 0%, rgba(1, 2, 5, 0) 16%);
     }
-    .cx-nebula { animation: none; }
+    /* The subject sits in the top of the card, clear of the words, and the
+       crop is centred on it. */
+    .cx-art { bottom: auto; height: 62%; }
+    .cx-art :global(img), .cx-img { object-position: var(--art-x, 66%) 50%; }
+    .cx-hero:first-of-type .cx-art { top: 20%; height: 40%; }
+    .cx-sum { display: block; overflow: visible; -webkit-line-clamp: unset; padding-right: 56px; }
+    .cx-sum-rest { display: none; }
+    .cx-stat { padding-right: 56px; }
   }
   @media (max-width: 899px) and (prefers-reduced-motion: no-preference) {
     :global(html:has(.cx)) { scroll-snap-type: y proximity; }
@@ -406,6 +424,8 @@ const spelled = items.map((h) => {
       height: 1px;
       top: calc(var(--i) * 100svh);
       scroll-snap-align: start;
+      /* The site's scroll padding would rest every card 88px too low. */
+      scroll-margin-top: -88px;
       pointer-events: none;
     }
     /* The art settles as its card arrives, where the browser can tie
@@ -453,7 +473,6 @@ const spelled = items.map((h) => {
     .cx-copy-in { padding: 0 clamp(20px, 4vw, 48px); max-width: none; }
     .cx-copy { padding-bottom: clamp(24px, 4vw, 44px); }
     .cx-title { font-size: clamp(2rem, 5vw, 4rem); }
-    .cx-nebula { animation: none; }
     .cx-head {
       position: static;
       padding: clamp(112px, 14vw, 160px) 0 clamp(16px, 2vw, 24px);
@@ -469,7 +488,7 @@ const spelled = items.map((h) => {
        --out   0 to 1 as it falls back for the next one
        --cin   0 to 1 as its words come in, --cout as they leave
        --drift a slow parallax on the art while it is on screen
-     and on the stage --dock (0 to 1), the rounded card it docks from.
+     and on the stage --exit (0 to 1), the last case study leaving.
      --------------------------------------------------------------------- */
   @media (min-width: 900px) and (prefers-reduced-motion: no-preference) {
     .cx { height: calc(100vh + (var(--n) - 1) * 150vh + 60vh); }
@@ -480,9 +499,6 @@ const spelled = items.map((h) => {
       overflow: hidden;
       isolation: isolate;
       background: #010205;
-      border-radius: calc(var(--dock, 0) * 40px);
-      transform: scale(calc(1 - var(--dock, 0) * 0.07));
-      transform-origin: 50% 0%;
     }
     .cx-space {
       display: block;
@@ -533,11 +549,11 @@ const spelled = items.map((h) => {
     .cx-copy {
       z-index: calc(30 + var(--i));
       padding-bottom: clamp(40px, 9vh, 96px);
-      opacity: calc(min(var(--cin, 0) * 3, 1) * (1 - var(--cout, 0)));
+      opacity: calc(min(var(--cin, 0) * 3, 1) * (1 - var(--cout, 0)) * (1 - var(--exit, 0) * 2));
       transform: translate3d(0, calc(var(--cout, 0) * -64px), 0);
     }
     .cx-hero:not([data-live]) .cx-copy-in { pointer-events: none; }
-    .cx-title { max-width: 13.5em; font-size: clamp(3rem, 5.5vw, 6.25rem); line-height: 0.98; }
+    .cx-title { max-width: min(13.5em, 56vw); font-size: clamp(3rem, 5.5vw, 6.25rem); line-height: 0.98; }
     /* Each letter rises into place, sharpening as it lands. No mask, so no letter is ever cut. */
     .cx-l {
       display: inline-block;
@@ -625,6 +641,20 @@ const spelled = items.map((h) => {
         linear-gradient(180deg, rgba(1, 2, 5, 0.5) 0%, rgba(1, 2, 5, 0) 22%);
     }
     .cx.is-gl .cx-veil { opacity: 1; }
+    /* The way out: the bottom of the stage melts into the night below, so it
+       has no edge when it comes up the screen. */
+    .cx-join {
+      display: block;
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      z-index: 28;
+      height: 60%;
+      pointer-events: none;
+      opacity: min(1, calc(var(--exit, 0) * 5));
+      background: linear-gradient(180deg, rgba(1, 2, 5, 0) 0%, rgba(1, 2, 5, 0.55) 45%, rgba(1, 2, 5, 0.92) 78%, #010205 100%);
+    }
     /* A fast scroll splits the colour of the words too. */
     .cx-title {
       text-shadow:
@@ -647,6 +677,7 @@ const spelled = items.map((h) => {
     .cx-index {
       display: block;
       position: absolute;
+      opacity: calc(1 - var(--exit, 0) * 2);
       z-index: 60;
       right: clamp(14px, 2vw, 30px);
       top: 50%;

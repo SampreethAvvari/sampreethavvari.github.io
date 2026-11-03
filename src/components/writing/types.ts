@@ -17,6 +17,8 @@ export type CaseHero = {
   rgb: string;
   /** Base path of the hero art, e.g. /writing/platform (then -2560.avif). */
   art?: string;
+  /** Where the subject sits across the art, as an object position, for phones. */
+  artX?: number;
   /** The post's own cover, used when there is no hero art. */
   cover?: string;
   alt: string;

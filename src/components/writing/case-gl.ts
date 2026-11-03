@@ -1,7 +1,8 @@
 // The 3D scene behind the six case studies: one WebGL context for the page.
 //
 // Each case study's art hangs on a curved glass slab among the stars, the six
-// slabs in a line receding into space. Scroll flies the camera from one
+// slabs in a line receding into space. The art is a subject on black, and the
+// black of it is see through, so the star sheets pass behind. Scroll flies the camera from one
 // slab to the next: the slab you leave dissolves from a glowing edge as you
 // pass through it, the next one grows out of the dark with a light sweep
 // across its glass. Star dust streaks with the speed of the flight, and a
@@ -37,6 +38,10 @@ export type FlightState = {
   t: number;
   /** Raw scroll position in steps, without the holds. */
   x: number;
+  /** The same, not stopped at the end of the section, for the stars. */
+  sky: number;
+  /** 0 until the last case study starts to leave, 1 when it has gone. */
+  exit: number;
 };
 
 type Tier = { dpr: number; stars: number; tex: 1280 | 2560 };
@@ -60,6 +65,7 @@ const LAYOUT = [
 const clamp01 = (v: number) => (v < 0 ? 0 : v > 1 ? 1 : v);
 const inOut = (v: number) => (v < 0.5 ? 4 * v * v * v : 1 - Math.pow(-2 * v + 2, 3) / 2);
 const lerp = (a: number, b: number, f: number) => a + (b - a) * f;
+const smoothstep01 = (v: number) => v * v * (3 - 2 * v);
 
 function pickTier(): Tier {
   const coarse = matchMedia("(pointer: coarse)").matches;
@@ -89,42 +95,48 @@ const SKY_FS = /* glsl */ `
 precision highp float;
 varying vec2 vUv;
 uniform float uTime; uniform float uAspect; uniform float uOff; uniform float uWarp;
-uniform float uStreak; uniform float uPX; uniform float uPY;
+uniform float uStreak; uniform float uPX; uniform float uPY; uniform float uPxH; uniform float uDpr;
 uniform vec3 uCol1; uniform vec3 uCol2;
 ${NOISE}
-// One sheet of stars. Each grid cell may hold one star, kept far enough from
-// the cell's edge that it is never cut, even stretched by speed.
-vec3 stars(vec2 p, float cells, float seed, float density, float sMin, float sMax) {
-  vec2 g = p * cells + seed;
+// One sheet of stars. Each cell of a turned grid may hold one star, drawn as a
+// gaussian measured in screen pixels, so it keeps its shape and brightness at
+// any sub pixel position and does not shimmer as it moves. The turn hides the
+// grid. haloS adds a soft glow around the nearest stars.
+vec3 sheet(vec2 p, float cells, float ang, float seed, float density, float s0, float s1, float stretch, float haloS, float haloG) {
+  float ca = cos(ang); float sa = sin(ang);
+  vec2 g = vec2(ca * p.x - sa * p.y, sa * p.x + ca * p.y) * cells + seed;
   vec2 id = floor(g);
-  vec2 f = fract(g) - 0.5;
-  float h = hash(id + seed);
-  if (h > density) return vec3(0.0);
+  if (hash(id + seed) > density) return vec3(0.0);
   float a = hash(id + 3.1); float b = hash(id + 7.7); float c = hash(id + 11.3); float e = hash(id + 13.7);
-  vec2 d = f - (vec2(a, b) - 0.5) * 0.46;
-  d.y /= 1.0 + uStreak * 0.75;
-  float size = mix(sMin, sMax, c * c * c);
-  float core = smoothstep(size, 0.0, length(d));
-  float twinkle = 0.72 + 0.28 * sin(uTime * (0.5 + 2.2 * e) + a * 40.0);
-  vec3 tint = mix(vec3(1.0, 0.86, 0.72), vec3(0.74, 0.84, 1.0), b);
-  return mix(vec3(1.0), tint, 0.55) * core * core * twinkle * (0.4 + 0.6 * e);
+  vec2 o = (fract(g) - 0.5 - (vec2(a, b) - 0.5) * 0.56) * uPxH / cells;
+  // Back to screen axes, so speed stretches every star along the scroll.
+  vec2 d = vec2(ca * o.x + sa * o.y, -sa * o.x + ca * o.y);
+  d.y /= 1.0 + uStreak * stretch;
+  float s = max(mix(s0, s1, c * c * c), 0.8 / uDpr);
+  float v = exp(-dot(d, d) / (2.0 * s * s));
+  if (haloS > 0.0) v += haloG * exp(-dot(d, d) / (2.0 * haloS * haloS));
+  float twinkle = 0.88 + 0.12 * sin(uTime * (0.4 + 1.4 * e) + a * 40.0);
+  vec3 tint = mix(vec3(1.0, 0.88, 0.76), vec3(0.78, 0.87, 1.0), b);
+  return mix(vec3(1.0), tint, 0.6) * v * twinkle * (0.42 + 0.58 * e * e);
 }
 void main() {
   vec2 p = (vUv - 0.5) * vec2(uAspect, 1.0);
-  vec3 col = vec3(0.004, 0.006, 0.014);
-  // A trace of the case study's colour, so the dark is not dead.
-  float r = length(p);
-  col += mix(uCol1, uCol2, 0.3) * 0.045 * (1.0 - smoothstep(0.0, 1.0, r));
-  // Three sheets at three depths: the nearer the sheet, the faster it moves
-  // with the scroll and the pointer.
+  // The same black as the sky below this section, so the two meet unseen.
+  vec3 col = vec3(1.0, 2.0, 5.0) / 255.0;
+  // Five sheets at five depths, running up the screen with the scroll: the
+  // nearer the sheet, the faster it goes and the more speed stretches it.
+  vec2 run = vec2(0.14, -1.0);
   float drift = uTime * 0.0016;
   vec2 ptr = vec2(uPX, -uPY);
-  col += 0.34 * stars(p + vec2(uOff * 0.02, -uOff * 0.1 - drift) + ptr * 0.004, 150.0, 1.3, 0.34, 0.15, 0.24);
-  col += 0.62 * stars(p + vec2(uOff * 0.05, -uOff * 0.22 - drift * 2.0) + ptr * 0.011, 82.0, 4.7, 0.27, 0.1, 0.22);
-  col += 1.15 * stars(p + vec2(uOff * 0.1, -uOff * 0.42 - drift * 3.5) + ptr * 0.024, 38.0, 9.1, 0.15, 0.05, 0.15);
-  // The tunnel of light while flying between slabs.
-  col += mix(uCol1, uCol2, 0.5) * uWarp * 0.34 * (1.0 - smoothstep(0.0, 0.85, r));
-  col *= 1.0 - 0.5 * dot(p * 0.85, p * 0.85);
+  float halo = clamp(uPxH / 900.0, 0.7, 1.25);
+  col += 0.66 * sheet(p + run * (uOff * 0.07 + drift) + ptr * 0.004, 72.0, 0.41, 1.3, 0.38, 0.62, 0.9, 0.3, 0.0, 0.0);
+  col += 0.82 * sheet(p + run * (uOff * 0.14 + drift * 1.6) + ptr * 0.008, 46.0, 1.13, 4.7, 0.32, 0.7, 1.05, 0.6, 0.0, 0.0);
+  col += 1.0 * sheet(p + run * (uOff * 0.3 + drift * 2.5) + ptr * 0.016, 26.0, 2.27, 9.1, 0.3, 0.85, 1.5, 1.4, 0.0, 0.0);
+  col += 1.25 * sheet(p + run * (uOff * 0.62 + drift * 4.0) + ptr * 0.032, 13.0, 0.73, 15.3, 0.32, 1.3, 2.4, 2.6, 0.0, 0.0);
+  col += 1.45 * sheet(p + run * (uOff * 1.05 + drift * 6.0) + ptr * 0.06, 5.5, 1.91, 21.7, 0.34, 2.2, 3.4, 3.4, 12.0 * halo, 0.2);
+  // A touch of light while flying between slabs.
+  float r = length(p);
+  col += mix(uCol1, uCol2, 0.5) * uWarp * 0.1 * (1.0 - smoothstep(0.0, 0.85, r));
   gl_FragColor = vec4(col, 1.0);
 }`;
 
@@ -162,7 +174,9 @@ void main() {
   // Colour split toward the edges when the flight is fast.
   vec2 dir = uv - 0.5;
   float c = uChroma * 0.022;
+  // Until its art arrives, a slab is a pane of tinted glass.
   vec3 col = vec3(0.02, 0.025, 0.04) + uAccent * 0.05;
+  float cover = 0.4;
   if (uHasTex > 0.5) {
     // Depth from the blurred brightness: bright subjects sit near, dark
     // space sits far, so the pointer moves them apart and the art breathes.
@@ -172,6 +186,9 @@ void main() {
     col.r = texture2D(uTex, duv + dir * c).r;
     col.g = texture2D(uTex, duv).g;
     col.b = texture2D(uTex, duv - dir * c).b;
+    // How much of the subject is here. The art is a subject on black: where
+    // it is black the glass is clear and the stars pass behind.
+    cover = smoothstep(0.03, 0.26, max(col.r, max(col.g, col.b)));
   }
 
   // Glass: a fresnel sheen, a bright rim in the post's colour with a thin
@@ -187,19 +204,30 @@ void main() {
   col.b += edge * 0.25 * uRim * step(p.x, 0.0);
   float band = exp(-pow((uv.x * 1.0 + (1.0 - uv.y) * 0.42 - uSweep) * 6.5, 2.0));
   col += (vec3(1.0) * 0.26 + uAccent * 0.3) * band;
+
+  // What the slab hides of the stars behind it: the subject, the rim and the
+  // sweep; the bare glass only tints them a little.
+  float a = max(cover, 0.05 + edgeIn * 0.14 + fres * 0.2);
+  a = max(a, edge * min(uRim, 1.0));
+  a = max(a, band * 0.5);
+
   col *= 1.0 - uDim;
+  a *= 1.0 - uDim;
 
   // Dissolve from a glowing edge while the camera passes through.
-  float alpha = inside * uOpacity;
+  float keep = 1.0;
   if (uDissolve > 0.001) {
     float n = fbm(uv * vec2(10.0, 5.6) + uSeed * 7.0);
     float th = uDissolve * 1.25 - 0.12;
-    float keep = smoothstep(th, th + 0.02, n);
+    float gone = smoothstep(th, th + 0.02, n);
     float burn = (1.0 - smoothstep(0.0, 0.03, abs(n - th - 0.02))) * step(0.02, uDissolve);
     col = mix(col, uAccent * 1.5 + vec3(0.12), burn * 0.9);
-    alpha *= max(keep, burn);
+    a = max(a, burn);
+    keep = max(gone, burn);
   }
-  gl_FragColor = vec4(col, alpha);
+  // Premultiplied: the light of the slab adds to whatever shows through it.
+  float f = inside * uOpacity * keep;
+  gl_FragColor = vec4(col * f, a * f);
 }`;
 
 const DUST_VS = /* glsl */ `
@@ -284,6 +312,8 @@ export function mountCaseGL(
       uStreak: { value: 0 },
       uPX: { value: 0 },
       uPY: { value: 0 },
+      uPxH: { value: 900 },
+      uDpr: { value: dpr },
       uCol1: { value: accents[0].clone() },
       uCol2: { value: (accents[1] || accents[0]).clone() },
     },
@@ -315,6 +345,7 @@ export function mountCaseGL(
       vertexShader: SLAB_VS,
       fragmentShader: SLAB_FS,
       transparent: true,
+      premultipliedAlpha: true,
       depthWrite: false,
       uniforms: {
         uTex: { value: null },
@@ -462,6 +493,7 @@ export function mountCaseGL(
     dist = Math.max(W / (0.74 * 2 * tanH * aspect), H / (0.72 * 2 * tanH));
     offX = 2 * dist * tanH * aspect * 0.1;
     skyMat.uniforms.uAspect.value = aspect;
+    skyMat.uniforms.uPxH.value = h;
   };
   const ro = new ResizeObserver(resize);
   ro.observe(canvas);
@@ -494,7 +526,7 @@ export function mountCaseGL(
   let slowFrames = 0;
   let sampled = 0;
   let steps = 0;
-  let skyX = state.x;
+  let skyX = state.sky;
 
   function draw(now: number) {
     const dtMs = Math.min(64, now - lastNow);
@@ -544,13 +576,17 @@ export function mountCaseGL(
       s.mesh.rotation.y = L.ry + Math.sin(time * 0.17 + i) * 0.035 + (i === k ? e * 0.25 : 0);
       s.mesh.rotation.x = Math.sin(time * 0.13 + i * 2.1) * 0.02;
       const d = s.mesh.position.distanceTo(camPos);
-      // Far slabs fade into the dark.
-      u.uDim.value = clamp01((d - dist * 1.1) / 70) * 0.85;
+      // Far slabs fade into the dark. The slab behind this one shows through
+      // the glass now, so it stays a faint hint until the flight sets off,
+      // and any further back stay out of it.
+      const far = clamp01((d - dist * 1.1) / 70) * 0.85;
+      u.uDim.value = i === k + 1 ? lerp(0.99, far, smoothstep01(clamp01((e - 0.03) / 0.4))) : i > k + 1 ? 0.97 : far;
       u.uChroma.value = speed;
       u.uBend.value = Math.max(-1, Math.min(1, velS / 2.2));
       u.uTime.value = time;
       let dissolve = 0;
-      let opacity = 1;
+      // The last case study fades as it leaves, so the stars carry on alone.
+      let opacity = 1 - smoothstep01(clamp01(state.exit / 0.7));
       if (i < k) opacity = 0;
       if (i === k && k < n - 1) dissolve = clamp01((e - 0.08) / 0.46);
       if (i === k + 1) {
@@ -566,14 +602,15 @@ export function mountCaseGL(
       }
       u.uDissolve.value = dissolve;
       u.uOpacity.value = opacity;
-      s.mesh.visible = opacity > 0 && (dissolve < 0.999);
+      s.mesh.visible = opacity > 0.001 && dissolve < 0.999 && i <= k + 2;
     });
 
     // Sky
     const su = skyMat.uniforms;
     su.uTime.value = time;
-    // The stars follow the whole scroll, holds included, with a little weight.
-    skyX += (state.x - skyX) * 0.12;
+    // The stars follow the whole scroll, holds and the way out included, with
+    // a little weight, the same at any frame rate.
+    skyX += (state.sky - skyX) * (1 - Math.exp(-dtMs / 125));
     su.uOff.value = skyX;
     su.uStreak.value = speed;
     su.uPX.value = pmx;
@@ -601,6 +638,7 @@ export function mountCaseGL(
           dpr = Math.max(0.75, dpr * 0.72);
           renderer.setPixelRatio(dpr);
           dustUniforms.uDpr.value = dpr;
+          skyMat.uniforms.uDpr.value = dpr;
           resize();
           pointGeo.setDrawRange(0, Math.floor(count * 0.6));
           lineGeo.setDrawRange(0, Math.floor(count * 0.6) * 2);

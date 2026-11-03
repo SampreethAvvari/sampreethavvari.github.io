@@ -20,6 +20,7 @@ import { onPage } from "../../scripts/lifecycle";
 import { mountCaseGL, type GLHandle } from "./case-gl";
 
 const STAGE = "(min-width: 900px) and (prefers-reduced-motion: no-preference)";
+const CALM = "(prefers-reduced-motion: reduce)";
 // Part of each step spent holding still before the change starts.
 const HOLD = 0.36;
 // One step of scroll, in viewport heights. Matches 150vh in the CSS.
@@ -30,7 +31,7 @@ const smooth = (v: number) => v * v * (3 - 2 * v);
 const inOut = (v: number) => (v < 0.5 ? 4 * v * v * v : 1 - Math.pow(-2 * v + 2, 3) / 2);
 const outCubic = (v: number) => 1 - Math.pow(1 - v, 3);
 
-type State = { t: number; x: number };
+type State = { t: number; x: number; sky: number; exit: number };
 
 const emit = (name: string, detail: Record<string, unknown>) =>
   dispatchEvent(new CustomEvent(name, { detail }));
@@ -58,7 +59,7 @@ export function mountCaseHeroes(): void {
     let stop: (() => void) | null = null;
     const run = () => {
       stop?.();
-      stop = mq.matches ? stage(root) : null;
+      stop = mq.matches ? stage(root) : matchMedia(CALM).matches ? null : starDrift(root);
     };
     mq.addEventListener("change", run, { signal });
     run();
@@ -69,6 +70,30 @@ export function mountCaseHeroes(): void {
   });
 }
 
+// Phones and the no WebGL fallback: two tiled star sheets inside each picture.
+// A transform moves them, wrapped at the tile, so nothing repaints.
+const TILE = 1024;
+function starDrift(root: HTMLElement): () => void {
+  let queued = 0;
+  const write = () => {
+    queued = 0;
+    const y = scrollY;
+    root.style.setProperty("--star-far", `${(-(y * 0.1) % TILE).toFixed(1)}px`);
+    root.style.setProperty("--star-near", `${(-(y * 0.34) % TILE).toFixed(1)}px`);
+  };
+  const onScroll = () => {
+    if (!queued) queued = requestAnimationFrame(write);
+  };
+  addEventListener("scroll", onScroll, { passive: true });
+  write();
+  return () => {
+    removeEventListener("scroll", onScroll);
+    cancelAnimationFrame(queued);
+    root.style.removeProperty("--star-far");
+    root.style.removeProperty("--star-near");
+  };
+}
+
 function stage(root: HTMLElement): () => void {
   const ac = new AbortController();
   const signal = ac.signal;
@@ -76,7 +101,7 @@ function stage(root: HTMLElement): () => void {
   const heroes = Array.from(root.querySelectorAll<HTMLElement>(".cx-hero"));
   const links = Array.from(root.querySelectorAll<HTMLAnchorElement>(".cx-index a"));
   const n = heroes.length;
-  const state: State = { t: 0, x: 0 };
+  const state: State = { t: 0, x: 0, sky: 0, exit: 0 };
   const accentOf = (i: number) => `rgb(${(heroes[i]?.style.getPropertyValue("--a") || "52,211,153").trim()})`;
 
   let top = 0;
@@ -121,7 +146,11 @@ function stage(root: HTMLElement): () => void {
     pxPerMs += (Math.abs(dy) / dms - pxPerMs) * 0.35;
     lastY = y;
     const rel = y - top;
-    put(stageEl, "--dock", Math.max(clamp01(-rel / vh), clamp01((rel - span) / vh)));
+    // The way out starts a little before the stage lets go and ends once half
+    // of it has left, so nothing is still lit when its bottom edge comes up.
+    state.exit = clamp01((rel - (span - vh * 0.3)) / (vh * 0.8));
+    state.sky = Math.max(0, rel) / seg;
+    put(stageEl, "--exit", state.exit);
 
     x = Math.max(0, Math.min(rel, span)) / seg;
     const k = Math.floor(x);
@@ -273,6 +302,7 @@ function stage(root: HTMLElement): () => void {
     });
   }
   if (!gl) dust = mountDust(root, heroes, state);
+  const drift = gl ? null : starDrift(root);
 
   // Clicking the 3D art opens the case study that is up.
   glCanvas?.addEventListener(
@@ -289,11 +319,12 @@ function stage(root: HTMLElement): () => void {
     cancelAnimationFrame(queued);
     clearTimeout(settle);
     dust?.();
+    drift?.();
     gl?.stop();
     root.classList.remove("is-gl");
     // Back to the plain cards: drop what the stage wrote.
     for (const el of [stageEl, ...heroes, ...links]) {
-      for (const v of ["--dock", "--open", "--zoom", "--out", "--cin", "--cout", "--drift", "--f", "--vel", "--head"]) el.style.removeProperty(v);
+      for (const v of ["--exit", "--open", "--zoom", "--out", "--cin", "--cout", "--drift", "--f", "--vel", "--head"]) el.style.removeProperty(v);
     }
     heroes.forEach((h, i) => {
       h.toggleAttribute("data-live", i === 0);

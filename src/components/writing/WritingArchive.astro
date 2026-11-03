@@ -1,24 +1,18 @@
 ---
-// Everything after the six case studies, as a star map: every post is a
-// small glowing card, and posts that share a tag gather into one
-// constellation, its line drawn in the order they were written. Search,
-// tag, year and kind of work filters move the cards to their new places;
-// hover or focus brings a card forward with its art in depth; a click
-// flies into it. Drag to move around, the buttons or ctrl and scroll to
-// zoom. "List view" shows the same posts as a plain grid, which is also
-// what renders before the script runs, on phones by default, and with
-// reduced motion.
+// Everything after the six case studies, as a night sky: posts are stars, and
+// posts that share a tag form one constellation drawn on a real shape. A name
+// or a star opens that constellation's cards in one panel beside it. Search,
+// tag, year and kind of work filters apply to both views. "List view" shows the
+// same posts as a plain grid, which is also what renders before the script
+// runs and what reduced motion opens on.
 import Icon from "../common/Icon.astro";
 import Picture from "../common/Picture.astro";
 import type { ArchivePost } from "./types";
-import type { TeachingMaterial } from "../../data/teaching";
-import { hasPublic } from "../../utils/postTopics";
 
 interface Props {
   posts: ArchivePost[];
-  guides: TeachingMaterial[];
 }
-const { posts, guides } = Astro.props;
+const { posts } = Astro.props;
 
 const kinds = [
   { key: "all", label: "All", title: "Every kind of work" },
@@ -36,8 +30,6 @@ const tags = [...tagCounts.entries()].sort((a, b) => b[1] - a[1] || a[0].localeC
 const ringOf = (m: number) => Math.min(1, m / 10).toFixed(3);
 const RING = 2 * Math.PI * 9;
 
-const WRITING_RGB = "52,211,153";
-
 // Star colours for the constellations, pale like real stars (blue white,
 // gold, ice, rose, cream), so none of them reads as a tab's colour.
 const TINTS = ["205,224,255", "255,222,170", "196,240,232", "255,206,196", "232,224,255", "255,242,214", "190,228,255", "255,226,236"];
@@ -45,18 +37,11 @@ const tint = (i: number) => TINTS[i % TINTS.length];
 const tagIndex = new Map(tags.map(([t], i) => [t, i]));
 // The first sentence of a summary, whole, for the cards in a constellation.
 const firstSentence = (d: string) => (d.match(/^.*?[.!?](?=\s|$)/) || [d])[0];
-const comets = [
-  { w: 130, top: "4%", pos: "left:3%", rz: 12 },
-  { w: 112, top: "36%", pos: "right:2%", rz: -12 },
-  { w: 106, top: "80%", pos: "right:28%", rz: -16 },
-];
 ---
 
 <section class="ax" id="every-post" aria-labelledby="ax-title" data-view="list">
-  <div class="ax-horizon" aria-hidden="true"><span class="ax-planet"></span><span class="ax-haze"></span></div>
-  {comets.map((c) => (
-    <span class="space-el" style={`width:${c.w}px;height:${Math.round(c.w * 0.27)}px;top:${c.top};${c.pos};`} aria-hidden="true"><span class="comet-glow" style={`--sr-rgb:${WRITING_RGB};`}></span><span class="space-comet" style={`--sr-rgb:${WRITING_RGB};--rz:${c.rz}deg;`}></span></span>
-  ))}
+  <div class="ax-night" aria-hidden="true"></div>
+  <span class="wx-joinstars" aria-hidden="true"></span>
 
   <!-- One screen: the heading and the controls sit over the sky. -->
   <div class="ax-screen">
@@ -263,87 +248,27 @@ const comets = [
   </div>
   <p id="ax-empty" class="wrap on-top t-body ax-empty" hidden>No posts match. Try another tag, year or search.</p>
 
-  <!-- Teaching: guides I wrote, kept beside the posts -->
-  <div id="teaching" class="wrap on-top ax-teach" aria-labelledby="ax-teach-title" role="region">
-    <div class="sec-head">
-      <div class="sec-head-main">
-        <p class="kicker">Teaching</p>
-        <h2 class="t-h2" id="ax-teach-title">
-          Guides I wrote.
-          <span class="t-tail">Free PDFs for engineers who ship AI.</span>
-        </h2>
-      </div>
-      <a href="/teaching" class="tlink">All materials <Icon name="arrow-right" size={14} /></a>
-    </div>
-    <div class="ax-teach-grid">
-      {guides.map((g) => (
-        <a href={`/teaching/${g.slug}`} class="ax-guide">
-          <span class="ax-light" aria-hidden="true"></span>
-          <div class="ax-guide-cover">
-            {hasPublic(g.cover) ? (
-              <Picture src={g.cover} alt={g.title} width={360} height={460} />
-            ) : (
-              <div class="ax-fallback" aria-hidden="true"></div>
-            )}
-          </div>
-          <div class="ax-guide-body">
-            <span class="badge">{g.pages ? `PDF · ${g.pages} pages` : "PDF"}</span>
-            <h3 class="t-h3 ax-guide-title">{g.title}</h3>
-            <p class="t-small ax-guide-desc">{g.description}</p>
-            <span class="tlink ax-guide-go">Read it <Icon name="arrow-right" size={14} /></span>
-          </div>
-        </a>
-      ))}
-    </div>
-  </div>
 </section>
 
 <style>
   .ax {
     position: relative;
     z-index: 1;
-    padding-top: clamp(120px, 16vw, 220px);
+    padding-top: clamp(88px, 10vw, 140px);
     overflow-x: clip;
+    /* One night from the case studies to the end of the page. */
+    background: #010205;
   }
 
-  /* The horizon: the rim of a dark planet catching the writing colour,
-     right where the case studies end. */
-  .ax-horizon {
+  /* The list view's stars. In the sky view the sky covers them. */
+  .ax-night {
     position: absolute;
-    left: 50%;
-    top: 0;
-    width: 100%;
-    height: clamp(420px, 52vw, 760px);
-    transform: translateX(-50%);
+    inset: 0;
     pointer-events: none;
-    overflow: hidden;
-    -webkit-mask-image: linear-gradient(180deg, #000 55%, transparent 100%);
-    mask-image: linear-gradient(180deg, #000 55%, transparent 100%);
-  }
-  .ax-planet {
-    position: absolute;
-    left: 50%;
-    top: clamp(70px, 9vw, 130px);
-    width: max(220vw, 2400px);
-    aspect-ratio: 1;
-    transform: translateX(-50%);
-    border-radius: 50%;
-    background: radial-gradient(closest-side, #010204 97%, rgba(1, 2, 4, 0) 100%);
-    box-shadow:
-      0 0 0 1px rgba(var(--c-writing-rgb), 0.55),
-      0 -2px 18px rgba(var(--c-writing-rgb), 0.6),
-      0 -20px 90px rgba(var(--c-writing-rgb), 0.28),
-      0 -60px 220px rgba(var(--c-writing-rgb), 0.16),
-      inset 0 18px 60px -30px rgba(var(--c-writing-rgb), 0.5);
-  }
-  .ax-haze {
-    position: absolute;
-    left: 50%;
-    top: 0;
-    width: min(1400px, 120vw);
-    height: clamp(200px, 24vw, 340px);
-    transform: translateX(-50%);
-    background: radial-gradient(50% 60% at 50% 70%, rgba(var(--c-writing-rgb), 0.16), rgba(var(--c-writing-rgb), 0) 70%);
+    background-image: url(/writing/stars-far.webp), url(/writing/stars-near.webp);
+    background-size: 1024px 1024px;
+    -webkit-mask-image: linear-gradient(180deg, transparent 0, #000 22vh, #000 calc(100% - 22vh), transparent 100%);
+    mask-image: linear-gradient(180deg, transparent 0, #000 22vh, #000 calc(100% - 22vh), transparent 100%);
   }
 
   .ax-head { position: relative; }
@@ -462,9 +387,6 @@ const comets = [
     visibility: hidden;
     transition: opacity 400ms var(--ease-glass), visibility 0s linear 400ms;
   }
-  /* The planet rim stays as a soft edge at the top of the sky. */
-  .ax[data-view="map"] .ax-horizon { opacity: 0.6; }
-  .ax[data-view="map"] .ax-planet { top: 22px; }
   @media (min-width: 1100px) {
     .ax[data-view="map"] .ax-dock { flex-wrap: nowrap; }
   }
@@ -482,7 +404,7 @@ const comets = [
     outline: none;
     perspective: 1500px;
     perspective-origin: 50% 45%;
-    background: linear-gradient(180deg, rgba(2, 4, 10, 0) 0%, #02040a 9%, #02040a 91%, rgba(2, 4, 10, 0) 100%);
+    background: #010205;
   }
   /* The dome: tilts a little with the pointer and the scroll. The script
      writes --rx and --ry; the far sky and the constellations move apart. */
@@ -521,12 +443,12 @@ const comets = [
   .ax-lines { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; pointer-events: none; }
   .ax-line {
     fill: none;
-    stroke: rgba(var(--tint), 0.32);
-    stroke-width: 0.9;
+    stroke: rgba(var(--tint), 0.62);
+    stroke-width: 1.15;
     stroke-linecap: round;
     transition: stroke 300ms var(--ease-glass), opacity 600ms var(--ease-glass);
   }
-  .ax-line.is-hot { stroke: rgba(var(--tint), 0.5); }
+  .ax-line.is-hot { stroke: rgba(var(--tint), 0.7); }
   .ax-line.is-dim { opacity: 0.18; }
   /* A constellation that wakes draws its lines in, bright. */
   .ax-line-draw {
@@ -561,13 +483,13 @@ const comets = [
     width: calc(var(--r) * 2);
     height: calc(var(--r) * 2);
     border-radius: 50%;
-    background: radial-gradient(circle, #fff 0 16%, rgba(var(--tint), 0.95) 30%, rgba(var(--tint), 0.25) 55%, rgba(var(--tint), 0) 72%);
-    box-shadow: 0 0 calc(var(--r) * 1.6) rgba(var(--tint), 0.55);
+    background: radial-gradient(circle, #fff 0 24%, rgba(var(--tint), 1) 38%, rgba(var(--tint), 0.32) 58%, rgba(var(--tint), 0) 74%);
+    box-shadow: 0 0 calc(var(--r) * 2) rgba(var(--tint), 0.5);
     animation: ax-twinkle var(--tw, 3.6s) ease-in-out var(--td, 0s) infinite;
   }
   @keyframes ax-twinkle {
-    0%, 100% { opacity: 0.78; transform: scale(0.92); }
-    50% { opacity: 1; transform: scale(1.08); }
+    0%, 100% { opacity: 0.9; transform: scale(0.95); }
+    50% { opacity: 1; transform: scale(1.06); }
   }
   .ax-s:hover i, .ax-s.is-hot i { box-shadow: 0 0 calc(var(--r) * 3) rgba(var(--tint), 0.95); }
   .ax-s.is-hot i { animation: ax-pulse 1.6s ease-in-out var(--td, 0s) infinite; }
@@ -601,13 +523,14 @@ const comets = [
     transition: opacity 600ms var(--ease-glass), background-color 250ms var(--ease-glass);
   }
   .ax-name-t {
-    font-size: 0.875rem;
+    font-size: 1rem;
     font-weight: 600;
     font-variant-caps: all-small-caps;
     letter-spacing: 0.14em;
-    text-shadow: 0 0 14px rgba(var(--tint), 0.55);
+    color: rgb(var(--tint));
+    text-shadow: 0 0 14px rgba(var(--tint), 0.5), 0 0 4px #010205, 0 0 2px #010205;
   }
-  .ax-name-n { font-size: 0.6875rem; letter-spacing: 0.04em; color: rgba(245, 245, 247, 0.5); }
+  .ax-name-n { font-size: 0.75rem; letter-spacing: 0.03em; color: rgba(245, 245, 247, 0.72); text-shadow: 0 0 6px #010205, 0 0 2px #010205; }
   .ax-name { translate: 0 0; transition: opacity 600ms var(--ease-glass), background-color 250ms var(--ease-glass), translate 400ms var(--ease-glass); }
   .ax-name:hover, .ax-name.is-hot { background: rgba(var(--tint), 0.08); translate: 0 -5px; }
   .ax-name:focus-visible { outline: none; box-shadow: 0 0 0 2px rgba(var(--tint), 0.7); }
@@ -1052,46 +975,13 @@ const comets = [
   }
 
 
-  /* ---------------- Guides ---------------- */
-  .ax-teach { padding-block: clamp(80px, 10vw, 140px) clamp(8px, 1vw, 16px); }
-  .ax-teach-grid { display: grid; gap: 18px; grid-template-columns: 1fr; }
-  @media (min-width: 900px) { .ax-teach-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 22px; } }
-  .ax-guide {
-    --mx: 50%;
-    --my: 30%;
-    position: relative;
-    display: grid;
-    grid-template-columns: 120px minmax(0, 1fr);
-    gap: 20px;
-    padding: 16px;
-    border-radius: 22px;
-    overflow: hidden;
-    text-decoration: none;
-    color: var(--ink);
-    background: linear-gradient(180deg, rgba(255, 255, 255, 0.045), rgba(255, 255, 255, 0.01) 40%), #07080c;
-    border: 1px solid rgba(255, 255, 255, 0.07);
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.07), 0 30px 60px -40px rgba(0, 0, 0, 0.95);
-    transition: transform 450ms var(--ease-glass), border-color 300ms var(--ease-glass);
-  }
-  @media (min-width: 640px) { .ax-guide { grid-template-columns: 150px minmax(0, 1fr); gap: 24px; padding: 20px; } }
-  .ax-guide:hover { transform: translateY(-4px); border-color: rgba(255, 255, 255, 0.12); }
-  .ax-guide:hover .ax-light { opacity: 1; }
-  .ax-guide:focus-visible { outline: none; box-shadow: 0 0 0 3px rgba(var(--c-writing-rgb), 0.6); }
-  .ax-guide-cover { position: relative; border-radius: 12px; overflow: hidden; aspect-ratio: 3 / 4; background: #07080b; border: 1px solid var(--line); box-shadow: 0 20px 40px -24px rgba(var(--c-writing-rgb), 0.45); transition: transform 600ms var(--ease-glass); }
-  .ax-guide:hover .ax-guide-cover { transform: rotate(-2deg) translateY(-2px); }
-  .ax-guide-cover :global(img) { width: 100%; height: 100%; object-fit: cover; display: block; }
-  .ax-guide-body { position: relative; display: flex; flex-direction: column; align-items: flex-start; padding-block: 4px; }
-  .ax-guide-title { margin-top: 16px; }
-  .ax-guide-desc { margin-top: 8px; }
-  .ax-guide-go { margin-top: auto; padding-top: 20px; }
-
   @media (max-width: 899px) {
     .ax-search { max-width: none; flex-basis: 100%; }
   }
   @media (prefers-reduced-motion: reduce) {
-    .ax-card, .ax-guide, .ax-media :global(img), .ax-guide-cover { transition: none; }
-    .ax-card:hover, .ax-guide:hover { transform: none; }
-    .ax-guide:hover .ax-guide-cover { transform: none; }
+    .ax-card, .ax-media :global(img) { transition: none; }
+    .ax-card:hover { transform: none; }
+
 
   }
 </style>

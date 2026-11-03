@@ -208,7 +208,7 @@ export function mountArchive(): void {
     section.addEventListener(
       "pointermove",
       (e) => {
-        const el = (e.target as HTMLElement).closest<HTMLElement>(".ax-card, .ax-guide");
+        const el = (e.target as HTMLElement).closest<HTMLElement>(".ax-card");
         if (!el) return;
         pending = { el, x: e.clientX, y: e.clientY };
         if (raf) return;
@@ -432,8 +432,12 @@ function mountMap(mapEl: HTMLElement): MapHandle {
 
   // ---- The backdrop: faint stars and the Milky Way, drawn once a size ----
   // Drawn once a size into a canvas of its own, then copied to the visible
-  // one each frame with the far parallax and any shooting star on top.
+  // one each frame with the far parallax and any shooting star on top. The
+  // stars have the same count, sizes and colours as the sheets over the case
+  // studies, so the night reads as one across the join.
+  const field = document.createElement("canvas");
   const bg = document.createElement("canvas");
+  const gas = document.createElement("canvas");
   let CW = 1;
   let CH = 1;
   let DPR = 1;
@@ -444,21 +448,22 @@ function mountMap(mapEl: HTMLElement): MapHandle {
     CH = canvas.clientHeight || H * 1.08;
     canvas.width = Math.round(CW * DPR);
     canvas.height = Math.round(CH * DPR);
+    field.width = canvas.width;
+    field.height = canvas.height;
     bg.width = canvas.width;
     bg.height = canvas.height;
-    const ctx = bg.getContext("2d");
+    const ctx = field.getContext("2d");
     if (!ctx) return;
     ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
     ctx.clearRect(0, 0, CW, CH);
-    const W = CW;
-    const H = CH;
+    drawGas();
     let seed = 7;
     const rnd = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
-    // The band runs corner to corner, low left to high right.
-    const ax = -W * 0.05;
-    const ay = H * 0.92;
-    const bx = W * 1.05;
-    const by = H * 0.08;
+    // A faint Milky Way, corner to corner, low left to high right.
+    const ax = -CW * 0.05;
+    const ay = CH * 0.92;
+    const bx = CW * 1.05;
+    const by = CH * 0.08;
     const len = Math.hypot(bx - ax, by - ay);
     const ux = (bx - ax) / len;
     const uy = (by - ay) / len;
@@ -467,56 +472,194 @@ function mountMap(mapEl: HTMLElement): MapHandle {
     ctx.globalCompositeOperation = "lighter";
     for (let i = 0; i < 26; i++) {
       const t = rnd();
-      const off = (rnd() - 0.5) * H * 0.16;
+      const off = (rnd() - 0.5) * CH * 0.16;
       const x = ax + ux * len * t + nx * off;
       const y = ay + uy * len * t + ny * off;
-      const r = H * (0.12 + rnd() * 0.16);
+      const r = CH * (0.12 + rnd() * 0.16);
       const g = ctx.createRadialGradient(x, y, 0, x, y, r);
-      const warm = rnd() < 0.4;
-      g.addColorStop(0, warm ? "rgba(255,226,196,0.05)" : "rgba(190,205,255,0.055)");
+      g.addColorStop(0, rnd() < 0.4 ? "rgba(255,226,196,0.022)" : "rgba(190,205,255,0.026)");
       g.addColorStop(1, "rgba(0,0,0,0)");
       ctx.fillStyle = g;
       ctx.fillRect(x - r, y - r, r * 2, r * 2);
     }
-    // Dust: many tiny points packed along the band.
-    for (let i = 0; i < Math.round((W * H) / 900); i++) {
+    for (let i = 0; i < Math.round((CW * CH) / 1500); i++) {
       const t = rnd();
-      const off = (rnd() + rnd() + rnd() - 1.5) * H * 0.14;
+      const off = (rnd() + rnd() + rnd() - 1.5) * CH * 0.14;
       const x = ax + ux * len * t + nx * off;
       const y = ay + uy * len * t + ny * off;
-      const a = 0.05 + rnd() * 0.22;
-      ctx.fillStyle = `rgba(225,232,255,${a.toFixed(3)})`;
-      const s = rnd() < 0.92 ? 0.7 : 1.3;
-      ctx.fillRect(x, y, s, s);
+      ctx.fillStyle = `rgba(225,232,255,${(0.04 + rnd() * 0.16).toFixed(3)})`;
+      const d = rnd() < 0.92 ? 0.7 : 1.2;
+      ctx.fillRect(x, y, d, d);
     }
-    // A dark lane down the middle of the band.
+    // The stars, sheet by sheet.
+    const area = (CW * CH) / (1440 * 900);
+    const SHEETS = [
+      { n: 2800, s0: 0.62, s1: 0.9, gain: 0.66, halo: 0 },
+      { n: 1000, s0: 0.7, s1: 1.05, gain: 0.82, halo: 0 },
+      { n: 330, s0: 0.85, s1: 1.5, gain: 1, halo: 0 },
+      { n: 44, s0: 1.3, s1: 2.2, gain: 1, halo: 0 },
+      { n: 5, s0: 2, s1: 2.8, gain: 1, halo: 10 },
+    ];
+    for (const sh of SHEETS) {
+      for (let i = 0; i < Math.round(sh.n * area); i++) {
+        const x = rnd() * CW;
+        const y = rnd() * CH;
+        const c = rnd();
+        const e = rnd();
+        const b = rnd();
+        const sig = Math.max(sh.s0 + (sh.s1 - sh.s0) * c * c * c, 0.8 / DPR);
+        const mag = Math.min(1, sh.gain * (0.42 + 0.58 * e * e));
+        const mix = (warm: number, cool: number) => Math.round(255 * (1 + ((warm + (cool - warm) * b) - 1) * 0.6));
+        const rgb = `${mix(1, 0.78)},${mix(0.88, 0.87)},${mix(0.76, 1)}`;
+        const R = sig * 3.2;
+        const g = ctx.createRadialGradient(x, y, 0, x, y, R);
+        g.addColorStop(0, `rgba(${rgb},${mag.toFixed(3)})`);
+        g.addColorStop(0.32, `rgba(${rgb},${(mag * 0.6).toFixed(3)})`);
+        g.addColorStop(0.62, `rgba(${rgb},${(mag * 0.15).toFixed(3)})`);
+        g.addColorStop(1, `rgba(${rgb},0)`);
+        ctx.fillStyle = g;
+        ctx.fillRect(x - R, y - R, R * 2, R * 2);
+        if (sh.halo) {
+          const HR = sh.halo * 3;
+          const h = ctx.createRadialGradient(x, y, 0, x, y, HR);
+          h.addColorStop(0, `rgba(${rgb},${(mag * 0.2).toFixed(3)})`);
+          h.addColorStop(0.4, `rgba(${rgb},${(mag * 0.06).toFixed(3)})`);
+          h.addColorStop(1, `rgba(${rgb},0)`);
+          ctx.fillStyle = h;
+          ctx.fillRect(x - HR, y - HR, HR * 2, HR * 2);
+        }
+      }
+    }
+    // The sky has no top or bottom edge: its stars fade out there, and the
+    // stars laid over each join carry on across it.
+    ctx.globalCompositeOperation = "destination-out";
+    const fade = CH * 0.2;
+    let g = ctx.createLinearGradient(0, 0, 0, fade);
+    g.addColorStop(0, "rgba(0,0,0,1)");
+    g.addColorStop(1, "rgba(0,0,0,0)");
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, CW, fade);
+    g = ctx.createLinearGradient(0, CH - fade, 0, CH);
+    g.addColorStop(0, "rgba(0,0,0,0)");
+    g.addColorStop(1, "rgba(0,0,0,1)");
+    ctx.fillStyle = g;
+    ctx.fillRect(0, CH - fade, CW, fade);
     ctx.globalCompositeOperation = "source-over";
-    for (let i = 0; i < 14; i++) {
-      const t = 0.1 + rnd() * 0.8;
-      const off = (rnd() - 0.5) * H * 0.04;
-      const x = ax + ux * len * t + nx * off;
-      const y = ay + uy * len * t + ny * off;
-      const r = H * (0.05 + rnd() * 0.06);
-      const g = ctx.createRadialGradient(x, y, 0, x, y, r);
-      g.addColorStop(0, "rgba(2,4,10,0.45)");
-      g.addColorStop(1, "rgba(2,4,10,0)");
+  };
+
+  // Green gas, low in the sky: a very faint haze, computed per pixel and
+  // dithered, because a ramp this dark would show bands as a CSS gradient.
+  const drawGas = () => {
+    const w = Math.max(1, Math.round(CW));
+    const h = Math.max(1, Math.round(CH * 0.56));
+    gas.width = w;
+    gas.height = h;
+    const gc = gas.getContext("2d");
+    if (!gc) return;
+    let seed = 91;
+    const rnd = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
+    // Soft lobes make the shape; nothing here has an edge.
+    const lobes = Array.from({ length: 5 }, (_, i) => ({
+      x: w * ((i + 0.25 + rnd() * 0.5) / 5),
+      y: h * (0.46 + rnd() * 0.44),
+      rx: w * (0.1 + rnd() * 0.15),
+      ry: h * (0.14 + rnd() * 0.2),
+      a: 0.35 + rnd() * 0.65,
+    }));
+    const img = gc.createImageData(w, h);
+    const d = img.data;
+    for (let y = 0; y < h; y++) {
+      // Nothing near the top of the sky, and it thins at the very bottom to
+      // meet the aurora of the section below.
+      const yn = y / h;
+      const up = Math.min(1, Math.max(0, (yn - 0.08) / 0.5));
+      const down = Math.min(1, Math.max(0, (1 - yn) / 0.16));
+      const env = up * up * (3 - 2 * up) * (0.32 + 0.68 * down);
+      for (let x = 0; x < w; x++) {
+        let v = 0;
+        for (const l of lobes) {
+          const dx = (x - l.x) / l.rx;
+          const dy = (y - l.y) / l.ry;
+          v += l.a * Math.exp(-(dx * dx + dy * dy));
+        }
+        v = Math.min(1, v) * env;
+        const i = (y * w + x) * 4;
+        const n = rnd() - 0.5;
+        // On the sky's own night colour, so where there is no gas nothing changes.
+        d[i] = Math.max(0, 1 + v * 2.5 + n);
+        d[i + 1] = Math.max(0, 2 + v * 13 + n);
+        d[i + 2] = Math.max(0, 5 + v * 7 + n);
+        d[i + 3] = 255;
+      }
+    }
+    gc.putImageData(img, 0, 0);
+  };
+
+  // The stars thin out where the constellations are, most of all right around
+  // their stars, lines and names, and stay rich toward the edges of the sky.
+  const carve = () => {
+    const ctx = bg.getContext("2d");
+    if (!ctx || !field.width) return;
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.clearRect(0, 0, bg.width, bg.height);
+    ctx.drawImage(field, 0, 0);
+    ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+    ctx.globalCompositeOperation = "destination-out";
+    // A point of the map on this canvas: the canvas is oversized and sits a
+    // little back in the dome.
+    const back = phone ? 1 : 1500 / 1440;
+    const ox = W / 2;
+    const oy = H * 0.45;
+    const px = (x: number) => ox + (x - ox) * back + (CW - W) / 2;
+    const py = (y: number) => oy + (y - oy) * back + (CH - H) / 2;
+    const oval = (x: number, y: number, rx: number, ry: number, a: number) => {
+      ctx.save();
+      ctx.translate(x, y);
+      ctx.scale(rx, ry);
+      const g = ctx.createRadialGradient(0, 0, 0, 0, 0, 1);
+      g.addColorStop(0, `rgba(0,0,0,${a})`);
+      g.addColorStop(0.55, `rgba(0,0,0,${(a * 0.7).toFixed(3)})`);
+      g.addColorStop(1, "rgba(0,0,0,0)");
       ctx.fillStyle = g;
-      ctx.fillRect(x - r, y - r, r * 2, r * 2);
+      ctx.fillRect(-1, -1, 2, 2);
+      ctx.restore();
+    };
+    const reach = phone ? 0.62 : 1;
+    const mr = mapEl.getBoundingClientRect();
+    const words = overlay ? Array.from(overlay.querySelectorAll<HTMLElement>(".ax-h2, .ax-dock, .ax-fpill, .ax-head .kicker")) : [];
+    for (const el of words) {
+      const r = el.getBoundingClientRect();
+      if (!r.width || getComputedStyle(el).visibility === "hidden") continue;
+      // Measured against the map, so it holds wherever the page is scrolled.
+      const x = r.left - mr.left + r.width / 2;
+      const y = r.top - mr.top + r.height / 2;
+      if (y > H) continue;
+      oval(px(x), py(y), r.width * 0.68, r.height * 1.25, 0.82);
     }
-    // Faint stars over the whole sky.
-    ctx.globalCompositeOperation = "lighter";
-    for (let i = 0; i < Math.round((W * H) / 2600); i++) {
-      const x = rnd() * W;
-      const y = rnd() * H;
-      const big = rnd() < 0.06;
-      const a = big ? 0.5 + rnd() * 0.4 : 0.12 + rnd() * 0.35;
-      ctx.fillStyle = `rgba(235,240,255,${a.toFixed(3)})`;
-      ctx.beginPath();
-      ctx.arc(x, y, big ? 1.1 : 0.6, 0, Math.PI * 2);
-      ctx.fill();
+    for (const g of groups) {
+      const vis = g.stars.filter((s) => s.on);
+      if (!vis.length) continue;
+      // The area of the whole figure, broad and gentle.
+      const cx = (g.x0 + g.x1) / 2;
+      const cy = (g.y0 + g.y1) / 2;
+      oval(px(cx), py(cy), (g.x1 - g.x0) / 2 + 150 * reach, (g.y1 - g.y0) / 2 + 150 * reach, 0.5);
+      // Tight around each star.
+      for (const s of vis) oval(px(s.x), py(s.y), 58 * reach, 58 * reach, 0.72);
+      // Along each line.
+      for (const [a, b] of g.edges) {
+        const steps = Math.max(1, Math.round(Math.hypot(b.x - a.x, b.y - a.y) / 22));
+        for (let i = 0; i <= steps; i++) {
+          const t = i / steps;
+          oval(px(a.x + (b.x - a.x) * t), py(a.y + (b.y - a.y) * t), 26 * reach, 26 * reach, 0.34);
+        }
+      }
+      // Behind the name.
+      const nw = g.name.offsetWidth || 100;
+      const nh = g.name.offsetHeight || 46;
+      oval(px(g.nx + nw / 2), py(g.ny + nh / 2), nw * 0.85, nh * 1.15, 0.9);
     }
     ctx.globalCompositeOperation = "source-over";
-    paint(0, 0, performance.now());
+    paint(lastOx, lastOy, performance.now());
   };
 
   // ---- The visible sky: the backdrop, shifted, and shooting stars ---------
@@ -524,14 +667,30 @@ function mountMap(mapEl: HTMLElement): MapHandle {
   const shots: Shot[] = [];
   let nextShot = performance.now() + 2500;
   let lastPaint = performance.now();
+  let lastOx = 0;
+  let lastOy = 0;
   const paint = (ox: number, oy: number, now: number) => {
     const ctx = canvas?.getContext("2d");
     if (!canvas || !ctx) return;
+    lastOx = ox;
+    lastOy = oy;
     const dt = Math.min(50, now - lastPaint) / 16.67;
     lastPaint = now;
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.clearRect(0, 0, canvas.width, canvas.height);
+    if (gas.width > 1 && mapEl.dataset.gas !== "off") {
+      // Whole pixels only, so the dither stays crisp; at this speed a step is
+      // far too small to see.
+      const t = reduce ? 0 : now / 1000;
+      const gx = Math.round(Math.sin(t * 0.021) * 46 + ox * 0.5);
+      const gy = Math.round(canvas.height / DPR - gas.height + Math.sin(t * 0.017) * 8 + oy * 0.5);
+      ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+      ctx.drawImage(gas, gx - 50, gy, gas.width + 100, gas.height);
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+    }
+    ctx.globalCompositeOperation = "lighter";
     ctx.drawImage(bg, Math.round(ox * DPR), Math.round(oy * DPR));
+    ctx.globalCompositeOperation = "source-over";
     if (reduce) return;
     ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
     if (now > nextShot) {
@@ -777,6 +936,7 @@ function mountMap(mapEl: HTMLElement): MapHandle {
       skyKey = key;
       drawSky();
     }
+    carve();
     laidOut = true;
   };
 
@@ -784,7 +944,7 @@ function mountMap(mapEl: HTMLElement): MapHandle {
     s.el.style.transform = `translate3d(${(s.x + s.lx).toFixed(1)}px, ${(s.y + s.ly).toFixed(1)}px, 0)`;
   };
   const radius = (s: Star) =>
-    impactMode ? 3 + Math.max(0, 1 - s.impact / 40) * 6 : 2.6 + Math.min(10, s.minutes) * 0.62;
+    impactMode ? 4.4 + Math.max(0, 1 - s.impact / 40) * 6.5 : 4 + Math.min(10, s.minutes) * 0.72;
 
   const write = () => {
     for (const s of stars) {

@@ -1,0 +1,363 @@
+---
+// The end of the writing page: the guides and the closing note, where the
+// night turns green. An aurora grows slowly as you scroll out of the sky and
+// leans toward the pointer; the stars stay visible through it. The guide
+// cards have their art in depth, with a small motion on hover.
+import Icon from "../common/Icon.astro";
+import Picture from "../common/Picture.astro";
+import type { TeachingMaterial } from "../../data/teaching";
+import { hasPublic } from "../../utils/postTopics";
+
+interface Props {
+  guides: TeachingMaterial[];
+}
+const { guides } = Astro.props;
+
+// The small motion each cover has on hover, by what its art shows.
+const MOTION: Record<string, "compass" | "sphere"> = {
+  "the-rag-compass": "compass",
+  "ai-engineers-handbook": "sphere",
+};
+---
+
+<section class="wc">
+  <div class="wc-sky" aria-hidden="true">
+    <div class="wc-stars wc-stars-far"></div>
+    <div class="wc-stars wc-stars-near"></div>
+    <div class="wc-aurora">
+      <span class="wc-curtain wc-c1"></span>
+      <span class="wc-curtain wc-c2"></span>
+      <span class="wc-curtain wc-c3"></span>
+    </div>
+    <div class="wc-noise"></div>
+  </div>
+  <span class="wx-joinstars" aria-hidden="true"></span>
+
+  <!-- Teaching: guides I wrote, kept beside the posts -->
+  <div id="teaching" class="wrap on-top wc-teach" role="region" aria-labelledby="wc-title">
+    <div class="sec-head">
+      <div class="sec-head-main">
+        <p class="kicker">Teaching</p>
+        <h2 class="t-h2" id="wc-title">
+          Guides I wrote.
+          <span class="t-tail">Free PDFs for engineers who ship AI.</span>
+        </h2>
+      </div>
+      <a href="/teaching" class="tlink">All materials <Icon name="arrow-right" size={14} /></a>
+    </div>
+    <div class="wc-grid">
+      {guides.map((g) => {
+        const motion = MOTION[g.slug];
+        return (
+          <a href={`/teaching/${g.slug}`} class="wc-card" data-slug={g.slug} data-motion={motion}>
+            <span class="wc-rim" aria-hidden="true"></span>
+            <div class="wc-art">
+              {motion ? (
+                <picture>
+                  <source srcset={`/writing/guides/${g.slug}.avif`} type="image/avif" />
+                  <img class="wc-img" src={`/writing/guides/${g.slug}.webp`} alt="" width="1100" height="640" loading="lazy" decoding="async" />
+                </picture>
+              ) : hasPublic(g.cover) ? (
+                <Picture src={g.cover} alt="" class="wc-img" width={1344} height={768} />
+              ) : (
+                <div class="wc-empty" aria-hidden="true"></div>
+              )}
+              {motion === "compass" && (
+                <svg class="wc-fx" viewBox="0 0 160 100" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+                  <g transform="matrix(16.9,-1.1,-1.8,14,80.7,46.9)">
+                    <g class="wc-needle">
+                      <path d="M0 -1.02 L0.07 0 L-0.07 0 Z" fill="#d9fff0" />
+                      <path d="M0 1.02 L0.07 0 L-0.07 0 Z" fill="#34d399" fill-opacity="0.75" />
+                      <circle r="0.075" fill="#eafff6" />
+                    </g>
+                  </g>
+                </svg>
+              )}
+              {motion === "sphere" && (
+                <svg class="wc-fx" viewBox="0 0 160 100" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+                  <g transform="translate(80 53)" fill="none" stroke="#7dffcf" stroke-width="0.32">
+                    <ellipse class="wc-meridian" rx="34.6" ry="34.6" style="--m:0" />
+                    <ellipse class="wc-meridian" rx="34.6" ry="34.6" style="--m:1" />
+                    <ellipse class="wc-meridian" rx="34.6" ry="34.6" style="--m:2" />
+                    <ellipse class="wc-meridian" rx="34.6" ry="34.6" style="--m:3" />
+                  </g>
+                </svg>
+              )}
+              <span class="wc-glare" aria-hidden="true"></span>
+            </div>
+            <div class="wc-body">
+              <span class="badge">{g.pages ? `PDF · ${g.pages} pages` : "PDF"}</span>
+              <h3 class="t-h3 wc-title">{g.title}</h3>
+              <p class="t-small wc-desc">{g.description}</p>
+              <span class="tlink wc-go">Read it <Icon name="arrow-right" size={14} /></span>
+            </div>
+          </a>
+        );
+      })}
+    </div>
+  </div>
+
+  <slot />
+</section>
+
+<style>
+  .wc {
+    position: relative;
+    z-index: 1;
+    background: #010205;
+    overflow-x: clip;
+    /* Only a short overlap up into the sky, under its lowest names. */
+    --join-top: -8vh;
+    --join-h: 30vh;
+  }
+
+  /* ---------------- The sky here: stars, then the aurora over them ---------------- */
+  .wc-sky { position: absolute; inset: 0; overflow: hidden; pointer-events: none; }
+  .wc-stars {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 0;
+    height: calc(100% + 1024px);
+    background-repeat: repeat;
+    background-size: 1024px 1024px;
+    will-change: transform;
+    /* They come in from the sky above and go out into what is below. */
+    -webkit-mask-image: linear-gradient(180deg, transparent 0, #000 22vh, #000 calc(100% - 1024px - 24vh), transparent calc(100% - 1024px));
+    mask-image: linear-gradient(180deg, transparent 0, #000 22vh, #000 calc(100% - 1024px - 24vh), transparent calc(100% - 1024px));
+  }
+  .wc-stars-far { opacity: 0.6; background-image: url(/writing/stars-far.webp); transform: translate3d(0, var(--wc-far, 0px), 0); }
+  .wc-stars-near { opacity: 0.85; background-image: url(/writing/stars-near.webp); transform: translate3d(0, var(--wc-near, 0px), 0); }
+
+  /* The script sets --grow (0 to 1) from the scroll and --ax, --ay from the
+     pointer. The transition keeps both slow and soft. */
+  .wc-aurora {
+    position: absolute;
+    inset: 0;
+    mix-blend-mode: screen;
+    -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='1200' height='800' preserveAspectRatio='none'%3E%3Cfilter id='r' x='0' y='0' width='100%25' height='100%25'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.009 0.0009' numOctaves='3' seed='7'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 2.6 0 0 0 -0.42'/%3E%3C/filter%3E%3Crect width='1200' height='800' filter='url(%23r)'/%3E%3C/svg%3E");
+    mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='1200' height='800' preserveAspectRatio='none'%3E%3Cfilter id='r' x='0' y='0' width='100%25' height='100%25'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.009 0.0009' numOctaves='3' seed='7'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 2.6 0 0 0 -0.42'/%3E%3C/filter%3E%3Crect width='1200' height='800' filter='url(%23r)'/%3E%3C/svg%3E");
+    -webkit-mask-size: 100% 100%;
+    mask-size: 100% 100%;
+    opacity: calc(0.1 + var(--grow, 1) * 0.9);
+    transform: translate3d(calc(var(--ax, 0) * 30px), calc((1 - var(--grow, 1)) * 110px + var(--ay, 0) * 14px), 0);
+    transition: transform 1100ms cubic-bezier(0.2, 0.7, 0.2, 1), opacity 500ms linear;
+  }
+  /* Three tall slanted veils of light, brightest low, fading up and out, with
+     no edge anywhere: each ends at zero well inside its own box. */
+  .wc-curtain {
+    position: absolute;
+    display: block;
+    border-radius: 50%;
+    background: radial-gradient(closest-side, rgba(52, 211, 153, 0.5) 0%, rgba(52, 211, 153, 0.36) 26%, rgba(45, 212, 170, 0.18) 52%, rgba(45, 212, 170, 0.05) 78%, rgba(45, 212, 170, 0) 100%);
+    filter: blur(26px);
+    animation: wc-breathe 19s ease-in-out infinite alternate;
+  }
+  .wc-c1 { left: -8%; top: 2%; width: 70%; height: 62%; --sk: -16deg; }
+  .wc-c2 { left: 28%; top: 20%; width: 62%; height: 58%; --sk: 14deg; animation-duration: 25s; animation-delay: -9s; opacity: 0.85; }
+  .wc-c3 { right: -10%; bottom: 3%; width: 72%; height: 58%; --sk: -11deg; animation-duration: 31s; animation-delay: -17s; }
+  @keyframes wc-breathe {
+    from { transform: skewX(var(--sk)) scale(1, 0.94) translate3d(-2%, 1%, 0); }
+    to { transform: skewX(calc(var(--sk) * 0.6)) scale(1.05, 1.08) translate3d(3%, -2%, 0); }
+  }
+  /* A fine grain over the glow only, so its long ramps have no bands. On pure
+     black this blend leaves the black alone. */
+  .wc-noise {
+    position: absolute;
+    inset: 0;
+    opacity: 0.55;
+    mix-blend-mode: soft-light;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23n)' opacity='0.7'/%3E%3C/svg%3E");
+  }
+
+  .wc-teach :global(.t-h2), .wc-teach :global(.kicker), .wc-teach :global(.tlink) { text-shadow: 0 0 14px #010205, 0 0 4px #010205; }
+
+  /* ---------------- The guides ---------------- */
+  .wc-teach { padding-top: clamp(96px, 13vw, 180px); padding-bottom: clamp(8px, 1vw, 16px); }
+  .wc-grid { display: grid; gap: 18px; grid-template-columns: 1fr; perspective: 1300px; }
+  @media (min-width: 900px) { .wc-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px; } }
+
+  .wc-card {
+    --u: 0;
+    --v: 0;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    border-radius: 24px;
+    text-decoration: none;
+    color: var(--ink);
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.035), rgba(255, 255, 255, 0) 40%), rgba(3, 8, 9, 0.5);
+    box-shadow: 0 34px 70px -44px rgba(0, 0, 0, 1);
+    transform: rotateX(calc(var(--v) * -5deg)) rotateY(calc(var(--u) * 6deg)) translate3d(0, var(--lift, 0px), 0);
+    transform-style: preserve-3d;
+    transition: transform 260ms cubic-bezier(0.2, 0.7, 0.2, 1);
+  }
+  .wc-card:hover { --lift: -4px; }
+  .wc-card:focus-visible { outline: none; --lift: -4px; box-shadow: 0 0 0 3px rgba(52, 211, 153, 0.6); }
+  /* The rim: a hairline, lit in green around the pointer. */
+  .wc-rim, .wc-glare { position: absolute; pointer-events: none; }
+  .wc-rim {
+    inset: 0;
+    z-index: 3;
+    border-radius: inherit;
+    padding: 1px;
+    background:
+      radial-gradient(300px circle at var(--gx, 50%) var(--gy, 0%), rgba(110, 255, 200, 0.95), rgba(52, 211, 153, 0.22) 55%, rgba(255, 255, 255, 0.09) 100%);
+    -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+  }
+
+  .wc-art {
+    position: relative;
+    display: block;
+    aspect-ratio: 16 / 10;
+    overflow: hidden;
+    border-radius: 24px 24px 0 0;
+  }
+  .wc-art :global(img) {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+    transform: translate3d(calc(var(--u) * -12px), calc(var(--v) * -9px), 0) scale(1.07);
+    transition: transform 320ms cubic-bezier(0.2, 0.7, 0.2, 1);
+  }
+  .wc-empty { position: absolute; inset: 0; background: radial-gradient(70% 90% at 30% 20%, rgba(52, 211, 153, 0.2), rgba(52, 211, 153, 0) 70%); }
+  /* The second layer sits nearer than the art and moves the other way. */
+  .wc-fx {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    transform: translate3d(calc(var(--u) * -12px), calc(var(--v) * -9px), 0) scale(1.07);
+    transition: transform 320ms cubic-bezier(0.2, 0.7, 0.2, 1);
+    pointer-events: none;
+    overflow: visible;
+  }
+  .wc-glare {
+    inset: 0;
+    z-index: 2;
+    background: radial-gradient(340px circle at var(--gx, 50%) var(--gy, 0%), rgba(220, 255, 240, 0.2), rgba(220, 255, 240, 0) 62%);
+    mix-blend-mode: screen;
+    opacity: 0;
+    transition: opacity 300ms ease-out;
+  }
+  .wc-card:hover .wc-glare { opacity: 1; }
+
+  /* The compass needle swings, and settles. */
+  .wc-needle { filter: drop-shadow(0 0 1px rgba(160, 255, 220, 0.9)); }
+  .wc-card:hover .wc-needle, .wc-card:focus-visible .wc-needle { animation: wc-swing 2400ms cubic-bezier(0.3, 0.1, 0.3, 1) both; }
+  @keyframes wc-swing {
+    0% { transform: rotate(0deg); }
+    16% { transform: rotate(46deg); }
+    34% { transform: rotate(-30deg); }
+    52% { transform: rotate(18deg); }
+    68% { transform: rotate(-10deg); }
+    84% { transform: rotate(4deg); }
+    100% { transform: rotate(0deg); }
+  }
+  /* The sphere turns: the wire net rolls, and light meridians sweep around it. */
+  .wc-card[data-motion="sphere"] .wc-art :global(img) {
+    transform-origin: 50% 53%;
+    transition: transform 1100ms cubic-bezier(0.2, 0.7, 0.2, 1);
+  }
+  .wc-card[data-motion="sphere"]:hover .wc-art :global(img),
+  .wc-card[data-motion="sphere"]:focus-visible .wc-art :global(img) {
+    transform: translate3d(calc(var(--u) * -12px), calc(var(--v) * -9px), 0) scale(1.09) rotate(38deg);
+    transition: transform 7000ms cubic-bezier(0.16, 0.6, 0.3, 1);
+  }
+  .wc-meridian { opacity: 0; transition: opacity 500ms ease-out; }
+  .wc-card:hover .wc-meridian, .wc-card:focus-visible .wc-meridian {
+    opacity: 0.55;
+    animation: wc-turn 4800ms linear infinite;
+    animation-delay: calc(var(--m) * -1200ms);
+  }
+  @keyframes wc-turn {
+    0% { transform: scaleX(1); }
+    25% { transform: scaleX(0.02); }
+    50% { transform: scaleX(-1); }
+    75% { transform: scaleX(-0.02); }
+    100% { transform: scaleX(1); }
+  }
+
+  .wc-body {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    flex: 1;
+    padding: 18px 24px 22px;
+    border-radius: 0 0 24px 24px;
+    background: linear-gradient(180deg, rgba(2, 6, 7, 0) 0%, rgba(2, 6, 7, 0.82) 22%, rgba(2, 6, 7, 0.9) 100%);
+    transform: translateZ(16px);
+  }
+  .wc-title { margin-top: 12px; }
+  .wc-desc { margin-top: 8px; text-wrap: pretty; }
+  .wc-go { margin-top: auto; padding-top: 16px; color: #6ee7b7; }
+
+  /* ---------------- The closing note: glass in the sky ---------------- */
+  .wc :global(.next-step) { position: relative; padding-bottom: clamp(72px, 9vw, 120px); }
+  .wc :global(.next-card) {
+    --mx: 50%;
+    --my: 0%;
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.045), rgba(255, 255, 255, 0.01) 55%), rgba(3, 9, 9, 0.46);
+    border-color: transparent;
+    border-radius: 24px;
+    box-shadow: 0 40px 90px -50px rgba(0, 0, 0, 1);
+    -webkit-backdrop-filter: blur(7px) saturate(1.25);
+    backdrop-filter: blur(7px) saturate(1.25);
+  }
+  /* A green edge light that gathers around the pointer, and a soft bloom on
+     the glass under it. */
+  .wc :global(.next-card)::before,
+  .wc :global(.next-card)::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    pointer-events: none;
+  }
+  .wc :global(.next-card)::before {
+    padding: 1px;
+    background: radial-gradient(460px circle at var(--mx) var(--my), rgba(120, 255, 205, 1), rgba(52, 211, 153, 0.4) 42%, rgba(52, 211, 153, 0.16) 100%);
+    -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+  }
+  .wc :global(.next-card)::after {
+    background: radial-gradient(520px circle at var(--mx) var(--my), rgba(52, 211, 153, 0.12), rgba(52, 211, 153, 0) 68%);
+  }
+  .wc :global(.next-card) > :global(*) { position: relative; z-index: 1; }
+
+  /* What comes below keeps the same night. */
+  :global(body:has(.wc) .site-foot) { background: #010205; margin-top: 0; }
+
+  @media (max-width: 899px) {
+    .wc-curtain { animation: none; transform: skewX(var(--sk)); filter: blur(18px); }
+    .wc-aurora { -webkit-mask-image: none; mask-image: none; }
+    .wc-c1 { width: 110%; left: -30%; height: 42%; }
+    .wc-c2 { width: 110%; left: 10%; top: 30%; height: 40%; }
+    .wc-c3 { width: 120%; right: -30%; height: 40%; }
+    .wc :global(.next-card) { -webkit-backdrop-filter: none; backdrop-filter: none; background: linear-gradient(180deg, rgba(255, 255, 255, 0.045), rgba(255, 255, 255, 0.01) 55%), rgba(3, 9, 9, 0.8); }
+    .wc-body { padding: 0 18px 20px; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .wc-curtain { animation: none; transform: skewX(var(--sk)); }
+    .wc-aurora, .wc-card, .wc-art :global(img), .wc-fx { transition: none; }
+    .wc-card { transform: none; }
+    .wc-card:hover .wc-needle, .wc-card:focus-visible .wc-needle { animation: none; }
+    .wc-card:hover .wc-meridian, .wc-card:focus-visible .wc-meridian { animation: none; opacity: 0; }
+    .wc-card[data-motion="sphere"]:hover .wc-art :global(img),
+    .wc-card[data-motion="sphere"]:focus-visible .wc-art :global(img) { transform: scale(1.07); }
+    .wc-stars { will-change: auto; }
+  }
+</style>
+
+<script>
+  import { mountWritingClose } from "./close";
+  mountWritingClose();
+</script>
