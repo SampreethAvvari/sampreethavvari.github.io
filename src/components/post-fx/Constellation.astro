@@ -1,0 +1,62 @@
+---
+// The post's contents as a small constellation in the margin. Each h2 is a
+// star, placed at build time from its own name so the shape is stable and the
+// page never shifts. The links are ordinary links: with no script, and in
+// print, this is a plain list of headings.
+import { hash01 } from "../../scripts/post-fx/sky-shapes";
+
+type Heading = { slug: string; text: string };
+const { headings } = Astro.props as { headings: Heading[] };
+
+const gap = headings.length > 10 ? 34 : headings.length > 7 ? 42 : 52;
+const W = 60;
+const placed: Array<Heading & { x: number; y: number; end?: boolean }> = [];
+let lastX = 30;
+headings.forEach((h, i) => {
+  let x = 8 + hash01(h.slug) * (W - 16);
+  // Neighbours keep apart, so the line reads as a walk down the sky.
+  if (Math.abs(x - lastX) < 12) x = lastX + (lastX > W / 2 ? -14 : 14);
+  x = Math.max(7, Math.min(W - 7, x));
+  lastX = x;
+  placed.push({ ...h, x: +x.toFixed(1), y: 10 + i * gap });
+});
+const endX = lastX > W / 2 ? 14 : W - 14;
+const endY = 10 + headings.length * gap;
+const H = endY + 12;
+
+// A little dust, so the rail reads as sky and not as a diagram.
+const dust = Array.from({ length: 18 }, (_, i) => {
+  const a = hash01(`d${i}${headings[0]?.slug}`);
+  const b = hash01(`e${i}${headings[0]?.slug}`);
+  const c = hash01(`f${i}`);
+  return { x: +(a * W).toFixed(1), y: +(b * H).toFixed(1), r: +(0.5 + c * 0.6).toFixed(2), o: +(0.12 + c * 0.3).toFixed(2) };
+});
+const pts = [...placed.map((p) => ({ x: p.x, y: p.y })), { x: endX, y: endY }];
+---
+
+<nav class="post-toc pfx-rail" id="post-toc" aria-label="On this page">
+  <p class="t-meta post-toc-label">On this page</p>
+  <div class="pfx-con" style={`--w:${W}px;height:${H}px;`}>
+    <svg class="pfx-con-svg" width={W} height={H} viewBox={`0 0 ${W} ${H}`} aria-hidden="true">
+      {dust.map((d) => <circle cx={d.x} cy={d.y} r={d.r} fill="#fff" opacity={d.o} />)}
+      {pts.slice(0, -1).map((p, i) => <line class="pfx-con-bg" x1={p.x} y1={p.y} x2={pts[i + 1].x} y2={pts[i + 1].y} />)}
+      {pts.slice(0, -1).map((p, i) => <line class="pfx-con-lit" pathLength="1" x1={p.x} y1={p.y} x2={pts[i + 1].x} y2={pts[i + 1].y} />)}
+    </svg>
+    <ol>
+      {placed.map((h, i) => (
+        <li style={`--x:${h.x}px;--y:${h.y}px;`}>
+          <a href={`#${h.slug}`} data-target={h.slug} data-index={i}>
+            <i class="pfx-star" aria-hidden="true"></i>
+            <span class="pfx-star-label">{h.text}</span>
+          </a>
+        </li>
+      ))}
+      <li class="pfx-con-end" style={`--x:${endX}px;--y:${endY}px;`}>
+        <a href="#pfx-sky">
+          <i class="pfx-star" aria-hidden="true"></i>
+          <span class="pfx-star-label">Where to next</span>
+        </a>
+      </li>
+    </ol>
+  </div>
+</nav>

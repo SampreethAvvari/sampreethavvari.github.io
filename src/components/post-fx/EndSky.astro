@@ -1,0 +1,175 @@
+---
+// The end of a post: its constellation, the posts that share its tag, as a
+// small live sky. The stars are ordinary links, placed at build time. With no
+// script they read as a plain list of posts.
+import { readingTime } from "../../utils/readingTime";
+import { disciplinesFor, slugOf, impactRank, formatPostDate, hasPublic } from "../../utils/postTopics";
+import { shapeFor, hash01 } from "../../scripts/post-fx/sky-shapes";
+import fs from "node:fs";
+import path from "node:path";
+
+const { posts, slug, tag } = Astro.props as { posts: any[]; slug: string; tag?: string };
+
+// Tags read as they do on the Writing tab.
+const TAG_LABEL: Record<string, string> = { Architecture: "Systems" };
+const labelOf = (t?: string) => (t ? TAG_LABEL[t] || t : "Notes");
+const TINTS = ["205,224,255", "255,222,170", "196,240,232", "255,206,196", "232,224,255", "255,242,214", "190,228,255", "255,226,236"];
+const counts = new Map<string, number>();
+for (const p of posts) {
+  const k = labelOf(p.frontmatter.tag);
+  counts.set(k, (counts.get(k) || 0) + 1);
+}
+const order = [...counts.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0])).map(([t]) => t);
+const name = labelOf(tag);
+const tint = TINTS[Math.max(0, order.indexOf(name)) % TINTS.length];
+
+const newest = (a: any, b: any) => new Date(b.frontmatter.date).getTime() - new Date(a.frontmatter.date).getTime();
+const same = posts.filter((p) => labelOf(p.frontmatter.tag) === name);
+
+// A tag of one or two is not a constellation yet: its neighbours by kind of
+// work join in, so the sky always has somewhere to go.
+let members = same;
+let widened = false;
+if (same.length < 3) {
+  widened = true;
+  const mine = disciplinesFor[slug] || [];
+  const others = posts.filter((p) => !same.includes(p));
+  const near = others.filter((p) => (disciplinesFor[slugOf(p.url)] || []).some((d: string) => mine.includes(d))).sort(newest);
+  const fill = near.length >= 4 ? near : [...near, ...others.filter((p) => !near.includes(p)).sort(newest)];
+  members = [...same, ...fill].slice(0, 7);
+}
+
+const thumbFor = (img?: string) => {
+  if (!img) return undefined;
+  const base = `/writing/thumbs/${img.replace(/^.*\//, "").replace(/\.(png|jpe?g|webp|avif)$/i, "")}`;
+  return fs.existsSync(path.join(process.cwd(), "public", `${base}.avif`)) ? base : undefined;
+};
+const firstSentence = (d: string) => (d.match(/^.*?[.!?](?=\s|$)/) || [d])[0];
+const TONE_RGB: Record<string, string> = {
+  blue: "91,141,239",
+  emerald: "52,211,153",
+  violet: "167,139,250",
+  amber: "245,165,36",
+  cyan: "34,211,238",
+  film: "244,63,94",
+};
+
+// Same order as the Writing sky, so the same stars sit in the same places.
+const sorted = [...members].sort(
+  (a, b) => impactRank(slugOf(a.url)) - impactRank(slugOf(b.url)) || new Date(b.frontmatter.date).getTime() - new Date(a.frontmatter.date).getTime(),
+);
+const shape = shapeFor(sorted.length);
+const rot = sorted.length > 1 ? (hash01(`${name}r`) - 0.5) * 0.5 : 0;
+const cos = Math.cos(rot);
+const sin = Math.sin(rot);
+const raw = sorted.map((_, i) => {
+  const n = sorted.length;
+  const p = shape.pts[i] || [0.5 + Math.cos(i * 2.4) * 0.45 * (i / n), 0.5 + Math.sin(i * 2.4) * 0.45 * (i / n)];
+  const lx = (p[0] - 0.5) * Math.sqrt(shape.aspect);
+  const ly = (p[1] - 0.5) / Math.sqrt(shape.aspect);
+  return [lx * cos - ly * sin, lx * sin + ly * cos];
+});
+// Fit to the field, a little inside its edges.
+const xs = raw.map((p) => p[0]);
+const ys = raw.map((p) => p[1]);
+const [x0, x1, y0, y1] = [Math.min(...xs), Math.max(...xs), Math.min(...ys), Math.max(...ys)];
+const fit = (v: number, a: number, b: number) => (b - a < 0.001 ? 50 : 9 + ((v - a) / (b - a)) * 82);
+const stars = sorted.map((p, i) => {
+  const s = slugOf(p.url);
+  const fm = p.frontmatter;
+  return {
+    slug: s,
+    url: p.url,
+    title: fm.title as string,
+    line: firstSentence(fm.description || ""),
+    meta: `${formatPostDate(fm.date)} · ${readingTime(p.rawContent())} min read`,
+    thumb: hasPublic(fm.img_path) ? thumbFor(fm.img_path) : undefined,
+    rgb: TONE_RGB[fm.tone] || "52,211,153",
+    r: +(2.6 + Math.min(10, readingTime(p.rawContent())) * 0.62).toFixed(1),
+    here: s === slug,
+    x: +fit(raw[i][0], x0, x1).toFixed(2),
+    y: +fit(raw[i][1], y0, y1).toFixed(2),
+    note: i,
+  };
+});
+const edges = shape.edges.filter(([a, b]) => a < stars.length && b < stars.length);
+// The card starts on the newest other star.
+const first = [...stars].filter((s) => !s.here).sort((a, b) => {
+  const pa = sorted.find((p) => slugOf(p.url) === a.slug);
+  const pb = sorted.find((p) => slugOf(p.url) === b.slug);
+  return newest(pa, pb);
+})[0];
+const others = stars.length - 1;
+const sub = widened
+  ? "The nearest posts by kind of work. Click a star to fly there."
+  : `${stars.length} posts share this tag. Click a star to fly there.`;
+---
+
+<section class="pfx-sky" id="pfx-sky" aria-labelledby="pfx-sky-title" style={`--tint:${tint};`} data-slug={slug}>
+  <canvas class="pfx-sky-bg" aria-hidden="true"></canvas>
+  <div class="wrap pfx-sky-wrap">
+    <div class="pfx-sky-head">
+      <p class="kicker">Constellation</p>
+      <h2 id="pfx-sky-title" class="pfx-sky-title">{widened ? "Nearby" : name}</h2>
+      <p class="pfx-sky-sub">{sub}</p>
+      <a href="/posts" class="tlink pfx-sky-all">All posts</a>
+    </div>
+    <div class="pfx-sky-field" data-count={others}>
+      <div class="pfx-sky-dome">
+        <svg class="pfx-sky-lines" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
+          {edges.map(([a, b]) => <line pathLength="1" x1={stars[a].x} y1={stars[a].y} x2={stars[b].x} y2={stars[b].y} />)}
+          <line class="pfx-sky-reach" pathLength="1" x1="50" y1="50" x2="50" y2="50" />
+        </svg>
+        <ol class="pfx-sky-stars">
+          {stars.map((s) => (
+            <li style={`--x:${s.x}%;--y:${s.y}%;--r:${s.r}px;--tw:${(2.6 + hash01(s.slug) * 3).toFixed(2)}s;--td:${(-hash01(`${s.slug}d`) * 4).toFixed(2)}s;`}>
+              {s.here ? (
+                <span class="pfx-sky-star is-here" aria-current="page" data-slug={s.slug} data-note={s.note}>
+                  <i aria-hidden="true"></i>
+                  <span class="pfx-sky-name">{s.title}</span>
+                  <b class="pfx-sky-tag">This post</b>
+                </span>
+              ) : (
+                <a
+                  class="pfx-sky-star"
+                  href={s.url}
+                  data-slug={s.slug}
+                  data-title={s.title}
+                  data-line={s.line}
+                  data-meta={s.meta}
+                  data-thumb={s.thumb}
+                  data-rgb={s.rgb}
+                  data-note={s.note}
+                >
+                  <i aria-hidden="true"></i>
+                  <span class="pfx-sky-name">{s.title}</span>
+                </a>
+              )}
+            </li>
+          ))}
+        </ol>
+      </div>
+    </div>
+    {first && (
+      <a class="pfx-sky-card" href={first.url} data-slug={first.slug} style={`--art:${first.rgb};`}>
+        <span class="pfx-sky-card-art">
+          {first.thumb && (
+            <picture>
+              <source srcset={`${first.thumb}.avif`} type="image/avif" />
+              <img src={`${first.thumb}.webp`} alt="" width="560" height="315" loading="lazy" decoding="async" />
+            </picture>
+          )}
+        </span>
+        <span class="pfx-sky-card-body">
+          <span class="t-meta pfx-sky-card-meta">{first.meta}</span>
+          <span class="pfx-sky-card-title">{first.title}</span>
+          <span class="pfx-sky-card-line">{first.line}</span>
+          <span class="pfx-sky-card-go">
+            Fly there
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14m0 0-6-6m6 6-6 6"></path></svg>
+          </span>
+        </span>
+      </a>
+    )}
+  </div>
+</section>

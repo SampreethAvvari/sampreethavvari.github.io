@@ -14,8 +14,13 @@ import {
   formatPostDate,
   hasPublic,
 } from "../utils/postTopics";
+import Constellation from "../components/post-fx/Constellation.astro";
+import EndSky from "../components/post-fx/EndSky.astro";
+import fs from "node:fs";
+import path from "node:path";
 // Article styles live in their own sheet so only post pages download them.
 import "../styles/post-article.css";
+import "../components/post-fx/post-fx.css";
 
 const { frontmatter, headings = [] } = Astro.props;
 const { title, date, description, img_path, img_alt, tag, stats, demo, architecture, facts } = frontmatter;
@@ -70,15 +75,48 @@ const toc = (headings as Array<{ depth: number; slug: string; text: string }>).f
   (h) => h.depth === 2,
 );
 
-// More writing: posts about the same kind of work first, then the newest.
-const newestFirst = (a: any, b: any) =>
-  new Date(b.frontmatter.date).getTime() - new Date(a.frontmatter.date).getTime();
-const mine = disciplinesFor[slug] || [];
-const others = allPosts.filter((p) => slugOf(p.url) !== slug).sort(newestFirst);
-const related = others.filter((p) =>
-  (disciplinesFor[slugOf(p.url)] || []).some((d) => mine.includes(d)),
-);
-const more = [...related, ...others.filter((p) => !related.includes(p))].slice(0, 3);
+// The opening: the post's own colour for the light around its art, and the
+// large art for the six case studies that have it.
+const TONE_RGB: Record<string, string> = {
+  blue: "91,141,239",
+  emerald: "52,211,153",
+  violet: "167,139,250",
+  amber: "245,165,36",
+  cyan: "34,211,238",
+  film: "244,63,94",
+};
+const artRgb = TONE_RGB[frontmatter.tone] || "52,211,153";
+const artBase = fs.existsSync(path.join(process.cwd(), "public", `writing/${slug}-2560.avif`)) ? `/writing/${slug}` : undefined;
+
+// What the small cards on this post's links show, for the links it really has.
+const raw = self ? self.rawContent() : "";
+const firstSentence = (d: string) => (d.match(/^.*?[.!?](?=\s|$)/) || [d])[0];
+const linkCards: Record<string, { t: string; d: string; img?: string; k: string }> = {};
+for (const m of raw.matchAll(/(?:\]\(|href=")(\/(?:posts|architecture)\/[a-z0-9-]+)/g)) {
+  const href = m[1];
+  if (linkCards[href]) continue;
+  const [, kind, target] = href.split("/");
+  if (kind === "posts") {
+    const p = allPosts.find((x) => slugOf(x.url) === target);
+    if (!p) continue;
+    linkCards[href] = {
+      t: p.frontmatter.title,
+      d: firstSentence(p.frontmatter.description || ""),
+      img: hasPublic(p.frontmatter.img_path) ? p.frontmatter.img_path : undefined,
+      k: "Post",
+    };
+  } else {
+    const a = architectureBySlug[target];
+    if (!a) continue;
+    linkCards[href] = {
+      t: a.name,
+      d: firstSentence(a.lede || ""),
+      img: hasPublic(`/arch/${a.slug}.png`) ? `/arch/${a.slug}.png` : undefined,
+      k: "Drawing",
+    };
+  }
+}
+const fxData = JSON.stringify({ links: linkCards }).replace(/</g, "\\u003c");
 ---
 
 <BaseLayout
@@ -92,61 +130,74 @@ const more = [...related, ...others.filter((p) => !related.includes(p))].slice(0
   published={date}
 >
   <div class="post-progress" id="post-progress" aria-hidden="true"></div>
+  <!-- While reading, the sky goes quiet behind the words. -->
+  <div class="pfx-veil" id="pfx-veil" aria-hidden="true"></div>
 
   <article class="post">
-    <header class="post-head page-top">
-      <div class="tone-atmos" aria-hidden="true"></div>
-      <div class="wrap on-top">
-        <div class="post-head-inner">
+    <header
+      class="post-head pfx-open"
+      id="pfx-open"
+      data-slug={slug}
+      data-rgb={artRgb}
+      data-art={artBase}
+      style={`--art:${artRgb};`}
+    >
+      <!-- The settled layout below is the real one. With a script the art and
+           the title start out in space and scroll into these places. -->
+      <div class="pfx-stage" id="pfx-stage">
+        <canvas class="pfx-gl" aria-hidden="true"></canvas>
+        <div class="pfx-scrim" aria-hidden="true"></div>
+        <div class="wrap pfx-settled on-top">
           <a href="/posts" class="tlink post-back">
             <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5m0 0 6 6m-6-6 6-6"></path></svg>
             All posts
           </a>
 
-          <p class="t-meta post-meta">
-            {date && <time datetime={date}>{formatPostDate(date)}</time>}
-            {minutes && (
-              <>
-                <span aria-hidden="true">·</span>
-                <span>{minutes} min read</span>
-              </>
-            )}
-            {tag && <span class="badge post-badge">{tag}</span>}
-          </p>
-
-          <h1 class={titleClass}>{title}</h1>
-
-          {description && <p class="t-lede post-lede">{description}</p>}
-
           {
-            demo && (
-              <div class="post-actions">
-                <a href={demo} class="btn btn-glass">
-                  Try the live demo <Icon name="arrow-right" size={15} class="arrow-r" />
-                </a>
-              </div>
+            hasCover && (
+              <figure class="post-cover-frame pfx-art" data-zoom={artBase || "1"}>
+                <Picture
+                  src={img_path}
+                  alt={img_alt || title}
+                  width={1200}
+                  height={675}
+                  loading="eager"
+                  fetchpriority="high"
+                />
+              </figure>
             )
           }
+
+          <div class="post-head-inner pfx-copy">
+            <p class="t-meta post-meta">
+              {date && <time datetime={date}>{formatPostDate(date)}</time>}
+              {minutes && (
+                <>
+                  <span aria-hidden="true">·</span>
+                  <span>{minutes} min read</span>
+                </>
+              )}
+              {tag && <span class="badge post-badge">{tag}</span>}
+            </p>
+
+            <h1 class={titleClass}>{title}</h1>
+
+            {description && <p class="t-lede post-lede">{description}</p>}
+
+            {
+              demo && (
+                <div class="post-actions">
+                  <a href={demo} class="btn btn-glass">
+                    Try the live demo <Icon name="arrow-right" size={15} class="arrow-r" />
+                  </a>
+                </div>
+              )
+            }
+          </div>
         </div>
+        <div class="pfx-cue" aria-hidden="true"><i></i></div>
       </div>
     </header>
-
-    {
-      hasCover && (
-        <div class="wrap">
-          <figure class="post-cover-frame">
-            <Picture
-              src={img_path}
-              alt={img_alt || title}
-              width={1200}
-              height={600}
-              loading="eager"
-              fetchpriority="high"
-            />
-          </figure>
-        </div>
-      )
-    }
 
     {
       architecture && (
@@ -197,16 +248,7 @@ const more = [...related, ...others.filter((p) => !related.includes(p))].slice(0
         {
           toc.length >= 2 && (
             <aside class="post-toc-wrap">
-              <nav class="post-toc" id="post-toc" aria-label="On this page">
-                <p class="t-meta post-toc-label">On this page</p>
-                <ol>
-                  {toc.map((h) => (
-                    <li>
-                      <a href={`#${h.slug}`} data-target={h.slug}>{h.text}</a>
-                    </li>
-                  ))}
-                </ol>
-              </nav>
+              <Constellation headings={toc} />
             </aside>
           )
         }
@@ -245,140 +287,11 @@ const more = [...related, ...others.filter((p) => !related.includes(p))].slice(0
     </div>
   </article>
 
-  {
-    more.length > 0 && (
-      <section class="section-tight post-more" aria-labelledby="more-writing">
-        <div class="wrap">
-          <div class="post-more-head">
-            <h2 id="more-writing" class="post-more-title">More writing</h2>
-            <a href="/posts" class="tlink">
-              All posts <Icon name="arrow-right" size={14} />
-            </a>
-          </div>
-          <div class="post-more-grid">
-            {more.map((p) => (
-              <a href={p.url} class="surface post-more-card">
-                <div class="surface-media post-more-media">
-                  {hasPublic(p.frontmatter.img_path) ? (
-                    <Picture
-                      src={p.frontmatter.img_path}
-                      alt={p.frontmatter.img_alt || p.frontmatter.title}
-                      width={600}
-                      height={338}
-                    />
-                  ) : (
-                    <div class="post-media-fallback" aria-hidden="true" />
-                  )}
-                </div>
-                <div class="post-more-body">
-                  <p class="t-meta">
-                    {formatPostDate(p.frontmatter.date)} · {readingTime(p.rawContent())} min read
-                  </p>
-                  <h3 class="post-more-card-title">{p.frontmatter.title}</h3>
-                </div>
-              </a>
-            ))}
-          </div>
-        </div>
-      </section>
-    )
-  }
+  <EndSky posts={allPosts} slug={slug} tag={tag} />
+
+  <script type="application/json" id="pfx-data" set:html={fxData}></script>
 
   <script>
-    import { onPage } from "../scripts/lifecycle";
-
-    // Runs each time a post is shown (moving from one post to the next
-    // swaps the page without a reload), and stops when it is swapped away.
-    onPage("post", (signal) => {
-      const on = { passive: true, signal };
-      let raf = 0;
-      let spyRaf = 0;
-      const stop = () => {
-        cancelAnimationFrame(raf);
-        cancelAnimationFrame(spyRaf);
-      };
-      // Reading progress, in the writing colour.
-      const bar = document.getElementById("post-progress");
-      if (bar) {
-        const update = () => {
-          raf = 0;
-          const doc = document.documentElement;
-          const height = doc.scrollHeight - doc.clientHeight;
-          const pct = height > 0 ? Math.min(1, Math.max(0, doc.scrollTop / height)) : 0;
-          bar.style.transform = "scaleX(" + pct + ")";
-        };
-        const queue = () => {
-          if (!raf) raf = requestAnimationFrame(update);
-        };
-        window.addEventListener("scroll", queue, on);
-        window.addEventListener("resize", queue, on);
-        update();
-      }
-
-      const body = document.getElementById("post-prose-body");
-      if (!body) return stop;
-
-      // Wide tables scroll inside their own frame, never the page.
-      body.querySelectorAll("table").forEach((t) => {
-        if (t.parentElement && t.parentElement.classList.contains("post-table")) return;
-        const wrap = document.createElement("div");
-        wrap.className = "post-table";
-        wrap.setAttribute("tabindex", "0");
-        wrap.setAttribute("role", "region");
-        wrap.setAttribute("aria-label", "Table");
-        t.parentNode!.insertBefore(wrap, t);
-        wrap.appendChild(t);
-        // Columns that hold sentences get more room on a phone.
-        const longest: number[] = [];
-        Array.from(t.rows).forEach((row) => {
-          Array.from(row.cells).forEach((cell, i) => {
-            longest[i] = Math.max(longest[i] || 0, (cell.textContent || "").trim().length);
-          });
-        });
-        Array.from(t.rows).forEach((row) => {
-          Array.from(row.cells).forEach((cell, i) => {
-            if (longest[i] > 32) cell.classList.add("is-wide");
-          });
-        });
-      });
-
-      // Mark the section being read in the side contents: the last heading
-      // that has passed a line 30% down the window.
-      const toc = document.getElementById("post-toc");
-      if (!toc) return stop;
-      const links: Record<string, HTMLElement> = {};
-      const heads: HTMLElement[] = [];
-      toc.querySelectorAll<HTMLElement>("a[data-target]").forEach((a) => {
-        const id = a.getAttribute("data-target") || "";
-        const h = document.getElementById(id);
-        if (!h) return;
-        links[id] = a;
-        heads.push(h);
-      });
-      let active: string | null = null;
-      const spy = () => {
-        spyRaf = 0;
-        const line = window.innerHeight * 0.3;
-        let current: string | null = null;
-        for (let i = 0; i < heads.length; i++) {
-          if (heads[i].getBoundingClientRect().top <= line) current = heads[i].id;
-          else break;
-        }
-        if (current === active) return;
-        active = current;
-        Object.keys(links).forEach((k) => {
-          links[k].classList.toggle("is-active", k === current);
-          if (k === current) links[k].setAttribute("aria-current", "true");
-          else links[k].removeAttribute("aria-current");
-        });
-      };
-      const queueSpy = () => {
-        if (!spyRaf) spyRaf = requestAnimationFrame(spy);
-      };
-      window.addEventListener("scroll", queueSpy, on);
-      window.addEventListener("resize", queueSpy, on);
-      spy();
-      return stop;
-    });
+    import "../scripts/post-fx/index";
   </script>
 </BaseLayout>

@@ -1,0 +1,684 @@
+/* ===========================================================================
+   A post's effects: the opening, the margin constellation, link cards, lit
+   numbers, the picture viewer, code blocks, the figures and the sky at the end.
+
+   Reading comes first. The rules that make things move live inside
+   @media screen and (scripting: enabled) and (prefers-reduced-motion: no-preference).
+   Outside it (no script, reduced motion, print) the page is the plain article.
+   =========================================================================== */
+
+/* ---------------------------------------------------------------------------
+   The reading veil. Above the star field, below the article. It rises as the
+   opening settles, so nothing moves behind the words. It leaves the far margin
+   a little sky.
+   --------------------------------------------------------------------------- */
+.pfx-veil {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  opacity: 0;
+  background: linear-gradient(90deg, #020306 0%, #020306 66%, rgba(2, 3, 6, 0.74) 100%);
+}
+@media (max-width: 1099px) { .pfx-veil { background: #020306; } }
+
+/* ---------------------------------------------------------------------------
+   The opening, settled. This is the layout everyone can read.
+   --------------------------------------------------------------------------- */
+.pfx-open { padding: 0; }
+.pfx-stage { position: relative; }
+.pfx-settled {
+  position: relative;
+  padding-top: clamp(96px, 9vw, 112px);
+  padding-bottom: clamp(22px, 2.6vw, 32px);
+}
+.pfx-gl, .pfx-scrim, .pfx-cue { display: none; }
+
+.pfx-settled .post-back { display: inline-flex; }
+.pfx-art.post-cover-frame {
+  /* The same measure as the reading column, in the same type size. */
+  font-size: 1.0625rem;
+  width: min(100%, 68ch);
+  aspect-ratio: 16 / 9;
+  margin: 14px 0 0;
+  border-radius: 20px;
+  background: #07080b;
+}
+@media (min-width: 768px) {
+  .pfx-art.post-cover-frame { font-size: 1.125rem; width: min(100%, 68ch, calc(52svh * 16 / 9)); min-width: min(100%, 520px); }
+}
+.pfx-art img { display: block; width: 100%; height: 100%; object-fit: cover; }
+@media (max-width: 639px) {
+  .pfx-art.post-cover-frame { aspect-ratio: 16 / 9; border-radius: 16px; }
+}
+
+.pfx-copy { margin-top: clamp(18px, 2.2vw, 26px); max-width: 44rem; }
+.pfx-copy .post-meta { margin-top: 0; }
+.pfx-copy .post-title { max-width: 40rem; transform-origin: 0 100%; }
+.pfx-copy .post-lede { color: var(--ink-soft); }
+
+/* Under the title the words come first, the rest of the head follows them. */
+.pfx-zoomable { transition: box-shadow 250ms var(--ease-glass); }
+.pfx-zoomable:focus-visible { outline: none; box-shadow: 0 0 0 3px rgba(var(--tone-rgb), 0.45); }
+
+/* ---------------------------------------------------------------------------
+   The opening, in space.
+   --------------------------------------------------------------------------- */
+@media screen and (scripting: enabled) and (prefers-reduced-motion: no-preference) {
+  /* The runway. A spacer and not padding: sticky stays inside the content box. */
+  .pfx-open::after { content: ""; display: block; height: 86svh; }
+  .pfx-stage {
+    position: sticky;
+    top: 0;
+    min-height: 100svh;
+    /* Only the far edge of the art may pass the page; words never do. */
+    overflow: clip;
+  }
+  .pfx-gl {
+    display: block;
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    visibility: hidden;
+    opacity: 0;
+    transition: opacity 500ms ease;
+    pointer-events: none;
+  }
+  .pfx-gl.is-up { visibility: visible; opacity: 1; }
+  /* At rest the page holds the picture; the canvas stops and steps aside. */
+  .pfx-gl.is-rest { visibility: hidden; opacity: 0; transition: none; }
+  .pfx-art { transform-origin: 50% 50%; will-change: transform; box-shadow: 0 40px 90px -40px rgba(var(--art), 0.6); }
+  .pfx-art.is-handed { visibility: hidden; }
+  .pfx-scrim {
+    display: block;
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background:
+      linear-gradient(90deg, rgba(1, 2, 5, 0.88) 0%, rgba(1, 2, 5, 0.66) 34%, rgba(1, 2, 5, 0) 62%),
+      linear-gradient(0deg, rgba(1, 2, 5, 0.6) 0%, rgba(1, 2, 5, 0) 46%);
+  }
+  .pfx-settled { pointer-events: none; }
+  .pfx-settled a, .pfx-settled button, .pfx-art { pointer-events: auto; }
+  .pfx-copy .post-meta, .pfx-copy .post-lede, .pfx-copy .post-actions { will-change: transform; }
+  .pfx-cue {
+    display: block;
+    position: absolute;
+    left: 50%;
+    bottom: 22px;
+    width: 1px;
+    height: 44px;
+    margin-left: -0.5px;
+    overflow: hidden;
+    background: rgba(255, 255, 255, 0.12);
+    pointer-events: none;
+  }
+  .pfx-cue i {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 1px;
+    height: 16px;
+    background: rgba(var(--art), 1);
+    animation: pfx-cue 2.2s cubic-bezier(0.6, 0, 0.3, 1) infinite;
+  }
+  @media (max-width: 899px) {
+    .pfx-open::after { height: 62svh; }
+    .pfx-cue { display: none; }
+    .pfx-scrim { background: linear-gradient(0deg, rgba(1, 2, 5, 0.86) 0%, rgba(1, 2, 5, 0.5) 36%, rgba(1, 2, 5, 0) 58%); }
+  }
+}
+@keyframes pfx-cue {
+  0% { transform: translateY(-16px); }
+  100% { transform: translateY(44px); }
+}
+
+/* Everything after the opening sits on the veil, above it. */
+.post-grid, .post-main { position: relative; }
+
+/* ---------------------------------------------------------------------------
+   Lit numbers. Colour only, so the lines never move.
+   --------------------------------------------------------------------------- */
+.pfx-num { transition: color 700ms ease, text-shadow 1400ms ease; }
+.pfx-num.is-lit { color: var(--ink); animation: pfx-num 1500ms ease-out; }
+@keyframes pfx-num {
+  0% { text-shadow: 0 0 0 rgba(var(--tone-rgb), 0); }
+  22% { text-shadow: 0 0 14px rgba(var(--tone-rgb), 0.75); }
+  100% { text-shadow: 0 0 0 rgba(var(--tone-rgb), 0); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .pfx-num, .pfx-num.is-lit { transition: none; animation: none; }
+}
+
+/* ---------------------------------------------------------------------------
+   The constellation in the margin.
+   --------------------------------------------------------------------------- */
+@media screen and (scripting: enabled) {
+  .pfx-rail { overflow: visible; max-height: none; }
+  .pfx-rail .post-toc-label { margin-bottom: 14px; }
+  .pfx-con { position: relative; }
+  .pfx-con-svg { position: absolute; left: 0; top: 0; overflow: visible; pointer-events: none; }
+  .pfx-con-bg { stroke: rgba(255, 255, 255, 0.11); stroke-width: 1; }
+  .pfx-con-lit {
+    stroke: var(--tone);
+    stroke-width: 1.25;
+    stroke-linecap: round;
+    stroke-dasharray: 1;
+    stroke-dashoffset: 1;
+    filter: drop-shadow(0 0 3px rgba(var(--tone-rgb), 0.85));
+  }
+  .pfx-rail ol { position: absolute; inset: 0; margin: 0; padding: 0; border: 0; list-style: none; }
+  .pfx-rail li {
+    position: absolute;
+    left: var(--x);
+    top: var(--y);
+    width: 0;
+    height: 0;
+  }
+  .pfx-rail a {
+    position: absolute;
+    left: -15px;
+    top: -15px;
+    display: block;
+    width: 30px;
+    height: 30px;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    color: transparent;
+    outline: none;
+  }
+  .pfx-star {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: 7px;
+    height: 7px;
+    margin: -3.5px 0 0 -3.5px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.34);
+    transition: transform 320ms var(--ease-glass), background-color 240ms ease, box-shadow 320ms ease;
+  }
+  .pfx-rail a.is-past .pfx-star { background: rgba(var(--tone-rgb), 0.9); box-shadow: 0 0 6px rgba(var(--tone-rgb), 0.5); }
+  .pfx-rail a.is-active .pfx-star {
+    background: #fff;
+    transform: scale(1.5);
+    box-shadow: 0 0 0 3px rgba(var(--tone-rgb), 0.28), 0 0 16px 3px rgba(var(--tone-rgb), 0.85);
+  }
+  .pfx-rail a:hover .pfx-star, .pfx-rail a:focus-visible .pfx-star, .pfx-rail a.is-peek .pfx-star {
+    background: #fff;
+    transform: scale(1.7);
+    box-shadow: 0 0 14px 3px rgba(255, 255, 255, 0.55);
+  }
+  .pfx-rail a:focus-visible .pfx-star { box-shadow: 0 0 0 3px rgba(var(--tone-rgb), 0.6); }
+  /* The name of the current star, or the one under the pointer, to its right. */
+  .pfx-star-label {
+    position: absolute;
+    left: calc(var(--w, 60px) - var(--x) + 22px);
+    top: 50%;
+    width: calc(15rem - var(--w, 60px) - 22px);
+    transform: translate(6px, -50%);
+    font-size: 0.8125rem;
+    line-height: 1.4;
+    color: var(--ink);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 220ms ease, transform 320ms var(--ease-glass);
+    text-wrap: balance;
+  }
+  .pfx-rail a.is-active .pfx-star-label,
+  .pfx-rail a.is-peek .pfx-star-label,
+  .pfx-rail a:focus-visible .pfx-star-label {
+    opacity: 1;
+    transform: translate(0, -50%);
+  }
+  .pfx-con.is-peek a.is-active:not(.is-peek) .pfx-star-label { opacity: 0; }
+  .pfx-con-end .pfx-star { background: transparent; box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.4); }
+  .pfx-con-end a.is-peek .pfx-star { background: #fff; }
+}
+
+/* ---------------------------------------------------------------------------
+   The small control for narrow screens, and its sheet. Solid glass, never blur:
+   these float over canvases on a phone.
+   --------------------------------------------------------------------------- */
+.pfx-dock {
+  position: fixed;
+  left: 14px;
+  bottom: 20px;
+  z-index: 46;
+  display: none;
+  align-items: center;
+  gap: 8px;
+  height: 44px;
+  padding: 0 14px 0 11px;
+  border-radius: 9999px;
+  border: 1px solid var(--line-strong);
+  background: rgba(14, 16, 20, 0.97);
+  box-shadow: 0 14px 30px -14px rgba(0, 0, 0, 0.9);
+  color: var(--ink);
+  font-size: 0.8125rem;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  opacity: 0;
+  transform: translateY(10px);
+  pointer-events: none;
+  transition: opacity 260ms ease, transform 320ms var(--ease-glass);
+}
+.pfx-dock.is-on { opacity: 1; transform: none; pointer-events: auto; }
+.pfx-dock svg circle { fill: var(--tone); }
+.pfx-dock-l { fill: none; stroke: rgba(var(--tone-rgb), 0.55); stroke-width: 1; }
+.pfx-dock:focus-visible { outline: none; box-shadow: 0 0 0 3px rgba(var(--tone-rgb), 0.5); }
+.pfx-sheet-scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 47;
+  display: block;
+  border: 0;
+  background: rgba(0, 0, 0, 0.62);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 260ms ease;
+}
+.pfx-sheet-scrim.is-open { opacity: 1; pointer-events: auto; }
+.pfx-sheet {
+  position: fixed;
+  left: 10px;
+  right: 10px;
+  bottom: 10px;
+  z-index: 48;
+  max-height: 70svh;
+  overflow-y: auto;
+  padding: 12px 8px;
+  border-radius: 20px;
+  border: 1px solid var(--line-strong);
+  background: #0e1014;
+  box-shadow: 0 30px 60px -20px #000;
+  visibility: hidden;
+  opacity: 0;
+  transform: translateY(16px);
+  transition: opacity 240ms ease, transform 340ms var(--ease-glass), visibility 0s linear 340ms;
+}
+.pfx-sheet.is-open { visibility: visible; opacity: 1; transform: none; transition: opacity 240ms ease, transform 340ms var(--ease-glass); }
+.pfx-sheet-list { list-style: none; margin: 0; padding: 0; }
+.pfx-sheet-list a {
+  position: relative;
+  display: grid;
+  grid-template-columns: 22px minmax(0, 1fr);
+  gap: 8px;
+  align-items: start;
+  padding: 10px 12px 10px 8px;
+  border-radius: 12px;
+  font-size: 0.9375rem;
+  line-height: 1.35;
+  color: var(--ink-soft);
+  text-decoration: none;
+}
+.pfx-sheet-list a:focus-visible { outline: none; background: var(--wash-strong); }
+.pfx-sheet-list a.is-active { color: var(--ink); background: var(--wash); }
+.pfx-sheet-list .pfx-star {
+  position: static;
+  display: block;
+  width: 7px;
+  height: 7px;
+  margin: 7px 0 0 8px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.34);
+}
+.pfx-sheet-list a.is-past .pfx-star { background: rgba(var(--tone-rgb), 0.9); }
+.pfx-sheet-list a.is-active .pfx-star { background: #fff; box-shadow: 0 0 0 3px rgba(var(--tone-rgb), 0.3), 0 0 12px 2px rgba(var(--tone-rgb), 0.85); }
+@media screen and (max-width: 1099px) and (scripting: enabled) {
+  .pfx-dock { display: inline-flex; }
+}
+
+/* ---------------------------------------------------------------------------
+   The card on a link.
+   --------------------------------------------------------------------------- */
+.pfx-link {
+  position: fixed;
+  left: 0;
+  top: 0;
+  z-index: 60;
+  width: 300px;
+  overflow: hidden;
+  border-radius: 16px;
+  border: 1px solid var(--line-strong);
+  background: #0d0f13;
+  box-shadow: 0 30px 60px -24px #000, 0 0 40px -18px rgba(var(--tone-rgb), 0.5);
+  pointer-events: none;
+  visibility: hidden;
+  opacity: 0;
+  transition: opacity 160ms ease, visibility 0s linear 160ms;
+}
+.pfx-link.is-on { visibility: visible; opacity: 1; transition: opacity 160ms ease; }
+.pfx-link-art { aspect-ratio: 16 / 9; overflow: hidden; background: #07080b; border-bottom: 1px solid var(--line); }
+.pfx-link-art[hidden] { display: none; }
+.pfx-link-art img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.pfx-link.is-on .pfx-link-art img { animation: pfx-link-in 500ms var(--ease-glass); }
+@keyframes pfx-link-in { from { transform: scale(1.06); } to { transform: none; } }
+.pfx-link-body { padding: 12px 14px 14px; }
+.pfx-link-kind { margin: 0 0 4px; font-size: 0.6875rem; color: var(--tone); font-weight: 500; }
+.pfx-link-title { margin: 0; font-size: 0.875rem; line-height: 1.32; font-weight: 600; letter-spacing: -0.012em; color: var(--ink); text-wrap: balance; }
+.pfx-link-line { margin: 5px 0 0; font-size: 0.8125rem; line-height: 1.42; color: var(--ink-soft); }
+@media (prefers-reduced-motion: reduce) {
+  .pfx-link, .pfx-link.is-on { transition: none; }
+  .pfx-link.is-on .pfx-link-art img { animation: none; }
+}
+
+/* ---------------------------------------------------------------------------
+   Code blocks: a frame, a copy control that stays put, a light on hover.
+   --------------------------------------------------------------------------- */
+.pfx-code { position: relative; margin: 1.8em 0; border-radius: 14px; }
+.post-prose .pfx-code pre { margin: 0; padding-right: 88px; transition: border-color 200ms ease; }
+.pfx-code::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 14px;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 240ms ease;
+  background: radial-gradient(240px circle at var(--mx, 50%) var(--my, 50%), rgba(var(--tone-rgb), 0.11), rgba(var(--tone-rgb), 0) 70%);
+}
+.pfx-code:hover::after { opacity: 1; }
+.post-prose .pfx-code:hover pre { border-color: rgba(var(--tone-rgb), 0.38); }
+.pfx-code .line { display: inline-block; min-width: 100%; }
+.pfx-codecopy {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 30px;
+  padding: 0 10px;
+  border-radius: 9px;
+  border: 1px solid var(--line-strong);
+  background: #12141a;
+  color: var(--ink-soft);
+  font-size: 0.75rem;
+  font-weight: 500;
+  opacity: 0.72;
+  transition: opacity 180ms ease, color 180ms ease, border-color 180ms ease, background-color 180ms ease;
+}
+.pfx-code:hover .pfx-codecopy, .pfx-codecopy:focus-visible { opacity: 1; color: var(--ink); }
+.pfx-codecopy:hover { border-color: rgba(var(--tone-rgb), 0.5); }
+.pfx-codecopy:focus-visible { outline: none; box-shadow: 0 0 0 3px rgba(var(--tone-rgb), 0.45); }
+.pfx-codecopy.is-done { color: var(--tone); border-color: rgba(var(--tone-rgb), 0.5); opacity: 1; }
+
+/* ---------------------------------------------------------------------------
+   The picture viewer.
+   --------------------------------------------------------------------------- */
+.pfx-view {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  outline: none;
+  touch-action: none;
+}
+.pfx-view-shade { position: absolute; inset: 0; background: rgba(1, 2, 5, 0.96); }
+.pfx-view-stage { position: relative; overflow: visible; }
+.pfx-view-img {
+  display: block;
+  max-width: none;
+  border-radius: 14px;
+  user-select: none;
+  -webkit-user-drag: none;
+  box-shadow: 0 60px 120px -40px #000;
+}
+.pfx-view-x {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: 1px solid var(--line-strong);
+  background: #12141a;
+  color: var(--ink);
+  transition: opacity 200ms ease;
+}
+.pfx-view-x:focus-visible { outline: none; box-shadow: 0 0 0 3px rgba(var(--tone-rgb), 0.5); }
+.pfx-view-hint {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 18px;
+  margin: 0;
+  text-align: center;
+  font-size: 0.75rem;
+  color: var(--ink-faint);
+  pointer-events: none;
+  transition: opacity 200ms ease;
+}
+.pfx-view.is-zoomed .pfx-view-hint { opacity: 0; }
+
+/* ---------------------------------------------------------------------------
+   The sky at the end of a post. Stars are links; with no script, a plain list.
+   --------------------------------------------------------------------------- */
+.pfx-sky { position: relative; z-index: 1; padding-block: clamp(48px, 6vw, 80px); overflow: clip; }
+.pfx-sky-bg { display: none; }
+.pfx-sky-title { margin: 8px 0 0; font-size: clamp(1.75rem, 3vw, 2.5rem); line-height: 1.06; letter-spacing: -0.03em; font-weight: 600; color: var(--ink); }
+.pfx-sky-sub { margin: 8px 0 0; font-size: 0.9375rem; line-height: 1.5; color: var(--ink-soft); max-width: 30rem; }
+.pfx-sky-all { margin-top: 10px; font-size: 0.875rem; }
+.pfx-sky-lines { display: none; }
+.pfx-sky-stars { list-style: none; margin: 18px 0 0; padding: 0; display: grid; gap: 4px; }
+.pfx-sky-star { color: var(--ink-soft); }
+a.pfx-sky-star { color: var(--ink); text-decoration: underline; text-underline-offset: 0.2em; text-decoration-color: var(--ink-ghost); }
+.pfx-sky-star i { display: none; }
+.pfx-sky-tag { margin-left: 8px; font-size: 0.75rem; font-weight: 500; color: var(--tone); }
+.pfx-sky-card { display: none; }
+
+@media screen and (scripting: enabled) {
+  .pfx-sky-bg {
+    display: block;
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    -webkit-mask-image: linear-gradient(180deg, transparent 0, #000 16%, #000 84%, transparent 100%);
+    mask-image: linear-gradient(180deg, transparent 0, #000 16%, #000 84%, transparent 100%);
+  }
+  .pfx-sky-wrap {
+    position: relative;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(280px, 360px);
+    grid-template-rows: auto minmax(0, 1fr);
+    gap: 12px clamp(24px, 4vw, 56px);
+  }
+  .pfx-sky-head { grid-column: 1 / -1; }
+  .pfx-sky-field {
+    position: relative;
+    height: clamp(420px, 62vh, 620px);
+    perspective: 1100px;
+  }
+  .pfx-sky-dome {
+    position: absolute;
+    inset: 0;
+    transform: rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg));
+    transform-style: preserve-3d;
+  }
+  .pfx-sky-lines {
+    display: block;
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    overflow: visible;
+    pointer-events: none;
+  }
+  .pfx-sky-lines line {
+    vector-effect: non-scaling-stroke;
+    stroke: rgba(var(--tint), 0.36);
+    stroke-width: 1;
+  }
+  .pfx-sky-reach { stroke: var(--tone) !important; stroke-width: 1.25 !important; opacity: 0; filter: drop-shadow(0 0 4px rgba(var(--tone-rgb), 0.9)); }
+  .pfx-sky-reach.is-on { opacity: 1; }
+  .pfx-sky-stars { position: absolute; inset: 0; margin: 0; display: block; }
+  .pfx-sky-stars li { position: absolute; left: var(--x); top: var(--y); width: 0; height: 0; }
+  .pfx-sky-star {
+    position: absolute;
+    left: -22px;
+    top: -22px;
+    display: block;
+    width: 44px;
+    height: 44px;
+    color: transparent;
+    text-decoration: none !important;
+    outline: none;
+  }
+  .pfx-sky-star i {
+    display: block;
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: calc(var(--r) * 2);
+    height: calc(var(--r) * 2);
+    margin: calc(var(--r) * -1) 0 0 calc(var(--r) * -1);
+    border-radius: 50%;
+    background: radial-gradient(circle, #fff 0 16%, rgba(var(--tint), 0.95) 30%, rgba(var(--tint), 0.25) 55%, rgba(var(--tint), 0) 72%);
+    box-shadow: 0 0 calc(var(--r) * 1.6) rgba(var(--tint), 0.55);
+    transition: transform 320ms var(--ease-glass), box-shadow 320ms ease;
+  }
+  .pfx-sky-star:hover i, .pfx-sky-star:focus-visible i, .pfx-sky-star.is-hot i {
+    transform: scale(1.5);
+    box-shadow: 0 0 calc(var(--r) * 3) rgba(var(--tint), 0.95);
+  }
+  .pfx-sky-star:focus-visible i { box-shadow: 0 0 0 2px var(--tone), 0 0 calc(var(--r) * 3) rgba(var(--tint), 0.95); }
+  /* The star you are reading from: a ring in the writing colour. */
+  .pfx-sky-star.is-here i::after {
+    content: "";
+    position: absolute;
+    inset: -7px;
+    border-radius: 50%;
+    border: 1px solid var(--tone);
+    box-shadow: 0 0 10px rgba(var(--tone-rgb), 0.7);
+  }
+  .pfx-sky-name {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+  .pfx-sky-tag {
+    position: absolute;
+    left: 50%;
+    top: calc(50% + var(--r) + 12px);
+    transform: translateX(-50%);
+    margin: 0;
+    white-space: nowrap;
+    font-size: 0.6875rem;
+    font-weight: 500;
+    color: var(--tone);
+    pointer-events: none;
+  }
+  .pfx-sky-card {
+    display: flex;
+    flex-direction: column;
+    align-self: center;
+    overflow: hidden;
+    border-radius: 18px;
+    border: 1px solid var(--line-strong);
+    background: #0d0f13;
+    box-shadow: 0 40px 80px -40px #000, 0 0 60px -30px rgba(var(--art), 0.7);
+    color: var(--ink);
+    text-decoration: none;
+    transition: transform 300ms var(--ease-glass), border-color 200ms ease, box-shadow 300ms ease;
+  }
+  .pfx-sky-card:hover { transform: translateY(-3px); border-color: rgba(var(--art), 0.6); }
+  .pfx-sky-card:focus-visible { outline: none; box-shadow: 0 0 0 3px rgba(var(--tone-rgb), 0.5); }
+  .pfx-sky-card-art { display: block; aspect-ratio: 16 / 9; overflow: hidden; background: #07080b; }
+  .pfx-sky-card-art img { display: block; width: 100%; height: 100%; object-fit: cover; }
+  .pfx-sky-card-body { display: flex; flex-direction: column; gap: 6px; padding: 14px 16px 16px; min-height: 176px; }
+  .pfx-sky-card-title { font-size: 1.0625rem; line-height: 1.28; font-weight: 600; letter-spacing: -0.016em; text-wrap: balance; }
+  .pfx-sky-card-line { font-size: 0.875rem; line-height: 1.46; color: var(--ink-soft); }
+  .pfx-sky-card-go { display: inline-flex; align-items: center; gap: 6px; margin-top: auto; padding-top: 6px; font-size: 0.8125rem; font-weight: 500; color: var(--tone); }
+  @media (max-width: 899px) {
+    .pfx-sky-wrap { grid-template-columns: minmax(0, 1fr); grid-template-rows: none; }
+    .pfx-sky-field { height: min(92vw, 400px); }
+    .pfx-sky-card { flex-direction: row; align-items: stretch; }
+    .pfx-sky-card-art { flex: 0 0 34%; aspect-ratio: auto; }
+    .pfx-sky-card-body { min-height: 0; padding: 12px 14px; }
+    .pfx-sky-card-title { font-size: 0.9375rem; }
+    .pfx-sky-card-line { display: none; }
+  }
+}
+@media screen and (scripting: enabled) and (prefers-reduced-motion: no-preference) {
+  .pfx-sky-lines line:not(.pfx-sky-reach) {
+    stroke-dasharray: 1;
+    stroke-dashoffset: 1;
+    transition: stroke-dashoffset 1400ms cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  .pfx-sky.is-seen .pfx-sky-lines line:not(.pfx-sky-reach) { stroke-dashoffset: 0; }
+  .pfx-sky-star i { animation: pfx-twinkle var(--tw, 3s) ease-in-out var(--td, 0s) infinite; }
+  .pfx-sky-reach { stroke-dasharray: 1; stroke-dashoffset: 1; }
+  .pfx-sky-reach.is-on { stroke-dashoffset: 0; transition: stroke-dashoffset 420ms cubic-bezier(0.22, 1, 0.3, 1); }
+  .pfx-sky.is-diving .pfx-sky-head,
+  .pfx-sky.is-diving .pfx-sky-card { opacity: 0; transition: opacity 260ms ease; }
+}
+@keyframes pfx-twinkle {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.72; }
+}
+
+/* The art of the next post, opening out of its star. */
+.pfx-dive {
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  pointer-events: none;
+  background: radial-gradient(circle at var(--x) var(--y), rgba(255, 255, 255, 0.95) 0, rgba(var(--art), 0.9) 4%, #020306 44%);
+  clip-path: circle(0 at var(--x) var(--y));
+  animation: pfx-iris 780ms cubic-bezier(0.7, 0, 0.84, 0.3) forwards;
+}
+.pfx-dive img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0;
+  mix-blend-mode: screen;
+  animation: pfx-dive-art 780ms ease-in forwards;
+}
+@keyframes pfx-iris { to { clip-path: circle(150vmax at var(--x) var(--y)); } }
+@keyframes pfx-dive-art {
+  0%, 40% { opacity: 0; transform: scale(1.3); }
+  100% { opacity: 0.9; transform: scale(1); }
+}
+
+/* ---------------------------------------------------------------------------
+   Figures: one frame, one set of parts.
+   --------------------------------------------------------------------------- */
+.pfx-slot { display: none; }
+@media screen and (scripting: enabled) {
+  .pfx-slot {
+    display: block;
+    margin: 2.2em 0;
+    border-radius: 20px;
+    border: 1px solid var(--line);
+    background: #07080c;
+    overflow: hidden;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   Print: the article and nothing else.
+   --------------------------------------------------------------------------- */
+@media print {
+  .pfx-veil, .pfx-gl, .pfx-scrim, .pfx-cue, .pfx-dock, .pfx-sheet, .pfx-sheet-scrim,
+  .pfx-link, .pfx-view, .pfx-codecopy, .pfx-slot, .pfx-sky, .pfx-rail, .post-toc-wrap, .post-progress { display: none !important; }
+  .pfx-stage { position: static !important; min-height: 0 !important; }
+  .pfx-open::after { display: none !important; }
+  .pfx-art.post-cover-frame { width: 60% !important; }
+  .post-grid.has-toc { grid-template-columns: minmax(0, 1fr) !important; }
+  .post-prose { max-width: none; color: #000; }
+}
