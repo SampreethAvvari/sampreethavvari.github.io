@@ -20,6 +20,7 @@ import type { Studio } from "./studio";
 import { room, type RoomSpec, mulberry, type Rng, dbg, kr, BELLS, bell, MODES, modal } from "./dsp";
 import { type Chord, voice, tonesIn, common } from "./theory";
 import { Sampler, Pad, Mono, glint } from "./instruments";
+import { PostSounds } from "./post-sounds";
 
 const THEME_LEVEL = dbg(-5);
 
@@ -99,6 +100,7 @@ export abstract class Movement {
   protected density = 0.38;
   protected arrivalBar = 0;
   private gates = new Map<string, { block: number; keep: boolean }>();
+  private postSounds: PostSounds | null = null;
   protected grains!: Sampler;
   protected grainLo = 74;
   protected grainHi = 89;
@@ -578,6 +580,13 @@ export abstract class Movement {
   dive(_direction: string, _tag: string) {}
   /** A new page came in and this movement carries on playing. */
   swapped() {}
+  /** A page's own event, for a movement written for that page (x is the pointer). */
+  pageEvent(_name: string, _d: Record<string, unknown>, _x: number) {}
+  /** A single post's events. Any movement can host them, so they are made on first use. */
+  post(name: string, d: Record<string, unknown>, x: number) {
+    if (!this.out || this.disposed) return;
+    (this.postSounds ??= new PostSounds(this)).on(name, d, x);
+  }
   /** Make the next scheduled step the first of a new bar. */
   protected alignBar() {
     const spb = this.spb;

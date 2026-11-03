@@ -103,6 +103,19 @@ export const PLACARDS: Record<MovementId, Placard> = {
       "The room has no walls and no echo, only a long bloom. Headphones give the sky its depth.",
     ],
   },
+  resume: {
+    number: "Interlude",
+    title: "Paper and Metal",
+    subtitle: "Struck silver bars, drifting paper, a thin cold chord · monochrome, weightless, quiet",
+    lines: [
+      "A resume is the plainest thing anyone writes, so this is the plainest music on the site.",
+      "It stays on the white keys of the piano, C major and its neighbours, with no colour added.",
+      "The metal is a thin silver bar. The paper is soft air that flutters and turns.",
+      "Each stop has its own chord, and the page comes apart in a flutter as the camera flies to the next one.",
+      "Find a sheet and it drifts. Pick it and it snaps. Turn it and it rustles over in zero gravity.",
+      "Sweep across the skills and they flutter like loose slips.",
+    ],
+  },
   teaching: {
     number: "Movement VII",
     title: "Memory, Handed On",

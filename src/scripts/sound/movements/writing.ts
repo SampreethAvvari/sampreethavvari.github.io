@@ -27,7 +27,7 @@
 // sparkle follows each card out. Closing pulls back the same way, in reverse.
 import { Movement, type Section } from "../movement";
 import { chord, chords, deg, MODES as SCALE, snap, bassOf, tonesIn, type Chord } from "../theory";
-import { Pad, Mono, Sampler, lead } from "../instruments";
+import { Pad, Mono, Sampler, lead, rush } from "../instruments";
 import { piano, bell, BELLS, dbg, nm, kr, mulberry, hashStr, type Rng, type RoomSpec } from "../dsp";
 
 const A = chords("Em9 Cmaj9 G/B D69");
@@ -409,30 +409,7 @@ export class Writing extends Movement {
   /** The camera dives into a constellation (a rising rush of air) or pulls back (falling). */
   dive(direction: string, _tag: string) {
     if (!this.out || this.disposed) return;
-    const ac = this.ac;
-    const t = ac.currentTime + 0.01;
-    const inward = direction !== "out";
-    const D = 0.7;
-    const src = ac.createBufferSource();
-    src.buffer = this.st.noise;
-    const bp = ac.createBiquadFilter();
-    bp.type = "bandpass";
-    bp.Q.value = 1.1;
-    kr(bp.frequency);
-    bp.frequency.setValueAtTime(inward ? 420 : 2600, t);
-    bp.frequency.exponentialRampToValueAtTime(inward ? 2600 : 420, t + D);
-    const g = ac.createGain();
-    g.gain.setValueAtTime(0, t);
-    g.gain.linearRampToValueAtTime(RUSH, t + D * (inward ? 0.75 : 0.25));
-    g.gain.setTargetAtTime(0, t + D * (inward ? 0.8 : 0.35), inward ? 0.06 : 0.18);
-    src.connect(bp).connect(g).connect(this.skyBus);
-    src.start(t, this.rng() * 4);
-    src.stop(t + D + 1);
-    src.onended = () => {
-      src.disconnect();
-      bp.disconnect();
-      g.disconnect();
-    };
+    rush(this, this.skyBus, this.ac.currentTime + 0.01, 0.7, direction !== "out", RUSH);
   }
 
   protected onScroll(i: number, _dir: number, _dt: number, t: number) {

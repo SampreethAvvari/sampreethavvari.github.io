@@ -460,6 +460,66 @@ export function glint(m: Movement, dest: AudioNode, midi: number, t: number, lev
 }
 
 /**
+ * Keeps a sweep from sounding like a machine gun. Notes too close together are
+ * dropped, the gap stretches and each note gets softer as a burst goes on, and
+ * it all recovers as soon as the pointer rests. Returns the gain for a note now,
+ * or 0 to skip it.
+ */
+export class Flutter {
+  private last = -1;
+  private heat = 0;
+  constructor(private gap = 0.055, private stretch = 0.018, private cool = 0.45, private soften = 0.5, private most = 6) {}
+  next(now: number): number {
+    if (this.last < 0) {
+      this.last = now;
+      this.heat = 1;
+      return 1;
+    }
+    const dt = now - this.last;
+    const h = Math.max(0, this.heat - dt / this.cool);
+    if (dt < this.gap + this.stretch * h) return 0;
+    this.last = now;
+    this.heat = Math.min(this.most, h + 1);
+    return 1 / (1 + this.soften * h);
+  }
+}
+
+/** A note at its own place in the field; its tail stays where it rang. */
+export function ringAt(m: Movement, s: Sampler, dest: AudioNode, midi: number, t: number, level: number, x: number, dur?: number) {
+  const sp = m.ac.createStereoPanner();
+  sp.pan.value = Math.max(-0.85, Math.min(0.85, x));
+  sp.connect(dest);
+  const src = s.play(midi, t, level, sp, { dur, force: true });
+  if (src) src.addEventListener("ended", () => sp.disconnect());
+  else sp.disconnect();
+}
+
+/** A rush of air: rising into something, or falling back out of it. */
+export function rush(m: Movement, dest: AudioNode, t: number, D: number, inward: boolean, level: number) {
+  const ac = m.ac;
+  const src = ac.createBufferSource();
+  src.buffer = m.st.noise;
+  const bp = ac.createBiquadFilter();
+  bp.type = "bandpass";
+  bp.Q.value = 1.1;
+  kr(bp.frequency);
+  bp.frequency.setValueAtTime(inward ? 420 : 2600, t);
+  bp.frequency.exponentialRampToValueAtTime(inward ? 2600 : 420, t + D);
+  const g = ac.createGain();
+  g.gain.setValueAtTime(0, t);
+  g.gain.linearRampToValueAtTime(level, t + D * (inward ? 0.75 : 0.25));
+  g.gain.setTargetAtTime(0, t + D * (inward ? 0.8 : 0.35), inward ? 0.06 : 0.18);
+  src.connect(bp).connect(g).connect(dest);
+  src.start(t, m.rng() * 4);
+  src.stop(t + D + 1);
+  src.onended = () => {
+    src.disconnect();
+    bp.disconnect();
+    g.disconnect();
+  };
+}
+
+/**
  * Breath: pink noise through a moving vocal band. Each breath is drawn as an
  * inhale and a longer exhale, the band rising and falling with it.
  */

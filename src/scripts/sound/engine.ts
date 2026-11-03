@@ -19,6 +19,14 @@
 //   architecture:focus detail { slug, title, discipline }   a system in focus
 //   architecture:flow  detail { intensity }                  its traffic, 0..1
 //   sound:duck       detail { amount, reason }  a clip with its own sound plays
+//   resume:sheet     detail { id, action: "hover" | "pick" | "flip" }
+//   resume:stop      detail { index, id }
+//   resume:transition detail { direction, from, to, duration }  duration in seconds
+//   resume:hover     detail { kind, id, note }
+//   post:section     detail { index, id }
+//   post:hover       detail { kind, id, note }
+//   post:figure      detail { id, action }
+//   post:transition  detail { direction: "out" | "in", slug }
 //   astro:after-swap (document)            a new page is in: crossfade to its movement
 //
 // This file stays small: the instruments and movements load on first use.
@@ -54,6 +62,8 @@ let wordsTimer = 0;
 // the architecture page and film clips, also remembered
 let archFocus: { slug: string; title?: string; discipline?: string } | null = null;
 let archFlow = 0;
+let resumeStop = -1;
+let linkWait = 0;
 let duckAmount = 0;
 
 const loadSuite = () => (suiteP ??= import("./suite").then((s) => (suite = s)));
@@ -125,6 +135,7 @@ function play(id: string, handover: boolean) {
     m.chapter(jChapter);
     m.journey(jP, 0);
   }
+  if (id === "resume" && resumeStop >= 0) m.pageEvent("resume:stop", { index: resumeStop, quiet: true }, 0.5);
   if (id === "architecture") {
     if (archFocus) m.focus(archFocus);
     if (archFlow) m.flow(archFlow);
@@ -172,7 +183,7 @@ export function setSound(v: boolean) {
 
 let px = 0.5, py = 0.5, pt = 0, speed = 0, lastM = 0, yawNow = 0;
 let jT = 0;
-const touches = { hover: 0, click: 0, sky: 0 };
+const touches = { hover: 0, click: 0, sky: 0, page: 0 };
 let lastY = 0, vS = 0, lastFrame = 0, raf = 0, lastHover = 0;
 
 function kick() {
@@ -246,11 +257,17 @@ function onMove(e: PointerEvent) {
 }
 
 const INTERACTIVE = "a, button, [role=button], summary, label, input, select, textarea";
+// Elements that announce their own hover with a page event, so the generic tap
+// would only double them: the writing sky, the post rail, sky and figures, the
+// resume's sheets, sections, keys and chips.
+const OWN_HOVER = ".ax-s, .ax-slot, .ax-c, #post-toc a, .pfx-sky-star, .pfx-day-star, .pfx-zp-run, [data-rw] [data-cell], [data-rw] [data-section], [data-rw] [data-jump], [data-rw] [data-key], [data-rw] [data-group]";
+// A click that plays its own sound in place of the generic tap.
+const OWN_CLICK = "[data-rw] [data-cell]";
 
 function onDown(e: PointerEvent) {
   if (!on || !current) return;
   const el = (e.target as Element | null)?.closest?.(INTERACTIVE);
-  if (el) {
+  if (el && !el.closest(OWN_CLICK)) {
     touches.click++;
     current.click(e.clientX / Math.max(1, innerWidth), e.clientY / Math.max(1, innerHeight));
   }
@@ -267,13 +284,25 @@ function onOver(e: PointerEvent) {
   if (!on || !current || e.pointerType !== "mouse") return;
   const el = (e.target as Element | null)?.closest?.("a, button, [role=button], summary, .journey-rail, [data-sound-hover]");
   if (!el || (e.relatedTarget instanceof Node && el.contains(e.relatedTarget))) return;
-  // the writing sky's stars and cards speak through writing:hover
-  if (currentId === "writing" && el.closest(".ax-s, .ax-slot, .ax-c")) return;
-  touches.hover++;
+  if (el.closest(OWN_HOVER)) return;
   const t = performance.now();
   if (t - lastHover < 110) return;
   lastHover = t;
-  current.hover(e.clientX / Math.max(1, innerWidth), e.clientY / Math.max(1, innerHeight));
+  const x = e.clientX / Math.max(1, innerWidth), y = e.clientY / Math.max(1, innerHeight);
+  // A post's internal link may show a card and speak for itself about 110 ms
+  // later, and only some have one, so wait to see before tapping.
+  clearTimeout(linkWait);
+  if (el.matches("a[href^='/']") && el.closest("#post-prose-body")) {
+    linkWait = window.setTimeout(() => {
+      if (el.matches(":hover")) {
+        touches.hover++;
+        current?.hover(x, y);
+      }
+    }, 150);
+    return;
+  }
+  touches.hover++;
+  current.hover(x, y);
 }
 
 // ---- mount -------------------------------------------------------------------
@@ -380,6 +409,29 @@ export function mountSound() {
     else wordsTimer = window.setTimeout(() => currentId === "home" && current?.words(d, 0.25), 250);
   });
 
+  // the resume, and the sounds of a single post
+  for (const name of ["resume:sheet", "resume:stop", "resume:transition", "resume:hover"]) {
+    addEventListener(name, (e) => {
+      const d = (e as CustomEvent).detail;
+      if (!d) return;
+      if (name === "resume:stop") resumeStop = Number(d.index);
+      if (currentId === "resume") {
+        if (name === "resume:hover" || name === "resume:sheet") touches.page++;
+        current?.pageEvent(name, d, px);
+      }
+    });
+  }
+  for (const name of ["post:section", "post:hover", "post:figure", "post:transition"]) {
+    addEventListener(name, (e) => {
+      const d = (e as CustomEvent).detail;
+      if (!d) return;
+      // the link spoke for itself, so the waiting tap is not needed
+      if (name === "post:hover" && d.kind === "link") clearTimeout(linkWait);
+      if (name === "post:hover") touches.page++;
+      current?.post(name, d, px);
+    });
+  }
+
   // the architecture observatory
   addEventListener("architecture:focus", (e) => {
     const d = (e as CustomEvent).detail;
@@ -407,6 +459,8 @@ export function mountSound() {
     if (id !== "home") { jChapter = 0; jP = 0; }
     archFocus = null;
     archFlow = 0;
+    resumeStop = -1;
+    clearTimeout(linkWait);
     if (duckAmount) { duckAmount = 0; studio?.duck(0); }
     if (!on || !ctx || !studio) {
       // silent: drop the old movement; the right one is built when sound comes on
