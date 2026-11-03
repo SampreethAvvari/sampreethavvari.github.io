@@ -80,8 +80,10 @@ export const buildRing: WorldBuilder = (shared, sun) => {
   // ---- 360 day cells on the inner floor: 3 rows of 120
   const cellMat = surface(shared, sun, {
     color: "#ffffff",
-    metal: 0.2,
-    rough: 0.4,
+    metal: 0,
+    rough: 1,
+    envI: 0,
+    rim: 0,
     data: true,
     seed: true,
     uniforms: { uPtr, uPtrOn, uCells },
@@ -98,16 +100,19 @@ export const buildRing: WorldBuilder = (shared, sun) => {
     // the load on each day: a wave around the ring, different per office
     float load = 0.5 + 0.5 * sin(col_ * 0.34 + row * 7.0 + uTime * 0.16) * sin(col_ * 0.13 - row * 3.1 - uTime * 0.09);
     load = pow(load, 1.6) + (vD.z > 0.93 ? 0.42 : 0.0);
-    vec3 free_ = vec3(0.1, 0.34, 0.8);
-    vec3 busy = vec3(1.9, 0.95, 0.3);
-    vec3 hot = vec3(5.0, 2.0, 0.6);
+    vec3 free_ = vec3(0.05, 0.22, 0.62);
+    vec3 busy = vec3(1.25, 0.46, 0.08);
+    vec3 hot = vec3(3.4, 1.1, 0.22);
     vec3 c = mix(free_, busy, smoothstep(0.1, 0.6, load));
     c = mix(c, hot, smoothstep(0.72, 1.05, load));
     base = vec3(0.012);
     // a wave of checks runs through every cell when hovered
     float check = smoothstep(0.86, 1.0, sin(col_ * 0.052 * 6.283 + row - uTime * 3.0)) * uCells;
     glowCol = mix(c, vec3(2.4, 4.4, 3.4), check);
-    glow = (0.12 + load * 0.78 + vD.w * 1.8 + check * 2.0);
+    float pane = smoothstep(0.5, 0.42, abs(vO.x)) * smoothstep(0.5, 0.4, abs(vO.y));
+    // light gathers in the middle of a window, like a lit room seen from outside
+    float room = 1.0 - dot(vO.xy, vO.xy) * 1.5;
+    glow = (0.06 + load * 0.62 + vD.w * 1.8 + check * 2.0) * (0.06 + pane * 0.94 * room);
     `,
   });
   const cells = instanced(faceted(box(1, 1, 1)), cellMat, 360, (i, m, d) => {
@@ -145,13 +150,19 @@ export const buildRing: WorldBuilder = (shared, sun) => {
   const spokeGeo = assemble(spokeParts);
   spin.add(new Mesh(spokeGeo, spokeMat));
 
-  const hubMat = surface(shared, sun, { color: "#9aa3b1", metal: 0.86, rough: 0.34, data: true, flat: true });
+  const hubMat = surface(shared, sun, { color: "#8d96a5", metal: 0.92, rough: 0.3, data: true, frag: "glowCol = vec3(2.4, 1.5, 0.7);" });
   const hubGeo = assemble([
-    { g: ball(3.1, 18, 12) },
-    { g: cyl(0.8, 0.8, 22, 12).rotateZ(Math.PI / 2), m: mat(0) },
-    { g: tor(4, 0.42, 8, 48).rotateY(Math.PI / 2), m: mat(0), d: [1, 1, 1, 0] },
-    { g: cyl(2.1, 2.1, 1.1, 16).rotateZ(Math.PI / 2), m: mat(4.1) },
-    { g: cyl(2.1, 2.1, 1.1, 16).rotateZ(Math.PI / 2), m: mat(-4.1) },
+    { g: ball(3.1, 48, 32) },
+    { g: tor(3.14, 0.05, 6, 96).rotateY(Math.PI / 2), m: mat(0.9), d: [1, 1, 1, 1.4] },
+    { g: tor(3.14, 0.05, 6, 96).rotateY(Math.PI / 2), m: mat(-0.9), d: [1, 1, 1, 1.4] },
+    { g: tor(2.9, 0.09, 6, 96).rotateY(Math.PI / 2), m: mat(1.7) },
+    { g: tor(2.9, 0.09, 6, 96).rotateY(Math.PI / 2), m: mat(-1.7) },
+    { g: cyl(0.5, 0.5, 19, 12).rotateZ(Math.PI / 2), m: mat(0) },
+    { g: tor(4, 0.42, 16, 96).rotateY(Math.PI / 2), m: mat(0), d: [1, 1, 1, 0] },
+    { g: cyl(2.1, 2.1, 1.1, 40).rotateZ(Math.PI / 2), m: mat(4.1) },
+    { g: cyl(2.1, 2.1, 1.1, 40).rotateZ(Math.PI / 2), m: mat(-4.1) },
+    { g: tor(2.1, 0.06, 6, 64).rotateY(Math.PI / 2), m: mat(4.7), d: [1, 1, 1, 1.2] },
+    { g: tor(2.1, 0.06, 6, 64).rotateY(Math.PI / 2), m: mat(-4.7), d: [1, 1, 1, 1.2] },
   ]);
   spin.add(new Mesh(hubGeo, hubMat));
   const hubGlow = glow("#ffcf96", 11, { intensity: 0.8 });

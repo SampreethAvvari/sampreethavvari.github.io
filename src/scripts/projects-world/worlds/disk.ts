@@ -91,7 +91,7 @@ void main() {
   float s = 0.5 + 0.5 * sin(a * 2.0 - log(rad + 1.0) * 5.0 + uTime * 0.03);
   float f = pow(1.0 - t, 2.1) * smoothstep(${CORE.toFixed(1)}, ${INNER.toFixed(1)}, rad) * (0.58 + s * 0.42);
   vec3 c = mix(vec3(0.9, 0.42, 0.18), vec3(3.0, 1.75, 0.8), pow(1.0 - t, 3.0));
-  gl_FragColor = vec4(c * f * 0.4, 1.0);
+  gl_FragColor = vec4(c * f * 0.24, 1.0);
 }`,
   });
   const floor = new Mesh(new PlaneGeometry(OUTER * 2, OUTER * 2), floorMat);
@@ -221,12 +221,15 @@ void main() {
   // ---- 16 small satellites in a short arc
   const uDays = { value: 0 };
   const dayMat = surface(shared, sun, { color: "#dbe1ea", metal: 0.6, rough: 0.34, data: true, uniforms: { uDays }, fragHead: "uniform float uDays;", frag: "glowCol = vec3(1.6, 2.0, 2.8); glow = 0.4 + uDays * 2.4;" });
-  const days = instanced(ball(0.15, 10, 8), dayMat, 16, (i, m) => {
+  const days = instanced(ball(0.085, 10, 8), dayMat, 16, (i, m) => {
     const a = -0.5 + (i / 15) * 1.3;
     m.setPosition(Math.cos(a) * 44, 3.4, Math.sin(a) * 44);
   });
   const dayGroup = new Group();
   dayGroup.add(days);
+  const dayArc = new Mesh(tor(44, 0.012, 5, 64, 1.3).rotateX(Math.PI / 2).rotateY(0.5), surface(shared, sun, { color: "#ffffff", glow: 0.5, frag: "glowCol = vec3(1.2, 1.3, 1.6);" }));
+  dayArc.position.y = 3.4;
+  dayGroup.add(dayArc);
   tilt.add(dayGroup);
 
   group.add(glow("#ffa45e", 90, { intensity: 0.03, power: 2.6 }));

@@ -58,7 +58,7 @@ void main() {
   gl_FragColor = vec4(sum / 8.0, 1.0);
 }`;
 const UP = /* glsl */ `
-uniform sampler2D tSrc; uniform vec2 uTexel;
+uniform sampler2D tSrc; uniform vec2 uTexel; uniform float uWeight;
 varying vec2 vUv;
 void main() {
   vec2 o = uTexel;
@@ -70,7 +70,7 @@ void main() {
   sum += texture2D(tSrc, vUv + vec2(o.x, -o.y)).rgb * 2.0;
   sum += texture2D(tSrc, vUv + vec2(0.0, -2.0 * o.y)).rgb;
   sum += texture2D(tSrc, vUv + vec2(-o.x, -o.y)).rgb * 2.0;
-  gl_FragColor = vec4(sum / 12.0, 1.0);
+  gl_FragColor = vec4(sum / 12.0 * uWeight, 1.0);
 }`;
 
 const FINAL = /* glsl */ `
@@ -159,12 +159,15 @@ void main() {
     for (int i = 0; i < 10; i++) {
       float k = (float(i) + jitter) / 10.0;
       float wt = 1.0 - k * 0.55;
-      sh += texture2D(tBloom, vUv + toStar * k * 0.92).rgb * wt;
+      vec2 sp = vUv + toStar * k * 0.92;
+      // only the star's own light makes a shaft, nothing bright on the way to it
+      float own = exp(-length((sp - uStar.xy) * asp) * 11.0);
+      sh += texture2D(tBloom, sp).rgb * wt * own;
       wsum += wt;
     }
     sh /= wsum;
     float falloff = exp(-length(toStar * asp) * 2.4);
-    col += min(sh, vec3(2.4)) * uStarCol * falloff * uStar.z;
+    col += min(sh * 2.4, vec3(2.4)) * uStarCol * falloff * uStar.z;
     // the long horizontal streak of the lens
     vec2 fd = (vUv - uStar.xy) * asp;
     float streak = exp(-abs(fd.y) * 340.0) * exp(-abs(fd.x) * 3.2);
@@ -222,7 +225,7 @@ export class Post {
     const base = { vertexShader: VS, depthTest: false, depthWrite: false };
     this.prefilter = new ShaderMaterial({ ...base, fragmentShader: PREFILTER, blending: NoBlending, uniforms: { tSrc: { value: null }, uTexel: { value: new Vector2() }, uThreshold: { value: hdr ? 1.5 : 0.85 }, uKnee: { value: 0.5 } } });
     this.down = new ShaderMaterial({ ...base, fragmentShader: DOWN, blending: NoBlending, uniforms: { tSrc: { value: null }, uTexel: { value: new Vector2() } } });
-    this.up = new ShaderMaterial({ ...base, fragmentShader: UP, blending: CustomBlending, blendEquation: AddEquation, blendSrc: OneFactor, blendDst: OneFactor, uniforms: { tSrc: { value: null }, uTexel: { value: new Vector2() } } });
+    this.up = new ShaderMaterial({ ...base, fragmentShader: UP, blending: CustomBlending, blendEquation: AddEquation, blendSrc: OneFactor, blendDst: OneFactor, uniforms: { tSrc: { value: null }, uTexel: { value: new Vector2() }, uWeight: { value: 0.62 } } });
     const defines: Record<string, string> = { SHAFTS: "1" };
     if (!opts.low) defines.ZOOM = "1";
     this.final = new ShaderMaterial({
@@ -235,7 +238,7 @@ export class Post {
         tBloom: { value: this.mips[0].texture },
         uAspect: { value: 1 },
         uTime: { value: 0 },
-        uBloom: { value: opts.low ? 0.2 : 0.17 },
+        uBloom: { value: opts.low ? 0.3 : 0.27 },
         uCA: { value: opts.low ? 0.002 : 0.004 },
         uGrain: { value: opts.low ? 0.022 : 0.03 },
         uVignette: { value: 0.46 },

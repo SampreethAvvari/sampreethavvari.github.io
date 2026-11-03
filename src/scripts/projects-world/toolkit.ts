@@ -92,6 +92,8 @@ export interface SurfaceOpts {
   rough?: number;
   glow?: number;
   envI?: number;
+  /** The thin line of star light on the limb. 1 by default. */
+  rim?: number;
   /** Faceted shading from screen derivatives. */
   flat?: boolean;
   /** Geometry or instances carry aData (rgb tint, a glow). */
@@ -141,6 +143,7 @@ export function surface(shared: Shared, sun: U<Vector3>, o: SurfaceOpts = {}): S
       uRough: { value: o.rough ?? 0.6 },
       uGlow: { value: o.glow ?? 0 },
       uEnvI: { value: o.envI ?? 1 },
+      uRim: { value: o.rim ?? 1 },
       ...(o.uniforms || {}),
     },
     vertexShader: /* glsl */ `
@@ -182,7 +185,7 @@ void main() {
   gl_Position = projectionMatrix * viewMatrix * wp;
 }`,
     fragmentShader: /* glsl */ `
-uniform vec3 uColor; uniform vec3 uSun; uniform float uMetal; uniform float uRough; uniform float uGlow; uniform float uEnvI; uniform float uTime;
+uniform vec3 uColor; uniform vec3 uSun; uniform float uMetal; uniform float uRough; uniform float uGlow; uniform float uEnvI; uniform float uRim; uniform float uTime;
 uniform samplerCube tEnv;
 varying vec3 vW; varying vec3 vN; varying vec3 vL; varying vec3 vO; varying vec4 vD; varying float vS;
 ${o.fragHead || ""}
@@ -219,7 +222,7 @@ void main() {
   col += SUN * spec * f0 * (1.0 - rough * 0.5);
   col += env * (f0 + (1.0 - f0) * F) * uEnvI * (1.0 - rough * 0.6) * 1.8;
   // a thin line of star light on the limb
-  col += SUN * pow(1.0 - nv, 4.0) * max(ndl + 0.3, 0.0) * 0.1;
+  col += SUN * pow(1.0 - nv, 4.0) * max(ndl + 0.3, 0.0) * 0.1 * uRim;
   col += glowCol * glow;
   ${o.after || ""}
   gl_FragColor = vec4(col, alpha);

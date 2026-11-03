@@ -31,6 +31,8 @@ const inst = { behavior: "instant" as ScrollBehavior };
 // Where the two shots of a world rest, as a fraction of its stage.
 const REST_A = 0.3;
 const REST_B = 0.7;
+// Where the belt starts, past which everything scrolls freely.
+const BELT_IN = 0.09;
 
 export function mountProjectsWorld() {
   onPage("projects-world", (signal) => {
@@ -95,6 +97,7 @@ export function mountProjectsWorld() {
     // the places the scroll can rest
     const rests: number[] = [0];
     for (let i = 1; i < N - 1; i++) rests.push(i + REST_A, i + REST_B);
+    rests.push(N - 1 + BELT_IN);
     const isWorld = (g: number) => g >= 1 && g < N - 1;
 
     let sys: System | null = null;
@@ -107,7 +110,7 @@ export function mountProjectsWorld() {
     let active = -1;
     const beatOf = (st: number, s: number) => {
       if (st === 0) return "";
-      if (st === N - 1) return s < 0.3 ? "a" : "b";
+      if (st === N - 1) return s < 0.16 ? "a" : "b";
       if (s > 0.15 && s < 0.5) return "a";
       if (s > 0.5 && s < 0.86) return "b";
       return "";
@@ -123,6 +126,7 @@ export function mountProjectsWorld() {
       if (countEl) countEl.textContent = String(clamp(st, 0, worlds.length)).padStart(2, "0");
       pins.forEach((p, i) => (i + 1 === st ? p.setAttribute("aria-current", "step") : p.removeAttribute("aria-current")));
       root.classList.toggle("is-touring", st > 0);
+      document.documentElement.classList.toggle("pw-touring", st > 0 && st <= worlds.length);
       void from;
     };
     let transitionFrom = -1;
@@ -170,7 +174,11 @@ export function mountProjectsWorld() {
 
       const onStage = root.getBoundingClientRect().bottom > innerHeight * 0.5;
       document.documentElement.classList.toggle("in-pw", onStage);
-      sys?.setScroll(Math.min(N - 0.001, g), velocity);
+      if (reduced) {
+        let best = rests[0];
+        for (const r of rests) if (Math.abs(r - g) < Math.abs(best - g)) best = r;
+        sys?.setScroll(best, 0);
+      } else sys?.setScroll(Math.min(N - 0.001, g), velocity);
     };
     let ticking = false;
     const onScroll = () => {
@@ -181,7 +189,6 @@ export function mountProjectsWorld() {
       scheduleSettle();
     };
     addEventListener("scroll", onScroll, { passive: true, signal });
-    update();
 
     // ---- the magnetic pull: when the scroll stops near a shot, it eases on.
     // Travel stays free; nothing happens while the reader is moving.
@@ -224,7 +231,7 @@ export function mountProjectsWorld() {
     const settle = () => {
       if (gliding || pointerDown || flying || (window as Window & { __pwHold?: boolean }).__pwHold) return;
       const here = gFromY(scrollY);
-      if (here >= N - 1 + 0.02 || here < 0) return; // belt and archive scroll freely
+      if (here >= N - 1 + BELT_IN + 0.01 || here < 0) return; // the belt and the cards scroll freely
       const st = Math.floor(here);
       const s = here - st;
       // nearest shot
@@ -362,7 +369,12 @@ export function mountProjectsWorld() {
           // a tap
           if (performance.now() - tStart < 500 && !(e.target as Element).closest?.("a, button")) {
             const c = e.changedTouches[0];
-            activate(sys?.pick(c.clientX, c.clientY) ?? null);
+            const hit = sys?.pick(c.clientX, c.clientY) ?? null;
+            if (hit?.kind === "part" && !(partFromDom && partFromDom.world === hit.world && partFromDom.part === hit.part)) partFromDom = { world: hit.world, part: hit.part };
+            else {
+              partFromDom = null;
+              activate(hit);
+            }
           }
           return;
         }
@@ -604,10 +616,25 @@ export function mountProjectsWorld() {
       return out;
     };
     let lineOpacity = 0;
-    const labelShift = new Float32Array(worlds.length + 1);
     const pinPlace = new Float32Array(worlds.length * 2);
+    const wNames = pins.map((a) => (a.textContent || "").length * 7.2 + 36);
 
+    let pxS = 0;
+    let pyS = 0;
     const onFrame = (f: FrameInfo) => {
+      (window as Window & { __pwG?: number }).__pwG = f.g;
+      if (!coarse && !reduced) {
+        const tx3 = mOn ? (mx / vw) * 2 - 1 : 0;
+        const ty3 = mOn ? (my / vh) * 2 - 1 : 0;
+        const nx = pxS + (tx3 - pxS) * 0.06;
+        const ny = pyS + (ty3 - pyS) * 0.06;
+        if (Math.abs(nx - pxS) + Math.abs(ny - pyS) > 0.0006) {
+          pxS = nx;
+          pyS = ny;
+          root.style.setProperty("--px", nx.toFixed(3));
+          root.style.setProperty("--py", ny.toFixed(3));
+        }
+      }
       // pointer, once per frame
       if (sys) {
         sys.setPointer(mx, my, mOn && !dragging);
@@ -618,7 +645,6 @@ export function mountProjectsWorld() {
           hovered = p;
           sys.setHeat(p);
           canvas.dataset.cursor = p ? "press" : "";
-          stage.dataset.cursor = p ? "press" : "";
           if (p) {
             if (p.kind === "part") emit("projects:hover", { kind: "part", id: `${worlds[p.world].id}:${worlds[p.world].parts[p.part].key}`, note: p.part });
             else if (p.kind === "world") emit("projects:hover", { kind: "world", id: worlds[p.world].id, note: p.world + 1 });
@@ -647,11 +673,24 @@ export function mountProjectsWorld() {
         const wx = f.worlds[i * 4];
         const wy = f.worlds[i * 4 + 1];
         const rr = Math.min(f.worlds[i * 4 + 3], 90);
-        const flip = wx + rr + 200 > vw;
-        const lx = flip ? wx - rr * 0.8 - 8 : wx + rr * 0.8 + 8;
-        let ly = wy - 14;
-        // only clashes with a label that shares the same part of the width
-        const clash = lastX.length && Math.abs(lastX[lastX.length - 1] - lx) < 190;
+        const half = Math.min(wNames[i], vw) / 2;
+        const lx = clamp(wx, half + 10, vw - half - 10);
+        let ly = wy + rr * 0.92 + 2;
+        const hitsWorld = (yy: number) => {
+          for (let j = 0; j < pins.length; j++) {
+            if (j === i) continue;
+            const dx = Math.max(0, Math.abs(f.worlds[j * 4] - lx) - half);
+            const dy = Math.max(0, Math.abs(f.worlds[j * 4 + 1] - (yy + 13)) - 13);
+            if (Math.hypot(dx, dy) < Math.min(f.worlds[j * 4 + 3], 90) * 0.9) return true;
+          }
+          return false;
+        };
+        if (hitsWorld(ly)) {
+          const up = wy - rr * 0.92 - 28;
+          if (!hitsWorld(up)) ly = up;
+        }
+        // only clashes with a caption that shares the same part of the width
+        const clash = lastX.length && (phone || Math.abs(lastX[lastX.length - 1] - lx) < half + 90);
         if (clash && ly < lastBottom) ly = lastBottom;
         lastBottom = ly + 26;
         lastX.push(lx);
@@ -668,17 +707,16 @@ export function mountProjectsWorld() {
         const opac = phone ? (showPinned ? smooth(0.5, 0.9, o) : 0) : railing ? 1 : showPinned ? 1 : 0.0;
         a.style.opacity = opac.toFixed(2);
         a.style.pointerEvents = opac > 0.1 ? "auto" : "none";
-        a.tabIndex = 0;
         a.classList.toggle("is-rail", railing && !phone);
-        a.classList.toggle("is-flip", !phone && (railing || flip));
-        a.style.setProperty("--flip", !phone && (railing || flip) ? "1" : phone && flip ? "1" : "0");
-        void labelShift;
+        a.classList.toggle("is-flip", !phone && railing);
+        a.style.setProperty("--flip", !phone && railing ? "1" : "0.5");
       });
       // the star's name sits just under it on the first screen
-      const sOn = f.star[2] > 0.5 && o > 0.35;
+      const sOn = !phone && f.star[2] > 0.5 && o > 0.35;
       starPin.style.opacity = sOn ? smooth(0.35, 0.8, o).toFixed(2) : "0";
       starPin.style.pointerEvents = sOn ? "auto" : "none";
-      starPin.style.transform = `translate3d(${(f.star[0] - 54).toFixed(1)}px, ${(f.star[1] + Math.min(f.star[3], 90) * 0.9 + 6).toFixed(1)}px, 0)`;
+      starPin.style.transform = `translate3d(${f.star[0].toFixed(1)}px, ${(f.star[1] - Math.min(f.star[3], 90) - 26).toFixed(1)}px, 0)`;
+      starPin.style.setProperty("--flip", "0.5");
 
       // ---- the belt's bodies
       const inBelt = f.g > N - 1.15;
@@ -737,7 +775,7 @@ export function mountProjectsWorld() {
           }
           paths[i].setAttribute("d", d);
           const hot = hovered?.kind === "part" && hovered.world === wIdx && hovered.part === i;
-          paths[i].setAttribute("opacity", ((hot ? 0.95 : 0.42) * lineOpacity).toFixed(3));
+          paths[i].setAttribute("opacity", ((hot ? 1 : 0.62) * lineOpacity).toFixed(3));
           rings[i].setAttribute("cx", px.toFixed(1));
           rings[i].setAttribute("cy", py.toFixed(1));
           rings[i].setAttribute("opacity", ((hot ? 1 : 0.7) * lineOpacity).toFixed(3));
@@ -809,6 +847,9 @@ export function mountProjectsWorld() {
       { passive: true, signal },
     );
 
+    // everything is declared: read where the page is (a return visit may not be at the top)
+    update();
+
     // ---- the scene: after first paint, paused off screen
     let destroyed = false;
     const boot = () => {
@@ -831,7 +872,7 @@ export function mountProjectsWorld() {
             return;
           }
           sys = s;
-          s.setScroll(Math.min(N - 0.001, g), 0);
+          update();
           root.classList.add("is-3d");
           if (!phone) root.classList.add("has-type");
           const io = new IntersectionObserver(([e]) => s.setPaused(!e.isIntersecting || document.hidden));
@@ -857,7 +898,7 @@ export function mountProjectsWorld() {
       stopFling();
       sys?.destroy();
       sys = null;
-      document.documentElement.classList.remove("in-pw");
+      document.documentElement.classList.remove("in-pw", "pw-touring");
       (window as Window & { __pwReady?: boolean }).__pwReady = false;
     };
   });

@@ -223,6 +223,7 @@ const SHAPES: Record<string, () => Piece[]> = {
 
 export function buildBelt(shared: Shared, ids: string[]) {
   const group = new Group();
+  let foreground: Mesh | null = null;
   const r = rng(909);
   const sun: U<Vector3> = { value: new Vector3(0, 0, 1) };
 
@@ -269,6 +270,35 @@ export function buildBelt(shared: Shared, ids: string[]) {
   });
   group.add(rocks);
 
+  // ---- a few big dark rocks right by the lens of the first shot, in its corners
+  if (!shared.low) {
+    const cam = new Vector3(0, 340, 985);
+    const f = new Vector3(0, 22, 66).sub(cam).normalize();
+    const rt = new Vector3(1, 0, 0);
+    const upc = new Vector3().crossVectors(rt, f).normalize();
+    // distance along the view, sideways, up, size
+    const near: [number, number, number, number][] = [
+      [150, -70, -32, 15],
+      [186, 92, -44, 22],
+      [236, -116, 60, 15],
+      [132, 58, 37, 5],
+      [310, 148, 78, 26],
+      [262, -142, -70, 25],
+      [212, -104, -8, 3.6],
+      [168, 84, 12, 2.8],
+      [246, 124, -8, 5],
+    ];
+    const fore = instanced(ico(1, 2), rockMat, near.length, (i, m, d) => {
+      const [dd, x, y, sz] = near[i];
+      const p = cam.clone().addScaledVector(f, dd).addScaledVector(rt, x).addScaledVector(upc, -y);
+      m.makeScale(sz, sz, sz);
+      m.setPosition(p);
+      d[0] = d[1] = d[2] = 0.72;
+    });
+    group.add(fore);
+    foreground = fore;
+  }
+
   // ---- dust
   const n = shared.low ? 5000 : 15000;
   const pos = new Float32Array(n * 3);
@@ -302,6 +332,7 @@ export function buildBelt(shared: Shared, ids: string[]) {
   void uHot;
   type Body = { id: string; hold: Group; world: Vector3; radius: number; spin: number; heat: number; halo: Mesh };
   const bodies: Body[] = [];
+  void foreground;
   const sides = [
     [19, 4],
     [-21, -5],

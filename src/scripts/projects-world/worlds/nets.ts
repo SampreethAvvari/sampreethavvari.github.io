@@ -17,7 +17,9 @@ const MAX_HITS = 8;
 const netFrag = (col: string) => /* glsl */ `
     vec3 bar = vBary;
     vec3 fw = fwidth(bar);
-    vec3 th = smoothstep(vec3(0.0), fw * 1.4 + 0.012, bar);
+    vec3 th = smoothstep(vec3(0.0), fw * 1.2 + 0.006, bar);
+    // from far off a net is mostly lines: keep it from turning into a solid ball
+    float dense = 1.0 - 0.72 * smoothstep(0.03, 0.2, max(fw.x, max(fw.y, fw.z)));
     float wire = 1.0 - min(th.x, min(th.y, th.z));
     vec3 dir = normalize(vL);
     float ripple = 0.0;
@@ -38,7 +40,7 @@ const netFrag = (col: string) => /* glsl */ `
     }
     float fres = pow(1.0 - abs(dot(normalize(vN), normalize(cameraPosition - vW))), 2.4);
     vec3 c = ${col};
-    vec3 net = c * wire * (uBase * 0.55 + fres * 0.42 + ripple * 2.4 + uHeat * 0.8) * (1.0 - uInside * 0.78);
+    vec3 net = c * wire * dense * (uBase * 0.55 + fres * 0.42 + ripple * 2.4 + uHeat * 0.8) * (1.0 - uInside * 0.94);
     net *= 1.0 - hole;
     vec3 rim = vec3(3.0, 3.6, 3.0) * smoothstep(0.0, 1.0, wire) * flash * 3.0;
     vec3 skin = c * fres * 0.012;
@@ -85,7 +87,7 @@ export const buildNets: WorldBuilder = (shared, sun) => {
   });
 
   // ---- what they protect: a warm core, the worker that delivers
-  const coreMat = surface(shared, sun, { color: "#ffb56b", metal: 0.6, rough: 0.3, flat: true, glow: 0.9, frag: "glowCol = vec3(1.9, 1.05, 0.42);" });
+  const coreMat = surface(shared, sun, { color: "#3a2c20", metal: 0.86, rough: 0.3, flat: true, frag: "vec3 ab = abs(vO) / 1.55; float ed = smoothstep(0.86, 1.0, max(min(ab.x, ab.y), max(min(ab.y, ab.z), min(ab.x, ab.z)))); glowCol = vec3(2.8, 1.5, 0.5); glow = 0.1 + ed * 2.4;" });
   const core = new Mesh(faceted(box(3.1, 3.1, 3.1)), coreMat);
   group.add(core);
   group.add(glow("#ffb56b", 19, { intensity: 0.34, power: 2.4 }));

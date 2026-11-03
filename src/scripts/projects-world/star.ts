@@ -54,8 +54,8 @@ void main() {
   float limb = pow(nv, 0.42);
   vec3 hot = vec3(2.9, 3.7, 5.6);
   vec3 cool = vec3(0.42, 0.86, 2.3);
-  vec3 c = mix(cool, hot, smoothstep(0.3, 0.72, g));
-  c *= 0.76 + fine * 0.62;
+  vec3 c = mix(cool, hot, smoothstep(0.34, 0.66, g));
+  c *= 0.5 + fine * 1.0;
   c *= limb;
   c += vec3(0.8, 1.2, 2.3) * pow(1.0 - nv, 3.0);
   c *= 1.0 + uHeat * 0.45;
@@ -152,7 +152,7 @@ varying vec2 vL;
 void main() {
   float flow = 0.5 + 0.5 * sin(vL.x * 18.0 - uTime * (1.2 + vL.y * 2.4) + vL.y * 40.0);
   float pulse = 0.6 + 0.4 * sin(uTime * 0.6 + vL.y * 30.0);
-  vec3 c = mix(vec3(0.4, 0.8, 2.2), vec3(2.6, 3.2, 4.6), flow * flow);
+  vec3 c = mix(vec3(0.3, 0.6, 1.7), vec3(1.7, 2.2, 3.4), flow * flow);
   c *= pulse * (1.25 + uHeat * 1.4) * smoothstep(0.0, 0.08, vL.x) * smoothstep(1.0, 0.92, vL.x);
   gl_FragColor = vec4(c, 1.0);
 }`,

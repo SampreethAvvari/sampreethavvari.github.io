@@ -175,7 +175,7 @@ void main() {
   if (V.y < 0.0) N = -N;
   float F = pow(1.0 - max(dot(N, V), 0.0), 3.0);
   vec3 env = textureCube(tEnv, reflect(-V, N)).rgb;
-  vec3 c = env * (0.8 + 3.2 * F) * fade;
+  vec3 c = env * (0.22 + 1.5 * F) * fade;
   c += vec3(0.3, 0.62, 1.25) * fade * (0.035 + 0.05 * ripple * ripple + uHeat * 0.28);
   c += vec3(1.0, 1.7, 3.2) * rim * (1.0 + uHeat * 2.0);
   c += vec3(0.7, 1.2, 2.4) * touch * fade * 0.9;

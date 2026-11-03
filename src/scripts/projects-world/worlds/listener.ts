@@ -42,7 +42,7 @@ export const buildListener: WorldBuilder = (shared, sun) => {
 
   // ---- the bars
   const list: { band: number; lon: number }[] = [];
-  const pitch = shared.low ? 0.58 : 0.4;
+  const pitch = shared.low ? 0.52 : 0.34;
   BAND.forEach((lat, b) => {
     const rows = shared.low ? 3 : 5;
     for (let q = 0; q < rows; q++) {

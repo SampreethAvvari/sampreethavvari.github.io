@@ -122,10 +122,10 @@ export const buildGeode: WorldBuilder = (shared, sun) => {
     float fire = exp(-miss * miss * 0.14) * (0.42 + uFire * 0.7);
     float sparkle = 0.55 + 0.45 * sin(vR * 60.0 + uTime * 0.3);
     vec3 thru = textureCube(tEnv, rd).rgb * vec3(0.8, 0.9, 1.0) * 0.9;
-    col = col * (0.14 + F * 0.75) + thru;
-    col += vec3(3.1, 1.5, 0.42) * fire * sparkle;
-    col += vec3(0.04, 0.075, 0.13);
-    col += vec3(0.74, 1.0, 1.5) * e * (0.34 + vOpen * 0.5);
+    col = col * (0.05 + F * 0.8) + thru * 0.32;
+    col += vec3(3.4, 1.5, 0.36) * fire * fire * sparkle * 0.9;
+    col += vec3(0.012, 0.024, 0.05);
+    col += vec3(0.62, 0.86, 1.3) * e * (0.26 + vOpen * 0.34);
     `,
   });
   const shell = new Mesh(shellGeo, shellMat);
@@ -134,17 +134,17 @@ export const buildGeode: WorldBuilder = (shared, sun) => {
   shellSpin.add(shell);
 
   // ---- the fire
-  const fireMat = surface(shared, sun, { color: "#ffb25a", metal: 0.2, rough: 0.5, flat: true, glow: 2.2, frag: "glowCol = vec3(1.0, 0.56, 0.2); float n = 0.5 + 0.5 * sin(dot(normalize(vL), vec3(9.0, 13.0, 7.0)) + uTime * 0.6); glow *= 0.72 + n * 0.5;" });
+  const fireMat = surface(shared, sun, { color: "#ff9b3d", metal: 0.2, rough: 0.5, flat: true, glow: 1.5, frag: "glowCol = vec3(1.0, 0.42, 0.08); float nvv = max(dot(N, V), 0.0); glow *= (0.16 + nvv * nvv * nvv * 1.5) * (0.86 + 0.14 * sin(uTime * 0.7));" });
   const coreSpin = new Group();
   group.add(coreSpin);
   coreSpin.add(new Mesh(ico(1.9, 1), fireMat));
   const fireGlow = glow("#ffa64a", 22, { intensity: 0.32, power: 2.4 });
   group.add(fireGlow);
-  group.add(glow("#ffd9a8", 8, { intensity: 0.5, power: 2.4 }));
+  group.add(glow("#ffd9a8", 7, { intensity: 0.34, power: 2.4 }));
 
   // ---- five forms for five pricing kinds, circling the fire
   const uKinds = { value: 0 };
-  const kindMat = surface(shared, sun, { color: "#ffcb8c", metal: 0.92, rough: 0.24, data: true, flat: true, uniforms: { uKinds }, fragHead: "uniform float uKinds;", frag: "glowCol = vec3(2.8, 1.45, 0.5); glow = (glow + 0.12) * (1.0 + uKinds * 2.4);" });
+  const kindMat = surface(shared, sun, { color: "#c66f18", metal: 0.96, rough: 0.16, rim: 0, envI: 1.6, data: true, flat: true, uniforms: { uKinds }, fragHead: "uniform float uKinds;", frag: "glowCol = vec3(2.4, 1.05, 0.22); float toFire = max(dot(N, -normalize(vL)), 0.0); glow = (glow + 0.04 + toFire * toFire * 0.42) * (1.0 + uKinds * 2.4);" });
   const kindGeos = [
     // flat: one plain slab
     assemble([{ g: box(2.6, 0.36, 1.9) }]),
@@ -189,7 +189,7 @@ export const buildGeode: WorldBuilder = (shared, sun) => {
   ];
   const lines: BeamItem[] = [];
   ringAxes.forEach(([x, y, z], i) => {
-    const rad = 8.5 + i * 0.5;
+    const rad = 10.2 + i * 0.42;
     const m = new Mesh(tor(rad, 0.022, 5, 128), frostMat);
     m.rotation.set(x, y, z);
     m.updateMatrix();
@@ -276,7 +276,7 @@ export const buildGeode: WorldBuilder = (shared, sun) => {
       });
       // open as the camera comes in
       const camD = c.cam.length();
-      const want = 0.12 + 1.75 * (1 - Math.min(1, Math.max(0, (camD - 13) / 12)));
+      const want = 0.12 + 0.9 * (1 - Math.min(1, Math.max(0, (camD - 13) / 12)));
       uOpen.value = damp(uOpen.value, want, 3, dt);
       uPtrOn.value = damp(uPtrOn.value, c.ptrOn, 6, dt);
       uPtr.value.copy(c.ptr).applyAxisAngle(yA, -rot);
@@ -293,7 +293,7 @@ export const buildGeode: WorldBuilder = (shared, sun) => {
       coin.rotation.y = c.t * 0.3;
 
       parts[0].at.set(Math.cos(0) * (dialR + 1), Math.sin(0) * (dialR + 1), 0).applyEuler(dialGroup.rotation);
-      parts[1].at.set(8.6, 0, 0).applyEuler(frozen.children[0].rotation);
+      parts[1].at.set(10.2, 0, 0).applyEuler(frozen.children[0].rotation);
       parts[2].at.copy(kinds[1].hold.position).applyAxisAngle(yA, coreRot);
       parts[3].at.copy(coin.position);
       parts[4].at.set(Math.cos(2.46 - c.t * 0.02) * 18.6, -2.4, Math.sin(2.46 - c.t * 0.02) * 18.6);

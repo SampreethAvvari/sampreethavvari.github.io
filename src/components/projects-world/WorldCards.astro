@@ -176,6 +176,11 @@ const STAR_PARTS = [
   .ac:hover { border-color: var(--line-strong); }
   .ac[hidden] { display: none; }
   .ac:has(> .ac-more[open]) { grid-column: 1 / -1; }
+  @media (min-width: 900px) {
+    .ac.is-w6:not(:has(> .ac-more[open])), .ac.is-w2:not(:has(> .ac-more[open])) { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 3fr); grid-template-rows: 1fr auto; }
+    .ac.is-w6:not(:has(> .ac-more[open])) .ac-art, .ac.is-w2:not(:has(> .ac-more[open])) .ac-art { grid-row: 1 / span 2; aspect-ratio: auto; height: 100%; min-height: 240px; }
+    .ac.is-w6:not(:has(> .ac-more[open])) .ac-more, .ac.is-w2:not(:has(> .ac-more[open])) .ac-more { grid-column: 2; }
+  }
   .ac-art { position: relative; aspect-ratio: 16 / 9; overflow: hidden; background: #07080b; }
   .ac-art :global(img) { display: block; width: 100%; height: 100%; object-fit: cover; }
   .ac-fallback { display: grid; place-items: center; width: 100%; height: 100%; padding: 16px; text-align: center; background: radial-gradient(70% 90% at 20% 10%, rgba(91, 141, 239, 0.2), transparent 70%), #07080b; }

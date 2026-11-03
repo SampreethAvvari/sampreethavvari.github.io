@@ -141,8 +141,8 @@ export const buildComet: WorldBuilder = (shared, sun) => {
     });
     return { p: pointCloud(p, { aD: [a, 4] }, m), uH };
   };
-  const dust = mkTail(shared.low ? 3400 : 9000, 0.05, 0.12, 0.5, "vec3(0.72, 0.92, 1.4)", "vec3(0.3, 0.46, 0.92)", 190);
-  const runs = mkTail(1008, 0.1, 0.12, 1.6, "vec3(2.2, 2.6, 3.2)", "vec3(0.9, 1.3, 2.1)", 170);
+  const dust = mkTail(shared.low ? 5000 : 15000, 0.06, 0.13, 0.62, "vec3(0.72, 0.92, 1.4)", "vec3(0.3, 0.46, 0.92)", 190);
+  const runs = mkTail(1008, 0.12, 0.13, 2.1, "vec3(2.2, 2.6, 3.2)", "vec3(0.9, 1.3, 2.1)", 170);
   group.add(dust.p, runs.p);
 
   // the coma
@@ -173,14 +173,14 @@ export const buildComet: WorldBuilder = (shared, sun) => {
   for (let i = 0; i < 11; i++) {
     const a = (i / 11) * Math.PI * 2;
     const g = new Group();
-    g.position.set(Math.cos(a) * 29, Math.sin(a * 3) * 3.4, Math.sin(a) * 29);
+    g.position.set(Math.cos(a) * 26, Math.sin(a * 3) * 2.6, Math.sin(a) * 26);
     g.lookAt(0, 0, 0);
     g.rotateX(Math.PI / 2);
     g.add(new Mesh(dishGeo, dishMat));
     dishes.add(g);
     dishItems.push(g);
   }
-  dishes.rotation.set(0.32, 0, -0.2);
+  dishes.rotation.set(0.86, 0, -0.34);
   group.add(dishes);
 
   const parts: Part[] = [

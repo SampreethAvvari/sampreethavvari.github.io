@@ -93,6 +93,7 @@ export interface System {
 
 const STAR_COL = new Color(0.68, 0.82, 1);
 const Y_AXIS = new Vector3(0, 1, 0);
+const lean3 = new Vector3();
 const tmp = new Vector3();
 const tmp2 = new Vector3();
 const tmp3 = new Vector3();
@@ -214,6 +215,7 @@ void main() {
     o.phone,
   );
 
+  let firstScroll = true;
   let gTarget = 0;
   let gNow = 0;
   let vel = 0;
@@ -304,6 +306,7 @@ void main() {
   let slowT = 0;
   let dip = 0;
   let lastStage = -1;
+  let hoverSlow = 1;
 
   const frame = (now: number) => {
     raf = requestAnimationFrame(frame);
@@ -331,7 +334,8 @@ void main() {
     overviewU.value = overview;
 
     // orbits: at speed from far away, nearly stopped close up
-    const orbitRate = (o.reduced ? 0.15 : 1) * lerp(0.1, 1, overview);
+    hoverSlow = damp(hoverSlow, heatPick && heatPick.kind !== "star" ? 0.16 : 1, 4, dt);
+    const orbitRate = (o.reduced ? 0.15 : 1) * lerp(0.1, 1, overview) * hoverSlow;
     ORBITS.forEach((orb, i) => {
       thetas[i] += angularSpeed(orb) * dt * orbitRate;
     });
@@ -362,6 +366,17 @@ void main() {
       shown.roll = pose.roll;
       shown.sx = pose.sx;
       shown.sy = pose.sy;
+    }
+
+    // the view leans a little toward the part being pointed at
+    {
+      const hp = heatPick && heatPick.kind === "part" ? heatPick : null;
+      if (hp && !o.reduced) {
+        const w = worlds[hp.world];
+        tmp2.copy(w.parts[hp.part].at).multiplyScalar(0.12 * w.group.scale.x).applyAxisAngle(Y_AXIS, locks[hp.world]);
+      } else tmp2.set(0, 0, 0);
+      lean3.lerp(tmp2, 1 - Math.exp(-3.5 * dt));
+      shown.look.add(lean3);
     }
 
     // what the drag has done
@@ -410,8 +425,8 @@ void main() {
     camera.updateMatrixWorld();
 
     // speed, measured from the camera itself
-    velV.copy(camera.position).sub(lastPos).multiplyScalar(1 / dt);
-    lastPos.copy(camera.position);
+    velV.copy(shown.pos).sub(lastPos).multiplyScalar(1 / dt);
+    lastPos.copy(shown.pos);
     const sNow = clamp((velV.length() - 40) / 700);
     speed = damp(speed, sNow, 5, dt);
     dust.uCam.value.copy(camera.position);
@@ -521,10 +536,9 @@ void main() {
 
     // reduced motion dips through dark when the stage changes
     if (o.reduced) {
-      const st = Math.round(g);
-      if (st !== lastStage) {
+      if (g !== lastStage) {
         if (lastStage !== -1) dip = 1;
-        lastStage = st;
+        lastStage = g;
       }
       dip = damp(dip, 0, 3, dt);
     }
@@ -537,7 +551,7 @@ void main() {
     const diskI = 3;
     if (worlds[diskI].group.visible) {
       const dd = camera.position.distanceTo(positions[diskI]);
-      const dn = 1 - smooth(50, 170, dd);
+      const dn = 1 - smooth(170, 260, dd);
       if (dn > 0.01) {
         tmp.copy(positions[diskI]).project(camera);
         if (tmp.z < 1) {
@@ -596,6 +610,10 @@ void main() {
 
   const sys: System = {
     setScroll(g, velocity) {
+      if (firstScroll) {
+        firstScroll = false;
+        gNow = g;
+      }
       gTarget = g;
       vel = velocity;
     },

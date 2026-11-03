@@ -39,7 +39,7 @@ export const buildArch: WorldBuilder = (shared, sun) => {
     uniforms: { uSweep, uRead, uPtr, uPtrOn, uStones },
     head: /* glsl */ `uniform float uSweep; uniform float uRead; uniform vec3 uPtr; uniform float uPtrOn; uniform float uStones; varying float vLit; varying float vGot; varying float vPtr;`,
     vertex: /* glsl */ `
-    float phi = d.x;
+    float phi = d.w;
     vec3 c = (instanceMatrix * vec4(0.0, 0.0, 0.0, 1.0)).xyz;
     float dd = phi - uSweep;
     vLit = exp(-dd * dd * 90.0);
@@ -76,7 +76,7 @@ export const buildArch: WorldBuilder = (shared, sun) => {
     m.multiply(mat(0, 0, 0, 0.05 * (r() - 0.5), 0, 0.07 * (r() - 0.5)));
     m.scale(new Vector3(wid, hgt, dep));
     m.setPosition(pos.x, hgt / 2, pos.z);
-    d[0] = phi;
+    d[3] = phi;
   });
   group.add(stones);
 
@@ -156,7 +156,7 @@ void main() {
   bladeHold.position.set(0, 0, ZC);
   bladeHold.add(blade);
   group.add(bladeHold);
-  const bladeEdge = beams([{ a: new Vector3(0, 0.1, 0), b: new Vector3(40, 0.1, 0), color: "#e6dcff", i: 1.8, w: 0.03 }], shared, { fade: 0.2 });
+  const bladeEdge = beams([{ a: new Vector3(0, 0.1, 0), b: new Vector3(40, 0.1, 0), color: "#e6dcff", i: 0.9, w: 0.02 }], shared, { fade: 0.2 });
   bladeHold.add(bladeEdge);
 
   // ---- two reports, one gate

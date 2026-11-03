@@ -78,8 +78,7 @@ const stageTop = (i: number) => SPANS.slice(0, i).reduce((a, b) => a + b, 0);
         <p class="pw-kick"><span class="pw-kick-dot"></span>Projects · {total} of them, {live} live in production</p>
         <h1 class="pw-h1">Things I've built.</h1>
         <p class="pw-tail">Most of them run a dental practice every day.</p>
-        <p class="pw-hint"><span class="pw-hint-m">Scroll to fly</span><i>·</i><span class="pw-hint-d">Drag to turn the system</span><i class="pw-hint-d">·</i><span>Tap a world to go there</span></p>
-      </header>
+              </header>
 
       <!-- one real link per world. On the first screen each is pinned to its
            world; later they become a small index on the right edge. -->
@@ -169,7 +168,7 @@ const stageTop = (i: number) => SPANS.slice(0, i).reduce((a, b) => a + b, 0);
       <p class="pw-count" aria-hidden="true" data-pw-count><b>00</b><i>/</i><span>{pad(worlds.length)}</span></p>
       <a class="pw-top" href="#worlds" data-go="0"><span>The whole system</span></a>
       <a class="pw-skip" href="#all"><span>Skip to all {total} projects</span></a>
-      <p class="pw-cue" aria-hidden="true"><span>Scroll</span><i></i></p>
+      <p class="pw-hint" data-pw-hint><span>Scroll to fly</span><i>·</i><span class="pw-hint-d">Drag to turn the system</span><i class="pw-hint-d">·</i><span>Tap a world to go there</span></p>
       <div class="pw-tip" data-pw-tip aria-hidden="true"><b></b><span></span></div>
     </div>
   </div>
@@ -184,6 +183,8 @@ const stageTop = (i: number) => SPANS.slice(0, i).reduce((a, b) => a + b, 0);
   /* The site's left gauge and top button would sit on the scene. */
   html.in-pw .orbit { opacity: 0 !important; pointer-events: none; transition: opacity 0.4s ease; }
   html.in-pw .to-top { opacity: 0 !important; pointer-events: none !important; }
+  /* on a phone the chat button would sit on the numbers; it is back on the first screen and at the cards */
+  @media (max-width: 899px) { html.in-pw.pw-touring .chat-launcher { opacity: 0 !important; pointer-events: none !important; } }
 </style>
 
 <style>
@@ -191,7 +192,7 @@ const stageTop = (i: number) => SPANS.slice(0, i).reduce((a, b) => a + b, 0);
   /* ---- without the scene: plain cards in the page's flow ---- */
   .pw { position: relative; background: #020306; }
   .pw-stage { position: relative; }
-  .pw-sky, .pw-canvas, .pw-shade, .pw-lines, .pw-pins, .pw-bodies, .pw-count, .pw-top, .pw-cue, .pw-tip, .pw-skip { display: none; }
+  .pw-sky, .pw-canvas, .pw-shade, .pw-lines, .pw-pins, .pw-bodies, .pw-count, .pw-top, .pw-tip, .pw-skip { display: none; }
   .pw-ui { display: grid; gap: 16px; padding: clamp(124px, 13vw, 168px) var(--gutter) 48px; max-width: calc(var(--max, 1200px) + 2 * var(--gutter)); margin-inline: auto; }
   .pw-w, .pw-beltcopy { display: grid; gap: 16px; padding: 24px; border: 1px solid var(--line); border-radius: 18px; background: rgba(255, 255, 255, 0.03); }
   .pw-hero { padding-bottom: 24px; }
@@ -203,7 +204,7 @@ const stageTop = (i: number) => SPANS.slice(0, i).reduce((a, b) => a + b, 0);
   .pw-kick b { font-weight: 500; color: #5b8def; }
   .pw-kick i { width: 40px; height: 1px; background: linear-gradient(90deg, #5b8def, rgba(91, 141, 239, 0.1)); }
   .pw-kick-dot { width: 7px; height: 7px; border-radius: 50%; background: #5b8def; box-shadow: 0 0 12px #5b8def; }
-  .pw-hint { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 18px 0 0; font-size: 0.75rem; letter-spacing: 0.01em; color: rgba(255, 255, 255, 0.5); }
+  .pw-hint { flex-wrap: wrap; align-items: center; gap: 8px; font-size: 0.75rem; letter-spacing: 0.01em; color: rgba(255, 255, 255, 0.55); }
   .pw-hint i { font-style: normal; opacity: 0.6; }
   .pw-title { margin: 0; font-weight: 300; font-size: clamp(2.6rem, 6.6vw, 7rem); letter-spacing: -0.052em; line-height: 0.96; color: #fff; }
   .pw-title span { display: block; }
@@ -286,8 +287,11 @@ const stageTop = (i: number) => SPANS.slice(0, i).reduce((a, b) => a + b, 0);
   .pw.is-live .pw-w[data-beat="b"] .pw-b { opacity: 1; }
   .pw.is-live .pw-w[data-beat="b"] .pw-b button { pointer-events: auto; }
   .pw.is-live .pw-a:focus-within { opacity: 1; }
+  /* a title link holds only its words, so the world behind it can still be dragged */
+  .pw.is-live .pw-w[data-beat="a"] .pw-title a { pointer-events: none; }
+  .pw.is-live .pw-w[data-beat="a"] .pw-title a span { pointer-events: auto; }
   .pw.is-live .pw-c { position: absolute; width: min(250px, 24vw); }
-  .pw.is-live .pw-c:not(.is-extra) { padding: 12px 14px 13px; border-radius: 14px; border: 1px solid rgba(255, 255, 255, 0.09); background: rgba(5, 8, 16, 0.62); transition: border-color 0.25s ease, background-color 0.25s ease; }
+  .pw.is-live .pw-c:not(.is-extra) { padding: 12px 14px 13px; border-radius: 14px; border: 1px solid rgba(255, 255, 255, 0.09); background: rgba(5, 8, 16, 0.74); transition: border-color 0.25s ease, background-color 0.25s ease; }
   .pw.is-live .pw-c.is-hot { border-color: rgba(91, 141, 239, 0.8) !important; background: rgba(9, 15, 30, 0.82) !important; }
   .pw.is-live .pw-c button { cursor: pointer; }
   .pw.is-live .pw-c b { font-size: clamp(1.55rem, 2.6vw, 2.75rem); transition: color 0.25s ease; }
@@ -297,6 +301,8 @@ const stageTop = (i: number) => SPANS.slice(0, i).reduce((a, b) => a + b, 0);
   .pw.is-live .pw-c.is-extra { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
   .pw.is-live .pw-c.is-extra:focus-within { width: auto; height: auto; clip-path: none; overflow: visible; left: 50%; bottom: 8%; }
   .pw.is-live .pw-line { text-shadow: 0 1px 14px rgba(0, 0, 0, 0.8); }
+  .pw.is-live .pw-title, .pw.is-live .pw-hero-num { translate: calc(var(--px, 0) * -9px) calc(var(--py, 0) * -6px); }
+  .pw.is-live .pw-kick { translate: calc(var(--px, 0) * -4px) calc(var(--py, 0) * -3px); }
   .pw.is-live .pw-title { text-shadow: 0 2px 30px rgba(2, 3, 6, 0.35); }
 
   /* pins and the index */
@@ -343,17 +349,16 @@ const stageTop = (i: number) => SPANS.slice(0, i).reduce((a, b) => a + b, 0);
   .pw.is-live .pw-count i { font-style: normal; opacity: 0.4; }
   .pw.is-live.is-touring .pw-count { opacity: 1; }
   .pw.is-live .pw-top, .pw.is-live .pw-skip { display: inline-flex; position: absolute; font-size: 0.75rem; color: rgba(255, 255, 255, 0.58); text-decoration: none; transition: color 0.2s ease, opacity 0.4s ease; }
-  .pw.is-live .pw-skip { left: max(32px, var(--gutter)); bottom: clamp(20px, 4vh, 36px); padding: 6px 0; border-bottom: 1px solid rgba(91, 141, 239, 0.6); }
+  .pw.is-live .pw-skip { right: var(--rx); bottom: clamp(20px, 4vh, 36px); padding: 6px 0; border-bottom: 1px solid rgba(91, 141, 239, 0.6); }
   .pw.is-live .pw-top { top: 96px; right: max(32px, var(--gutter)); opacity: 0; pointer-events: none !important; }
   .pw.is-live.is-touring .pw-top { opacity: 1; pointer-events: auto !important; }
   .pw.is-live .pw-top:hover, .pw.is-live .pw-skip:hover { color: #fff; }
   .pw.is-live .pw-top:focus-visible, .pw.is-live .pw-skip:focus-visible { outline: 1.5px solid #5b8def; outline-offset: 4px; opacity: 1; }
   .pw.is-live.is-touring .pw-skip { opacity: 0; pointer-events: none !important; }
   .pw.is-live .pw-skip:focus-visible { opacity: 1; }
-  .pw.is-live .pw-cue { display: grid; position: absolute; left: 50%; bottom: 24px; transform: translateX(-50%); justify-items: center; gap: 8px; margin: 0; font-size: 0.6875rem; letter-spacing: 0.14em; text-transform: uppercase; color: rgba(255, 255, 255, 0.55); transition: opacity 0.5s ease; }
-  .pw-cue i { width: 1px; height: 34px; background: linear-gradient(rgba(255, 255, 255, 0.7), transparent); animation: pw-cue 1.8s ease-in-out infinite; transform-origin: top; }
-  .pw.is-live.is-moving .pw-cue { opacity: 0; }
-  @keyframes pw-cue { 0% { transform: scaleY(0); opacity: 1; } 60% { transform: scaleY(1); opacity: 1; } 100% { transform: scaleY(1); opacity: 0; } }
+  .pw-hint { display: none; }
+  .pw.is-live .pw-hint { display: flex; position: absolute; left: max(32px, var(--gutter)); bottom: clamp(26px, 4.6vh, 42px); margin: 0; transition: opacity 0.5s ease; }
+  .pw.is-live.is-touring .pw-hint, .pw.is-live.is-moving .pw-hint { opacity: 0; }
 
   /* the tip that follows a hovered part */
   .pw.is-live .pw-tip { display: grid; position: absolute; left: 0; top: 0; gap: 3px; width: max-content; max-width: 240px; padding: 10px 14px; border-radius: 12px; border: 1px solid rgba(255, 255, 255, 0.14); background: rgba(6, 9, 18, 0.86); opacity: 0; transition: opacity 0.18s ease; will-change: transform, opacity; }
@@ -366,11 +371,11 @@ const stageTop = (i: number) => SPANS.slice(0, i).reduce((a, b) => a + b, 0);
     /* the title runs right across the mirror's horizon, split around the world */
     .pw.is-live .pw-mirror .pw-a { inset: 0; }
     .pw.is-live .pw-mirror .pw-title { position: absolute; left: max(32px, var(--gutter)); right: max(32px, var(--gutter)); top: 50%; transform: translateY(-50%); }
-    .pw.is-live .pw-mirror .pw-title a { display: flex; justify-content: space-between; align-items: center; pointer-events: auto; }
+    .pw.is-live .pw-mirror .pw-title a { display: flex; justify-content: space-between; align-items: center; }
     .pw.is-live .pw-mirror .pw-title span { font-size: clamp(2.8rem, 6.5vw, 7.4rem); }
     .pw.is-live .pw-mirror .pw-a-kick { position: absolute; left: max(32px, var(--gutter)); top: calc(50% - clamp(4.4rem, 7vw, 8rem)); }
-    .pw.is-live .pw-mirror .pw-line { position: absolute; right: max(32px, var(--gutter)); top: calc(50% + clamp(3.2rem, 5vw, 6rem)); width: 22rem; text-align: right; }
-    .pw.is-live .pw-mirror .pw-acts { position: absolute; left: max(32px, var(--gutter)); top: calc(50% + clamp(3.2rem, 5vw, 6rem)); }
+    .pw.is-live .pw-mirror .pw-line { position: absolute; right: var(--rx); top: calc(50% + clamp(5.4rem, 8.4vw, 9.4rem)); width: 21rem; text-align: right; }
+    .pw.is-live .pw-mirror .pw-acts { position: absolute; left: max(32px, var(--gutter)); top: calc(50% + clamp(5.4rem, 8.4vw, 9.4rem)); }
     .pw.is-live .pw-mirror .pw-c:nth-child(1) { left: max(32px, var(--gutter)); top: 21%; }
     .pw.is-live .pw-mirror .pw-c:nth-child(2) { left: max(32px, var(--gutter)); top: 63%; }
     .pw.is-live .pw-mirror .pw-c:nth-child(3) { right: var(--rx); top: 21%; text-align: right; }
@@ -459,9 +464,9 @@ const stageTop = (i: number) => SPANS.slice(0, i).reduce((a, b) => a + b, 0);
     .pw.is-live .pw-hero { left: 16px; right: 16px; top: 76px; bottom: auto; }
     .pw.is-live .pw-h1 { font-size: clamp(2.9rem, 13.4vw, 4.6rem); margin-top: 10px; }
     .pw.is-live .pw-tail { font-size: 1rem; }
-    .pw.is-live .pw-hint { margin-top: 10px; }
+    .pw.is-live .pw-hint-d { display: none; }
+    .pw.is-live .pw-hint { left: 16px; bottom: 44px; }
     .pw.is-live .pw-skip { left: 16px; bottom: 16px; }
-    .pw.is-live .pw-cue { display: none; }
     .pw.is-live .pw-a { left: 16px; right: 16px; bottom: 22px; gap: 10px; }
     .pw.is-live .pw-title { font-size: clamp(2.7rem, 12.6vw, 4.2rem); }
     .pw.is-live .pw-title span { display: block; }
@@ -489,7 +494,6 @@ const stageTop = (i: number) => SPANS.slice(0, i).reduce((a, b) => a + b, 0);
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .pw-cue i { animation: none; }
     .pw.is-live .pw-a, .pw.is-live .pw-b { transition: opacity 0.25s ease; transform: none; }
   }
 </style>
