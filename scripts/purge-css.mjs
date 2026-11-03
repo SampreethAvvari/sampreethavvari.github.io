@@ -13,6 +13,22 @@
 // go after that. Safe by construction: what remains matches exactly what matched
 // before.
 //
+// Two more things that cost every page, also safe by construction:
+//
+// The typography plugin ends every prose rule with
+// :not(:where([class~=not-prose],[class~=not-prose] *)). "Anything inside an element
+// whose class attribute has this word" means a browser cannot rule out a change of
+// any class on any element, so each one restyles everything under that element: a
+// class on <html> restyled the whole page, again and again while a page starts and
+// while it scrolls. Nothing here uses not-prose, so the clause goes. It adds no
+// specificity, so no rule moves in the cascade. Should a page ever use not-prose,
+// the clause becomes one on the class itself, which means the same and costs nothing.
+//
+// A page can link a stylesheet that every rule of which comes again later on the
+// same page (Tailwind's output, once from the integration and once from global.css).
+// The later copy of a rule beats everything the earlier copy could, so the earlier
+// link does nothing but make the browser match all of it twice. It goes from that page.
+//
 // Runs as part of `npm run build`, after `astro build`. node scripts/purge-css.mjs [dist]
 import { readFileSync, readdirSync, statSync, writeFileSync } from "node:fs";
 import path from "node:path";
@@ -95,12 +111,16 @@ let after = 0;
 let droppedRules = 0;
 const roots = new Map();
 
+const NOT_PROSE = /:not\(:where\(\[class~=["']?not-prose["']?\],\s*\[class~=["']?not-prose["']?\] \*\)\)/g;
+const proseScope = tokens.has("not-prose") ? ":not(:where(.not-prose,.not-prose *))" : "";
+
 for (const f of sheets) {
   const css = readFileSync(f, "utf8");
   before += Buffer.byteLength(css);
   const root = postcss.parse(css, { from: f });
   root.walkRules((rule) => {
     if (inKeyframes(rule)) return;
+    if (rule.selector.includes("not-prose")) rule.selector = rule.selector.replace(NOT_PROSE, proseScope);
     const live = rule.selectors.filter(alive);
     if (!live.length) {
       rule.remove();
@@ -139,7 +159,29 @@ for (const [f, root] of roots) {
   writeFileSync(f, out);
 }
 
+// A stylesheet whose every rule comes again later on the same page.
+const nodesOf = new Map([...roots].map(([f, root]) => [f, root.nodes.map((n) => n.toString())]));
+const sheetOf = (href) => path.join(DIST, href);
+const LINK = /<link\b[^>]*\brel="stylesheet"[^>]*\bhref="(\/_astro\/[^"]+\.css)"[^>]*>\s*/g;
+let linksDropped = 0;
+for (const page of files.filter((f) => f.endsWith(".html"))) {
+  const html = readFileSync(page, "utf8");
+  const links = [...html.matchAll(LINK)];
+  const drop = new Set();
+  links.forEach((m, i) => {
+    const mine = nodesOf.get(sheetOf(m[1]));
+    if (!mine?.length) return;
+    const later = new Set(links.slice(i + 1).flatMap((l) => nodesOf.get(sheetOf(l[1])) ?? []));
+    if (mine.every((n) => later.has(n))) drop.add(m[0]);
+  });
+  if (!drop.size) continue;
+  let out = html;
+  for (const tag of drop) out = out.replace(tag, "");
+  writeFileSync(page, out);
+  linksDropped += drop.size;
+}
+
 console.log(
   `purge-css: ${droppedRules} rules that can never match removed from ${sheets.length} stylesheets, ` +
-    `${(before / 1024).toFixed(0)} KB to ${(after / 1024).toFixed(0)} KB`,
+    `${(before / 1024).toFixed(0)} KB to ${(after / 1024).toFixed(0)} KB, ${linksDropped} links to a sheet repeated later on the page dropped`,
 );
