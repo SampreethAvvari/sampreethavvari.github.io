@@ -1,0 +1,35 @@
+---
+// What a wrong address gets. Cloudflare serves the built 404.html with a 404 status.
+import BaseLayout from "../layouts/BaseLayout.astro";
+import Icon from "../components/common/Icon.astro";
+---
+
+<BaseLayout title="Page not found · Sampreeth Avvari" description="This page does not exist.">
+  <section class="wrap nf">
+    <p class="kicker">404</p>
+    <h1 class="t-title nf-title">
+      Nothing out here.
+      <span class="t-tail">This page isn't on the map.</span>
+    </h1>
+    <div class="nf-actions">
+      <a href="/" class="btn btn-primary">Back to the start</a>
+      <a href="/projects/" class="tlink">See the projects <Icon name="arrow-right" size={14} /></a>
+    </div>
+  </section>
+</BaseLayout>
+
+<style>
+  .nf {
+    position: relative;
+    z-index: 1;
+    min-height: 78svh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: flex-start;
+    padding-block: 140px 64px;
+  }
+  .nf-title { margin: 18px 0 32px; }
+  .nf-title .t-tail { display: block; }
+  .nf-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 20px; }
+</style>
