@@ -152,10 +152,10 @@ const resume = RESUME[d.slug];
     <!-- The writing -->
     <section class="ww-panel at-bc" data-stop={3 + groups.length} data-id="writing" data-shade="b" data-depth="26" id="writing" style="text-align:left">
       <div class="ww-box is-glass" style="width:min(1140px,100%);max-width:1140px;text-align:left">
-        <p class="ww-eye"><b>The writing</b><i></i><a href="/posts" style="color:inherit;text-decoration:none;pointer-events:auto">All posts</a></p>
+        <p class="ww-eye"><b>The writing</b><i></i><a href="/posts" style="color:inherit;text-decoration:none">All posts</a></p>
         <div class="ww-shelf" data-ww-scroll>
           {articles.map((a, k) => (
-            <a href={a.href} style={`--w:${shelfWidth(k)};pointer-events:auto`} data-note={k} data-id={`article-${k}`}>
+            <a href={a.href} style={`--w:${shelfWidth(k)}`} data-note={k} data-id={`article-${k}`}>
               <span class="ww-shelf-art" aria-hidden="true">
                 {hasPublic(a.img) ? <Picture src={a.img ?? ""} alt="" width={160} height={108} /> : <span class="ww-card-fallback"></span>}
               </span>

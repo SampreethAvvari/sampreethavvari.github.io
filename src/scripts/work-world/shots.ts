@@ -94,7 +94,7 @@ export function indexKeys(curveAt: (u: number) => Vector3, uAtZ: (z: number) => 
   const a1 = ringFor(0, STATION_PHI[0] * DEG);
 
   // 0 Hero. Low under the near rim, looking up across the ring into the star.
-  P({ p: wide ? V(190, -150, 540) : V(70, -210, 960), l: wide ? V(-74, -46, 0) : V(-50, -210, 0), r: wide ? -12 : -6, f: wide ? 38 : 40, a: a1 - 58 * DEG, stop: 0 });
+  P({ p: wide ? V(190, -150, 540) : V(270, -200, 960), l: wide ? V(-74, -46, 0) : V(-30, -250, 0), r: wide ? -12 : -6, f: wide ? 38 : 40, a: a1 - 58 * DEG, stop: 0 });
   P({ p: V(70, -300, 330), l: V(-60, -220, 10), r: -8, f: 40, a: a1 - 22 * DEG });
 
   // 1 AI: three quarters from the left, the room off to the right of frame.
@@ -182,13 +182,13 @@ export function indexKeys(curveAt: (u: number) => Vector3, uAtZ: (z: number) => 
 
   // 10 2024: from directly above the pair, the disc turning, rolled hard.
   const b = BODY.binary;
-  P({ p: V(b.x + 40, b.y + (wide ? 430 : 840), b.z + (wide ? 420 : 460)), l: V(b.x + (wide ? -150 : 0), b.y, b.z + (wide ? -10 : 30)), r: wide ? 24 : 6, f: 40, u: uAtZ(b.z + 4), stop: 10, sun: 0.72, sky: 0.9 });
+  P({ p: V(b.x + 40, b.y + (wide ? 430 : 840), b.z + (wide ? 420 : 460)), l: V(b.x + (wide ? -150 : 0), b.y, b.z + (wide ? -10 : 230)), r: wide ? 24 : 6, f: 40, u: uAtZ(b.z + 4), stop: 10, sun: 0.72, sky: 0.9 });
   P({ p: V(b.x - 120, b.y - 170, b.z - 260), l: V(120, -60, zAt(2025.4)), r: 12, f: 60, u: uAtZ(b.z - 280), sun: 0.8, sky: 0.94 });
   P({ p: V(180, -20, zAt(2025.5)), l: V(0, 0, 200), r: 4, f: 54, u: uAtZ(zAt(2025.45)), sun: 0.9, sky: 1 });
 
   // 11 Now: from far out to the side, the whole line at once, the station big
   // at the end of it.
-  P({ p: wide ? V(-720, -400, -530) : V(-860, -620, -760), l: wide ? V(-30, 20, 40) : V(30, -200, 40), r: wide ? 10 : 6, f: wide ? 36 : 44, a: a5 + 34 * DEG, u: 1, stop: 11, sun: 1, sky: 1 });
+  P({ p: wide ? V(-720, -400, -530) : V(-860, -620, -760), l: wide ? V(-30, 20, 40) : V(30, -340, 40), r: wide ? 10 : 6, f: wide ? 36 : 44, a: a5 + 34 * DEG, u: 1, stop: 11, sun: 1, sky: 1 });
   return k;
 }
 
