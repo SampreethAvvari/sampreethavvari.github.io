@@ -93,10 +93,11 @@ export class Governor {
         this.sum += dtMs;
         this.count++;
       }
-      if (this.modeT < 1800 || !this.count) return;
+      if (this.modeT < 2500 || !this.count) return;
       const now = this.sum / this.count;
       if (this.mode === "checkDown") {
-        if (now > this.before * 0.93) {
+        // A real gain, not the scene getting lighter for a moment.
+        if (now > this.before * 0.87) {
           // No faster yet. Frames land on whole screen refreshes, so one step may not show: try the next.
           if (this.idx < this.steps.length - 1) {
             this.set(this.idx + 1);
