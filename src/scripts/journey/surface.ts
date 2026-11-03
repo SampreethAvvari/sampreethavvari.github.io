@@ -42,6 +42,7 @@ import {
   type WebGLRenderer,
 } from "three";
 import type { Landing } from "./path";
+import { buildFigure, FIGURE_H } from "./figure";
 import { PlateBank, type PlateMeta } from "./plates";
 import { rng } from "./textures";
 
@@ -95,11 +96,7 @@ export function groundHeight(x: number, z: number) {
   h += swell * 3.0 * smooth(6, 34, r) * smooth(14, 44, toStand);
   // Low ridges that break the far horizon.
   const far = smooth(500, 2200, r);
-  if (far > 0) h += far * (Math.pow(fbm2(x * 0.0009 + 3.1, z * 0.0009 + 7.7), 2.2) * 70 + crest * 8);
-  // The low rise he stops behind in the first steps.
-  const rx = x / 3.4;
-  const rz = (z - 12.0) / 1.15;
-  h += 0.36 * Math.exp(-rx * rx - rz * rz);
+  if (far > 0) h += far * (Math.pow(fbm2(x * 0.0009 + 3.1, z * 0.0009 + 7.7), 2.2) * 45 + crest * 6);
   return h - (r * r) / (2 * 90000);
 }
 
@@ -503,16 +500,16 @@ const DOME_FS = (layers: number) => /* glsl */ `
       float body = exp(-gg * gg / (0.016 + 0.032 * core));
       float halo = exp(-g * g / 0.2);
       // Gentle dust along the centre line: mottled and soft, nothing long or streaked.
-      vec2 lp = vec2(lon * 9.0 + w2 * 3.0, gg * 15.0 + w1 * 2.5);
+      vec2 lp = vec2(lon * 15.0 + w2 * 3.0, gg * 26.0 + w1 * 2.5);
       float lanes = vnoise(lp) * 0.42 + vnoise(lp * 2.3 + 3.7) * 0.28 + vnoise(lp * 5.1 + 1.3) * 0.18 + vnoise(lp * 10.7 + 8.1) * 0.12;
-      float lane = smoothstep(0.42, 0.8, lanes) * exp(-gg * gg / 0.008);
+      float lane = smoothstep(0.43, 0.72, lanes) * exp(-gg * gg / 0.006);
       // Soft mottling of stars too small to see one by one.
       float cloud = vnoise(vec2(lon * 24.0, g * 36.0) + 5.0) * 0.5 + vnoise(vec2(lon * 55.0, g * 80.0) + 2.0) * 0.3 + vnoise(vec2(lon * 120.0, g * 170.0) + 9.0) * 0.2;
-      float dens = body * (0.5 + 0.7 * core) * (0.78 + 0.44 * cloud);
-      float glow = (dens + halo * 0.07) * (1.0 - lane * 0.36);
-      vec3 mw = mix(vec3(0.36, 0.47, 0.95), vec3(1.0, 0.8, 0.58), core * smoothstep(0.15, 0.9, body));
+      float dens = pow(body, 1.25) * (0.42 + 0.95 * core) * (0.76 + 0.48 * cloud);
+      float glow = (dens + halo * 0.05) * (1.0 - lane * 0.5);
+      vec3 mw = mix(vec3(0.26, 0.38, 1.0), vec3(1.0, 0.74, 0.46), core * smoothstep(0.12, 0.85, body));
       float tint = vnoise(vec2(lon * 9.0, g * 26.0) + 21.0);
-      mw = mix(mw, vec3(0.86, 0.56, 0.62), smoothstep(0.64, 0.88, tint) * 0.26 * body);
+      mw = mix(mw, vec3(0.95, 0.5, 0.56), smoothstep(0.6, 0.86, tint) * 0.3 * body);
       float above = smoothstep(-0.02, 0.1, d.y);
       c += mw * glow * 0.115 * uMilky * above * copyDim;
       // Star dust: thousands of tiny points, thickest in the band, thinner in the lanes.
@@ -698,19 +695,15 @@ export interface SurfaceShot {
 }
 
 /** Camera path through the world. Index 1 is the first steps, 2 the helmet, 3 the touch. */
-const EXIT_POS = new Vector3(0, 1.3, 20);
+const EXIT_POS = new Vector3(0, 1.0, 18);
 const EXIT_LOOK = new Vector3(-9.7, 4.6, -60);
-const WIDE_POS = new Vector3(0, 0, -80); // height comes from the ground below
+const WIDE_POS = new Vector3(0, 0, -94); // height comes from the ground below
 const WIDE_YAW = (-8 * Math.PI) / 180;
 const WIDE_PITCH = (6.4 * Math.PI) / 180;
 const MOON_ANCHOR = new Vector3(0, 0, -80);
 /** The ramp in the first steps: where he starts from, how far it drops, and his distance from the camera at the start. */
-const HATCH_Z = 1.9;
-const RAMP_FOOT_Z = 4.25;
-const RAMP_DROP = 0.91;
-const EXIT_D0 = 18.1;
-/** One source pixel of the helmet plate, in units: he stands about 1.35 tall. */
-const HELMET_PU = 1.35 / 700;
+/** One source pixel of the helmet plate, in units: he is the same height everywhere. */
+const HELMET_PU = FIGURE_H / 660;
 /** One source pixel of the hand plate: a macro frame about 23 cm tall. */
 const HAND_PU = 0.0002;
 /** The closing camera: its height over the sand and its distance from the sapling. */
@@ -732,7 +725,7 @@ const ARM_R = [1690, 300];
 const ARM_DIR = [0.7, -0.714];
 const ARM_LEN = 2600;
 /** Seconds for the hand to come down to the leaf. */
-const HAND_REACH = 2.4;
+const HAND_REACH = 3;
 
 const CARD_VS = /* glsl */ `
   varying vec2 vUv;
@@ -825,7 +818,10 @@ const CARD_DEPTH_FS = /* glsl */ `
 const SAP_SWAY = /* glsl */ `
   uniform float uTime;
   uniform float uTouch;
+  uniform vec2 uPress;
   vec3 swayed(vec3 q, float k) {
+    // The leaf under his finger goes where the fingertip takes it.
+    q.xy += uPress * smoothstep(0.0026, 0.0105, q.x);
     float gust = sin(uTime * 1.1) * 0.5 + sin(uTime * 2.7 + 1.0) * 0.3 + sin(uTime * 6.1) * 0.08;
     float bend = k * k * (0.0022 + 0.0022 * gust);
     q.x += bend;
@@ -1567,7 +1563,7 @@ export function buildSurface(o: { low: boolean; landing: Landing; cloudTex: Text
   // ------------------------------------------------------------ camera path
   const site = (x: number, y: number, z: number) => new Vector3(x, y, z);
   const gh = (x: number, z: number) => groundHeight(x, z);
-  const widePos = site(WIDE_POS.x, Math.max(gh(STAND.x, STAND.z), gh(WIDE_POS.x, WIDE_POS.z)) + 0.6, WIDE_POS.z);
+  const widePos = site(WIDE_POS.x, Math.max(gh(STAND.x, STAND.z), gh(WIDE_POS.x, WIDE_POS.z)) + 0.34, WIDE_POS.z);
   const wideDir = site(Math.sin(WIDE_YAW) * Math.cos(WIDE_PITCH), Math.sin(WIDE_PITCH), -Math.cos(WIDE_YAW) * Math.cos(WIDE_PITCH));
   const wideLook = widePos.clone().addScaledVector(wideDir, 60);
   const standY = gh(STAND.x, STAND.z);
@@ -1670,7 +1666,7 @@ export function buildSurface(o: { low: boolean; landing: Landing; cloudTex: Text
       side: DoubleSide,
     });
     const depth = new Mesh(planeG, depthMat);
-    depth.renderOrder = 4;
+    depth.renderOrder = 5.5;
     depth.frustumCulled = false;
     const mesh = new Mesh(planeG, mat);
     mesh.renderOrder = 5;
@@ -1772,6 +1768,7 @@ export function buildSurface(o: { low: boolean; landing: Landing; cloudTex: Text
   const SAP = site(STAND.x, groundHeight(STAND.x, STAND.z - 3), STAND.z - 3);
   const SAP_H = 0.024;
   const sapU = {
+    uPress: { value: new Vector2() },
     uCamSite: camSite,
     uCool: { value: new Color(0.0035, 0.0045, 0.009) },
     uTime: windTime,
@@ -1791,14 +1788,14 @@ export function buildSurface(o: { low: boolean; landing: Landing; cloudTex: Text
   sapling.renderOrder = 3;
   group.add(sapling);
   // The tip the finger comes to rest on, just above the upper leaf.
-  const TOUCH_AT = SAP.clone().add(site(0.0068, SAP_H * 0.97, 0));
+  const TOUCH_AT = SAP.clone().add(site(0.0078, SAP_H * 0.96, 0));
 
   sandU.uSapO.value.copy(SAP);
   // The pass that lays the seedling flat along the lamp's rays.
   const sapShadowMat = new ShaderMaterial({
     vertexShader: SAP_SHADOW_VS,
     fragmentShader: /* glsl */ `void main() { gl_FragColor = vec4(1.0); }`,
-    uniforms: { uTime: windTime, uTouch: sapU.uTouch, uSapOrigin: sandU.uSapO, uLampSite: sandU.uLampSite, uPatch: sandU.uSapPatch },
+    uniforms: { uTime: windTime, uTouch: sapU.uTouch, uPress: sapU.uPress, uSapOrigin: sandU.uSapO, uLampSite: sandU.uLampSite, uPatch: sandU.uSapPatch },
     side: DoubleSide,
     depthTest: false,
     depthWrite: false,
@@ -1936,12 +1933,16 @@ export function buildSurface(o: { low: boolean; landing: Landing; cloudTex: Text
   sleeve.visible = false;
   group.add(sleeve);
 
+  // The first steps are a real figure in the world, on the real ramp and sand.
+  const figure = buildFigure(low, !low, (x, z) => groundHeight(x, z));
+  group.add(figure.group);
+
   // ------------------------------------------------------------ the three performances
   type Stage = { perf: string; idle: string; state: number; t: number; dur: number; scene: "exit" | "helmet" | "touch"; beats: number[]; sent: number };
   const stages: Stage[] = [
-    { perf: "exitP", idle: "exitI", state: 0, t: 0, dur: 130 / 24, scene: "exit", beats: [0, 0.3, 0.6], sent: -1 },
+    { perf: "", idle: "", state: 0, t: 0, dur: figure.duration, scene: "exit", beats: [0, figure.rampEndP, 1], sent: -1 },
     { perf: "helmetP", idle: "helmetI", state: 0, t: 0, dur: 8, scene: "helmet", beats: [0, 0.42, 0.56, 0.68], sent: -1 },
-    { perf: "handP", idle: "handI", state: 0, t: 0, dur: 8, scene: "touch", beats: [0, 0.03, HAND_REACH / 8, 0.6], sent: -1 },
+    { perf: "handR", idle: "handR", state: 0, t: 0, dur: 8, scene: "touch", beats: [0, 0.03, HAND_REACH / 8, 0.6], sent: -1 },
   ];
   const zone = (s: number) => (s < 1.5 ? 0 : s < 2.72 ? 1 : 2);
   let curZone = -1;
@@ -1962,7 +1963,8 @@ export function buildSurface(o: { low: boolean; landing: Landing; cloudTex: Text
         st.state = 0;
         st.t = 0;
         st.sent = -1;
-      } else if (st.state === 0 && Math.abs(s - at) < 0.012) {
+      } else if (st.state === 0 && Math.abs(s - at) < 0.012 && (k > 0 || settled > 4)) {
+        // He waits for the ramp to be down.
         st.state = 1;
         st.t = 0;
       } else if (st.state === 1 && s > at + 0.12) {
@@ -2017,20 +2019,25 @@ export function buildSurface(o: { low: boolean; landing: Landing; cloudTex: Text
     const m = bank.meta(id);
     card.mesh.visible = card.depth.visible = false;
     if (!m) return null;
-    const f = st.state === 0 ? 0 : st.state === 1 ? Math.floor(st.t * m.fps) : useIdle ? Math.floor(st.t * m.fps) : m.frames - 1;
+    let f = st.state === 0 ? 0 : st.state === 1 ? Math.floor(st.t * m.fps) : useIdle ? Math.floor(st.t * m.fps) : m.frames - 1;
+    if (m.pingpong) {
+      const span = 2 * (m.frames - 1);
+      const q = Math.floor(windTime.value * m.fps) % span;
+      f = q < m.frames ? q : span - q;
+    }
     const tex = bank.texture(id, Math.min(f, m.loop ? f : m.frames - 1));
     if (!tex) return null;
+    // Whatever the clip's camera did, this frame is held to one size on one ground point.
+    const shownF = bank.shown(id);
+    const lock = m.stab && shownF >= 0 ? m.stab[shownF] : null;
+    if (lock) {
+      pu *= lock[0];
+      ax = lock[1];
+      ay = lock[2];
+    }
     card.tMap.value = tex;
     shared.uBlur.value = st.scene === "touch" ? 0.008 : 0;
     shared.uEdge.value = st.scene === "touch" ? 1 : 0;
-    // The hand hangs from its fingertip, in the frame actually on show.
-    if (st.scene === "touch") {
-      const i = bank.shown(id);
-      if (i >= 0 && m.foot[i]) {
-        ax = m.foot[i][0];
-        ay = m.foot[i][1];
-      }
-    }
     cardAt[0] = ax;
     cardAt[1] = ay;
     shared.uFocus.value.set((ax - m.box[0]) / (m.box[2] - m.box[0]), (ay - m.box[1]) / (m.box[3] - m.box[1]));
@@ -2065,8 +2072,6 @@ export function buildSurface(o: { low: boolean; landing: Landing; cloudTex: Text
       sandU.uHandN.value.set(Math.sin(yaw), 0, Math.cos(yaw));
       sandU.uHandK.value.set(1 / w, 1 / h);
     }
-    // The depth pass sits a hair behind so the colour pass always passes.
-    card.depth.position.addScaledVector(tmpV.set(Math.sin(yaw), 0, Math.cos(yaw)), -0.0005);
     return m;
   }
 
@@ -2129,13 +2134,14 @@ export function buildSurface(o: { low: boolean; landing: Landing; cloudTex: Text
   const PLATE_KEEP = [1, 1, 0.8, 0.25];
   const SUN_K = [1, 0.8, 0.14, 0.05];
   const FORM_K = [1, 1, 0.95, 0.15];
-  const RIP_K = [1, 1, 0.4, 0];
+  const RIP_K = [1, 1, 0.1, 0];
   const LONG_K = [0, 0.1, 1, 0];
   const HAZE_D = [2400, 2200, 1100, 70];
 
   function update(f: SurfaceInput) {
     const { time, dt, camera, s } = f;
     cover.value = f.cover;
+    if (location.search.includes("dbgsurf")) (window as unknown as { __cam: PerspectiveCamera }).__cam = camera;
     uTime.value = time;
     windTime.value += dt * (f.reduced ? 0.25 : 1);
     group.visible = f.cover > 0.001;
@@ -2207,9 +2213,16 @@ export function buildSurface(o: { low: boolean; landing: Landing; cloudTex: Text
     const z = zone(s);
     if (z !== curZone) {
       curZone = z;
-      bank.prefer(z === 0 ? ["exitP", "exitI", "helmetP", "helmetI", "handP", "handI"] : z === 1 ? ["helmetP", "helmetI", "handP", "handI", "exitP", "exitI"] : ["handP", "handI", "helmetI", "helmetP"]);
+      bank.prefer(z < 2 ? ["helmetP", "helmetI", "handR"] : ["handR", "helmetI", "helmetP"]);
     }
+    settled = f.land >= 1 ? settled + dt : 0;
     stepStages(s, dt, f.reduced);
+    {
+      const st = stages[0];
+      const out = st.state !== 0 && s > 0.25 && s < 1.46;
+      figure.group.visible = out;
+      if (out) figure.update(st.state === 1 ? st.t : figure.duration + st.t, time, f.reduced, c1.copy(skyU.uHorSun.value).multiplyScalar(0.5));
+    }
 
     // ---- relight for the hour
     blend(s, SKY.plateShadow, shared.uShadow.value);
@@ -2237,34 +2250,7 @@ export function buildSurface(o: { low: boolean; landing: Landing; cloudTex: Text
     let shadowLen = 0;
     const camZ = camSite.value.z;
     const zStand = STAND.z;
-    if (bank.ready && s > 0.25 && s < 1.46) {
-      const st = stages[0];
-      const perf = bank.meta(st.perf);
-      if (perf && perf.height) {
-        // How much bigger he has grown in the plate says how far he has come.
-        const last = perf.frames - 1;
-        const fr = st.state === 0 ? 0 : st.state === 1 ? Math.min(last, Math.floor(st.t * perf.fps)) : last;
-        const h0 = perf.height[0];
-        const rho = perf.height[fr] / h0;
-        const D = EXIT_D0 / Math.max(rho, 0.5);
-        const z = EXIT_POS.z - D;
-        const onRamp = clamp((RAMP_FOOT_Z - z) / (RAMP_FOOT_Z - HATCH_Z), 0, 1);
-        // Past the ramp he is on the plain; the rise in front of him hides his boots.
-        const y = RAMP_DROP * onRamp;
-        const sideX = ((perf.foot[fr][0] - perf.foot[0][0]) * 1.35) / perf.height[fr];
-        anchorW.set(sideX, y, z);
-        const idle = idleOn(st) ? bank.meta(st.idle) : null;
-        if (idle) {
-          m = placeCard(st, anchorW, idle.foot[0][0], idle.foot[0][1], 1.35 / perf.height[last], 0, 0);
-        } else {
-          m = placeCard(st, anchorW, perf.foot[fr][0], perf.foot[fr][1], 1.35 / perf.height[fr], 0, 0);
-        }
-        if (m && onRamp < 0.04) {
-          shadowAt = tmpV2.set(anchorW.x, groundHeight(anchorW.x, anchorW.z), anchorW.z);
-          shadowLen = 7;
-        }
-      }
-    } else if (bank.ready && s >= 1.46 && s < 2.8 && camZ > zStand - 0.2) {
+    if (bank.ready && s >= 1.46 && s < 2.8 && camZ > zStand - 0.2) {
       const rest = footRest("helmetP");
       if (rest) {
         anchorW.set(STAND.x, groundHeight(STAND.x, STAND.z), STAND.z);
@@ -2275,22 +2261,29 @@ export function buildSurface(o: { low: boolean; landing: Landing; cloudTex: Text
         }
       }
     } else if (bank.ready && s >= 2.72) {
-      const rest = footRest("handP");
+      const rest = footRest("handR");
       if (rest) {
         const st = stages[2];
-        // The arm comes in from above and to the right, and the finger comes to rest on the leaf.
+        // The arm comes in along its own line, and the finger comes to rest on the leaf.
         const reach = st.state === 0 ? 0 : st.state === 1 ? clamp(st.t / HAND_REACH, 0, 1) : 1;
         const e = 1 - Math.pow(1 - reach, 3);
         const arrive = smooth(2.72, 3, s);
-        // Frame by frame the fingertip stays on the leaf; the hand breathes around it.
-        const onIdle = idleOn(st);
-        const fm = bank.meta(onIdle ? st.idle : st.perf);
-        const fi = fm ? (st.state === 0 ? 0 : st.state === 1 ? Math.min(fm.frames - 1, Math.floor(st.t * fm.fps)) : onIdle ? Math.floor(st.t * fm.fps) % fm.frames : fm.frames - 1) : 0;
-        const ft = fm ? fm.foot[fi] : rest;
-        m = placeCard(st, TOUCH_AT, ft[0], ft[1], HAND_PU, (1 - e) * 0.05 + (1 - arrive) * 0.03, (1 - e) * 0.09 + (1 - arrive) * 0.03);
+        m = placeCard(st, TOUCH_AT, rest[0], rest[1], HAND_PU, (1 - e) * 0.085 + (1 - arrive) * 0.03, (1 - e) * 0.05 + (1 - arrive) * 0.03);
+        // The leaf is under the fingertip: it follows it, and gives a little when it presses.
+        if (m && m.stab) {
+          const at0 = Math.max(bank.shown(m.id), 0);
+          const tx = (m.foot[at0][0] - cardAt[0]) * HAND_PU;
+          const ty = (cardAt[1] - m.foot[at0][1]) * HAND_PU;
+          const ct = Math.cos(HAND_TILT);
+          const st0 = Math.sin(HAND_TILT);
+          const on = smooth(0.82, 1, reach);
+          sapU.uPress.value.set((tx * ct - ty * st0) * on, (tx * st0 + ty * ct - 0.0011) * on);
+        } else {
+          sapU.uPress.value.set(0, 0);
+        }
         // Where the plate's sleeve leaves off, the dark arm carries on, behind it.
-        const offR = (1 - e) * 0.05 + (1 - arrive) * 0.03;
-        const offU = (1 - e) * 0.09 + (1 - arrive) * 0.03;
+        const offR = (1 - e) * 0.085 + (1 - arrive) * 0.03;
+        const offU = (1 - e) * 0.05 + (1 - arrive) * 0.03;
         const cz = Math.cos(HAND_TILT);
         const sz = Math.sin(HAND_TILT);
         if (m) {
@@ -2316,7 +2309,7 @@ export function buildSurface(o: { low: boolean; landing: Landing; cloudTex: Text
         const lampK = smooth(2.72, 3, s) * (f.reduced ? (m ? 1 : 0) : lampOn);
         if (m) {
           const at = bank.shown(m.id);
-          const led = (m.lamp && m.lamp[at >= 0 ? at : 0]) || [cardAt[0] + WRIST_LED[0] - rest[0], cardAt[1] + WRIST_LED[1] - rest[1]];
+          const led = (m.lamp && m.lamp[at >= 0 ? at : 0]) || WRIST_LED;
           const lx = (led[0] - cardAt[0]) * HAND_PU;
           const ly = (cardAt[1] - led[1]) * HAND_PU;
           ledAt.copy(TOUCH_AT).addScaledVector(_right, lx * cz - ly * sz + offR).add(tmpV.set(0, lx * sz + ly * cz + offU, 0));
@@ -2397,6 +2390,7 @@ export function buildSurface(o: { low: boolean; landing: Landing; cloudTex: Text
     },
     dispose() {
       bank.destroy();
+      figure.dispose();
       grain?.dispose();
       sapRT?.dispose();
       sapShadowMat.dispose();

@@ -16,6 +16,10 @@ export interface PlateMeta {
   box: [number, number, number, number];
   /** Lowest point of the figure per frame in source pixels: x, y (feet, or the fingertip). */
   foot: [number, number][];
+  /** Per frame: the scale that holds him to one size, and the source pixel that stays on his ground point. */
+  stab?: [number, number, number][];
+  /** Plays forward and back, for a stretch of a clip that does not loop by itself. */
+  pingpong?: boolean;
   /** Where a lamp on the figure is per frame, in source pixels, when the plate has one. */
   lamp?: [number, number][];
   /** Height of the figure per frame in source pixels, steadied. */

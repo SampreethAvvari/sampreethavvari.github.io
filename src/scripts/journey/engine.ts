@@ -718,8 +718,7 @@ export function mountJourney(canvas: HTMLCanvasElement, opts: JourneyOptions): J
         const par = sshot.parallax * k;
         camera.position
           .addScaledVector(landing.right, px * par + Math.sin(time * 0.21) * par * 0.14)
-          .addScaledVector(landing.up, -py * par * 0.45 + Math.sin(time * 0.33 + 1) * par * 0.09)
-          .addScaledVector(landing.fwd, Math.sin(time * 0.17 + 2) * par * 0.2);
+          .addScaledVector(landing.up, -py * par * 0.45 + Math.sin(time * 0.33 + 1) * par * 0.09);
       }
     }
     camera.lookAt(_v);

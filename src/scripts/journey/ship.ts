@@ -431,8 +431,10 @@ export function buildShip(opts: ShipBuildOptions): Ship {
   const rampMat = new MeshStandardMaterial({ color: 0x3b3d42, metalness: 0.8, roughness: 0.5, envMapIntensity: 0.9 });
   const ramp = new Mesh(boxUV(mergeAll(rampParts), 2.2), rampMat);
   ramp.castShadow = shadows;
+  ramp.receiveShadow = shadows;
   const rampRails = new Mesh(mergeAll(railParts), legMat);
   rampRails.castShadow = shadows;
+  rampRails.receiveShadow = shadows;
   const rampLed: BufferGeometry[] = [];
   for (const sx of [1, -1]) rampLed.push(new BoxGeometry(0.012, RAMP_LEN * 0.9, 0.012).translate(sx * 0.44, RAMP_LEN * 0.5, -0.05));
   const rampLight = new Mesh(mergeAll(rampLed), new MeshBasicMaterial({ color: new Color(1.3, 0.8, 0.42) }));
