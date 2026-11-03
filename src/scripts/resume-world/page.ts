@@ -53,7 +53,6 @@ export function startResumeWorld(visit: AbortSignal): void | (() => void) {
   const canvas = root.querySelector<HTMLCanvasElement>(".rw-canvas")!;
   const stops = Array.from(root.querySelectorAll<HTMLElement>("[data-stop]"));
   const rail = Array.from(root.querySelectorAll<HTMLElement>("[data-go]"));
-  const nowEl = root.querySelector<HTMLElement>("[data-now]");
   const COUNT = STOPS.length;
   const SPAN = Number(root.dataset.span || 1);
   const data: WorldData = JSON.parse(document.getElementById("rw-data")?.textContent || "{}");
@@ -166,7 +165,6 @@ export function startResumeWorld(visit: AbortSignal): void | (() => void) {
       }
       el.classList.toggle("is-on", ad < 0.2);
     });
-    if (nowEl) nowEl.textContent = String(Math.round(p) + 1).padStart(2, "0");
     const near = Math.round(p);
     rail.forEach((a, i) => {
       if (i === near) a.setAttribute("aria-current", "step");

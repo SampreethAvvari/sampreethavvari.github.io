@@ -158,7 +158,10 @@ export function mountMotion(o: MotionOpts): Motion {
       const near = Math.round(progress());
       if (near !== crossed) {
         // passing a stop by hand still counts as a move for the score
-        if (!isGliding) o.onLeave(crossed, near, near > crossed ? 1 : -1, 420);
+        if (!isGliding) {
+          o.onLeave(crossed, near, near > crossed ? 1 : -1, 420);
+          at = near;
+        }
         crossed = near;
       }
       if (isGliding) return;

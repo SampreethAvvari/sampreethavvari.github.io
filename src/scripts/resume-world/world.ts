@@ -642,7 +642,7 @@ export async function mountWorld(
   const nameParts = data.person.name.split(" ");
   const buildType = () => {
     const lines = wide() ? [data.person.name] : nameParts;
-    const fontPx = wide() ? 300 : 300;
+    const fontPx = 300;
     const mask = typeMask(lines, fontPx, 620, -fontPx * 0.042);
     return distanceField(mask, 14);
   };
@@ -1246,6 +1246,7 @@ export async function mountWorld(
   const heroQ = sheets.map(() => new Quaternion());
   const heroS = sheets.map(() => 1);
   const qRoll = new Quaternion();
+  const frame1Inverse = frames[1].q.clone().invert();
   const Z = new Vector3(0, 0, 1);
   const up = new Vector3(0, 1, 0);
   let last = performance.now();
@@ -1331,14 +1332,11 @@ export async function mountWorld(
     camera.updateMatrixWorld();
 
     const cd = 4.4;
-    const fw = vA.set(0, 0, -1).applyQuaternion(camera.quaternion).clone();
-    const rt = vA.set(1, 0, 0).applyQuaternion(camera.quaternion).clone();
-    const upv = vA.set(0, 1, 0).applyQuaternion(camera.quaternion).clone();
     shared.uCursor.value
       .copy(camera.position)
-      .addScaledVector(fw, cd)
-      .addScaledVector(rt, (wx * viewW(cd)) / 2)
-      .addScaledVector(upv, (-wy * viewH(cd)) / 2);
+      .addScaledVector(vA.set(0, 0, -1).applyQuaternion(camera.quaternion), cd)
+      .addScaledVector(vA.set(1, 0, 0).applyQuaternion(camera.quaternion), (wx * viewW(cd)) / 2)
+      .addScaledVector(vA.set(0, 1, 0).applyQuaternion(camera.quaternion), (-wy * viewH(cd)) / 2);
     shared.uCursorI.value = 1.45 + speed * 0.6;
 
     // ---- the four sheets
@@ -1416,7 +1414,7 @@ export async function mountWorld(
       if (isChosen) {
         vA.lerp(pageSpec.pos, e);
         vA.addScaledVector(frames[0].fwd, -Math.sin(Math.PI * e) * 1.1);
-        qA.slerp(qFrom(1, spy * 0.04, spx * 0.07, 0, qB).multiply(qC.copy(pageSpec.q).premultiply(frames[1].q.clone().invert())), e);
+        qA.slerp(qFrom(1, spy * 0.04, spx * 0.07, 0, qB).multiply(qC.copy(pageSpec.q).premultiply(frame1Inverse)), e);
         heroS[i] = lerp(s.worldW, pageSpec.worldW, e);
         const settle = 1 - smooth(0.7, 0.97, P);
         bendK = bendK * settle + Math.sin(Math.PI * e) * 0.6;

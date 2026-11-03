@@ -63,7 +63,6 @@ const world: WorldData = {
 };
 const worldJson = JSON.stringify(world).replace(/</g, "\\u003c");
 const [firstName, ...restName] = name.split(" ");
-const pad = (n: number) => String(n).padStart(2, "0");
 const STOP_LABELS = ["Sheets", "The page", "Hybridge", "Research", "Video", "Shure", "Skills", "Education"];
 const skillsStop = STOPS.indexOf("skills");
 const eduStop = STOPS.indexOf("education");
@@ -233,7 +232,6 @@ const eduStop = STOPS.indexOf("education");
         ))}
       </ol>
     </nav>
-    <p class="rw-count" aria-hidden="true"><b data-now>01</b><i>/</i><span>{pad(STOPS.length)}</span></p>
     <p class="rw-dock">
       <span>PDF</span>
       {sheets.map((s) => <a href={s.file} target="_blank" rel="noopener" aria-label={`Open the ${s.name} resume in a new tab`}>{s.acronym}</a>)}
@@ -255,7 +253,7 @@ const eduStop = STOPS.indexOf("education");
      reduced motion. A calm, complete resume on the same paper.
      ------------------------------------------------------------------ */
   .rw-stage { width: min(100%, calc(var(--max) + 2 * var(--gutter))); margin-inline: auto; padding: clamp(104px, 14vh, 148px) var(--gutter) clamp(64px, 8vw, 104px); }
-  .rw-sky, .rw-canvas, .rw-hits, .rw-rail, .rw-dock, .rw-count, .rw-chips, .rw-s-page, .rw-kick, .rw-hint, .rw-keyhint, .rw-s-skills .rw-small { display: none; }
+  .rw-sky, .rw-canvas, .rw-hits, .rw-rail, .rw-dock, .rw-chips, .rw-s-page, .rw-kick, .rw-hint, .rw-keyhint, .rw-s-skills .rw-small { display: none; }
   .rw-kicker { display: inline-flex; align-items: center; gap: 8px; margin: 0; font-size: 0.875rem; font-weight: 500; color: var(--ink); }
   .rw-kicker::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: #fff; box-shadow: 0 0 10px #fff; }
   .rw-h1 { margin: 18px 0 0; font-size: clamp(2.6rem, 7.2vw, 5.4rem); font-weight: 600; letter-spacing: -0.042em; line-height: 1.02; }
@@ -697,7 +695,7 @@ const eduStop = STOPS.indexOf("education");
     :global(body), :global(html) { background: #fff !important; color: #000 !important; }
     .rw, .rw.is-live { height: auto !important; color: #000; }
     .rw .rw-stage, .rw.is-live .rw-stage { position: static !important; height: auto !important; overflow: visible !important; padding: 0 !important; width: 100% !important; }
-    .rw-sky, .rw-canvas, .rw-hits, .rw-rail, .rw-dock, .rw-count, .rw-chips, .rw-s-page, .rw-paper, .rw-kick, .rw-small, .rw-keyhint, .rw-hint, .rw-logo { display: none !important; }
+    .rw-sky, .rw-canvas, .rw-hits, .rw-rail, .rw-dock, .rw-chips, .rw-s-page, .rw-paper, .rw-kick, .rw-small, .rw-keyhint, .rw-hint, .rw-logo { display: none !important; }
     .rw-stop, .is-live .rw-stop { position: static !important; opacity: 1 !important; transform: none !important; }
     .rw-slide, .is-live .rw-slide { transform: none !important; }
     .rw-copy, .is-live .rw-role .rw-copy, .is-live .rw-s-skills .rw-copy, .is-live .rw-s-edu .rw-copy { position: static !important; width: auto !important; margin: 0 !important; display: block !important; color: #000 !important; text-shadow: none !important; text-align: left !important; }
