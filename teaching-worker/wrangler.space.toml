@@ -1,0 +1,21 @@
+# The Teaching counters and ratings for space.sampreethavvari.com: the same code as
+# wrangler.toml, its own Worker and its own database, so nothing here reaches the main
+# site's numbers. Deploy with: npx wrangler deploy -c wrangler.space.toml
+#
+# RESEND_API_KEY is a secret and is not set here yet. Without it ratings are saved
+# and no email goes out. To turn email on: npx wrangler secret put RESEND_API_KEY -c wrangler.space.toml
+name = "sampreeth-teaching-space"
+main = "src/index.ts"
+compatibility_date = "2026-05-01"
+
+[vars]
+ALLOWED_ORIGINS = "https://space.sampreethavvari.com,http://localhost:4321,http://localhost:4323"
+FEEDBACK_TO = "spa9659@nyu.edu"
+
+[[d1_databases]]
+binding = "TEACHING_DB"
+database_name = "sampreeth-teaching-space"
+database_id = "3443e7eb-a8db-43b8-a70e-7a856f9e3edb"
+
+[observability]
+enabled = true

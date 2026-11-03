@@ -1,0 +1,12 @@
+# space.sampreethavvari.com: this branch's build, served as static files on Cloudflare's
+# free plan. It has nothing to do with sampreethavvari.com, which GitHub Pages serves
+# from main. Deploy with: node scripts/deploy-space.mjs
+name = "sampreeth-space"
+compatibility_date = "2026-05-01"
+workers_dev = false
+routes = [{ pattern = "space.sampreethavvari.com", custom_domain = true }]
+
+[assets]
+directory = "./dist"
+not_found_handling = "404-page"
+html_handling = "auto-trailing-slash"

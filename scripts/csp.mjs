@@ -29,6 +29,8 @@ const SCRIPTS = ["https://static.cloudflareinsights.com"];
 const CONNECT = [
   "https://sampreeth-chatbot.sampreethavvariedu.workers.dev",
   "https://sampreeth-teaching.sampreethavvariedu.workers.dev",
+  "https://sampreeth-chatbot-space.sampreethavvariedu.workers.dev",
+  "https://sampreeth-teaching-space.sampreethavvariedu.workers.dev",
   "https://cloudflareinsights.com",
 ];
 const FRAMES = ["https://jobpilot-demo.pages.dev"];

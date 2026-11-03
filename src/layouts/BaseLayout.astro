@@ -230,6 +230,7 @@ const pageComets = hasOwnComets
         var CF_BEACON_TOKEN = "643bcd2b05614ef2b29da4c4f0409d04";
         var host = location.hostname;
         if (host === "localhost" || host === "127.0.0.1") return; // dev runs don't count
+        if (host.indexOf("space.") === 0) return; // this site's visits stay out of the main site's numbers
         if (!CF_BEACON_TOKEN || CF_BEACON_TOKEN.indexOf("__") === 0) return; // token not set yet
         var s = document.createElement("script");
         s.defer = true;

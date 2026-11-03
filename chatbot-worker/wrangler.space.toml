@@ -1,0 +1,27 @@
+# The chatbot for space.sampreethavvari.com: the same code as wrangler.toml, its own
+# Worker, its own key and its own rate counters, so nothing here reaches the main
+# site's chatbot. Deploy with: npx wrangler deploy -c wrangler.space.toml
+name = "sampreeth-chatbot-space"
+main = "src/index.ts"
+compatibility_date = "2026-05-01"
+compatibility_flags = ["nodejs_compat"]
+
+[vars]
+AI_MODEL = "@cf/meta/llama-3.3-70b-instruct-fp8-fast"
+ALLOWED_ORIGINS = "https://space.sampreethavvari.com,http://localhost:4321,http://localhost:4323"
+
+[ai]
+binding = "AI"
+
+[observability]
+enabled = true
+
+[[durable_objects.bindings]]
+name = "RATE_GATE"
+class_name = "RateGate"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["RateGate"]
+
+# CHAT_SIGNING_KEY is a secret: npx wrangler secret put CHAT_SIGNING_KEY -c wrangler.space.toml
