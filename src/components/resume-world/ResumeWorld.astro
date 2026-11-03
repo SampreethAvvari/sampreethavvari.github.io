@@ -1,13 +1,12 @@
 ---
 // The resume as an object in zero gravity. One pinned stage; the page scrolls
-// behind it and each stretch of scroll is a stop. Every word and every PDF
+// behind it and each stretch of scroll is a stop. Every word and every
 // link is real HTML from the first byte. The 3D world (scripts/resume-world)
 // arrives after first paint and draws over it. Without JavaScript or WebGL,
 // or with reduced motion, this same markup is a plain, complete document.
 import Icon from "../common/Icon.astro";
-import { STOPS, type RoleData, type WorldData } from "../../scripts/resume-world/types";
+import { STOPS, type RoleData, type SheetData, type WorldData } from "../../scripts/resume-world/types";
 
-interface Sheet { acronym: string; name: string; file: string; blurb: string }
 interface Role { title: string; date: string; location: string; logo?: string; highlights?: string[] }
 interface Edu { title: string; date: string; location: string; logo?: string; gpa?: string }
 interface Skill { label: string; items: string[] }
@@ -16,12 +15,11 @@ interface Props {
   name: string;
   location: string;
   contact: Contact;
-  sheets: Sheet[];
   experience: Role[];
   education: Edu[];
   skills: Skill[];
 }
-const { name, location, contact, sheets, experience, education, skills } = Astro.props;
+const { name, location, contact, experience, education, skills } = Astro.props;
 
 // What the site footer carries, kept on the last stop's own screen.
 const REACH = [
@@ -68,14 +66,26 @@ const logoClass = (src: string) => (DARK_READY.has(src) ? "rw-logo is-light" : "
 const ROLE_IDS = ["hybridge", "research", "video", "shure"];
 const EDU_IDS = ["nyu", "jntu"];
 const LANE = ["left", "right", "under", "over"];
-const sheetId = (s: Sheet) => s.acronym.toLowerCase();
+
+// One sheet for each section. A sheet prints its section and flies there.
+const sheets: SheetData[] = [
+  { id: "experience", name: "Experience", blurb: "Hybridge Implants, research and video at NYU, and Shure.", lines: experience.map((r) => r.title) },
+  { id: "skills", name: "Skills", blurb: "Languages, AI and ML, cloud, testing and tools.", lines: skills.map((g) => g.label) },
+  { id: "education", name: "Education", blurb: "Master of Science at NYU, Bachelor of Technology in India.", lines: education.map((e) => e.title) },
+];
+// The same words on the plain sheets painted before the 3D arrives.
+const paperRows: Record<SheetData["id"], { a: string; b?: string }[]> = {
+  experience: experience.map((r) => ({ a: r.title, b: span(r.date) })),
+  skills: skills.map((g) => ({ a: g.label })),
+  education: education.map((e) => ({ a: e.title, b: span(e.date) })),
+};
 
 const roles = experience.map((r, i) => ({ ...r, id: ROLE_IDS[i] ?? `role-${i}`, stop: 2 + i, items: (r.highlights ?? []).map(split) }));
 const keyed = roles.find((r) => r.items.some((it) => it.name));
 
 const world: WorldData = {
   person: { name, location },
-  sheets: sheets.map((s) => ({ id: sheetId(s), acronym: s.acronym, name: s.name, file: s.file, blurb: s.blurb })),
+  sheets,
   roles: roles.map((r): RoleData => ({ id: r.id, title: r.title, org: r.location, date: span(r.date), logo: r.logo ?? "", items: r.items })),
   education: education.map((e, i) => ({ id: EDU_IDS[i] ?? `edu-${i}`, title: e.title, school: e.location, date: span(e.date), gpa: e.gpa ?? "", logo: e.logo ?? "" })),
   skills,
@@ -103,14 +113,14 @@ const eduStop = STOPS.indexOf("education");
     <!-- Invisible links that ride on the 3D objects. The real ones, for
          keyboards and screen readers, are in the words below. -->
     <div class="rw-hits">
-      {sheets.map((s) => <a class="rw-hit" data-hit={sheetId(s)} href={s.file} target="_blank" rel="noopener" tabindex="-1" aria-hidden="true" draggable="false"></a>)}
+      {sheets.map((s) => <a class="rw-hit" data-hit={s.id} href={`#${s.id}`} tabindex="-1" aria-hidden="true" draggable="false"></a>)}
       <a class="rw-hit" data-section="experience" href="#experience" tabindex="-1" aria-hidden="true"></a>
       <a class="rw-hit" data-section="skills" href="#skills" tabindex="-1" aria-hidden="true"></a>
       <a class="rw-hit" data-section="education" href="#education" tabindex="-1" aria-hidden="true"></a>
       {keyed?.items.filter((it) => it.name).map((it, i) => <a class="rw-hit" data-key={i} data-name={it.name} href={it.href} tabindex="-1" aria-hidden="true"></a>)}
     </div>
 
-    <!-- 01 the four sheets -->
+    <!-- 01 the sheets, one for each section -->
     <div class="rw-stop rw-s-hero" data-stop="0">
       <p class="rw-kicker">Resume</p>
       <h1 class="rw-h1">
@@ -118,37 +128,26 @@ const eduStop = STOPS.indexOf("education");
         <span class="rw-tail">AI engineer in New York.</span>
       </h1>
       <p class="rw-lede">
-        Same person, four lenses. Open the one that fits the role. Each opens in a new tab.
-        <span class="rw-hint">Drag a sheet to turn it. Scroll to take one apart.</span>
+        Experience, skills and education, one sheet each. Open one to go there.
+        <span class="rw-hint">Drag a sheet to turn it. Scroll and the page comes apart.</span>
       </p>
       <svg class="rw-tethers" aria-hidden="true">
-        {sheets.map((s) => <line data-tether={sheetId(s)} x1="0" y1="0" x2="0" y2="0"></line>)}
+        {sheets.map((s) => <line data-tether={s.id} x1="0" y1="0" x2="0" y2="0"></line>)}
       </svg>
-      <ul class="rw-versions" id="versions">
+      <ul class="rw-sheets" id="sheets">
         {sheets.map((s, i) => (
           <li>
-            <a
-              class="rw-version"
-              data-cell={sheetId(s)}
-              href={s.file}
-              target="_blank"
-              rel="noopener"
-              aria-label={`Open the ${s.name} resume in a new tab`}
-              style={`--i:${i}`}
-            >
+            <a class="rw-sheet" data-cell={s.id} href={`#${s.id}`} aria-label={`Go to ${s.name}`} style={`--i:${i}`}>
               <span class="rw-paper" aria-hidden="true">
-                <span class="rw-paper-top"><b>{name}</b><i>{s.acronym}</i></span>
+                <span class="rw-paper-top"><b>{name}</b></span>
                 <span class="rw-paper-name">{s.name}</span>
                 <span class="rw-paper-rule"></span>
-                {experience.map((r) => <span class="rw-paper-line"><b>{r.title}</b><i>{span(r.date)}</i></span>)}
-                <span class="rw-paper-rule"></span>
-                {education.map((e) => <span class="rw-paper-line"><b>{e.title}</b></span>)}
+                {paperRows[s.id].map((row) => <span class="rw-paper-line"><b>{row.a}</b>{row.b && <i>{row.b}</i>}</span>)}
               </span>
               <span class="rw-cell">
-                <span class="rw-acr">{s.acronym}</span>
                 <span class="rw-cell-name">{s.name}</span>
                 <span class="rw-cell-blurb">{s.blurb}</span>
-                <span class="rw-open">Open PDF <Icon name="arrow-up-right" size={13} /></span>
+                <span class="rw-open">Open <Icon name="arrow-right" size={13} /></span>
               </span>
             </a>
           </li>
@@ -159,12 +158,8 @@ const eduStop = STOPS.indexOf("education");
     <!-- 02 one page, large, whole, about to come apart -->
     <div class="rw-stop rw-s-page" data-stop="1">
       <div class="rw-copy rw-slide">
-        <p class="rw-kick">One page</p>
-        <p class="rw-title" data-page-name>{sheets[0].name}</p>
-        <p class="rw-org" data-page-blurb>{sheets[0].blurb}</p>
-        <a class="rw-cta" data-page-open href={sheets[0].file} target="_blank" rel="noopener" aria-label={`Open the ${sheets[0].name} resume in a new tab`}>
-          <span>Open this PDF</span><i><Icon name="arrow-up-right" size={13} /></i>
-        </a>
+        <p class="rw-kick">Resume</p>
+        <p class="rw-title">One page</p>
         <p class="rw-jumps">
           <a href="#experience" data-jump="experience">Experience</a>
           <a href="#skills" data-jump="skills">Skills</a>
@@ -221,7 +216,7 @@ const eduStop = STOPS.indexOf("education");
       </div>
     </section>
 
-    <!-- education comes last, and all four PDFs are one click away again -->
+    <!-- education comes last, and the three sheets come back, one over each link -->
     <section class="rw-stop rw-s-edu" data-stop={eduStop}>
       <div class="rw-copy rw-slide">
         <p class="rw-kick">Education</p>
@@ -239,8 +234,8 @@ const eduStop = STOPS.indexOf("education");
       </div>
       <div class="rw-end">
       <p class="rw-last">
-        <span class="rw-last-label">Open a PDF</span>
-        {sheets.map((s) => <a class="rw-pill" data-end={sheetId(s)} href={s.file} target="_blank" rel="noopener" aria-label={`Open the ${s.name} resume in a new tab`}>{s.acronym} <Icon name="arrow-up-right" size={12} /></a>)}
+        <span class="rw-last-label">Back to</span>
+        {sheets.map((s) => <a class="rw-pill" data-end={s.id} data-jump={s.id} href={`#${s.id}`}>{s.name}</a>)}
       </p>
       <nav class="rw-foot" aria-label="Contact and site">
         <p class="rw-foot-reach">
@@ -258,18 +253,14 @@ const eduStop = STOPS.indexOf("education");
       </div>
     </section>
 
-    <!-- where you are, and the PDFs from every stop -->
+    <!-- where you are -->
     <nav class="rw-rail" aria-label="Stops">
       <ol>
         {STOP_LABELS.map((label, i) => (
-          <li><a href={i === 0 ? "#versions" : i === skillsStop ? "#skills" : i === eduStop ? "#education" : "#experience"} data-go={i} aria-current={i === 0 ? "step" : undefined} aria-label={label}><span class="rw-rail-label">{label}</span><i></i></a></li>
+          <li><a href={i === 0 ? "#sheets" : i === skillsStop ? "#skills" : i === eduStop ? "#education" : "#experience"} data-go={i} aria-current={i === 0 ? "step" : undefined} aria-label={label}><span class="rw-rail-label">{label}</span><i></i></a></li>
         ))}
       </ol>
     </nav>
-    <p class="rw-dock">
-      <span>PDF</span>
-      {sheets.map((s) => <a href={s.file} target="_blank" rel="noopener" aria-label={`Open the ${s.name} resume in a new tab`}>{s.acronym}</a>)}
-    </p>
   </div>
 </section>
 
@@ -287,7 +278,7 @@ const eduStop = STOPS.indexOf("education");
      reduced motion. A calm, complete resume on the same paper.
      ------------------------------------------------------------------ */
   .rw-stage { width: min(100%, calc(var(--max) + 2 * var(--gutter))); margin-inline: auto; padding: clamp(104px, 14vh, 148px) var(--gutter) 28px; }
-  .rw-sky, .rw-canvas, .rw-hits, .rw-rail, .rw-dock, .rw-chips, .rw-s-page, .rw-kick, .rw-hint, .rw-keyhint, .rw-s-skills .rw-small { display: none; }
+  .rw-sky, .rw-canvas, .rw-hits, .rw-rail, .rw-chips, .rw-s-page, .rw-kick, .rw-hint, .rw-keyhint, .rw-s-skills .rw-small { display: none; }
   .rw-kicker { display: inline-flex; align-items: center; gap: 8px; margin: 0; font-size: 0.875rem; font-weight: 500; color: var(--ink); }
   .rw-kicker::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: #fff; box-shadow: 0 0 10px #fff; }
   .rw-h1 { margin: 18px 0 0; font-size: clamp(2.6rem, 7.2vw, 5.4rem); font-weight: 600; letter-spacing: -0.042em; line-height: 1.02; }
@@ -295,10 +286,12 @@ const eduStop = STOPS.indexOf("education");
   .rw-tail { display: block; color: var(--ink-faint); }
   .rw-lede { margin: 22px 0 0; max-width: 38rem; font-size: 1.0625rem; line-height: 1.6; color: var(--ink-soft); }
 
-  .rw-versions { list-style: none; margin: 40px 0 0; padding: 0; display: grid; gap: 16px; grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  @media (min-width: 900px) { .rw-versions { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 20px; } }
-  .rw-version { display: grid; gap: 14px; color: inherit; text-decoration: none; height: 100%; align-content: start; }
-  .rw-version:focus-visible { outline: 1.5px solid #fff; outline-offset: 4px; border-radius: 6px; }
+  .rw-sheets { list-style: none; margin: 40px 0 0; padding: 0; display: grid; gap: 16px; grid-template-columns: minmax(0, 1fr); }
+  @media (min-width: 640px) { .rw-sheets { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px; } }
+  /* On a narrow plain page the sheets are three links; the sections follow right below. */
+  @media (max-width: 639px) { .rw:not(.is-live) .rw-paper { display: none; } }
+  .rw-sheet { display: grid; gap: 14px; color: inherit; text-decoration: none; height: 100%; align-content: start; }
+  .rw-sheet:focus-visible { outline: 1.5px solid #fff; outline-offset: 4px; border-radius: 6px; }
 
   /* a sheet painted with CSS: real words on paper */
   .rw-paper {
@@ -316,7 +309,7 @@ const eduStop = STOPS.indexOf("education");
     line-height: 1.3;
     transition: transform 0.5s var(--ease-glass), box-shadow 0.5s ease;
   }
-  .rw-version:hover .rw-paper { transform: translateY(-6px); box-shadow: 0 40px 70px -24px rgba(255, 255, 255, 0.16), inset 0 0 0 1px #fff; }
+  .rw-sheet:hover .rw-paper { transform: translateY(-6px); box-shadow: 0 40px 70px -24px rgba(255, 255, 255, 0.16), inset 0 0 0 1px #fff; }
   .rw-paper-top { display: flex; justify-content: space-between; gap: 8px; font-size: 1.5em; font-weight: 640; letter-spacing: -0.02em; }
   .rw-paper-top i { font-style: normal; font-weight: 300; }
   .rw-paper-name { font-size: 1.15em; font-weight: 560; }
@@ -326,7 +319,6 @@ const eduStop = STOPS.indexOf("education");
   .rw-paper-line i { font-style: normal; opacity: 0.6; white-space: nowrap; }
 
   .rw-cell { display: grid; gap: 4px; align-content: start; }
-  .rw-acr { font-size: 0.75rem; font-weight: 600; letter-spacing: 0.04em; color: var(--ink-faint); }
   .rw-cell-name { font-size: 1rem; font-weight: 580; letter-spacing: -0.01em; line-height: 1.25; }
   .rw-cell-blurb { font-size: 0.8125rem; line-height: 1.45; color: var(--ink-soft); }
   .rw-open { display: inline-flex; align-items: center; gap: 4px; margin-top: 4px; font-size: 0.8125rem; font-weight: 560; color: #fff; }
@@ -433,7 +425,7 @@ const eduStop = STOPS.indexOf("education");
   .is-live .rw-copy { text-shadow: 0 1px 18px rgba(0, 0, 0, 0.75); }
   .is-3d .rw-logo { display: none; }
 
-  /* ---- 01 the four sheets */
+  /* ---- 01 the sheets, one for each section */
   .is-live .rw-kicker { position: absolute; top: 88px; left: var(--gx); font-size: 0.8125rem; }
   .is-live .rw-h1 { position: static; margin: 0; }
   .is-live .rw-h1-name {
@@ -453,21 +445,21 @@ const eduStop = STOPS.indexOf("education");
   .is-live .rw-tail { position: absolute; top: 88px; left: calc(var(--gx) + 74px); font-size: 0.8125rem; font-weight: 450; letter-spacing: 0; line-height: 1.5; color: var(--ink-soft); }
   .is-live .rw-lede { position: absolute; top: 88px; right: var(--gx); margin: 0; max-width: 40vw; font-size: 0.8125rem; line-height: 1.5; text-align: right; color: var(--ink-soft); }
   .is-live .rw-hint { display: block; color: var(--ink-faint); }
-  .is-live .rw-versions { position: absolute; left: var(--gx); right: var(--gx); bottom: 18px; margin: 0; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; }
-  .is-live .rw-version { position: relative; display: block; height: auto; pointer-events: auto; }
+  .is-live .rw-sheets { position: absolute; left: var(--gx); right: var(--gx); bottom: 18px; margin: 0; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+  .is-live .rw-sheet { position: relative; display: block; height: auto; pointer-events: auto; }
   .is-live .rw-paper {
     aspect-ratio: 8.5 / 11;
     position: absolute;
     left: 50%;
     bottom: calc(100% + 16px);
     width: min(100%, calc((100svh - 330px) * 0.7727));
-    transform: translateX(-50%) rotate(calc((var(--i) - 1.5) * 1.6deg)) translateY(calc((var(--i) - 1.5) * -3px));
+    transform: translateX(-50%) rotate(calc((var(--i) - 1) * 1.6deg)) translateY(calc((var(--i) - 1) * -3px));
     transition: opacity 0.7s ease, transform 0.5s var(--ease-glass);
     animation: rw-float 7s ease-in-out infinite;
     animation-delay: calc(var(--i) * -1.7s);
   }
   @keyframes rw-float { 50% { translate: 0 -9px; } }
-  .is-live .rw-version:hover .rw-paper { transform: translateX(-50%) translateY(-8px); }
+  .is-live .rw-sheet:hover .rw-paper { transform: translateX(-50%) translateY(-8px); }
   .is-3d .rw-paper { opacity: 0; visibility: hidden; transition: opacity 0.7s ease, visibility 0s linear 0.7s; animation: none; }
   .is-live .rw-cell {
     display: grid;
@@ -478,7 +470,7 @@ const eduStop = STOPS.indexOf("education");
     border-top: 1px solid rgba(255, 255, 255, 0.16);
     transition: border-color 0.3s ease;
   }
-  .is-live .rw-version::before {
+  .is-live .rw-sheet::before {
     content: "";
     position: absolute;
     left: 0;
@@ -491,39 +483,17 @@ const eduStop = STOPS.indexOf("education");
     transform-origin: left;
     transition: transform 0.55s var(--ease-glass);
   }
-  .is-live .rw-version:hover::before, .is-live .rw-version:focus-visible::before, .is-live .rw-version.is-near::before { transform: scaleX(1); }
-  .is-live .rw-acr { grid-column: 1; grid-row: 1; align-self: center; }
-  .is-live .rw-cell-name { grid-column: 1 / -1; font-size: 0.9375rem; }
-  .is-live .rw-cell-blurb { grid-column: 1 / -1; font-size: 0.75rem; line-height: 1.4; }
+  .is-live .rw-sheet:hover::before, .is-live .rw-sheet:focus-visible::before, .is-live .rw-sheet.is-near::before { transform: scaleX(1); }
+  .is-live .rw-cell-name { grid-column: 1; grid-row: 1; align-self: center; font-size: 0.9375rem; }
+  .is-live .rw-cell-blurb { grid-column: 1 / -1; grid-row: 2; font-size: 0.75rem; line-height: 1.4; }
   .is-live .rw-open { grid-column: 2; grid-row: 1; align-self: start; margin: 0; height: 28px; padding: 0 11px; border-radius: 999px; background: #fff; color: #05070b; font-size: 0.75rem; white-space: nowrap; transition: transform 0.3s var(--ease-glass), box-shadow 0.3s ease; }
-  .is-live .rw-version:hover .rw-open, .is-live .rw-version.is-near .rw-open { box-shadow: 0 0 22px rgba(255, 255, 255, 0.55); transform: translateY(-1px); }
+  .is-live .rw-sheet:hover .rw-open, .is-live .rw-sheet.is-near .rw-open { box-shadow: 0 0 22px rgba(255, 255, 255, 0.55); transform: translateY(-1px); }
 
   /* ---- 02 the page */
   .is-live .rw-s-page { display: block; }
   .rw-s-page .rw-copy { position: absolute; left: var(--gx); bottom: clamp(36px, 8vh, 72px); width: min(31vw, 560px); --mx: -60px; --my: -60px; }
   .rw-s-page .rw-title { font-size: clamp(2rem, 3.5vw, 3.2rem); }
-  .rw-cta {
-    position: relative;
-    display: inline-flex;
-    align-items: center;
-    gap: 10px;
-    height: 42px;
-    margin-top: 18px;
-    padding: 0 7px 0 18px;
-    border-radius: 999px;
-    background: #fff;
-    color: #05070b;
-    font-size: 0.875rem;
-    font-weight: 580;
-    text-decoration: none;
-    text-shadow: none;
-    box-shadow: 0 10px 34px -10px rgba(255, 255, 255, 0.6);
-    transition: transform 0.25s var(--ease-glass), box-shadow 0.25s ease;
-  }
-  .rw-cta i { display: grid; place-items: center; width: 28px; height: 28px; border-radius: 50%; background: rgba(5, 7, 11, 0.1); font-style: normal; transition: transform 0.3s var(--ease-glass); }
-  .rw-cta:hover { transform: translateY(-2px); box-shadow: 0 16px 44px -10px rgba(255, 255, 255, 0.8); }
-  .rw-cta:hover i { transform: translate(2px, -2px); }
-  .rw-cta:focus-visible, .rw-jumps a:focus-visible, .rw-chip:focus-visible, .rw-dock a:focus-visible, .rw-rail a:focus-visible { outline: 1.5px solid #fff; outline-offset: 3px; }
+  .rw-jumps a:focus-visible, .rw-chip:focus-visible, .rw-rail a:focus-visible { outline: 1.5px solid #fff; outline-offset: 3px; }
   .rw-jumps { display: flex; flex-wrap: wrap; gap: 6px 16px; margin: 18px 0 0; font-size: 0.875rem; }
   .rw-jumps a { color: rgba(255, 255, 255, 0.82); text-decoration: none; border-bottom: 1px solid rgba(255, 255, 255, 0.25); padding-bottom: 2px; transition: color 0.2s ease, border-color 0.2s ease; }
   .rw-jumps a:hover { color: #fff; border-color: #fff; }
@@ -613,28 +583,6 @@ const eduStop = STOPS.indexOf("education");
   .rw-rail a[aria-current] i { width: 24px; background: #fff; box-shadow: 0 0 8px rgba(255, 255, 255, 0.8); }
   .rw-rail a[aria-current] .rw-rail-label { color: #fff; }
 
-  .is-live .rw-dock {
-    display: flex;
-    align-items: center;
-    gap: 4px;
-    position: absolute;
-    top: 84px;
-    right: var(--gx);
-    z-index: 4;
-    margin: 0;
-    padding: 3px 3px 3px 12px;
-    border-radius: 999px;
-    border: 1px solid rgba(255, 255, 255, 0.14);
-    background: rgba(8, 10, 14, 0.86);
-    font-size: 0.75rem;
-    color: var(--ink-faint);
-    opacity: 1;
-    transition: opacity 0.4s ease, transform 0.5s var(--ease-glass);
-  }
-  .rw-dock span { margin-right: 4px; }
-  .rw-dock a { display: grid; place-items: center; height: 26px; min-width: 36px; padding: 0 8px; border-radius: 999px; color: rgba(255, 255, 255, 0.86); text-decoration: none; font-weight: 560; transition: background 0.2s ease, color 0.2s ease; }
-  .rw-dock a:hover { background: #fff; color: #05070b; }
-  .is-live[data-at="sheets"] .rw-dock:not(:focus-within), .is-live[data-at="education"] .rw-dock:not(:focus-within) { opacity: 0; transform: translateY(-6px); pointer-events: none; }
   .rw-tethers { display: none; }
   .is-3d .rw-tethers { display: block; position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; overflow: visible; }
   .rw-tethers line { stroke: #fff; stroke-width: 1; opacity: 0; transition: opacity 0.25s ease; }
@@ -647,14 +595,13 @@ const eduStop = STOPS.indexOf("education");
     .is-live .rw-lede { display: none; }
     .is-live .rw-h1-name { top: 92px; left: 3.5vw; right: 3.5vw; font-size: 21.5vw; white-space: normal; line-height: 0.92; }
     .is-live .rw-h1-name > span { display: block; }
-    .is-live .rw-versions { left: 12px; right: 12px; bottom: 10px; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
+    .is-live .rw-sheets { left: 12px; right: 12px; bottom: 10px; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
     .is-live .rw-paper { width: min(92%, calc((100svh - 480px) / 2 * 0.7727)); bottom: auto; top: 0; display: none; }
-    .is-live .rw-cell { padding: 7px 8px 7px 10px; border: 1px solid rgba(255, 255, 255, 0.14); border-radius: 12px; background: rgba(10, 12, 17, 0.94); grid-template-columns: minmax(0, 1fr) auto; align-items: center; min-height: 48px; }
-    .is-live .rw-version::before { display: none; }
-    .is-live .rw-acr { font-size: 0.625rem; }
-    .is-live .rw-cell-name { grid-column: 1; font-size: 0.75rem; line-height: 1.15; }
+    .is-live .rw-cell { padding: 7px 4px; border: 1px solid rgba(255, 255, 255, 0.14); border-radius: 12px; background: rgba(10, 12, 17, 0.94); grid-template-columns: minmax(0, 1fr); align-items: center; justify-items: center; min-height: 48px; }
+    .is-live .rw-sheet::before { display: none; }
+    .is-live .rw-cell-name { grid-column: 1; font-size: 0.8125rem; line-height: 1.15; }
     .is-live .rw-cell-blurb { display: none; }
-    .is-live .rw-open { grid-row: 1 / span 2; align-self: center; width: 26px; height: 26px; padding: 0; justify-content: center; font-size: 0; gap: 0; }
+    .is-live .rw-open { display: none; }
 
     .is-live .rw-stop .rw-copy,
     .is-live .rw-role .rw-copy,
@@ -686,7 +633,6 @@ const eduStop = STOPS.indexOf("education");
     .is-live .has-keys .rw-items :global(.ilink) { font-size: 0.9375rem; }
     .is-live .has-keys .rw-items { overflow-y: auto; touch-action: pan-y pinch-zoom; scrollbar-width: none; }
     .rw-s-page .rw-title { font-size: 1.75rem; }
-    .rw-cta { margin-top: 10px; height: 38px; }
     .rw-jumps { margin-top: 10px; font-size: 0.8125rem; }
     .is-live .rw-small, .is-live .rw-keyhint { margin-top: 8px; font-size: 0.6875rem; }
     .is-live .rw-s-video .rw-items { margin-top: 10px; }
@@ -705,12 +651,9 @@ const eduStop = STOPS.indexOf("education");
     .is-live .rw-foot p.rw-foot-copy { font-size: 0.625rem; line-height: 1.3; }
     .is-live .rw-last-label { flex-basis: 100%; margin: 0 0 2px; text-align: center; }
     .is-live .rw-pill { min-width: 0; flex: 1 1 0; }
-    .is-live[data-at="page"] .rw-dock { opacity: 0; pointer-events: none; }
     .is-live .rw-s-shure .rw-copy { text-align: left; }
     :is(.rw-coarse, .rw-fine) { font-size: inherit; }
     .is-live .rw-rail { display: none; }
-    .is-live .rw-dock { top: 72px; right: 12px; padding: 2px 2px 2px 10px; }
-    .is-live .rw-dock a { height: 24px; min-width: 32px; padding: 0 6px; font-size: 0.6875rem; }
     :global(html.in-rw .chat-launcher) { opacity: 0 !important; pointer-events: none !important; }
   }
 
@@ -735,16 +678,14 @@ const eduStop = STOPS.indexOf("education");
     .is-live .rw-lede, .is-live .rw-cell-blurb { display: none; }
     .is-live .rw-kicker, .is-live .rw-tail { top: 74px; }
     .is-live .rw-h1-name { top: 72px; font-size: 7vw; }
-    .is-live .rw-versions { bottom: 8px; }
+    .is-live .rw-sheets { bottom: 8px; }
     .is-live .rw-title { font-size: 1.75rem; }
     .is-live .rw-copy { font-size: 0.875rem; }
     .is-live .rw-items li { font-size: 0.8125rem; line-height: 1.4; }
     .is-live .rw-s-hybridge .rw-copy, .is-live .rw-s-research .rw-copy { top: 80px; margin-top: 0; }
     .is-live .rw-s-shure .rw-copy { top: 84px; }
-    .rw-cta { margin-top: 8px; height: 36px; }
     .rw-jumps { margin-top: 8px; }
     .is-live .rw-small, .is-live .rw-keyhint { display: none; }
-    .is-live .rw-dock { display: none; }
     .is-live .rw-foot { font-size: 0.6875rem; }
     .is-live .rw-foot a { padding: 2px 0; }
     .is-live .rw-end { gap: 6px; }
@@ -757,7 +698,7 @@ const eduStop = STOPS.indexOf("education");
     :global(body), :global(html) { background: #fff !important; color: #000 !important; }
     .rw, .rw.is-live { height: auto !important; color: #000; }
     .rw .rw-stage, .rw.is-live .rw-stage { position: static !important; height: auto !important; overflow: visible !important; padding: 0 !important; width: 100% !important; }
-    .rw-sky, .rw-canvas, .rw-hits, .rw-rail, .rw-dock, .rw-chips, .rw-s-page, .rw-paper, .rw-kick, .rw-small, .rw-keyhint, .rw-hint, .rw-logo { display: none !important; }
+    .rw-sky, .rw-canvas, .rw-hits, .rw-rail, .rw-chips, .rw-s-page, .rw-paper, .rw-kick, .rw-small, .rw-keyhint, .rw-hint, .rw-logo { display: none !important; }
     .rw-stop, .is-live .rw-stop { position: static !important; opacity: 1 !important; transform: none !important; }
     .rw-slide, .is-live .rw-slide { transform: none !important; }
     .rw-copy, .is-live .rw-role .rw-copy, .is-live .rw-s-skills .rw-copy, .is-live .rw-s-edu .rw-copy { position: static !important; width: auto !important; margin: 0 !important; display: block !important; color: #000 !important; text-shadow: none !important; text-align: left !important; }
@@ -765,13 +706,7 @@ const eduStop = STOPS.indexOf("education");
     .rw-h1-name, .is-live .rw-h1-name, .is-3d .rw-h1-name { position: static !important; font-size: 26pt !important; color: #000 !important; white-space: normal !important; }
     .rw-kicker, .is-live .rw-kicker { display: none !important; }
     .rw-tail, .is-live .rw-tail { position: static !important; color: #333 !important; font-size: 11pt !important; }
-    .rw-lede, .is-live .rw-lede { position: static !important; max-width: none !important; text-align: left !important; font-size: 10pt !important; color: #333 !important; display: block !important; }
-    .rw-versions, .is-live .rw-versions { position: static !important; display: block !important; margin: 6pt 0 0 !important; }
-    .rw-version, .is-live .rw-version { color: #000 !important; }
-    .rw-cell, .is-live .rw-cell { display: block !important; border: 0 !important; padding: 0 0 4pt !important; background: none !important; }
-    .rw-acr, .rw-open { display: none !important; }
-    .rw-cell-name, .is-live .rw-cell-name { display: inline !important; font-size: 10pt !important; font-weight: 600; color: #000 !important; }
-    .rw-cell-blurb, .is-live .rw-cell-blurb { display: inline !important; font-size: 10pt !important; color: #333 !important; margin-left: 6pt; }
+    .rw-lede, .is-live .rw-lede, .rw-sheets, .is-live .rw-sheets { display: none !important; }
     .rw-role, .is-live .rw-role { margin: 0 0 8pt !important; padding: 0 !important; border: 0 !important; background: none !important; break-inside: avoid; }
     .rw-title, .is-live .rw-title, .is-live .rw-s-skills .rw-title, .is-live .rw-s-edu .rw-title { font-size: 12pt !important; margin: 0 !important; color: #000 !important; }
     .rw-s-skills .rw-title, .rw-s-edu .rw-title, .is-live .rw-s-skills .rw-title, .is-live .rw-s-edu .rw-title { font-size: 16pt !important; margin: 18pt 0 6pt !important; }

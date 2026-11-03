@@ -5,36 +5,6 @@ import { info } from "../data/info";
 
 const title = "SA: Resume";
 
-// One resume per discipline. The PDFs open in a new tab (no forced download)
-// so a recruiter can read first and save only if they want to. Disciplines
-// are plain labels here, never colours.
-const RESUMES = [
-  {
-    acronym: "AIE",
-    name: "AI Engineering",
-    file: "/Sampreeth_Avvari_AIE.pdf",
-    blurb: "RAG, LLM systems, and production AI shipped to real users.",
-  },
-  {
-    acronym: "FDE",
-    name: "Forward Deployed Engineering",
-    file: "/Sampreeth_Avvari_FDE.pdf",
-    blurb: "Embedded with the customer: find the problem, ship, hand it off.",
-  },
-  {
-    acronym: "MLE",
-    name: "Machine Learning Engineering",
-    file: "/Sampreeth_Avvari_MLE.pdf",
-    blurb: "Models, MLOps, and evaluation from training through serving.",
-  },
-  {
-    acronym: "SDE",
-    name: "Software Engineering",
-    file: "/Sampreeth_Avvari_SDE.pdf",
-    blurb: "Typed, tested services and the platforms that run them.",
-  },
-];
-
 const { experience, education, skills } = info.about;
 ---
 
@@ -48,7 +18,6 @@ const { experience, education, skills } = info.about;
     name={info.name}
     location={info.location}
     contact={info.contact}
-    sheets={RESUMES}
     experience={experience}
     education={education}
     skills={skills}

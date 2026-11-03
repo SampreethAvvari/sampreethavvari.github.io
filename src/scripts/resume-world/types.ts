@@ -1,6 +1,8 @@
 // What the page hands the 3D world: the same data the HTML shows.
 
-export type SheetData = { id: string; acronym: string; name: string; file: string; blurb: string };
+export type SectionId = "experience" | "skills" | "education";
+/** One sheet for each section of the resume. `lines` is what its back lists. */
+export type SheetData = { id: SectionId; name: string; blurb: string; lines: string[] };
 export type RoleItem = { name: string; href: string; text: string };
 export type RoleData = { id: string; title: string; org: string; date: string; logo: string; items: RoleItem[] };
 export type EduData = { id: string; title: string; school: string; date: string; gpa: string; logo: string };

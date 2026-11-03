@@ -12,7 +12,7 @@
 //   B  unused, left at 1
 // Every mark is drawn with "multiply" on a white page.
 
-import type { WorldData } from "./types";
+import type { SheetData, WorldData } from "./types";
 
 export const PAGE_W = 1400;
 export const PAGE_H = 1812;
@@ -31,7 +31,7 @@ export type Piece = {
   rect: Rect;
   /** Scale in the atlas, 0 when it never needs more than the page. */
   hi: number;
-  draw: (c: CanvasRenderingContext2D, sheet: number) => void;
+  draw: (c: CanvasRenderingContext2D) => void;
 };
 
 export type Slip = {
@@ -96,6 +96,22 @@ export function splitHighlight(h: string): { name: string; href: string; rest: s
 
 const plain = (s: string) => s.replace(/\[([^\]]+)\]\([^)\s]+\)/g, "$1").replace(/`([^`]+)`/g, "$1");
 
+/** A logo printed in dark ink, sat against `edge` on the side it names. */
+function stampLogo(c: CanvasRenderingContext2D, masks: Map<string, HTMLCanvasElement>, src: string, edge: number, top: number, h: number, side: "left" | "right" = "right") {
+  const img = masks.get(src);
+  if (!img) return;
+  const w = (img.width / img.height) * h;
+  const tinted = document.createElement("canvas");
+  tinted.width = img.width;
+  tinted.height = img.height;
+  const t = tinted.getContext("2d")!;
+  t.drawImage(img, 0, 0);
+  t.globalCompositeOperation = "source-in";
+  t.fillStyle = INK(40);
+  t.fillRect(0, 0, img.width, img.height);
+  c.drawImage(tinted, side === "right" ? edge - w : edge, top, w, h);
+}
+
 export function layoutPage(m: CanvasRenderingContext2D, d: WorldData, masks: Map<string, HTMLCanvasElement>): Layout {
   const MX = 92;
   const CW = PAGE_W - MX * 2;
@@ -108,23 +124,9 @@ export function layoutPage(m: CanvasRenderingContext2D, d: WorldData, masks: Map
     c.fillStyle = INK(170);
     c.fillRect(MX, ry, CW, 2);
   };
-  const logo = (c: CanvasRenderingContext2D, src: string, right: number, top: number, h: number) => {
-    const img = masks.get(src);
-    if (!img) return;
-    const w = (img.width / img.height) * h;
-    const tinted = document.createElement("canvas");
-    tinted.width = img.width;
-    tinted.height = img.height;
-    const t = tinted.getContext("2d")!;
-    t.drawImage(img, 0, 0);
-    t.globalCompositeOperation = "source-in";
-    t.fillStyle = INK(40);
-    t.fillRect(0, 0, img.width, img.height);
-    c.drawImage(tinted, right - w, top, w, h);
-  };
 
-  // ---- the head of the page: the only part that differs between the four
-  const HEAD_H = 232;
+  // ---- the head of the page
+  const HEAD_H = 204;
   pieces.push({
     id: "head",
     group: "head",
@@ -132,13 +134,10 @@ export function layoutPage(m: CanvasRenderingContext2D, d: WorldData, masks: Map
     slot: 0,
     rect: { x: MX - PX, y: 54, w: CW + PX * 2, h: HEAD_H - 54 },
     hi: 0,
-    draw: (c, s) => {
-      const sh = d.sheets[s];
+    draw: (c) => {
       text(c, d.person.name, MX, 124, { font: font(640, 78), ink: FOIL, track: -2.4 });
-      text(c, sh.acronym, PAGE_W - MX, 124, { font: font(300, 78), ink: INK(70), align: "right", track: -1.5 });
-      text(c, sh.name, MX, 176, { font: font(520, 33), track: -0.5 });
+      text(c, d.roles[0]?.title ?? "", MX, 176, { font: font(520, 33), track: -0.5 });
       text(c, d.person.location, PAGE_W - MX, 176, { font: font(420, 23), ink: INK(90), align: "right" });
-      text(c, sh.blurb, MX, 212, { font: font(400, 23), ink: INK(90) });
     },
   });
   y = HEAD_H;
@@ -183,7 +182,7 @@ export function layoutPage(m: CanvasRenderingContext2D, d: WorldData, masks: Map
         text(c, role.title, MX, top + 32, { font: ROLE_FONT, track: -0.4 });
         text(c, role.org, MX, top + 60, { font: META, ink: INK(80) });
         text(c, role.date, PAGE_W - MX, top + 60, { font: META, ink: INK(80), align: "right" });
-        if (role.logo) logo(c, role.logo, PAGE_W - MX, top + 6, 28);
+        if (role.logo) stampLogo(c, masks, role.logo, PAGE_W - MX, top + 6, 28);
       },
     });
     y = top + HEAD;
@@ -325,17 +324,118 @@ function blank(w: number, h: number) {
   return { cv, c };
 }
 
-/** One whole page, for one of the four sheets. */
-export function paintPage(layout: Layout, sheet: number, width: number): HTMLCanvasElement {
+/** The whole page, which a sheet turns into and the lines lift off. */
+export function paintPage(layout: Layout, width: number): HTMLCanvasElement {
   const s = width / PAGE_W;
   const { cv, c } = blank(width, width * PAGE_RATIO);
   c.scale(s, s);
-  for (const p of layout.pieces) p.draw(c, sheet);
+  for (const p of layout.pieces) p.draw(c);
   for (const sl of layout.slips) paintSlip(c, sl);
   return cv;
 }
 
-/** The back of a sheet: its name large, and what it is. */
+// What a sheet's face prints below its heading. Called with no canvas it only
+// measures, so the words can be set as large as the sheet allows.
+type Print = (c: CanvasRenderingContext2D | null, top: number, k: number) => number;
+
+function sectionPrint(m: CanvasRenderingContext2D, d: WorldData, id: SheetData["id"], masks: Map<string, HTMLCanvasElement>, MX: number, CW: number): Print {
+  if (id === "experience") {
+    return (c, top, k) => {
+      let y = top;
+      d.roles.forEach((role) => {
+        if (c) {
+          text(c, role.title, MX, y + 46 * k, { font: font(610, 46 * k), track: -0.6 });
+          text(c, role.org, MX, y + 88 * k, { font: font(420, 31 * k), ink: INK(80) });
+          text(c, role.date, MX + CW, y + 88 * k, { font: font(420, 31 * k), ink: INK(80), align: "right" });
+          if (role.logo) stampLogo(c, masks, role.logo, MX + CW, y + 8 * k, 40 * k);
+        }
+        y += 108 * k;
+        const named = role.items.filter((it) => it.name);
+        if (named.length) {
+          const colW = (CW - 40) / 2;
+          const rowH = 52 * k;
+          if (c) named.forEach((it, i) => text(c, it.name, MX + (i % 2) * (colW + 40), y + Math.floor(i / 2) * rowH + 34 * k, { font: font(540, 33 * k), track: -0.2 }));
+          y += Math.ceil(named.length / 2) * rowH;
+        } else {
+          role.items.forEach((it) => {
+            wrap(m, plain(it.text), font(400, 31 * k), CW).forEach((ln) => {
+              if (c) text(c, ln, MX, y + 32 * k, { font: font(400, 31 * k), ink: INK(46) });
+              y += 42 * k;
+            });
+            y += 8 * k;
+          });
+        }
+        y += 40 * k;
+      });
+      return y - top;
+    };
+  }
+  if (id === "skills") {
+    return (c, top, k) => {
+      let y = top;
+      d.skills.forEach((g) => {
+        if (c) text(c, g.label, MX, y + 30 * k, { font: font(620, 30 * k), ink: FOIL });
+        y += 44 * k;
+        let x = MX;
+        g.items.forEach((word) => {
+          m.font = font(450, 29 * k);
+          const w = m.measureText(word).width;
+          if (x + w > MX + CW) {
+            x = MX;
+            y += 40 * k;
+          }
+          if (c) text(c, word, x, y + 28 * k, { font: font(450, 29 * k), ink: INK(30) });
+          x += w + 30 * k;
+        });
+        y += 64 * k;
+      });
+      return y - top;
+    };
+  }
+  return (c, top, k) => {
+    let y = top;
+    d.education.forEach((e) => {
+      if (masks.has(e.logo)) {
+        if (c) stampLogo(c, masks, e.logo, MX, y, 84 * k, "left");
+        y += 130 * k;
+      }
+      wrap(m, e.title, font(600, 62 * k), CW).forEach((ln) => {
+        if (c) text(c, ln, MX, y + 62 * k, { font: font(600, 62 * k), track: -1 });
+        y += 76 * k;
+      });
+      if (c) {
+        text(c, e.school, MX, y + 46 * k, { font: font(420, 38 * k), ink: INK(66) });
+        text(c, `${e.date}${e.gpa ? ` · GPA ${e.gpa}` : ""}`, MX, y + 98 * k, { font: font(420, 38 * k), ink: INK(96) });
+      }
+      y += 290 * k;
+    });
+    return y - top;
+  };
+}
+
+/** A sheet's face: its one section, set larger than on the whole page. */
+export function paintFace(m: CanvasRenderingContext2D, d: WorldData, sheet: number, width: number, masks: Map<string, HTMLCanvasElement>): HTMLCanvasElement {
+  const s = width / PAGE_W;
+  const { cv, c } = blank(width, width * PAGE_RATIO);
+  c.scale(s, s);
+  const MX = 92;
+  const CW = PAGE_W - MX * 2;
+  const sh = d.sheets[sheet];
+  text(c, d.person.name, MX, 124, { font: font(640, 78), ink: FOIL, track: -2.4 });
+  text(c, d.person.location, MX + CW, 124, { font: font(420, 23), ink: INK(90), align: "right" });
+  c.fillStyle = INK(170);
+  c.fillRect(MX, 166, CW, 2);
+  text(c, sh.name, MX - 4, 310, { font: font(640, 124), track: -5 });
+  const top = 380;
+  const room = PAGE_H - top - 72;
+  const print = sectionPrint(m, d, sh.id, masks, MX, CW);
+  let k = 1.1;
+  while (k > 0.5 && print(null, top, k) > room) k *= 0.975;
+  print(c, top, k);
+  return cv;
+}
+
+/** The back of a sheet: its section's name large, and what is in it. */
 export function paintBacks(d: WorldData, cellW: number): { canvas: HTMLCanvasElement; rects: [number, number, number, number][] } {
   const cellH = Math.round(cellW * PAGE_RATIO);
   const { cv, c } = blank(cellW * 2, cellH * 2);
@@ -349,22 +449,18 @@ export function paintBacks(d: WorldData, cellW: number): { canvas: HTMLCanvasEle
     c.translate(ox, oy);
     c.scale(u, u);
     const L = 56;
-    text(c, sh.acronym, L - 6, 250, { font: font(640, 214), ink: FOIL, track: -9 });
+    text(c, sh.name, L - 3, 150, { font: font(640, 100), ink: FOIL, track: -4 });
     c.fillStyle = INK(150);
-    c.fillRect(L, 300, 700 - L * 2, 1.5);
-    const nameLines = wrap(c, sh.name, font(560, 46), 700 - L * 2);
-    let y = 368;
-    nameLines.forEach((ln) => {
-      text(c, ln, L, y, { font: font(560, 46), track: -1 });
-      y += 54;
-    });
-    y += 8;
-    wrap(c, sh.blurb, font(400, 27), 700 - L * 2 - 44).forEach((ln) => {
-      text(c, ln, L, y, { font: font(400, 27), ink: INK(70) });
-      y += 38;
+    c.fillRect(L, 190, 700 - L * 2, 1.5);
+    let y = 250;
+    sh.lines.forEach((line) => {
+      wrap(c, line, font(520, 31), 700 - L * 2).forEach((ln) => {
+        text(c, ln, L, y, { font: font(520, 31), ink: INK(40), track: -0.3 });
+        y += 40;
+      });
+      y += 8;
     });
     text(c, d.person.name, L, 842, { font: font(560, 24), ink: INK(40) });
-    text(c, "Open PDF", 700 - L, 842, { font: font(560, 24), ink: FOIL, align: "right" });
     c.restore();
   });
   return { canvas: cv, rects };
@@ -415,7 +511,7 @@ export function paintAtlas(layout: Layout, size: number, tall: number): { canvas
     c.beginPath();
     c.rect(r.x, r.y, r.w, r.h);
     c.clip();
-    sp.p.draw(c, 0);
+    sp.p.draw(c);
     c.restore();
     rects.set(sp.p.id, [sp.x / size, sp.y / tall, (r.w * sp.s) / size, (r.h * sp.s) / tall]);
   }

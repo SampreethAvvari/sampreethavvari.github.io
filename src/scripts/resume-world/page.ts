@@ -53,20 +53,11 @@ export function startResumeWorld(visit: AbortSignal): void | (() => void) {
   document.documentElement.classList.add("in-rw");
 
   // ------------------------------------------------------------ the chosen sheet
-  const nameEl = root.querySelector<HTMLElement>("[data-page-name]");
-  const blurbEl = root.querySelector<HTMLElement>("[data-page-blurb]");
-  const openEl = root.querySelector<HTMLAnchorElement>("[data-page-open]");
+  // The one that comes forward and becomes the whole page.
   let chosen = 0;
   const choose = (i: number) => {
     if (i === chosen || i < 0) return;
     chosen = i;
-    const sh = data.sheets[i];
-    if (nameEl) nameEl.textContent = sh.name;
-    if (blurbEl) blurbEl.textContent = sh.blurb;
-    if (openEl) {
-      openEl.href = sh.file;
-      openEl.setAttribute("aria-label", `Open the ${sh.name} resume in a new tab`);
-    }
     world?.setChosen(i);
   };
 
@@ -123,7 +114,8 @@ export function startResumeWorld(visit: AbortSignal): void | (() => void) {
   });
 
   // A link straight to a section.
-  const HASH: Record<string, number> = { "#versions": 0, "#experience": 2, "#skills": 6, "#education": 7 };
+  const sectionStop: Record<string, number> = { experience: 2, skills: 6, education: 7 };
+  const HASH: Record<string, number> = { "#sheets": 0, "#experience": sectionStop.experience, "#skills": sectionStop.skills, "#education": sectionStop.education };
   // The browser also scrolls to the fragment once the page has loaded, so ask again then.
   const toHash = () => {
     const i = HASH[location.hash];
@@ -259,15 +251,18 @@ export function startResumeWorld(visit: AbortSignal): void | (() => void) {
     }, on);
     el.addEventListener("focus", () => hoverSheet(i), on);
     el.addEventListener("blur", () => hovered === i && hoverSheet(-1), on);
-    el.addEventListener("click", () => {
+    el.addEventListener("click", (e) => {
+      e.preventDefault();
+      choose(i);
       fire("resume:sheet", { id: ids[i], action: "pick" });
       world?.pickSheet(i);
+      motion.go(sectionStop[ids[i]]);
     }, on);
   };
   cellLinks.forEach((el) => bindHover(el, ids.indexOf(el.dataset.cell || "")));
 
   // The links over the sheets also drag: a press and a move spins the sheet,
-  // a press alone opens the PDF, which is the browser's own click.
+  // a press alone flies to its section.
   hitSheets.forEach((el) => {
     const i = ids.indexOf(el.dataset.hit || "");
     bindHover(el, i);
@@ -328,7 +323,6 @@ export function startResumeWorld(visit: AbortSignal): void | (() => void) {
 
   // ------------------------------------------------------------ the page's sections
   const sectionHits = Array.from(root.querySelectorAll<HTMLAnchorElement>("[data-section]"));
-  const sectionStop: Record<string, number> = { experience: 2, skills: 6, education: 7 };
   sectionHits.forEach((el, i) => {
     const name = el.dataset.section || "";
     el.addEventListener("pointerenter", () => {

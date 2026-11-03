@@ -33,7 +33,7 @@ const HOVERS: Record<string, { from: number; wrap: number; step: number; level: 
   mark: { from: 4, wrap: 6, step: 1, level: -29, dur: 0.5, slip: false },
   line: { from: 2, wrap: 12, step: 1, level: -30, dur: 0.12, slip: true },
 };
-const SHEETS = ["aie", "fde", "mle", "sde"];
+const SHEETS = ["experience", "skills", "education"];
 
 export class Resume extends Movement {
   readonly id = "resume";
@@ -188,11 +188,11 @@ export class Resume extends Movement {
     if (land !== undefined) this.plate.play(land, t + D, dbg(-30) * size, this.touch, { rev: true, force: true });
   }
 
-  /** The four sheets, side by side across the room. */
+  /** The sheets, side by side across the room. */
   private sheet(id: string, action: string) {
     const t = this.ac.currentTime + 0.004;
     const i = Math.max(0, SHEETS.indexOf(id));
-    const x = -0.55 + (i / 3) * 1.1;
+    const x = -0.55 + (i / (SHEETS.length - 1)) * 1.1;
     const tones = tonesIn(this.chord, nm("C5"), nm("C6"));
     const m = tones.length ? tones[i % tones.length] : nm("C5");
     if (action === "hover") {

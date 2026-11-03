@@ -1,7 +1,8 @@
 // The resume as an object in zero gravity.
 //
-// Four printed sheets float in front of his name. One comes forward, and its
-// lines lift off the page and spread into the space around you: the work
+// Three printed sheets float in front of the name, one for each section. One
+// comes forward and turns into the whole page, and its lines lift off and
+// spread into the space around you: the work
 // becomes stops you fly between, each company's mark standing as a solid lit
 // object, the skills become a cloud of paper slips, education comes last.
 // Every pose is a function of the scroll, so scrolling back puts the page
@@ -48,7 +49,7 @@ import {
 } from "three";
 import { Finish } from "./finish";
 import { distanceField, layeredQuads, logoMask, typeMask, type Field } from "./marks";
-import { PAGE_H, PAGE_RATIO, PAGE_W, layoutPage, paintAtlas, paintBacks, paintPage, paintWords, type Layout, type Piece, type Rect, type Slip } from "./paper";
+import { PAGE_H, PAGE_RATIO, PAGE_W, layoutPage, paintAtlas, paintBacks, paintFace, paintPage, paintWords, type Layout, type Piece, type Rect, type Slip } from "./paper";
 import { DUST_FS, DUST_VS, MARK_FS, MARK_VS, PAPER_FS, PAPER_VS } from "./shaders";
 import { STOPS, type WorldData } from "./types";
 
@@ -57,7 +58,7 @@ export type WorldHits = {
   sections: { name: "experience" | "skills" | "education"; el: HTMLElement }[];
   keys: HTMLElement[];
   tethers: SVGLineElement[];
-  /** The PDF links at the last stop; the small sheets stand over them. */
+  /** The links back at the last stop; the small sheets stand over them. */
   endLinks: HTMLElement[];
 };
 
@@ -398,10 +399,14 @@ export async function mountWorld(
   const measure = document.createElement("canvas").getContext("2d")!;
   const layoutData: Layout = layoutPage(measure, data, masks);
   await nextFrame();
-  const pageTex: Texture[] = [];
+  // The whole page, which the lines lift off, and each sheet's own section.
+  const pageTex = tex(paintPage(layoutData, tier.page));
+  upload(pageTex);
+  await nextFrame();
+  const faceTex: Texture[] = [];
   for (let i = 0; i < data.sheets.length; i++) {
-    pageTex.push(tex(paintPage(layoutData, i, tier.page)));
-    upload(pageTex[i]);
+    faceTex.push(tex(paintFace(measure, data, i, tier.page, masks)));
+    upload(faceTex[i]);
     await nextFrame();
   }
   const backs = paintBacks(data, Math.round(tier.page / 2));
@@ -451,7 +456,8 @@ export async function mountWorld(
   const slipGeo = paperGeometry(2, 1);
   const n = data.sheets.length;
   const sheets: SheetRT[] = data.sheets.map((_, i) => {
-    const mat = paperMaterial(pageTex[i], null, backTex);
+    const mat = paperMaterial(faceTex[i], pageTex, backTex);
+    mat.uniforms.uHasAlt.value = 2;
     const batch = new Batch(sheetGeo, mat, 1);
     batch.place(0, { x: 0, y: 0, w: PAGE_W, h: PAGE_H }, backs.rects[i], 0.13 + i * 0.21);
     batch.state.set([0, 1, 1, 0.13 + i * 0.21], 0);
@@ -486,7 +492,7 @@ export async function mountWorld(
   // The lines of the page, with one blank sheet behind them. Instance 0 is
   // the blank.
   const piecesList = layoutData.pieces;
-  const pieceMat = paperMaterial(pageTex[0], atlasTex, null);
+  const pieceMat = paperMaterial(pageTex, atlasTex, null);
   const pieceBatch = new Batch(pieceGeo, pieceMat, piecesList.length + 1);
   // It shades as the whole page but prints nothing: a blank corner of the atlas.
   pieceBatch.place(0, { x: 0, y: 0, w: PAGE_W, h: PAGE_H }, [0.9985, 0.9985, 0.0005, 0.0005], 0.5);
@@ -527,7 +533,7 @@ export async function mountWorld(
   });
 
   const slipsList = layoutData.slips;
-  const slipMat = paperMaterial(pageTex[0], wordsTex, null);
+  const slipMat = paperMaterial(pageTex, wordsTex, null);
   const slipBatch = new Batch(slipGeo, slipMat, slipsList.length);
   scene.add(slipBatch.mesh);
   const slips: SlipRT[] = slipsList.map((s, i) => {
@@ -770,10 +776,9 @@ export async function mountWorld(
   const cellRects: ({ x: number; y: number } | null)[] = [];
   const endRects: ({ x: number; y: number } | null)[] = [];
   const STAGGER = [
-    { dz: -0.1, dy: 0.018, yaw: 0.34, pitch: -0.12, roll: -0.06 },
-    { dz: 0.9, dy: -0.03, yaw: -0.16, pitch: 0.13, roll: 0.04 },
-    { dz: -0.7, dy: 0.012, yaw: 0.15, pitch: 0.1, roll: -0.03 },
-    { dz: 0.5, dy: -0.016, yaw: -0.32, pitch: -0.13, roll: 0.07 },
+    { dz: -0.1, dy: 0.018, yaw: 0.3, pitch: -0.12, roll: -0.05 },
+    { dz: 0.8, dy: -0.024, yaw: -0.08, pitch: 0.12, roll: 0.03 },
+    { dz: -0.4, dy: 0.012, yaw: -0.3, pitch: -0.1, roll: 0.06 },
   ];
   let typeLit = 1;
 
@@ -829,27 +834,27 @@ export async function mountWorld(
       s.dist = 9 + sg.dz * (isWide ? 1 : 0.5);
       s.base = { yaw: sg.yaw * (isWide ? 1 : 0.7), pitch: sg.pitch, roll: sg.roll };
       if (isWide) {
-        const cw = r ? r.width : W / 4;
+        const cw = r ? r.width : W / n;
         // the sheets stand in front of the lower part of his name
         const regionTop = nameBox.bottom - nameBox.hpx * 0.24;
         const regionH = Math.max(120, cellTop - regionTop - 14);
-        const hpx = Math.min(regionH, (cw / PAGE_W) * PAGE_H * 0.98);
-        s.sx = (r ? r.left + r.width / 2 : ((i + 0.5) * W) / 4) / W;
+        const hpx = Math.min(regionH * 0.9, (cw / PAGE_W) * PAGE_H * 0.98);
+        s.sx = (r ? r.left + r.width / 2 : ((i + 0.5) * W) / n) / W;
         s.sy = (regionTop + regionH / 2) / H + sg.dy;
         s.worldW = pxWorld((hpx / PAGE_H) * PAGE_W, 9);
       } else {
-        // two by two above the links
+        // two above and one below, over the links
         const regionTop = nameBox.bottom - 24;
         const regionH = cellTop - regionTop - 8;
         const rowH = regionH / 2;
         const hpx = Math.min(rowH * 0.98, (W * 0.43 * PAGE_H) / PAGE_W);
         const col = i % 2;
         const row = Math.floor(i / 2);
-        s.sx = (col ? 0.74 : 0.26) + (row ? 0.008 : -0.008);
+        s.sx = row ? 0.5 : col ? 0.74 : 0.26;
         s.sy = (regionTop + rowH * (row + 0.5)) / H + sg.dy * 0.5;
         s.worldW = pxWorld((hpx / PAGE_H) * PAGE_W, 9);
       }
-      s.dir.set(i < 2 ? -1 : 1, i % 2 ? -0.45 : 0.55, -1).normalize();
+      s.dir.set(i === 0 ? -1 : i === n - 1 ? 1 : 0.35, i % 2 ? -0.55 : 0.55, -1).normalize();
     });
 
     // ---- the page, large and readable
@@ -1015,7 +1020,7 @@ export async function mountWorld(
         return { e, mw, mh: mw / (mk?.aspect ?? 3), ch: card ? cw * (card.p.rect.h / card.p.rect.w) : 80 };
       });
       const top = 112;
-      // above the PDF links and the small print, however tall they wrap
+      // above the links and the small print, however tall they wrap
       const endEl = hits.endLinks[0]?.closest<HTMLElement>(".rw-end");
       const endBlock = endEl ? layoutBox(endEl, canvas.parentElement) : null;
       const bottom = (endBlock ? endBlock.top : H - 96) - 6;
@@ -1093,7 +1098,7 @@ export async function mountWorld(
       const mul = sl.s.label ? 1.24 : 0.92 + hash(sl.i + 3) * 0.24;
       return { sl, cx, cy, tx: cx, ty: cy, w: sl.s.rect.w * unit * mul + 18, h: sl.s.rect.h * unit * mul + 16, mul };
     });
-    // the heading and the PDF links keep their ground
+    // the heading and the menu keep their ground
     const keepOut = isWide
       ? [{ l: 0, t: 0, r: Math.min(380, W * 0.3), b: 220 }, { l: W - 250, t: 0, r: W, b: 128 }]
       : [{ l: 0, t: 0, r: W, b: 146 }];
@@ -1364,7 +1369,7 @@ export async function mountWorld(
       .addScaledVector(vA.set(0, 1, 0).applyQuaternion(camera.quaternion), (-wy * viewH(cd)) / 2);
     shared.uCursorI.value = 1.45 + speed * 0.6;
 
-    // ---- the four sheets
+    // ---- the sheets
     const leave = clamp(P * 6);
     sheets.forEach((s, i) => {
       const b = s.batch;
@@ -1451,7 +1456,7 @@ export async function mountWorld(
         axis.set(s.dir.y, s.dir.x, 0.4).normalize();
         qA.multiply(qB.setFromAxisAngle(axis, out * 2.4));
       }
-      // the last stop: four small sheets again, one over each link
+      // the last stop: the small sheets again, one over each link
       if (endE > 0) {
         const cell = endRects[i];
         const hEnd = cell ? (Math.min(H * 0.17, 168)) : 120;
@@ -1478,6 +1483,8 @@ export async function mountWorld(
       b.mesh.setMatrixAt(0, mat);
       b.state[1] = isChosen ? lerp(0.86 + h * 0.2 + pk * 0.1, 1, smooth(0.7, 0.985, P)) : 0.86 + h * 0.2 + pk * 0.1;
       b.state[2] = isChosen && endE <= 0 ? 1 - smooth(0.7, 0.985, P) : 1;
+      // flying forward, the chosen sheet's section prints into the whole page
+      b.state[0] = isChosen && endE <= 0 ? smooth(0.12, 0.7, P) : 0;
       b.flex.set([bendK, bendY, twist, ripple], 0);
       b.commit();
 
@@ -1927,8 +1934,6 @@ export async function mountWorld(
     },
     setChosen(i) {
       chosen = i;
-      pieceMat.uniforms.tPage.value = pageTex[i];
-      slipMat.uniforms.tPage.value = pageTex[i];
     },
     chosen: () => chosen,
     hoverSheet(i) {

@@ -122,7 +122,8 @@ void main() {
     }
   } else if (!edge) {
     pr = texture2D(tPage, pageUv).rgb;
-    if (uHasAlt > 0.5 && vState.x > 0.002) pr = mix(pr, texture2D(tAlt, vUvB.xy + vec2(L.x, 1.0 - L.y) * vUvB.zw).rgb, vState.x);
+    // a piece's alternate is its sharp copy; a sheet's (2) is the whole page it turns into
+    if (uHasAlt > 0.5 && vState.x > 0.002) pr = mix(pr, texture2D(tAlt, uHasAlt > 1.5 ? pageUv : vUvB.xy + vec2(L.x, 1.0 - L.y) * vUvB.zw).rgb, vState.x);
     if (uHasBack > 0.5) otherInk = texture2D(tBack, vUvB.xy + vec2(1.0 - L.x, 1.0 - L.y) * vUvB.zw).r;
   }
 
