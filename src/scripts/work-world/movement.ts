@@ -39,6 +39,13 @@ export function mountMovement(o: MovementOptions) {
   const topAt = (q: number) => root.offsetTop + q * spanPx();
   const qNow = () => clamp((scrollY - root.offsetTop) / Math.max(1, spanPx()), 0, count - 1);
   const inStage = () => scrollY >= root.offsetTop - 2 && scrollY <= topAt(count - 1) + 2;
+  // Nothing lies past the last stop. Our own scrolling never leaves it, so the
+  // last screen stays whole whatever the phone's address bar is doing.
+  const push = (d: number) => {
+    const max = topAt(count - 1);
+    const next = scrollY + d;
+    scrollBy({ top: next > max ? Math.min(0, max - scrollY) : d, behavior: INSTANT });
+  };
 
   let glideId = 0;
   let gliding = false;
@@ -216,7 +223,7 @@ export function mountMovement(o: MovementOptions) {
       lastInput = now;
       lastDir = delta > 0 ? 1 : -1;
     }
-    scrollBy({ top: delta, behavior: INSTANT });
+    push(delta);
   }, { passive: false, ...sig });
   addEventListener("touchend", () => {
     if (!owned || free) return;
@@ -240,7 +247,7 @@ export function mountMovement(o: MovementOptions) {
       }
       lastInput = t;
       lastDir = vel > 0 ? 1 : -1;
-      scrollBy({ top: vel * dt, behavior: INSTANT });
+      push(vel * dt);
       fling = requestAnimationFrame(run);
     };
     fling = requestAnimationFrame(run);
@@ -251,6 +258,14 @@ export function mountMovement(o: MovementOptions) {
     const tgt = e.target as HTMLElement | null;
     if (tgt?.closest?.("input, textarea, select, [contenteditable=true]") || e.metaKey || e.ctrlKey || e.altKey) return;
     if (!inStage()) return;
+    if (e.key === "Home" || e.key === "End") {
+      if (tgt?.closest?.("[data-ww-scroll]")) return;
+      e.preventDefault();
+      lastInput = performance.now();
+      lastDir = e.key === "End" ? 1 : -1;
+      glide(e.key === "End" ? count - 1 : 0);
+      return;
+    }
     const down = e.key === "ArrowDown" || e.key === "PageDown" || e.key === "ArrowRight" || (e.key === " " && !e.shiftKey);
     const up = e.key === "ArrowUp" || e.key === "PageUp" || e.key === "ArrowLeft" || (e.key === " " && e.shiftKey);
     if (!down && !up) return;
@@ -295,7 +310,7 @@ export function mountMovement(o: MovementOptions) {
       stopFling();
       lastInput = performance.now();
       if (dy) lastDir = dy > 0 ? 1 : -1;
-      scrollBy({ top: dy, behavior: INSTANT });
+      push(dy);
       wake(180);
     },
     /** Let go of a drag with this velocity, in pixels per ms. */
@@ -315,7 +330,7 @@ export function mountMovement(o: MovementOptions) {
         }
         lastInput = t;
         lastDir = vel > 0 ? 1 : -1;
-        scrollBy({ top: vel * dt, behavior: INSTANT });
+        push(vel * dt);
         fling = requestAnimationFrame(run);
       };
       fling = requestAnimationFrame(run);

@@ -9,8 +9,9 @@ import path from "node:path";
 import BaseLayout from "../../layouts/BaseLayout.astro";
 import Picture from "../../components/common/Picture.astro";
 import Icon from "../../components/common/Icon.astro";
-import NextStep from "../../components/common/NextStep.astro";
+import WorldFoot from "../../components/work-world/WorldFoot.astro";
 import WorldStage from "../../components/work-world/WorldStage.astro";
+import { info } from "../../data/info";
 import { RESUME, bayStopCount, groupCards } from "../../components/work-world/world-data";
 import { disciplines } from "../../data/disciplines";
 import { readingTime } from "../../utils/readingTime";
@@ -82,10 +83,10 @@ const shopCount = 3;
 const resume = RESUME[d.slug];
 ---
 
-<BaseLayout title={`${d.name} · Sampreeth Avvari`} description={d.summary}>
+<BaseLayout title={`${d.name} · Sampreeth Avvari`} description={d.summary} footerVariant="minimal">
   <WorldStage page="bay" slug={d.slug} stops={stops} label={`Inside the ${d.name} bay`} span={1.6}>
     <!-- Arrive -->
-    <section class="ww-panel at-bl" data-stop="0" data-id="arrive" data-shade="bl" data-depth="40">
+    <section class="ww-panel at-bl" data-stop="0" data-id="arrive" data-shade="bl" data-depth="40" id="arrive">
       <div class="ww-box" style="max-width:min(860px,80vw)">
         <p class="ww-eye"><b>Bay {pad(idx + 1)}</b><i></i><span>{d.projects.length} projects · {d.articles.length} articles</span></p>
         <h1 class="ww-h1" style="font-size:clamp(2.4rem,6vw,5.75rem)">{d.name}.</h1>
@@ -166,7 +167,7 @@ const resume = RESUME[d.slug];
     </section>
 
     <!-- The way out -->
-    <section class="ww-panel at-c" data-stop={stops - 1} data-id="exit" data-shade="all" data-depth="20" id="exit">
+    <section class="ww-panel at-c has-foot" data-stop={stops - 1} data-id="exit" data-shade="all" data-depth="20" id="exit">
       <div class="ww-box is-glass is-exit" style="width:min(680px,100%);max-width:680px">
         <p class="ww-eye"><b>End of the bay</b></p>
         <h2 class="ww-h2">Where next.</h2>
@@ -179,16 +180,20 @@ const resume = RESUME[d.slug];
           </a>
         </nav>
         <div class="ww-actions">
-          <a class="jb" href="/work"><span>Back to the station</span><i class="jb-arrow"><Icon name="arrow-right" size={13} /></i></a>
-          <a class="jb is-ghost" href={resume} target="_blank" rel="noopener noreferrer"><span>Resume for this work</span><i class="jb-arrow"><Icon name="arrow-up-right" size={13} /></i></a>
+          <a class="jb is-solid" href={`mailto:${info.contact.email}`}><span>Get in touch</span><i class="jb-arrow"><Icon name="mail" size={13} /></i></a>
+          <a class="jb" href="/projects"><span>Every project</span><i class="jb-arrow"><Icon name="arrow-right" size={13} /></i></a>
+          <a class="jb is-ghost" href={resume} target="_blank" rel="noopener noreferrer"><span>Resume</span><i class="jb-arrow"><Icon name="arrow-up-right" size={13} /></i></a>
+          <a class="jb is-ghost" href="/work"><span>The station</span><i class="jb-arrow"><Icon name="arrow-right" size={13} /></i></a>
         </div>
       </div>
+      <WorldFoot />
     </section>
 
     <nav slot="hud" class="ww-rail" aria-label="In this bay">
       <ol>
         <li><a href="/work" data-out>Station</a></li>
         <li class="is-gap" aria-hidden="true"></li>
+        <li><a href="#arrive" data-ww-go="0">{d.name}</a></li>
         <li><a href="#how" data-ww-go="1">How I work</a></li>
         <li><a href="#bring" data-ww-go="2">What I bring</a></li>
         {groups.map((_, gi) => <li><a href={`#work-${gi + 1}`} data-ww-go={3 + gi}>Projects {gi + 1}</a></li>)}
@@ -198,5 +203,4 @@ const resume = RESUME[d.slug];
     </nav>
   </WorldStage>
 
-  <NextStep next={{ href: "/architecture", label: "See the drawings" }} />
 </BaseLayout>

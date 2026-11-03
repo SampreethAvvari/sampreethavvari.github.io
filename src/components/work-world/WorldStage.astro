@@ -29,7 +29,8 @@ const { page, slug, stops, label, span = 1.9 } = Astro.props;
   <style>
     .ww { height: auto !important; }
     .ww-stage { position: static !important; height: auto !important; overflow: visible !important; }
-    .ww-panels { position: static !important; }
+    .ww-panels { position: static !important; height: auto !important; }
+    .ww-foot { position: static !important; }
     .ww-panel { position: relative !important; opacity: 1 !important; pointer-events: auto !important; inset: auto !important; min-height: 0 !important; }
     .ww-reveal, .ww-more { max-height: none !important; opacity: 1 !important; overflow: visible !important; }
     .ww-canvas, .ww-rail, .ww-read, .ww-cue { display: none !important; }
@@ -41,13 +42,15 @@ const { page, slug, stops, label, span = 1.9 } = Astro.props;
   .ww, .ww-panels { --cc: 245, 165, 36; }
   .ww {
     position: relative;
-    height: calc((var(--stops) - 1) * var(--span) * 100svh + 100svh);
+    height: calc((var(--stops) - 1) * var(--span) * 100vh + 100vh);
+    height: calc((var(--stops) - 1) * var(--span) * 100svh + 100lvh);
     background: #030201;
   }
   .ww-stage {
     position: sticky;
     top: 0;
-    height: 100svh;
+    height: 100vh;
+    height: 100lvh;
     overflow: hidden;
     overflow: clip;
     isolation: isolate;
@@ -68,7 +71,7 @@ const { page, slug, stops, label, span = 1.9 } = Astro.props;
   .ww.is-3d .ww-canvas { opacity: 1; }
 
   .ww-stage.is-dragging { user-select: none; -webkit-user-select: none; }
-  .ww-panels { position: absolute; inset: 0; z-index: 2; pointer-events: none; overflow: hidden; overflow: clip; transform-style: preserve-3d; perspective-origin: 50% 50%; }
+  .ww-panels { position: absolute; left: 0; right: 0; top: 0; height: 100vh; height: 100svh; z-index: 2; pointer-events: none; overflow: hidden; overflow: clip; transform-style: preserve-3d; perspective-origin: 50% 50%; }
   .ww-panel {
     position: absolute;
     inset: 0;
@@ -157,6 +160,9 @@ const { page, slug, stops, label, span = 1.9 } = Astro.props;
   }
   .ww-box.is-glass[data-ww-scroll] { max-height: calc(100svh - 110px); overflow-y: auto; overscroll-behavior: contain; scrollbar-width: none; }
   .ww-box.is-glass[data-ww-scroll]::-webkit-scrollbar { display: none; }
+  .has-foot .ww-box[data-ww-scroll] { max-height: calc(100svh - 96px - 84px); overflow-y: auto; overscroll-behavior: contain; scrollbar-width: none; }
+  .has-foot .ww-box[data-ww-scroll]::-webkit-scrollbar { display: none; }
+  @media (max-width: 760px) { .has-foot .ww-box[data-ww-scroll] { max-height: calc(100svh - 84px - 136px); } }
   /* Clear of the chat button in the corner. */
   .at-br, .at-bc { padding-bottom: 96px; }
   @media (min-width: 761px) { .at-br, .at-r { padding-right: 96px; } }
@@ -189,6 +195,31 @@ const { page, slug, stops, label, span = 1.9 } = Astro.props;
   .ww-toggle::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: #f5a524; box-shadow: 0 0 10px rgba(245, 165, 36, 0.9); }
   .at-br .ww-toggle, .at-r .ww-toggle, .at-tr .ww-toggle { justify-self: end; }
   .at-bc .ww-toggle, .at-c .ww-toggle { justify-self: center; }
+
+  /* The small line that replaces the footer, on the last screen only. */
+  .ww-panel.has-foot { padding-bottom: 84px; }
+  .ww-foot {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 4px 22px;
+    padding: 34px max(32px, var(--gutter, 32px)) 12px;
+    background: linear-gradient(to top, rgba(3, 2, 1, 0.88) 0%, rgba(3, 2, 1, 0.66) 46%, transparent 100%);
+    font-size: 0.75rem;
+    text-align: left;
+  }
+  .ww-foot-tabs, .ww-foot-out { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 14px; }
+  .ww-foot a { display: inline-flex; align-items: center; gap: 6px; color: rgba(255, 255, 255, 0.72); text-decoration: none; line-height: 1.5; }
+  .ww-foot a:hover { color: #fff; }
+  .ww-foot a:focus-visible { outline: 1.5px solid #f5a524; outline-offset: 2px; }
+  .ww-foot-tabs a::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: rgb(var(--fc)); box-shadow: 0 0 8px rgba(var(--fc), 0.8); }
+  .ww-foot-copy { font-size: 0.6875rem; color: rgba(255, 255, 255, 0.5); }
+  .ww.is-flat .ww-foot { position: static; padding: 24px 0 0; background: none; grid-column: 1 / -1; width: 100%; }
 
   /* Rail and readout */
   .ww-rail { position: absolute; right: max(18px, calc(var(--gutter, 24px) - 16px)); top: 50%; transform: translateY(-50%); z-index: 3; }
@@ -342,6 +373,10 @@ const { page, slug, stops, label, span = 1.9 } = Astro.props;
     .ww-box.is-exit { justify-items: start; text-align: left; }
     .ww-box.is-exit .ww-eye, .ww-box.is-exit .ww-actions { justify-content: flex-start; }
     .ww-box.is-exit .ww-h2 { text-align: left; justify-self: start; }
+    .ww-panel.has-foot { padding-bottom: 136px; }
+    .ww-foot { padding: 26px 76px 10px 16px; gap: 3px 14px; justify-content: flex-start; }
+    .ww-foot-tabs, .ww-foot-out { gap: 2px 12px; }
+    .ww-foot-copy { font-size: 0.625rem; line-height: 1.35; }
     .ww-doors { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     .ww-door.is-next { text-align: left; }
     .ww-panel[data-stop] .ww-actions .jb { flex: 0 0 auto; }
@@ -384,7 +419,7 @@ const { page, slug, stops, label, span = 1.9 } = Astro.props;
   .ww.is-flat .ww-stage { position: relative; height: auto; overflow: visible; touch-action: auto; clip-path: inset(0); }
   .ww.is-flat .ww-sky { position: fixed; inset: 0; opacity: 0.8; }
   .ww.is-flat .ww-canvas { position: fixed; inset: 0; height: 100vh; opacity: 0.5; }
-  .ww.is-flat .ww-panels { position: relative; overflow: visible; perspective: none !important; padding-top: 72px; }
+  .ww.is-flat .ww-panels { position: relative; height: auto; overflow: visible; perspective: none !important; padding-top: 72px; }
   .ww.is-flat .ww-panel { position: relative; inset: auto; opacity: 1 !important; transform: none !important; pointer-events: auto; padding-block: 36px; justify-items: start; align-items: start; text-align: left; }
   .ww.is-flat .ww-panel a, .ww.is-flat .ww-panel button { pointer-events: auto; }
   .ww.is-flat .ww-reveal, .ww.is-flat .ww-more { max-height: none; opacity: 1; overflow: visible; }

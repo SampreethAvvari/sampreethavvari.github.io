@@ -1,0 +1,29 @@
+---
+// What the site footer carries, as one small line on the last screen of a Work
+// page. These pages have no footer: they end on the 3D. The dots wear each
+// tab's colour, as they do on the home page's last chapter.
+import { info } from "../../data/info";
+
+const TABS = [
+  { name: "Projects", href: "/projects", rgb: "91,141,239" },
+  { name: "Work", href: "/work", rgb: "245,165,36" },
+  { name: "Film", href: "/filmmaking", rgb: "244,63,94" },
+  { name: "Writing", href: "/posts", rgb: "52,211,153" },
+  { name: "Architecture", href: "/architecture", rgb: "34,211,238" },
+  { name: "Mind", href: "/mind", rgb: "167,139,250" },
+];
+const year = new Date().getFullYear();
+---
+
+<nav class="ww-foot" aria-label="Site">
+  <span class="ww-foot-tabs">
+    {TABS.map((t) => <a href={t.href} style={`--fc:${t.rgb}`}>{t.name}</a>)}
+  </span>
+  <span class="ww-foot-out">
+    <a href={info.contact.linkedin} target="_blank" rel="noopener noreferrer">LinkedIn</a>
+    <a href={info.contact.github} target="_blank" rel="noopener noreferrer">GitHub</a>
+    <a href={info.contact.instagram} target="_blank" rel="noopener noreferrer">Instagram</a>
+    <a href="#top-of-world" data-ww-go="0">Back to the start</a>
+  </span>
+  <span class="ww-foot-copy">© {year} Sampreeth Avvari · Visits counted with Cloudflare Web Analytics, no cookies</span>
+</nav>

@@ -809,6 +809,7 @@ export function buildTrail(opts: { low: boolean; font: string }) {
     curve,
     hits,
     uAtZ,
+    textures,
     headPosition: headP,
     setHot(stop: string, v: number) {
       hotOf[stop] = v;

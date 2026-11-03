@@ -145,6 +145,7 @@ export function mountWorld(canvas: HTMLCanvasElement, opts: WorldOptions) {
   let extraWarp = 0;
   let irisOpen = 0;
   let insideK = 0;
+  let compiling = false;
   const shadeNow = new Vector4();
   const shadeT = new Vector4();
 
@@ -707,8 +708,20 @@ export function mountWorld(canvas: HTMLCanvasElement, opts: WorldOptions) {
     start() {
       resize(true);
       last = performance.now();
-      if (opts.still) frame();
-      else if (!raf) raf = requestAnimationFrame(frame);
+      if (opts.still) {
+        frame();
+        return;
+      }
+      if (raf || compiling) return;
+      compiling = true;
+      const go = () => {
+        compiling = false;
+        if (dead || raf) return;
+        trail.textures.forEach((t) => renderer.initTexture(t));
+        last = performance.now();
+        raf = requestAnimationFrame(frame);
+      };
+      Promise.race([renderer.compileAsync(scene, camera), new Promise((r) => setTimeout(r, 6000))]).then(go, go);
     },
     destroy() {
       dead = true;

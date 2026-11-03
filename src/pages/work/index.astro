@@ -3,9 +3,10 @@
 // as a comet's path through time. One pinned stage, twelve stops; all the words
 // and links are real HTML in the panels below. See src/scripts/work-world/.
 import BaseLayout from "../../layouts/BaseLayout.astro";
-import NextStep from "../../components/common/NextStep.astro";
 import Icon from "../../components/common/Icon.astro";
+import WorldFoot from "../../components/work-world/WorldFoot.astro";
 import WorldStage from "../../components/work-world/WorldStage.astro";
+import { info } from "../../data/info";
 import { BAYS, TRAIL, bayStopCount, disciplines, leadProjects } from "../../components/work-world/world-data";
 
 const pad = (n: number) => String(n).padStart(2, "0");
@@ -28,7 +29,7 @@ const TRAIL_AT = [
 const stopsTotal = 1 + BAYS.length + 1 + TRAIL.length;
 ---
 
-<BaseLayout title="Work · Sampreeth Avvari">
+<BaseLayout title="Work · Sampreeth Avvari" footerVariant="minimal">
   <WorldStage page="index" stops={stopsTotal} label="A ring station with four docking bays, then the career as a comet's path">
     <!-- 0 The first screen -->
     <section class="ww-panel at-bl" data-stop="0" data-id="station" data-shade="bl" data-depth="150" id="station">
@@ -84,8 +85,8 @@ const stopsTotal = 1 + BAYS.length + 1 + TRAIL.length;
       const a = TRAIL_AT[i];
       const last = i === TRAIL.length - 1;
       return (
-        <section class={`ww-panel ww-stop ${a.at}`} data-stop={6 + i} data-id={t.id} data-body={t.body} data-shade={a.shade} data-depth={a.depth} id={t.id}>
-          <div class:list={["ww-box", { "is-glass": a.glass }]}>
+        <section class:list={["ww-panel ww-stop", a.at, { "has-foot": last }]} data-stop={6 + i} data-id={t.id} data-body={t.body} data-shade={a.shade} data-depth={a.depth} id={t.id}>
+          <div class:list={["ww-box", { "is-glass": a.glass }]} data-ww-scroll={last ? "" : undefined}>
             <p class="ww-eye"><b>{t.date}</b></p>
             <h2 class="ww-h2">{t.title}</h2>
             <p class="ww-line">{t.org} · {t.place}</p>
@@ -103,11 +104,13 @@ const stopsTotal = 1 + BAYS.length + 1 + TRAIL.length;
             <button type="button" class="ww-toggle" data-ww-toggle aria-expanded="false">More</button>
             {last && (
               <div class="ww-actions">
-                <a class="jb is-solid" href="/resume"><span>Resume</span><i class="jb-arrow"><Icon name="arrow-up-right" size={13} /></i></a>
-                <a class="jb is-ghost" href="/gallery"><span>Gallery</span><i class="jb-arrow"><Icon name="arrow-right" size={13} /></i></a>
+                <a class="jb is-solid" href={`mailto:${info.contact.email}`}><span>Get in touch</span><i class="jb-arrow"><Icon name="mail" size={13} /></i></a>
+                <a class="jb" href="/projects"><span>Every project</span><i class="jb-arrow"><Icon name="arrow-right" size={13} /></i></a>
+                <a class="jb is-ghost" href="/resume"><span>Resume</span><i class="jb-arrow"><Icon name="arrow-up-right" size={13} /></i></a>
               </div>
             )}
           </div>
+          {last && <WorldFoot />}
         </section>
       );
     })}
@@ -124,5 +127,4 @@ const stopsTotal = 1 + BAYS.length + 1 + TRAIL.length;
     <p slot="hud" class="ww-read" aria-hidden="true"><span data-ww-year>2017</span></p>
   </WorldStage>
 
-  <NextStep next={{ href: "/projects", label: "See every project" }} />
 </BaseLayout>

@@ -199,17 +199,21 @@ onPage("work-world", (signal) => {
   const setActive = (i: number) => {
     if (i === active) return;
     active = i;
-    rail.forEach((a, k) => (k === i ? a.setAttribute("aria-current", "step") : a.removeAttribute("aria-current")));
+    markRail(i);
     shade(i);
     if (touch) updateBays();
   };
 
-  const rail = Array.from(root.querySelectorAll<HTMLAnchorElement>("[data-ww-go]"));
+  const goers = Array.from(root.querySelectorAll<HTMLAnchorElement>("[data-ww-go]"));
+  const rail = Array.from(root.querySelectorAll<HTMLAnchorElement>(".ww-rail [data-ww-go]"));
+  function markRail(i: number) {
+    rail.forEach((a) => (Number(a.dataset.wwGo) === i ? a.setAttribute("aria-current", "step") : a.removeAttribute("aria-current")));
+  }
   const readEl = root.querySelector<HTMLElement>("[data-ww-year]");
 
   const movement: Movement = mountMovement({
     root,
-    stage,
+    stage: layer,
     count,
     span,
     reduced,
@@ -444,8 +448,8 @@ onPage("work-world", (signal) => {
     }, sig);
   });
 
-  // Rail links glide to their stop.
-  rail.forEach((a) => {
+  // These links glide to their stop.
+  goers.forEach((a) => {
     a.addEventListener("click", (e) => {
       e.preventDefault();
       movement.go(Number(a.dataset.wwGo));
@@ -522,7 +526,7 @@ onPage("work-world", (signal) => {
   q = movement.q();
   shade(Math.round(q));
   active = Math.round(q);
-  rail.forEach((a, k) => (k === active ? a.setAttribute("aria-current", "step") : a.removeAttribute("aria-current")));
+  markRail(active);
 
   // ---- the world
   let stopFrame: (() => void) | null = null;
