@@ -177,6 +177,9 @@ void main() {
     col = mix(col, f, foil);
   }
 
+  // the bare reverse of a strip sits in shadow, so a hoop has an inside
+  if (back && uHasBack < 0.5) col *= 0.52;
+
   // the cut edge, a hair of light around the sheet
   vec2 eL = min(L, 1.0 - L) * vSize;
   float ed = min(eL.x, eL.y);

@@ -16,26 +16,38 @@ import type { World } from "./world";
 const SILVER = "206,212,222";
 const fire = (name: string, detail: unknown) => window.dispatchEvent(new CustomEvent(name, { detail }));
 
-export function startResumeWorld(signal: AbortSignal): void | (() => void) {
+export function startResumeWorld(visit: AbortSignal): void | (() => void) {
   const root = document.querySelector<HTMLElement>("[data-rw]");
   if (!root) return;
-  const on = { signal };
   initAmbient(
     [
       [SILVER, SILVER],
       [SILVER, SILVER],
     ],
     undefined,
-    signal,
+    visit,
   );
 
   const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
-  const hasGL = "WebGL2RenderingContext" in window;
+  const hasGL = (() => {
+    try {
+      const g = document.createElement("canvas").getContext("webgl2");
+      g?.getExtension("WEBGL_lose_context")?.loseContext();
+      return !!g;
+    } catch {
+      return false;
+    }
+  })();
+  // Reduced motion and no WebGL get the same markup as a plain document.
   if (reduced || !hasGL) {
     root.classList.remove("is-live");
     return;
   }
   root.classList.add("is-live");
+  const live = new AbortController();
+  visit.addEventListener("abort", () => live.abort(), { once: true });
+  const signal = live.signal;
+  const on = { signal };
 
   const stage = root.querySelector<HTMLElement>(".rw-stage")!;
   const canvas = root.querySelector<HTMLCanvasElement>(".rw-canvas")!;
@@ -453,6 +465,21 @@ export function startResumeWorld(signal: AbortSignal): void | (() => void) {
   };
   addEventListener("resize", onResize, { passive: true, ...on });
 
+  // If WebGL fails after all: back to the plain document, with nothing left running.
+  const toDocument = () => {
+    live.abort();
+    halt();
+    io.disconnect();
+    stops.forEach((el) => {
+      el.style.removeProperty("opacity");
+      el.style.removeProperty("--d");
+      el.classList.remove("is-on");
+    });
+    pane?.style.removeProperty("min-height");
+    document.documentElement.classList.remove("in-rw");
+    root.classList.remove("is-live", "is-3d");
+  };
+
   // ------------------------------------------------------------ the 3D world
   // Lazy: three and the world arrive after the first paint.
   const boot = () => {
@@ -481,7 +508,7 @@ export function startResumeWorld(signal: AbortSignal): void | (() => void) {
           return;
         }
         if (!w) {
-          root.classList.remove("is-live");
+          toDocument();
           return;
         }
         world = w;
@@ -499,7 +526,7 @@ export function startResumeWorld(signal: AbortSignal): void | (() => void) {
       })
       .catch((err) => {
         console.warn("resume world did not start", err);
-        // The words and links carry on in the painted sky.
+        toDocument();
       });
   };
   const ric = (window as Window & { requestIdleCallback?: (cb: () => void, o?: { timeout: number }) => number }).requestIdleCallback;

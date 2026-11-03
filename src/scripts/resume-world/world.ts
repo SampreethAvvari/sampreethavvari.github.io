@@ -556,7 +556,7 @@ export async function mountWorld(
       axis: new Vector3(seed - 0.5, hash(seed * 3) - 0.5, hash(seed * 5) - 0.5).normalize(),
       rate: 0.15 + seed * 0.5,
       phase: seed * 20,
-      size: 2.2 + hash(seed * 7) * 1.6,
+      size: 2.6 + hash(seed * 7) * 2.4,
     });
   }
 
@@ -933,14 +933,14 @@ export async function mountWorld(
       mark(`role-${sh.id}`, 0.4, 0.5, 7, Math.min(W * 0.68, H * 1.15), 0.2, 0.06, -0.035);
     } else {
       const keyScale = (W * 0.82) / 608;
-      const top = 0.245;
-      const bot = 0.53;
+      const top = 0.262;
+      const bot = 0.54;
       K(hy.id).forEach((c, i, all) => {
         const t = all.length > 1 ? i / (all.length - 1) : 0;
         const wpx = c.p.rect.w * keyScale;
         destine(c, c.destK, 0.09 + wpx / (2 * W), lerp(top, bot, t), 7, wpx, 0.02, -0.08, 0);
       });
-      mark(`role-${hy.id}`, 0.5, 0.17, 7, W * 0.56, -0.08, 0.05);
+      mark(`role-${hy.id}`, 0.5, 0.165, 7, W * 0.56, -0.08, 0.05);
       const frR = free(3);
       const hoopR = Math.min(W * 0.44, frR.room * 0.46);
       K(re.id).forEach((c) => hoop(c, 0.5, frR.mid, 7, hoopR, 0.42, -0.08, -1, 0.4));
@@ -964,8 +964,8 @@ export async function mountWorld(
         place(id, sx, 0.545, 7, Math.min(W * 0.39, H * 0.68), 0.03, i === 0 ? 0.14 : -0.14);
         mark(`edu-${e.id}`, sx, 0.345, 7, i === 0 ? Math.min(W * 0.21, H * 0.36) : Math.min(W * 0.27, H * 0.46), i === 0 ? 0.16 : -0.16, 0.03);
       } else {
-        place(id, 0.5, i === 0 ? 0.3 : 0.5, 7, W * 0.88, 0.02, 0);
-        mark(`edu-${e.id}`, 0.5, i === 0 ? 0.195 : 0.4, 7, i === 0 ? W * 0.42 : W * 0.6, 0, 0.02);
+        place(id, 0.5, i === 0 ? 0.335 : 0.625, 7, W * 0.88, 0.02, 0);
+        mark(`edu-${e.id}`, 0.5, i === 0 ? 0.205 : 0.495, 7, i === 0 ? W * 0.46 : W * 0.66, 0, 0.02);
       }
     });
 
@@ -1014,7 +1014,7 @@ export async function mountWorld(
       [0, -0.86],
     ];
     const seats = isWide ? wideSeats : tallSeats;
-    const unit = isWide ? clamp(H / 900, 0.8, 1.25) * 0.84 : 0.47; // screen px per page unit
+    const unit = isWide ? clamp(H / 900, 0.8, 1.25) * 0.84 : 0.445; // screen px per page unit
     const counts = new Array(G).fill(0);
     const topEdge = isWide ? 82 : 128;
     const botEdge = H - (isWide ? 78 : 66);
@@ -1485,7 +1485,7 @@ export async function mountWorld(
           qA.copy(pc.entryQ).slerp(pc.destQ, e);
           scale = pc.destS;
           morph = pc.p.hi > 0 ? 1 : 0;
-          rim = 1;
+          rim = pc.hoop ? 0.42 : 1;
           ripple = Math.sin(Math.PI * e) * 0.01;
           bendK = pc.hoop ? pc.destFlexK * Math.max(e, 0.02) : pc.destFlexK * e + Math.sin(Math.PI * e) * (pc.seed - 0.5) * 1.5;
         } else if (direct && P < stopK + 0.92) {
@@ -1523,8 +1523,7 @@ export async function mountWorld(
               lit = 1;
               ripple = pc.hoop ? 0 : Math.max(ripple, 0.0016);
             }
-            bendK = Math.max(Math.abs(bendK), 0) === 0 ? pc.destFlexK : bendK;
-          } else if (pc.destFlexK) bendK = pc.destFlexK;
+          }
         }
 
         sV.setScalar(scale);
