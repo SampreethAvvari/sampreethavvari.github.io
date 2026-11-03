@@ -857,6 +857,22 @@ const dataJson = JSON.stringify(mindGraphs).replace(/</g, "\\u003c");
     .mind-tour-text { font-size: 0.84rem; }
   }
 
+  /* Phones: nothing over the moving map blurs it. A blur over a canvas that
+     redraws every frame is recomputed every frame at the phone's full pixel
+     density, and on an iPhone that is enough to get the tab killed and
+     reloaded. Solid dark glass reads the same at this size. */
+  @media (max-width: 767px), (pointer: coarse) {
+    .mind-panel, .mind-reset, .mind-card-frame, .mind-tour-frame,
+    :global(body:has(.mind-root) .nav-glass), :global(body:has(.mind-root) .chat-launcher) {
+      -webkit-backdrop-filter: none !important;
+      backdrop-filter: none !important;
+    }
+    .mind-panel, .mind-reset { background: rgba(12, 13, 20, 0.92); }
+    .mind-card-frame { background-color: rgba(10, 11, 18, 0.95); }
+    .mind-tour-frame { background: radial-gradient(120% 90% at 0% 0%, rgba(var(--c-mind-rgb), 0.18), transparent 60%), rgba(12, 12, 20, 0.95); }
+    :global(body:has(.mind-root) .nav-glass) { background: rgba(10, 11, 16, 0.9) !important; }
+  }
+
   @media (prefers-reduced-motion: reduce) {
     .mind-panel { animation: none; }
     .mind-card.is-in .mind-card-frame, .mind-card.is-in .mind-card-frame::after { animation: none; }

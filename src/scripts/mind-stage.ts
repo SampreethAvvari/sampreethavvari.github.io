@@ -857,11 +857,18 @@ export function mountMind() {
   }
 
   // ---- render -------------------------------------------------------------
+  // The canvas buffer is only rebuilt when its pixel size really changes. On a
+  // phone the address bar sliding fires many tiny resizes, and rebuilding a
+  // full screen buffer on each one is what runs a phone out of graphics
+  // memory. Phones also draw at 1.5x, which is plenty on a moving star field.
   function resize() {
-    dpr = Math.min(window.devicePixelRatio || 1, phone ? 1.75 : 2);
-    W = canvas!.clientWidth; H = canvas!.clientHeight;
-    canvas!.width = Math.round(W * dpr);
-    canvas!.height = Math.round(H * dpr);
+    const nextDpr = Math.min(window.devicePixelRatio || 1, phone ? 1.5 : 2);
+    const w = Math.round(canvas!.clientWidth), h = Math.round(canvas!.clientHeight);
+    const pw = Math.round(w * nextDpr), ph = Math.round(h * nextDpr);
+    if (pw === canvas!.width && ph === canvas!.height && nextDpr === dpr && w === W && h === H) return;
+    dpr = nextDpr; W = w; H = h;
+    if (canvas!.width !== pw) canvas!.width = pw;
+    if (canvas!.height !== ph) canvas!.height = ph;
     ctx!.setTransform(dpr, 0, 0, dpr, 0, 0);
     cam.focal = focalFor(W, H);
   }
@@ -928,7 +935,7 @@ export function mountMind() {
     drawDust(speed, dustQ);
     ctx!.globalCompositeOperation = "source-over";
     // the axes step back while a star is open, so its names read clearly
-    if (hasQuadrants) drawAxes(showAxisLabels, tourAxes ? 1.2 : touring ? 0.08 : (1 - out * 0.85) * (selected ? 0.35 : 1));
+    if (hasQuadrants) drawAxes(showAxisLabels && (!selected || tourAxes), tourAxes ? 1.2 : touring ? 0.08 : (1 - out * 0.85) * (selected ? 0.35 : 1));
     ctx!.globalCompositeOperation = "lighter";
 
     // Comets behind the map's centre draw under it, the rest over it.
@@ -1075,7 +1082,8 @@ export function mountMind() {
     op = clamp(op, 0, 1.5);
     if (op <= 0.01) return;
     const x = p.px, y = p.py;
-    const halo = big ? Math.max(R * 8 + lerp(16, 6, out), lerp(26, 11, out)) : Math.max(R * 4.6 + 4, lerp(8, 5, out));
+    const haloMax = Math.max(W, H) * (phone ? 0.45 : 0.8);
+    const halo = Math.min(haloMax, big ? Math.max(R * 8 + lerp(16, 6, out), lerp(26, 11, out)) : Math.max(R * 4.6 + 4, lerp(8, 5, out)));
     blit(sprite("glow", p.color), x, y, halo, op * (big ? lerp(0.72, 0.5, out) : 0.42));
     if ((SPIKED.has(p.type) || (big && !p.major)) && out < 0.85) blit(sprite("spike", p.color), x, y, Math.max(R * 7 + 20, lerp(30, 12, out)), op * 0.55 * (1 - out));
     const core = Math.max(R * (big ? 1.45 : 0.95), big ? lerp(2.6, 1.7, out) : 1.2);
@@ -1622,7 +1630,12 @@ export function mountMind() {
   window.addEventListener("resize", () => placeTour());
 
   // ---- boot ---------------------------------------------------------------
-  const ro = new ResizeObserver(() => resize());
+  let resizeQueued = false;
+  const ro = new ResizeObserver(() => {
+    if (resizeQueued) return;
+    resizeQueued = true;
+    requestAnimationFrame(() => { resizeQueued = false; resize(); });
+  });
   ro.observe(canvas);
   resize();
   loadGraph(graphKey);
