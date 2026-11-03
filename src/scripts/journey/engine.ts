@@ -225,7 +225,7 @@ function groundEnvironment(renderer: WebGLRenderer): WebGLRenderTarget {
         float y = vP.y;
         vec3 c = y > 0.0 ? mix(vec3(0.9, 0.3, 0.05), vec3(0.4, 0.1, 0.05), smoothstep(0.0, 0.7, y)) : mix(vec3(0.2, 0.08, 0.03), vec3(0.05, 0.02, 0.012), smoothstep(0.0, -0.4, y));
         float sun = pow(max(dot(vP, normalize(vec3(0.14, 0.08, -1.0))), 0.0), 60.0);
-        c += vec3(5.0, 2.2, 0.7) * sun;
+        c += vec3(1.5, 0.75, 0.28) * sun;
         gl_FragColor = vec4(c, 1.0);
       }`,
     }),
@@ -886,36 +886,32 @@ export function mountJourney(canvas: HTMLCanvasElement, opts: JourneyOptions): J
     const closeK = smooth(2.75, 3, sNow);
     if (closeK > 0 && surface) {
       pf.dof = pf.dof ?? [0, 0, 0, 0];
-      pf.dof[0] = portrait ? 0.56 : 0.6;
-      pf.dof[1] = portrait ? 0.56 : 0.2;
+      _v.copy(surface.focusWorld).project(camera);
+      pf.dof[0] = _v.x * 0.5 + 0.5;
+      pf.dof[1] = _v.y * 0.5 + 0.5;
       pf.dof[2] = closeK * (low ? 0.6 : 1);
-      pf.dof[3] = portrait ? 0.16 : 0.14;
+      pf.dof[3] = 0.07;
       // Where the horizon is on screen.
       _v2.copy(camera.position).addScaledVector(landing.fwd, 3000).addScaledVector(landing.up, -camera.position.clone().sub(landing.pad).dot(landing.up)).project(camera);
       pf.dofH = _v2.y * 0.5 + 0.5;
     } else {
       pf.dof = undefined;
     }
-    // Hot air over the horizon and faint shafts, only while the sun is up.
+    // Hot air over the horizon, only while the sun is up.
     if (surface && groundK > 0.5 && !reduced && !low && sNow < 1.9) {
-      _v.copy(surface.sunWorld).multiplyScalar(4000).add(camera.position).project(camera);
-      pf.rays = pf.rays ?? [0, 0, 0];
-      const onScreen = _v.z < 1 && Math.abs(_v.x) < 1.3 && Math.abs(_v.y) < 1.3;
-      pf.rays[0] = _v.x * 0.5 + 0.5;
-      pf.rays[1] = _v.y * 0.5 + 0.5;
-      pf.rays[2] = onScreen ? 0.45 * (1 - smooth(1.2, 1.9, sNow)) : 0;
       pf.heat = pf.heat ?? [0.5, 0];
       _v2.copy(camera.position).addScaledVector(landing.fwd, 3000).addScaledVector(landing.up, -camera.position.clone().sub(landing.pad).dot(landing.up)).project(camera);
       pf.heat[0] = _v2.y * 0.5 + 0.5;
       pf.heat[1] = 0.0007 * (1 - smooth(1.4, 1.9, sNow));
     } else {
-      pf.rays = undefined;
       pf.heat = undefined;
     }
     pf.bloom = lerp(1, 0.32, groundK);
     pf.ca = lerp(1, 0.3, groundK);
     pf.grain = lerp(1, 0.55, groundK);
     pf.exposure = lerp(1, 0.9, groundK);
+    // The lamp's shadow of the seedling, drawn before the frame that uses it.
+    if (surface && sNow > 2.4) surface.lampPass(renderer);
     post.render(scene, camera, pf);
   }
 

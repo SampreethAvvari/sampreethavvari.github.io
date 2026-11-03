@@ -361,11 +361,15 @@ export function buildShip(opts: ShipBuildOptions): Ship {
   addParts(lander, lp);
   // Its own skin: a ceramic grey hull that takes the sky, bright trim, dark seals, small lights.
   const hullMat = comp.clone();
-  hullMat.color = new Color(0xa4a6ab);
-  hullMat.metalness = 0.62;
-  hullMat.roughness = 0.68;
-  hullMat.envMapIntensity = 1.15;
-  const trimMat = new MeshStandardMaterial({ color: 0xc6c9cf, metalness: 1, roughness: 0.27, envMapIntensity: 1.25 });
+  hullMat.color = new Color(0xd2cfc8);
+  hullMat.metalness = 0.22;
+  hullMat.roughness = 0.6;
+  hullMat.envMapIntensity = 0.8;
+  const trimMat = new MeshStandardMaterial({ color: 0xc6c9cf, metalness: 1, roughness: 0.36, envMapIntensity: 1.25 });
+  // Legs and rails: worn metal that never throws the sun back as a white spot.
+  const legMat = metal.clone();
+  legMat.roughness = 0.62;
+  legMat.metalness = 0.75;
   const ledMat = new MeshBasicMaterial({ color: new Color(1.5, 1.05, 0.62) });
   lander.traverse((o) => {
     const mm = o as Mesh;
@@ -427,7 +431,7 @@ export function buildShip(opts: ShipBuildOptions): Ship {
   const rampMat = new MeshStandardMaterial({ color: 0x3b3d42, metalness: 0.8, roughness: 0.5, envMapIntensity: 0.9 });
   const ramp = new Mesh(boxUV(mergeAll(rampParts), 2.2), rampMat);
   ramp.castShadow = shadows;
-  const rampRails = new Mesh(mergeAll(railParts), metal);
+  const rampRails = new Mesh(mergeAll(railParts), legMat);
   rampRails.castShadow = shadows;
   const rampLed: BufferGeometry[] = [];
   for (const sx of [1, -1]) rampLed.push(new BoxGeometry(0.012, RAMP_LEN * 0.9, 0.012).translate(sx * 0.44, RAMP_LEN * 0.5, -0.05));
@@ -510,7 +514,7 @@ export function buildShip(opts: ShipBuildOptions): Ship {
     pivot.position.set(x, y, z);
     lg.push(new CylinderGeometry(0.1, 0.12, 0.05, 12).translate(0, -len + 0.08, 0));
     lg.push(new CylinderGeometry(0.018, 0.018, len * 0.62, 6).translate(0.075, -len * 0.42, 0));
-    const mesh = new Mesh(mergeAll(lg), metal);
+    const mesh = new Mesh(mergeAll(lg), legMat);
     mesh.castShadow = shadows;
     const sleeve = new Mesh(mergeAll([new BoxGeometry(0.15, len * 0.34, 0.15).translate(0, -len * 0.17, 0), new BoxGeometry(0.1, 0.06, 0.1).translate(0, -len * 0.36, 0), new CylinderGeometry(0.03, 0.03, 0.12, 8).rotateZ(Math.PI / 2).translate(0, -0.02, 0)]), carbon);
     sleeve.castShadow = shadows;

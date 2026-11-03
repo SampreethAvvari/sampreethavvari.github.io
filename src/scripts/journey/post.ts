@@ -18,7 +18,6 @@ import {
   ShaderMaterial,
   UnsignedByteType,
   Vector2,
-  Vector3,
   Vector4,
   WebGLRenderTarget,
   type Scene,
@@ -105,7 +104,6 @@ uniform vec3 uFlashColor;
 uniform vec4 uDof;       // focus uv x, y, strength, clear radius
 uniform float uDofH;     // horizon uv y: above it nothing blurs
 uniform vec2 uHeat;      // horizon uv y, strength
-uniform vec3 uRays;      // sun uv x, y, strength
 varying vec2 vUv;
 
 vec3 rrtOdt(vec3 v) {
@@ -181,7 +179,7 @@ void main() {
   }
   // A soft lens: only the focus stays sharp.
   if (uDof.z > 0.001) {
-    float fr = length((vUv - uDof.xy) * asp);
+    float fr = length((vUv - uDof.xy) * asp * vec2(0.3, 1.0));
     float blur = smoothstep(uDof.w, uDof.w + 0.42, fr) * uDof.z;
     // The stars stay sharp; only the near and far sand go soft.
     blur *= 1.0 - smoothstep(uDofH + 0.005, uDofH + 0.05, uv.y);
@@ -196,20 +194,6 @@ void main() {
       }
       col = acc / 11.0;
     }
-  }
-  // Faint shafts of the low sun through the dust.
-  if (uRays.z > 0.001) {
-    vec2 dir = (uRays.xy - vUv) / 12.0;
-    vec2 sp = vUv + dir * (hash12(gl_FragCoord.xy) * 0.9);
-    float acc = 0.0;
-    float wgt = 1.0;
-    for (int i = 0; i < 12; i++) {
-      vec3 sc = texture2D(tScene, sp).rgb;
-      acc += max(dot(sc, vec3(0.3, 0.6, 0.1)) - 0.62, 0.0) * wgt;
-      wgt *= 0.9;
-      sp += dir;
-    }
-    col += vec3(1.0, 0.55, 0.26) * acc * uRays.z * 0.11;
   }
 #ifdef BLOOM
   col += texture2D(tBloom, uv).rgb * uBloom;
@@ -265,8 +249,6 @@ export interface PostFrame {
   dofH?: number;
   /** Horizon uv y and shimmer strength. */
   heat?: [number, number];
-  /** Sun uv x, y and shaft strength. */
-  rays?: [number, number, number];
 }
 
 export class Post {
@@ -352,7 +334,6 @@ export class Post {
         uDof: { value: new Vector4(0, 0, 0, 0.2) },
         uDofH: { value: 1 },
         uHeat: { value: new Vector2(0.5, 0) },
-        uRays: { value: new Vector3(0, 0, 0) },
       },
       blending: NoBlending,
     });
@@ -415,8 +396,6 @@ export class Post {
     else u.uDof.value.z = 0;
     if (f.heat) u.uHeat.value.set(f.heat[0], f.heat[1]);
     else u.uHeat.value.y = 0;
-    if (f.rays) u.uRays.value.set(f.rays[0], f.rays[1], f.rays[2]);
-    else u.uRays.value.z = 0;
     u.uFade.value = f.fade;
     u.uFlare.value.x = f.flare.x;
     u.uFlare.value.y = f.flare.y;

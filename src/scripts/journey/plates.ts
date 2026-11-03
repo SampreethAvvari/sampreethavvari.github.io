@@ -16,6 +16,8 @@ export interface PlateMeta {
   box: [number, number, number, number];
   /** Lowest point of the figure per frame in source pixels: x, y (feet, or the fingertip). */
   foot: [number, number][];
+  /** Where a lamp on the figure is per frame, in source pixels, when the plate has one. */
+  lamp?: [number, number][];
   /** Height of the figure per frame in source pixels, steadied. */
   height?: number[];
   dir: { d: string; p: string };
@@ -64,7 +66,7 @@ export class PlateBank {
   constructor(url: string, phone: boolean) {
     this.base = new URL(url, location.href);
     this.set = phone ? "p" : "d";
-    this.conc = phone ? 3 : 6;
+    this.conc = phone ? 4 : 8;
     this.maxDecoded = phone ? 12 : 20;
   }
 
@@ -102,7 +104,18 @@ export class PlateBank {
     this.pump();
   }
 
+  /** Next frame to fetch: the chapter's own two plates side by side, coarse frames first, then the rest. */
   private next(): [Stream, number] | null {
+    const pass = (i: number) => (i % 12 === 0 ? 0 : i % 6 === 0 ? 1 : i % 3 === 0 ? 2 : 3);
+    const near = this.priority.slice(0, 2);
+    for (let want = 0; want < 4; want++) {
+      for (const id of near) {
+        const s = this.streams.get(id);
+        if (!s) continue;
+        while (s.queue.length && s.state[s.queue[0]]) s.queue.shift();
+        if (s.queue.length && pass(s.queue[0]) <= want) return [s, s.queue.shift()!];
+      }
+    }
     for (const id of this.priority) {
       const s = this.streams.get(id);
       if (!s) continue;
@@ -206,6 +219,13 @@ export class PlateBank {
         break;
       }
     }
+    // The nearest frame that has arrived behind the playhead, decoded ready for next time.
+    for (let i = at; i >= 0 && i > use; i--) {
+      if (s.state[i] === 2) {
+        this.decode(s, i);
+        break;
+      }
+    }
     if (use < 0 && s.shown < 0) {
       // Nothing behind the playhead yet: anything decoded, or a loaded frame to decode.
       for (let i = at; i < n; i++) {
@@ -237,6 +257,12 @@ export class PlateBank {
       s.shown = use;
     }
     return s.tex;
+  }
+
+  /** Which frame of this plate the texture holds right now. */
+  shown(id: string) {
+    const s = this.streams.get(id);
+    return s ? s.shown : -1;
   }
 
   /** Does this plate have its first frame ready to show? */
