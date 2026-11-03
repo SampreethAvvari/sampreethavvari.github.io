@@ -48,7 +48,7 @@ import {
   WebGLRenderer,
 } from "three";
 import { Finish } from "./finish";
-import { distanceField, layeredQuads, logoMask, typeMask, type Field } from "./marks";
+import { distanceFields, layeredQuads, logoMask, typeMask, type Field } from "./marks";
 import { PAGE_H, PAGE_RATIO, PAGE_W, layoutPage, paintAtlas, paintBacks, paintFace, paintPage, paintWords, type Layout, type Piece, type Rect, type Slip } from "./paper";
 import { DUST_FS, DUST_VS, MARK_FS, MARK_VS, PAPER_FS, PAPER_VS } from "./shaders";
 import { STOPS, type WorldData } from "./types";
@@ -641,16 +641,19 @@ export async function mountWorld(
   const marks: MarkRT[] = [];
   const wide = () => canvas.clientWidth / Math.max(1, canvas.clientHeight) >= 1.05 && canvas.clientWidth >= 768;
   const spreadFor = (w: number) => Math.max(10, Math.round(w / 64));
-  const logoField = (src: string) => {
-    const m = masks.get(src);
-    return m ? distanceField(m, spreadFor(m.width)) : null;
-  };
+  // His name, large, behind the sheets. Phones stack it on two lines.
+  const nameParts = data.person.name.split(" ");
+  const nameFontPx = 300;
+  const nameMask = typeMask(wide() ? [data.person.name] : nameParts, nameFontPx, 620, -nameFontPx * 0.042);
+  const logoSrcs = logoUrls.filter((src) => masks.has(src));
+  const made = await distanceFields([
+    ...logoSrcs.map((src) => ({ mask: masks.get(src)!, spread: spreadFor(masks.get(src)!.width) })),
+    { mask: nameMask, spread: 14 },
+  ]);
   const fieldsBySrc = new Map<string, Field>();
-  for (const src of logoUrls) {
-    const f = logoField(src);
-    if (f) fieldsBySrc.set(src, f);
-    await nextFrame();
-  }
+  logoSrcs.forEach((src, i) => fieldsBySrc.set(src, made[i]));
+  const nameField = made[made.length - 1];
+  await nextFrame();
   data.roles.forEach((r, i) => {
     const f = fieldsBySrc.get(r.logo);
     if (f) marks.push(makeMark(`role-${r.id}`, f, 2 + i, r.logo.includes("hybridge") ? 0.05 : 0.09, 0.2, f.spread * 0.5));
@@ -661,15 +664,7 @@ export async function mountWorld(
     if (f) marks.push(makeMark(`edu-${e.id}`, f, STOPS.indexOf("education"), e.logo.endsWith(".png") ? 0.008 : 0.06, e.logo.endsWith(".png") ? 0.36 : 0.2, e.logo.endsWith(".png") ? 2.5 : f.spread * 0.5));
   });
 
-  // His name, large, behind the sheets. Phones stack it on two lines.
-  const nameParts = data.person.name.split(" ");
-  const buildType = () => {
-    const lines = wide() ? [data.person.name] : nameParts;
-    const fontPx = 300;
-    const mask = typeMask(lines, fontPx, 620, -fontPx * 0.042);
-    return distanceField(mask, 14);
-  };
-  const typeMark = makeMark("name", buildType(), 0, 0.06, 0.17, 5);
+  const typeMark = makeMark("name", nameField, 0, 0.06, 0.17, 5);
   typeMark.mesh.layers.enable(1);
   typeMark.mat.uniforms.uShadeOn.value = 1;
   marks.push(typeMark);
