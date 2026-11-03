@@ -23,6 +23,15 @@
 //   resume:stop      detail { index, id }
 //   resume:transition detail { direction, from, to, duration }  duration in seconds
 //   resume:hover     detail { kind, id, note }
+//   projects:world   detail { index, id, accent }  a stage takes the screen
+//   projects:transition detail { direction, from, to, duration }  duration in ms
+//   projects:hover   detail { kind, id, note }
+//   projects:open    detail { id }
+//   work:bay         detail { id, action }  action is hover, open or close
+//   work:spin        detail { velocity, section }  stops per second
+//   work:stop        detail { index, id }
+//   work:transition  detail { direction, from, to, duration }  duration in ms
+//   work:hover       detail { kind, id, note }
 //   post:section     detail { index, id }
 //   post:hover       detail { kind, id, note }
 //   post:figure      detail { id, action }
@@ -63,6 +72,8 @@ let wordsTimer = 0;
 let archFocus: { slug: string; title?: string; discipline?: string } | null = null;
 let archFlow = 0;
 let resumeStop = -1;
+let projectsStage = -1;
+let workStop: { index: number; id: string } | null = null;
 let linkWait = 0;
 let duckAmount = 0;
 
@@ -136,6 +147,8 @@ function play(id: string, handover: boolean) {
     m.journey(jP, 0);
   }
   if (id === "resume" && resumeStop >= 0) m.pageEvent("resume:stop", { index: resumeStop, quiet: true }, 0.5);
+  if (id === "projects" && projectsStage >= 0) m.pageEvent("projects:world", { index: projectsStage, quiet: true }, 0.5);
+  if (id === "work" && workStop) m.pageEvent("work:stop", { ...workStop, quiet: true }, 0.5);
   if (id === "architecture") {
     if (archFocus) m.focus(archFocus);
     if (archFlow) m.flow(archFlow);
@@ -259,8 +272,9 @@ function onMove(e: PointerEvent) {
 const INTERACTIVE = "a, button, [role=button], summary, label, input, select, textarea";
 // Elements that announce their own hover with a page event, so the generic tap
 // would only double them: the writing sky, the post rail, sky and figures, the
-// resume's sheets, sections, keys and chips.
-const OWN_HOVER = ".ax-s, .ax-slot, .ax-c, #post-toc a, .pfx-sky-star, .pfx-day-star, .pfx-zp-run, [data-rw] [data-cell], [data-rw] [data-section], [data-rw] [data-jump], [data-rw] [data-key], [data-rw] [data-group]";
+// resume's sheets, sections, keys and chips, the parts on the star system, the
+// cards, chips, doors and shelf on the ring station.
+const OWN_HOVER = ".ax-s, .ax-slot, .ax-c, .pw-c, .ww-card, .ww-chip, .ww-door, .ww-shelf a, #post-toc a, .pfx-sky-star, .pfx-day-star, .pfx-zp-run, [data-rw] [data-cell], [data-rw] [data-section], [data-rw] [data-jump], [data-rw] [data-key], [data-rw] [data-group]";
 // A click that plays its own sound in place of the generic tap.
 const OWN_CLICK = "[data-rw] [data-cell]";
 
@@ -281,7 +295,8 @@ function onKeyClick(e: MouseEvent) {
   current.click((r.left + r.width / 2) / Math.max(1, innerWidth), (r.top + r.height / 2) / Math.max(1, innerHeight));
 }
 function onOver(e: PointerEvent) {
-  if (!on || !current || e.pointerType !== "mouse") return;
+  // a button held down is a drag: passing over a link on the way is not a hover
+  if (!on || !current || e.pointerType !== "mouse" || e.buttons) return;
   const el = (e.target as Element | null)?.closest?.("a, button, [role=button], summary, .journey-rail, [data-sound-hover]");
   if (!el || (e.relatedTarget instanceof Node && el.contains(e.relatedTarget))) return;
   if (el.closest(OWN_HOVER)) return;
@@ -313,7 +328,8 @@ export function mountSound() {
   // for local testing only; Vite drops this from production builds
   if (import.meta.env.DEV) {
     (window as unknown as { __sound: unknown }).__sound = {
-      state: () => ({ ctx: ctx?.state ?? null, on, current: currentId, leaving: leaving.length, chapter: jChapter, ...touches }),
+      movement: () => current,
+      state: () => ({ ctx: ctx?.state ?? null, on, current: currentId, leaving: leaving.length, chapter: jChapter, reading: !!(current as unknown as { reading?: boolean } | null)?.reading, scrollI: (current as unknown as { scrollI?: number } | null)?.scrollI ?? 0, stage: (current as unknown as { stage?: number } | null)?.stage ?? -1, ...touches }),
     };
   }
   on = readPref();
@@ -409,6 +425,32 @@ export function mountSound() {
     else wordsTimer = window.setTimeout(() => currentId === "home" && current?.words(d, 0.25), 250);
   });
 
+  // the star system on the projects tab
+  for (const name of ["projects:world", "projects:transition", "projects:hover", "projects:open"]) {
+    addEventListener(name, (e) => {
+      const d = (e as CustomEvent).detail;
+      if (!d) return;
+      if (name === "projects:world") projectsStage = Number(d.index);
+      if (currentId === "projects") {
+        if (name === "projects:hover") touches.page++;
+        current?.pageEvent(name, d, px);
+      }
+    });
+  }
+
+  // the ring station on the work tab
+  for (const name of ["work:bay", "work:spin", "work:stop", "work:transition", "work:hover"]) {
+    addEventListener(name, (e) => {
+      const d = (e as CustomEvent).detail;
+      if (!d) return;
+      if (name === "work:stop") workStop = { index: Number(d.index), id: String(d.id) };
+      if (currentId === "work") {
+        if (name === "work:hover") touches.page++;
+        current?.pageEvent(name, d, px);
+      }
+    });
+  }
+
   // the resume, and the sounds of a single post
   for (const name of ["resume:sheet", "resume:stop", "resume:transition", "resume:hover"]) {
     addEventListener(name, (e) => {
@@ -460,6 +502,8 @@ export function mountSound() {
     archFocus = null;
     archFlow = 0;
     resumeStop = -1;
+    projectsStage = -1;
+    workStop = null;
     clearTimeout(linkWait);
     if (duckAmount) { duckAmount = 0; studio?.duck(0); }
     if (!on || !ctx || !studio) {

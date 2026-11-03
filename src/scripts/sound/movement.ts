@@ -101,6 +101,8 @@ export abstract class Movement {
   protected arrivalBar = 0;
   private gates = new Map<string, { block: number; keep: boolean }>();
   private postSounds: PostSounds | null = null;
+  /** The distant shimmer's level. */
+  protected distantLevel = dbg(-22);
   protected grains!: Sampler;
   protected grainLo = 74;
   protected grainHi = 89;
@@ -435,7 +437,7 @@ export abstract class Movement {
     const tones = tonesIn(this.chord, this.grainLo, this.grainHi);
     if (!tones.length) return;
     const at = t + this.rng() * this.stepDur * this.spb;
-    this.grains.play(this.pick(tones), at, dbg(-22) * (0.5 + 0.5 * this.rng()), this.atmo, { force: true });
+    this.grains.play(this.pick(tones), at, this.distantLevel * (0.5 + 0.5 * this.rng()), this.atmo, { force: true });
   }
 
   /** Change chord: every pad voice leads to its nearest new note. */
@@ -509,6 +511,12 @@ export abstract class Movement {
     const t = this.ac.currentTime;
     this.brighten(t, 0.18);
     this.onScroll(i, dir, dt, t);
+    // a page's own flight owns the sound while it lasts
+    if (this.travelling()) {
+      this.travel = 0;
+      this.grainAcc = 0;
+      return;
+    }
     // reading pace: a soft detent every third of a screen
     this.travel += Math.abs(dy);
     if (this.travel > 0.34) {
@@ -523,6 +531,10 @@ export abstract class Movement {
     }
   }
   protected onScroll(_i: number, _dir: number, _dt: number, _t: number) {}
+  /** Is the page flying the camera itself, with its own gesture playing? */
+  protected travelling(): boolean {
+    return false;
+  }
   protected detent(t: number, dir: number) {
     const tones = tonesIn(this.chord, this.tapLo + 7, this.tapHi + 7);
     if (!tones.length) return;

@@ -25,6 +25,10 @@
 // shimmer when the pointer arrives. Opening one dives in: a rising rush of
 // air, the whole bed moves to that constellation's chord as it blooms, and a
 // sparkle follows each card out. Closing pulls back the same way, in reverse.
+//
+// While someone is reading a post, reading comes first. The bed stays, the
+// distant shimmer becomes far bells, and a piano sentence comes only about once
+// a minute, 5 dB quieter. The index of posts keeps the full movement.
 import { Movement, type Section } from "../movement";
 import { chord, chords, deg, MODES as SCALE, snap, bassOf, tonesIn, type Chord } from "../theory";
 import { Pad, Mono, Sampler, lead, rush } from "../instruments";
@@ -43,6 +47,11 @@ const SENTENCES = [
 ];
 
 interface Note { at: number; m: number; v: number }
+
+// while reading: bars between piano sentences (about 3.6 s a bar), and how far down
+const READ_GAP = 14;
+const READ_LEVEL = dbg(-5);
+const readingPost = () => /^\/posts\/[^/]+\/?$/.test(location.pathname);
 
 // each constellation's own colour of the harmony
 const TAG_CHORDS: Record<string, string> = {
@@ -102,9 +111,9 @@ export class Writing extends Movement {
   protected bright = 2300;
   protected wet = 0.85;
   protected trim = 0.78;
-  /** Its sentences are already written 5 dB lower. */
+  /** Its sentences are already written 5 dB lower; reading takes them down again. */
   themeLevel(): number {
-    return 1;
+    return this.reading ? READ_LEVEL : 1;
   }
   protected tapLo = 67;
   protected tapHi = 84;
@@ -128,6 +137,9 @@ export class Writing extends Movement {
   private chime!: Sampler;
   private far!: Sampler;
   private skyBus!: GainNode;
+  /** Is someone reading a post, as opposed to browsing the index? */
+  reading = false;
+  private readNext = 0;
 
   protected room(): RoomSpec {
     return { rt60: 1.7, length: 2.3, predelay: 0.016, early: 6, earlyLevel: 0.35, hi: 5000, lo: 900, damp: 0.45, lowCut: 90, bloom: 0, width: 0.85 };
@@ -185,6 +197,27 @@ export class Writing extends Movement {
     this.tap = new Sampler(this, (sr, f) => piano(sr, f, 0.5, r, 1.4), 12, 5);
     this.grains = this.keys;
     this.keys.warm([nm("G3"), nm("B3"), nm("D4"), nm("E4"), nm("G4"), nm("A4"), nm("B4"), nm("D5")]);
+    this.setReading(readingPost());
+  }
+
+  /** Move between the full movement and the quiet one kept for reading. */
+  setReading(on: boolean) {
+    if (on === this.reading) return;
+    this.reading = on;
+    // the shimmer and scroll sounds are piano on the index, far bells while reading
+    this.grains = on ? this.far : this.keys;
+    // and they stay far: a long bell builds up in the room
+    this.distantLevel = dbg(on ? -31 : -22);
+    this.phrase = [];
+    this.phraseStart = -1;
+    if (on) this.readNext = this.bar + READ_GAP;
+    else this.arrivalBar = this.bar + 1;
+  }
+
+  /** While reading, the piano only plays inside one of its rare sentences. */
+  allow(key: string): boolean {
+    if (!this.reading) return super.allow(key);
+    return this.phraseStart >= 0 && this.phrase.length > 0 && this.bar - this.phraseStart < 2;
   }
 
   protected onChord(c: Chord, t: number) {
@@ -218,6 +251,13 @@ export class Writing extends Movement {
 
   protected onBar(_t: number) {
     const L = this.S.layers;
+    if (this.reading) {
+      if (L.piano && this.bar >= this.readNext) {
+        this.sentence(this.bar);
+        this.readNext = this.bar + READ_GAP + Math.floor(this.rng() * 5);
+      }
+      return;
+    }
     // a sentence takes two bars, then one or two bars of breath
     if (L.piano && (this.phraseStart < 0 || this.bar - this.phraseStart >= (this.stop ? 4 : 3))) this.sentence(this.bar);
   }
@@ -257,7 +297,8 @@ export class Writing extends Movement {
     // the signal: a light across water, every eight bars
     if (L.signal && this.bar % 8 === 3 && (pos === 0 || pos === 6)) {
       const m = pos === 0 ? nm("D6") : nm("G5");
-      lead(this, this.signal, m, t, pos === 0 ? 0.6 : 1.3, dbg(-20), { wave: this.st.wave("air"), attack: 0.25, release: 1.2, cutoff: 3000 });
+      // it builds up in the room, so while reading it has to start much lower to stay far
+      lead(this, this.signal, m, t, pos === 0 ? 0.6 : 1.3, dbg(this.reading ? -31 : -20), { wave: this.st.wave("air"), attack: 0.25, release: 1.2, cutoff: 3000 });
     }
   }
 
@@ -401,9 +442,10 @@ export class Writing extends Movement {
     }
   }
 
-  /** Leaving for another writing page with a panel open: the form takes the chord back. */
+  /** Another writing page came in: the form takes the chord back, and the page says how to play. */
   swapped() {
     this.holdHarmony = false;
+    this.setReading(readingPost());
   }
 
   /** The camera dives into a constellation (a rising rush of air) or pulls back (falling). */

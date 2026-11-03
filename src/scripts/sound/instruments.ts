@@ -485,11 +485,11 @@ export class Flutter {
 }
 
 /** A note at its own place in the field; its tail stays where it rang. */
-export function ringAt(m: Movement, s: Sampler, dest: AudioNode, midi: number, t: number, level: number, x: number, dur?: number) {
+export function ringAt(m: Movement, s: Sampler, dest: AudioNode, midi: number, t: number, level: number, x: number, dur?: number, force = true) {
   const sp = m.ac.createStereoPanner();
   sp.pan.value = Math.max(-0.85, Math.min(0.85, x));
   sp.connect(dest);
-  const src = s.play(midi, t, level, sp, { dur, force: true });
+  const src = s.play(midi, t, level, sp, { dur, force });
   if (src) src.addEventListener("ended", () => sp.disconnect());
   else sp.disconnect();
 }

@@ -28,14 +28,14 @@ export const PLACARDS: Record<MovementId, Placard> = {
   projects: {
     number: "Movement I",
     title: "Fire and Hands",
-    subtitle: "Struck wood and stone, plucked gut strings, a low drone · close, earthy, steady",
+    subtitle: "Struck wood and stone, plucked strings, glass, and one colour for each world · a star system, toured",
     lines: [
       "Before anything else, people made tools for each other. These projects are tools too, used every day at a dental practice.",
-      "The drum is wood and stone struck by hand, a little uneven on purpose, the way hands are.",
-      "A plucked string plays a short motif that starts rough and gets one note closer to right on every pass.",
-      "A Dorian: a minor key with a raised sixth that keeps it hopeful.",
-      "The room is small and close, like a cave lit by a fire. The low drone in the middle never stops.",
-      "Click anything and you strike a stone, tuned to the chord that is playing.",
+      "The system is the home key: a low drone like a fire, wood and stone struck by hand, and a plucked motif that gets one note closer to right on every pass.",
+      "Each world has its own colour. Mirror answers every glass note with its reflection in the other ear. Ring turns slowly around you. Listener is two voices over a drum.",
+      "Disk is a deep bowed pull. Geode breaks one chord across the room. Arch sweeps over 32 stones, up and over. Nets catches sparks on a climbing line. Comet has a long rushing tail.",
+      "Flying between worlds, the rhythm holds and the new chord slides into tune, then lands on arrival. The belt at the end is sparse and rocky.",
+      "Scroll inside a world and a swell of its chord follows your speed. Touch a part or a body and it answers with one note.",
     ],
   },
   architecture: {
@@ -54,14 +54,14 @@ export const PLACARDS: Record<MovementId, Placard> = {
   work: {
     number: "Movement III",
     title: "Four Crafts, One Line",
-    subtitle: "Marimba, nylon string, FM bell, a learning voice · four corners, one melody",
+    subtitle: "Marimba, nylon string, FM bell, a learning voice · a ring station, four bays, the years coming forward",
     lines: [
-      "Four kinds of work: AI engineering, forward deployed engineering, machine learning, software engineering.",
-      "Each has an instrument and a corner of the room: marimba for software, nylon string for forward deployed, a bell for AI, a voice for machine learning.",
-      "No single instrument plays the melody. It is split note by note between the four, so the line turns around your head.",
+      "Four kinds of work, each with an instrument: a bell for AI, a nylon string for forward deployed, a voice for machine learning, a marimba for software.",
+      "On the ring, one melody is split note by note between them, so the line turns around your head and only exists when they play together.",
+      "Each bay gives one instrument the lead. The reading room streams bells, the dock runs out a string, the scanner turns two rings, the keel runs a wave. Its doors open and seal when you reach them.",
       "The machine learning voice changes its tone every bar, one step closer to a target, like a model training.",
-      "F major with added ninths, warm and unhurried.",
-      "It only sounds like one line because the four parts listen to each other.",
+      "The trail starts at 2017 with one bell in the dark. Every year forward has its own harmony and adds a player.",
+      "Now is the home key, F major, with everyone playing. Turn the ring and you hear it turn, and it stops when you stop.",
     ],
   },
   writing: {
