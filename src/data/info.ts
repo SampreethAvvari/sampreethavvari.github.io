@@ -1599,7 +1599,7 @@ export const info = {
       title: "JobPilot",
       demo: "/demos/jobpilot",
       tier: "personal",
-      date: "Jun to Aug 2026",
+      date: "Jun to Oct 2026",
       description:
         "My open source job hunt autopilot. It watched 163 company boards, scored each role against my profile, and tailored a resume and cover letter per match, with a calibrated judge keeping the rewrites honest.",
       link: "https://github.com/SampreethAvvari/job-pilot",

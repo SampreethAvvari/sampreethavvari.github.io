@@ -192,7 +192,7 @@ const SHAPES: Record<string, () => Piece[]> = {
     for (let i = 0; i < 5; i++) out.push({ g: box(0.7, 0.14, 0.1), m: mat((i - 2) * 0.82, 2.5), d: LIT(1.7) });
     return out;
   },
-  // 38 projects on one board, 22 of them live
+  // 38 projects on one board on Oct 29, 22 of them live
   launchpad: () => {
     const out: Piece[] = [];
     for (let i = 0; i < 38; i++) {

@@ -30,7 +30,7 @@ export const PLACARDS: Record<MovementId, Placard> = {
     title: "Fire and Hands",
     subtitle: "Struck wood and stone, plucked strings, glass, and one colour for each world · a star system, toured",
     lines: [
-      "Before anything else, people made tools for each other. These projects are tools too, used every day at a dental practice.",
+      "Before anything else, people made tools for each other. These projects are tools too, built for a dental practice.",
       "The system is the home key: a low drone like a fire, wood and stone struck by hand, and a plucked motif that gets one note closer to right on every pass.",
       "Each world has its own key and pace. Mirror answers every glass note with its reflection in the other ear. Ring turns slowly around you. Listener is two voices over a drum.",
       "Disk is a deep bowed pull. Geode breaks one chord across the room. Arch sweeps over 32 stones, up and over. Nets catches sparks on a climbing line. Comet has a long rushing tail.",

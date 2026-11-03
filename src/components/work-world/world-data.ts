@@ -41,7 +41,7 @@ export const BAYS: BayCopy[] = [
       // Launchpad highlight: "A request filed in the Cowork Dashboard on October 28 was live 19 minutes later"
       { value: "19 min", label: "from a filed request to live, October 28" },
       // Launchpad highlight: "38 projects on one board on Oct 29, 22 of them live"
-      { value: "38", label: "projects on one board, 22 of them live" },
+      { value: "38", label: "projects on one board on Oct 29, 22 of them live" },
       // Doctor Portal highlight: "Top priority to a working live link in 3.7 hours"
       { value: "3.7 hours", label: "top priority to a working live link" },
     ],

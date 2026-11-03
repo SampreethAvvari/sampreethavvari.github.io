@@ -32,14 +32,14 @@ export const WORLD_COPY: WorldCopy[] = [
     match: "Patient Dashboard",
     name: ["Patient", "Dashboard"],
     accent: "#9cc4ff",
-    line: "One row per patient, every document one click away, and a live read only mirror the other apps read through.",
+    line: "One row per patient, with linked records one click away, and a live read only mirror the apps that need it read through.",
     shown: 4,
     parts: [
       { key: "links", stat: 0, label: "Charts the linker picked right, in a blind test against bookings" },
       { key: "lag", stat: 1, label: "How far the mirror trails, down from 6.0 days" },
-      { key: "intakes", stat: 2, label: "Intake surveys linked to their chart on their own by Sep 30" },
+      { key: "intakes", stat: 2, label: "Intakes link to their chart on their own" },
       { key: "backfill", stat: 3, label: "From the first backfill, with 0 errors, each one undoable" },
-      { key: "ids", value: "Four ids", label: "Four tabs and four ids for one patient. Every record now joins on one." },
+      { key: "ids", value: "Four ids", label: "Four tabs and four ids for one patient. Records now join on the Denticon id." },
     ],
   },
   {
