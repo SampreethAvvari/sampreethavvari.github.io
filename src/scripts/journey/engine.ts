@@ -663,15 +663,15 @@ export function mountJourney(canvas: HTMLCanvasElement, opts: JourneyOptions): J
     }
     if (cb > 0) {
       _v.copy(landing.touch)
-        .addScaledVector(landing.right, lerp(-2.0, -6.5, k))
-        .addScaledVector(landing.up, lerp(3.4, 1.9, k))
-        .addScaledVector(landing.fwd, -lerp(20, 14, k));
+        .addScaledVector(landing.right, lerp(-2.0, -4.2, k))
+        .addScaledVector(landing.up, lerp(3.4, 1.7, k))
+        .addScaledVector(landing.fwd, -lerp(20, 14.5, k));
       camera.position.lerp(_v, cb);
       // Aim past the lander so it sits lower right (upper centre on phones).
       _look
         .copy(landing.touch)
-        .addScaledVector(landing.right, lerp(-1.6, -4.8, k))
-        .addScaledVector(landing.up, lerp(-11, 4.6, k))
+        .addScaledVector(landing.right, lerp(-1.6, -6.0, k))
+        .addScaledVector(landing.up, lerp(-11, 3.6, k))
         .addScaledVector(landing.fwd, 40);
       _v.copy(_target).lerp(_look, cb);
     } else {
