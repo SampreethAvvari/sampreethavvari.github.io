@@ -320,13 +320,7 @@ const spelled = items.map((h) => {
   }
   .cx-w {
     display: inline-block;
-    overflow: hidden;
-    overflow: clip;
     vertical-align: top;
-    /* The title's tight tracking and the blur run past each word's box, so the
-       mask gets room on every side and the margins hand that room back. */
-    padding: 0.1em 0.12em 0.2em;
-    margin: -0.1em -0.12em -0.2em;
   }
   .cx-w { white-space: nowrap; }
   .cx-sum {
@@ -544,7 +538,7 @@ const spelled = items.map((h) => {
     }
     .cx-hero:not([data-live]) .cx-copy-in { pointer-events: none; }
     .cx-title { max-width: 13.5em; font-size: clamp(3rem, 5.5vw, 6.25rem); line-height: 0.98; }
-    /* Each letter rises out of its word's mask, sharpening as it lands. */
+    /* Each letter rises into place, sharpening as it lands. No mask, so no letter is ever cut. */
     .cx-l {
       display: inline-block;
       --r: clamp(0, var(--cin, 0) * (1 + (var(--ln) - 1) * 0.016) - var(--li) * 0.016, 1);
