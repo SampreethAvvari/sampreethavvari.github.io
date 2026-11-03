@@ -52,6 +52,7 @@
 [data-tone="film"]     { --tone: var(--c-film);     --tone-rgb: var(--c-film-rgb); }
 [data-tone="mind"]     { --tone: var(--c-mind);     --tone-rgb: var(--c-mind-rgb); }
 [data-tone="home"]     { --tone: var(--c-home);     --tone-rgb: var(--c-home-rgb); }
+[data-tone="resume"]   { --tone: rgb(206, 212, 222); --tone-rgb: 206, 212, 222; }
 
 /* ---------------------------------------------------------------------------
    Base. Inter's optical size axis follows the font size on its own, so never
@@ -1091,8 +1092,9 @@ html.lg-live .nav-mono {
 .nav-condensed .nav-actions { margin-left: 0; gap: 2px; }
 .nav-condensed .nav-mono { transform: scale(0.94); }
 
-/* Phones: the icons are the tabs, at rest and in the island. */
-@media (max-width: 959px) {
+/* Under 1100px the labelled bar no longer fits: the icons are the tabs, at rest
+   and in the island. */
+@media (max-width: 1099px) {
   .nav-tabs { display: flex; margin: 0 auto; gap: 0; }
   .nav-tab { width: 34px; height: 34px; padding: 0; justify-content: center; gap: 0; border-radius: 9999px; }
   .nav-tab .nav-label, .nav-name { max-width: 0; opacity: 0; margin: 0; }

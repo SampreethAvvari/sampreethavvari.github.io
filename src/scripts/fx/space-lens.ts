@@ -116,7 +116,9 @@ export function mountSpaceLens() {
   addEventListener("pointermove", (e) => {
     if (e.pointerType !== "mouse") return;
     const t = performance.now();
-    if (lastT) {
+    // Inside a post's figure the labels stay straight, so it stays readable.
+    const inFigure = !!(e.target as Element | null)?.closest?.("[data-post-fig]");
+    if (lastT && !inFigure) {
       const v = Math.hypot(e.clientX - lastX, e.clientY - lastY) / Math.max(8, t - lastT);
       speed = Math.max(speed, v);
     }
