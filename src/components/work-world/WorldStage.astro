@@ -161,7 +161,10 @@ const { page, slug, stops, label, span = 1.9 } = Astro.props;
   .ww-box.is-glass[data-ww-scroll]::-webkit-scrollbar { display: none; }
   .has-foot .ww-box[data-ww-scroll] { max-height: calc(100svh - 96px - 84px); overflow-y: auto; overscroll-behavior: contain; scrollbar-width: none; }
   .has-foot .ww-box[data-ww-scroll]::-webkit-scrollbar { display: none; }
-  @media (max-width: 760px) { .has-foot .ww-box[data-ww-scroll] { max-height: calc(100svh - 84px - 136px); } }
+  @media (max-width: 760px) {
+    .has-foot .ww-box[data-ww-scroll] { max-height: calc(100svh - 84px - 136px); }
+    .ww-box.is-glass[data-ww-scroll] { max-height: calc(100svh - 84px - 150px); }
+  }
   /* Clear of the chat button in the corner. */
   .at-br, .at-bc { padding-bottom: 96px; }
   @media (min-width: 761px) { .at-br, .at-r { padding-right: 96px; } }
@@ -398,7 +401,6 @@ const { page, slug, stops, label, span = 1.9 } = Astro.props;
     .ww-deck { display: flex; width: calc(100vw - 16px) !important; margin-right: -16px; gap: 10px; overflow-x: auto; scroll-snap-type: x mandatory; padding: 6px 16px 6px 0; scrollbar-width: none; perspective: none; }
     .ww-deck::-webkit-scrollbar { display: none; }
     .ww-deck > * { flex: 0 0 min(78vw, 320px); scroll-snap-align: start; margin-top: 0 !important; transform: none; }
-    .ww-deck-wrap, .ww-shelf-wrap { width: 100%; }
     .ww-card-art { aspect-ratio: 2 / 1; }
     .ww-card ul { display: none; }
     .ww-shelf { display: flex; width: calc(100% + 16px); margin-right: -16px; overflow-x: auto; scroll-snap-type: x mandatory; padding-right: 16px; scrollbar-width: none; }
