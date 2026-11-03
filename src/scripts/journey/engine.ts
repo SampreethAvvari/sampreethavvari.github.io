@@ -698,7 +698,7 @@ export function mountJourney(canvas: HTMLCanvasElement, opts: JourneyOptions): J
       _look
         .copy(landing.touch)
         .addScaledVector(landing.right, lerp(-1.6, -7.8, k))
-        .addScaledVector(landing.up, lerp(-11, 3.6, k))
+        .addScaledVector(landing.up, lerp(-18, 3.6, k))
         .addScaledVector(landing.fwd, 40);
       _v.copy(_target).lerp(_look, cb);
     } else {

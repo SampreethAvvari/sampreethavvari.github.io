@@ -320,6 +320,10 @@ const ENDING = 0;
   /* on the planet the sky is the picture: only a warm dark behind the words */
   .journey.on-surface .journey-shade { background: linear-gradient(to right, rgba(26, 9, 3, 0.62) 0%, rgba(26, 9, 3, 0.3) 30%, transparent 56%), linear-gradient(to bottom, rgba(26, 9, 3, 0.34) 0%, transparent 22%); }
   .journey.on-surface .journey-grain { opacity: 0.045; }
+  /* a tall screen has the words low down: the dark goes under them */
+  @media (max-aspect-ratio: 1/1) {
+    .journey.on-surface .journey-shade { background: linear-gradient(to top, rgba(16, 7, 8, 0.62) 0%, rgba(16, 7, 8, 0.42) 34%, transparent 62%), linear-gradient(to bottom, rgba(16, 7, 8, 0.3) 0%, transparent 16%); }
+  }
   /* the chapter list stays readable over any sky */
   .journey.on-surface .journey-index a { text-shadow: 0 1px 10px rgba(4, 2, 2, 0.75); color: rgba(255, 255, 255, 0.72); }
   .journey.on-surface .journey-index a[aria-current] { color: #fff; }

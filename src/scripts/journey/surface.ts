@@ -517,13 +517,13 @@ const DOME_FS = (layers: number) => /* glsl */ `
       float lane = smoothstep(0.43, 0.72, lanes) * exp(-gg * gg / 0.006);
       // Soft mottling of stars too small to see one by one.
       float cloud = vnoise(vec2(lon * 24.0, g * 36.0) + 5.0) * 0.5 + vnoise(vec2(lon * 55.0, g * 80.0) + 2.0) * 0.3 + vnoise(vec2(lon * 120.0, g * 170.0) + 9.0) * 0.2;
-      float dens = pow(body, 1.25) * (0.42 + 0.95 * core) * (0.76 + 0.48 * cloud);
+      float dens = (body * 0.55 + body * body * 0.45) * (0.42 + 0.95 * core) * (0.76 + 0.48 * cloud);
       float glow = (dens + halo * 0.05) * (1.0 - lane * 0.5);
-      vec3 mw = mix(vec3(0.26, 0.38, 1.0), vec3(1.0, 0.74, 0.46), core * smoothstep(0.12, 0.85, body));
+      vec3 mw = mix(vec3(0.34, 0.46, 0.98), vec3(1.0, 0.76, 0.5), core * smoothstep(0.02, 0.8, body));
       float tint = vnoise(vec2(lon * 9.0, g * 26.0) + 21.0);
       mw = mix(mw, vec3(0.95, 0.5, 0.56), smoothstep(0.6, 0.86, tint) * 0.3 * body);
       float above = smoothstep(-0.02, 0.1, d.y);
-      c += mw * mw * glow * 0.2 * uMilky * above * copyDim;
+      c += mw * glow * 0.125 * uMilky * above * copyDim;
       // Star dust: thousands of tiny points, thickest in the band, thinner in the lanes.
       float dustK = clamp(dens * 1.3 + halo * 0.06, 0.0, 1.0) * (1.0 - lane * 0.5);
       for (int k = 0; k < DUST_LAYERS; k++) {
@@ -798,7 +798,7 @@ const CARD_FS = /* glsl */ `
     col *= uFall;
     vec3 dl = vWorld - uLampWorld;
     float dd = dot(dl, dl);
-    float cone = smoothstep(-0.35, 0.3, dot(dl / max(sqrt(dd), 1e-4), uLampDir));
+    float cone = smoothstep(-0.1, 0.45, dot(dl / max(sqrt(dd), 1e-4), uLampDir));
     float lamp = uLampR * uLampR / (uLampR * uLampR + dd) * cone;
     // What the plate holds of the surface keeps its shape; its colour cast goes.
     col += (mix(c, vec3(l), 0.6) * 1.6 + 0.004) * uLampCol * lamp;
@@ -1046,7 +1046,6 @@ export function buildSurface(o: { low: boolean; landing: Landing; cloudTex: Text
   group.quaternion.copy(l.quat);
   group.updateMatrixWorld(true);
   const inv = new Quaternion().copy(l.quat).invert();
-  if (location.search.includes("dbgsurf")) (window as unknown as { __surf: Group }).__surf = group;
   const r = rng(4242);
 
   // Shared by the sky and the ground.
@@ -1318,7 +1317,7 @@ export function buildSurface(o: { low: boolean; landing: Landing; cloudTex: Text
           float fb = seen * (1.0 - smoothstep(14.0, 120.0, dist)) * mix(0.2, 1.0, patchy) * high * calm * uRipK;
           // Sand grain, right at the lens only.
           float gn = (texture2D(tRipple, uv * 2.7).a - 0.5) * 0.7 + (texture2D(tRipple, uv * 11.0).a - 0.5) * 0.9 + (texture2D(tRipple, uv * 31.0).a - 0.5) * 1.3;
-          float fg = (1.0 - smoothstep(0.3, 2.6, dist)) * calm;
+          float fg = (1.0 - smoothstep(0.3, 2.6, dist)) * calm * (1.0 - smoothstep(0.2, 0.55, uNight));
           // The sand itself, close up: grains on small ripples, real relief for the lamp to rake across.
           sandQ = vSite.xz - uSapO.xz;
           sandQx = dFdx(sandQ);
@@ -2153,7 +2152,6 @@ export function buildSurface(o: { low: boolean; landing: Landing; cloudTex: Text
   function update(f: SurfaceInput) {
     const { time, dt, camera, s } = f;
     cover.value = f.cover;
-    if (location.search.includes("dbgsurf")) (window as unknown as { __cam: PerspectiveCamera }).__cam = camera;
     uTime.value = time;
     windTime.value += dt * (f.reduced ? 0.25 : 1);
     group.visible = f.cover > 0.001;
@@ -2208,8 +2206,9 @@ export function buildSurface(o: { low: boolean; landing: Landing; cloudTex: Text
       m.uArc.value.copy(skyU.uHorSun.value).lerp(c1, m.pale).multiplyScalar(lerp(0.5, 1, moonK));
       m.uShade.value.copy(skyU.uMid.value).multiplyScalar(m.shade);
       m.uK.value = moonK;
-      const a = m.az + (f.reduced ? 0 : time * m.drift * 0.02);
-      const elNow = m.el - 0.42 * smooth(2.25, 3, s);
+      const clearOfCount = m === moonList[0] && f.height > f.width ? (-7 * Math.PI * (1 - smooth(0.6, 1.6, s))) / 180 : 0;
+      const a = m.az + clearOfCount + (f.reduced ? 0 : time * m.drift * 0.02);
+      const elNow = m.el - 0.42 * smooth(2.25, 3, s) - (f.height > f.width ? 0.08 * (1 - smooth(0.6, 1.6, s)) : 0);
       const ce = Math.cos(elNow);
       m.mesh.position.set(MOON_ANCHOR.x + Math.sin(a) * ce * m.dist, MOON_ANCHOR.y + Math.sin(elNow) * m.dist, MOON_ANCHOR.z - Math.cos(a) * ce * m.dist);
       if (!f.reduced) m.mesh.rotation.y += dt * 0.004;
