@@ -39,6 +39,7 @@ type W = Window & { __ww?: unknown };
 
 let world: World | null = null;
 let booting: Promise<World | null> | null = null;
+let bootingFor: HTMLCanvasElement | null = null;
 let worldCanvas: HTMLCanvasElement | null = null;
 let keepWorld = false;
 let cameFrom: string | null = null;
@@ -71,7 +72,15 @@ async function bootWorld(canvas: HTMLCanvasElement, low: boolean, reduced: boole
     world.destroy();
     world = null;
   }
-  if (booting) return booting;
+  if (booting) {
+    if (bootingFor === canvas) return booting;
+    // Still building for a page already left: that world will not be used, so
+    // build this page's once it is done.
+    await booting.catch(() => {});
+    if (!canvas.isConnected) return null;
+    return bootWorld(canvas, low, reduced);
+  }
+  bootingFor = canvas;
   booting = (async () => {
     const code = import("./engine");
     await Promise.race([document.fonts?.load?.("700 100px Inter") ?? Promise.resolve(), new Promise((r) => setTimeout(r, 900))]);
@@ -88,6 +97,7 @@ async function bootWorld(canvas: HTMLCanvasElement, low: boolean, reduced: boole
     return w;
   })().finally(() => {
     booting = null;
+    bootingFor = null;
   });
   return booting;
 }
@@ -583,6 +593,17 @@ onPage("work-world", (signal) => {
       }
     });
     wd.start();
+    // The canvas stays across the bays, so a GPU lost on the last page shows here
+    // too: still gone, this page stays words; back again, the canvas shows again.
+    if (canvas.getContext("webgl2")?.isContextLost()) {
+      wd.setPaused(true);
+      movement.stop();
+      canvas.style.display = "none";
+      root.classList.add("is-flat");
+      document.documentElement.classList.remove("ww-flying");
+      return;
+    }
+    canvas.style.display = "";
     root.classList.add("is-3d");
     let onScreen = true;
     const pauseIfNeeded = () => wd.setPaused(!onScreen || document.hidden);
