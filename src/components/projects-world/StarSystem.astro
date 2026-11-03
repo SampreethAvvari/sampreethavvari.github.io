@@ -148,7 +148,7 @@ const stageTop = (i: number) => SPANS.slice(0, i).reduce((a, b) => a + b, 0);
       <div class="pw-beltcopy" data-pane={worlds.length + 1}>
         <p class="pw-kick"><b>{bodies.length}</b><i></i>More, in the belt</p>
         <p class="pw-belttitle">The rest of the system.</p>
-        <p class="pw-line">Each one shaped by what it does. Hover to read, click to open.</p>
+        <p class="pw-line">Each one shaped by what it does. Click to open.</p>
         <a class="jb is-ghost pw-beltskip" href="#all"><span>Every project in cards</span><i class="jb-arrow"><Icon name="arrow-right" size={13} /></i></a>
       </div>
       <nav class="pw-bodies" aria-label="More projects, in the belt" data-pw-bodies>
@@ -168,7 +168,7 @@ const stageTop = (i: number) => SPANS.slice(0, i).reduce((a, b) => a + b, 0);
       <p class="pw-count" aria-hidden="true" data-pw-count><b>00</b><i>/</i><span>{pad(worlds.length)}</span></p>
       <a class="pw-top" href="#worlds" data-go="0"><span>The whole system</span></a>
       <a class="pw-skip" href="#all"><span>Skip to all {total} projects</span></a>
-      <p class="pw-hint" data-pw-hint><span>Scroll to fly</span><i>·</i><span class="pw-hint-d">Drag to turn the system</span><i class="pw-hint-d">·</i><span>Tap a world to go there</span></p>
+      <p class="pw-hint" data-pw-hint><span>Scroll to fly</span><i>·</i><span class="pw-hint-d">Drag to turn the system</span><i class="pw-hint-d">·</i><span class="pw-hint-mouse">Click a world to go there</span><span class="pw-hint-touch">Tap a world to go there</span></p>
       <div class="pw-tip" data-pw-tip aria-hidden="true"><b></b><span></span></div>
     </div>
   </div>
@@ -362,6 +362,8 @@ const stageTop = (i: number) => SPANS.slice(0, i).reduce((a, b) => a + b, 0);
   .pw-hint { display: none; }
   .pw.is-live .pw-hint { display: flex; position: absolute; left: max(32px, var(--gutter)); bottom: clamp(26px, 4.6vh, 42px); margin: 0; transition: opacity 0.5s ease; }
   .pw.is-live.is-touring .pw-hint, .pw.is-live.is-moving .pw-hint { opacity: 0; }
+  .pw-hint-touch { display: none; }
+  @media (pointer: coarse) { .pw-hint-touch { display: inline; } .pw-hint-mouse { display: none; } }
 
   /* the tip that follows a hovered part */
   .pw.is-live .pw-tip { display: grid; position: absolute; left: 0; top: 0; gap: 3px; width: max-content; max-width: 240px; padding: 10px 14px; border-radius: 12px; border: 1px solid rgba(255, 255, 255, 0.14); background: rgba(6, 9, 18, 0.86); opacity: 0; transition: opacity 0.18s ease; will-change: transform, opacity; }

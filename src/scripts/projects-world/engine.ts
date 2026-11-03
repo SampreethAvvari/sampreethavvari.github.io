@@ -449,9 +449,8 @@ void main() {
       // grow a little when far off, so they read in the system view
       const grow = lerp(1, o.phone ? 2.05 : 2.5, smooth(90, 520, distTo) * smooth(0.1, 0.9, overview));
       const near = 1 - smooth(w.radius * 3, w.radius * 11, distTo);
-      // up close, only the world in focus and what is far enough to stay small
-      const nearStage = Math.abs(g - (i + 1.5));
-      const inView = overview > 0.01 || i === focus || nearStage < 1.04 || distTo > 330;
+      // up close, only the world in focus: the others come in for the sling either side of it
+      const inView = overview > 0.01 || (g > i + 0.8 && g < i + 2.2);
       w.group.visible = inView;
       beacons[i].visible = !inView;
       beacons[i].position.copy(pos);

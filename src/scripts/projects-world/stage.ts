@@ -67,11 +67,10 @@ export function mountProjectsWorld() {
     // ---- scroll: y on the page to g in stage units
     let vh = innerHeight;
     let vw = innerWidth;
-    let top = 0;
     const cum: number[] = [];
+    const topNow = () => root.getBoundingClientRect().top + scrollY;
     const measure = () => {
       vh = innerHeight;
-      top = root.getBoundingClientRect().top + scrollY;
       let t = 0;
       spans.forEach((s, i) => {
         cum[i] = t;
@@ -82,16 +81,15 @@ export function mountProjectsWorld() {
     measure();
     // the section's height is in small viewport units; on a phone the toolbar changes innerHeight
     const rawUnit = () => (root.offsetHeight / (cum[N] + 1));
-    let unit = rawUnit();
     const gFromY = (y: number) => {
-      const screens = (y - top) / unit;
+      const screens = (y - topNow()) / rawUnit();
       if (screens <= 0) return 0;
       for (let i = 0; i < N; i++) if (screens < cum[i + 1]) return i + (screens - cum[i]) / spans[i];
       return N;
     };
     const yFromG = (g: number) => {
       const i = Math.min(N - 1, Math.max(0, Math.floor(g)));
-      return top + (cum[i] + spans[i] * (g - i)) * unit;
+      return topNow() + (cum[i] + spans[i] * (g - i)) * rawUnit();
     };
 
     // the places the scroll can rest
@@ -863,7 +861,6 @@ export function mountProjectsWorld() {
         sizedH = h;
         vw = w;
         measure();
-        unit = rawUnit();
         rectsDirty = true;
         sys?.resize();
         onScroll();
