@@ -9,7 +9,7 @@
 // solves for the slab that covers them, so the landing is exact at any size.
 
 import { Governor } from "../gl-governor";
-import { quietShaderChecks } from "../gl-warm";
+import { decodedTexture, prelink, quietShaderChecks } from "../gl-warm";
 import {
   AdditiveBlending,
   BufferAttribute,
@@ -27,7 +27,6 @@ import {
   Scene,
   ShaderMaterial,
   Texture,
-  TextureLoader,
   Vector2,
   WebGLRenderer,
 } from "three";
@@ -287,16 +286,21 @@ export function mountOpeningGL(
 
   let disposed = false;
   let texture: Texture | null = null;
-  const loader = new TextureLoader();
+  // The picture decodes away from the page's thread and the shaders link in the
+  // background, so the hand over from the page's picture never holds up a scroll.
   const finish = () => {
-    draw(performance.now());
-    onReady();
+    prelink(renderer, scene, camera, null).then(() => {
+      if (disposed) return;
+      if (texture) renderer.initTexture(texture);
+      draw(performance.now());
+      onReady();
+    });
   };
   if (url) {
-    loader.load(
-      url,
+    decodedTexture(url).then(
       (tex) => {
         if (disposed) {
+          (tex.image as ImageBitmap | null)?.close?.();
           tex.dispose();
           return;
         }
@@ -315,7 +319,6 @@ export function mountOpeningGL(
         slab.visible = true;
         finish();
       },
-      undefined,
       () => {
         if (!disposed) finish();
       },
@@ -476,6 +479,7 @@ export function mountOpeningGL(
     stop() {
       disposed = true;
       canvas.removeEventListener("webglcontextlost", lostContext);
+      (texture?.image as ImageBitmap | null)?.close?.();
       texture?.dispose();
       slabMat.dispose();
       slabGeo.dispose();

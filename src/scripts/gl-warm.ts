@@ -6,7 +6,25 @@
 // between steps, and hidden things are drawn once ahead of time, one at a time,
 // into a single unseen pixel.
 
-import { WebGLRenderTarget, type Camera, type Light, type Mesh, type Object3D, type ShaderMaterial, type Texture, type WebGLRenderer } from "three";
+import { Texture, TextureLoader, WebGLRenderTarget, type Camera, type Light, type Mesh, type Object3D, type ShaderMaterial, type WebGLRenderer } from "three";
+
+/**
+ * A picture as a texture, decoded away from the page's thread. A browser that
+ * cannot do that gets the ordinary loader, which decodes when it first draws.
+ */
+export async function decodedTexture(url: string): Promise<Texture> {
+  try {
+    const res = await fetch(url);
+    if (!res.ok) throw new Error(String(res.status));
+    const bmp = await createImageBitmap(await res.blob(), { imageOrientation: "flipY", premultiplyAlpha: "none", colorSpaceConversion: "none" });
+    const tex = new Texture(bmp);
+    tex.flipY = false;
+    tex.needsUpdate = true;
+    return tex;
+  } catch {
+    return new TextureLoader().loadAsync(url);
+  }
+}
 
 /** Let the page have a turn: input, scrolling and frames go first. */
 export function breathe(): Promise<void> {
@@ -18,13 +36,29 @@ export function quietShaderChecks(renderer: WebGLRenderer) {
   if (!import.meta.env.DEV) renderer.debug.checkShaderErrors = false;
 }
 
-/** Link an object's shaders for the target it will draw to, in the background. Resolves when they are ready. */
-export function prelink(renderer: WebGLRenderer, object: Object3D, camera: Camera, target: WebGLRenderTarget | null): Promise<unknown> {
+/**
+ * Link an object's shaders for the target it will draw to, in the background.
+ * Resolves when they are ready. It keeps asking without ever making the GPU
+ * answer at once, and copes with the world being taken down while it waits.
+ */
+export function prelink(renderer: WebGLRenderer, object: Object3D, camera: Camera, target: WebGLRenderTarget | null): Promise<void> {
   const was = renderer.getRenderTarget();
   renderer.setRenderTarget(target);
-  const ready = renderer.compileAsync(object, camera);
+  const waiting = renderer.compile(object, camera);
   renderer.setRenderTarget(was);
-  return ready.catch(() => undefined);
+  const t0 = performance.now();
+  return new Promise((done) => {
+    const check = () => {
+      for (const m of waiting) {
+        const p = (renderer.properties.get(m) as { currentProgram?: { isReady(): boolean } }).currentProgram;
+        if (!p || p.isReady()) waiting.delete(m);
+      }
+      // A driver that never says it is ready gets used anyway.
+      if (!waiting.size || performance.now() - t0 > 12000) done();
+      else setTimeout(check, 16);
+    };
+    check();
+  });
 }
 
 /** The same for full screen passes: one mesh, its material swapped per pass. */

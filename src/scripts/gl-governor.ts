@@ -24,6 +24,9 @@ type Mode = "watch" | "checkDown" | "checkUp";
 // A screen held at 30 frames a second looks like an overloaded one until a step
 // down changes nothing. Once seen, that holds for every page of the visit.
 let heldAt30 = false;
+// Once fewer pixels have bought nothing, this machine's limit is probably not
+// its pixels: later pages wait much longer before they try again.
+let boughtNothing = false;
 
 export class Governor {
   private readonly steps: number[];
@@ -101,6 +104,7 @@ export class Governor {
           }
           // No faster with the fewest pixels: they were not the cost.
           if (this.from === 0 && Math.abs(this.before - 33.3) < 1.5) heldAt30 = true;
+          boughtNothing = true;
           this.locked = true;
           this.set(this.from);
         }
@@ -123,7 +127,7 @@ export class Governor {
       this.fastT = this.avg < this.fastMs ? this.fastT + dtMs : 0;
     }
 
-    if (this.slowT > 2400 && this.idx < this.steps.length - 1 && !this.locked && !(heldAt30 && Math.abs(this.avg - 33.3) < 1.5)) {
+    if (this.slowT > (boughtNothing ? 9000 : 2400) && this.idx < this.steps.length - 1 && !this.locked && !(heldAt30 && Math.abs(this.avg - 33.3) < 1.5)) {
       this.waited += dtMs;
       if (!moving && this.waited < 1500) return;
       this.waited = 0;

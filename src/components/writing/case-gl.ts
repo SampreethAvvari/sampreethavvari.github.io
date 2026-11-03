@@ -28,11 +28,11 @@ import {
   Scene,
   ShaderMaterial,
   Texture,
-  TextureLoader,
   Vector3,
   WebGLRenderer,
 } from "three";
 import { Governor } from "../../scripts/gl-governor";
+import { decodedTexture, prelink } from "../../scripts/gl-warm";
 
 export type FlightState = {
   /** Which case study is up, 0 to n - 1, with holds at whole numbers. */
@@ -347,7 +347,6 @@ export function mountCaseGL(
     pos.needsUpdate = true;
     slabGeo.computeVertexNormals();
   }
-  const loader = new TextureLoader();
   // Shared by every slab: where the pointer is, smoothed.
   const pointer = { x: 0, y: 0 } as { x: number; y: number };
   const textures: Texture[] = [];
@@ -433,21 +432,12 @@ export function mountCaseGL(
     else uploads.push({ tex, i });
     nextUpload();
   };
-  const decode = async (url: string) => {
-    const res = await fetch(url);
-    const bmp = await createImageBitmap(await res.blob(), { imageOrientation: "flipY", premultiplyAlpha: "none", colorSpaceConversion: "none" });
-    const tex = new Texture(bmp);
-    tex.flipY = false;
-    tex.needsUpdate = true;
-    return tex;
-  };
   heroes.forEach((h, i) => {
     const art = h.dataset.art;
     const img = h.querySelector<HTMLImageElement>(".cx-img");
     const url = art ? `${art}-${tier.tex}.${ext}` : img?.currentSrc || img?.src;
     if (!url) return;
-    decode(url)
-      .catch(() => loader.loadAsync(url))
+    decodedTexture(url)
       .then((tex) => {
         if (disposed) {
           (tex.image as ImageBitmap | null)?.close?.();
@@ -563,7 +553,7 @@ export function mountCaseGL(
     warmed = true;
     tryReady();
   };
-  renderer.compileAsync(scene, camera).then(warmDone, warmDone);
+  prelink(renderer, scene, camera, null).then(warmDone, warmDone);
 
   // Pointer parallax.
   let mx = 0;
@@ -744,15 +734,12 @@ export function mountCaseGL(
   };
   const restored = () => {
     lost = false;
-    renderer.compileAsync(scene, camera).then(
-      () => {
-        if (disposed || lost) return;
-        draw(performance.now());
-        onReady();
-        if (onScreen) start();
-      },
-      () => {},
-    );
+    prelink(renderer, scene, camera, null).then(() => {
+      if (disposed || lost) return;
+      draw(performance.now());
+      onReady();
+      if (onScreen) start();
+    });
   };
   canvas.addEventListener("webglcontextlost", lostContext);
   canvas.addEventListener("webglcontextrestored", restored);
