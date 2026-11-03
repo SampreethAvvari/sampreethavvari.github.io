@@ -178,7 +178,7 @@
 
     if ("transferControlToOffscreen" in cv && typeof Worker !== "undefined") {
       afterPaint(() => {
-        const off = cv.transferControlToOffscreen();
+        const surface = cv.transferControlToOffscreen();
         const worker = new SkyWorker();
         worker.onmessage = (e: MessageEvent<{ type: string }>) => {
           if (e.data.type === "ready" || e.data.type === "restored") on();
@@ -186,7 +186,7 @@
           else if (e.data.type === "fail") worker.terminate();
         };
         send = (m) => worker.postMessage(m);
-        worker.postMessage({ type: "init", canvas: off, isMobile, ...size(), input }, [off]);
+        worker.postMessage({ type: "init", canvas: surface, isMobile, ...size(), input }, [surface]);
         told = null;
         tellHidden();
       });

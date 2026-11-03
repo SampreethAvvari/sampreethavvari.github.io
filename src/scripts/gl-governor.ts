@@ -128,7 +128,7 @@ export class Governor {
       this.fastT = this.avg < this.fastMs ? this.fastT + dtMs : 0;
     }
 
-    if (this.slowT > (boughtNothing ? 9000 : 2400) && this.idx < this.steps.length - 1 && !this.locked && !(heldAt30 && Math.abs(this.avg - 33.3) < 1.5)) {
+    if (this.avg > this.slowMs && this.slowT > (boughtNothing ? 9000 : 2400) && this.idx < this.steps.length - 1 && !this.locked && !(heldAt30 && Math.abs(this.avg - 33.3) < 1.5)) {
       this.waited += dtMs;
       if (!moving && this.waited < 1500) return;
       this.waited = 0;

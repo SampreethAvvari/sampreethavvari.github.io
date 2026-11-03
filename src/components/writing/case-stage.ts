@@ -56,11 +56,12 @@ export function mountCaseHeroes(): void {
       { signal },
     );
 
-    // The cards snap on phones, from the first touch. Switched on with the page
+    // The cards snap on phones, from the first move. Switched on with the page
     // itself, the browser snaps while everything is still arriving and the page
-    // moves by itself as it loads.
+    // moves by itself as it loads. On the touch itself, a page resting between
+    // cards would jump under a finger that has not moved.
     const snapOn = () => document.documentElement.classList.add("cx-snap-on");
-    for (const ev of ["touchstart", "wheel", "keydown"]) addEventListener(ev, snapOn, { passive: true, once: true, signal });
+    for (const ev of ["touchmove", "wheel", "keydown"]) addEventListener(ev, snapOn, { passive: true, once: true, signal });
     signal.addEventListener("abort", () => document.documentElement.classList.remove("cx-snap-on"), { once: true });
 
     const mq = matchMedia(STAGE);

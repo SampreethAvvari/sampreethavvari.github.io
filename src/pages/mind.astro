@@ -1,6 +1,7 @@
 ---
 import BaseLayout from "../layouts/BaseLayout.astro";
 import { mindGraphs } from "../data/mind/graph";
+import "../styles/solid-glass.css";
 
 // Escape "<" so a stray "</script>" in any blurb can never break out of the
 // JSON data island.
@@ -316,7 +317,7 @@ const dataJson = JSON.stringify(mindGraphs).replace(/</g, "\\u003c");
     text-wrap: balance;
   }
   /* The page's script failed: the map is not coming, so it does not say it is. */
-  :global(html.no-stage) .mind-sub { visibility: hidden; }
+  :global(html.no-stage) .mind-sub, :global(html.no-stage) .mind-detail, :global(html.no-stage) .mind-hint { visibility: hidden; }
   .mind-sub {
     margin: 12px 0 0;
     font-size: 0.875rem;
