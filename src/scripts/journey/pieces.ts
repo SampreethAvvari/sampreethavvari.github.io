@@ -46,7 +46,7 @@ import {
 import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js";
 import { additive, GlowBatch } from "./fx";
 import { NOISE } from "./glsl";
-import { CROSS, landingPhase, type FlightPath, type Landing } from "./path";
+import { CROSS, type FlightPath, type Landing } from "./path";
 import { rng } from "./textures";
 
 /** The pointer as a ray in world space. on: 0 when there is no pointer. */
@@ -62,6 +62,8 @@ export interface PieceFrame {
   p: number;
   camera: Camera;
   ptr: PointerRay;
+  /** Landing phase 0..1 (touchdown at 0.84), driven by the engine's clock. */
+  land: number;
 }
 
 export interface Piece {
@@ -1718,8 +1720,8 @@ function landingWorld(i: number, color: Color, ctx: Ctx): Piece {
     warm: { amount: 1.3, dir: sunDir },
     flare: { pos: sunPos, color: new Color(1.0, 0.35, 0.2), strength: 0.9 },
     haze: { color: new Color(0.17, 0.06, 0.035), density: 0.0024 },
-    update({ time, dt, p, ptr }) {
-      const L = landingPhase(l, p);
+    update({ time, dt, ptr, land }) {
+      const L = land;
       dustMat.uniforms.uTime.value = time;
       dustMat.uniforms.uSpread.value = smooth(0.55, 1.0, L);
       dustMat.uniforms.uAmt.value = smooth(0.55, 0.74, L) * (1 - smooth(0.9, 1.0, L)) * 1.6;

@@ -363,7 +363,12 @@ const comets = [
   .ax-tag:focus-visible { outline: none; box-shadow: 0 0 0 3px rgba(var(--c-writing-rgb), 0.5); }
   .ax-status { margin-top: 12px; display: flex; flex-wrap: wrap; gap: 6px 16px; }
 
-  /* ---------------- The map ---------------- */
+  /* ---------------- The map ----------------
+     Three levels by zoom, set by the script on data-lod:
+       stars  zoomed out: each post is a glowing star, names only
+       cards  the default: compact cards with the full title and a meta row
+       full   zoomed in on one constellation: art, title, summary
+     An open card (hover or focus) shows the full card at any level. */
   .ax-map { display: none; }
   .ax[data-view="map"] .ax-map {
     display: block;
@@ -371,31 +376,27 @@ const comets = [
     z-index: 2;
     height: 100vh;
     height: 100svh;
-    min-height: 640px;
+    min-height: 680px;
     margin-top: 18px;
     overflow: hidden;
-    cursor: grab;
-    touch-action: pan-y;
     outline: none;
     background: radial-gradient(42% 38% at 50% 55%, rgba(var(--c-writing-rgb), 0.07), rgba(var(--c-writing-rgb), 0) 100%);
   }
-  .ax[data-view="map"] .ax-map.is-dragging { cursor: grabbing; }
   .ax[data-view="map"] .ax-listwrap { display: none; }
 
-  .ax-glows, .ax-lines, .ax-names, .ax-stars { position: absolute; inset: 0; margin: 0; padding: 0; list-style: none; }
-  .ax-lines { width: 100%; height: 100%; overflow: visible; pointer-events: none; }
+  .ax-glows, .ax-lines, .ax-names, .ax-stars { position: absolute; left: 0; top: 0; width: 100%; height: 100%; margin: 0; padding: 0; list-style: none; }
+  .ax-lines { overflow: visible; pointer-events: none; z-index: 1; }
   .ax-line {
     fill: none;
-    stroke: url(#ax-line-g);
-    stroke: rgba(var(--c-writing-rgb), 0.5);
+    stroke: rgba(var(--c-writing-rgb), 0.2);
     stroke-width: 1;
-    stroke-dasharray: none;
     stroke-linecap: round;
-    transition: opacity 500ms var(--ease-glass);
-    filter: drop-shadow(0 0 4px rgba(var(--c-writing-rgb), 0.7));
+    transition: stroke 300ms var(--ease-glass), opacity 400ms var(--ease-glass);
   }
+  .ax-line.is-hot { stroke: rgba(var(--c-writing-rgb), 0.8); filter: drop-shadow(0 0 4px rgba(var(--c-writing-rgb), 0.8)); }
+  .ax-line.is-dim { opacity: 0.35; }
   .ax-line.is-off { opacity: 0; }
-  .ax-glows { pointer-events: none; }
+  .ax-glows { pointer-events: none; z-index: 0; }
   .ax-glow {
     position: absolute;
     left: 0;
@@ -403,13 +404,13 @@ const comets = [
     width: 10px;
     height: 10px;
     border-radius: 50%;
-    background: radial-gradient(closest-side, rgba(var(--c-writing-rgb), 0.22), rgba(var(--c-writing-rgb), 0.08) 45%, rgba(var(--c-writing-rgb), 0) 100%);
-    transition: opacity 600ms var(--ease-glass);
-    will-change: transform;
+    background: radial-gradient(closest-side, rgba(var(--c-writing-rgb), 0.16), rgba(var(--c-writing-rgb), 0.05) 50%, rgba(var(--c-writing-rgb), 0) 100%);
+    transform-origin: 0 0;
+    transition: opacity 600ms var(--ease-glass), transform 700ms var(--ease-glass);
   }
   .ax-glow.is-off { opacity: 0; }
-  .ax-names { pointer-events: none; z-index: 3; }
-  .ax-stars { z-index: 2; }
+  .ax-glow.is-dim { opacity: 0.4; }
+  .ax-names { pointer-events: none; z-index: 4; }
   .ax-name {
     position: absolute;
     left: 0;
@@ -420,73 +421,124 @@ const comets = [
     height: 26px;
     padding: 0 10px 0 8px;
     border-radius: 9999px;
-    border: 1px solid rgba(var(--c-writing-rgb), 0.28);
-    background: rgba(3, 8, 7, 0.72);
+    border: 1px solid rgba(var(--c-writing-rgb), 0.3);
+    background: rgba(3, 8, 7, 0.8);
     color: var(--ink);
     font-size: 0.75rem;
     font-weight: 600;
-    letter-spacing: 0.01em;
     white-space: nowrap;
-    cursor: pointer;
+    cursor: zoom-in;
     pointer-events: auto;
-    transition: opacity 400ms var(--ease-glass), border-color 200ms var(--ease-glass), box-shadow 300ms var(--ease-glass);
-    will-change: transform;
+    transition: opacity 400ms var(--ease-glass), border-color 200ms var(--ease-glass), box-shadow 300ms var(--ease-glass), transform 600ms var(--ease-glass);
   }
-  .ax-name:hover, .ax-name.is-on { border-color: rgba(var(--c-writing-rgb), 0.8); box-shadow: 0 0 22px -6px rgba(var(--c-writing-rgb), 0.9); }
+  .ax-name:hover { border-color: rgba(var(--c-writing-rgb), 0.8); box-shadow: 0 0 22px -6px rgba(var(--c-writing-rgb), 0.9); }
   .ax-name:focus-visible { outline: none; box-shadow: 0 0 0 3px rgba(var(--c-writing-rgb), 0.55); }
   .ax-name.is-off { opacity: 0; pointer-events: none; }
+  .ax-name.is-dim { opacity: 0.45; }
+  .ax-map[data-mode="focus"] .ax-name { cursor: zoom-out; height: 34px; padding: 0 14px 0 12px; font-size: 0.9375rem; }
   .ax-name-dot { width: 6px; height: 6px; border-radius: 50%; background: rgb(var(--c-writing-rgb)); box-shadow: 0 0 10px rgba(var(--c-writing-rgb), 0.9); }
   .ax-name-n { color: rgba(var(--c-writing-rgb), 0.9); font-variant-numeric: tabular-nums; }
 
+  .ax-stars { z-index: 2; }
   .ax-star {
     position: absolute;
     left: 0;
     top: 0;
     transform-origin: 0 0;
     opacity: 0;
-    transition: opacity 500ms var(--ease-glass);
+    transition: opacity 450ms var(--ease-glass);
     will-change: transform;
   }
   .ax-map.is-live .ax-star { opacity: 1; }
+  .ax-map.is-live .ax-star.is-dim { opacity: 0.4; }
   .ax-map.is-live .ax-star.is-out { opacity: 0; visibility: hidden; transition: opacity 400ms var(--ease-glass), visibility 0s linear 400ms; }
-  .ax-star.is-open { z-index: 20; }
+  .ax-map.is-live .ax-star.is-open { z-index: 30; opacity: 1; }
 
   .ax-node {
     --px: 0;
     --py: 0;
+    position: relative;
     display: flex;
     flex-direction: column;
-    width: 104px;
+    width: var(--cw, 196px);
     border-radius: 12px;
     overflow: hidden;
     text-decoration: none;
     color: var(--ink);
-    background: linear-gradient(180deg, rgba(255, 255, 255, 0.07), rgba(255, 255, 255, 0.02) 50%), #06080b;
-    border: 1px solid rgba(255, 255, 255, 0.12);
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.015) 60%), rgba(6, 9, 12, 0.94);
+    border: 1px solid rgba(255, 255, 255, 0.1);
     box-shadow:
       0 0 0 1px rgba(0, 0, 0, 0.6),
-      0 0 26px -8px rgba(var(--c-writing-rgb), 0.55),
-      0 18px 40px -20px rgba(0, 0, 0, 0.9);
-    transform: perspective(700px) rotateX(calc(var(--py) * -9deg)) rotateY(calc(var(--px) * 11deg));
-    transition: width 420ms var(--ease-glass), box-shadow 300ms var(--ease-glass), border-color 300ms var(--ease-glass), transform 200ms linear;
+      0 0 22px -10px rgba(var(--c-writing-rgb), 0.6),
+      0 16px 34px -22px rgba(0, 0, 0, 0.9);
+    transition: box-shadow 300ms var(--ease-glass), border-color 300ms var(--ease-glass), transform 300ms var(--ease-glass);
   }
-  .ax-star[data-featured] .ax-node { border-color: rgba(var(--c-writing-rgb), 0.5); }
+  .ax-star[data-featured] .ax-node { border-color: rgba(var(--c-writing-rgb), 0.45); }
+  .ax-node:focus-visible { outline: none; }
+  .ax-node-dot { display: none; }
+  .ax-node-art { display: none; position: relative; aspect-ratio: 16 / 9; overflow: hidden; background: #05070a; }
+  .ax-node-body { display: flex; flex-direction: column; gap: 6px; padding: 10px 12px 11px; }
+  .ax-node-title {
+    font-size: 0.84375rem;
+    line-height: 1.3;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    text-wrap: pretty;
+    overflow-wrap: break-word;
+  }
+  .ax-node-meta {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.71875rem;
+    line-height: 1.2;
+    color: rgba(245, 245, 247, 0.58);
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+  .ax-node-desc { display: none; font-size: 0.8125rem; line-height: 1.5; color: var(--ink-soft); text-wrap: pretty; }
+
+  /* Zoomed in, and an open card: the art, the title, the summary. */
+  .ax-map[data-lod="full"] .ax-node,
+  .ax-star.is-open .ax-node { width: var(--fw, 300px); }
+  .ax-map[data-lod="full"] .ax-node-art,
+  .ax-star.is-open .ax-node-art { display: block; }
+  .ax-map[data-lod="full"] .ax-node-desc,
+  .ax-star.is-open .ax-node-desc { display: block; }
+  .ax-map[data-lod="full"] .ax-node-title,
+  .ax-star.is-open .ax-node-title { font-size: 1rem; line-height: 1.28; }
+  .ax-map[data-lod="full"] .ax-node-body,
+  .ax-star.is-open .ax-node-body { padding: 14px 16px 16px; gap: 8px; }
   .ax-star.is-open .ax-node {
-    width: 300px;
+    transform: translateY(-6px);
     border-color: rgba(var(--c-writing-rgb), 0.75);
     box-shadow:
       0 0 0 1px rgba(0, 0, 0, 0.6),
       0 0 60px -10px rgba(var(--c-writing-rgb), 0.8),
       0 40px 80px -30px rgba(0, 0, 0, 1);
   }
-  .ax-node:focus-visible { outline: none; }
-  .ax-node-art {
-    position: relative;
-    display: block;
-    aspect-ratio: 16 / 9;
-    overflow: hidden;
-    background: #05070a;
+
+  /* Zoomed out: every post is a star. The title stays in the link for
+     screen readers. */
+  .ax-map[data-lod="stars"] .ax-star:not(.is-open) .ax-node {
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    border: 0;
+    background: radial-gradient(circle, #fff 0 18%, rgba(var(--c-writing-rgb), 0.95) 34%, rgba(var(--c-writing-rgb), 0) 70%);
+    box-shadow: 0 0 16px rgba(var(--c-writing-rgb), 0.9);
   }
+  .ax-map[data-lod="stars"] .ax-star:not(.is-open) .ax-node-body {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+  .ax-map[data-lod="stars"] .ax-star:not(.is-open) .ax-node:focus-visible { box-shadow: 0 0 0 3px rgba(var(--c-writing-rgb), 0.6), 0 0 16px rgba(var(--c-writing-rgb), 0.9); }
+
   .ax-node-img {
     position: absolute;
     inset: -8%;
@@ -495,20 +547,15 @@ const comets = [
     object-fit: cover;
     display: block;
     transform: translate3d(calc(var(--px) * -10px), calc(var(--py) * -7px), 0);
-    transition: transform 200ms linear, filter 400ms var(--ease-glass);
-    filter: saturate(0.9) brightness(0.9);
+    transition: transform 200ms linear;
   }
-  .ax-star.is-open .ax-node-img { filter: saturate(1.1) brightness(1.05); }
   /* The second layer: a glint that moves the other way. */
   .ax-node-glint {
     position: absolute;
     inset: 0;
     background: radial-gradient(60% 80% at calc(50% + var(--px) * 40%) calc(40% + var(--py) * 40%), rgba(255, 255, 255, 0.22), rgba(255, 255, 255, 0) 60%);
     mix-blend-mode: soft-light;
-    opacity: 0;
-    transition: opacity 300ms var(--ease-glass);
   }
-  .ax-star.is-open .ax-node-glint { opacity: 1; }
   .ax-node-fallback {
     position: absolute;
     inset: 0;
@@ -523,40 +570,23 @@ const comets = [
   }
   .ax-node-badge {
     position: absolute;
-    left: 6px;
-    top: 6px;
-    padding: 2px 6px;
+    left: 8px;
+    top: 8px;
+    padding: 3px 8px;
     border-radius: 9999px;
-    font-size: 0.5625rem;
+    font-size: 0.6875rem;
     font-weight: 600;
     color: #02140d;
     background: rgb(var(--c-writing-rgb));
     box-shadow: 0 0 12px rgba(var(--c-writing-rgb), 0.8);
   }
-  .ax-node-body { display: flex; flex-direction: column; gap: 4px; padding: 6px 7px 7px; }
-  .ax-node-title {
-    font-size: 0.65625rem;
-    line-height: 1.28;
-    font-weight: 600;
-    letter-spacing: -0.005em;
-    display: -webkit-box;
-    -webkit-box-orient: vertical;
-    -webkit-line-clamp: 2;
-    overflow: hidden;
-  }
-  .ax-node-meta { display: flex; align-items: center; gap: 5px; font-size: 0.5625rem; color: rgba(245, 245, 247, 0.55); font-variant-numeric: tabular-nums; white-space: nowrap; }
-  .ax-node-desc { display: none; font-size: 0.8125rem; line-height: 1.5; color: var(--ink-soft); }
-  .ax-star.is-open .ax-node-body { padding: 12px 14px 14px; gap: 8px; }
-  .ax-star.is-open .ax-node-title { font-size: 1rem; line-height: 1.25; -webkit-line-clamp: 3; }
-  .ax-star.is-open .ax-node-meta { font-size: 0.75rem; }
-  .ax-star.is-open .ax-node-desc { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 4; overflow: hidden; }
 
   .ax-ring { width: 15px; height: 15px; flex: none; transform: rotate(-90deg); }
   .ax-ring circle { fill: none; stroke-width: 3; }
   .ax-ring-bg { stroke: rgba(255, 255, 255, 0.14); }
-  .ax-ring-fg { stroke: rgb(var(--c-writing-rgb)); stroke-linecap: round; filter: drop-shadow(0 0 2px rgba(var(--c-writing-rgb), 0.8)); }
+  .ax-ring-fg { stroke: rgb(var(--c-writing-rgb)); stroke-linecap: round; }
 
-  .ax-zoom { position: absolute; right: clamp(14px, 2vw, 28px); bottom: clamp(70px, 10vh, 110px); z-index: 30; display: flex; flex-direction: column; gap: 6px; }
+  .ax-zoom { position: absolute; right: 22px; top: 104px; z-index: 30; display: flex; flex-direction: column; gap: 6px; }
   .ax-zbtn {
     width: 40px;
     height: 40px;
@@ -570,15 +600,49 @@ const comets = [
   }
   .ax-zfit { font-size: 0.6875rem; font-weight: 600; }
   .ax-zbtn:focus-visible { outline: none; box-shadow: 0 0 0 3px rgba(var(--c-writing-rgb), 0.55); }
+  .ax-back {
+    position: absolute;
+    z-index: 30;
+    left: 84px;
+    top: 104px;
+    height: 36px;
+    padding: 0 16px;
+    border: 0;
+    border-radius: 9999px;
+    color: var(--ink);
+    font-size: 0.8125rem;
+    font-weight: 500;
+    cursor: pointer;
+  }
+  .ax-back:focus-visible { outline: none; box-shadow: 0 0 0 3px rgba(var(--c-writing-rgb), 0.55); }
   .ax-hint {
     position: absolute;
-    left: 50%;
-    bottom: clamp(36px, 5vh, 56px);
-    transform: translateX(-50%);
+    left: 84px;
+    bottom: 14px;
+    z-index: 3;
     font-size: 0.75rem;
     color: rgba(245, 245, 247, 0.42);
     white-space: nowrap;
     pointer-events: none;
+  }
+  .ax-map[data-mode="focus"] .ax-hint { display: none; }
+
+  /* Phones: one constellation per screen, swiped sideways. */
+  @media (max-width: 899px) {
+    .ax[data-view="map"] .ax-map {
+      height: auto;
+      min-height: 0;
+      overflow-x: auto;
+      overflow-y: hidden;
+      scroll-snap-type: x mandatory;
+      overscroll-behavior-x: contain;
+      scrollbar-width: none;
+    }
+    .ax[data-view="map"] .ax-map::-webkit-scrollbar { display: none; }
+    .ax-name { scroll-snap-align: start; scroll-margin-left: 16px; cursor: default; }
+    .ax-lines, .ax-glows, .ax-zoom, .ax-hint, .ax-back { display: none !important; }
+    .ax-node-meta { font-size: 0.75rem; }
+    .ax-node-title { font-size: 0.9375rem; }
   }
 
   /* ---------------- List view ---------------- */
@@ -759,15 +823,12 @@ const comets = [
 
   @media (max-width: 899px) {
     .ax-search { max-width: none; flex-basis: 100%; }
-    .ax-hint { display: none; }
-    .ax-node { width: 100px; }
-    .ax-star.is-open .ax-node { width: 250px; }
   }
   @media (prefers-reduced-motion: reduce) {
     .ax-card, .ax-guide, .ax-media :global(img), .ax-guide-cover, .ax-node, .ax-node-img { transition: none; }
     .ax-card:hover, .ax-guide:hover { transform: none; }
     .ax-guide:hover .ax-guide-cover { transform: none; }
-    .ax-node { transform: none; }
+    .ax-star.is-open .ax-node { transform: none; }
     .ax-node-img { transform: none; }
   }
 </style>

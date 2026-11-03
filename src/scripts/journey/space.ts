@@ -35,6 +35,8 @@ export interface SpaceInput {
   ptr: PointerRay;
   /** +1 flying forward along the path, -1 after turning back. */
   heading: number;
+  /** Landing phase 0..1 (touchdown at 0.84). */
+  land: number;
   time: number;
   dt: number;
   speed: number;
@@ -435,7 +437,7 @@ export function buildSpace(path: FlightPath, chapters: Chapter[], low: boolean, 
   const flare: Flare = { pos: new Vector3(), color: new Color(), strength: 0 };
   const skyColor = new Color();
   const haze = { color: new Color(), density: 0, weight: 0 };
-  const frame: PieceFrame = { time: 0, dt: 0, p: 0, camera: null as unknown as PerspectiveCamera, ptr: { o: new Vector3(), d: new Vector3(), on: 0 } };
+  const frame: PieceFrame = { time: 0, dt: 0, p: 0, camera: null as unknown as PerspectiveCamera, ptr: { o: new Vector3(), d: new Vector3(), on: 0 }, land: 0 };
 
   function update(s: SpaceInput) {
     const { p, time, dt, camera } = s;
@@ -459,6 +461,7 @@ export function buildSpace(path: FlightPath, chapters: Chapter[], low: boolean, 
     frame.p = p;
     frame.camera = camera;
     frame.ptr = s.ptr;
+    frame.land = s.land;
     for (const pc of pieces) {
       const w = pc.weight(p);
       const on = w > 0.001;

@@ -1251,4 +1251,13 @@ export function mountWall(signal: AbortSignal): void | (() => void) {
     gl.deleteBuffer(instBuf);
     gl.deleteVertexArray(vao);
     gl.deleteProgram(prog);
-    gl.deleteProgram(bgProg
+    gl.deleteProgram(bgProg);
+    gl.deleteShader(bgVs);
+    gl.deleteShader(bgFs);
+    gl.deleteBuffer(bgBuf);
+    gl.deleteVertexArray(bgVao);
+    gl.deleteShader(vs);
+    gl.deleteShader(fs);
+    gl.getExtension("WEBGL_lose_context")?.loseContext();
+  };
+}

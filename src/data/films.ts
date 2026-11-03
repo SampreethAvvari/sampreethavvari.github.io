@@ -26,10 +26,12 @@ export type Still = { src: string; alt: string };
  *
  * A clip: files under public/films/<slug>/ (reel-1080.mp4, reel-720.mp4 for
  * phones, poster.jpg, and audio.m4a for the film's own sound). Until a clip
- * exists, a film can show its own stills instead: each entry names one of
- * its stills (any part of the filename), pushed and drifted in that order.
- * Dropping reel-1080.mp4 into the folder is enough to switch to the clip;
- * the other files are picked up the same way when they are there.
+ * exists, a film shows its own stills instead (each entry names one of its
+ * stills by any part of the filename, shown in that order), or, with no
+ * stills either, a designed title card. Dropping reel-1080.mp4 into the
+ * folder is enough to switch to the clip; the other files are picked up
+ * the same way when they are there. The category is the film's form when
+ * the site states it, and the plain word "Film" when it does not.
  */
 export type VideoReel = { category: string; mp4: string; mp4Phone?: string; poster: string; audio?: string };
 export type StillsReel = { category: string; stills: string[] };

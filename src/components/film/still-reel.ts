@@ -1,9 +1,8 @@
 // A reel made from a film's own stills, for films whose clip has not
-// arrived yet. One 2D canvas, treated like a clip: it has a length (each
-// still leads for a few seconds, with a slow push in and a drift across the
-// frame, then dissolves into the next), it can be scrubbed to any point, and
-// it can play from there at normal speed. It draws only when asked or while
-// playing, and the reel's cut reads the canvas like a video frame.
+// arrived yet. One 2D canvas, treated like a clip: each still leads for a
+// few seconds with a slow push in and a drift across the frame, then
+// dissolves into the next, and the run loops. It draws only while it plays,
+// and the reel's cut reads the canvas like a video frame.
 //
 // Many stills have letterbox bars baked in. When a still loads its true
 // black top and bottom rows are measured, and the picture inside them is
@@ -36,7 +35,7 @@ export class StillReel {
   constructor(
     readonly canvas: HTMLCanvasElement,
     urls: string[],
-    private opts: { phone: boolean; dprCap: number; loop?: boolean; onFirstFrame?: () => void; onEnd?: () => void },
+    private opts: { phone: boolean; dprCap: number; loop?: boolean; onFirstFrame?: () => void },
   ) {
     this.ctx = canvas.getContext("2d", { alpha: false });
     this.frames = urls.map((src) => {
@@ -45,17 +44,13 @@ export class StillReel {
       img.dataset.src = src;
       return { img, y0: 0, y1: 1, ready: false };
     });
-    // A scrub can land anywhere, so every still loads now (five or so).
+    // Five or so stills: they all load now, so no dissolve waits on one.
     this.frames.forEach((_, i) => this.load(i));
   }
 
   /** Seconds, as if it were a clip. */
   get duration() {
     return Math.max(1, this.frames.length) * HOLD;
-  }
-  /** Where it stands, 0 to 1. */
-  get progress() {
-    return this.elapsed / this.duration;
   }
   get ready() {
     return !!this.frames[0]?.ready;
@@ -174,12 +169,6 @@ export class StillReel {
     }
   }
 
-  /** Jump to a point, 0 to 1, and draw it. */
-  seek(p: number) {
-    this.elapsed = Math.max(0, Math.min(1, p)) * this.duration;
-    this.draw();
-  }
-
   /** Play from where it stands at normal speed; at the end it stops, or
    *  starts over when it loops. */
   play() {
@@ -195,7 +184,6 @@ export class StillReel {
         this.elapsed = this.duration;
         this.draw();
         this.pause();
-        this.opts.onEnd?.();
         return;
       }
       this.draw();

@@ -66,6 +66,67 @@
           "webp": 7370828
         }
       }
+    },
+    {
+      "id": "helmet",
+      "title": "Helmet off",
+      "frames": 192,
+      "fps": 24,
+      "duration": 8,
+      "key": 72,
+      "keyLabel": "helmet clears the head",
+      "beats": [
+        {
+          "id": "stand",
+          "start": 0
+        },
+        {
+          "id": "lift",
+          "start": 29
+        },
+        {
+          "id": "off",
+          "start": 72
+        },
+        {
+          "id": "breathe",
+          "start": 120
+        }
+      ],
+      "desktop": {
+        "dir": "helmet/desktop",
+        "width": 1600,
+        "height": 900,
+        "focus": [
+          [
+            0,
+            0.5
+          ],
+          [
+            130,
+            0.46
+          ],
+          [
+            191,
+            0.45
+          ]
+        ]
+      },
+      "phone": {
+        "dir": "helmet/phone",
+        "width": 900,
+        "height": 1200
+      },
+      "bytes": {
+        "desktop": {
+          "avif": 2917613,
+          "webp": 5426122
+        },
+        "phone": {
+          "avif": 1097621,
+          "webp": 2968122
+        }
+      }
     }
   ]
 }

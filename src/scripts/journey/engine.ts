@@ -8,9 +8,11 @@
 // world) at i + 0.8, the middle of a glide between two rest points.
 //
 // The 3D carries the chapters up to the one with id "film" (the landing
-// world). As that world appears, the lander undocks, comes down through the
-// clouds and settles before its rest point: landed(progress) is 1 from
-// about land + 0.29. Chapters after it hold a calm shot of the landed lander.
+// world). When the page arrives at that world's rest point and holds, the
+// lander undocks and comes down in real time: touchdown exactly TOUCHDOWN_S
+// seconds after arrival, then it settles and holds. Leaving forward before
+// it finishes snaps it to landed; leaving backward (past the jump's
+// crossover) snaps it back to the dock. Chapters after it hold the landed shot.
 //
 // Usage:
 //   const { mountJourney } = await import("./journey/engine");
@@ -44,7 +46,7 @@ import {
   type Texture,
   type WebGLRenderTarget,
 } from "three";
-import { approachU, CROSS, FlightPath, JUMP_A, JUMP_B, jumpAt, landedAt, landingPhase, REST, travel, worldAt } from "./path";
+import { approachU, CROSS, FlightPath, JUMP_A, JUMP_B, jumpAt, REST, travel, worldAt } from "./path";
 import { Post, type PostFrame } from "./post";
 import { buildShip, type ShipInput } from "./ship";
 import { compositeTextures, foilNormal, solarTexture } from "./skin";
@@ -74,6 +76,8 @@ export interface Journey {
   setPointer(nx: number, ny: number): void;
   /** Stop rendering entirely while paused. */
   setPaused(paused: boolean): void;
+  /** 0 until the lander touches down, then 1. */
+  landedNow(): number;
   destroy(): void;
 }
 
@@ -110,9 +114,21 @@ export function jumpState(progress: number, landWorld = LAND_WORLD): { from: num
   return jumpAt(progress, landWorld + 1);
 }
 
-/** 0 before the lander touches down, 1 once it has settled and the dust is down (from about landWorld + 0.29). */
+/** Seconds from arriving at the landing world's rest point to touchdown (eight beats at 85.7 bpm). */
+export const TOUCHDOWN_S = 5.6;
+
+// The live landing state of the mounted engine, so landed() can answer.
+let liveLanded = 0;
+
+/**
+ * 0 until the lander touches down, then 1. Before the landing world it is 0
+ * and past its rest point it is 1; at the rest point it follows the real
+ * time descent of the mounted engine (Journey.landedNow says the same).
+ */
 export function landed(progress: number, landWorld = LAND_WORLD): number {
-  return landedAt(progress, landWorld + 1);
+  if (progress < landWorld - 1 + CROSS) return 0;
+  if (progress > landWorld + REST + 0.05) return 1;
+  return liveLanded;
 }
 
 /** Progress at which each chapter sits at rest. */
@@ -356,6 +372,9 @@ export function mountJourney(canvas: HTMLCanvasElement, opts: JourneyOptions): J
   let firstFrame = false;
   let prevL = 0;
   let bounceT = -1;
+  // Landing state: 0 docked, 1 coming down, 2 landed.
+  let landState = 0;
+  let landStart = 0;
   // Heading: +1 flying forward along the path, -1 after turning back. It
   // flips on the direction of a jump, and the turn plays out over a second.
   let heading = 1;
@@ -521,7 +540,20 @@ export function mountJourney(canvas: HTMLCanvasElement, opts: JourneyOptions): J
     rig.updateMatrixWorld();
 
     // Landing in the last world: the lander undocks and comes down onto the pad.
-    const L = landingPhase(landing, p);
+    // The landing runs on the clock once the page holds at the rest point.
+    const restP = landWorld + REST;
+    if (p < landWorld - 1 + CROSS) landState = 0; // back past the crossover: docked again
+    else if (targetP > restP + 0.05 || p > restP + 0.05) landState = 2; // moving on: landed
+    else if (landState === 0 && Math.abs(targetP - restP) < 0.0015) {
+      landState = reduced ? 2 : 1;
+      landStart = performance.now();
+    }
+    let L = 0;
+    if (landState === 1) {
+      L = clamp((performance.now() - landStart) / 1000 / (TOUCHDOWN_S / 0.84), 0, 1);
+      if (L >= 1) landState = 2;
+    } else if (landState === 2) L = 1;
+    liveLanded = L >= 0.84 ? 1 : 0;
     _dockPos.setFromMatrixPosition(ship.dock).applyMatrix4(sr.matrixWorld);
     _dockQuat.setFromRotationMatrix(sr.matrixWorld);
     if (L > 0) {
@@ -566,7 +598,7 @@ export function mountJourney(canvas: HTMLCanvasElement, opts: JourneyOptions): J
     shipIn.detach = smooth(0, 0.1, L);
     shipIn.heading = Math.cos(turnAng);
     shipIn.heat = smooth(0.08, 0.25, L) * (1 - smooth(0.42, 0.6, L));
-    shipIn.landed = landedAt(p, W);
+    shipIn.landed = smooth(0.84, 0.98, L);
     ship.update(shipIn);
 
     // ---- Camera: the chapter's shot around the ship, eased into the landing shot.
@@ -666,7 +698,7 @@ export function mountJourney(canvas: HTMLCanvasElement, opts: JourneyOptions): J
     ptr.d.set(ptx, -pty, 0.5).unproject(camera).sub(camera.position).normalize();
     ptr.on = ptrOn * (1 - bell);
 
-    space.update({ p, q, time, dt, speed, boost, color: _color, camera, fwd: _fwd, reduced, pxScale, dpr, warp: reduced ? 0 : bell, ptr, heading: Math.cos(turnAng) });
+    space.update({ p, q, time, dt, speed, boost, color: _color, camera, fwd: _fwd, reduced, pxScale, dpr, warp: reduced ? 0 : bell, ptr, heading: Math.cos(turnAng), land: L });
     const fog = scene.fog as FogExp2;
     fog.color.setRGB(0.012, 0.014, 0.03).lerp(_color, 0.04).lerp(space.haze.color, space.haze.weight);
     fog.density = lerp(0.0008, space.haze.density, space.haze.weight);
@@ -835,6 +867,9 @@ export function mountJourney(canvas: HTMLCanvasElement, opts: JourneyOptions): J
         lensX = ptx * 0.5 + 0.5;
         lensY = 0.5 - pty * 0.5;
       }
+    },
+    landedNow() {
+      return landState === 2 || (landState === 1 && liveLanded === 1) ? 1 : 0;
     },
     setPaused(next: boolean) {
       if (paused === next) return;
