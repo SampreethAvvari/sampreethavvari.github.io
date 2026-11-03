@@ -1326,7 +1326,7 @@ export const info = {
     {
       title: "Enterprise Data Project",
       tier: "industry",
-      date: "Aug 2025 to present",
+      date: "Dec 2025 to Mar 2026",
       description:
         "I moved team automations onto one self hosted n8n platform on AWS.",
       link: "",
