@@ -219,7 +219,7 @@ function augment(base: Px, stop: number): { px: Px; fired: string[] } {
 }
 
 const render: Figure = ({ root, signal, still }) => {
-  frame(root, "The lever that costs nothing", "Drag the star up. Every stop is a real run. The parameter count does not move.");
+  frame(root, "The lever that costs nothing", "Drag the star up. Every stop is from the report. The parameter count does not move.");
   const body = h("div", "pfx-zp-body");
   root.append(body);
 

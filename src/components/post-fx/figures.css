@@ -2,6 +2,8 @@
    moves when a figure arrives. Words in a figure are never <p>: the article's
    paragraph styles would take them over. */
 
+.pfx-fig { --fig-faint: rgba(245, 245, 247, 0.6); }
+
 @media screen and (scripting: enabled) {
   [data-post-fig="referee-line"] { height: 690px; }
   [data-post-fig="minhash"] { height: 668px; }
@@ -13,7 +15,7 @@
   [data-post-fig="referee-line"] { height: 730px; }
   [data-post-fig="minhash"] { height: 1068px; }
   [data-post-fig="zero-params"] { height: 800px; }
-  [data-post-fig="day-sky"] { height: 948px; }
+  [data-post-fig="day-sky"] { height: 950px; }
   [data-post-fig="permission-gate"] { height: 836px; }
 }
 
@@ -115,7 +117,7 @@
 .pfx-ref-card.is-other { border-style: dashed; }
 .pfx-ref-card.is-pass { opacity: 1; transform: none; border-color: rgba(244, 63, 94, 0.75); box-shadow: 0 0 18px -6px rgba(244, 63, 94, 0.9); background-color: #1a1016; }
 .pfx-ref-axis { position: relative; height: 18px; margin-top: 4px; }
-.pfx-ref-tick { position: absolute; transform: translateX(-50%); font-size: 0.6875rem; color: var(--ink-faint); font-variant-numeric: tabular-nums; }
+.pfx-ref-tick { position: absolute; transform: translateX(-50%); font-size: 0.6875rem; color: var(--fig-faint); font-variant-numeric: tabular-nums; }
 .pfx-ref-checks { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin-top: 8px; }
 .pfx-ref-check {
   padding: 8px 11px;
@@ -124,7 +126,7 @@
   background: #0e1014;
   font-size: 0.8125rem;
   font-weight: 500;
-  color: var(--ink-faint);
+  color: var(--fig-faint);
   transition: color 180ms ease, border-color 180ms ease;
 }
 .pfx-ref-check.is-ok { color: var(--ink); border-color: rgba(var(--tone-rgb), 0.5); }
@@ -196,18 +198,18 @@
 .pfx-mh-cells { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 2px; }
 .pfx-mh-cell { display: block; height: 24px; border-radius: 2px; opacity: 0.42; transition: opacity 160ms ease, background-color 200ms ease, box-shadow 200ms ease; }
 .pfx-mh-cell.is-same { opacity: 1; box-shadow: 0 0 6px -1px rgba(255, 255, 255, 0.5); }
-.pfx-mh-bandtag { margin-top: 2px; font-size: 0.6875rem; color: var(--ink-faint); text-align: center; }
+.pfx-mh-bandtag { margin-top: 2px; font-size: 0.6875rem; color: var(--fig-faint); text-align: center; }
 .pfx-mh-band.is-lock .pfx-mh-bandtag { color: #d7c9ff; }
 .pfx-mh-verdict { display: grid; grid-template-columns: minmax(0, 1fr) 170px; align-items: center; gap: 14px; padding: 12px 20px 2px; }
 .pfx-mh-vhead { font-size: 1rem; line-height: 1.3; font-weight: 600; letter-spacing: -0.012em; color: var(--ink-soft); }
 .pfx-mh-vhead.is-yes { color: #d7c9ff; }
-.pfx-mh-vsub { margin-top: 4px; font-size: 0.8125rem; line-height: 1.4; color: var(--ink-faint); font-variant-numeric: tabular-nums; }
+.pfx-mh-vsub { margin-top: 4px; font-size: 0.8125rem; line-height: 1.4; color: var(--fig-faint); font-variant-numeric: tabular-nums; }
 .pfx-mh-curvebox { display: grid; gap: 2px; }
 .pfx-mh-curve { width: 100%; height: auto; }
 .pfx-mh-axis { fill: none; stroke: rgba(255, 255, 255, 0.16); stroke-width: 0.8; }
 .pfx-mh-s { fill: none; stroke: rgb(167, 139, 250); stroke-width: 1.4; }
 .pfx-mh-dot { fill: #fff; filter: drop-shadow(0 0 4px rgba(167, 139, 250, 1)); }
-.pfx-mh-curvecap { font-size: 0.6875rem; line-height: 1.25; color: var(--ink-faint); }
+.pfx-mh-curvecap { font-size: 0.6875rem; line-height: 1.25; color: var(--fig-faint); }
 .pfx-mh-funnel { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 .pfx-mh-funnel .pfx-read-v { font-size: 1.0625rem; }
 
@@ -218,7 +220,7 @@
 .pfx-zp-big { display: block; width: 100%; aspect-ratio: 1; image-rendering: pixelated; }
 .pfx-zp-fired { display: flex; flex-wrap: wrap; gap: 4px; min-height: 48px; align-content: start; }
 .pfx-zp-chip { padding: 2px 8px; border-radius: 9999px; font-size: 0.6875rem; font-weight: 500; line-height: 1.5; color: #e0d6ff; border: 1px solid rgba(167, 139, 250, 0.5); background: #151026; }
-.pfx-zp-chip.is-none { color: var(--ink-faint); border-color: var(--line); background: transparent; }
+.pfx-zp-chip.is-none { color: var(--fig-faint); border-color: var(--line); background: transparent; }
 .pfx-zp-strip { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 3px; }
 .pfx-zp-thumb { display: block; width: 100%; aspect-ratio: 1; border-radius: 3px; image-rendering: pixelated; background: #000; }
 .pfx-zp-load {
@@ -245,7 +247,7 @@
 .pfx-zp-wall { position: absolute; top: 0; bottom: 0; width: 0; border-left: 1px solid rgba(255, 130, 130, 0.85); box-shadow: 0 0 10px rgba(255, 110, 110, 0.5); }
 .pfx-zp-wall span { position: absolute; left: 0; bottom: -17px; transform: translateX(-50%); font-size: 0.6875rem; font-weight: 500; color: rgba(255, 180, 180, 0.95); white-space: nowrap; }
 .pfx-zp-yaxis { position: absolute; left: -34px; top: 0; bottom: 0; width: 30px; }
-.pfx-zp-ytick { position: absolute; right: 0; transform: translateY(50%); font-size: 0.6875rem; color: var(--ink-faint); font-variant-numeric: tabular-nums; }
+.pfx-zp-ytick { position: absolute; right: 0; transform: translateY(50%); font-size: 0.6875rem; color: var(--fig-faint); font-variant-numeric: tabular-nums; }
 .pfx-zp-run {
   position: absolute;
   width: 26px;
@@ -307,7 +309,7 @@
   touch-action: none;
 }
 .pfx-zp-star:focus-visible { outline: none; filter: drop-shadow(0 0 2px #fff) drop-shadow(0 0 12px rgba(167, 139, 250, 1)); }
-.pfx-zp-xlab { margin: 18px 0 0 34px; font-size: 0.6875rem; color: var(--ink-faint); text-align: center; }
+.pfx-zp-xlab { margin: 18px 0 0 34px; font-size: 0.6875rem; color: var(--fig-faint); text-align: center; }
 .pfx-zp-read { display: grid; grid-template-columns: minmax(0, 1.1fr) repeat(2, minmax(0, 1fr)); gap: 8px; margin-top: 8px; }
 .pfx-zp-now { display: grid; align-content: start; gap: 2px; }
 .pfx-zp-acc { font-size: 2rem; line-height: 1.05; font-weight: 600; letter-spacing: -0.035em; font-variant-numeric: tabular-nums; color: var(--ink); }
@@ -323,7 +325,7 @@
   pointer-events: none;
 }
 .pfx-zp-runlab.is-left { margin: 0 0 8px -11px; transform: translateX(-100%); }
-.pfx-zp-xtick { position: absolute; bottom: -17px; transform: translateX(-50%); font-size: 0.6875rem; color: var(--ink-faint); font-variant-numeric: tabular-nums; }
+.pfx-zp-xtick { position: absolute; bottom: -17px; transform: translateX(-50%); font-size: 0.6875rem; color: var(--fig-faint); font-variant-numeric: tabular-nums; }
 .pfx-zp-params b, .pfx-zp-spare b { font-size: 1rem; line-height: 1.15; color: var(--ink); font-variant-numeric: tabular-nums; }
 @media (max-width: 639px) {
   .pfx-zp-body { grid-template-columns: minmax(0, 1fr); }
@@ -354,7 +356,7 @@
   font-weight: 500;
   line-height: 1.2;
   text-align: center;
-  color: rgba(245, 245, 247, 0.5);
+  color: rgba(245, 245, 247, 0.62);
   pointer-events: none;
 }
 .pfx-day-star {
@@ -456,7 +458,7 @@
 }
 .pfx-day-track:focus-visible .pfx-day-handle { box-shadow: 0 0 0 3px rgba(91, 141, 239, 0.9); }
 .pfx-day-hours { position: relative; height: 16px; }
-.pfx-day-hour { position: absolute; font-size: 0.6875rem; color: var(--ink-faint); white-space: nowrap; }
+.pfx-day-hour { position: absolute; font-size: 0.6875rem; color: var(--fig-faint); white-space: nowrap; }
 .pfx-day-read { display: grid; grid-template-columns: minmax(130px, 170px) minmax(0, 1fr); gap: 8px; padding: 10px 14px 14px; }
 .pfx-day-now .pfx-read-v { font-size: 1.5rem; }
 .pfx-day-fire { display: grid; align-content: center; min-height: 76px; }
@@ -471,7 +473,7 @@
 
 /* ---- Try to talk it out ------------------------------------------------------ */
 .pfx-gate-row { display: grid; gap: 4px; margin-top: 8px; }
-.pfx-gate-rowname { font-size: 0.75rem; font-weight: 500; color: var(--ink-faint); }
+.pfx-gate-rowname { font-size: 0.75rem; font-weight: 500; color: var(--fig-faint); }
 .pfx-gate-row .pfx-seg { margin-top: 0; }
 .pfx-seg.is-cards { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 4px; padding: 3px; border-radius: 14px; }
 .pfx-seg.is-cards .pfx-seg-b { min-height: 48px; padding: 6px 10px; border-radius: 11px; white-space: normal; line-height: 1.28; text-align: left; }
@@ -492,7 +494,7 @@
 .pfx-gate-node.is-docs { left: 18%; }
 .pfx-gate-node.is-gate { max-width: 132px; color: #9ff0cf; }
 .pfx-gate-node.is-gate.is-stop { color: #ffb4b4; }
-.pfx-gate-node.is-model.is-off { color: var(--ink-faint); text-decoration: line-through; }
+.pfx-gate-node.is-model.is-off { color: var(--fig-faint); text-decoration: line-through; }
 .pfx-gate-tip {
   position: absolute;
   left: 0;
@@ -508,7 +510,7 @@
   pointer-events: none;
 }
 .pfx-gate-answer { min-height: 128px; margin: 4px 14px 14px; padding: 13px 15px 14px; border-radius: 14px; border: 1px solid var(--line); background: #0b0c11; }
-.pfx-gate-ahead { font-size: 0.75rem; font-weight: 500; color: var(--ink-faint); }
+.pfx-gate-ahead { font-size: 0.75rem; font-weight: 500; color: var(--fig-faint); }
 .pfx-gate-atext { min-height: 1.4em; margin-top: 5px; font-size: 1.0625rem; line-height: 1.38; font-weight: 500; letter-spacing: -0.012em; color: var(--ink); }
 .is-line .pfx-gate-atext { color: #ffd0d0; }
 .pfx-gate-anote { margin-top: 6px; font-size: 0.8125rem; line-height: 1.42; color: var(--ink-soft); }

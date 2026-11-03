@@ -669,7 +669,9 @@ a.pfx-sky-star { color: var(--ink); text-decoration: underline; text-underline-o
 @media screen and (scripting: enabled) {
   .pfx-slot {
     display: block;
-    margin: 2.2em 0;
+    /* In rem: the figure sets its own type size when it arrives, and an em
+       margin would move the page. */
+    margin: 2.5rem 0;
     border-radius: 20px;
     border: 1px solid var(--line);
     /* The figure's own bit of sky: dust and a little of the post's colour. */
@@ -726,8 +728,8 @@ a.pfx-sky-star { color: var(--ink); text-decoration: underline; text-underline-o
 }
 .pfx-read-c.is-line:hover, .pfx-read-c.is-line:focus-visible { border-color: rgba(245, 165, 36, 0.55); background: #13110d; }
 .pfx-read-v { font-size: 1.1875rem; font-weight: 600; line-height: 1.15; letter-spacing: -0.024em; font-variant-numeric: tabular-nums; color: var(--ink); }
-.pfx-read-k { margin-top: 3px !important; font-size: 0.8125rem; line-height: 1.35; color: var(--ink-soft); }
-.pfx-read-why { margin-top: 4px !important; font-size: 0.75rem; line-height: 1.38; color: var(--ink-faint); }
+.pfx-read-k { margin-top: 3px; font-size: 0.8125rem; line-height: 1.35; color: var(--ink-soft); }
+.pfx-read-why { margin-top: 4px; font-size: 0.75rem; line-height: 1.38; color: rgba(245, 245, 247, 0.6); }
 
 /* The coins. */
 @media screen and (scripting: enabled) {

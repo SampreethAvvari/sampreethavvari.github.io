@@ -32,7 +32,7 @@ import {
   WebGLRenderer,
 } from "three";
 import type { Figure } from "./index";
-import { clamp, emit, h, isPhone, noteOf, whileVisible } from "../util";
+import { clamp, emit, h, noteOf, whileVisible } from "../util";
 import { frame, fig, readCard, segmented } from "./parts";
 
 type Kind = "never" | "app" | "other" | "rest";
@@ -94,7 +94,7 @@ const RAW: Array<Omit<Project, "lines"> & { lines: Array<Omit<Line, "show"> & { 
     total: 0.32,
     lines: [
       { id: "sec", label: "Secret Manager", amount: 0.2, kind: "other", why: "More than its Cloud Run" },
-      { id: "run", label: "Cloud Run", amount: 0.04, kind: "app", why: "Request time for its services" },
+      { id: "run", label: "Cloud Run", amount: 0.04, kind: "app", why: "Less than the secrets it reads" },
     ],
   },
   {
@@ -105,7 +105,7 @@ const RAW: Array<Omit<Project, "lines"> & { lines: Array<Omit<Line, "show"> & { 
     lines: [
       { id: "sec", label: "Secret Manager", amount: 0.05, kind: "other", why: "More than its Cloud Run" },
       // The post says "less than a cent" and gives no figure, so none is shown.
-      { id: "run", label: "Cloud Run", amount: 0.005, show: "Under 1¢", kind: "app", why: "Less than a cent" },
+      { id: "run", label: "Cloud Run", amount: 0.005, show: "Under a cent", kind: "app", why: "Less than a cent" },
     ],
   },
 ];
@@ -351,11 +351,9 @@ const render: Figure = ({ root, signal, still }) => {
       never.sort((x, y) => y.amount - x.amount).forEach(({ p, l }) => read.append(lineCard(p, l, "", true)));
     } else if (mode === "apps") {
       PROJECTS.forEach((proj, p) =>
-        proj.lines.forEach((line, l) => {
+        proj.lines.forEach((line) => {
           if (line.kind === "app") {
-            const c = readCard(line.show, proj.short, "is-line is-small");
-            read.append(c);
-            void l;
+            read.append(readCard(line.show, proj.short, "is-line is-small"));
           }
         }),
       );
@@ -415,9 +413,7 @@ const render: Figure = ({ root, signal, still }) => {
     // How many device pixels one coin spans decides how crisp its edge can be.
     const coinPx = ((STEP / (2 * tan * dist)) * H) * dpr;
     shared.uCrisp.value = clamp((coinPx - 1.6) / 2.2);
-    labelsDirty = true;
   };
-  let labelsDirty = true;
   const ro = new ResizeObserver(resize);
   ro.observe(stage);
   resize();
@@ -585,13 +581,11 @@ const render: Figure = ({ root, signal, still }) => {
     poolShown = still ? wantShown : clamp(poolShown + (wantShown ? dt * 0.8 : -dt * 3), 0, 1.2);
 
     // Labels sit under each stack, and follow it as it turns.
-    const phone = W < 520;
     labelEls.forEach((b, i) => {
       proj.set(stackX(i), -0.22, stackZ(i)).applyQuaternion(qy).project(camera);
       const x = (proj.x * 0.5 + 0.5) * W;
       const y = (-proj.y * 0.5 + 0.5) * H;
       b.style.transform = `translate3d(${x.toFixed(1)}px, ${y.toFixed(1)}px, 0) translateX(-50%)`;
-      void phone;
     });
     if (poolLabel) {
       const topY = coins.reduce((a, c) => (c.pool ? Math.max(a, c.pool.y) : a), 0);
@@ -599,8 +593,6 @@ const render: Figure = ({ root, signal, still }) => {
       poolLabel.style.transform = `translate3d(${((proj.x * 0.5 + 0.5) * W).toFixed(1)}px, ${((-proj.y * 0.5 + 0.5) * H).toFixed(1)}px, 0) translate(8px, -50%)`;
       poolLabel.style.opacity = mode === "never" && poolShown > 0.85 ? "1" : "0";
     }
-    labelsDirty = false;
-    void labelsDirty;
     renderer.render(scene, camera);
   };
 
@@ -616,7 +608,6 @@ const render: Figure = ({ root, signal, still }) => {
     renderer.dispose();
     renderer.forceContextLoss();
     poolLabel = null;
-    void isPhone;
   };
 };
 

@@ -12,7 +12,7 @@
 //   post:hover { kind: "service", id: "<service>", note }  note is the group, 0 to 8
 
 import type { Figure } from "./index";
-import { clamp, emit, h, isPhone, whileVisible } from "../util";
+import { clamp, emit, h, whileVisible } from "../util";
 import { fig, frame, segmented } from "./parts";
 
 type Day = "monday" | "wednesday" | "other";
@@ -160,9 +160,9 @@ const render: Figure = ({ root, signal, still }) => {
   const legend = h("div", "pfx-day-legend");
   [
     ["warm", "Always on"],
-    ["run", "Runs all day"],
+    ["run", "Runs through the day"],
     ["fire", "Fires on the clock"],
-    ["wait", "Waits to be called"],
+    ["wait", "Waiting"],
   ].forEach(([k, label]) => {
     const it = h("span", "pfx-day-key");
     it.append(h("i", `is-${k}`), h("span", undefined, label));
@@ -200,6 +200,7 @@ const render: Figure = ({ root, signal, still }) => {
   const stars: Lit[] = SERVICES.map((s) => {
     const el = h("button", "pfx-day-star");
     el.type = "button";
+    el.tabIndex = -1;
     el.style.left = `${s.x * 100}%`;
     el.style.top = `${s.y * 100}%`;
     el.setAttribute("aria-label", `${s.name}. ${s.when}`);
@@ -475,11 +476,10 @@ const render: Figure = ({ root, signal, still }) => {
 
   buildTicks();
   refresh(true);
-  void isPhone;
 
   // ---- Frames: the day runs; the mornings run slower so they can be seen ----------
   let autoplay = !still;
-  let autoEnd = m(6, 52);
+  const autoEnd = m(6, 52);
   let last = performance.now();
   if (!still) {
     whileVisible(
@@ -501,8 +501,6 @@ const render: Figure = ({ root, signal, still }) => {
       signal,
     );
   }
-  void autoEnd;
-  autoEnd = m(6, 52);
 
   return () => ro.disconnect();
 };

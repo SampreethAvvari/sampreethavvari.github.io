@@ -12,7 +12,7 @@
 //   post:hover { kind: "band", id: "band-<i>", note }
 
 import type { Figure } from "./index";
-import { clamp, emit, h, isPhone, whileVisible } from "../util";
+import { clamp, emit, h, whileVisible } from "../util";
 import { fig, frame, readCard } from "./parts";
 
 const PERMS = 30;
@@ -42,7 +42,7 @@ function minhash(set: number[], seeds: number[]) {
 type Star = { x: number; y: number; tx: number; ty: number; a: number; b: number; ta: number; tb: number; r: number; tw: number };
 
 const render: Figure = ({ root, signal, still }) => {
-  frame(root, "Taste as 30 numbers", "Drag how many movies the two share. Watch which numbers agree, and when a whole band locks.");
+  frame(root, "Taste as 30 numbers", "Two made up users. Drag how many movies they share, and watch when a whole band locks.");
 
   const skyBox = h("div", "pfx-mh-sky");
   const canvas = h("canvas", "pfx-mh-canvas");
@@ -244,7 +244,7 @@ const render: Figure = ({ root, signal, still }) => {
     dpr = Math.min(devicePixelRatio || 1, 1.5);
     canvas.width = Math.round(W * dpr);
     canvas.height = Math.round(H * dpr);
-    cA.x = W * (isPhone() ? 0.2 : 0.2);
+    cA.x = W * 0.2;
     cA.y = H / 2;
     cB.x = W * 0.8;
     cB.y = H / 2;

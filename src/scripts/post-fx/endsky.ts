@@ -24,6 +24,11 @@ export function mountEndSky(signal: AbortSignal): void | (() => void) {
   if (!field || !dome) return;
 
   const still = reduced();
+  // A touch screen taps.
+  if (isTouch()) {
+    const sub = section.querySelector(".pfx-sky-sub");
+    if (sub?.textContent) sub.textContent = sub.textContent.replace("Click a star", "Tap a star");
+  }
   const stars = Array.from(section.querySelectorAll<HTMLElement>(".pfx-sky-star"));
   const links = stars.filter((s): s is HTMLAnchorElement => s.tagName === "A");
   const here = stars.find((s) => s.classList.contains("is-here"));
