@@ -61,6 +61,8 @@ export type WorldHits = {
 export type WorldEvents = {
   onSheetFlip?: (i: number) => void;
   onSkillTouch?: (index: number, slip: Slip) => void;
+  onMarkHover?: (id: string, note: number) => void;
+  onLineHover?: (id: string, note: number) => void;
 };
 
 export type World = {
@@ -270,6 +272,8 @@ type MarkRT = {
   float: number;
   yaw: number;
   seed: number;
+  over: boolean;
+  band: number;
 };
 type SheetRT = {
   batch: Batch;
@@ -460,9 +464,8 @@ export async function mountWorld(
   const piecesList = layoutData.pieces;
   const pieceMat = paperMaterial(pageTex[0], atlasTex, null);
   const pieceBatch = new Batch(pieceGeo, pieceMat, piecesList.length + 1);
-  const BLANK: Rect = { x: 2, y: 2, w: 40, h: 40 };
-  pieceBatch.place(0, BLANK, [0, 0, 0, 0], 0.5);
-  pieceBatch.size.set([1, PAPER_LOCAL_H], 0);
+  // It shades as the whole page but prints nothing: a blank corner of the atlas.
+  pieceBatch.place(0, { x: 0, y: 0, w: PAGE_W, h: PAGE_H }, [0.9985, 0.9985, 0.0005, 0.0005], 0.5);
   scene.add(pieceBatch.mesh);
 
   const destOf = (dest: string) => {
@@ -602,11 +605,11 @@ export async function mountWorld(
     mesh.frustumCulled = false;
     mesh.matrixAutoUpdate = true;
     scene.add(mesh);
-    return { id, mesh, mat, tex: t, aspect: field.aspect, stop, pos: new Vector3(), q: new Quaternion(), worldW: 1, depth, float: 0.05, yaw: 0, seed: hash(stop * 3 + id.length) };
+    return { id, mesh, mat, tex: t, aspect: field.aspect, stop, pos: new Vector3(), q: new Quaternion(), worldW: 1, depth, float: 0.05, yaw: 0, seed: hash(stop * 3 + id.length), over: false, band: 1.9 };
   };
 
   const marks: MarkRT[] = [];
-  const wide = () => canvas.clientWidth / Math.max(1, canvas.clientHeight) >= 1.05;
+  const wide = () => canvas.clientWidth / Math.max(1, canvas.clientHeight) >= 1.05 && canvas.clientWidth >= 768;
   const spreadFor = (w: number) => Math.max(10, Math.round(w / 64));
   const logoField = (src: string) => {
     const m = masks.get(src);
@@ -624,7 +627,7 @@ export async function mountWorld(
   });
   data.education.forEach((e) => {
     const f = fieldsBySrc.get(e.logo);
-    if (f) marks.push(makeMark(`edu-${e.id}`, f, STOPS.indexOf("education"), e.logo.endsWith(".png") ? 0.018 : 0.06, 0.2, f.spread * (e.logo.endsWith(".png") ? 0.28 : 0.5)));
+    if (f) marks.push(makeMark(`edu-${e.id}`, f, STOPS.indexOf("education"), e.logo.endsWith(".png") ? 0.008 : 0.06, e.logo.endsWith(".png") ? 0.36 : 0.2, e.logo.endsWith(".png") ? 2.5 : f.spread * 0.5));
   });
 
   // His name, large, behind the sheets. Phones stack it on two lines.
@@ -753,7 +756,7 @@ export async function mountWorld(
     W = Math.max(1, canvas.clientWidth);
     H = Math.max(1, canvas.clientHeight);
     aspect = W / H;
-    isWide = aspect >= 1.05;
+    isWide = aspect >= 1.05 && W >= 768;
     camera.fov = isWide ? 30 : 36;
     tanH = Math.tan(((camera.fov / 2) * Math.PI) / 180);
     camera.aspect = aspect;
@@ -781,12 +784,19 @@ export async function mountWorld(
       endRects[i] = { x: r.left + r.width / 2 - stage.left, y: bottom };
     });
     const cellTop = Math.min(...rects.map((r) => (r ? r.top - stage.top : H * 0.86)));
-    const nameBase = isWide ? H * 0.33 : H * 0.32;
-    const nameBottom = () => {
-      const dT = 10.5;
-      const tw = viewW(dT) * 0.93;
-      return 96 + ((tw / typeMark.aspect) / viewH(dT)) * H;
-    };
+    const dT = 10.5;
+    const nameBox = (() => {
+      let tw = viewW(dT) * (isWide ? 0.955 : 0.93);
+      let th = tw / typeMark.aspect;
+      const most = viewH(dT) * (isWide ? 0.24 : 0.3);
+      if (th > most) {
+        th = most;
+        tw = th * typeMark.aspect;
+      }
+      const hpx = (th / viewH(dT)) * H;
+      const topPx = isWide ? (H < 620 ? 72 : 112) : 96;
+      return { tw, hpx, topPx, bottom: topPx + hpx };
+    })();
 
     sheets.forEach((s, i) => {
       const r = rects[i];
@@ -795,7 +805,8 @@ export async function mountWorld(
       s.base = { yaw: sg.yaw * (isWide ? 1 : 0.7), pitch: sg.pitch, roll: sg.roll };
       if (isWide) {
         const cw = r ? r.width : W / 4;
-        const regionTop = nameBase * 0.8;
+        // the sheets stand in front of the lower part of his name
+        const regionTop = nameBox.bottom - nameBox.hpx * 0.24;
         const regionH = Math.max(120, cellTop - regionTop - 14);
         const hpx = Math.min(regionH, (cw / PAGE_W) * PAGE_H * 0.98);
         s.sx = (r ? r.left + r.width / 2 : ((i + 0.5) * W) / 4) / W;
@@ -803,7 +814,7 @@ export async function mountWorld(
         s.worldW = pxWorld((hpx / PAGE_H) * PAGE_W, 9);
       } else {
         // two by two above the links
-        const regionTop = Math.max(H * 0.2, nameBottom() - 26);
+        const regionTop = nameBox.bottom - 24;
         const regionH = cellTop - regionTop - 8;
         const rowH = regionH / 2;
         const hpx = Math.min(rowH * 0.98, (W * 0.43 * PAGE_H) / PAGE_W);
@@ -932,15 +943,20 @@ export async function mountWorld(
       });
       mark(`role-${sh.id}`, 0.4, 0.5, 7, Math.min(W * 0.68, H * 1.15), 0.2, 0.06, -0.035);
     } else {
-      const keyScale = (W * 0.82) / 608;
-      const top = 0.262;
-      const bot = 0.54;
+      const frH = free(2);
+      const hyMark = marks.find((c) => c.id === `role-${hy.id}`);
+      const markWpx = Math.min(W * 0.56, H * 0.3);
+      const markHpx = markWpx / (hyMark?.aspect ?? 3.9);
+      const keysTop = 112 + markHpx + 20;
+      const keysBot = frH.bottom * H - 18;
+      const pitch = (keysBot - keysTop) / 9;
+      const keyScale = Math.min((W * 0.82) / 608, (pitch * 0.84) / 40);
       K(hy.id).forEach((c, i, all) => {
         const t = all.length > 1 ? i / (all.length - 1) : 0;
         const wpx = c.p.rect.w * keyScale;
-        destine(c, c.destK, 0.09 + wpx / (2 * W), lerp(top, bot, t), 7, wpx, 0.02, -0.08, 0);
+        destine(c, c.destK, 0.09 + wpx / (2 * W), lerp(keysTop, keysBot, t) / H, 7, wpx, 0.02, -0.08, 0);
       });
-      mark(`role-${hy.id}`, 0.5, 0.165, 7, W * 0.56, -0.08, 0.05);
+      mark(`role-${hy.id}`, 0.5, (112 + markHpx / 2) / H, 7, markWpx, -0.08, 0.05);
       const frR = free(3);
       const hoopR = Math.min(W * 0.44, frR.room * 0.46);
       K(re.id).forEach((c) => hoop(c, 0.5, frR.mid, 7, hoopR, 0.42, -0.08, -1, 0.4));
@@ -957,27 +973,39 @@ export async function mountWorld(
 
     // Education: two cards, two marks, equal lanes.
     const edu = data.education;
-    edu.forEach((e, i) => {
-      const id = `${e.id}-card`;
-      if (isWide) {
+    if (isWide) {
+      edu.forEach((e, i) => {
+        const id = `${e.id}-card`;
         const sx = i === 0 ? 0.285 : 0.715;
         place(id, sx, 0.545, 7, Math.min(W * 0.39, H * 0.68), 0.03, i === 0 ? 0.14 : -0.14);
         mark(`edu-${e.id}`, sx, 0.345, 7, i === 0 ? Math.min(W * 0.21, H * 0.36) : Math.min(W * 0.27, H * 0.46), i === 0 ? 0.16 : -0.16, 0.03);
-      } else {
-        place(id, 0.5, i === 0 ? 0.335 : 0.625, 7, W * 0.88, 0.02, 0);
-        mark(`edu-${e.id}`, 0.5, i === 0 ? 0.205 : 0.495, 7, i === 0 ? W * 0.46 : W * 0.66, 0, 0.02);
-      }
-    });
+      });
+    } else {
+      // a mark and its card, a mark and its card, evenly down the screen
+      const cw = Math.min(W * 0.88, H * 0.62);
+      const rows = edu.map((e, i) => {
+        const card = pieces.find((c) => c.p.id === `${e.id}-card`);
+        const mk = marks.find((c) => c.id === `edu-${e.id}`);
+        const mw = Math.min(W * (i === 0 ? 0.46 : 0.66), H * (i === 0 ? 0.24 : 0.34));
+        return { e, mw, mh: mw / (mk?.aspect ?? 3), ch: card ? cw * (card.p.rect.h / card.p.rect.w) : 80 };
+      });
+      const top = 112;
+      const bottom = H - 96;
+      const total = rows.reduce((a0, r) => a0 + r.mh + r.ch, 0);
+      const gap = Math.max(4, (bottom - top - total) / (rows.length * 2 + 1));
+      let y = top + gap * 0.6;
+      rows.forEach((r) => {
+        mark(`edu-${r.e.id}`, 0.5, (y + r.mh / 2) / H, 7, r.mw, 0, 0.02);
+        y += r.mh + gap * 0.7;
+        place(`${r.e.id}-card`, 0.5, (y + r.ch / 2) / H, 7, cw, 0.02, 0);
+        y += r.ch + gap * 1.7;
+      });
+    }
 
     // ---- his name across the top
-    const dT = 10.5;
-    const tw = viewW(dT) * (isWide ? 0.955 : 0.93);
-    const th = tw / typeMark.aspect;
-    const topPx = isWide ? 112 : 96;
-    const hpxT = (th / viewH(dT)) * H;
-    at(0, 0.5, (topPx + hpxT / 2) / H, dT, typeMark.pos);
+    at(0, 0.5, (nameBox.topPx + nameBox.hpx / 2) / H, dT, typeMark.pos);
     typeMark.q.copy(frames[0].q);
-    typeMark.worldW = tw;
+    typeMark.worldW = nameBox.tw;
 
     layoutCloud();
   };
@@ -1014,7 +1042,7 @@ export async function mountWorld(
       [0, -0.86],
     ];
     const seats = isWide ? wideSeats : tallSeats;
-    const unit = isWide ? clamp(H / 900, 0.8, 1.25) * 0.84 : 0.445; // screen px per page unit
+    const unit = isWide ? clamp(H / 900, 0.8, 1.25) * 0.84 : clamp((W / 390) * 0.445, 0.4, 0.66); // screen px per page unit
     const counts = new Array(G).fill(0);
     const topEdge = isWide ? 82 : 128;
     const botEdge = H - (isWide ? 78 : 66);
@@ -1283,7 +1311,10 @@ export async function mountWorld(
       if (s.pickT > 0 && s.pick > 0.94) s.pickT = 0;
 
       // spin: the drag, its coast, and the pull back to a face
-      if (!s.dragging) {
+      if (s.dragging) {
+        s.vy *= Math.exp(-dt * 10);
+        s.vp *= Math.exp(-dt * 10);
+      } else {
         const target = P > 0.015 ? Math.round(s.yaw / (Math.PI * 2)) * Math.PI * 2 : Math.round(s.yaw / Math.PI) * Math.PI;
         const pull = Math.abs(s.vy) < 2.4 ? 22 : 0;
         s.vy += (target - s.yaw) * pull * dt;
@@ -1378,8 +1409,8 @@ export async function mountWorld(
       sV.setScalar(heroS[i]);
       mat.compose(vA, qA, sV);
       b.mesh.setMatrixAt(0, mat);
-      b.state[1] = 0.86 + h * 0.2 + pk * 0.1;
-      b.state[2] = 1;
+      b.state[1] = isChosen ? lerp(0.86 + h * 0.2 + pk * 0.1, 1, smooth(0.7, 0.985, P)) : 0.86 + h * 0.2 + pk * 0.1;
+      b.state[2] = isChosen && endE <= 0 ? 1 - smooth(0.7, 0.985, P) : 1;
       b.flex.set([bendK, bendY, twist, ripple], 0);
       b.commit();
 
@@ -1428,7 +1459,7 @@ export async function mountWorld(
         mat.compose(vA, qA, sV);
       }
       pieceBatch.mesh.setMatrixAt(0, mat);
-      pieceBatch.state.set([0, 1 - be * 0.8, smooth(1.0, 1.05, P), 0.5], 0);
+      pieceBatch.state.set([1, 1 - be * 0.8, smooth(1.0, 1.05, P), 0.5], 0);
       pieceBatch.flex.set([be * 0.25, 0, be * 0.1, be * 0.006], 0);
 
       for (const pc of pieces) {
@@ -1512,7 +1543,7 @@ export async function mountWorld(
               projectPx(pc.dest, pt);
               const near = pointerSeen ? Math.exp(-Math.pow((pt.y / H - (pny * 0.5 + 0.5)) / 0.05, 2)) * smooth(0.2, 0.5, pnx * 0.5 + 0.5) : 0;
               pc.near = damp(pc.near, near * onStop, 10, dt);
-              const push = pc.active * 0.55 + pc.near * 0.16;
+              const push = (pc.active * 0.55 + pc.near * 0.16) * (isWide ? 1 : 0.3);
               vB.addScaledVector(frames[stopK].fwd, -push);
               vB.addScaledVector(frames[stopK].right, -pc.active * (isWide ? 0.5 : 0.04) - pc.near * 0.08);
               qB.setFromAxisAngle(up, (isWide ? 0.3 : 0.08) * pc.active);
@@ -1522,6 +1553,30 @@ export async function mountWorld(
             } else {
               lit = 1;
               ripple = pc.hoop ? 0 : Math.max(ripple, 0.0016);
+              if (!pc.hoop) {
+                const w0 = pc.destS * (pc.p.rect.w / PAGE_W);
+                const h0 = pc.destS * (pc.p.rect.h / PAGE_W);
+                let a0 = 1e9;
+                let b0 = 1e9;
+                let c0 = -1e9;
+                let d0 = -1e9;
+                for (const v of rectCorners(pc.dest, pc.destQ, w0, h0)) {
+                  projectPx(v, pt);
+                  a0 = Math.min(a0, pt.x);
+                  b0 = Math.min(b0, pt.y);
+                  c0 = Math.max(c0, pt.x);
+                  d0 = Math.max(d0, pt.y);
+                }
+                const px0 = (pnx * 0.5 + 0.5) * W;
+                const py0 = (pny * 0.5 + 0.5) * H;
+                const over = pointerSeen && onStop > 0.8 && px0 > a0 && px0 < c0 && py0 > b0 && py0 < d0 ? 1 : 0;
+                if (over && !pc.lift) events.onLineHover?.(pc.p.id, pc.i % 12);
+                pc.lift = over;
+                pc.near = damp(pc.near, over, 9, dt);
+                vB.addScaledVector(frames[stopK].fwd, -pc.near * 0.34);
+                lit = 0.92 + pc.near * 0.14;
+                rim = 1 + pc.near * 0.6;
+              }
             }
           }
         }
@@ -1728,7 +1783,29 @@ export async function mountWorld(
       (u0.uSize.value as Vector2).set(mk.worldW, mk.worldW / mk.aspect);
       u0.uDepth.value = lerp(0.01, mk.depth, arrive);
       u0.uLit.value = smooth(-0.98, -0.5, dk);
-      u0.uSweep.value = lerp(-0.7, 1.9, clamp((dk + 0.6) / 0.62));
+      const passing = lerp(-0.7, 1.9, clamp((dk + 0.6) / 0.62));
+      // on hover the band follows the pointer across the mark
+      const mw = mk.worldW;
+      const mh = mw / mk.aspect;
+      let a1 = 1e9;
+      let b1 = 1e9;
+      let c1 = -1e9;
+      let d1 = -1e9;
+      for (const v of rectCorners(mk.pos, mk.q, mw, mh)) {
+        projectPx(v, pt);
+        a1 = Math.min(a1, pt.x);
+        b1 = Math.min(b1, pt.y);
+        c1 = Math.max(c1, pt.x);
+        d1 = Math.max(d1, pt.y);
+      }
+      const px1 = (pnx * 0.5 + 0.5) * W;
+      const py1 = (pny * 0.5 + 0.5) * H;
+      const over = pointerSeen && onStop > 0.8 && px1 > a1 && px1 < c1 && py1 > b1 && py1 < d1;
+      if (over && !mk.over) events.onMarkHover?.(mk.id.replace(/^(role|edu)-/, ""), marks.indexOf(mk));
+      mk.over = over;
+      const follow = (px1 - a1) / Math.max(1, c1 - a1) + ((py1 - b1) / Math.max(1, d1 - b1)) * 0.35;
+      mk.band = damp(mk.band, over ? follow : passing, over ? 16 : 6, dt);
+      u0.uSweep.value = dk < 0.02 && dk > -0.02 ? mk.band : passing;
     }
 
     // ---- dust

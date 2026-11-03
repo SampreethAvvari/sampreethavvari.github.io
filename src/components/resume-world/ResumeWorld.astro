@@ -165,7 +165,7 @@ const eduStop = STOPS.indexOf("education");
           <div class="rw-copy rw-slide">
             <p class="rw-kick">Experience · {ri + 1} of {roles.length}</p>
             {r.logo && <span class={logoClass(r.logo)}><img src={r.logo} alt="" loading="lazy" decoding="async" /></span>}
-            <h3 class="rw-title" data-sound-hover="role" data-id={r.id}>{r.title}</h3>
+            <h3 class="rw-title">{r.title}</h3>
             <p class="rw-org">{r.location}</p>
             <p class="rw-date">{span(r.date)}</p>
             <ul class="rw-items">
@@ -211,7 +211,7 @@ const eduStop = STOPS.indexOf("education");
       </div>
       <div class="rw-edu">
         {education.map((e) => (
-          <article class="rw-edu-card" data-sound-hover="education" data-id={e.title}>
+          <article class="rw-edu-card">
             {e.logo && <span class={logoClass(e.logo)}><img src={e.logo} alt="" loading="lazy" decoding="async" /></span>}
             <h3 class="rw-edu-title">{e.title}</h3>
             <p class="rw-org">{e.location}</p>
@@ -448,10 +448,10 @@ const eduStop = STOPS.indexOf("education");
     transition: transform 0.55s var(--ease-glass);
   }
   .is-live .rw-version:hover::before, .is-live .rw-version:focus-visible::before, .is-live .rw-version.is-near::before { transform: scaleX(1); }
-  .is-live .rw-acr { grid-column: 1; }
-  .is-live .rw-cell-name { grid-column: 1; font-size: 0.9375rem; }
-  .is-live .rw-cell-blurb { grid-column: 1; font-size: 0.75rem; line-height: 1.4; }
-  .is-live .rw-open { grid-column: 2; grid-row: 1 / span 3; align-self: start; margin: 0; height: 28px; padding: 0 11px; border-radius: 999px; background: #fff; color: #05070b; font-size: 0.75rem; white-space: nowrap; transition: transform 0.3s var(--ease-glass), box-shadow 0.3s ease; }
+  .is-live .rw-acr { grid-column: 1; grid-row: 1; align-self: center; }
+  .is-live .rw-cell-name { grid-column: 1 / -1; font-size: 0.9375rem; }
+  .is-live .rw-cell-blurb { grid-column: 1 / -1; font-size: 0.75rem; line-height: 1.4; }
+  .is-live .rw-open { grid-column: 2; grid-row: 1; align-self: start; margin: 0; height: 28px; padding: 0 11px; border-radius: 999px; background: #fff; color: #05070b; font-size: 0.75rem; white-space: nowrap; transition: transform 0.3s var(--ease-glass), box-shadow 0.3s ease; }
   .is-live .rw-version:hover .rw-open, .is-live .rw-version.is-near .rw-open { box-shadow: 0 0 22px rgba(255, 255, 255, 0.55); transform: translateY(-1px); }
 
   /* ---- 02 the page */
@@ -495,14 +495,14 @@ const eduStop = STOPS.indexOf("education");
   .is-live .has-keys .rw-items { position: relative; min-height: 180px; display: block; }
   .is-live .has-keys .rw-items li { position: absolute; left: 0; right: 0; top: 0; padding-left: 0; opacity: 0; transform: translateY(8px); transition: opacity 0.28s ease, transform 0.4s var(--ease-glass); }
   .is-live .has-keys .rw-items li::before { display: none; }
-  .is-live .has-keys .rw-items li.is-shown { opacity: 1; transform: none; }
+  .is-live .has-keys .rw-items li.is-shown { position: relative; opacity: 1; transform: none; }
   .is-live .has-keys .rw-items :global(.ilink) { display: inline; font-size: 1.0625rem; }
 
   .is-live .rw-s-research .rw-copy { right: calc(var(--gx) + 24px); top: 50%; width: min(36vw, 620px); margin-top: -170px; --mx: 240px; --my: 0px; }
   .is-live .rw-s-video .rw-copy { left: var(--gx); bottom: clamp(36px, 8vh, 84px); width: min(36vw, 620px); --mx: -160px; --my: 0px; }
   .is-live .rw-s-shure .rw-copy { right: calc(var(--gx) + 20px); top: 132px; width: min(460px, 34vw); text-align: right; --mx: 180px; --my: -60px; }
   /* on wide screens the two strips of paper carry these words themselves */
-  @media (min-width: 768px) {
+  @media (min-width: 768px) and (min-aspect-ratio: 21 / 20) {
     .is-3d .rw-s-shure .rw-items { position: absolute; width: 1px; height: 1px; margin: 0; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
   }
 
@@ -594,7 +594,7 @@ const eduStop = STOPS.indexOf("education");
 
   /* ---- phones: the object above, the words below on solid glass (no blur
      over a canvas on iPhone) */
-  @media (max-width: 767px) {
+  @media (max-width: 767px), (max-aspect-ratio: 21 / 20) {
     .is-live .rw-kicker { top: 78px; left: 16px; font-size: 0.75rem; }
     .is-live .rw-tail { top: 78px; left: 84px; font-size: 0.75rem; }
     .is-live .rw-lede { display: none; }
@@ -605,7 +605,7 @@ const eduStop = STOPS.indexOf("education");
     .is-live .rw-cell { padding: 7px 8px 7px 10px; border: 1px solid rgba(255, 255, 255, 0.14); border-radius: 12px; background: rgba(10, 12, 17, 0.94); grid-template-columns: minmax(0, 1fr) auto; align-items: center; min-height: 48px; }
     .is-live .rw-version::before { display: none; }
     .is-live .rw-acr { font-size: 0.625rem; }
-    .is-live .rw-cell-name { font-size: 0.75rem; line-height: 1.15; }
+    .is-live .rw-cell-name { grid-column: 1; font-size: 0.75rem; line-height: 1.15; }
     .is-live .rw-cell-blurb { display: none; }
     .is-live .rw-open { grid-row: 1 / span 2; align-self: center; width: 26px; height: 26px; padding: 0; justify-content: center; font-size: 0; gap: 0; }
 
@@ -637,6 +637,7 @@ const eduStop = STOPS.indexOf("education");
     .is-live .rw-items { margin-top: 10px; }
     .is-live .rw-items li { font-size: 0.8125rem; line-height: 1.5; }
     .is-live .has-keys .rw-items :global(.ilink) { font-size: 0.9375rem; }
+    .is-live .has-keys .rw-items { overflow-y: auto; touch-action: pan-y pinch-zoom; scrollbar-width: none; }
     .rw-s-page .rw-title { font-size: 1.75rem; }
     .rw-cta { margin-top: 10px; height: 38px; }
     .rw-jumps { margin-top: 10px; font-size: 0.8125rem; }
@@ -653,10 +654,40 @@ const eduStop = STOPS.indexOf("education");
     .is-live .rw-pill { min-width: 0; flex: 1 1 0; }
     .is-live[data-at="page"] .rw-dock { opacity: 0; pointer-events: none; }
     .is-live .rw-s-shure .rw-copy { text-align: left; }
+    :is(.rw-coarse, .rw-fine) { font-size: inherit; }
     .is-live .rw-rail { display: none; }
     .is-live .rw-dock { top: 72px; right: 12px; padding: 2px 2px 2px 10px; }
     .is-live .rw-dock a { height: 24px; min-width: 32px; padding: 0 6px; font-size: 0.6875rem; }
     :global(html.in-rw .chat-launcher) { opacity: 0 !important; pointer-events: none !important; }
+  }
+
+  @media (max-height: 700px) and (max-width: 767px) {
+    .is-live .rw-keyhint { display: none; }
+    .is-live .rw-title { font-size: 1.5rem; }
+    .is-live .rw-org { margin-top: 3px; font-size: 0.8125rem; }
+    .is-live .rw-stop .rw-copy { padding-top: 12px; padding-bottom: 12px; }
+  }
+  /* the chat button keeps clear of the links on short laptops */
+  @media (max-height: 800px) and (min-width: 1024px) {
+    :global(html.in-rw .chat-launcher) { bottom: 150px !important; }
+  }
+
+  /* ---- short screens: a phone on its side, a small laptop window */
+  @media (max-height: 620px) and (min-width: 768px) and (min-aspect-ratio: 21 / 20) {
+    .is-live .rw-lede, .is-live .rw-cell-blurb { display: none; }
+    .is-live .rw-kicker, .is-live .rw-tail { top: 74px; }
+    .is-live .rw-h1-name { top: 72px; font-size: 7vw; }
+    .is-live .rw-versions { bottom: 8px; }
+    .is-live .rw-title { font-size: 1.75rem; }
+    .is-live .rw-copy { font-size: 0.875rem; }
+    .is-live .rw-items li { font-size: 0.8125rem; line-height: 1.4; }
+    .is-live .rw-s-hybridge .rw-copy, .is-live .rw-s-research .rw-copy { top: 80px; margin-top: 0; }
+    .is-live .rw-s-shure .rw-copy { top: 84px; }
+    .rw-cta { margin-top: 8px; height: 36px; }
+    .rw-jumps { margin-top: 8px; }
+    .is-live .rw-small, .is-live .rw-keyhint { display: none; }
+    .is-live .rw-dock { display: none; }
+    .is-live .rw-open { height: 24px; padding: 0 9px; font-size: 0.6875rem; }
   }
 
   /* ---- print: a clean document on white */

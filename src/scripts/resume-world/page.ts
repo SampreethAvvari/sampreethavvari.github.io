@@ -98,8 +98,10 @@ export function startResumeWorld(visit: AbortSignal): void | (() => void) {
     },
     claimTouch: (target, sideways) => {
       // A sideways drag on a sheet spins it; on the labels it swipes them.
-      if (!sideways) return false;
-      return !!target?.closest?.(".rw-hit, .rw-chips");
+      if (sideways) return !!target?.closest?.(".rw-hit, .rw-chips");
+      // A long post summary on a small phone scrolls in its own pane.
+      const box = target?.closest?.<HTMLElement>(".has-keys .rw-items");
+      return !!box && box.scrollHeight > box.clientHeight + 1;
     },
   });
   announced = Math.round(motion.progress());
@@ -129,7 +131,17 @@ export function startResumeWorld(visit: AbortSignal): void | (() => void) {
 
   // A link straight to a section.
   const HASH: Record<string, number> = { "#versions": 0, "#experience": 2, "#skills": 6, "#education": 7 };
-  if (HASH[location.hash] !== undefined) motion.go(HASH[location.hash], true);
+  // The browser also scrolls to the fragment once the page has loaded, so ask again then.
+  const toHash = () => {
+    const i = HASH[location.hash];
+    if (i !== undefined) {
+      motion.measure();
+      motion.go(i, true);
+    }
+  };
+  toHash();
+  if (document.readyState !== "complete") addEventListener("load", () => setTimeout(toHash, 0), { once: true, signal });
+  addEventListener("hashchange", toHash, on);
 
   // A soft pool of light stands behind each stop's subject.
   const sky = root.querySelector<HTMLElement>(".rw-sky");
@@ -390,12 +402,26 @@ export function startResumeWorld(visit: AbortSignal): void | (() => void) {
   const pane = root.querySelector<HTMLElement>(".has-keys .rw-items");
   const sizePane = () => {
     if (!pane) return;
+    pane.style.minHeight = "";
+    pane.style.maxHeight = "";
     let tallest = 0;
     items.forEach((el) => (tallest = Math.max(tallest, el.offsetHeight)));
-    pane.style.minHeight = `${tallest}px`;
+    let h = tallest;
+    const copy = pane.closest<HTMLElement>(".rw-copy");
+    if (copy && matchMedia("(max-width: 767px), (max-aspect-ratio: 21 / 20)").matches) {
+      // the mark and ten keys need their room above the words
+      const chrome = copy.offsetHeight - pane.offsetHeight;
+      h = Math.min(tallest, Math.max(96, stage.offsetHeight - 350 - chrome));
+      pane.style.maxHeight = `${h}px`;
+    }
+    pane.style.minHeight = `${h}px`;
   };
   sizePane();
-  document.fonts?.ready.then(() => !signal.aborted && sizePane());
+  document.fonts?.ready.then(() => {
+    if (signal.aborted) return;
+    sizePane();
+    world?.layout();
+  });
 
   // ------------------------------------------------------------ the skills
   const chips = Array.from(root.querySelectorAll<HTMLElement>("[data-group]"));
@@ -435,13 +461,6 @@ export function startResumeWorld(visit: AbortSignal): void | (() => void) {
         c.classList.toggle("is-on", cg === pinned);
         c.setAttribute("aria-pressed", String(cg === pinned));
       });
-    }, on);
-  });
-
-  // ------------------------------------------------------------ marks and the rest of the page react too
-  root.querySelectorAll<HTMLElement>("[data-sound-hover]").forEach((el, i) => {
-    el.addEventListener("pointerenter", (e) => {
-      if (e.pointerType === "mouse") fire("resume:hover", { kind: el.dataset.soundHover, id: el.dataset.id || String(i), note: i % 12 });
     }, on);
   });
 
@@ -500,6 +519,8 @@ export function startResumeWorld(visit: AbortSignal): void | (() => void) {
           {
             onSheetFlip: (i) => fire("resume:sheet", { id: ids[i], action: "flip" }),
             onSkillTouch: (i, s) => fire("resume:hover", { kind: s.label ? "group" : "skill", id: s.text, note: s.label ? s.group : i % 24 }),
+            onMarkHover: (id, note) => fire("resume:hover", { kind: "mark", id, note }),
+            onLineHover: (id, note) => fire("resume:hover", { kind: "line", id, note }),
           },
           () => motion.progress(),
         );

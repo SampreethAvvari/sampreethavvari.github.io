@@ -127,7 +127,8 @@ void main() {
   }
 
   // the sheet is not perfectly flat: slow waves in its surface make the glare wander
-  vec2 sp = pageUv * vec2(5.0, 6.4) + vState.w * 9.0;
+  float apart = vState.z; // 0 while the pieces still form one page
+  vec2 sp = pageUv * vec2(5.0, 6.4) + vState.w * 9.0 * apart;
   vec3 wob = vec3(vnoise(sp) - 0.5, vnoise(sp + 17.3) - 0.5, 0.0);
   vec3 Np = normalize(N + wob * 0.05);
 
@@ -141,7 +142,7 @@ void main() {
   // paper: light on the face, a glow from behind that makes the sheet luminous
   // (brightest at its heart, falling off to its corners), and the print on the
   // other side showing faintly where the light comes through
-  vec2 c = (L - 0.5) * vec2(1.0, 1.15);
+  vec2 c = (mix(pageUv, L, apart) - 0.5) * vec2(1.0, 1.15);
   float heart = 1.0 - smoothstep(0.1, 0.92, length(c + wob.xy * 0.22));
   float dist = length(cameraPosition - vW);
   float air = smoothstep(0.7, 3.2, dist) * (1.0 - smoothstep(16.0, 60.0, dist) * 0.8);
@@ -149,7 +150,7 @@ void main() {
   float glow = uLuminous * (0.05 + 0.82 * heart);
   float through = max(-ndk, 0.0) * 0.2 + max(-ndc, 0.0) * cAtt * 0.36 + glow * 0.34;
   vec3 albedo = vec3(pow(pr.r, 2.2)) * vec3(0.95, 0.955, 0.965);
-  vec3 col = albedo * min(face + glow + through * mix(1.0, otherInk, 0.7), 0.94);
+  vec3 col = albedo * min(face + glow + through * mix(1.0, otherInk, 0.7 * apart), 0.94);
 
   // what stands behind glows softly through the sheet
   if (uBehind > 0.001 && !edge) {
@@ -270,8 +271,8 @@ void main() {
   vec3 col = body + env * (front > 0.5 ? mix(0.62, 0.22, bevel) : 0.8);
   col += cAtt * (ndc * 0.24 + pow(nh, 40.0) * 0.9 + pow(nh, 300.0) * 3.0);
   // a band of light crosses it on arrival
-  float band = exp(-pow((vUv.x + vUv.y * 0.35 - uSweep) * 7.0, 2.0));
-  col += band * vec3(1.6);
+  float band = exp(-pow((vUv.x + vUv.y * 0.35 - uSweep) * 9.0, 2.0));
+  col += band * vec3(0.95);
   // the wall falls into shadow away from the front
   if (front < 0.5) col *= mix(0.3, 1.0, vLayer);
   if (uShadeOn > 0.5) {
