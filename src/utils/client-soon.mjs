@@ -12,10 +12,11 @@ export default (load, _options, el) => {
   const wake = async () => {
     if (awake) return;
     awake = true;
-    el.removeEventListener("click", onPress, true);
     const hydrate = await load();
     await hydrate();
-    press?.click();
+    el.removeEventListener("click", onPress, true);
+    // The framework commits on its own schedule, so give it a frame first.
+    if (press) requestAnimationFrame(() => setTimeout(() => press.click(), 60));
   };
 
   function onPress(e) {
