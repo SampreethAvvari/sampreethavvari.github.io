@@ -176,6 +176,8 @@ export default function ChatWidget() {
       >
         <img
           src="/logos/samp-chat.webp"
+          width="256"
+          height="256"
           alt="Chat with Sampreeth's assistant"
           className="w-full h-full rounded-full object-cover p-[3px]"
         />
@@ -191,6 +193,8 @@ export default function ChatWidget() {
             <span className="relative shrink-0">
               <img
                 src="/logos/samp-chat.webp"
+                width="256"
+                height="256"
                 alt=""
                 className="w-9 h-9 rounded-full object-cover ring-1 ring-text/15 dark:ring-dk-text/20"
               />
