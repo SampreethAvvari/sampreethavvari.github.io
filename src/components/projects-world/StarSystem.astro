@@ -487,6 +487,7 @@ const stageTop = (i: number) => SPANS.slice(0, i).reduce((a, b) => a + b, 0);
     .pw.is-live .pw-c.is-hot { border-color: rgba(91, 141, 239, 0.8); }
     /* the words always have a dark floor to sit on */
     .pw.is-live.is-touring .pw-shade { opacity: 1; background: linear-gradient(to top, rgba(2, 3, 6, 0.86) 0%, rgba(2, 3, 6, 0.62) 30%, transparent 52%); }
+    .pw.is-live.is-touring.copy-top .pw-shade { background: linear-gradient(to bottom, rgba(2, 3, 6, 0.72) 0%, rgba(2, 3, 6, 0.4) 26%, transparent 46%); }
     .pw.is-live.is-touring.is-belt .pw-shade { opacity: 0; }
     .pw.is-live .pw-count { top: 72px; }
     .pw.is-live .pw-top { top: 72px; right: 16px; }

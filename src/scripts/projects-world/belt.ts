@@ -346,7 +346,8 @@ export function buildBelt(shared: Shared, ids: string[]) {
     const t = (i + 0.5) / ids.length;
     const ang = BELT_START + (0.03 + t * 0.92) * BELT_SWEEP * 1.05;
     const [dr, y] = sides[i % sides.length];
-    hold.position.set(Math.cos(ang) * (BELT_R + dr), y, Math.sin(ang) * (BELT_R + dr));
+    const lane = shared.low ? 0.6 : 1;
+    hold.position.set(Math.cos(ang) * (BELT_R + dr * lane), y, Math.sin(ang) * (BELT_R + dr * lane));
     hold.rotation.set(r() * 0.5, r() * 6, r() * 0.5);
     const geo = assemble(shape());
     const mesh = new Mesh(geo, bodyMat);

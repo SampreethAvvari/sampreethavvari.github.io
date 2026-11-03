@@ -157,6 +157,7 @@ export function mountProjectsWorld() {
           const pane = panes[i - 1];
           if (b) pane.dataset.beat = b;
           else delete pane.dataset.beat;
+          if (i === st) root.classList.toggle("copy-top", b === "a" && (idAt(i) === "listener" || idAt(i) === "comet"));
           if (b === "b") rectsDirty = true;
           linksDirty = true;
         }
@@ -747,8 +748,8 @@ export function mountProjectsWorld() {
         const y = f.bodies[i * 4 + 1];
         const front = f.bodies[i * 4 + 2] > 0.5;
         const rad = f.bodies[i * 4 + 3];
-        const on = inBelt && f.g < N - 0.1 && front && rad > 58 && x > 10 && x < vw - 10 && y > 84 && y < vh - 40;
-        a.style.opacity = on ? smooth(58, 92, rad).toFixed(2) : "0";
+        const on = inBelt && f.g < N - 0.1 && front && rad > (phone ? 44 : 58) && x > 10 && x < vw - 10 && y > 84 && y < vh - 40;
+        a.style.opacity = on ? smooth(phone ? 44 : 58, phone ? 70 : 92, rad).toFixed(2) : "0";
         a.style.pointerEvents = on ? "auto" : "none";
         if (on) a.style.transform = `translate3d(${clamp(x + rad * 0.72, 12, vw - (phone ? 190 : 240)).toFixed(1)}px, ${clamp(y - 14, 84, vh - 120).toFixed(1)}px, 0)`;
       });
