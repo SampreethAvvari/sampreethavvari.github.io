@@ -21,6 +21,7 @@ import {
   Mesh,
   MeshBasicMaterial,
   MeshStandardMaterial,
+  PlaneGeometry,
   Quaternion,
   ShaderMaterial,
   SphereGeometry,
@@ -359,16 +360,32 @@ export function buildShip(opts: ShipBuildOptions): Ship {
   });
   addParts(lander, lp);
 
-  // The ramp: closed it is the back wall, open it reaches down to the ground.
+  // The ramp: closed it is the back wall, open it slides out to a long easy
+  // slope down to the ground. Treads and side rails give it scale.
   const STAND = 1.35;
+  const RAMP_LEN = 2.6;
   const rampPivot = new Group();
   rampPivot.position.set(0, -0.44, LZ1 + 0.02);
-  const rampGeo = new BoxGeometry(0.9, 0.95, 0.06).translate(0, 0.475, 0);
-  const ramp = new Mesh(boxUV(rampGeo, 2.2), comp);
+  const rampParts: BufferGeometry[] = [new BoxGeometry(0.9, RAMP_LEN, 0.05).translate(0, RAMP_LEN / 2, 0)];
+  const railParts: BufferGeometry[] = [];
+  for (const sx of [1, -1]) railParts.push(new BoxGeometry(0.05, RAMP_LEN, 0.1).translate(sx * 0.47, RAMP_LEN / 2, 0.02));
+  for (let k = 0; k < 12; k++) railParts.push(new BoxGeometry(0.82, 0.035, 0.03).translate(0, 0.12 + (k / 12) * (RAMP_LEN - 0.2), -0.035));
+  const ramp = new Mesh(boxUV(mergeAll(rampParts), 2.2), comp);
   ramp.castShadow = shadows;
-  rampPivot.add(ramp);
+  const rampRails = new Mesh(mergeAll(railParts), metal);
+  rampRails.castShadow = shadows;
+  rampPivot.add(ramp, rampRails);
   lander.add(rampPivot);
-  const RAMP_OPEN = Math.PI - Math.acos(Math.min(1, (STAND - 0.44) / 0.95));
+  const RAMP_CLOSED = 0.95 / RAMP_LEN;
+  const RAMP_OPEN = Math.PI - Math.acos(Math.min(1, (STAND - 0.44) / RAMP_LEN));
+  rampPivot.scale.y = RAMP_CLOSED;
+  // The open hatch: warm light from inside, framed by the hull.
+  const doorMat = new MeshBasicMaterial({ color: new Color(0, 0, 0) });
+  const doorPanel = new Mesh(new PlaneGeometry(0.8, 0.86).translate(0, -0.02, 0), doorMat);
+  doorPanel.position.set(0, 0, LZ1 + 0.012);
+  doorPanel.visible = false;
+  lander.add(doorPanel);
+
 
   // Heat glow wrapped around the lander while it comes down through the air.
   const heatMat = additive(
@@ -610,7 +627,10 @@ export function buildShip(opts: ShipBuildOptions): Ship {
     rampOpen += (rampTo - rampOpen) * Math.min(1, dt * (rampTo > rampOpen ? 0.9 : 3));
     const re = rampOpen * rampOpen * (3 - 2 * rampOpen);
     rampPivot.rotation.x = re * RAMP_OPEN;
-    landerGlows.setIntensity(door, re * 2.4);
+    rampPivot.scale.y = RAMP_CLOSED + (1 - RAMP_CLOSED) * re;
+    doorPanel.visible = re > 0.01;
+    doorMat.color.setRGB(1.05 * re, 0.56 * re, 0.22 * re);
+    landerGlows.setIntensity(door, re * 0.8);
     for (const i of flood) landerGlows.setIntensity(i, 0.5 + 1.1 * Math.max(s.gear, re));
     landerGlows.setIntensity(navL, 1.6);
     landerGlows.setIntensity(navR, 1.6);

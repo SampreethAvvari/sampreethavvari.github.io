@@ -1486,6 +1486,7 @@ function landingWorld(i: number, color: Color, ctx: Ctx): Piece {
   site.add(dust);
 
   const haze = { color: new Color(0.17, 0.06, 0.035), density: 0.0011 };
+  let settle = 0;
   const flare = { pos: new Vector3(), color: new Color(1.0, 0.42, 0.14), strength: 0.1 };
 
   return {
@@ -1503,9 +1504,12 @@ function landingWorld(i: number, color: Color, ctx: Ctx): Piece {
       cloudFade.value = fade.value * (1 - smooth(0.8, 1.0, L));
       clouds.visible = cloudFade.value > 0.002;
       dustMat.uniforms.uTime.value = time;
-      dustMat.uniforms.uSpread.value = smooth(0.55, 1.0, L);
-      dustMat.uniforms.uAmt.value = smooth(0.55, 0.74, L) * (1 - smooth(0.9, 1.0, L)) * 1.6;
-      surface.update({ time, dt, camera: camera as PerspectiveCamera, cover: fade.value, s, pxScale, dpr, reduced });
+      if (L >= 1) settle += dt;
+      else settle = 0;
+      dustMat.uniforms.uSpread.value = smooth(0.55, 1.0, L) * (1 + settle * 0.015);
+      const settling = L >= 1 ? 0.14 + 0.5 * Math.exp(-settle / 5) : 0;
+      dustMat.uniforms.uAmt.value = Math.max(smooth(0.55, 0.74, L) * (1 - smooth(0.9, 1.0, L)) * 1.6, settling) * (1 - smooth(1.2, 1.7, s));
+      surface.update({ time, dt, camera: camera as PerspectiveCamera, cover: fade.value, s, pxScale, dpr, reduced, land: L });
       haze.color.copy(surface.hazeColor);
       flare.pos.copy(surface.sunWorld).multiplyScalar(5200).add(l.pad);
     },

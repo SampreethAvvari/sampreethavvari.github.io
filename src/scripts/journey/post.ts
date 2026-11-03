@@ -18,6 +18,8 @@ import {
   ShaderMaterial,
   UnsignedByteType,
   Vector2,
+  Vector3,
+  Vector4,
   WebGLRenderTarget,
   type Scene,
   type WebGLRenderer,
@@ -100,6 +102,10 @@ uniform float uJump;      // 0..1, the hyperspace jump
 uniform float uFlash;     // 0..1, the flash at the crossover
 uniform float uDip;       // 0..1, a dip through dark (reduced motion)
 uniform vec3 uFlashColor;
+uniform vec4 uDof;       // focus uv x, y, strength, clear radius
+uniform float uDofH;     // horizon uv y: above it nothing blurs
+uniform vec2 uHeat;      // horizon uv y, strength
+uniform vec3 uRays;      // sun uv x, y, strength
 varying vec2 vUv;
 
 vec3 rrtOdt(vec3 v) {
@@ -150,6 +156,14 @@ void main() {
     vec2 jd = uv - 0.5;
     uv = 0.5 + jd * (1.0 - uJump * 0.16 + uJump * 0.42 * dot(jd, jd));
   }
+  // Hot air: the world shimmers in a thin band over the horizon.
+  if (uHeat.y > 0.0001) {
+    float hb = exp(-pow((uv.y - uHeat.x) / 0.05, 2.0));
+    if (hb > 0.01) {
+      float nz = sin(uv.y * 310.0 + uTime * 5.3) * 0.5 + sin(uv.y * 170.0 - uTime * 3.1 + uv.x * 9.0) * 0.5;
+      uv.x += nz * hb * uHeat.y;
+    }
+  }
   vec3 col;
   vec2 cd = uv - 0.5;
 #ifdef CA
@@ -164,6 +178,38 @@ void main() {
     col.b = texture2D(tScene, uv - co).b;
   } else {
     col = texture2D(tScene, uv).rgb;
+  }
+  // A soft lens: only the focus stays sharp.
+  if (uDof.z > 0.001) {
+    float fr = length((vUv - uDof.xy) * asp);
+    float blur = smoothstep(uDof.w, uDof.w + 0.42, fr) * uDof.z;
+    // The stars stay sharp; only the near and far sand go soft.
+    blur *= 1.0 - smoothstep(uDofH - 0.03, uDofH + 0.005, uv.y);
+    if (blur > 0.01) {
+      vec3 acc = col;
+      float rad = blur * 0.012;
+      for (int i = 0; i < 10; i++) {
+        float fi = float(i);
+        float ang = fi * 2.399963;
+        float rr = sqrt((fi + 0.5) / 10.0) * rad;
+        acc += texture2D(tScene, uv + vec2(cos(ang) / uAspect, sin(ang)) * rr).rgb;
+      }
+      col = acc / 11.0;
+    }
+  }
+  // Faint shafts of the low sun through the dust.
+  if (uRays.z > 0.001) {
+    vec2 dir = (uRays.xy - vUv) / 12.0;
+    vec2 sp = vUv + dir * (hash12(gl_FragCoord.xy) * 0.9);
+    float acc = 0.0;
+    float wgt = 1.0;
+    for (int i = 0; i < 12; i++) {
+      vec3 sc = texture2D(tScene, sp).rgb;
+      acc += max(dot(sc, vec3(0.3, 0.6, 0.1)) - 0.62, 0.0) * wgt;
+      wgt *= 0.9;
+      sp += dir;
+    }
+    col += vec3(1.0, 0.55, 0.26) * acc * uRays.z * 0.11;
   }
 #ifdef BLOOM
   col += texture2D(tBloom, uv).rgb * uBloom;
@@ -214,6 +260,13 @@ export interface PostFrame {
   ca?: number;
   grain?: number;
   exposure?: number;
+  /** Focus: uv x, y, strength, clear radius. */
+  dof?: [number, number, number, number];
+  dofH?: number;
+  /** Horizon uv y and shimmer strength. */
+  heat?: [number, number];
+  /** Sun uv x, y and shaft strength. */
+  rays?: [number, number, number];
 }
 
 export class Post {
@@ -296,6 +349,10 @@ export class Post {
         uFlash: { value: 0 },
         uDip: { value: 0 },
         uFlashColor: { value: new Color(1, 1, 1) },
+        uDof: { value: new Vector4(0, 0, 0, 0.2) },
+        uDofH: { value: 1 },
+        uHeat: { value: new Vector2(0.5, 0) },
+        uRays: { value: new Vector3(0, 0, 0) },
       },
       blending: NoBlending,
     });
@@ -353,6 +410,13 @@ export class Post {
     u.uCA.value = 0.018 * (f.ca ?? 1);
     u.uGrain.value = this.grainBase * (f.grain ?? 1);
     u.uExposure.value = f.exposure ?? 1;
+    u.uDofH.value = f.dofH ?? 1;
+    if (f.dof) u.uDof.value.set(f.dof[0], f.dof[1], f.dof[2], f.dof[3]);
+    else u.uDof.value.z = 0;
+    if (f.heat) u.uHeat.value.set(f.heat[0], f.heat[1]);
+    else u.uHeat.value.y = 0;
+    if (f.rays) u.uRays.value.set(f.rays[0], f.rays[1], f.rays[2]);
+    else u.uRays.value.z = 0;
     u.uFade.value = f.fade;
     u.uFlare.value.x = f.flare.x;
     u.uFlare.value.y = f.flare.y;

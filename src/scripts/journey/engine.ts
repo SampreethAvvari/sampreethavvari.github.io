@@ -213,6 +213,32 @@ function lerp(a: number, b: number, t: number) {
   return a + (b - a) * t;
 }
 
+/** The planet's evening baked into a reflection map, for the craft on the ground: a warm sky, dark sand, a low sun ahead. */
+function groundEnvironment(renderer: WebGLRenderer): WebGLRenderTarget {
+  const s = new Scene();
+  const dome = new Mesh(
+    new SphereGeometry(60, 32, 16),
+    new ShaderMaterial({
+      side: BackSide,
+      vertexShader: /* glsl */ `varying vec3 vP; void main(){ vP = normalize(position); gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`,
+      fragmentShader: /* glsl */ `varying vec3 vP; void main(){
+        float y = vP.y;
+        vec3 c = y > 0.0 ? mix(vec3(0.9, 0.3, 0.05), vec3(0.4, 0.1, 0.05), smoothstep(0.0, 0.7, y)) : mix(vec3(0.2, 0.08, 0.03), vec3(0.05, 0.02, 0.012), smoothstep(0.0, -0.4, y));
+        float sun = pow(max(dot(vP, normalize(vec3(0.14, 0.08, -1.0))), 0.0), 60.0);
+        c += vec3(5.0, 2.2, 0.7) * sun;
+        gl_FragColor = vec4(c, 1.0);
+      }`,
+    }),
+  );
+  s.add(dome);
+  const pmrem = new PMREMGenerator(renderer);
+  const rt = pmrem.fromScene(s, 0.02);
+  pmrem.dispose();
+  dome.geometry.dispose();
+  (dome.material as Material).dispose();
+  return rt;
+}
+
 /** A dark studio of soft panels, baked once into a reflection map. */
 function environment(renderer: WebGLRenderer): WebGLRenderTarget {
   const s = new Scene();
@@ -293,6 +319,7 @@ export function mountJourney(canvas: HTMLCanvasElement, opts: JourneyOptions): J
   const camera = new PerspectiveCamera(42, 1, 0.3, 9000);
 
   let envRT = environment(renderer);
+  let envGround = groundEnvironment(renderer);
   scene.environment = envRT.texture;
 
   // Lighting like a space photograph: one hard sun, a soft rim in the
@@ -303,7 +330,7 @@ export function mountJourney(canvas: HTMLCanvasElement, opts: JourneyOptions): J
   scene.add(key, key.target, rim, rim.target, fill);
   if (shadows) {
     key.castShadow = true;
-    key.shadow.mapSize.set(1024, 1024);
+    key.shadow.mapSize.set(2048, 2048);
     const sc = key.shadow.camera;
     sc.left = -9;
     sc.right = 9;
@@ -766,7 +793,11 @@ export function mountJourney(canvas: HTMLCanvasElement, opts: JourneyOptions): J
     rim.target.position.copy(_target);
     rim.target.updateMatrixWorld();
     rim.color.copy(_color);
-    rim.intensity = lerp(1.3, 0.35, groundK);
+    rim.intensity = 1.3;
+    if (surface && groundK > 0) {
+      rim.color.lerp(surface.skyLight, groundK);
+      rim.intensity = lerp(1.3, 0.3, groundK);
+    }
     // The pointer as a ray into the scene, for the things that answer it.
     ptrOn = damp(ptrOn, hasPointer ? 1 : 0, 3, dt);
     ptr.o.copy(camera.position);
@@ -842,6 +873,45 @@ export function mountJourney(canvas: HTMLCanvasElement, opts: JourneyOptions): J
     pf.flash = reduced ? 0 : cross;
     pf.dip = reduced && ja > 0 ? 0.92 * Math.exp(-Math.pow((ja - 0.5) / 0.2, 2)) : 0;
     pf.flashColor.copy(_color).lerp(_white, 0.55);
+    const wantEnv = groundK > 0.5 ? envGround.texture : envRT.texture;
+    if (scene.environment !== wantEnv) scene.environment = wantEnv;
+    // The reflections dim with the evening.
+    scene.environmentIntensity = groundK > 0.5 ? lerp(1, 0.12, smooth(0.8, 2.6, sNow)) : 1;
+    const nearNow = sNow > 2.5 ? 0.04 : 0.3;
+    if (camera.near !== nearNow) {
+      camera.near = nearNow;
+      camera.updateProjectionMatrix();
+    }
+    // The closing shot's shallow focus, on the sapling.
+    const closeK = smooth(2.75, 3, sNow);
+    if (closeK > 0 && surface) {
+      pf.dof = pf.dof ?? [0, 0, 0, 0];
+      pf.dof[0] = portrait ? 0.56 : 0.68;
+      pf.dof[1] = 0.2;
+      pf.dof[2] = closeK * (low ? 0.6 : 1);
+      pf.dof[3] = portrait ? 0.3 : 0.24;
+      // Where the horizon is on screen.
+      _v2.copy(camera.position).addScaledVector(landing.fwd, 3000).addScaledVector(landing.up, -camera.position.clone().sub(landing.pad).dot(landing.up)).project(camera);
+      pf.dofH = _v2.y * 0.5 + 0.5;
+    } else {
+      pf.dof = undefined;
+    }
+    // Hot air over the horizon and faint shafts, only while the sun is up.
+    if (surface && groundK > 0.5 && !reduced && !low && sNow < 1.9) {
+      _v.copy(surface.sunWorld).multiplyScalar(4000).add(camera.position).project(camera);
+      pf.rays = pf.rays ?? [0, 0, 0];
+      const onScreen = _v.z < 1 && Math.abs(_v.x) < 1.3 && Math.abs(_v.y) < 1.3;
+      pf.rays[0] = _v.x * 0.5 + 0.5;
+      pf.rays[1] = _v.y * 0.5 + 0.5;
+      pf.rays[2] = onScreen ? 1 - smooth(1.2, 1.9, sNow) : 0;
+      pf.heat = pf.heat ?? [0.5, 0];
+      _v2.copy(camera.position).addScaledVector(landing.fwd, 3000).addScaledVector(landing.up, -camera.position.clone().sub(landing.pad).dot(landing.up)).project(camera);
+      pf.heat[0] = _v2.y * 0.5 + 0.5;
+      pf.heat[1] = 0.0007 * (1 - smooth(1.4, 1.9, sNow));
+    } else {
+      pf.rays = undefined;
+      pf.heat = undefined;
+    }
     pf.bloom = lerp(1, 0.32, groundK);
     pf.ca = lerp(1, 0.3, groundK);
     pf.grain = lerp(1, 0.55, groundK);
@@ -916,6 +986,8 @@ export function mountJourney(canvas: HTMLCanvasElement, opts: JourneyOptions): J
     lost = false;
     envRT.dispose();
     envRT = environment(renderer);
+    envGround.dispose();
+    envGround = groundEnvironment(renderer);
     scene.environment = envRT.texture;
     width = 0;
     height = 0;
@@ -978,6 +1050,8 @@ export function mountJourney(canvas: HTMLCanvasElement, opts: JourneyOptions): J
       for (const t of textures) t.dispose();
       if (shadows) key.shadow.dispose();
       envRT.dispose();
+      envGround.dispose();
+      surface?.dispose();
       post.dispose();
       scene.clear();
       renderer.renderLists.dispose();
