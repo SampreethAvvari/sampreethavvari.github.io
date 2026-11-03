@@ -179,7 +179,7 @@ const pageComets = hasOwnComets
     {(modified ?? published) && <meta property="article:modified_time" content={modified ?? published} />}
     {ogType === "article" && <meta property="article:author" content="Sampreeth Avvari" />}
     <!-- Structured data: the person, the site and this page, one graph -->
-    <script type="application/ld+json" set:html={JSON.stringify(jsonLd)} />
+    <script type="application/ld+json" set:html={JSON.stringify(jsonLd).replace(/</g, "\\u003c")} />
     <!-- No icon font: every icon is an inline SVG. -->
     <title>{title}</title>
     <script is:inline>

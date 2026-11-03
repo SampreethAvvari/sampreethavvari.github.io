@@ -353,7 +353,7 @@ function buildRepo(): MindGraph {
       weight: d.private ? 4.6 : 5.2,
       url: d.private ? undefined : d.url,
       links: d.private || !d.url ? [] : [{ label: "Open the repository", url: d.url }],
-      blurb: description,
+      blurb: d.private ? "" : description,
       meta: `${stars}${d.private ? "private" : "public"}`,
       chips: langs.slice(0, 8),
     });

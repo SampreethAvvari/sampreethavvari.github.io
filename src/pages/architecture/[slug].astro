@@ -314,7 +314,7 @@ const sections = [
     </nav>
   </article>
 
-  <script type="application/json" id="arch-parts" set:html={JSON.stringify(arch.parts)} />
+  <script type="application/json" id="arch-parts" set:html={JSON.stringify(arch.parts).replace(/</g, "\\u003c")} />
 
   <script>
     import { initArchitecture } from "../../scripts/architecture";

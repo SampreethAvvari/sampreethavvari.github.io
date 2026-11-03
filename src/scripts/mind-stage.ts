@@ -197,6 +197,9 @@ export function mountMind() {
   let hasQuadrants = false;
   let showAxisLabels = false;
   let alpha = 1, fade = 0;
+  // Layout steps still to run. They spread over the first frames so the page
+  // answers at once on a phone; the stars settle while the camera flies in.
+  let settleLeft = 0;
   let autorotate = !reduced;
   let idle = 0;
   let hover: Node | null = null;
@@ -524,7 +527,11 @@ export function mountMind() {
     closeCard();
     selected = null; hover = null; alpha = 1; fade = 0;
     autorotate = !reduced;
-    for (let i = 0; i < 260; i++) step(0.85);
+    // The anchors are pinned from the start, so the map's extent (and the
+    // camera fit) is already right before the rest has settled.
+    settleLeft = 260;
+    const t0 = performance.now();
+    while (settleLeft > 0 && (reduced || performance.now() - t0 < 24)) { step(0.85); settleLeft--; }
     frameToFit();
     Object.assign(cam, { tx: 0, ty: 0, tz: 0, dist: camTarget!.dist! * 1.6 });
     BOX = worldR * 5;
@@ -648,7 +655,7 @@ export function mountMind() {
       for (const ax of AXES) {
         const e = projXYZ(ax.at[0] * ext * 0.86, ax.at[1] * ext * 0.86, ax.at[2] * ext * 0.86);
         if (e.pz < NEAR) continue;
-        if (!tourAxes && nodes.some((n) => PLANET.has(n.type) && Math.hypot(n.px - e.px, n.py - e.py) < 70)) continue;
+        if (!tourAxes && nodes.some((n) => PLANET.has(n.type) && Math.hypot(n.px - e.px, n.py - e.py) < 120)) continue;
         ctx!.fillStyle = `rgba(214,232,255,${0.95 * fade * vis})`;
         ctx!.fillText(ax.label, e.px, e.py);
       }
@@ -878,7 +885,11 @@ export function mountMind() {
       vel.yaw *= damp; vel.pitch *= damp;
       vel.tx *= damp; vel.ty *= damp; vel.tz *= damp;
     }
-    if (alpha > 0.02) { step(alpha); alpha *= 0.968; }
+    if (settleLeft > 0) {
+      const t1 = performance.now();
+      const budget = phone ? 6 : 12;
+      do { step(0.85); settleLeft--; } while (settleLeft > 0 && performance.now() - t1 < budget);
+    } else if (alpha > 0.02) { step(alpha); alpha *= 0.968; }
     if (fade < 1) fade = Math.min(1, fade + dt * 2.4);
     idle += dt;
     if (autorotate && idle > 2.4 && !camTarget && !selected) cam.yaw += 0.06 * dt;

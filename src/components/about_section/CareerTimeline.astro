@@ -179,7 +179,7 @@ const trackH = rows.length * ROW_H;
     <div class="tl-dialog-body" id="tl-dialog-body"></div>
   </div>
 
-  <script type="application/json" id="tl-data" set:html={JSON.stringify(payload)} />
+  <script type="application/json" id="tl-data" set:html={JSON.stringify(payload).replace(/</g, "\\u003c")} />
 </div>
 
 <style is:global>

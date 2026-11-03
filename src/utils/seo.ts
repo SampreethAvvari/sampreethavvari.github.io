@@ -17,7 +17,10 @@ export function personNode(base: string, opts: { image: string; email: string; d
     "@id": abs(base, PERSON_ID),
     name: "Sampreeth Avvari",
     // His film credits read Sampreeth Sharma, so both names are one person.
-    alternateName: ["Sampreeth Sharma"],
+    // the first name alone is how most people search for him
+    alternateName: ["Sampreeth", "Sampreeth Sharma"],
+    givenName: "Sampreeth",
+    familyName: "Avvari",
     url: abs(base, "/"),
     image: abs(base, opts.image),
     email: `mailto:${opts.email}`,

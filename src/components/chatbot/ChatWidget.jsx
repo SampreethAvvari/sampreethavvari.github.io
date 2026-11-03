@@ -19,12 +19,17 @@ function escapeHtml(s) {
   return s
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;");
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
 }
 
+// Same rule as the worker: this site, a few profiles, or the email address.
+// Quotes are already escaped above, so an address can never leave its attribute.
 function safeUrl(url) {
-  if (/^(https?:|mailto:)/i.test(url)) return url;
-  if (/^[/#]/.test(url)) return url;
+  if (/^\/(?!\/)/.test(url) || /^#/.test(url)) return url;
+  if (/^mailto:spa9659@nyu\.edu$/i.test(url)) return url;
+  if (/^https:\/\/(www\.)?(sampreethavvari\.com|github\.com\/SampreethAvvari|linkedin\.com\/in\/sampreethavvari|imdb\.com\/title\/)/i.test(url)) return url;
   return "#";
 }
 
@@ -32,7 +37,7 @@ function applyInline(s) {
   s = s.replace(/\[([^\]]+)\]\(([^)]+)\)/g, (_, text, url) => {
     const safe = safeUrl(url);
     const external = /^https?:/i.test(safe);
-    const attrs = external ? ' target="_blank" rel="noreferrer"' : "";
+    const attrs = external ? ' target="_blank" rel="noopener noreferrer"' : "";
     return `<a href="${safe}"${attrs}>${text}</a>`;
   });
   s = s.replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>");
@@ -115,19 +120,33 @@ export default function ChatWidget() {
     }
 
     try {
+      // Only what the worker needs: the recent turns, and each reply with the
+      // signature it came with (unsigned turns are ignored there anyway).
+      const history = nextMessages
+        .filter((m) => m !== initialMessage)
+        .slice(-8)
+        .map((m) => (m.sig ? { role: m.role, content: m.content, sig: m.sig } : { role: m.role, content: m.content }));
       const res = await fetch(CHAT_ENDPOINT, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ messages: nextMessages }),
+        body: JSON.stringify({ messages: history }),
       });
 
+      if (res.status === 429) {
+        setError("That's a lot of questions at once. Give it a minute and try again.");
+        return;
+      }
+      if (res.status === 413) {
+        setError("That message is a bit long. Try a shorter question.");
+        return;
+      }
       if (!res.ok) {
         throw new Error("Chat request failed");
       }
 
       const data = await res.json();
-      const reply = data.reply || "Sorry, I don't have that info yet.";
-      setMessages((prev) => [...prev, { role: "assistant", content: reply }]);
+      const reply = typeof data.reply === "string" && data.reply ? data.reply : "Sorry, I don't have that info yet.";
+      setMessages((prev) => [...prev, { role: "assistant", content: reply, sig: typeof data.sig === "string" ? data.sig : undefined }]);
     } catch (err) {
       setError("Sorry, something went wrong. Try again.");
     } finally {
@@ -217,6 +236,7 @@ export default function ChatWidget() {
           <div className="p-3 border-t border-text/10 dark:border-dk-text/10">
             <div className="chat-composer">
               <textarea
+                maxLength={600}
                 className="chat-input"
                 rows={1}
                 placeholder="Ask about Sampreeth…"
