@@ -437,7 +437,6 @@ function mountMap(mapEl: HTMLElement): MapHandle {
   // studies, so the night reads as one across the join.
   const field = document.createElement("canvas");
   const bg = document.createElement("canvas");
-  const gas = document.createElement("canvas");
   let CW = 1;
   let CH = 1;
   let DPR = 1;
@@ -456,7 +455,6 @@ function mountMap(mapEl: HTMLElement): MapHandle {
     if (!ctx) return;
     ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
     ctx.clearRect(0, 0, CW, CH);
-    drawGas();
     let seed = 7;
     const rnd = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
     // A faint Milky Way, corner to corner, low left to high right.
@@ -547,54 +545,6 @@ function mountMap(mapEl: HTMLElement): MapHandle {
     ctx.globalCompositeOperation = "source-over";
   };
 
-  // Green gas, low in the sky: a very faint haze, computed per pixel and
-  // dithered, because a ramp this dark would show bands as a CSS gradient.
-  const drawGas = () => {
-    const w = Math.max(1, Math.round(CW));
-    const h = Math.max(1, Math.round(CH * 0.56));
-    gas.width = w;
-    gas.height = h;
-    const gc = gas.getContext("2d");
-    if (!gc) return;
-    let seed = 91;
-    const rnd = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
-    // Soft lobes make the shape; nothing here has an edge.
-    const lobes = Array.from({ length: 5 }, (_, i) => ({
-      x: w * ((i + 0.25 + rnd() * 0.5) / 5),
-      y: h * (0.46 + rnd() * 0.44),
-      rx: w * (0.1 + rnd() * 0.15),
-      ry: h * (0.14 + rnd() * 0.2),
-      a: 0.35 + rnd() * 0.65,
-    }));
-    const img = gc.createImageData(w, h);
-    const d = img.data;
-    for (let y = 0; y < h; y++) {
-      // Nothing near the top of the sky, and it thins at the very bottom to
-      // meet the aurora of the section below.
-      const yn = y / h;
-      const up = Math.min(1, Math.max(0, (yn - 0.08) / 0.5));
-      const down = Math.min(1, Math.max(0, (1 - yn) / 0.16));
-      const env = up * up * (3 - 2 * up) * (0.32 + 0.68 * down);
-      for (let x = 0; x < w; x++) {
-        let v = 0;
-        for (const l of lobes) {
-          const dx = (x - l.x) / l.rx;
-          const dy = (y - l.y) / l.ry;
-          v += l.a * Math.exp(-(dx * dx + dy * dy));
-        }
-        v = Math.min(1, v) * env;
-        const i = (y * w + x) * 4;
-        const n = rnd() - 0.5;
-        // On the sky's own night colour, so where there is no gas nothing changes.
-        d[i] = Math.max(0, 1 + v * 2.5 + n);
-        d[i + 1] = Math.max(0, 2 + v * 13 + n);
-        d[i + 2] = Math.max(0, 5 + v * 7 + n);
-        d[i + 3] = 255;
-      }
-    }
-    gc.putImageData(img, 0, 0);
-  };
-
   // The stars thin out where the constellations are, most of all right around
   // their stars, lines and names, and stay rich toward the edges of the sky.
   const carve = () => {
@@ -678,19 +628,7 @@ function mountMap(mapEl: HTMLElement): MapHandle {
     lastPaint = now;
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    if (gas.width > 1 && mapEl.dataset.gas !== "off") {
-      // Whole pixels only, so the dither stays crisp; at this speed a step is
-      // far too small to see.
-      const t = reduce ? 0 : now / 1000;
-      const gx = Math.round(Math.sin(t * 0.021) * 46 + ox * 0.5);
-      const gy = Math.round(canvas.height / DPR - gas.height + Math.sin(t * 0.017) * 8 + oy * 0.5);
-      ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
-      ctx.drawImage(gas, gx - 50, gy, gas.width + 100, gas.height);
-      ctx.setTransform(1, 0, 0, 1, 0, 0);
-    }
-    ctx.globalCompositeOperation = "lighter";
     ctx.drawImage(bg, Math.round(ox * DPR), Math.round(oy * DPR));
-    ctx.globalCompositeOperation = "source-over";
     if (reduce) return;
     ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
     if (now > nextShot) {

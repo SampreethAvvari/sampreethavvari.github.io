@@ -72,6 +72,7 @@ export function mountWritingClose(): void {
         card.style.setProperty("--v", ((v - 0.5) * 2).toFixed(3));
         card.style.setProperty("--gx", `${(u * 100).toFixed(1)}%`);
         card.style.setProperty("--gy", `${(v * 100).toFixed(1)}%`);
+        card.classList.add("is-lit");
       }
       if (note) {
         const r = note.getBoundingClientRect();
@@ -95,6 +96,7 @@ export function mountWritingClose(): void {
         if (!card || card.contains(e.relatedTarget as Node)) return;
         card.style.removeProperty("--u");
         card.style.removeProperty("--v");
+        card.classList.remove("is-lit");
       },
       { signal },
     );

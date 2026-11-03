@@ -106,9 +106,10 @@ const MOTION: Record<string, "compass" | "sphere"> = {
     z-index: 1;
     background: #010205;
     overflow-x: clip;
-    /* Only a short overlap up into the sky, under its lowest names. */
-    --join-top: -8vh;
-    --join-h: 30vh;
+    /* A crossfade with the sky above, as dim as the stars here. */
+    --join-top: -20vh;
+    --join-h: 42vh;
+    --join-o: 0.72;
   }
 
   /* ---------------- The sky here: stars, then the aurora over them ---------------- */
@@ -241,12 +242,12 @@ const MOTION: Record<string, "compass" | "sphere"> = {
   .wc-glare {
     inset: 0;
     z-index: 2;
-    background: radial-gradient(340px circle at var(--gx, 50%) var(--gy, 0%), rgba(220, 255, 240, 0.2), rgba(220, 255, 240, 0) 62%);
+    background: radial-gradient(340px circle at var(--gx, 50%) var(--gy, 0%), rgba(130, 255, 205, 0.15), rgba(130, 255, 205, 0) 62%);
     mix-blend-mode: screen;
     opacity: 0;
     transition: opacity 300ms ease-out;
   }
-  .wc-card:hover .wc-glare { opacity: 1; }
+  .wc-card.is-lit .wc-glare { opacity: 1; }
 
   /* The compass needle swings, and settles. */
   .wc-needle { filter: drop-shadow(0 0 1px rgba(160, 255, 220, 0.9)); }

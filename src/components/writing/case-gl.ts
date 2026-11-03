@@ -114,10 +114,15 @@ vec3 sheet(vec2 p, float cells, float ang, float seed, float density, float s0, 
   d.y /= 1.0 + uStreak * stretch;
   float s = max(mix(s0, s1, c * c * c), 0.8 / uDpr);
   float v = exp(-dot(d, d) / (2.0 * s * s));
-  if (haloS > 0.0) v += haloG * exp(-dot(d, d) / (2.0 * haloS * haloS));
+  float gain = 0.42 + 0.58 * e * e;
+  if (haloS > 0.0) {
+    // The nearest stars: always a bright core, and only the brightest glow.
+    gain = 0.74 + 0.26 * e;
+    v += haloG * e * e * e * exp(-dot(d, d) / (2.0 * haloS * haloS));
+  }
   float twinkle = 0.88 + 0.12 * sin(uTime * (0.4 + 1.4 * e) + a * 40.0);
   vec3 tint = mix(vec3(1.0, 0.88, 0.76), vec3(0.78, 0.87, 1.0), b);
-  return mix(vec3(1.0), tint, 0.6) * v * twinkle * (0.42 + 0.58 * e * e);
+  return mix(vec3(1.0), tint, 0.6) * v * twinkle * gain;
 }
 void main() {
   vec2 p = (vUv - 0.5) * vec2(uAspect, 1.0);
@@ -133,7 +138,7 @@ void main() {
   col += 0.82 * sheet(p + run * (uOff * 0.14 + drift * 1.6) + ptr * 0.008, 46.0, 1.13, 4.7, 0.32, 0.7, 1.05, 0.6, 0.0, 0.0);
   col += 1.0 * sheet(p + run * (uOff * 0.3 + drift * 2.5) + ptr * 0.016, 26.0, 2.27, 9.1, 0.3, 0.85, 1.5, 1.4, 0.0, 0.0);
   col += 1.25 * sheet(p + run * (uOff * 0.62 + drift * 4.0) + ptr * 0.032, 13.0, 0.73, 15.3, 0.32, 1.3, 2.4, 2.6, 0.0, 0.0);
-  col += 1.45 * sheet(p + run * (uOff * 1.05 + drift * 6.0) + ptr * 0.06, 5.5, 1.91, 21.7, 0.34, 2.2, 3.4, 3.4, 12.0 * halo, 0.2);
+  col += 1.45 * sheet(p + run * (uOff * 1.05 + drift * 6.0) + ptr * 0.06, 5.5, 1.91, 21.7, 0.34, 2.2, 3.4, 3.4, 9.0 * halo, 0.3);
   // A touch of light while flying between slabs.
   float r = length(p);
   col += mix(uCol1, uCol2, 0.5) * uWarp * 0.1 * (1.0 - smoothstep(0.0, 0.85, r));
@@ -195,13 +200,15 @@ void main() {
   // colour fringe, and a band of light that sweeps across.
   vec3 V = normalize(vView);
   float fres = pow(1.0 - abs(dot(normalize(vN), V)), 2.5);
-  float edge = 1.0 - smoothstep(0.0, 0.03, -d);
-  float edgeIn = 1.0 - smoothstep(0.0, 0.12, -d);
+  float side = mix(0.16, 1.0, smoothstep(-0.89, -0.12, p.x));
+  float edge = (1.0 - smoothstep(0.0, 0.03, -d)) * side;
+  float edgeIn = (1.0 - smoothstep(0.0, 0.12, -d)) * side;
   col += uAccent * fres * 0.35;
   col += uAccent * edgeIn * 0.16 * uRim;
   col += (uAccent * 0.8 + 0.35) * edge * 0.9 * uRim;
-  col.r += edge * 0.25 * uRim * step(0.0, p.x);
-  col.b += edge * 0.25 * uRim * step(p.x, 0.0);
+  float warm = smoothstep(-0.89, 0.89, p.x);
+  col.r += edge * 0.25 * uRim * warm;
+  col.b += edge * 0.25 * uRim * (1.0 - warm);
   float band = exp(-pow((uv.x * 1.0 + (1.0 - uv.y) * 0.42 - uSweep) * 15.0, 2.0)) * uSweepGain;
   col += (vec3(1.0) * 0.26 + uAccent * 0.3) * band;
 
@@ -217,10 +224,11 @@ void main() {
   // Dissolve from a glowing edge while the camera passes through.
   float keep = 1.0;
   if (uDissolve > 0.001) {
-    float n = fbm(uv * vec2(10.0, 5.6) + uSeed * 7.0);
+    float n = fbm(uv * vec2(30.0, 16.9) + uSeed * 7.0);
     float th = uDissolve * 1.25 - 0.12;
-    float gone = smoothstep(th, th + 0.02, n);
-    float burn = (1.0 - smoothstep(0.0, 0.03, abs(n - th - 0.02))) * step(0.02, uDissolve);
+    float gone = smoothstep(th, th + 0.03, n);
+    float solid = clamp(cover + edge, 0.0, 1.0);
+    float burn = (1.0 - smoothstep(0.0, 0.016, abs(n - th - 0.02))) * step(0.02, uDissolve) * solid;
     col = mix(col, uAccent * 1.5 + vec3(0.12), burn * 0.9);
     a = max(a, burn);
     keep = max(gone, burn);

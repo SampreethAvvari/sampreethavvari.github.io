@@ -555,6 +555,15 @@ const spelled = items.map((h) => {
     }
     .cx-hero:not([data-live]) .cx-copy-in { pointer-events: none; }
     .cx-title { max-width: min(13.5em, 52vw); font-size: clamp(3rem, 5.5vw, 6.25rem); line-height: 0.98; }
+    /* On wide screens the column starts further in, so the title stops at the
+       same place on the screen, clear of the subject. */
+    @media (min-width: 1441px) {
+      .cx-title { max-width: min(13.5em, calc(10vw + 600px)); }
+    }
+    /* On a short laptop screen the first title needs the room. */
+    @media (max-height: 800px) {
+      .cx-lede { display: none; }
+    }
     /* Each letter rises into place, sharpening as it lands. No mask, so no letter is ever cut. */
     .cx-l {
       display: inline-block;
@@ -651,10 +660,10 @@ const spelled = items.map((h) => {
       right: 0;
       bottom: 0;
       z-index: 28;
-      height: 60%;
+      height: 28vh;
       pointer-events: none;
       opacity: min(1, calc(var(--exit, 0) * 5));
-      background: linear-gradient(180deg, rgba(1, 2, 5, 0) 0%, rgba(1, 2, 5, 0.55) 45%, rgba(1, 2, 5, 0.92) 78%, #010205 100%);
+      background: linear-gradient(180deg, rgba(1, 2, 5, 0) 0%, rgba(1, 2, 5, 0.5) 50%, rgba(1, 2, 5, 0.9) 86%, #010205 100%);
     }
     /* A fast scroll splits the colour of the words too. */
     .cx-title {
@@ -706,7 +715,7 @@ const spelled = items.map((h) => {
       opacity: 0;
       transform: translateX(8px);
       transition: opacity 300ms var(--ease-glass), transform 300ms var(--ease-glass);
-      text-shadow: 0 1px 12px rgba(0, 0, 0, 0.8);
+      text-shadow: 0 0 4px #010205, 0 0 10px #010205, 0 1px 14px rgba(0, 0, 0, 0.9);
     }
     .cx-index ol::before {
       content: "";
