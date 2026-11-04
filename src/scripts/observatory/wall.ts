@@ -251,7 +251,46 @@ const damp = (c: number, t: number, rate: number, dt: number) => c + (t - c) * (
 const easeOut = (x: number) => 1 - Math.pow(1 - clamp(x, 0, 1), 3);
 const mod = (a: number, n: number) => ((a % n) + n) % n;
 
-export function mountWall(signal: AbortSignal): void | (() => void) {
+const glOptions = (low: boolean): WebGLContextAttributes => ({ alpha: true, premultipliedAlpha: true, antialias: false, depth: false, stencil: false, powerPreference: low ? "default" : "high-performance" });
+
+type Built = { vs: WebGLShader; fs: WebGLShader; prog: WebGLProgram };
+// Compile and link, without asking how it went: asking waits for the graphics driver.
+function build(gl: WebGL2RenderingContext, vsSrc: string, fsSrc: string): Built {
+  const shader = (type: number, src: string) => {
+    const sh = gl.createShader(type)!;
+    gl.shaderSource(sh, src);
+    gl.compileShader(sh);
+    return sh;
+  };
+  const vs = shader(gl.VERTEX_SHADER, vsSrc);
+  const fs = shader(gl.FRAGMENT_SHADER, fsSrc);
+  const prog = gl.createProgram()!;
+  gl.attachShader(prog, vs);
+  gl.attachShader(prog, fs);
+  gl.linkProgram(prog);
+  return { vs, fs, prog };
+}
+
+// The wall's programs compile on a background thread where the browser offers it, and
+// the wall starts when they are done, so the page does not stop to wait for the driver.
+export function startWall(signal: AbortSignal): void | (() => void) {
+  const canvas = document.querySelector<HTMLCanvasElement>("[data-wall] [data-wall-canvas]");
+  const gl = canvas?.getContext("webgl2", glOptions(matchMedia("(max-width: 767px), (pointer: coarse)").matches || ((navigator as Navigator & { deviceMemory?: number }).deviceMemory ?? 8) < 4)) as WebGL2RenderingContext | null | undefined;
+  const parallel = gl?.getExtension("KHR_parallel_shader_compile") as { COMPLETION_STATUS_KHR: number } | null | undefined;
+  if (!gl || !parallel) return mountWall(signal);
+  const built = { wall: build(gl, VS, FS), sky: build(gl, BG_VS, BG_FS) };
+  let stop: void | (() => void);
+  const check = () => {
+    if (signal.aborted) return;
+    const done = [built.wall, built.sky].every((b) => gl.isContextLost() || gl.getProgramParameter(b.prog, parallel.COMPLETION_STATUS_KHR));
+    if (done) stop = mountWall(signal, built);
+    else requestAnimationFrame(check);
+  };
+  requestAnimationFrame(check);
+  return () => stop?.();
+}
+
+export function mountWall(signal: AbortSignal, built?: { wall: Built; sky: Built }): void | (() => void) {
   const root = document.querySelector<HTMLElement>("[data-wall]");
   const dataEl = document.getElementById("wall-data");
   if (!root || !dataEl) return;
@@ -322,7 +361,7 @@ export function mountWall(signal: AbortSignal): void | (() => void) {
 
   // --------------------------------------------------------------- mode
   // The wall, or the list of real links. Without WebGL2 the list is all.
-  const gl = canvas.getContext("webgl2", { alpha: true, premultipliedAlpha: true, antialias: false, depth: false, stencil: false, powerPreference: low ? "default" : "high-performance" });
+  const gl = canvas.getContext("webgl2", glOptions(low)) as WebGL2RenderingContext | null;
   let mode: "wall" | "list" = gl ? "wall" : "list";
   try {
     if (sessionStorage.getItem("arch-view") === "list") mode = "list";
@@ -365,19 +404,7 @@ export function mountWall(signal: AbortSignal): void | (() => void) {
   }
 
   // ------------------------------------------------------------- program
-  const compile = (type: number, src: string) => {
-    const sh = gl.createShader(type)!;
-    gl.shaderSource(sh, src);
-    gl.compileShader(sh);
-    if (!gl.getShaderParameter(sh, gl.COMPILE_STATUS)) console.error(gl.getShaderInfoLog(sh));
-    return sh;
-  };
-  const vs = compile(gl.VERTEX_SHADER, VS);
-  const fs = compile(gl.FRAGMENT_SHADER, FS);
-  const prog = gl.createProgram()!;
-  gl.attachShader(prog, vs);
-  gl.attachShader(prog, fs);
-  gl.linkProgram(prog);
+  const { vs, fs, prog } = built?.wall ?? build(gl, VS, FS);
   if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) console.error(gl.getProgramInfoLog(prog));
   gl.useProgram(prog);
   const U = (name: string) => gl.getUniformLocation(prog, name);
@@ -420,12 +447,7 @@ export function mountWall(signal: AbortSignal): void | (() => void) {
   gl.bindVertexArray(null);
 
   // The sky behind: one full screen triangle.
-  const bgVs = compile(gl.VERTEX_SHADER, BG_VS);
-  const bgFs = compile(gl.FRAGMENT_SHADER, BG_FS);
-  const bgProg = gl.createProgram()!;
-  gl.attachShader(bgProg, bgVs);
-  gl.attachShader(bgProg, bgFs);
-  gl.linkProgram(bgProg);
+  const { vs: bgVs, fs: bgFs, prog: bgProg } = built?.sky ?? build(gl, BG_VS, BG_FS);
   if (!gl.getProgramParameter(bgProg, gl.LINK_STATUS)) console.error(gl.getProgramInfoLog(bgProg));
   const bgU = {
     pan: gl.getUniformLocation(bgProg, "uPan"),

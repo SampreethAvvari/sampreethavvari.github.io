@@ -128,8 +128,8 @@ const data = JSON.stringify(cards).replace(/</g, "\\u003c");
 
 <script>
   import { onPage } from "../../../scripts/lifecycle";
-  import { mountWall } from "../../../scripts/observatory/wall";
-  onPage("glass-wall", (signal) => mountWall(signal));
+  import { startWall } from "../../../scripts/observatory/wall";
+  onPage("glass-wall", (signal) => startWall(signal));
 </script>
 
 <style>
