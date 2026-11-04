@@ -12,6 +12,7 @@
     "ingest:reset": "node scripts/ingest-embeddings.mjs"
   },
   "dependencies": {
+    "@astrojs/preact": "^3.1.1",
     "@astrojs/react": "^3.0.9",
     "@astrojs/rss": "^4.0.5",
     "@astrojs/sitemap": "^3.1.1",
@@ -24,6 +25,7 @@
     "fuse.js": "^7.0.0",
     "gray-matter": "^4.0.3",
     "pdfjs-dist": "4.10.38",
+    "preact": "^10.19.6",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-lazy-load-image-component": "^1.6.0",

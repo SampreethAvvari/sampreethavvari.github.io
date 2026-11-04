@@ -1,6 +1,6 @@
 import { defineConfig } from 'astro/config';
 import tailwind from "@astrojs/tailwind";
-import react from "@astrojs/react";
+import preact from "@astrojs/preact";
 import robotsTxt from "astro-robots-txt";
 import { rehypeAccessibleEmojis } from 'rehype-accessible-emojis';
 import { readdirSync, readFileSync } from "node:fs";
@@ -67,7 +67,7 @@ export default defineConfig({
       },
     },
     tailwind(),
-    react(),
+    preact({ compat: true }),
     robotsTxt({
       policy: [
         ...CRAWLERS.map((userAgent) => ({ userAgent, allow: '/' })),
