@@ -251,10 +251,6 @@ const firstSentence = (d: string) => (d.match(/^.*?[.!?](?=\s|$)/) || [d])[0];
 </section>
 
 <style>
-  @property --ax-rx { syntax: "<angle>"; inherits: false; initial-value: 0deg; }
-  @property --ax-ry { syntax: "<angle>"; inherits: false; initial-value: 0deg; }
-  @property --ax-px { syntax: "<length>"; inherits: false; initial-value: 0px; }
-  @property --ax-py { syntax: "<length>"; inherits: false; initial-value: 0px; }
   .ax {
     position: relative;
     z-index: 1;
@@ -411,18 +407,19 @@ const firstSentence = (d: string) => (d.match(/^.*?[.!?](?=\s|$)/) || [d])[0];
     perspective-origin: 50% 45%;
     background: #010205;
   }
-  /* The dome: tilts a little with the pointer and the scroll. The script
-     writes these every frame; the far sky and the constellations move apart.
-     They do not inherit, so a frame restyles the one element, not the sky under it. */
+  /* The dome: tilts a little with the pointer and the scroll, and the far sky and the
+     constellations move apart. The script writes each transform itself every frame.
+     Through a custom property the same write restyles the 120 stars under it, even when
+     the property does not inherit: 6.5 ms a frame against 0.05 ms. */
   .ax-dome {
     position: absolute;
     inset: 0;
     transform-style: preserve-3d;
-    transform: rotateX(var(--ax-rx, 0deg)) rotateY(var(--ax-ry, 0deg));
+    transform: rotateX(0deg) rotateY(0deg);
   }
   /* Full screen layers only while the sky is on screen. */
   .ax-map[data-on] .ax-dome, .ax-map[data-on] .ax-par { will-change: transform; }
-  .ax-par { position: absolute; inset: 0; transform: translate3d(var(--ax-px, 0px), var(--ax-py, 0px), 0); }
+  .ax-par { position: absolute; inset: 0; transform: translate3d(0, 0, 0); }
   .ax[data-view="map"] .ax-listwrap { display: none; }
 
   .ax-sky {
@@ -494,6 +491,8 @@ const firstSentence = (d: string) => (d.match(/^.*?[.!?](?=\s|$)/) || [d])[0];
     box-shadow: 0 0 calc(var(--r) * 2) rgba(var(--tint), 0.5);
     animation: ax-twinkle var(--tw, 3.6s) ease-in-out var(--td, 0s) infinite;
   }
+  /* Off screen they hold still, so scrolling the rest of the page does not restyle them. */
+  .ax-map:not([data-on]) .ax-s i { animation-play-state: paused; }
   @keyframes ax-twinkle {
     0%, 100% { opacity: 0.9; transform: scale(0.95); }
     50% { opacity: 1; transform: scale(1.06); }
@@ -806,7 +805,7 @@ const firstSentence = (d: string) => (d.match(/^.*?[.!?](?=\s|$)/) || [d])[0];
     .ax-dock .lg { -webkit-backdrop-filter: none; backdrop-filter: none; }
     /* No perspective here: it would pin the fixed sheet to the map. */
     .ax[data-view="map"] .ax-map { perspective: none; }
-    .ax-dome { transform: none; }
+    .ax-dome { transform: none !important; }
     .ax-map[data-on] .ax-dome { will-change: auto; }
     .ax-name-t { font-size: 0.8125rem; }
     .ax-hint { white-space: normal; text-align: center; width: 80%; }

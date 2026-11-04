@@ -1346,12 +1346,10 @@ function mountMap(mapEl: HTMLElement): MapHandle {
     const sf = Math.max(-1, Math.min(1, (r.top + r.height / 2 - innerHeight / 2) / innerHeight));
     const rx = (sf * 6 - psy * 3 + Math.sin(t * 0.11) * 0.6) * free;
     const ry = (psx * 4 + Math.cos(t * 0.09) * 0.6) * free;
-    dome.style.setProperty("--ax-rx", `${rx.toFixed(3)}deg`);
-    dome.style.setProperty("--ax-ry", `${ry.toFixed(3)}deg`);
+    dome.style.transform = `rotateX(${rx.toFixed(3)}deg) rotateY(${ry.toFixed(3)}deg)`;
     const px = (-psx * 16 + Math.sin(t * 0.07) * 6) * free;
     const py = (-psy * 10 + Math.cos(t * 0.05) * 4) * free;
-    par.style.setProperty("--ax-px", `${px.toFixed(2)}px`);
-    par.style.setProperty("--ax-py", `${py.toFixed(2)}px`);
+    par.style.transform = `translate3d(${px.toFixed(2)}px, ${py.toFixed(2)}px, 0)`;
     paint(-psx * 6 - CW * 0.0, -psy * 4, now);
     // Stars near the pointer lean toward it.
     for (const s of stars) {

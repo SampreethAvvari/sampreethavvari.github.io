@@ -172,6 +172,17 @@ function stage(root: HTMLElement): () => void {
 
   // Write a variable only when its text changes.
   const last = new WeakMap<HTMLElement, Record<string, string>>();
+  // The colour split on a title: 0 still, 1 fast.
+  const split = (el: HTMLElement, v: number) => {
+    const s = v.toFixed(2);
+    let m = last.get(el);
+    if (!m) last.set(el, (m = {}));
+    if (m.split === s) return;
+    m.split = s;
+    const dx = (5 * v).toFixed(1);
+    const a = (0.75 * v).toFixed(3);
+    el.style.filter = v > 0 ? `drop-shadow(-${dx}px 0 0 rgba(255, 50, 110, ${a})) drop-shadow(${dx}px 0 0 rgba(60, 200, 255, ${a}))` : "";
+  };
   const put = (el: HTMLElement, name: string, v: number) => {
     const s = v.toFixed(4);
     let m = last.get(el);
@@ -257,7 +268,7 @@ function stage(root: HTMLElement): () => void {
         put(p.copy, "--cout", clamp01(cout / 0.34));
         put(p.copy, "--exit", state.exit);
       }
-      put(p.title, "--vel", live ? shownVel : 0);
+      split(p.title, live ? shownVel : 0);
       // At rest the letters drop their filters.
       const calm = cin >= 1 && cout <= 0;
       if (calm !== h.hasAttribute("data-calm")) h.toggleAttribute("data-calm", calm);
@@ -313,7 +324,7 @@ function stage(root: HTMLElement): () => void {
     settle = window.setTimeout(() => {
       pxPerMs = 0;
       vel = 0;
-      for (const p of parts) put(p.title, "--vel", 0);
+      for (const p of parts) split(p.title, 0);
       finish();
     }, 140);
     if (queued) return;
@@ -431,9 +442,12 @@ function stage(root: HTMLElement): () => void {
     document.documentElement.classList.remove("in-cx");
     // Back to the plain cards: drop what the stage wrote.
     const written = [stageEl, ...heroes, ...links, ...headParts, ...exitParts];
-    for (const p of parts) written.push(p.frame, p.rim, p.art, p.copy, p.title);
+    for (const p of parts) {
+      written.push(p.frame, p.rim, p.art, p.copy, p.title);
+      p.title.style.removeProperty("filter");
+    }
     for (const el of written) {
-      for (const v of ["--exit", "--open", "--zoom", "--out", "--cin", "--cout", "--drift", "--f", "--vel", "--head"]) el.style.removeProperty(v);
+      for (const v of ["--exit", "--open", "--zoom", "--out", "--cin", "--cout", "--drift", "--f", "--head"]) el.style.removeProperty(v);
     }
     heroes.forEach((h, i) => {
       h.toggleAttribute("data-live", i === 0);

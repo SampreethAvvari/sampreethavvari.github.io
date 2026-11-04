@@ -610,6 +610,7 @@ const spelled = items.map((h) => {
       transform-origin: 50% 0;
       animation: cx-cue 2.2s var(--ease-glass) infinite;
     }
+    .cx-hero:not([data-near]) .cx-cue-line { animation-play-state: paused; }
     @keyframes cx-cue {
       0% { transform: scaleY(0); opacity: 0; }
       40% { transform: scaleY(1); opacity: 1; }
@@ -668,13 +669,11 @@ const spelled = items.map((h) => {
       opacity: min(1, calc(var(--exit, 0) * 5));
       background: linear-gradient(180deg, rgba(1, 2, 5, 0) 0%, rgba(1, 2, 5, 0.5) 50%, rgba(1, 2, 5, 0.9) 86%, #010205 100%);
     }
-    /* A fast scroll splits the colour of the words too. */
-    .cx-title {
-      text-shadow:
-        calc(var(--vel, 0) * -5px) 0 0 rgba(255, 50, 110, calc(var(--vel, 0) * 0.75)),
-        calc(var(--vel, 0) * 5px) 0 0 rgba(60, 200, 255, calc(var(--vel, 0) * 0.75)),
-        0 2px 30px rgba(0, 0, 0, 0.45);
-    }
+    /* A fast scroll splits the colour of the words too. The script writes the split as this
+       title's own filter, so a frame restyles one element and draws no text. As a text shadow
+       it restyled and redrew every letter, on every frame of the scroll. */
+    .cx-title { text-shadow: 0 2px 30px rgba(0, 0, 0, 0.45); }
+    .cx-hero[data-live] .cx-title { will-change: filter; }
 
     .cx-dust {
       display: block;
