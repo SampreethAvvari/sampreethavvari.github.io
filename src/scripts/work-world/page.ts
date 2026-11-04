@@ -17,7 +17,6 @@ import { navigate } from "astro:transitions/client";
 import { onPage } from "../lifecycle";
 import { mountMovement, type Movement } from "./movement";
 import { emit } from "./math";
-import { hasWebGL2 } from "../gl-probe";
 import type { Panels } from "./panels";
 import type { BayId } from "./bays";
 import type { Hit, World } from "./engine";
@@ -129,7 +128,9 @@ onPage("work-world", (signal) => {
   const span = Number(root.dataset.span || 1.9);
   const ids = panels.map((p) => p.dataset.id || p.id || `stop-${p.dataset.stop}`);
 
-  const gl = hasWebGL2();
+  // Only whether the browser has it at all: making a context to ask stops the page before
+  // its words show, and the world's own context answers soon after. If it fails, flat page.
+  const gl = "WebGL2RenderingContext" in window;
   // Reduced motion and no WebGL share the flat page, and so does a page whose
   // script came so late the plain page has already taken over.
   if (!gl || reduced || document.documentElement.classList.contains("no-stage")) {

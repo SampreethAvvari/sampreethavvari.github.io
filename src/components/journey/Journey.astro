@@ -611,7 +611,6 @@ const anchorAt = (i: number) => yOf(restAt(i));
 </style>
 
 <script>
-  import { hasWebGL2 } from "../../scripts/gl-probe";
   import { arriveAt, inJumpGap, pOf, restAt, RESTS, SCENE, settleAt, TOTAL_SCREENS, travelEnd, worldAt, yOf } from "../../scripts/journey/plan";
   type Chapter = { id: string; color: string; scene: string | null };
   type Journey = { setScroll(p: number, v: number): void; setPointer(x: number, y: number): void; setDirection(d: number): void; interact(kind: "hover" | "press" | "drag" | "release", x: number, y: number): void; setPaused(p: boolean): void; destroy(): void };
@@ -1029,7 +1028,10 @@ const anchorAt = (i: number) => yOf(restAt(i));
     const canvas = root.querySelector<HTMLCanvasElement>(".journey-canvas");
     const engines = import.meta.glob("../../scripts/journey/engine.ts");
     const loadEngine = Object.values(engines)[0] as undefined | (() => Promise<any>);
-    if (canvas && loadEngine && hasWebGL2()) {
+    // Only whether the browser has it at all. Making a context just to ask costs the page
+    // a long stop before its words show, and the flight's own context answers moments later:
+    // if that one fails, the catch below leaves the painted sky.
+    if (canvas && loadEngine && "WebGL2RenderingContext" in window) {
       // The code starts down the wire now; the flight starts when there is a moment.
       const code = loadEngine();
       const boot = () => code.then(async (m) => {

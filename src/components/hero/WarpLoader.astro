@@ -692,8 +692,12 @@ const rgb2 = palette[1] ?? palette[0];
         return;
       }
       if (r.bottom < 0 || r.top > vh || r.right < 0 || r.left > vw) return;
+      // A screen reader's copy, a line of words in a corner.
+      if (r.width <= 1 && r.height <= 1) return;
       var cs = getComputedStyle(el);
-      if (cs.visibility === "hidden") return;
+      // Nothing to see, so nothing to fly: each block flying is a layer of its own for the
+      // length of the arrival, which a phone feels most just as the page comes up.
+      if (cs.visibility === "hidden" || parseFloat(cs.opacity) < 0.02) return;
       if (isBlock(el, cs, r, vw, vh)) { out.push([el, r]); return; }
       for (var k = el.firstElementChild; k; k = k.nextElementSibling) collect(k, out, vw, vh);
     }

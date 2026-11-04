@@ -8,7 +8,6 @@
 //   resume:transition  { direction, from, to, duration }   duration in seconds
 //   resume:hover       { kind, id, note }                   note: a stable small integer
 
-import { hasWebGL2 } from "../gl-probe";
 import { initAmbient } from "../spatial";
 import { mountMotion } from "./motion";
 import { STOPS, type WorldData } from "./types";
@@ -30,7 +29,9 @@ export function startResumeWorld(visit: AbortSignal): void | (() => void) {
   );
 
   const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
-  const hasGL = hasWebGL2();
+  // Only whether the browser has it at all: making a context to ask stops the page before
+  // its words show, and the world's own context answers soon after. If it fails, toDocument.
+  const hasGL = "WebGL2RenderingContext" in window;
   // Reduced motion and no WebGL get the same markup as a plain document, and so
   // does a page whose script came so late the plain page has already taken over.
   if (reduced || !hasGL || document.documentElement.classList.contains("no-stage")) {
@@ -137,6 +138,9 @@ export function startResumeWorld(visit: AbortSignal): void | (() => void) {
 
   // ------------------------------------------------------------ the words of each stop
   const shown = stops.map(() => -1);
+  // What reads --d. Written on these and not on the stop, or every chip and line in the stop
+  // restyles on every frame, for a value only these use.
+  const movers = stops.map((el) => Array.from(el.querySelectorAll<HTMLElement>(".rw-slide, .rw-chips")));
   const applyCopy = (p: number) => {
     stops.forEach((el, i) => {
       const d = p - Number(el.dataset.stop);
@@ -147,7 +151,8 @@ export function startResumeWorld(visit: AbortSignal): void | (() => void) {
       if (q !== shown[i] || (q > 0 && ad > 0.0005)) {
         shown[i] = q;
         el.style.opacity = String(o);
-        el.style.setProperty("--d", d.toFixed(4));
+        const ds = d.toFixed(4);
+        for (const m of movers[i]) m.style.setProperty("--d", ds);
       }
       el.classList.toggle("is-on", ad < 0.2);
     });
@@ -467,9 +472,9 @@ export function startResumeWorld(visit: AbortSignal): void | (() => void) {
     live.abort();
     halt();
     io.disconnect();
-    stops.forEach((el) => {
+    stops.forEach((el, i) => {
       el.style.removeProperty("opacity");
-      el.style.removeProperty("--d");
+      for (const m of movers[i]) m.style.removeProperty("--d");
       el.classList.remove("is-on");
     });
     pane?.style.removeProperty("min-height");
