@@ -44,8 +44,9 @@ export class StillReel {
       img.dataset.src = src;
       return { img, y0: 0, y1: 1, ready: false };
     });
-    // Five or so stills: the first now, the rest as soon as it is up, so no
-    // dissolve waits on one and they do not hold up the frame on screen.
+    // Five or so stills, each a large file. The first now, and each of the others a whole
+    // hold before its turn, which is time to spare even on a slow connection. A film that is
+    // only waiting in the wings, or that someone scrolls past, costs one still and not five.
     this.load(0);
   }
 
@@ -76,7 +77,6 @@ export class StillReel {
         return decoded();
       })
       .then(async () => {
-        if (i === 0) for (let k = 1; k < this.frames.length; k++) this.load(k);
         if (!f.img.naturalWidth) return;
         await this.measure(f);
         f.ready = true;
@@ -181,9 +181,12 @@ export class StillReel {
     const slot = Math.min(n - 1, Math.floor(t / HOLD));
     const into = t - slot * HOLD;
     const span = HOLD + DISSOLVE;
+    if (this.playing) this.load((slot + 1) % n);
     ctx.fillStyle = "#050002";
     ctx.fillRect(0, 0, this.w, this.h);
-    this.paint(this.frames[slot], into / span, slot, 1);
+    // A still that has not come yet: the one before holds, so the screen never goes black.
+    if (!this.frames[slot]?.ready && slot > 0) this.paint(this.frames[slot - 1], 1, slot - 1, 1);
+    else this.paint(this.frames[slot], into / span, slot, 1);
     if (slot > 0 && into < DISSOLVE) {
       this.paint(this.frames[slot - 1], (into + HOLD) / span, slot - 1, 1 - into / DISSOLVE);
     }

@@ -21,6 +21,9 @@ const first = items[0];
 
 {n > 0 && (
   <section class="reel" data-reel style={`--n:${n}`} aria-roledescription="carousel" aria-label="Films, one per screen">
+    {/* Its full height before the first layout. At one screen tall, the sections under it would
+        sit close enough for the browser to fetch their lazy pictures, half a megabyte of them. */}
+    <script is:inline>document.currentScript.parentElement.classList.add("is-tall");</script>
     <h1 class="sr-only">Films by Sampreeth Avvari</h1>
     <a href={after} class="reel-skip">Skip the reel</a>
     <div class="reel-stage" data-reel-stage>
@@ -107,8 +110,9 @@ const first = items[0];
 <style>
   .reel { position: relative; background: #000; --reel-ink: hsl(30 30% 93%); }
   /* With script: one screen per film, the stage pinned through them all. */
-  .reel.is-live { height: calc(var(--n) * 100vh); }
-  @supports (height: 100svh) { .reel.is-live { height: calc(var(--n) * 100svh); } }
+  .reel.is-live, .reel.is-tall { height: calc(var(--n) * 100vh); }
+  @supports (height: 100svh) { .reel.is-live, .reel.is-tall { height: calc(var(--n) * 100svh); } }
+  :global(html.no-stage) .reel.is-tall:not(.is-live) { height: auto; }
   .reel-stage {
     position: relative;
     height: 100vh;
