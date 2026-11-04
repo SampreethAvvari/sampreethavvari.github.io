@@ -629,10 +629,18 @@ export function mountWall(signal: AbortSignal): void | (() => void) {
   ]);
   fontsIn.then(() => {
     if (signal.aborted) return;
-    cards.forEach((_, k) => drawCell(k));
     // Pictures nearest the centre first.
     const first = list.length ? list : cards.map((_, i) => i);
     const orderLoad = [...first, ...cards.map((_, i) => i).filter((i) => !first.includes(i))];
+    // The words too, a few cells a frame, so the page never stops for the whole wall at once.
+    const waiting = orderLoad.slice();
+    const drawSome = () => {
+      if (signal.aborted) return;
+      const t = performance.now();
+      while (waiting.length && performance.now() - t < 6) drawCell(waiting.shift()!);
+      if (waiting.length) requestAnimationFrame(drawSome);
+    };
+    drawSome();
     orderLoad.forEach((k, n) => {
       const img = new Image();
       img.decoding = "async";

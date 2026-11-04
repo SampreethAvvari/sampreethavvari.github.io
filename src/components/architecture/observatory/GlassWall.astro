@@ -305,6 +305,10 @@ const data = JSON.stringify(cards).replace(/</g, "\\u003c");
   @media (min-width: 1080px) { .gl-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
   .gl-item { position: relative; display: flex; flex-direction: column; min-width: 0; }
   .gl-item[hidden] { display: none; }
+  /* The list is out of sight behind the wall until someone asks for it, so its cards wait
+     to be laid out until they are near the screen. Screen readers still have all of them. */
+  .gl-item { content-visibility: auto; contain-intrinsic-size: auto 443px; }
+  @media (min-width: 720px) { .gl-item { contain-intrinsic-size: auto 460px; } }
   .gl-card {
     display: flex;
     flex-direction: column;
