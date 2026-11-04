@@ -29,3 +29,6 @@ supabase/.temp/
 
 # full-res hero originals (kept locally, web uses compressed public/ copies)
 image-originals/
+
+# every page of the Teaching books as a picture, made by scripts/make-teaching-pages.mjs
+public/teaching/pages/*/

@@ -4,6 +4,10 @@
 //    the reader can lay out every page at once, before any of the file has come.
 // 2. Three real pages of each book, as small images in public/teaching/pages, so
 //    the stack on the material page needs no PDF code until someone reads.
+// 3. Every page of each book as a sharp picture, in a folder named for that version
+//    of the PDF, public/teaching/pages/<slug>/<hash>/<page>-<width>.avif, so a sheet
+//    reads before PDF.js and the file have come. Not kept in git: this script makes
+//    them again, and picks up where it stopped.
 //
 // Run by hand when a PDF is added or changed. The pages are drawn in a real browser,
 // the same drawing a visitor gets, since node's canvas gets the books' gradients
@@ -11,10 +15,11 @@
 //   PLAYWRIGHT=/path/to/node_modules/playwright node scripts/make-teaching-pages.mjs
 // Without it only the sizes are written. A material without these still works: its
 // stack shows blank paper, and the reader reads the sizes from the file.
+import { createHash } from "node:crypto";
 import { getDocument } from "pdfjs-dist/legacy/build/pdf.mjs";
 import sharp from "sharp";
 import { createRequire } from "node:module";
-import { mkdirSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
 import path from "node:path";
 
 const DIR = "public/teaching";
@@ -22,6 +27,8 @@ const OUT = path.join(DIR, "pages");
 // The cover, the contents and a page with a figure on it.
 const PAGES = [1, 3, 9];
 const WIDTH = 800;
+// A phone at 2x, a phone at 3x, a laptop at 2x. reader.ts picks by these.
+const PICTURE_WIDTHS = [900, 1240, 1760];
 const LIB = "node_modules/pdfjs-dist/legacy/build";
 
 const files = readdirSync(DIR).filter((f) => f.endsWith(".pdf"));
@@ -41,7 +48,8 @@ for (const file of files) {
   sizes.forEach((s, i) => {
     if (s.join() !== common.join()) odd[i + 1] = s;
   });
-  books[file.replace(/\.pdf$/, "")] = { pages: doc.numPages, w: common[0], h: common[1], odd };
+  const pictures = createHash("sha256").update(readFileSync(path.join(DIR, file))).digest("hex").slice(0, 10);
+  books[file.replace(/\.pdf$/, "")] = { pages: doc.numPages, w: common[0], h: common[1], odd, pictures };
   await doc.destroy();
 }
 writeFileSync("src/data/teaching-pages.json", `${JSON.stringify(books, null, 1)}\n`);
@@ -94,6 +102,45 @@ for (const file of files) {
     await shot.clone().avif({ quality: 46, effort: 6 }).toFile(path.join(OUT, `${slug}-${n}.avif`));
     await shot.clone().webp({ quality: 66 }).toFile(path.join(OUT, `${slug}-${n}.webp`));
     console.log(`${slug} page ${n}`);
+  }
+
+  // Every page. Past 1240 wide the marks are too small to see, so the file can be lighter.
+  const { pages: count, pictures } = books[slug];
+  const folder = path.join(OUT, slug, pictures);
+  mkdirSync(folder, { recursive: true });
+  for (const e of readdirSync(path.join(OUT, slug), { withFileTypes: true })) {
+    if (e.isDirectory() && e.name !== pictures) rmSync(path.join(OUT, slug, e.name), { recursive: true, force: true });
+  }
+  const widest = Math.max(...PICTURE_WIDTHS);
+  for (let n = 1; n <= count; n++) {
+    if (PICTURE_WIDTHS.every((w) => existsSync(path.join(folder, `${n}-${w}.avif`)))) continue;
+    const url = await page.evaluate(
+      async ({ file, n, width }) => {
+        const lib = await import("/pdf.min.mjs");
+        lib.GlobalWorkerOptions.workerSrc = "/pdf.worker.min.mjs";
+        window.__docs = window.__docs || {};
+        const doc = await (window.__docs[file] ||= lib.getDocument({ url: `/${file}`, isEvalSupported: false, verbosity: 0 }).promise);
+        const p = await doc.getPage(n);
+        const viewport = p.getViewport({ scale: width / p.getViewport({ scale: 1 }).width });
+        const c = document.createElement("canvas");
+        c.width = Math.round(viewport.width);
+        c.height = Math.round(viewport.height);
+        await p.render({ canvasContext: c.getContext("2d", { alpha: false }), viewport, background: "#fff" }).promise;
+        p.cleanup();
+        return c.toDataURL("image/png");
+      },
+      { file, n, width: widest },
+    );
+    const png = Buffer.from(url.split(",")[1], "base64");
+    await Promise.all(
+      PICTURE_WIDTHS.map((w) =>
+        sharp(png)
+          .resize(w)
+          .avif({ quality: w === widest ? 50 : 60, effort: 4, chromaSubsampling: "4:4:4" })
+          .toFile(path.join(folder, `${n}-${w}.avif`)),
+      ),
+    );
+    if (n % 10 === 0 || n === count) console.log(`${slug} pictures ${n} of ${count}`);
   }
 }
 await browser.close();

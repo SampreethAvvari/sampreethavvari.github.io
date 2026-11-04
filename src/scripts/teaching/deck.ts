@@ -41,7 +41,7 @@ export function mountDeck(signal: AbortSignal): void | (() => void) {
   const warm = () => {
     if (warmed) return;
     warmed = true;
-    load().then((m) => m.warmReader()).catch(() => {});
+    load().then((m) => m.warmReader(root)).catch(() => {});
   };
 
   // Staying at the stack, on a connection that can spare it.

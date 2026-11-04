@@ -5,7 +5,10 @@
 // back, so a long book costs the same as a short one.
 //
 // Everything here is imported when someone starts reading, and PDF.js itself is a
-// plain file from this site, fetched at that moment.
+// plain file from this site, fetched at that moment. Every page also exists as a
+// picture made ahead of time, so a sheet reads the moment its picture comes, however
+// long PDF.js and the file take. The canvas then takes its place, unseen, and brings
+// the selectable words, the links and the deep zoom with it.
 //
 // Sound hooks, on window:
 //   post:figure   { id: "viewer", action: "open" | "close" }  the book opened or closed
@@ -31,9 +34,26 @@ function loadLib(): Promise<Lib> {
   return libP;
 }
 
+// The widths scripts/make-teaching-pages.mjs draws each page at.
+const PICTURE_WIDTHS = [900, 1240, 1760];
+const pictureUrl = (base: string, n: number, cssWidth: number) => {
+  const want = cssWidth * Math.min(devicePixelRatio || 1, 3);
+  const w = PICTURE_WIDTHS.find((x) => x >= want * 0.9) ?? PICTURE_WIDTHS[PICTURE_WIDTHS.length - 1];
+  return `${base}/${n}-${w}.avif`;
+};
+
 /** The visitor has come to the stack: into the cache ahead of the press, not run. */
-export function warmReader() {
+export function warmReader(root?: HTMLElement) {
   for (const url of [pdfUrl, workerUrl]) fetch(url, { priority: "low" } as RequestInit).catch(() => {});
+  const base = root?.dataset.pictures;
+  if (!root || !base) return;
+  // The first page, at the size the reader will show it.
+  const cw = root.clientWidth;
+  const refW = 595;
+  const css = cw < PHONE_MAX ? ((cw - 8) / (refW - PHONE_CROP * 2)) * refW : Math.min(cw - (cw < 1024 ? 48 : 96), 880);
+  const img = new Image();
+  img.decoding = "async";
+  img.src = pictureUrl(base, 1, css);
 }
 
 export type Reader = { reveal: () => void; close: () => void; destroy: () => void };
@@ -55,6 +75,7 @@ type Sheet = {
   textBusy: boolean;
   links: HTMLElement | null;
   ghost: HTMLElement | null;
+  pic: HTMLImageElement | null;
   lean: string;
 };
 
@@ -91,6 +112,15 @@ export function openReader(
   const STORE = `tr-page:${slug}`;
   const OPEN = `tr-open:${slug}`;
   const docRoot = document.documentElement;
+  let pictures = root.dataset.pictures || "";
+  // PDF.js waits its turn for the first picture, so on a slow connection the page the
+  // reader is looking at goes first. Never for long: the two do not depend on each other.
+  let pictureCame = () => {};
+  const firstPicture = new Promise<void>((resolve) => {
+    if (!pictures) return resolve();
+    pictureCame = resolve;
+    setTimeout(resolve, 1500);
+  });
 
   const life = new AbortController();
   const signal = life.signal;
@@ -109,6 +139,19 @@ export function openReader(
   let phone = false;
   let wide = false;
 
+  // The page's fly in scales the whole article about its middle. The book is about to
+  // make that article very tall, which would throw every measure below off by pages, so
+  // a press during the fly in ends it.
+  for (let e: HTMLElement | null = root; e; e = e.parentElement) {
+    for (const a of e.getAnimations()) {
+      try {
+        a.finish();
+      } catch {
+        /* one that never ends: nothing here runs like that */
+      }
+    }
+  }
+
   // ---- The parts -----------------------------------------------------------
   const stackLeaf = root.querySelector<HTMLElement>(".tr-leaf-top");
   const firstImg = stackLeaf?.querySelector<HTMLImageElement>("img");
@@ -125,7 +168,7 @@ export function openReader(
     const no = h("span", "tr-page-no", String(n));
     no.setAttribute("aria-hidden", "true");
     el.append(no, inner);
-    const s: Sheet = { n, el, inner, pw: size[0], ph: size[1], crop: 0, k: 1, doneK: 0, canvas: null, task: null, busy: false, page: null, text: null, textBusy: false, links: null, ghost: null, lean: "" };
+    const s: Sheet = { n, el, inner, pw: size[0], ph: size[1], crop: 0, k: 1, doneK: 0, canvas: null, task: null, busy: false, page: null, text: null, textBusy: false, links: null, ghost: null, pic: null, lean: "" };
     return s;
   };
   const sizeOf = (n: number): [number, number] => dims?.odd?.[n] ?? [dims?.w ?? 595.28, dims?.h ?? 841.89];
@@ -260,6 +303,47 @@ export function openReader(
   }
 
   // ---- Painting ------------------------------------------------------------
+  // A sheet near the screen wears its picture until its canvas is ready. A browser
+  // without AVIF, or a picture that does not come, just waits for the canvas.
+  const dress = (s: Sheet) => {
+    if (!pictures || s.canvas || s.pic) return;
+    if (!s.ghost) {
+      s.ghost = h("div", "tr-page-ghost");
+      s.inner.append(s.ghost);
+    }
+    const img = h("img", "tr-page-pic");
+    img.alt = "";
+    img.decoding = "async";
+    if (s.n === current) img.setAttribute("fetchpriority", "high");
+    img.addEventListener(
+      "load",
+      () => {
+        const show = () => img.classList.add("is-in");
+        img.decode().then(show, show);
+        pictureCame();
+      },
+      { once: true },
+    );
+    img.addEventListener(
+      "error",
+      () => {
+        img.remove();
+        if (s.pic === img) s.pic = null;
+        pictures = "";
+        pictureCame();
+      },
+      { once: true },
+    );
+    img.src = pictureUrl(pictures, s.n, s.pw * s.k);
+    s.pic = img;
+    s.ghost.append(img);
+  };
+  const undress = (s: Sheet) => {
+    s.ghost?.remove();
+    s.ghost = null;
+    s.pic = null;
+  };
+
   const near = new Set<Sheet>();
   let io: IntersectionObserver | null = null;
   const watch = () => {
@@ -270,10 +354,13 @@ export function openReader(
         for (const en of entries) {
           const s = sheets[Number((en.target as HTMLElement).dataset.n) - 1];
           if (!s) continue;
-          if (en.isIntersecting) near.add(s);
-          else {
+          if (en.isIntersecting) {
+            near.add(s);
+            dress(s);
+          } else {
             near.delete(s);
             flatten(s);
+            if (!s.canvas) undress(s);
           }
         }
         queue();
@@ -354,10 +441,14 @@ export function openReader(
       const old = s.canvas;
       s.canvas = c;
       s.doneK = k;
+      // Over a picture of itself the canvas needs no fade: the swap should not show.
+      const ghost = s.ghost;
+      if (ghost) c.style.animation = "none";
       s.inner.prepend(c);
       freeCanvas(old);
-      s.ghost?.remove();
       s.ghost = null;
+      s.pic = null;
+      if (ghost) requestAnimationFrame(() => ghost.remove());
       s.el.classList.add("is-drawn");
       wordsSoon();
     } catch (err) {
@@ -894,7 +985,8 @@ export function openReader(
     }
   };
 
-  loadLib()
+  firstPicture
+    .then(loadLib)
     .then(async (m) => {
       if (dead) return;
       lib = m;
@@ -940,7 +1032,8 @@ export function openReader(
     })
     .catch((err) => {
       console.warn("reader: could not open the book", err);
-      fail();
+      // The pictures still read as the book. Without them, the plain way.
+      if (!pictures) fail();
     });
 
   // ---- Closing -------------------------------------------------------------
@@ -955,7 +1048,7 @@ export function openReader(
     io?.disconnect();
     if (document.fullscreenElement === root) void document.exitFullscreen().catch(() => {});
     for (const s of sheets) release(s);
-    void task?.destroy();
+    task?.destroy().catch(() => {});
     task = null;
     doc = null;
     col.remove();

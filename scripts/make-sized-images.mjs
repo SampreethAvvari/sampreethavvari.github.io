@@ -37,7 +37,7 @@ const stems = new Set();
 for (const folder of FOLDERS) {
   const dir = path.join(PUBLIC, folder);
   if (!existsSync(dir)) continue;
-  for (const f of walk(dir)) if (/\.avif$/i.test(f)) stems.add(posix(path.relative(PUBLIC, f)).replace(/\.avif$/i, ""));
+  for (const f of walk(dir)) if (/\.avif$/i.test(f) && !/[\\/]teaching[\\/]pages[\\/]/.test(f)) stems.add(posix(path.relative(PUBLIC, f)).replace(/\.avif$/i, ""));
 }
 if (ROOT_COVERS) {
   for (const e of readdirSync(PUBLIC, { withFileTypes: true })) {
