@@ -7,6 +7,7 @@
 // place until the canvas has drawn over it, and comes back if the GPU goes.
 
 import { hasWebGL2 } from "../gl-probe";
+import { warpTask } from "../warp-task";
 import { afterImages } from "../lifecycle";
 import { clamp, fxOn, isTouch, onScrollFrame, smooth } from "../post-fx/util";
 import type { Holo, HoloBox, HoloState } from "./holo-gl";
@@ -194,6 +195,9 @@ export function mountStage(signal: AbortSignal): void | (() => void) {
   });
 
   // ---- Three only now, when the page is up ---------------------------------
+  // The site's loader stays up until the cover is in 3D, or has stayed a picture.
+  const built = warpTask(1);
+  signal.addEventListener("abort", () => built.done());
   const handOver = (on: boolean) => {
     arts.forEach((a) => {
       if (on) {
@@ -206,9 +210,11 @@ export function mountStage(signal: AbortSignal): void | (() => void) {
   };
   let handTimer = 0;
   async function startGL() {
+    if (!canvas) built.done();
     if (signal.aborted || !canvas || booting || gl) return;
     // No GPU: the page's picture stays, and the page's sky goes ahead.
     const giveUp = () => {
+      built.done();
       glOut = true;
       root.classList.remove("in-cx");
     };
@@ -243,6 +249,7 @@ export function mountStage(signal: AbortSignal): void | (() => void) {
       rgb,
       state,
       () => {
+        built.done();
         if (signal.aborted) return;
         glReady = true;
         canvas?.classList.add("is-up");
@@ -256,6 +263,7 @@ export function mountStage(signal: AbortSignal): void | (() => void) {
       },
       () => {
         // The GPU went away: the page's own picture, which never left the layout.
+        built.done();
         glReady = false;
         glOut = true;
         clearTimeout(handTimer);

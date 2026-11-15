@@ -7,6 +7,7 @@
 // only ever a transform away from it, so nothing can shift the page.
 
 import { fxOn, isPhone, isTouch, clamp, smooth, offsetIn, emit, onScrollFrame } from "./util";
+import { warpTask } from "../warp-task";
 import type { Box, OpeningGL, OpeningState } from "./opening-gl";
 
 const easeE = (p: number) => {
@@ -255,21 +256,25 @@ export function mountOpening(signal: AbortSignal): void | (() => void) {
 
   // ---- Three only now, when the page is up ---------------------------------
   let idle = 0;
+  // The site's loader stays up until the opening is in 3D, or has stayed a picture.
+  const built = warpTask(1);
+  signal.addEventListener("abort", () => built.done());
   async function startGL() {
-    if (signal.aborted || !canvas) return;
+    if (signal.aborted || !canvas) return built.done();
     // Already deep in the article: wait until the reader comes back up.
     if (state.e >= 0.999) {
       glWanted = true;
-      return;
+      return built.done();
     }
     const img = art?.querySelector<HTMLImageElement>("img");
     const big = open.dataset.art;
     const ext = img?.currentSrc?.endsWith(".avif") ? "avif" : "webp";
     const url = big ? `${big}-${isTouch() ? 1280 : 2560}.${ext}` : img?.currentSrc || img?.src;
     const loaded = await import("./opening-gl").catch(() => null);
-    if (!loaded || signal.aborted) return; // the page's picture stays
+    if (!loaded || signal.aborted) return built.done(); // the page's picture stays
     const { mountOpeningGL } = loaded;
     gl = mountOpeningGL(canvas, url, rgb, (slug.length % 13) / 13, state, () => {
+      built.done();
       if (signal.aborted) return;
       glReady = true;
       sweepFrom = (performance.now() - sweepAt) / 1000;
@@ -285,6 +290,7 @@ export function mountOpening(signal: AbortSignal): void | (() => void) {
       wake();
     }, () => {
       // The GPU went away: back to the page's own picture, which never left the layout.
+      built.done();
       glReady = false;
       clearTimeout(handTimer);
       const dead = gl;
@@ -294,6 +300,7 @@ export function mountOpening(signal: AbortSignal): void | (() => void) {
       art?.classList.remove("is-handed");
       place();
     });
+    if (!gl) built.done();
   }
   const w = window as Window & {
     requestIdleCallback?: (cb: () => void, o?: { timeout: number }) => number;

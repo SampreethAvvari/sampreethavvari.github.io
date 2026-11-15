@@ -18,6 +18,7 @@ import { navigate } from "astro:transitions/client";
 import { hasWebGL2 } from "../../scripts/gl-probe";
 import { layoutBox } from "../../scripts/layout-box";
 import { onPage } from "../../scripts/lifecycle";
+import { warpTask } from "../../scripts/warp-task";
 import type { Capsule, RailGL, RailState } from "./rail-gl";
 
 const clamp01 = (v: number) => (v < 0 ? 0 : v > 1 ? 1 : v);
@@ -457,22 +458,28 @@ function indexStage(root: HTMLElement, pageSignal: AbortSignal): () => void {
     if (scrollY > top && at) requestAnimationFrame(() => at.scrollIntoView({ block: "start", behavior: "instant" as ScrollBehavior }));
   };
   if (canvas) {
+    // The site's loader stays up until the world is showing, or the page has gone plain.
+    const built = warpTask(2);
+    signal.addEventListener("abort", () => built.done());
+    const shown = () => { built.done(); showGL(); };
+    const none = () => { built.done(); noGL(); };
+    const plain = () => { built.done(); toPlain(); };
     // Asking whether the GPU is there stops the page for a moment, so it waits
     // for a quiet one, and three is only fetched once the answer is yes.
     later(() => {
       if (signal.aborted) return;
       if (!hasWebGL2()) {
-        toPlain();
+        plain();
         return;
       }
       import("./rail-gl")
-        .then(({ mountRail }) => (signal.aborted ? null : mountRail(canvas, { capsules, stops: n, outside: true, lookahead: lookahead >= 0 ? lookahead : undefined }, state, showGL, noGL, signal)))
+        .then(({ mountRail }) => (signal.aborted ? null : mountRail(canvas, { capsules, stops: n, outside: true, lookahead: lookahead >= 0 ? lookahead : undefined }, state, shown, none, signal)))
         .then((made) => {
           if (signal.aborted) return;
           gl = made;
-          if (!gl) toPlain();
+          if (!gl) plain();
         })
-        .catch(toPlain);
+        .catch(plain);
     });
   }
 
@@ -639,21 +646,28 @@ function flightWorld(flight: HTMLElement, signal: AbortSignal): (() => void) | n
     coversSky = false;
     document.documentElement.classList.remove("in-cx");
   };
+  // The site's loader stays up until the flight is showing, or has given up.
+  const built = warpTask(2);
+  signal.addEventListener("abort", () => built.done());
+  const shown = () => { built.done(); showGL(); };
+  const none = () => { built.done(); noGL(); };
   const start = () => {
     if (signal.aborted) return;
     if (!hasWebGL2()) {
+      built.done();
       flight.classList.remove("is-live");
       return;
     }
     const url = slabImg?.currentSrc || slabImg?.src || flight.dataset.tex;
     import("./rail-gl")
-      .then(({ mountRail }) => (signal.aborted ? null : mountRail(canvas, { capsules: [{ url, stop: 0 }], stops: 2, outside: false }, state, showGL, noGL, signal)))
+      .then(({ mountRail }) => (signal.aborted ? null : mountRail(canvas, { capsules: [{ url, stop: 0 }], stops: 2, outside: false }, state, shown, none, signal)))
       .then((made) => {
         if (signal.aborted) return;
         gl = made;
-        if (!gl) flight.classList.remove("is-live");
+        if (!gl) { built.done(); flight.classList.remove("is-live"); }
       })
       .catch(() => {
+        built.done();
         if (!signal.aborted) flight.classList.remove("is-live");
       });
   };

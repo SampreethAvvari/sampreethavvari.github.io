@@ -1,9 +1,12 @@
 ---
 // Page loader: a jump to light speed. Stars stream out from the center like
 // the scroll warp in SpaceField, comets in the tab's colour cut across, and a
-// small "loading" sits in the middle. It covers the first paint of a visit
-// and comes back up for every move to another page (Astro's client side
-// router), so moving between pages reads as one trip.
+// percent sits in the middle. It covers the first paint of a visit and comes
+// back up for every move to another page (Astro's client side router), so
+// moving between pages reads as one trip. It stays up until the page has
+// loaded everything it shows: its pictures, its 3D world with the shaders
+// linked, the film frames (src/scripts/warp-task.ts). Only then does the
+// first page of a visit ask about sound, and the page opens fully drawn.
 //
 // Arrival: the streaks slow back into points and the loader drops behind the
 // page, so the stars you flew through become the sky, while SpaceField coasts
@@ -182,7 +185,10 @@ const rgb2 = palette[1] ?? palette[0];
     background: radial-gradient(closest-side, rgba(0, 0, 0, 0.6), transparent);
   }
 
-  /* Set like the site's kicker: Inter 500, the tab's dot. */
+  /* How far the page has loaded: the tab's dot and a percent, set like the
+     site's kicker (Inter 500). The figure is a CSS counter, so it never ends
+     up in the page's text; the script sets --warp-p on .warp-num. Tabular
+     figures, so the number does not shuffle sideways as it counts. */
   .warp-text {
     display: inline-flex;
     align-items: center;
@@ -192,6 +198,7 @@ const rgb2 = palette[1] ?? palette[0];
     font-weight: 500;
     letter-spacing: -0.005em;
     line-height: 1;
+    color: rgba(255, 255, 255, 0.82);
   }
   .warp-text::before {
     content: "";
@@ -202,77 +209,38 @@ const rgb2 = palette[1] ?? palette[0];
     box-shadow: 0 0 12px rgba(var(--warp-rgb), 0.7);
     animation: warp-dot 1.25s ease-in-out infinite;
   }
-  /* The word lives in CSS so it never ends up in the page's text. A bright
-     copy sweeps across it through a soft window half the word wide. The
-     window slides one way and the copy inside slides back by the same
-     amount, so the copy holds still under the light. Both are transforms,
-     so the shimmer keeps going while the page is busy loading. */
-  .warp-word {
-    position: relative;
-    display: inline-block;
+  .warp-num {
+    min-width: 4ch;
+    font-variant-numeric: tabular-nums;
+    counter-reset: warp-p var(--warp-p, 0);
   }
-  .warp-word::before {
-    content: "loading";
-    color: rgba(255, 255, 255, 0.5);
-  }
-  .warp-shine {
-    position: absolute;
-    top: 0;
-    bottom: 0;
-    left: 0;
-    width: 50%;
-    overflow: hidden;
-    -webkit-mask-image: linear-gradient(90deg, transparent, #000 50%, transparent);
-    mask-image: linear-gradient(90deg, transparent, #000 50%, transparent);
-    animation: warp-sweep 1.9s linear infinite;
-  }
-  .warp-shine::before {
-    content: "loading";
-    position: absolute;
-    top: 0;
-    left: 0;
-    color: #fff;
-    white-space: nowrap;
-    animation: warp-sweep-back 1.9s linear infinite;
-  }
+  .warp-num::before { content: counter(warp-p) "%"; }
   @keyframes warp-dot {
     0%, 100% { transform: scale(0.8); opacity: 0.6; }
     50% { transform: scale(1.15); opacity: 1; }
   }
-  @keyframes warp-sweep {
-    from { transform: translateX(-100%); }
-    to { transform: translateX(200%); }
-  }
-  @keyframes warp-sweep-back {
-    from { transform: translateX(50%); }
-    to { transform: translateX(-100%); }
-  }
 
+  /* The bar fills with the percent; its bright head is where loading is now. */
   .warp-bar {
     position: relative;
-    width: 76px;
+    width: 96px;
     height: 1px;
-    overflow: hidden;
     border-radius: 1px;
     background: rgba(255, 255, 255, 0.1);
   }
-  .warp-bar::after {
-    content: "";
+  .warp-fill {
     position: absolute;
     inset: 0;
-    width: 42%;
-    background: linear-gradient(90deg, transparent, rgba(var(--warp-rgb), 1), transparent);
-    animation: warp-scan 1.25s cubic-bezier(0.6, 0, 0.4, 1) infinite;
-  }
-  @keyframes warp-scan {
-    from { transform: translateX(-100%); }
-    to { transform: translateX(240%); }
+    border-radius: inherit;
+    background: linear-gradient(90deg, rgba(var(--warp-rgb), 0.25), rgba(var(--warp-rgb), 1));
+    box-shadow: 0 0 8px rgba(var(--warp-rgb), 0.6);
+    transform: scaleX(0);
+    transform-origin: left center;
   }
 
   @media (prefers-reduced-motion: reduce) {
     .warp-canvas { display: none; }
-    .warp-text::before, .warp-bar::after { animation: none; }
-    .warp-shine { display: none; }
+    .warp-text::before { animation: none; }
   }
   @media print {
     .warp { display: none; }
@@ -291,10 +259,10 @@ const rgb2 = palette[1] ?? palette[0];
   <div class="warp-sky"></div>
   <canvas class="warp-canvas"></canvas>
   <div class="warp-label">
-    <span class="warp-text"><span class="warp-word"><span class="warp-shine"></span></span></span>
-    <span class="warp-bar"></span>
+    <span class="warp-text"><span class="warp-num"></span></span>
+    <span class="warp-bar"><i class="warp-fill"></i></span>
   </div>
-  <!-- Once a visit, the jump ends on a choice: sound or silence. -->
+  <!-- Once a visit, when everything has loaded, the jump ends on a choice: sound or silence. -->
   <div class="warp-gate" hidden>
     <p class="warp-gate-kicker"><span class="warp-gate-wave" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></span>This site has a score in eight movements</p>
     <div class="warp-gate-actions">
@@ -614,10 +582,128 @@ const rgb2 = palette[1] ?? palette[0];
       if (!tinting) tint();
     }
     tint();
-    var MAX = 3500; // never hold the first page longer than this
-    // Once the page's own scripts have run, only this much longer for its images.
+    // Laying the page out: once it has loaded, or its scripts have run and a
+    // moment has passed, or this long after the start, whichever is first.
+    var MAX = 3500;
     var GRACE = 500;
     var t0 = performance.now();
+
+    // ---- What the loader waits for before it opens. The page's own HTML,
+    // stylesheets and pictures, and whatever the page's scripts hand it while
+    // it is up (window.__warpTask, src/scripts/warp-task.ts): a 3D world being
+    // built, its shaders linking, the film frames coming down. It opens when
+    // every one of them is done and nothing new has started for a moment, and
+    // shows how far they have got. Nothing holds it past CAP.
+    var CAP = 40000;
+    var SETTLE = 350;
+    var tasks = [], holding = true, lastTask = t0, docF = 0;
+    var holdFrom = t0, holdMin = 0, finishing = false, opened = null, checkTimer = 0;
+    var NONE = { progress: function () {}, done: function () {} };
+    window.__warpTask = function (weight) {
+      if (!holding) return NONE;
+      var t = { w: weight > 0 ? +weight : 1, f: 0, done: false };
+      tasks.push(t);
+      lastTask = performance.now();
+      return {
+        progress: function (f) {
+          if (!t.done && f > t.f) t.f = Math.min(1, +f || 0);
+        },
+        done: function () {
+          if (t.done) return;
+          t.done = true;
+          t.f = 1;
+          lastTask = performance.now();
+        },
+      };
+    };
+    // Whether the loader is still waiting: work may go faster while nobody can scroll.
+    window.__warpHeld = function () { return holding; };
+    function fraction() {
+      var w = 1, f = docF;
+      for (var i = 0; i < tasks.length; i++) {
+        w += tasks[i].w;
+        f += tasks[i].f * tasks[i].w;
+      }
+      return f / w;
+    }
+    function allDone() {
+      if (docF < 1) return false;
+      for (var i = 0; i < tasks.length; i++) if (!tasks[i].done) return false;
+      return performance.now() - lastTask >= SETTLE;
+    }
+
+    // The percent on screen eases toward the real figure and never goes back.
+    // It stops at 99 until everything is in, then runs to 100 and opens.
+    var numEl = root.querySelector(".warp-num");
+    var fillEl = root.querySelector(".warp-fill");
+    var shownP = 0, shownInt = -1, meterRaf = 0, meterT = 0;
+    function paint() {
+      var n = Math.floor(shownP);
+      if (n !== shownInt && numEl) {
+        shownInt = n;
+        numEl.style.setProperty("--warp-p", String(n));
+      }
+      if (fillEl) fillEl.style.transform = "scaleX(" + (shownP / 100).toFixed(4) + ")";
+    }
+    function meter(now) {
+      meterRaf = 0;
+      var dt = meterT ? Math.min(0.1, (now - meterT) / 1000) : 0.016;
+      meterT = now;
+      if (finishing) shownP = Math.min(100, shownP + dt * 320);
+      else {
+        var goal = Math.min(99, fraction() * 100);
+        var next = reduce ? goal : shownP + (goal - shownP) * (1 - Math.exp(-dt / 0.3));
+        if (goal - next < 0.05) next = goal;
+        if (next > shownP) shownP = next;
+      }
+      paint();
+      if (finishing && shownP >= 100) {
+        meterT = 0;
+        var go = opened;
+        opened = null;
+        if (go) setTimeout(go, reduce ? 0 : 160);
+        return;
+      }
+      if (holding || finishing) meterRaf = requestAnimationFrame(meter);
+    }
+    function meterOn() {
+      if (!meterRaf) {
+        meterT = 0;
+        meterRaf = requestAnimationFrame(meter);
+      }
+    }
+    // Start holding: the first page, or a move to another page.
+    function hold(from, min) {
+      clearTimeout(checkTimer);
+      holding = true;
+      finishing = false;
+      opened = null;
+      tasks = [];
+      docF = 0;
+      lastTask = holdFrom = from;
+      holdMin = min;
+      shownP = 0;
+      paint();
+      meterOn();
+      check();
+    }
+    // Everything is in (or the time is up): run the percent to 100, then `then`.
+    function check() {
+      clearTimeout(checkTimer);
+      if (!holding) return;
+      var t = performance.now();
+      if ((allDone() && t - holdFrom >= holdMin) || t - holdFrom > CAP) {
+        holding = false;
+        finishing = true;
+        opened = whenOpen;
+        meterOn();
+        return;
+      }
+      checkTimer = setTimeout(check, 100);
+    }
+    // What happens at 100: the first page of a visit asks about sound, a move
+    // to another page arrives. Set below.
+    var whenOpen = function () {};
 
     // The sky draws in a worker when the browser can hand a canvas to one,
     // and on this thread otherwise. `call` reaches it either way.
@@ -757,6 +843,9 @@ const rgb2 = palette[1] ?? palette[0];
       // still inside the click, so the page's sound may start right away
       window.dispatchEvent(new CustomEvent("sound:set", { detail: v }));
       gating = false;
+      // The pressed button lets go of focus before the loader is hidden from screen readers.
+      var held = document.activeElement;
+      if (held && root.contains(held) && held.blur) held.blur();
       root.setAttribute("aria-hidden", "true");
       leave(0);
     }
@@ -794,6 +883,11 @@ const rgb2 = palette[1] ?? palette[0];
       if (leaving || id !== trip) return;
       leaving = true;
       away = false;
+      // Nothing more to wait for: a task started from here on does nothing.
+      clearTimeout(checkTimer);
+      holding = false;
+      finishing = false;
+      opened = null;
       // The jump ends: the streaks shrink back to points and stay as the sky.
       call("leave");
       root.classList.remove("is-quick");
@@ -811,11 +905,15 @@ const rgb2 = palette[1] ?? palette[0];
     }
 
     // Leaving for another page: the warp comes back up and holds until the
-    // next page is in and its scripts have started.
+    // next page is in and everything it hands the loader is done, the same
+    // as the first page, counting from 0 again.
+    var arrived = 0;
     function enter(url) {
       var id = ++trip;
       away = true;
       enteredAt = performance.now();
+      whenOpen = function () { leave(id); };
+      hold(enteredAt, HOLD);
       // Start blending toward the next tab now. The page that arrives
       // finishes the same blend on the same clock (toneTween).
       var seg = url.pathname.split("/").filter(Boolean)[0] || "";
@@ -843,8 +941,9 @@ const rgb2 = palette[1] ?? palette[0];
       call("size", dims());
       call("enter", [base, toPal, blendAt]);
       running = true;
-      // If the navigation never happens (cancelled, offline), let go.
-      setTimeout(function () { leave(id); }, 6000);
+      // If the navigation never happens (cancelled, offline), let go. Once the
+      // page is in, it waits for that page's work instead (up to CAP).
+      setTimeout(function () { if (arrived !== id) leave(id); }, 6000);
     }
 
     // The move cannot happen (offline, no copy of the page): back to this page.
@@ -862,29 +961,46 @@ const rgb2 = palette[1] ?? palette[0];
       call("aim", [p]);
     }
 
-    // Ready: the whole page has loaded, or its scripts have run and a moment
-    // has passed, or the time is up. A slow image or a chunk that never comes
-    // holds nothing back, and the sound choice comes up in time too.
+    // Laid out: the whole page has loaded, or its scripts have run and a moment
+    // has passed, or the time is up. From then on the page builds its worlds
+    // under the loader, which stays up until they are done (check above).
     var isReady = false;
     function ready() {
       if (isReady) return;
       // A stylesheet that is still coming holds the page's body back: nothing to
-      // reveal yet, so the sky stays, up to the time it can take to give up.
+      // lay out yet, so the sky stays, up to the time it can take to give up.
       if (!document.querySelector("main") && performance.now() - t0 < 15000) {
         setTimeout(ready, 250);
         return;
       }
       isReady = true;
       document.documentElement.classList.remove("parsing");
-      setTimeout(function () {
-        if (gating) showGate();
-        else leave(0);
-      }, Math.max(0, MIN - (performance.now() - t0)));
     }
-    if (document.readyState === "complete") ready();
-    else {
-      window.addEventListener("load", ready, { once: true });
-      document.addEventListener("DOMContentLoaded", function () { setTimeout(ready, GRACE); }, { once: true });
+    // The first page of a visit: when everything is in, the sound choice once
+    // a visit, otherwise straight in.
+    whenOpen = function () {
+      if (gating) showGate();
+      else leave(0);
+    };
+    holdMin = MIN;
+    meterOn();
+    check();
+    // The page's own part of the percent: half when its HTML is in and its
+    // scripts have run, all of it when its stylesheets and pictures are too
+    // (a picture that hangs counts as in after a while).
+    function docHalf() { if (docF < 0.5) docF = 0.5; }
+    function docAll() { docF = 1; }
+    if (document.readyState === "complete") {
+      docAll();
+      ready();
+    } else {
+      window.addEventListener("load", function () { docAll(); ready(); }, { once: true });
+      document.addEventListener("DOMContentLoaded", function () {
+        docHalf();
+        setTimeout(ready, GRACE);
+        setTimeout(docAll, 10000);
+      }, { once: true });
+      if (document.readyState === "interactive") docHalf();
     }
     setTimeout(ready, MAX);
 
@@ -905,6 +1021,10 @@ const rgb2 = palette[1] ?? palette[0];
       trip++;
       away = false;
       leaving = true;
+      clearTimeout(checkTimer);
+      holding = false;
+      finishing = false;
+      opened = null;
       root.classList.remove("is-quick");
       root.classList.add("is-done");
       root.hidden = true;
@@ -924,17 +1044,27 @@ const rgb2 = palette[1] ?? palette[0];
       var load = e.loader;
       e.loader = function () {
         return Promise.resolve(load()).then(function () {
-          if (id === trip && e.newDocument && e.newDocument !== document) aim(e.newDocument);
+          if (id !== trip) return;
+          if (docF < 0.5) docF = 0.5;
+          if (e.newDocument && e.newDocument !== document) aim(e.newDocument);
         });
       };
     });
-    // The new page is in and its scripts have started: arrive, once the jump
-    // has had its moment.
+    // The new page replaces the old one: what the old page handed the loader
+    // no longer counts (its world is being taken down). The new page's own
+    // tasks start when its scripts run, on astro:page-load.
+    document.addEventListener("astro:after-swap", function () {
+      if (away) tasks = [];
+    });
+    // The new page is in and its scripts have started: arrive once the jump
+    // has had its moment and everything the page handed over is done.
     document.addEventListener("astro:page-load", function () {
       if (!away) return;
       try { sessionStorage.removeItem("warp-from"); } catch (e) {}
-      var id = trip;
-      setTimeout(function () { leave(id); }, Math.max(0, HOLD - (performance.now() - enteredAt)));
+      arrived = trip;
+      docF = 1;
+      lastTask = performance.now();
+      check();
     });
   })();
 </script>

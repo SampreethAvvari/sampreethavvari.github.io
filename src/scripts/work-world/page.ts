@@ -15,6 +15,7 @@
 
 import { navigate } from "astro:transitions/client";
 import { onPage } from "../lifecycle";
+import { warpTask } from "../warp-task";
 import { mountMovement, type Movement } from "./movement";
 import { emit } from "./math";
 import type { Panels } from "./panels";
@@ -633,6 +634,9 @@ onPage("work-world", (signal) => {
   };
 
   plainPanels(q);
+  // The site's loader stays up until the station is built (its shaders hold it too, gl-warm).
+  const built = warpTask(3);
+  signal.addEventListener("abort", () => built.done());
   // The code starts down the wire now; the world starts when there is a moment.
   if (!world) import("./engine").catch(() => {});
   const boot = () => {
@@ -643,7 +647,8 @@ onPage("work-world", (signal) => {
       .catch((err) => {
         console.warn(err);
         root.classList.add("is-flat");
-      });
+      })
+      .finally(() => built.done());
   };
   if (world && worldCanvas === canvas) boot();
   else if ("requestIdleCallback" in window) (window as Window & typeof globalThis).requestIdleCallback(boot, { timeout: 900 });

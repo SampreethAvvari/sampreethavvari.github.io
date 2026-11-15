@@ -1523,6 +1523,8 @@ export function buildSurface(o: { low: boolean; landing: Landing; cloudTex: Text
   // point, turning to face the camera, relit by the hour. A second pass writes
   // depth where he is solid, so dust behind him stays behind him.
   const bank = new PlateBank("/story/plates/manifest.json", low);
+  // The hand comes down now, while the site's loader is up, so it is whole when the story gets there.
+  bank.preload(["handR"]);
   const planeG = new PlaneGeometry(1, 1);
   const shared = {
     uShadow: { value: new Color() },

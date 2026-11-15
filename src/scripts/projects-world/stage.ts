@@ -15,6 +15,7 @@
 //   projects:open        { id }  a project is being opened.
 
 import { onPage } from "../lifecycle";
+import { warpTask } from "../warp-task";
 import { cardsBridge } from "./cards";
 import type { FrameInfo, Pick, System } from "./engine";
 
@@ -1027,11 +1028,14 @@ export function mountProjectsWorld() {
       },
       { signal },
     );
+    // The site's loader stays up until the system is built (its shaders hold it too, gl-warm).
+    const built = warpTask(3);
+    signal.addEventListener("abort", () => built.done());
     // The code starts down the wire now, so the wait for the scene is the wait
     // for the network and not for an idle moment first.
     const engine = import("./engine");
     const boot = () => {
-      if (destroyed) return;
+      if (destroyed) return built.done();
       engine
         .then(async ({ mountSystem }) => {
           if (destroyed) return;
@@ -1068,7 +1072,8 @@ export function mountProjectsWorld() {
           console.warn(err);
           // The GPU went while it was being built: build it again when it returns.
           if (gone) canvas.addEventListener("webglcontextrestored", boot, { once: true, signal });
-        });
+        })
+        .finally(() => built.done());
     };
     const idle = (window as Window & { requestIdleCallback?: (cb: () => void, o?: { timeout: number }) => number }).requestIdleCallback;
     if (idle) idle(boot, { timeout: 900 });

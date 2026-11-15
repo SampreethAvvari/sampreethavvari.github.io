@@ -25,6 +25,7 @@
 import { MAJOR, radiusOf, spreadOf } from "./mind-world/settle";
 import { Flat, mix, PLANET_SCALE, rgbOf, type FlatComet, type FlatNode, type Projected } from "./mind-world/flat";
 import { LabelAtlas } from "./mind-world/labels";
+import { warpTask } from "./warp-task";
 import type { World, WorldComet, WorldFrame, WorldLink, WorldShown } from "./mind-world/engine";
 
 interface RawLink { label: string; url: string }
@@ -1988,6 +1989,9 @@ export function mountMind(): (() => void) | undefined {
     }
   };
   if (!flatSky && glCanvas) {
+    // The site's loader stays up until the world is built (its shaders hold it too, gl-warm).
+    const built = warpTask(3);
+    signal.addEventListener("abort", () => built.done());
     // The code starts down the wire now, so the wait is the wire and not an idle moment first.
     const engine = import("./mind-world/engine");
     const boot = () => {
@@ -2027,7 +2031,8 @@ export function mountMind(): (() => void) | undefined {
           if (signal.aborted) return;
           toPlain();
           glCanvas.addEventListener("webglcontextrestored", boot, { once: true, signal });
-        });
+        })
+        .finally(() => built.done());
     };
     const rest = (window as Window & { requestIdleCallback?: (cb: () => void, o?: { timeout: number }) => number }).requestIdleCallback;
     if (rest) rest(boot, { timeout: 500 });

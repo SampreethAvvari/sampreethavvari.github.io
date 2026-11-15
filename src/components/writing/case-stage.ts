@@ -18,6 +18,7 @@
 
 import { layoutBox } from "../../scripts/layout-box";
 import { onPage } from "../../scripts/lifecycle";
+import { warpTask } from "../../scripts/warp-task";
 import type { GLHandle } from "./case-gl";
 
 const STAGE = "(min-width: 900px) and (prefers-reduced-motion: no-preference)";
@@ -409,13 +410,18 @@ function stage(root: HTMLElement): () => void {
   };
   const glCanvas = root.querySelector<HTMLCanvasElement>(".cx-gl");
   if (glCanvas) {
+    // The site's loader stays up until the 3D art is showing, or the page has gone flat.
+    const built = warpTask(2);
+    signal.addEventListener("abort", () => built.done());
+    const shown = () => { built.done(); showGL(); };
+    const gone = () => { built.done(); flat(); };
     import("./case-gl")
       .then(({ mountCaseGL }) => {
         if (signal.aborted) return;
-        gl = mountCaseGL(root, glCanvas, heroes, state, showGL, flat);
-        if (!gl) flat();
+        gl = mountCaseGL(root, glCanvas, heroes, state, shown, gone);
+        if (!gl) gone();
       })
-      .catch(flat);
+      .catch(gone);
   } else {
     flat();
   }

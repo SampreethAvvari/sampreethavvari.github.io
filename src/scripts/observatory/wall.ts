@@ -18,6 +18,7 @@
 //   architecture:flow   { intensity: 0..1 }                         how fast the wall moves
 
 import { navigate } from "astro:transitions/client";
+import { warpTask } from "../warp-task";
 
 type Card = {
   slug: string;
@@ -278,13 +279,18 @@ export function startWall(signal: AbortSignal): void | (() => void) {
   const gl = canvas?.getContext("webgl2", glOptions(matchMedia("(max-width: 767px), (pointer: coarse)").matches || ((navigator as Navigator & { deviceMemory?: number }).deviceMemory ?? 8) < 4)) as WebGL2RenderingContext | null | undefined;
   const parallel = gl?.getExtension("KHR_parallel_shader_compile") as { COMPLETION_STATUS_KHR: number } | null | undefined;
   if (!gl || !parallel) return mountWall(signal);
+  // The site's loader stays up until the wall's programs are linked and it has started.
+  const task = warpTask(2);
+  signal.addEventListener("abort", () => task.done());
   const built = { wall: build(gl, VS, FS), sky: build(gl, BG_VS, BG_FS) };
   let stop: void | (() => void);
   const check = () => {
     if (signal.aborted) return;
     const done = [built.wall, built.sky].every((b) => gl.isContextLost() || gl.getProgramParameter(b.prog, parallel.COMPLETION_STATUS_KHR));
-    if (done) stop = mountWall(signal, built);
-    else requestAnimationFrame(check);
+    if (done) {
+      stop = mountWall(signal, built);
+      task.done();
+    } else requestAnimationFrame(check);
   };
   requestAnimationFrame(check);
   return () => stop?.();

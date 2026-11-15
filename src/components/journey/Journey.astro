@@ -612,6 +612,7 @@ const anchorAt = (i: number) => yOf(restAt(i));
 
 <script>
   import { arriveAt, inJumpGap, pOf, restAt, RESTS, SCENE, settleAt, TOTAL_SCREENS, travelEnd, worldAt, yOf } from "../../scripts/journey/plan";
+  import { warpTask } from "../../scripts/warp-task";
   type Chapter = { id: string; color: string; scene: string | null };
   type Journey = { setScroll(p: number, v: number): void; setPointer(x: number, y: number): void; setDirection(d: number): void; interact(kind: "hover" | "press" | "drag" | "release", x: number, y: number): void; setPaused(p: boolean): void; destroy(): void };
   type Ending = { setScene(id: string): void; setProgress(p: number): void; setPaused(b: boolean): void; destroy(): void; duration?(id: string): number; ready?(id: string): boolean };
@@ -1032,8 +1033,14 @@ const anchorAt = (i: number) => yOf(restAt(i));
     // a long stop before its words show, and the flight's own context answers moments later:
     // if that one fails, the catch below leaves the painted sky.
     if (canvas && loadEngine && "WebGL2RenderingContext" in window) {
+      // The site's loader stays up until the flight has drawn its first frame
+      // (its shaders linking and its hidden pieces warming hold it too, gl-warm).
+      const flight = warpTask(3);
+      canvas.addEventListener("journeyready", () => flight.done(), { once: true, ...sig });
+      visit.signal.addEventListener("abort", () => flight.done());
       // The code starts down the wire now; the flight starts when there is a moment.
       const code = loadEngine();
+      code.then(() => flight.progress(0.35), () => flight.done());
       const boot = () => code.then(async (m) => {
         if (visit.signal.aborted) return; // left the page while it loaded
         // the ship reports where it is on screen; the words step aside if it drifts into them
@@ -1056,6 +1063,7 @@ const anchorAt = (i: number) => yOf(restAt(i));
         };
         const mounted = (await m.mountJourney(canvas, { chapters, quality: low ? "low" : "high", reducedMotion: reduced, onShip })) as Journey;
         if (visit.signal.aborted) { mounted.destroy(); return; }
+        flight.progress(0.7);
         journey = mounted;
         if (typeof m.landed === "function") landed = m.landed;
         const plan = m.CHAPTER_FRAMING as Framing[] | undefined;
@@ -1073,10 +1081,12 @@ const anchorAt = (i: number) => yOf(restAt(i));
         document.addEventListener("visibilitychange", rest, sig);
         // A phone can take the GPU back at any time: the painted sky holds the
         // screen and the words and the scroll carry on until it comes back.
-        canvas.addEventListener("webglcontextlost", () => root.classList.remove("is-3d"), sig);
+        canvas.addEventListener("webglcontextlost", () => { root.classList.remove("is-3d"); flight.done(); }, sig);
+        if (canvas.getContext("webgl2")?.isContextLost()) flight.done();
         canvas.addEventListener("webglcontextrestored", () => root.classList.add("is-3d"), sig);
       }).catch(() => {
         // The painted sky stays. If the GPU went while this was being built, build it again when it returns.
+        flight.done();
         if (canvas.getContext("webgl2")?.isContextLost()) canvas.addEventListener("webglcontextrestored", boot, { once: true, ...sig });
       });
       if ("requestIdleCallback" in window) (window as any).requestIdleCallback(boot, { timeout: 1500 });
@@ -1107,22 +1117,32 @@ const anchorAt = (i: number) => yOf(restAt(i));
       sceneRaf = requestAnimationFrame(tick);
     }
 
-    // ---- the filmed scenes' player: loads when the planet comes near
+    // ---- the filmed scenes' player. It starts with the page and fetches every frame
+    // of every scene under the site's loader, so the planet never waits on the network.
     const endCanvas = root.querySelector<HTMLCanvasElement>(".journey-ending");
     const endings = import.meta.glob("../../scripts/journey/ending.ts");
     const loadEnding = Object.values(endings)[0] as undefined | (() => Promise<any>);
     let endingAsked = false;
+    // Only when a chapter has a filmed scene (none does today, and the build leaves the frames out).
+    const film = endCanvas && loadEnding && firstScene >= 0 ? warpTask(4) : null;
+    visit.signal.addEventListener("abort", () => film?.done());
+    const filmLoad = (done: number, total: number) => {
+      if (total <= 0 || done >= total) film?.done();
+      else film?.progress(done / total);
+    };
     function bootEnding() {
       if (endingAsked || !endCanvas || !loadEnding) return;
       endingAsked = true;
       loadEnding().then((m) => {
         if (visit.signal.aborted) return;
-        player = m.mountEnding(endCanvas, { manifestUrl: "/story/manifest.json", phone: low }) as Ending;
+        player = m.mountEnding(endCanvas, { manifestUrl: "/story/manifest.json", phone: low, eager: true, onLoad: filmLoad }) as Ending;
         root.classList.add("has-ending");
-        // if a filmed chapter is already showing, start it now
+        // if a filmed chapter is already showing, start it now; otherwise it rests until one does
         if (active >= 0 && chapters[active].scene) { const i = active; active = -1; show(i); }
-      }).catch(() => { /* no film yet: the landing shot holds */ });
+        else player.setPaused(true);
+      }).catch(() => { film?.done(); /* no film yet: the landing shot holds */ });
     }
+    if (firstScene >= 0) bootEnding();
 
     // ---- leaving the page: stop the scene, the film and every listener added above
     document.addEventListener("astro:before-swap", () => {

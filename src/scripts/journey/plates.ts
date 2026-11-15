@@ -4,6 +4,7 @@
 // are fetched per chapter, so nothing loads until the story gets close.
 
 import { LinearFilter, SRGBColorSpace, Texture } from "three";
+import { warpTask, type WarpTask } from "../warp-task";
 
 export interface PlateMeta {
   id: string;
@@ -66,6 +67,7 @@ export class PlateBank {
   private dead = false;
   private asked = false;
   private ready_ = false;
+  private held: { ids: string[]; task: WarpTask } | null = null;
 
   constructor(url: string, phone: boolean) {
     this.base = new URL(url, location.href);
@@ -90,11 +92,45 @@ export class PlateBank {
           this.streams.set(meta.id, { meta, blobs: new Array(meta.frames).fill(null), state: new Uint8Array(meta.frames), queue: order(meta.frames), tex: null, shown: -1 });
         }
         this.ready_ = this.streams.size > 0;
+        if (this.held) this.prefer(this.held.ids);
         this.pump();
+        this.checkHeld();
       })
       .catch(() => {
         /* no plates: the world still lives without him */
+        this.releaseHeld();
       });
+  }
+
+  /** Fetch these plates whole now, holding the site's loader until they are in. */
+  preload(ids: string[]) {
+    this.releaseHeld();
+    this.held = { ids, task: warpTask(0.5) };
+    this.begin();
+    if (this.ready_) {
+      this.prefer(ids);
+      this.checkHeld();
+    }
+  }
+
+  private checkHeld() {
+    const h = this.held;
+    if (!h || !this.ready_) return;
+    let done = 0;
+    let total = 0;
+    for (const id of h.ids) {
+      const s = this.streams.get(id);
+      if (!s) continue;
+      total += s.meta.frames;
+      for (let i = 0; i < s.meta.frames; i++) if (s.state[i] >= 2) done++;
+    }
+    if (done >= total) this.releaseHeld();
+    else h.task.progress(done / total);
+  }
+
+  private releaseHeld() {
+    this.held?.task.done();
+    this.held = null;
   }
 
   meta(id: string) {
@@ -156,6 +192,7 @@ export class PlateBank {
       .finally(() => {
         this.inflight--;
         this.pump();
+        this.checkHeld();
       });
   }
 
@@ -277,6 +314,7 @@ export class PlateBank {
 
   destroy() {
     this.dead = true;
+    this.releaseHeld();
     this.aborter.abort();
     for (const b of this.decoded.values()) b.close();
     this.decoded.clear();

@@ -25,6 +25,10 @@ export interface EndingOptions {
   manifestUrl: string;
   /** Small or touch screen: lighter frames, lower pixel ratio. */
   phone: boolean;
+  /** Fetch every frame at full speed, paused or not (the page is under its loader). */
+  eager?: boolean;
+  /** After each frame arrives: how many of the frames it will fetch are in. A total of 0 means there is nothing to fetch. */
+  onLoad?: (done: number, total: number) => void;
 }
 
 export interface Ending {
@@ -75,6 +79,8 @@ interface SceneState {
   /** 0 none, 1 loading, 2 ready, 3 failed */
   state: Uint8Array;
   queue: number[];
+  /** Every frame it means to fetch (the whole scene, or every other one to save data). */
+  plan: number[];
 }
 
 const clamp = (v: number, a: number, b: number) => (v < a ? a : v > b ? b : v);
@@ -157,7 +163,25 @@ export function mountEnding(canvas: HTMLCanvasElement, opts: EndingOptions): End
   const grain = makeGrain(opts.phone ? 128 : 160, 4);
   const patterns = ctx ? grain.map((t) => ctx.createPattern(t, "repeat")) : [];
   const maxDecoded = opts.phone ? 10 : 12;
-  const conc = () => (paused ? 2 : opts.phone ? 4 : 6);
+  const conc = () => (opts.eager ? (opts.phone ? 6 : 10) : paused ? 2 : opts.phone ? 4 : 6);
+  let reported = -1;
+  /** Tell the page how many of the frames it will fetch are in. */
+  function report(force = false) {
+    if (!opts.onLoad || destroyed) return;
+    if (!setName || !ext) {
+      if (force) opts.onLoad(0, 0);
+      return;
+    }
+    let done = 0;
+    let total = 0;
+    for (const s of scenes.values()) {
+      total += s.plan.length;
+      for (const i of s.plan) if (s.state[i] >= 2) done++;
+    }
+    if (done === reported && !force) return;
+    reported = done;
+    opts.onLoad(done, total);
+  }
   const keyOf = (s: SceneId, i: number) => `${s}:${i}`;
 
   const scene = () => (current ? scenes.get(current) || null : null);
@@ -215,6 +239,7 @@ export function mountEnding(canvas: HTMLCanvasElement, opts: EndingOptions): End
       .finally(() => {
         if (gen !== generation) return;
         inflight--;
+        report();
         pump();
       });
   }
@@ -295,7 +320,9 @@ export function mountEnding(canvas: HTMLCanvasElement, opts: EndingOptions): End
       s.blobs = new Array(s.info.frames).fill(null);
       s.state = new Uint8Array(s.info.frames);
       s.queue = fetchOrder(s.info.frames, lite);
+      s.plan = s.queue.slice();
     }
+    reported = -1;
   }
 
   function useSet(name: "desktop" | "phone") {
@@ -318,7 +345,7 @@ export function mountEnding(canvas: HTMLCanvasElement, opts: EndingOptions): End
     const tryAt = (k: number) => {
       if (destroyed) return;
       if (gen !== generation) { probing = false; probeFormat(); return; }
-      if (k >= formats.length) { probing = false; return; }
+      if (k >= formats.length) { probing = false; report(true); return; }
       ext = formats[k];
       fetch(frameUrl(s, 0), { signal: aborter.signal })
         .then((r) => (r.ok ? r.blob() : Promise.reject(new Error(String(r.status)))))
@@ -331,6 +358,7 @@ export function mountEnding(canvas: HTMLCanvasElement, opts: EndingOptions): End
           decoded.set(keyOf(s.info.id, 0), bmp);
           dirty = true;
           wake();
+          report(true);
           pump();
         })
         .catch(() => { ext = ""; tryAt(k + 1); });
@@ -578,10 +606,12 @@ export function mountEnding(canvas: HTMLCanvasElement, opts: EndingOptions): End
       for (const info of m.scenes || []) {
         if (!info || !info.id || !(info.frames > 0) || !info.desktop || !info.phone) continue;
         const n = info.frames | 0;
-        scenes.set(info.id, { info: { ...info, frames: n }, blobs: new Array(n).fill(null), state: new Uint8Array(n), queue: fetchOrder(n, lite) });
+        const queue = fetchOrder(n, lite);
+        scenes.set(info.id, { info: { ...info, frames: n }, blobs: new Array(n).fill(null), state: new Uint8Array(n), queue, plan: queue.slice() });
         order.push(info.id);
       }
-      if (!scenes.size) return; // no film yet: ready() stays false and the page keeps its fallback
+      // no film yet: ready() stays false and the page keeps its fallback
+      if (!scenes.size) { report(true); return; }
       if (wantedScene && scenes.has(wantedScene)) current = wantedScene;
       resize();
       if (current) {
@@ -590,7 +620,7 @@ export function mountEnding(canvas: HTMLCanvasElement, opts: EndingOptions): End
         if (keep) api.setProgress(keep);
       }
     })
-    .catch(() => { /* no film: ready() stays false */ });
+    .catch(() => { report(true); /* no film: ready() stays false */ });
 
   const api: Ending = {
     setScene(id: SceneId) {

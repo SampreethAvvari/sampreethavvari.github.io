@@ -5,8 +5,13 @@ name = "sampreeth-space"
 compatibility_date = "2026-05-01"
 workers_dev = false
 routes = [{ pattern = "space.sampreethavvari.com", custom_domain = true }]
+# Sends http:// to https://. It runs only for page addresses (no dot in the path);
+# every file is served without it.
+main = "space-worker.js"
 
 [assets]
 directory = "./dist"
+binding = "ASSETS"
 not_found_handling = "404-page"
 html_handling = "auto-trailing-slash"
+run_worker_first = ["/*", "!/*.*"]

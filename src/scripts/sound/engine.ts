@@ -50,6 +50,7 @@
 // This file stays small: the instruments, the movements and everything that
 // answers the visitor (touch.ts) load on first use.
 import { movementFor } from "./ids";
+import { warpWait } from "../warp-task";
 import type { Movement, Studio, Touch, Flight } from "./suite";
 
 type Suite = typeof import("./suite");
@@ -227,12 +228,15 @@ export function mountSound() {
   announce();
   window.addEventListener("sound:set", (e) => setSound(!!(e as CustomEvent).detail));
 
+  // The loader is about to ask about sound, or sound was on last time: the
+  // suite comes down under the loader, so the score starts on the click.
+  let asking = false;
+  try { asking = !sessionStorage.getItem("sound-asked"); } catch { /* private mode */ }
+  if (on || asking) void warpWait(loadSuite(), 0.5).catch(() => {});
+
   // A choice remembered from an earlier visit: browsers only let sound start
-  // from a tap or a key, so wait for the first one. The suite loads now.
+  // from a tap or a key, so wait for the first one.
   if (on) {
-    const rest = (window as Window & { requestIdleCallback?: (cb: () => void, o?: { timeout: number }) => number }).requestIdleCallback;
-    if (rest) rest(() => void loadSuite(), { timeout: 4000 });
-    else setTimeout(() => void loadSuite(), 1500);
     const kinds = ["pointerdown", "keydown", "touchend"];
     const wake = () => {
       if (!on) return kinds.forEach((k) => removeEventListener(k, wake, true));

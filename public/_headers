@@ -3,6 +3,11 @@
 # keeps the Pages default: public, max-age=0, must-revalidate, with an ETag. A visitor
 # always sees the latest deploy and pays one round trip for a 304.
 
+# Always https: a browser that has seen this once goes to https by itself for a year,
+# even when someone types http:// (space-worker.js redirects the first visit).
+/*
+  Strict-Transport-Security: max-age=31536000
+
 # The build puts a hash of the contents in these names, so a name never changes meaning.
 /_astro/*
   Cache-Control: public, max-age=31536000, immutable

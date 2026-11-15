@@ -9,6 +9,7 @@
 //   resume:hover       { kind, id, note }                   note: a stable small integer
 
 import { initAmbient } from "../spatial";
+import { warpTask } from "../warp-task";
 import { mountMotion } from "./motion";
 import { STOPS, type WorldData } from "./types";
 import type { World } from "./world";
@@ -486,9 +487,12 @@ export function startResumeWorld(visit: AbortSignal): void | (() => void) {
   // ------------------------------------------------------------ the 3D world
   // Lazy: three and the world arrive after the first paint. The code starts down
   // the wire now; the world starts when there is a moment.
+  // The site's loader stays up until the sheets are built (their shaders hold it too, gl-warm).
+  const built = warpTask(3);
+  signal.addEventListener("abort", () => built.done());
   const code = import("./world");
   const boot = () => {
-    if (signal.aborted) return;
+    if (signal.aborted) return built.done();
     code
       .then(async (m) => {
         if (signal.aborted) return;
@@ -541,7 +545,8 @@ export function startResumeWorld(visit: AbortSignal): void | (() => void) {
       .catch((err) => {
         console.warn("resume world did not start", err);
         toDocument();
-      });
+      })
+      .finally(() => built.done());
   };
   const ric = (window as Window & { requestIdleCallback?: (cb: () => void, o?: { timeout: number }) => number }).requestIdleCallback;
   if (ric) ric(boot, { timeout: 500 });

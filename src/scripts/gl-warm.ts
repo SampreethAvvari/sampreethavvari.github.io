@@ -6,13 +6,22 @@
 // between steps, and hidden things are drawn once ahead of time, one at a time,
 // into a single unseen pixel.
 
+// While the site's loader is up, each of these holds it (warp-task.ts), so a
+// world opens with its pictures in, its shaders linked and its hidden pieces
+// already drawn once.
+
 import { Texture, TextureLoader, WebGLRenderTarget, type Camera, type Light, type Mesh, type Object3D, type ShaderMaterial, type WebGLRenderer } from "three";
+import { warpTask, warpWait } from "./warp-task";
 
 /**
  * A picture as a texture, decoded away from the page's thread. A browser that
  * cannot do that gets the ordinary loader, which decodes when it first draws.
  */
-export async function decodedTexture(url: string): Promise<Texture> {
+export function decodedTexture(url: string): Promise<Texture> {
+  return warpWait(decodeTexture(url), 0.5);
+}
+
+async function decodeTexture(url: string): Promise<Texture> {
   try {
     const res = await fetch(url);
     if (!res.ok) throw new Error(String(res.status));
@@ -42,6 +51,10 @@ export function quietShaderChecks(renderer: WebGLRenderer) {
  * answer at once, and copes with the world being taken down while it waits.
  */
 export function prelink(renderer: WebGLRenderer, object: Object3D, camera: Camera, target: WebGLRenderTarget | null): Promise<void> {
+  return warpWait(link(renderer, object, camera, target), 1);
+}
+
+function link(renderer: WebGLRenderer, object: Object3D, camera: Camera, target: WebGLRenderTarget | null): Promise<void> {
   const was = renderer.getRenderTarget();
   renderer.setRenderTarget(target);
   const waiting = renderer.compile(object, camera);
@@ -93,6 +106,11 @@ export function warmAhead(renderer: WebGLRenderer, scene: Object3D, camera: Came
   let stopped = false;
   let next = 0;
   let cancel: (() => void) | null = null;
+  // Under the loader this is the last of a world's setup: it holds the loader
+  // and, with nobody able to scroll yet, does as much as each quiet moment fits.
+  const total = jobs.length + textures.length;
+  const task = total ? warpTask(2) : null;
+  const held = () => !!task && !!(window as Window & { __warpHeld?: () => boolean }).__warpHeld?.();
   const pixel = new WebGLRenderTarget(1, 1, { depthBuffer: true, stencilBuffer: false });
   const lights: Light[] = [];
   scene.traverse((o) => {
@@ -144,24 +162,31 @@ export function warmAhead(renderer: WebGLRenderer, scene: Object3D, camera: Came
   const step = () => {
     cancel = null;
     if (stopped) return;
-    const job = jobs[next++];
-    const tex = job ? null : textures[next - 1 - jobs.length];
-    if (!job && !tex) {
-      pixel.dispose();
-      return;
-    }
-    try {
-      if (job) drawOne(job);
-      else if (tex) renderer.initTexture(tex);
-    } catch {
-      /* it will set up when it is first shown instead */
-    }
-    cancel = idle(step);
+    const t0 = performance.now();
+    // One per quiet moment once the page is open; under the loader, a batch.
+    do {
+      const job = jobs[next++];
+      const tex = job ? null : textures[next - 1 - jobs.length];
+      if (!job && !tex) {
+        pixel.dispose();
+        task?.done();
+        return;
+      }
+      try {
+        if (job) drawOne(job);
+        else if (tex) renderer.initTexture(tex);
+      } catch {
+        /* it will set up when it is first shown instead */
+      }
+      task?.progress(next / total);
+    } while (held() && performance.now() - t0 < 12);
+    cancel = held() ? idle(step, 50) : idle(step);
   };
-  cancel = idle(step, 600);
+  cancel = held() ? idle(step, 50) : idle(step, 600);
   return () => {
     stopped = true;
     cancel?.();
     pixel.dispose();
+    task?.done();
   };
 }
