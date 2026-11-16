@@ -247,14 +247,45 @@ const pageComets = hasOwnComets
       // own script fails, or has not run after a long wait, the pinned stages
       // would show their first screen and nothing else, so they go back to plain
       // readable pages, the same ones browsers without WebGL get.
+      //
+      // A page a browser kept from before the last deploy names script files that are
+      // gone. Before going plain, the page asks for itself again: if the site has moved
+      // on, it loads once more, fresh. On the space site, why a page went plain (and any
+      // script error) goes to the Worker's log, so a phone nobody can debug still says.
+      // The wait matches the loader's own limit: under the loader a slow page is still
+      // covered, and its scripts may yet come.
       (function () {
         if (window.__pageWatch) return;
         window.__pageWatch = true;
-        var WAIT = 12000;
+        var WAIT = 40000;
         var timer = 0;
         var root = document.documentElement;
-        function flat() {
+        var told = 0;
+        function tell(why) {
+          try {
+            if (told++ > 4 || location.hostname.indexOf("space.") !== 0 || !navigator.sendBeacon) return;
+            navigator.sendBeacon("/__diag", JSON.stringify({ why: String(why).slice(0, 400), path: location.pathname, ua: navigator.userAgent, t: Math.round(performance.now()) }));
+          } catch (e) {}
+        }
+        function stale(why) {
+          var mine = [].map.call(document.querySelectorAll('script[type="module"][src]'), function (s) { return s.getAttribute("src"); });
+          var key = "stale-reload:" + location.pathname, last = 0;
+          try { last = +sessionStorage.getItem(key) || 0; } catch (e) { last = Date.now(); }
+          if (!mine.length || Date.now() - last < 60000) return flat(why);
+          fetch(location.href, { cache: "no-store", credentials: "same-origin" })
+            .then(function (r) { return r.ok ? r.text() : ""; })
+            .then(function (html) {
+              var moved = !!html && mine.some(function (src) { return html.indexOf(src) < 0; });
+              if (!moved) return flat(why);
+              // and the fresh copy opens like a first visit, sound choice included
+              try { sessionStorage.setItem(key, String(Date.now())); sessionStorage.removeItem("warp-seen"); } catch (e) {}
+              tell("old copy of the page, loading it fresh: " + why);
+              location.reload();
+            }, function () { flat(why); });
+        }
+        function flat(why) {
           clearTimeout(timer);
+          if (why) tell("plain page: " + why);
           root.classList.add("no-stage");
           var pw = document.querySelector("[data-pw]");
           var rw = document.querySelector("[data-rw]");
@@ -271,18 +302,20 @@ const pageComets = hasOwnComets
         function watch() {
           clearTimeout(timer);
           root.classList.remove("no-stage");
-          timer = setTimeout(flat, WAIT);
+          timer = setTimeout(function () { flat("no script after " + WAIT / 1000 + " s"); }, WAIT);
         }
         function arrived() {
           clearTimeout(timer);
         }
         window.addEventListener("error", function (e) {
           var el = e.target;
-          if (el && el.tagName === "SCRIPT" && el.type === "module") flat();
+          if (el && el.tagName === "SCRIPT" && el.type === "module") stale("script did not load " + (el.getAttribute("src") || ""));
+          else if (!el || !el.tagName) tell("error: " + (e.message || "") + " @ " + (e.filename || "").replace(location.origin, "") + ":" + (e.lineno || 0) + ":" + (e.colno || 0));
         }, true);
         window.addEventListener("unhandledrejection", function (e) {
           var why = String((e.reason && e.reason.message) || e.reason || "");
           if (/dynamically imported module|importing a module script failed|unable to preload/i.test(why)) e.preventDefault();
+          tell("rejection: " + why);
         });
         watch();
         document.addEventListener("DOMContentLoaded", arrived, { once: true });

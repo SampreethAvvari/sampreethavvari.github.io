@@ -7,9 +7,17 @@
 // http:// gets a permanent redirect to the same address on https before any
 // page goes out; the Strict-Transport-Security header (public/_headers) then
 // keeps their browser on https by itself.
+//
+// It also takes /__diag: a page that had to fall back to its plain layout, or hit
+// a script error, says why (BaseLayout). The note goes to this Worker's log
+// (wrangler tail), with the browser's own description and no address.
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
+    if (url.pathname === "/__diag") {
+      if (request.method === "POST") console.log("diag " + (await request.text()).slice(0, 2000));
+      return new Response(null, { status: 204 });
+    }
     if (url.protocol === "http:") {
       url.protocol = "https:";
       return Response.redirect(url.toString(), 301);
