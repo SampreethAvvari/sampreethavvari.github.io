@@ -142,6 +142,22 @@ const cards = strip.map((p) => {
   };
 });
 
+// Experience under About: current roles as two wide cards, earlier ones in a
+// row of three. Logos are quiet monochrome marks, as on /resume.
+const XP_LIGHT = new Set(["/logos/shure.svg", "/logos/qlaws-light.svg"]);
+const xp = (info.about.experience as any[]).map((e) => ({
+  title: e.title as string,
+  date: e.date as string,
+  org: String(e.location).split(",")[0],
+  logo: e.logo as string,
+  logoCls: XP_LIGHT.has(e.logo) ? "xp-logo is-light" : "xp-logo",
+  summary: (e.summary ?? "") as string,
+  tags: (e.tags ?? []) as string[],
+  now: /present/i.test(e.date),
+}));
+const xpNow = xp.filter((e) => e.now);
+const xpPast = xp.filter((e) => !e.now);
+
 const disciplineLines: Record<string, string> = {
   aie: "RAG, agents, evals and guardrails. Systems that answer honestly or not at all.",
   fde: "Sitting with the people who have the problem, then shipping what they needed.",
@@ -161,7 +177,7 @@ const filmCredits = [
 const faq = [
   {
     q: "Who is Sampreeth Avvari?",
-    a: "A forward deployed engineer in New York. Sampreeth builds and runs the software at Hybridge Implants, a dental implant group, and writes and directs films as Sampreeth Sharma.",
+    a: "A forward deployed engineer in New York. Sampreeth builds and runs the software at Hybridge Implants, a dental implant group, and is co-CTO at QLaws, a legal AI company, where he leads security and AI and ML engineering. He also writes and directs films as Sampreeth Sharma.",
   },
   {
     q: "What has Sampreeth built at Hybridge Implants?",
@@ -223,7 +239,7 @@ const sky = Array.from({ length: 6 }, (_, i) => ({
           <span class="t-tail">I ship in the room.</span>
         </h1>
         <p class="t-lede hero-lede">
-          The only engineer at a three office dental implant practice. I find the problem next to the people who have it, build the fix, and run it in production. I also make films.
+          The only engineer at a three office dental implant practice, and co-CTO at QLaws, a legal AI company. I find the problem next to the people who have it, build the fix, and run it in production. I also make films.
         </p>
         <ul class="hero-proof" aria-label="In numbers">
           {heroProof.map((p) => (
@@ -520,6 +536,43 @@ const sky = Array.from({ length: 6 }, (_, i) => ({
       </div>
       <div class="surface surface-pad about-timeline" data-reveal>
         <CareerTimeline />
+      </div>
+    </div>
+
+    <div class="wrap on-top xp" id="experience">
+      <div class="xp-head" data-reveal>
+        <h3 class="t-h3">Experience</h3>
+        <a href="/resume#experience" class="tlink">Full resume <Icon name="arrow-right" size={14} /></a>
+      </div>
+      <div class="xp-now">
+        {xpNow.map((x) => (
+          <article class="surface surface-pad xp-card" data-reveal>
+            <div class="xp-top">
+              <span class={x.logoCls}><img src={x.logo} alt={x.org} loading="lazy" decoding="async" /></span>
+              <span class="badge badge-live">Now</span>
+            </div>
+            <h4 class="t-h4 xp-title">{x.title}</h4>
+            <p class="t-meta xp-meta">{x.org} · {x.date}</p>
+            <p class="t-small xp-sum">{x.summary}</p>
+            {x.tags.length > 0 && (
+              <ul class="xp-tags" aria-label="Focus">
+                {x.tags.map((t) => <li class="badge">{t}</li>)}
+              </ul>
+            )}
+          </article>
+        ))}
+      </div>
+      <div class="xp-past">
+        {xpPast.map((x) => (
+          <article class="surface surface-pad xp-card" data-reveal>
+            <div class="xp-top">
+              <span class={x.logoCls}><img src={x.logo} alt={x.org} loading="lazy" decoding="async" /></span>
+            </div>
+            <h4 class="t-h4 xp-title">{x.title}</h4>
+            <p class="t-meta xp-meta">{x.org} · {x.date}</p>
+            <p class="t-small xp-sum">{x.summary}</p>
+          </article>
+        ))}
       </div>
     </div>
   </section>
@@ -1222,6 +1275,40 @@ const sky = Array.from({ length: 6 }, (_, i) => ({
   @media (min-width: 1024px) { .about-grid { grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: 56px; } }
   .about-text { max-width: 36rem; font-size: 1rem; }
   .about-timeline { overflow: hidden; }
+
+  /* About: Experience. Two current roles side by side, three earlier ones in
+     a row below, every card in a row the same height. */
+  .xp { margin-top: 72px; }
+  .xp-head { display: flex; align-items: baseline; justify-content: space-between; gap: 16px; margin-bottom: 20px; }
+  .xp-now, .xp-past { display: grid; gap: 16px; grid-template-columns: 1fr; }
+  .xp-past { margin-top: 16px; }
+  @media (min-width: 768px) {
+    .xp-now { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; }
+    .xp-past { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px; margin-top: 20px; }
+  }
+  .xp-card { display: flex; flex-direction: column; }
+  .xp-top { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 28px; }
+  .xp-logo { display: inline-flex; align-items: center; height: 26px; }
+  .xp-past .xp-logo { height: 20px; }
+  .xp-logo img {
+    display: block;
+    height: 100%;
+    width: auto;
+    max-width: 140px;
+    object-fit: contain;
+    object-position: left center;
+    filter: grayscale(1) invert(1) contrast(1.15);
+    mix-blend-mode: screen;
+    opacity: 0.85;
+  }
+  .xp-logo.is-light img { filter: grayscale(1) brightness(1.1); mix-blend-mode: normal; opacity: 0.9; }
+  /* The QLaws wordmark has no tagline under it, so it sits a little smaller
+     to carry the same weight as the Hybridge mark beside it. */
+  .xp-logo img[src*="qlaws"] { height: 84%; }
+  .xp-title { margin-top: 20px; }
+  .xp-meta { margin-top: 6px; }
+  .xp-sum { margin-top: 12px; }
+  .xp-tags { display: flex; flex-wrap: wrap; gap: 6px; margin: auto 0 0; padding: 18px 0 0; list-style: none; }
 </style>
 
 <script>

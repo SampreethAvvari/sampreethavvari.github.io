@@ -50,7 +50,7 @@ const md = (s: string) =>
 // Logos show as quiet monochrome marks, so no brand colour competes with the
 // tabs. Most are drawn for a light page and get inverted; Shure's is already
 // a light mark made for dark backgrounds.
-const DARK_READY = new Set(["/logos/shure.svg"]);
+const DARK_READY = new Set(["/logos/shure.svg", "/logos/qlaws-light.svg"]);
 const logoClass = (src: string) => (DARK_READY.has(src) ? "res-logo is-light" : "res-logo");
 
 // "Sept 2025 - Present" reads as "Sept 2025 to present".

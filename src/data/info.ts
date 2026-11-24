@@ -9,7 +9,7 @@ export const info = {
 
   about: {
     description:
-      "I'm an AI engineer who likes building things right next to the people who'll actually use them. After my MS at NYU, I joined a dental implant company as its only engineer, and the systems I ship there are used every day by doctors, coordinators, finance and the lab. I also make movies, which is where I learned to work with people who don't write code.",
+      "I'm an AI engineer who likes building things right next to the people who'll actually use them. After my MS at NYU, I joined a dental implant company as its only engineer, and the systems I ship there are used every day by doctors, coordinators, finance and the lab. Since November 2026 I've been co-CTO at QLaws, a legal AI company, leading security and AI and ML engineering. I also make movies, which is where I learned to work with people who don't write code.",
     // Everything on one axis for the About timeline. start/end are "YYYY-MM";
     // "present" pins to today. short is the label inside the bar.
     timeline: [
@@ -116,6 +116,21 @@ export const info = {
           { label: "Platform map", href: "/posts/platform" },
         ],
       },
+      {
+        title: "Co-CTO",
+        short: "Co-CTO · QLaws",
+        org: "QLaws",
+        location: "New York",
+        date: "Nov 2026 to present",
+        start: "2026-11",
+        end: "present",
+        logo: "/logos/qlaws-q.svg",
+        accent: "#FE6516",
+        rgb: "254,101,22",
+        kind: "work",
+        blurb:
+          "Co-CTO at a legal AI company. I lead security and the AI and ML engineering: templates from any firm document, deal terms extracted with a checked quote behind every value, drafting with an evaluator loop, and each firm's data scoped to that firm.",
+      },
     ],
     education: [
       {
@@ -188,13 +203,31 @@ export const info = {
       position?: string;
       tag?: "Grad" | "Shure" | "Hybridge";
     }>,
+    // summary and tags feed the Experience cards on the landing page;
+    // highlights feed /resume.
     experience: [
+      {
+        title: "Co-CTO",
+        date: "Nov 2026 to present",
+        location: "QLaws, New York",
+        logo: "/logos/qlaws-light.svg",
+        summary:
+          "I lead security and AI and ML engineering for a platform that drafts contracts from a law firm's own documents.",
+        tags: ["Document to template", "Cited deal terms", "Injection guards", "Firm isolation"],
+        highlights: [
+          "Security for a platform that drafts contracts from law firms' client files. Firm scoping on every query, a deletion owner for every table that holds client text, ids only in app logs, sealed connector tokens with key rotation, and a locked Vertex AI setup with prompt caching and request logging off and processing kept in the US. I wrote the engineering rules and the SOC 2 control map the team builds against.",
+          "AI and ML on Gemini. Any firm document becomes a template of parameters, clause alternatives and fixed text. Deal terms come out of term sheets, email and partner instructions with a quote behind every value, checked against its source lines. Models write placeholders and code fills the values, outside text is wrapped against prompt injection, drafts go through an evaluator and reviser loop, and a scored acceptance replay runs whole deals end to end.",
+        ],
+      },
       {
         title: "AI Engineer",
         date: "Sept 2025 to present",
         location: "Hybridge Implants, New York",
         logo: "/logos/hybridge.webp",
         logoClass: "h-12",
+        summary:
+          "The only engineer at a three office dental implant practice and its lab, running 45 services on Google Cloud.",
+        tags: ["Gemini grading", "Denticon mirror", "Capacity planning", "Reconciliation"],
         highlights: [
           "[Consultation QA Pipeline](/posts/clinical-rag). A Zoom webhook starts a Gemini grader that scores every consult against the CEO's seven criterion rubric, with a transcript quote and timestamp behind each score. 471 consults scored live from May 19 to Oct 28 across three offices; median 2.7 minutes from transcript to sent report in October. It also drafts the doctor's chart note, guarded so a truncated note never ships.",
           "[Pipeline observability hardening](/posts/pipeline-ghosting). Runs went green while emails never sent. I moved the run row to the top, made every failure retry or turn amber, resent 13 runs that had scored but never emailed, and added a Logs tab anyone can read.",
@@ -213,6 +246,7 @@ export const info = {
         date: "May 2024 to Sep 2025",
         location: "New York University, New York",
         logo: "/logos/nyu.svg",
+        summary: "A reward model, then SFT and GRPO on a 4 bit Llama 3 8B.",
         highlights: [
           "Language model research: turned ChangeMyView replies into preference pairs, trained a reward model with TRL and QLoRA, and fine tuned a 4 bit Llama 3 8B with SFT and GRPO on NYU's GPU cluster.",
         ],
@@ -222,6 +256,7 @@ export const info = {
         date: "Jan 2024 to May 2025",
         location: "New York University, New York",
         logo: "/logos/nyu.svg",
+        summary: "Educational video for NYU public health faculty.",
         highlights: [
           "Directed and edited educational video for NYU GPH faculty and their Brightspace courses on public health topics.",
           "Shot on a Sony Alpha 7III; edited in DaVinci Resolve and Adobe Premiere Pro with motion graphics and titles in After Effects.",
@@ -232,6 +267,7 @@ export const info = {
         date: "Aug 2021 to Aug 2023",
         location: "Shure Incorporated, India",
         logo: "/logos/shure.svg",
+        summary: "Python and Selenium test automation for two desktop products.",
         highlights: [
           "Built test automation in Python and Selenium for Shure's Conference WorkBench and Designer desktop products.",
           "Ran regression testing and bug triage on both products.",

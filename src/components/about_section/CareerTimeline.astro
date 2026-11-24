@@ -67,6 +67,9 @@ const rows = spans
       // Late, narrow spans hang their label to the left of the trail so the
       // text never runs off the right edge of the chart.
       flip: left + width > 80,
+      // A span only a few months old is shorter than its logo chip, so the
+      // chip moves out to the left of the trail instead of covering the head.
+      tiny: width < 6,
     };
   })
   .sort((a, b) => a.startM - b.startM);
@@ -131,7 +134,7 @@ const trackH = rows.length * ROW_H;
         {rows.map((r, rowIdx) => (
           <button
             type="button"
-            class={`tl-lane ${r.kind === "education" ? "tl-lane-edu" : ""} ${r.ongoing ? "tl-lane-now" : ""} ${r.flip ? "tl-lane-flip" : ""}`}
+            class={`tl-lane ${r.kind === "education" ? "tl-lane-edu" : ""} ${r.ongoing ? "tl-lane-now" : ""} ${r.flip ? "tl-lane-flip" : ""} ${r.tiny ? "tl-lane-short" : ""}`}
             style={`top:${(rows.length - 1 - rowIdx) * ROW_H}px; height:${ROW_H}px; left:${r.left}%; width:${r.width}%; --brgb:${r.rgb}; --bacc:${r.accent};`}
             data-item={r.i}
             aria-haspopup="dialog"
@@ -339,6 +342,8 @@ const trackH = rows.length * ROW_H;
   .career-tl .tl-lane:hover .tl-chip {
     transform: translateY(-1px);
   }
+
+  .career-tl .tl-lane-short .tl-chip { left: -27px; }
 
   .career-tl .tl-chip img {
     max-width: 78%;
